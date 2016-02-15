@@ -66,6 +66,14 @@ sub _as_string {
    return $_[ 0 ]->name;
 }
 
+my $_assert_membership_allowed = sub {
+   my ($self, $type) = @_;
+
+   $type eq 'bike_rider' and $self->assert_certification_for( 'catagory_b' );
+
+   return;
+};
+
 my $_encrypt_password = sub {
    my ($self, $name, $password, $stored) = @_;
 
@@ -76,10 +84,18 @@ my $_encrypt_password = sub {
 };
 
 my $_find_type_by = sub {
-   my ($self, $role_name) = @_;
+   my ($self, $name, $type) = @_;
 
    return $self->result_source->schema->resultset( 'Type' )->search
-      ( { name => $role_name, type => 'role' } )->single;
+      ( { name => $name, type => $type } )->single;
+};
+
+my $_find_cert_type = sub {
+   return $_[ 0 ]->$_find_type_by( $_[ 1 ], 'certification' );
+};
+
+my $_find_role_type = sub {
+   return $_[ 0 ]->$_find_type_by( $_[ 1 ], 'role' );
 };
 
 # Public methods
@@ -87,28 +103,57 @@ sub activate {
    my $self = shift; $self->active( TRUE ); return $self->update;
 }
 
+sub add_certification_for {
+   my ($self, $cert_name, $opts) = @_; $opts //= {};
+
+   my $type = $self->$_find_cert_type( $cert_name ); my $failed = FALSE;
+
+   try   { $self->assert_certification_for( $cert_name, $type ) }
+   catch { $failed = TRUE };
+
+   $failed or throw 'Person [_1] already has certification [_2]',
+                    [ $self->name, $type ];
+
+   # TODO: Add the optional completed and notes fields
+   return $self->certifications->create
+      ( { recipient => $self->id, type => $type->id } );
+}
+
 sub add_member_to {
    my ($self, $role_name) = @_;
 
-   my $type = $self->$_find_type_by( $role_name ); my $failed = FALSE;
+   my $type = $self->$_find_role_type( $role_name ); my $failed = FALSE;
 
    try   { $self->assert_member_of( $role_name, $type ) }
    catch { $failed = TRUE };
 
    $failed or throw 'Person [_1] already a member of role [_2]',
-                    [ $self->name, $type->name ];
+                    [ $self->name, $type ];
+
+   $self->$_assert_membership_allowed( $type );
 
    return $self->roles->create( { member => $self->id, type => $type->id } );
+}
+
+sub assert_certification_for {
+   my ($self, $cert_name, $type) = @_;
+
+   $type //= $self->$_find_cert_type( $cert_name );
+
+   my $cert = $self->certifications->find( $self->id, $type->id )
+      or throw 'Person [_1] has no certification for [_2]',
+               [ $self->name, $type ];
+
+   return $cert;
 }
 
 sub assert_member_of {
    my ($self, $role_name, $type) = @_;
 
-   $type //= $self->$_find_type_by( $role_name );
+   $type //= $self->$_find_role_type( $role_name );
 
    my $role = $self->roles->find( $self->id, $type->id )
-      or throw 'Person [_1] not member of role [_2]',
-               [ $self->name, $type->name ];
+      or throw 'Person [_1] not member of role [_2]', [ $self->name, $type ];
 
    return $role;
 }
@@ -130,6 +175,10 @@ sub authenticate {
 
 sub deactivate {
    my $self = shift; $self->active( FALSE ); return $self->update;
+}
+
+sub delete_certification_for {
+   return $_[ 0 ]->assert_certification_for( $_[ 1 ] )->delete;
 }
 
 sub delete_member_from {

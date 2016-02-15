@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Tests for certification
           - Tests for person / role membership
           - Can add persons to roles
           - First passing test creates a person and authenticates
