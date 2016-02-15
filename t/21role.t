@@ -9,16 +9,26 @@ my $connection =  App::Notitia::Schema->new
    ( config    => { appclass => 'App::Notitia', tempdir => 't' } );
 my $schema     =  $connection->schedule;
 my $person_rs  =  $schema->resultset( 'Person' );
-my $person     =  $person_rs->search( { name => 'john' } )->single;
+my $person     =  $person_rs->search( { name => 'john' } )->first;
 
 eval { $person->delete_member_from( 'bike_rider' ) };
+
+eval { $person->assert_member_of( 'bike_rider' ) }; my $e = $EVAL_ERROR;
+
+like $e, qr{ \Qnot member\E }mx, 'John is not a bike rider';
 
 $person->add_member_to( 'bike_rider' );
 
 $person = $person_rs->search
    ( { name => 'john' }, { prefetch => 'roles' } )->first;
 
-is $person->roles->first->type->name, 'bike_rider', 'John is a bike rider';
+my $role = $person->assert_member_of( 'bike_rider' );
+
+is $role, 'bike_rider', 'John is a bike rider';
+
+eval { $person->add_member_to( 'bike_rider' ) }; $e = $EVAL_ERROR;
+
+like $e, qr{ \Qalready a member\E }mx, 'John is a bike rider already';
 
 done_testing;
 

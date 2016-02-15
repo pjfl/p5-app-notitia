@@ -35,16 +35,6 @@ $e = $EVAL_ERROR; is $e->class, 'ValidationErrors', 'Validation errors';
 
 is $e->args->[ 0 ]->class, 'ValidLength', 'Invalid name length';
 
-my $type_rs    =  $schema->resultset( 'Type' );
-my $rider_type =  $type_rs->search
-   ( { name    => 'bike_rider', type => 'role' } )->single;
-my $role_rs    =  $schema->resultset( 'Role' );
-my $role       =  $role_rs->search
-   ( { member  => $person->id, type => $rider_type->id } );
-
-$role and $role->delete;
-$role = $role_rs->create( { member => $person->id, type => $rider_type->id } );
-
 done_testing;
 
 # Local Variables:

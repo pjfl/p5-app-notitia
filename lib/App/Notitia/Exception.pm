@@ -24,6 +24,7 @@ has '+class' => default => $class;
 sub code {
    return $_[ 0 ]->rv;
 }
+
 1;
 
 __END__

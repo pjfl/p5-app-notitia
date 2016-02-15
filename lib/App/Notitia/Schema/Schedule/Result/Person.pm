@@ -54,7 +54,7 @@ my $_new_salt = sub {
    my ($type, $lf) = @_;
 
    return "\$${type}\$${lf}\$"
-      .(en_base64( pack( 'H*', substr( create_token, 0, 32 ) ) ) );
+        . (en_base64( pack( 'H*', substr( create_token, 0, 32 ) ) ) );
 };
 
 my $_is_encrypted = sub {
@@ -67,10 +67,10 @@ sub _as_string {
 }
 
 my $_encrypt_password = sub {
-   my ($self, $username, $password, $stored) = @_;
+   my ($self, $name, $password, $stored) = @_;
 
-   my $salt = defined $stored ? get_salt( $stored )
-      : $_new_salt->( '2a', $self->result_source->schema->config->load_factor );
+   my $lf   = $self->result_source->schema->config->load_factor;
+   my $salt = defined $stored ? get_salt( $stored ) : $_new_salt->( '2a', $lf );
 
    return bcrypt( $password, $salt );
 };
@@ -119,12 +119,12 @@ sub authenticate {
    $self->active or $for_update
       or throw AccountInactive, [ $self->name ], rv => HTTP_UNAUTHORIZED;
 
-   my $username = $self->name;
+   my $name     = $self->name;
    my $stored   = $self->password || NUL;
-   my $supplied = $self->$_encrypt_password( $username, $passwd, $stored );
+   my $supplied = $self->$_encrypt_password( $name, $passwd, $stored );
 
    $supplied eq $stored
-      or throw IncorrectPassword, [ $username ], rv => HTTP_UNAUTHORIZED;
+      or throw IncorrectPassword, [ $name ], rv => HTTP_UNAUTHORIZED;
    return;
 }
 
@@ -146,10 +146,10 @@ sub insert {
    my $self     = shift;
    my $columns  = { $self->get_inflated_columns };
    my $password = $columns->{password};
-   my $username = $columns->{name};
+   my $name     = $columns->{name};
 
    $password and not $_is_encrypted->( $password ) and $columns->{password}
-      = $self->$_encrypt_password( $username, $password );
+      = $self->$_encrypt_password( $name, $password );
    $self->set_inflated_columns( $columns );
 
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
