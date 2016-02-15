@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Can add persons to roles
           - First passing test creates a person and authenticates
           - Created schema
 

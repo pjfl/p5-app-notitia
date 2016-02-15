@@ -8,16 +8,16 @@ CREATE TABLE "person" (
   "joined" timestamp NOT NULL,
   "resigned" timestamp NOT NULL,
   "subscription" timestamp NOT NULL,
-  "postcode" character varying(16) DEFAULT '' NOT NULL,
   "name" character varying(64) DEFAULT '' NOT NULL,
+  "password" character varying(128) DEFAULT '' NOT NULL,
   "first_name" character varying(64) DEFAULT '' NOT NULL,
   "last_name" character varying(64) DEFAULT '' NOT NULL,
   "address" character varying(64) DEFAULT '' NOT NULL,
+  "postcode" character varying(16) DEFAULT '' NOT NULL,
   "email_address" character varying(64) DEFAULT '' NOT NULL,
   "mobile_phone" character varying(64) DEFAULT '' NOT NULL,
   "home_phone" character varying(64) DEFAULT '' NOT NULL,
-  "password" character varying(128) DEFAULT '' NOT NULL,
-  "notes" character varying(255),
+  "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "person_name" UNIQUE ("name")
 );
@@ -28,7 +28,8 @@ CREATE TABLE "type" (
   "id" serial NOT NULL,
   "name" character varying(32) DEFAULT '' NOT NULL,
   "type" character varying NOT NULL,
-  PRIMARY KEY ("id")
+  PRIMARY KEY ("id"),
+  CONSTRAINT "type_name_type" UNIQUE ("name", "type")
 );
 
 DROP TABLE "endorsement" CASCADE;
@@ -37,7 +38,7 @@ CREATE TABLE "endorsement" (
   "points" smallint NOT NULL,
   "endorsed" timestamp NOT NULL,
   "code" character varying(16) DEFAULT '' NOT NULL,
-  "notes" character varying(255),
+  "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("recipient", "code")
 );
 CREATE INDEX "endorsement_idx_recipient" on "endorsement" ("recipient");
@@ -56,7 +57,7 @@ CREATE TABLE "certification" (
   "recipient" integer NOT NULL,
   "type" integer NOT NULL,
   "completed" timestamp NOT NULL,
-  "notes" character varying(255),
+  "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("recipient", "type")
 );
 CREATE INDEX "certification_idx_recipient" on "certification" ("recipient");
@@ -89,7 +90,7 @@ CREATE TABLE "vehicle" (
   "disposed" timestamp NOT NULL,
   "vrn" character varying(16) DEFAULT '' NOT NULL,
   "name" character varying(64) DEFAULT '' NOT NULL,
-  "notes" character varying(255),
+  "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("id")
 );
 CREATE INDEX "vehicle_idx_owner" on "vehicle" ("owner");
@@ -104,7 +105,7 @@ CREATE TABLE "event" (
   "end" timestamp NOT NULL,
   "name" character varying(64) DEFAULT '' NOT NULL,
   "description" character varying(128) DEFAULT '' NOT NULL,
-  "notes" character varying(255),
+  "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "event_name" UNIQUE ("name")
 );

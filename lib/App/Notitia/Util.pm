@@ -9,13 +9,20 @@ use Class::Usul::Functions  qw( class2appdir find_apphome
 use Class::Usul::Time       qw( str2time time2str );
 use Scalar::Util            qw( weaken );
 
-our @EXPORT_OK = qw( enumerated_data_type enhance foreign_key_data_type
-                     get_hashed_pw get_salt nullable_foreign_key_data_type
+our @EXPORT_OK = qw( bool_data_type enumerated_data_type enhance
+                     foreign_key_data_type get_hashed_pw get_salt
+                     nullable_foreign_key_data_type
                      nullable_varchar_data_type numerical_id_data_type
                      serial_data_type set_on_create_datetime_data_type
                      stash_functions varchar_data_type );
 
 # Public functions
+sub bool_data_type (;$) {
+   return { data_type     => 'boolean',
+            default_value => $_[ 0 ] // FALSE,
+            is_nullable   => FALSE, };
+}
+
 sub enumerated_data_type ($;$) {
    return { data_type     => 'enum',
             default_value => $_[ 1 ],

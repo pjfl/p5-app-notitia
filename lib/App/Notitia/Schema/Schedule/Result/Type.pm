@@ -4,7 +4,7 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( NUL );
+use App::Notitia::Constants qw( TYPE_TYPE_ENUM );
 use App::Notitia::Util      qw( enumerated_data_type serial_data_type
                                 varchar_data_type );
 
@@ -14,10 +14,12 @@ $class->table( 'type' );
 
 $class->add_columns
    ( id   => serial_data_type,
-     name => varchar_data_type( 32, NUL ),
+     name => varchar_data_type( 32 ),
      type => enumerated_data_type( TYPE_TYPE_ENUM ), );
 
 $class->set_primary_key( 'id' );
+
+$class->add_unique_constraint( [ 'name', 'type' ] );
 
 # Private methods
 sub _as_string {

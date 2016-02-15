@@ -4,11 +4,9 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( NUL );
-use App::Notitia::Util      qw( foreign_key_data_type
-                                nullable_foreign_key_data_type
-                                nullable_varchar_data_type serial_data_type
-                                varchar_data_type );
+use App::Notitia::Util qw( foreign_key_data_type
+                           nullable_foreign_key_data_type
+                           serial_data_type varchar_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -20,9 +18,9 @@ $class->add_columns
      owner    => nullable_foreign_key_data_type,
      aquired  => { data_type => 'datetime' },
      disposed => { data_type => 'datetime' },
-     vrn      => varchar_data_type( 16, NUL ),
-     name     => varchar_data_type( 64, NUL ),
-     notes    => nullable_varchar_data_type, );
+     vrn      => varchar_data_type( 16 ),
+     name     => varchar_data_type( 64 ),
+     notes    => varchar_data_type, );
 
 $class->set_primary_key( 'id' );
 
@@ -32,7 +30,7 @@ $class->belongs_to( type  => "${result}::Type" );
 
 # Private methods
 sub _as_string {
-   return $_[ 0 ]->name ? $_[ 0 ]->name : $_[ 0 ]->type;
+   return $_[ 0 ]->name ? $_[ 0 ]->name : $_[ 0 ]->vrn;
 }
 
 1;

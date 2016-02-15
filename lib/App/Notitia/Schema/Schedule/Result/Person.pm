@@ -6,7 +6,8 @@ use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia;
 use App::Notitia::Constants    qw( EXCEPTION_CLASS TRUE FALSE NUL );
-use App::Notitia::Util         qw( get_salt nullable_foreign_key_data_type
+use App::Notitia::Util         qw( bool_data_type get_salt
+                                   nullable_foreign_key_data_type
                                    serial_data_type varchar_data_type );
 use Class::Usul::Functions     qw( create_token throw );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
@@ -21,12 +22,8 @@ $class->table( 'person' );
 $class->add_columns
    ( id               => serial_data_type,
      next_of_kin      => nullable_foreign_key_data_type,
-     active           => { data_type     => 'boolean',
-                           default_value => FALSE,
-                           is_nullable   => FALSE, },
-     password_expired => { data_type     => 'boolean',
-                           default_value => TRUE,
-                           is_nullable   => FALSE, },
+     active           => bool_data_type,
+     password_expired => bool_data_type( TRUE ),
      dob              => { data_type => 'datetime' },
      joined           => { data_type => 'datetime' },
      resigned         => { data_type => 'datetime' },
@@ -78,29 +75,42 @@ my $_encrypt_password = sub {
    return bcrypt( $password, $salt );
 };
 
+my $_find_type_by = sub {
+   my ($self, $role_name) = @_;
+
+   return $self->result_source->schema->resultset( 'Type' )->search
+      ( { name => $role_name, type => 'role' } )->single;
+};
+
 # Public methods
 sub activate {
    my $self = shift; $self->active( TRUE ); return $self->update;
 }
 
 sub add_member_to {
-   my ($self, $role) = @_; my $failed = FALSE;
+   my ($self, $role_name) = @_;
 
-   try { $self->assert_member_of( $role ) } catch { $failed = TRUE };
+   my $type = $self->$_find_type_by( $role_name ); my $failed = FALSE;
 
-   $failed or throw 'User [_1] already a member of role [_2]',
-                    [ $self->name, $role ];
+   try   { $self->assert_member_of( $role_name, $type ) }
+   catch { $failed = TRUE };
 
-   return $self->roles->create( { member => $self->id, type => $role } );
+   $failed or throw 'Person [_1] already a member of role [_2]',
+                    [ $self->name, $type->name ];
+
+   return $self->roles->create( { member => $self->id, type => $type->id } );
 }
 
 sub assert_member_of {
-   my ($self, $role_name) = @_;
+   my ($self, $role_name, $type) = @_;
 
-   my $role = $self->roles->find( $self->id, $role_name )
-      or throw 'User [_1] not member of role [_2]', [ $self->name, $role_name ];
+   $type //= $self->$_find_type_by( $role_name );
 
-   return TRUE;
+   my $role = $self->roles->find( $self->id, $type->id )
+      or throw 'Person [_1] not member of role [_2]',
+               [ $self->name, $type->name ];
+
+   return $role;
 }
 
 sub authenticate {
@@ -125,10 +135,9 @@ sub deactivate {
 sub delete_member_from {
    my ($self, $role_name) = @_;
 
-   # TODO: Prevent deleting of last role
+   my $role = $self->assert_member_of( $role_name );
 
-   my $role = $self->roles->find( $self->id, $role_name )
-      or throw 'User [_1] not member of role [_2]', [ $self->name, $role_name ];
+   # TODO: Prevent deleting of last role
 
    return $role->delete;
 }
@@ -148,10 +157,10 @@ sub insert {
    return $self->next::method;
 }
 
-sub list_other_roles {
+sub list_roles {
    my $self = shift;
 
-   return [ map { NUL.$_->type }
+   return [ map { $_->type->name }
             $self->roles->search( { member => $self->id } )->all ];
 }
 

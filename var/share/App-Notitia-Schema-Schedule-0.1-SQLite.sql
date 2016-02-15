@@ -11,16 +11,16 @@ CREATE TABLE "person" (
   "joined" datetime NOT NULL,
   "resigned" datetime NOT NULL,
   "subscription" datetime NOT NULL,
-  "postcode" varchar(16) NOT NULL DEFAULT '',
   "name" varchar(64) NOT NULL DEFAULT '',
+  "password" varchar(128) NOT NULL DEFAULT '',
   "first_name" varchar(64) NOT NULL DEFAULT '',
   "last_name" varchar(64) NOT NULL DEFAULT '',
   "address" varchar(64) NOT NULL DEFAULT '',
+  "postcode" varchar(16) NOT NULL DEFAULT '',
   "email_address" varchar(64) NOT NULL DEFAULT '',
   "mobile_phone" varchar(64) NOT NULL DEFAULT '',
   "home_phone" varchar(64) NOT NULL DEFAULT '',
-  "password" varchar(128) NOT NULL DEFAULT '',
-  "notes" varchar(255),
+  "notes" varchar(255) NOT NULL DEFAULT '',
   FOREIGN KEY ("next_of_kin") REFERENCES "person"("id")
 );
 
@@ -36,6 +36,8 @@ CREATE TABLE "type" (
   "type" enum NOT NULL
 );
 
+CREATE UNIQUE INDEX "type_name_type" ON "type" ("name", "type");
+
 DROP TABLE "endorsement";
 
 CREATE TABLE "endorsement" (
@@ -43,7 +45,7 @@ CREATE TABLE "endorsement" (
   "points" smallint NOT NULL,
   "endorsed" datetime NOT NULL,
   "code" varchar(16) NOT NULL DEFAULT '',
-  "notes" varchar(255),
+  "notes" varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY ("recipient", "code"),
   FOREIGN KEY ("recipient") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -67,7 +69,7 @@ CREATE TABLE "certification" (
   "recipient" integer NOT NULL,
   "type" integer NOT NULL,
   "completed" datetime NOT NULL,
-  "notes" varchar(255),
+  "notes" varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY ("recipient", "type"),
   FOREIGN KEY ("recipient") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY ("type") REFERENCES "type"("id")
@@ -112,7 +114,7 @@ CREATE TABLE "vehicle" (
   "disposed" datetime NOT NULL,
   "vrn" varchar(16) NOT NULL DEFAULT '',
   "name" varchar(64) NOT NULL DEFAULT '',
-  "notes" varchar(255),
+  "notes" varchar(255) NOT NULL DEFAULT '',
   FOREIGN KEY ("owner") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY ("type") REFERENCES "type"("id")
 );
@@ -131,7 +133,7 @@ CREATE TABLE "event" (
   "end" datetime NOT NULL,
   "name" varchar(64) NOT NULL DEFAULT '',
   "description" varchar(128) NOT NULL DEFAULT '',
-  "notes" varchar(255),
+  "notes" varchar(255) NOT NULL DEFAULT '',
   FOREIGN KEY ("owner") REFERENCES "person"("id"),
   FOREIGN KEY ("rota") REFERENCES "rota"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );

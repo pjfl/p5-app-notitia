@@ -5,7 +5,8 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( FALSE SLOT_TYPE_ENUM );
-use App::Notitia::Util      qw( enumerated_data_type foreign_key_data_type
+use App::Notitia::Util      qw( bool_data_type enumerated_data_type
+                                foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 numerical_id_data_type );
 
@@ -18,9 +19,7 @@ $class->add_columns
      type             => enumerated_data_type( SLOT_TYPE_ENUM, 0 ),
      subslot          => numerical_id_data_type,
      operator         => foreign_key_data_type,
-     bike_requested   => { data_type     => 'boolean',
-                           default_value => FALSE,
-                           is_nullable   => FALSE, },
+     bike_requested   => bool_data_type,
      vehicle_assigner => nullable_foreign_key_data_type,
      vehicle          => nullable_foreign_key_data_type, );
 
