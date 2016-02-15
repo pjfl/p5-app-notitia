@@ -11,13 +11,13 @@ my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 $class->table( 'role' );
 
 $class->add_columns
-   ( member => foreign_key_data_type,
-     type   => foreign_key_data_type, );
+   ( member_id => foreign_key_data_type,
+     type_id   => foreign_key_data_type, );
 
-$class->set_primary_key( 'member', 'type' );
+$class->set_primary_key( 'member_id', 'type_id' );
 
-$class->belongs_to( member => "${result}::Person" );
-$class->belongs_to( type   => "${result}::Type"   );
+$class->belongs_to( member => "${result}::Person", 'member_id' );
+$class->belongs_to( type   => "${result}::Type",   'type_id'   );
 
 # Private methods
 sub _as_string {

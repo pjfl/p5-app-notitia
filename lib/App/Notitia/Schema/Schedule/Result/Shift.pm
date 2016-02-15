@@ -13,22 +13,22 @@ my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 $class->table( 'shift' );
 
 $class->add_columns
-   ( id   => serial_data_type,
-     rota => foreign_key_data_type,
-     type => enumerated_data_type( SHIFT_TYPE_ENUM, 'day' ), );
+   ( id      => serial_data_type,
+     rota_id => foreign_key_data_type,
+     type    => enumerated_data_type( SHIFT_TYPE_ENUM, 'day' ), );
 
 $class->set_primary_key( 'id' );
 
-$class->belongs_to( rota              => "${result}::Rota" );
-$class->has_many  ( 'controllers'     => "${result}::Slot",
-                    { 'foreign.shift' => 'self.id' },
-                    { where           => { 'foreign.type'  => 'controller' } });
-$class->has_many  ( 'riders'          => "${result}::Slot",
-                    { 'foreign.shift' => 'self.id' },
-                    { where           => { 'foreign.type'  => 'rider' } } );
-$class->might_have( 'spare_driver'    => "${result}::Slot",
-                    { 'foreign.shift' => 'self.id' },
-                    { where           => { 'foreign.type'  => 'driver' } } );
+$class->belongs_to( rota                 => "${result}::Rota", 'rota_id' );
+$class->has_many  ( 'controllers'        => "${result}::Slot",
+                    { 'foreign.shift_id' => 'self.id' }, { where => {
+                       'foreign.type'    => 'controller' } });
+$class->has_many  ( 'riders'             => "${result}::Slot",
+                    { 'foreign.shift_id' => 'self.id' }, { where => {
+                       'foreign.type'    => 'rider' } } );
+$class->might_have( 'spare_driver'       => "${result}::Slot",
+                    { 'foreign.shift_id' => 'self.id' }, { where => {
+                       'foreign.type'    => 'driver' } } );
 
 # Private methods
 sub _as_string {

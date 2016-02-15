@@ -41,164 +41,166 @@ CREATE UNIQUE INDEX "type_name_type" ON "type" ("name", "type");
 DROP TABLE "endorsement";
 
 CREATE TABLE "endorsement" (
-  "recipient" integer NOT NULL,
+  "recipient_id" integer NOT NULL,
   "points" smallint NOT NULL,
   "endorsed" datetime NOT NULL,
   "code" varchar(16) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
-  PRIMARY KEY ("recipient", "code"),
-  FOREIGN KEY ("recipient") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY ("recipient_id", "code"),
+  FOREIGN KEY ("recipient_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX "endorsement_idx_recipient" ON "endorsement" ("recipient");
+CREATE INDEX "endorsement_idx_recipient_id" ON "endorsement" ("recipient_id");
 
 DROP TABLE "rota";
 
 CREATE TABLE "rota" (
   "id" INTEGER PRIMARY KEY NOT NULL,
+  "type_id" integer NOT NULL,
   "date" datetime NOT NULL,
-  "type" integer NOT NULL,
-  FOREIGN KEY ("type") REFERENCES "type"("id")
+  FOREIGN KEY ("type_id") REFERENCES "type"("id")
 );
 
-CREATE INDEX "rota_idx_type" ON "rota" ("type");
+CREATE INDEX "rota_idx_type_id" ON "rota" ("type_id");
 
 DROP TABLE "certification";
 
 CREATE TABLE "certification" (
-  "recipient" integer NOT NULL,
-  "type" integer NOT NULL,
+  "recipient_id" integer NOT NULL,
+  "type_id" integer NOT NULL,
   "completed" datetime NOT NULL,
   "notes" varchar(255) NOT NULL DEFAULT '',
-  PRIMARY KEY ("recipient", "type"),
-  FOREIGN KEY ("recipient") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY ("type") REFERENCES "type"("id")
+  PRIMARY KEY ("recipient_id", "type_id"),
+  FOREIGN KEY ("recipient_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("type_id") REFERENCES "type"("id")
 );
 
-CREATE INDEX "certification_idx_recipient" ON "certification" ("recipient");
+CREATE INDEX "certification_idx_recipient_id" ON "certification" ("recipient_id");
 
-CREATE INDEX "certification_idx_type" ON "certification" ("type");
+CREATE INDEX "certification_idx_type_id" ON "certification" ("type_id");
 
 DROP TABLE "role";
 
 CREATE TABLE "role" (
-  "member" integer NOT NULL,
-  "type" integer NOT NULL,
-  PRIMARY KEY ("member", "type"),
-  FOREIGN KEY ("member") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY ("type") REFERENCES "type"("id")
+  "member_id" integer NOT NULL,
+  "type_id" integer NOT NULL,
+  PRIMARY KEY ("member_id", "type_id"),
+  FOREIGN KEY ("member_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("type_id") REFERENCES "type"("id")
 );
 
-CREATE INDEX "role_idx_member" ON "role" ("member");
+CREATE INDEX "role_idx_member_id" ON "role" ("member_id");
 
-CREATE INDEX "role_idx_type" ON "role" ("type");
+CREATE INDEX "role_idx_type_id" ON "role" ("type_id");
 
 DROP TABLE "shift";
 
 CREATE TABLE "shift" (
   "id" INTEGER PRIMARY KEY NOT NULL,
-  "rota" integer NOT NULL,
+  "rota_id" integer NOT NULL,
   "type" enum NOT NULL DEFAULT 'day',
-  FOREIGN KEY ("rota") REFERENCES "rota"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  FOREIGN KEY ("rota_id") REFERENCES "rota"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX "shift_idx_rota" ON "shift" ("rota");
+CREATE INDEX "shift_idx_rota_id" ON "shift" ("rota_id");
 
 DROP TABLE "vehicle";
 
 CREATE TABLE "vehicle" (
   "id" INTEGER PRIMARY KEY NOT NULL,
-  "type" integer NOT NULL,
-  "owner" integer,
+  "type_id" integer NOT NULL,
+  "owner_id" integer,
   "aquired" datetime NOT NULL,
   "disposed" datetime NOT NULL,
   "vrn" varchar(16) NOT NULL DEFAULT '',
   "name" varchar(64) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
-  FOREIGN KEY ("owner") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY ("type") REFERENCES "type"("id")
+  FOREIGN KEY ("owner_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("type_id") REFERENCES "type"("id")
 );
 
-CREATE INDEX "vehicle_idx_owner" ON "vehicle" ("owner");
+CREATE INDEX "vehicle_idx_owner_id" ON "vehicle" ("owner_id");
 
-CREATE INDEX "vehicle_idx_type" ON "vehicle" ("type");
+CREATE INDEX "vehicle_idx_type_id" ON "vehicle" ("type_id");
+
+CREATE UNIQUE INDEX "vehicle_vrn" ON "vehicle" ("vrn");
 
 DROP TABLE "event";
 
 CREATE TABLE "event" (
   "id" INTEGER PRIMARY KEY NOT NULL,
-  "rota" integer NOT NULL,
-  "owner" integer NOT NULL,
+  "rota_id" integer NOT NULL,
+  "owner_id" integer NOT NULL,
   "start" datetime NOT NULL,
   "end" datetime NOT NULL,
   "name" varchar(64) NOT NULL DEFAULT '',
   "description" varchar(128) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
-  FOREIGN KEY ("owner") REFERENCES "person"("id"),
-  FOREIGN KEY ("rota") REFERENCES "rota"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  FOREIGN KEY ("owner_id") REFERENCES "person"("id"),
+  FOREIGN KEY ("rota_id") REFERENCES "rota"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX "event_idx_owner" ON "event" ("owner");
+CREATE INDEX "event_idx_owner_id" ON "event" ("owner_id");
 
-CREATE INDEX "event_idx_rota" ON "event" ("rota");
+CREATE INDEX "event_idx_rota_id" ON "event" ("rota_id");
 
 CREATE UNIQUE INDEX "event_name" ON "event" ("name");
 
 DROP TABLE "participent";
 
 CREATE TABLE "participent" (
-  "event" integer NOT NULL,
-  "participent" integer NOT NULL,
-  PRIMARY KEY ("event", "participent"),
-  FOREIGN KEY ("event") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY ("participent") REFERENCES "person"("id")
+  "event_id" integer NOT NULL,
+  "participent_id" integer NOT NULL,
+  PRIMARY KEY ("event_id", "participent_id"),
+  FOREIGN KEY ("event_id") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("participent_id") REFERENCES "person"("id")
 );
 
-CREATE INDEX "participent_idx_event" ON "participent" ("event");
+CREATE INDEX "participent_idx_event_id" ON "participent" ("event_id");
 
-CREATE INDEX "participent_idx_participent" ON "participent" ("participent");
+CREATE INDEX "participent_idx_participent_id" ON "participent" ("participent_id");
 
 DROP TABLE "slot";
 
 CREATE TABLE "slot" (
-  "shift" integer NOT NULL,
+  "shift_id" integer NOT NULL,
+  "operator_id" integer NOT NULL,
   "type" enum NOT NULL DEFAULT '0',
   "subslot" smallint NOT NULL,
-  "operator" integer NOT NULL,
   "bike_requested" boolean NOT NULL DEFAULT 0,
-  "vehicle_assigner" integer,
-  "vehicle" integer,
-  PRIMARY KEY ("shift", "type", "subslot"),
-  FOREIGN KEY ("operator") REFERENCES "person"("id"),
-  FOREIGN KEY ("shift") REFERENCES "shift"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY ("vehicle") REFERENCES "vehicle"("id"),
-  FOREIGN KEY ("vehicle_assigner") REFERENCES "person"("id")
+  "vehicle_assigner_id" integer,
+  "vehicle_id" integer,
+  PRIMARY KEY ("shift_id", "type", "subslot"),
+  FOREIGN KEY ("operator_id") REFERENCES "person"("id"),
+  FOREIGN KEY ("shift_id") REFERENCES "shift"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("vehicle_id") REFERENCES "vehicle"("id"),
+  FOREIGN KEY ("vehicle_assigner_id") REFERENCES "person"("id")
 );
 
-CREATE INDEX "slot_idx_operator" ON "slot" ("operator");
+CREATE INDEX "slot_idx_operator_id" ON "slot" ("operator_id");
 
-CREATE INDEX "slot_idx_shift" ON "slot" ("shift");
+CREATE INDEX "slot_idx_shift_id" ON "slot" ("shift_id");
 
-CREATE INDEX "slot_idx_vehicle" ON "slot" ("vehicle");
+CREATE INDEX "slot_idx_vehicle_id" ON "slot" ("vehicle_id");
 
-CREATE INDEX "slot_idx_vehicle_assigner" ON "slot" ("vehicle_assigner");
+CREATE INDEX "slot_idx_vehicle_assigner_id" ON "slot" ("vehicle_assigner_id");
 
 DROP TABLE "transport";
 
 CREATE TABLE "transport" (
-  "event" integer NOT NULL,
-  "vehicle" integer NOT NULL,
-  "vehicle_assigner" integer NOT NULL,
-  PRIMARY KEY ("event", "vehicle"),
-  FOREIGN KEY ("event") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY ("vehicle") REFERENCES "vehicle"("id"),
-  FOREIGN KEY ("vehicle_assigner") REFERENCES "person"("id")
+  "event_id" integer NOT NULL,
+  "vehicle_id" integer NOT NULL,
+  "vehicle_assigner_id" integer NOT NULL,
+  PRIMARY KEY ("event_id", "vehicle_id"),
+  FOREIGN KEY ("event_id") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("vehicle_id") REFERENCES "vehicle"("id"),
+  FOREIGN KEY ("vehicle_assigner_id") REFERENCES "person"("id")
 );
 
-CREATE INDEX "transport_idx_event" ON "transport" ("event");
+CREATE INDEX "transport_idx_event_id" ON "transport" ("event_id");
 
-CREATE INDEX "transport_idx_vehicle" ON "transport" ("vehicle");
+CREATE INDEX "transport_idx_vehicle_id" ON "transport" ("vehicle_id");
 
-CREATE INDEX "transport_idx_vehicle_assigner" ON "transport" ("vehicle_assigner");
+CREATE INDEX "transport_idx_vehicle_assigner_id" ON "transport" ("vehicle_assigner_id");
 
 COMMIT;

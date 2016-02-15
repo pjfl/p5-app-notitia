@@ -11,15 +11,15 @@ my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 $class->table( 'rota' );
 
 $class->add_columns
-   ( id   => serial_data_type,
-     date => { data_type => 'datetime' },
-     type => foreign_key_data_type, );
+   ( id      => serial_data_type,
+     type_id => foreign_key_data_type,
+     date    => { data_type => 'datetime' }, );
 
 $class->set_primary_key( 'id' );
 
-$class->belongs_to( type   => "${result}::Type" );
-$class->has_many  ( events => "${result}::Event", 'rota' );
-$class->has_many  ( shifts => "${result}::Shift", 'rota' );
+$class->belongs_to( type   => "${result}::Type",  'type_id' );
+$class->has_many  ( events => "${result}::Event", 'rota_id' );
+$class->has_many  ( shifts => "${result}::Shift", 'rota_id' );
 
 # Private methods
 sub _as_string {

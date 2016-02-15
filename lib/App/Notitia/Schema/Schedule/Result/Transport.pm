@@ -11,15 +11,16 @@ my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 $class->table( 'transport' );
 
 $class->add_columns
-   ( event            => foreign_key_data_type,
-     vehicle          => foreign_key_data_type,
-     vehicle_assigner => foreign_key_data_type, );
+   ( event_id            => foreign_key_data_type,
+     vehicle_id          => foreign_key_data_type,
+     vehicle_assigner_id => foreign_key_data_type, );
 
-$class->set_primary_key( 'event', 'vehicle' );
+$class->set_primary_key( 'event_id', 'vehicle_id' );
 
-$class->belongs_to( event            => "${result}::Event"   );
-$class->belongs_to( vehicle_assigner => "${result}::Person"  );
-$class->belongs_to( vehicle          => "${result}::Vehicle" );
+$class->belongs_to( event            => "${result}::Event", 'event_id' );
+$class->belongs_to( vehicle_assigner => "${result}::Person",
+                    'vehicle_assigner_id'  );
+$class->belongs_to( vehicle          => "${result}::Vehicle", 'vehicle_id' );
 
 # Private methods
 sub _as_string {

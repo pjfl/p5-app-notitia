@@ -15,22 +15,22 @@ my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 $class->table( 'slot' );
 
 $class->add_columns
-   ( shift            => foreign_key_data_type,
-     type             => enumerated_data_type( SLOT_TYPE_ENUM, 0 ),
-     subslot          => numerical_id_data_type,
-     operator         => foreign_key_data_type,
-     bike_requested   => bool_data_type,
-     vehicle_assigner => nullable_foreign_key_data_type,
-     vehicle          => nullable_foreign_key_data_type, );
+   ( shift_id            => foreign_key_data_type,
+     operator_id         => foreign_key_data_type,
+     type                => enumerated_data_type( SLOT_TYPE_ENUM, 0 ),
+     subslot             => numerical_id_data_type,
+     bike_requested      => bool_data_type,
+     vehicle_assigner_id => nullable_foreign_key_data_type,
+     vehicle_id          => nullable_foreign_key_data_type, );
 
-$class->set_primary_key( 'shift', 'type', 'subslot' );
+$class->set_primary_key( 'shift_id', 'type', 'subslot' );
 
-$class->belongs_to( shift            => "${result}::Shift" );
-$class->belongs_to( operator         => "${result}::Person" );
-$class->belongs_to( vehicle_assigner => "${result}::Person", 'vehicle_assigner',
-                    { join_type => 'left' } );
-$class->belongs_to( vehicle          => "${result}::Vehicle", 'vehicle',
-                    { join_type => 'left' } );
+$class->belongs_to( shift            => "${result}::Shift", 'shift_id' );
+$class->belongs_to( operator         => "${result}::Person", 'operator_id' );
+$class->belongs_to( vehicle_assigner => "${result}::Person",
+                    'vehicle_assigner_id', { join_type => 'left' } );
+$class->belongs_to( vehicle          => "${result}::Vehicle",
+                    'vehicle_id', { join_type => 'left' } );
 
 # Private methods
 sub _as_string {

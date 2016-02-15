@@ -13,8 +13,8 @@ $class->table( 'event' );
 
 $class->add_columns
    ( id          => serial_data_type,
-     rota        => foreign_key_data_type,
-     owner       => foreign_key_data_type,
+     rota_id     => foreign_key_data_type,
+     owner_id    => foreign_key_data_type,
      start       => { data_type => 'datetime' },
      end         => { data_type => 'datetime' },
      name        => varchar_data_type(  64 ),
@@ -25,10 +25,10 @@ $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'name' ] );
 
-$class->belongs_to( rota         => "${result}::Rota" );
-$class->belongs_to( owner        => "${result}::Person" );
-$class->has_many  ( participents => "${result}::Participent", 'event' );
-$class->has_many  ( transports   => "${result}::Transport",   'event' );
+$class->belongs_to( rota         => "${result}::Rota", 'rota_id' );
+$class->belongs_to( owner        => "${result}::Person", 'owner_id' );
+$class->has_many  ( participents => "${result}::Participent", 'event_id' );
+$class->has_many  ( transports   => "${result}::Transport",   'event_id' );
 
 # Private methods
 sub _as_string {

@@ -12,15 +12,15 @@ my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 $class->table( 'endorsement' );
 
 $class->add_columns
-   ( recipient => foreign_key_data_type,
-     points    => numerical_id_data_type,
-     endorsed  => { data_type => 'datetime' },
-     code      => varchar_data_type( 16 ),
-     notes     => varchar_data_type, );
+   ( recipient_id => foreign_key_data_type,
+     points       => numerical_id_data_type,
+     endorsed     => { data_type => 'datetime' },
+     code         => varchar_data_type( 16 ),
+     notes        => varchar_data_type, );
 
-$class->set_primary_key( 'recipient', 'code' );
+$class->set_primary_key( 'recipient_id', 'code' );
 
-$class->belongs_to( recipient => "${result}::Person" );
+$class->belongs_to( recipient => "${result}::Person", 'recipient_id' );
 
 # Private methods
 sub _as_string {

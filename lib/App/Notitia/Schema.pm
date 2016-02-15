@@ -35,17 +35,9 @@ has 'schedule'        => is => 'lazy', isa => Object,
    builder            => $_build_schedule;
 
 has 'schedule_class'  => is => 'lazy', isa => LoadableClass,
-   builder            => sub { $_[ 0 ]->schema_classes->{ 'notitia' } };
+   builder            => sub { $_[ 0 ]->schema_classes->{ 'schedule' } };
 
 # Construction
-around 'BUILDARGS' => sub {
-   my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
-
-   my $conf = $attr->{config}; $conf->{name} //= class2appdir $conf->{appclass};
-
-   return $attr;
-};
-
 around 'deploy_file' => sub {
    my ($orig, $self, @args) = @_;
 

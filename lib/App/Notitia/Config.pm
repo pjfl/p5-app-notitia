@@ -5,14 +5,13 @@ use namespace::autoclean;
 use Class::Usul::Constants       qw( NUL TRUE );
 use Class::Usul::Crypt::Util     qw( decrypt_from_config encrypt_for_config );
 use Class::Usul::File;
-use Class::Usul::Functions       qw( app_prefix create_token );
+use Class::Usul::Functions       qw( create_token );
 use Data::Validation::Constants  qw( );
 use File::DataClass::Types       qw( ArrayRef Bool CodeRef Directory File
                                      HashRef NonEmptySimpleStr
                                      NonNumericSimpleStr
                                      NonZeroPositiveInt Object Path
                                      PositiveInt SimpleStr Str Undef );
-use Type::Utils                  qw( enum );
 use Web::ComposableRequest::Util qw( extract_lang );
 use Moo;
 
@@ -60,6 +59,10 @@ my $_build_user_home = sub {
    return $verdir =~ m{ \A v \d+ \. \d+ p (\d+) \z }msx
         ? $appldir->dirname : $appldir;
 };
+
+sub _build_l10n_domains {
+   my $prefix = $_[ 0 ]->prefix; return [ $prefix, "${prefix}-".$_[ 0 ]->name ];
+}
 
 # Public attributes
 has 'brand'           => is => 'ro',   isa => SimpleStr, default => NUL;
@@ -143,7 +146,7 @@ has 'request_roles'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
 
 has 'schema_classes'  => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
    builder            => sub { {
-      'notitia'       => 'App::Notitia::Schema::Schedule', } };
+      'schedule'      => 'App::Notitia::Schema::Schedule', } };
 
 has 'scrubber'        => is => 'ro',   isa => Str,
    default            => '[^ +\-\./0-9@A-Z\\_a-z~]';
