@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - First passing test creates a person and authenticates
           - Created schema
 
 0.1.1     2016-02-14 00:47:20

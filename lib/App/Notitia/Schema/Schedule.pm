@@ -8,6 +8,12 @@ use Scalar::Util          qw( blessed );
 
 __PACKAGE__->load_namespaces;
 
+my $Config = {};
+
+sub config {
+   my ($self, $v) = @_; return defined $v ? $Config = $v : $Config;
+}
+
 sub ddl_filename {
     my ($self, $type, $version, $dir, $preversion) = @_;
 

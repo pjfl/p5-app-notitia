@@ -143,7 +143,7 @@ has 'request_roles'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
 
 has 'schema_classes'  => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
    builder            => sub { {
-      'notitia-model' => 'App::Notitia::Schema::Schedule', } };
+      'notitia'       => 'App::Notitia::Schema::Schedule', } };
 
 has 'scrubber'        => is => 'ro',   isa => Str,
    default            => '[^ +\-\./0-9@A-Z\\_a-z~]';

@@ -4,9 +4,9 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
+use App::Notitia;
 use App::Notitia::Constants    qw( EXCEPTION_CLASS TRUE FALSE NUL );
 use App::Notitia::Util         qw( get_salt nullable_foreign_key_data_type
-                                   nullable_varchar_data_type
                                    serial_data_type varchar_data_type );
 use Class::Usul::Functions     qw( create_token throw );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
@@ -31,16 +31,16 @@ $class->add_columns
      joined           => { data_type => 'datetime' },
      resigned         => { data_type => 'datetime' },
      subscription     => { data_type => 'datetime' },
-     postcode         => varchar_data_type(  16, NUL ),
-     name             => varchar_data_type(  64, NUL ),
-     first_name       => varchar_data_type(  64, NUL ),
-     last_name        => varchar_data_type(  64, NUL ),
-     address          => varchar_data_type(  64, NUL ),
-     email_address    => varchar_data_type(  64, NUL ),
-     mobile_phone     => varchar_data_type(  64, NUL ),
-     home_phone       => varchar_data_type(  64, NUL ),
-     password         => varchar_data_type( 128, NUL ),
-     notes            => nullable_varchar_data_type, );
+     name             => varchar_data_type(  64 ),
+     password         => varchar_data_type( 128 ),
+     first_name       => varchar_data_type(  64 ),
+     last_name        => varchar_data_type(  64 ),
+     address          => varchar_data_type(  64 ),
+     postcode         => varchar_data_type(  16 ),
+     email_address    => varchar_data_type(  64 ),
+     mobile_phone     => varchar_data_type(  64 ),
+     home_phone       => varchar_data_type(  64 ),
+     notes            => varchar_data_type, );
 
 $class->set_primary_key( 'id' );
 
@@ -73,7 +73,7 @@ my $_encrypt_password = sub {
    my ($self, $username, $password, $stored) = @_;
 
    my $salt = defined $stored ? get_salt( $stored )
-      : $_new_salt->( '2a', $self->result_source->resultset->load_factor );
+      : $_new_salt->( '2a', $self->result_source->schema->config->load_factor );
 
    return bcrypt( $password, $salt );
 };
@@ -104,9 +104,9 @@ sub assert_member_of {
 }
 
 sub authenticate {
-   my ($self, $passwd) = @_;
+   my ($self, $passwd, $for_update) = @_;
 
-   $self->active
+   $self->active or $for_update
       or throw AccountInactive, [ $self->name ], rv => HTTP_UNAUTHORIZED;
 
    my $username = $self->name;
@@ -143,6 +143,8 @@ sub insert {
       = $self->$_encrypt_password( $username, $password );
    $self->set_inflated_columns( $columns );
 
+   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
    return $self->next::method;
 }
 
@@ -159,7 +161,7 @@ sub validation_attributes {
          name        => { max_length => 64, min_length => 3, } },
       fields         => {
          password    => { validate => 'isMandatory' },
-         username    => {
+         name        => {
             validate => 'isMandatory isValidIdentifier isValidLength' }, },
    };
 }

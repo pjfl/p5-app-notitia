@@ -35,7 +35,7 @@ has 'schedule'        => is => 'lazy', isa => Object,
    builder            => $_build_schedule;
 
 has 'schedule_class'  => is => 'lazy', isa => LoadableClass,
-   builder            => sub { $_[ 0 ]->schema_classes->{ 'notitia-model' } };
+   builder            => sub { $_[ 0 ]->schema_classes->{ 'notitia' } };
 
 # Construction
 around 'BUILDARGS' => sub {
