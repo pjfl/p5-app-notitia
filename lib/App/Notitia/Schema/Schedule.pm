@@ -1,13 +1,22 @@
-package App::Notitia;
+package App::Notitia::Schema::Schedule;
 
-use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use parent 'DBIx::Class::Schema';
 
-use Class::Usul::Functions  qw( ns_environment );
+use File::Spec::Functions qw( catfile );
+use Scalar::Util          qw( blessed );
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+__PACKAGE__->load_namespaces;
+
+sub ddl_filename {
+    my ($self, $type, $version, $dir, $preversion) = @_;
+
+    $DBIx::Class::VERSION < 0.08100 and ($dir, $version) = ($version, $dir);
+
+   (my $filename = (blessed $self || $self)) =~ s{ :: }{-}gmx;
+    $version = join '.', (split m{ [.] }mx, $version)[ 0, 1 ];
+    $preversion and $version = "${preversion}-${version}";
+    return catfile( $dir, "${filename}-${version}-${type}.sql" );
 }
 
 1;
@@ -20,11 +29,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Schema::Schedule - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Schema::Schedule;
    # Brief but working code examples
 
 =head1 Description

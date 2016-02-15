@@ -1,13 +1,27 @@
-package App::Notitia;
+package App::Notitia::Schema::Schedule::Result::Role;
 
-use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
+use parent   'App::Notitia::Schema::Base';
 
-use Class::Usul::Functions  qw( ns_environment );
+use App::Notitia::Util qw( foreign_key_data_type );
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
+
+$class->table( 'role' );
+
+$class->add_columns
+   ( member => foreign_key_data_type,
+     type   => foreign_key_data_type, );
+
+$class->set_primary_key( 'member', 'type' );
+
+$class->belongs_to( member => "${result}::Person" );
+$class->belongs_to( type   => "${result}::Type"   );
+
+# Private methods
+sub _as_string {
+   return $_[ 0 ]->type;
 }
 
 1;
@@ -20,11 +34,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Schema::Schedule::Result::Role - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Schema::Schedule::Result::Role;
    # Brief but working code examples
 
 =head1 Description

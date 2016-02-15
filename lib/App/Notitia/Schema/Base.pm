@@ -1,13 +1,32 @@
-package App::Notitia;
+package App::Notitia::Schema::Base;
 
-use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use parent 'DBIx::Class::Core';
 
-use Class::Usul::Functions  qw( ns_environment );
+use App::Notitia::Constants qw( NUL );
+use Data::Validation;
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+__PACKAGE__->load_components( qw( InflateColumn::Object::Enum TimeStamp ) );
+
+sub validate {
+   my $self = shift; my $attr = $self->validation_attributes;
+
+   defined $attr->{fields} or return;
+
+   my $columns = { $self->get_inflated_columns };
+
+   for my $field (keys %{ $attr->{fields} }) {
+      my $valids =  $attr->{fields}->{ $field }->{validate} or next;
+         $valids =~ m{ isMandatory }msx and $columns->{ $field } //= undef;
+   }
+
+   $columns = Data::Validation->new( $attr )->check_form( NUL, $columns );
+   $self->set_inflated_columns( $columns );
+   return;
+}
+
+sub validation_attributes {
+   return {};
 }
 
 1;
@@ -20,11 +39,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Schema::Base - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Schema::Base;
    # Brief but working code examples
 
 =head1 Description

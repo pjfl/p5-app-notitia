@@ -1,14 +1,22 @@
-package App::Notitia;
+package App::Notitia::Schema::Schedule::Result::Participent;
 
-use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use parent   'App::Notitia::Schema::Base';
 
-use Class::Usul::Functions  qw( ns_environment );
+use App::Notitia::Util qw( foreign_key_data_type );
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
-}
+my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
+
+$class->table( 'participent' );
+
+$class->add_columns
+   ( event       => foreign_key_data_type,
+     participent => foreign_key_data_type, );
+
+$class->set_primary_key( 'event', 'participent' );
+
+$class->belongs_to( event       => "${result}::Event" );
+$class->belongs_to( participent => "${result}::Person" );
 
 1;
 
@@ -20,11 +28,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Schema::Schedule::Result::Participent - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Schema::Schedule::Result::Participent;
    # Brief but working code examples
 
 =head1 Description

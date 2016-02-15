@@ -1,0 +1,160 @@
+#!/usr/bin/env perl
+# If you have a $LOCAL_LIB directory then this script will set it up for
+# you as it executes
+
+# If used like /usr/bin/env then it will run other commands based on
+# your current path settings (with a local::lib environment if present)
+
+# e.g. use FindBin qw( $Bin );
+#    BEGIN { do catfile( $Bin, q(<appname>_localenv) ) or croak $EVAL_ERROR }
+
+use lib;
+use strict;
+use warnings;
+
+use Config;
+use Cwd                   qw( abs_path );
+use English               qw( -no_match_vars );
+use File::Basename        qw( basename dirname );
+use File::Spec::Functions qw( catdir catfile );
+
+my $LOCAL_LIB  = 'local'; # This is the only configurable
+
+my $extend     = sub {
+   my ($k, $v, $sep) = @_; $sep //= $Config::Config{path_sep};
+
+   return $ENV{ $k } = $v.($ENV{ $k } ? $sep.$ENV{ $k } : q());
+};
+my $untaint    = sub {
+   my $v = shift;
+
+   $v = $v =~ m{ \A ([^\$%&\*;<>\`|]+) \z }mx ? $1 : die "Path ${v} tainted";
+
+   return $v;
+};
+my $was_called = caller() ? 1 : 0;
+my $our_path   = $was_called ? (caller())[ 1 ] : $PROGRAM_NAME;
+my $bindir     = $untaint->( abs_path( dirname( $our_path ) ) );
+my $basedir    = dirname( $bindir );
+my $libdir     = catdir( $basedir, 'lib' ); my $local_lib;
+
+# The libdir can be inside local_lib or it's sibling
+if (-d catdir( $libdir, 'perl5' )) { $local_lib = $basedir }
+else { $local_lib = catdir( $basedir, $LOCAL_LIB ) }
+
+if (-d $local_lib) {
+   # So we can find local::lib when fully self contained
+   lib->import( catdir( $local_lib, 'lib', 'perl5' ) );
+
+   require local::lib; local::lib->import( $local_lib );
+
+   my $localbin = catdir( $local_lib, 'bin' );
+
+   -d $localbin and $localbin ne $bindir and $extend->( 'PATH', $localbin );
+   $extend->( 'PERL5_MB_OPT', 'INSTALLMAN1DIR=none INSTALLMAN3DIR=none', q( ) );
+}
+
+-d $bindir and $extend->( 'PATH', $bindir );
+-d $libdir and $extend->( 'PERL5LIB', $libdir ) and lib->import( $libdir );
+
+not $was_called and @ARGV and exec @ARGV;
+
+1;
+
+__END__
+
+=pod
+
+=encoding utf-8
+
+=head1 Name
+
+notitia-localenv - One-line description of the programs purpose
+
+=head1 Synopsis
+
+=over 3
+
+=item B<notitia-localenv> B<> I<>
+
+I<Command line description>
+
+=item B<notitia-localenv> B<-H> | B<-h> I<[method]> | B<-?>
+
+Display man page / method help  / usage strings
+
+=item B<notitia-localenv> B<list-methods>
+
+Lists the methods available in this program
+
+=back
+
+=head1 Description
+
+I<Program description>
+
+=head1 Required arguments
+
+=over 3
+
+=item I<>
+
+=back
+
+=head1 Options
+
+=over 3
+
+=item B<-D>
+
+Turn debugging on
+
+=back
+
+=head1 Diagnostics
+
+Prints errors to stderr
+
+=head1 Exit status
+
+Returns zero on success, non zero on failure
+
+=head1 Configuration
+
+Uses the constructor's C<appclass> attribute to locate a configuration file
+
+=head1 Dependencies
+
+=over 3
+
+=item L<Class::Usul>
+
+=back
+
+=head1 Incompatibilities
+
+None
+
+=head1 Bugs and limitations
+
+Please report problems to
+http://rt.cpan.org/NoAuth/Bugs.html?Dist=App-Notitia
+
+=head1 Author
+
+Peter Flanigan, C<< <pjfl@cpan.org> >>
+
+=head1 License and copyright
+
+Copyright (c) 2016 Peter Flanigan
+
+This is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
+
+# Local Variables:
+# mode: perl
+# tab-width: 3
+# End:
+# vim: expandtab shiftwidth=3:

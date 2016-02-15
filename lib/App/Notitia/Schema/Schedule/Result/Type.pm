@@ -1,13 +1,27 @@
-package App::Notitia;
+package App::Notitia::Schema::Schedule::Result::Type;
 
-use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
+use parent   'App::Notitia::Schema::Base';
 
-use Class::Usul::Functions  qw( ns_environment );
+use App::Notitia::Constants qw( NUL );
+use App::Notitia::Util      qw( enumerated_data_type serial_data_type
+                                varchar_data_type );
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
+
+$class->table( 'type' );
+
+$class->add_columns
+   ( id   => serial_data_type,
+     name => varchar_data_type( 32, NUL ),
+     type => enumerated_data_type( TYPE_TYPE_ENUM ), );
+
+$class->set_primary_key( 'id' );
+
+# Private methods
+sub _as_string {
+   return $_[ 0 ]->name;
 }
 
 1;
@@ -20,11 +34,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Schema::Schedule::Result::Type - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Schema::Schedule::Result::Type;
    # Brief but working code examples
 
 =head1 Description

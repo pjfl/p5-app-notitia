@@ -1,13 +1,31 @@
-package App::Notitia;
+package App::Notitia::Schema::Schedule::Result::Endorsement;
 
-use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
+use parent   'App::Notitia::Schema::Base';
 
-use Class::Usul::Functions  qw( ns_environment );
+use App::Notitia::Constants qw( NUL );
+use App::Notitia::Util      qw( foreign_key_data_type nullable_varchar_data_type
+                                numerical_id_data_type varchar_data_type );
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
+
+$class->table( 'endorsement' );
+
+$class->add_columns
+   ( recipient => foreign_key_data_type,
+     points    => numerical_id_data_type,
+     endorsed  => { data_type => 'datetime' },
+     code      => varchar_data_type( 16, NUL ),
+     notes     => nullable_varchar_data_type, );
+
+$class->set_primary_key( 'recipient', 'code' );
+
+$class->belongs_to( recipient => "${result}::Person" );
+
+# Private methods
+sub _as_string {
+   return $_[ 0 ]->code;
 }
 
 1;
@@ -20,11 +38,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Schema::Schedule::Result::Endorsements - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Schema::Schedule::Result::Endorsements;
    # Brief but working code examples
 
 =head1 Description

@@ -2,13 +2,49 @@
 use strict;
 use warnings;
 
-use Module::Build ##{ $meta2{prereqs}->{configure}->{requires}->{'Module::Build'} ##};
+use Module::Build 0.4004;
 use File::Spec::Functions qw( catdir );
 
-my $perl_ver = ##{ $meta2{prereqs}->{runtime}->{requires}->{perl} ##};
-my $name     = '##{ $zilla->name ##}'; $name =~ s{ - }{::}gmx;
+my $perl_ver = 5.010001;
+my $name     = 'App-Notitia'; $name =~ s{ - }{::}gmx;
 my $prereqs  = {
-##{ $plugin->get_prereqs( 1 ) ##}
+  'build_requires' => {
+    'Module::Build' => '0.4004',
+    'version' => '0.88'
+  },
+  'configure_requires' => {
+    'Module::Build' => '0.4004',
+    'version' => '0.88'
+  },
+  'requires' => {
+    'Class::Usul' => 'v0.72.0',
+    'Crypt::Eksblowfish' => '0.009',
+    'DBIx::Class' => '0.08204',
+    'DBIx::Class::Helpers' => '2.023005',
+    'DBIx::Class::InflateColumn::Object::Enum' => '0.04',
+    'DBIx::Class::TimeStamp' => '0.14',
+    'Data::Validation' => 'v0.23.0',
+    'Exporter::Tiny' => '0.042',
+    'File::DataClass' => 'v0.68.0',
+    'HTTP::Message' => '6.06',
+    'Moo' => '2.000001',
+    'Try::Tiny' => '0.22',
+    'Type::Tiny' => '1.000005',
+    'Unexpected' => 'v0.43.0',
+    'Web::ComposableRequest' => 'v0.7.0',
+    'local::lib' => '2.000015',
+    'namespace::autoclean' => '0.26',
+    'perl' => '5.010001',
+    'strictures' => '2.000000'
+  },
+  'test_requires' => {
+    'File::Spec' => '0',
+    'Module::Build' => '0.4004',
+    'Module::Metadata' => '0',
+    'Sys::Hostname' => '0',
+    'Test::Requires' => '0.06',
+    'version' => '0.88'
+  },
 };
 my $testing  = sub { $ENV{AUTOMATED_TESTING}
                   || $ENV{PERL_CPAN_REPORTER_CONFIG}
@@ -31,7 +67,7 @@ my $bob = Module::Build->subclass( code => do { local $/; <DATA> } )->new(
    'notes'          => { min_perl_version => $perl_ver,
                          testing          => $testing->() },
    %{ $prereqs },
-##{ $plugin->get_default('share_dir') ##}
+
 );
 
 $bob->install_path( 'bin'    => catdir( $bob->install_base, 'bin'   ) );

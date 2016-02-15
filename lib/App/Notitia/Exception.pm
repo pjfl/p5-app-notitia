@@ -1,15 +1,29 @@
-package App::Notitia;
+package App::Notitia::Exception;
 
-use 5.010001;
-use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use namespace::autoclean;
 
-use Class::Usul::Functions  qw( ns_environment );
+use Unexpected::Functions qw( has_exception );
+use Moo;
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+extends 'Class::Usul::Exception';
+
+my $class = __PACKAGE__;
+
+has_exception $class              => parents => [ 'Class::Usul::Exception' ];
+
+has_exception 'Authentication'    => parents => [ $class ];
+
+has_exception 'AccountInactive'   => parents => [ 'Authentication' ],
+   error   => 'User [_1] authentication failed';
+
+has_exception 'IncorrectPassword' => parents => [ 'Authentication' ],
+   error   => 'User [_1] authentication failed';
+
+has '+class' => default => $class;
+
+sub code {
+   return $_[ 0 ]->rv;
 }
-
 1;
 
 __END__
@@ -20,11 +34,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Exception - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Exception;
    # Brief but working code examples
 
 =head1 Description
