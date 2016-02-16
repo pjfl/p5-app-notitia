@@ -20,7 +20,7 @@ like $e, qr{ \Qno certification\E }mx, 'John has no catagory_b certification';
 $person->add_certification_for( 'catagory_b' );
 
 $person = $person_rs->search
-   ( { name => 'john' }, { prefetch => 'certifications' } )->first;
+   ( { name => 'john' }, { prefetch => 'certs' } )->first;
 
 my $certification = $person->assert_certification_for( 'catagory_b' );
 

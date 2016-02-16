@@ -1,0 +1,12 @@
+{
+   "credentials" : {
+      "schedule" : {
+         "driver" : "mysql",
+         "host" : "localhost",
+         "name" : "schedule",
+         "password" : "{Twofish2}U2FsdGVkX185PajEeZHGtGOuvRBG3IgbbJYbEFf4dm0=",
+         "port" : 3306,
+         "user" : "notitia"
+      }
+   }
+}

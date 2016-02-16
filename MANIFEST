@@ -22,6 +22,7 @@ lib/App/Notitia/Schema/Schedule/Result/Slot.pm
 lib/App/Notitia/Schema/Schedule/Result/Transport.pm
 lib/App/Notitia/Schema/Schedule/Result/Type.pm
 lib/App/Notitia/Schema/Schedule/Result/Vehicle.pm
+lib/App/Notitia/Schema/Schedule/ResultSet/Vehicle.pm
 lib/App/Notitia/Util.pm
 lib/App/Notitia/app-notitia.json
 t/02pod.t
@@ -30,9 +31,13 @@ t/05kwalitee.t
 t/06yaml.t
 t/07podspelling.t
 t/10test_script.t
+t/20person.t
+t/21role.t
+t/22certification.t
+t/23role.t
+t/30vehicle.t
 t/boilerplate.pm
 var/etc/connect-info.json
-var/logs/app-notitia.log
 var/root/img/logo-wave.gif
 var/root/img/logo.png
 var/share/App-Notitia-Schema-Schedule-0.1-MySQL.sql

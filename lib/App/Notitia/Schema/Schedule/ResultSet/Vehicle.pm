@@ -1,13 +1,31 @@
-package App::Notitia;
+package App::Notitia::Schema::Schedule::ResultSet::Vehicle;
 
-use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use parent 'DBIx::Class::ResultSet';
 
-use Class::Usul::Functions  qw( ns_environment );
+use App::Notitia::Constants qw( FALSE NUL TRUE );
+use Class::Usul::Functions  qw( throw );
+use HTTP::Status            qw( HTTP_NOT_FOUND );
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+# Private methods
+my $_find_type_by = sub {
+   my ($self, $name, $type) = @_;
+
+   return $self->result_source->schema->resultset( 'Type' )->search
+      ( { name => $name, type => $type } )->single;
+};
+
+my $_find_vehicle_type = sub {
+   return $_[ 0 ]->$_find_type_by( $_[ 1 ], 'vehicle' );
+};
+
+# Public methods
+sub new_result {
+   my ($self, $columns) = @_; my $type = delete $columns->{type};
+
+   $type and $columns->{type_id} = $self->$_find_vehicle_type( $type )->id;
+
+   return $self->next::method( $columns );
 }
 
 1;
@@ -20,11 +38,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Schema::Schedule::ResultSet::Vehicle - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Schema::Schedule::ResultSet::Vehicle;
    # Brief but working code examples
 
 =head1 Description

@@ -12,7 +12,7 @@ my $vehicle_rs =  $schema->resultset( 'Vehicle' );
 my $vehicle    =  $vehicle_rs->search( { vrn => 'PJ06KZV' } )->first;
 
 $vehicle and $vehicle->delete;
-$vehicle =   $vehicle_rs->create( { vrn => 'PJ06KZV', type_id => 'bike' } );
+$vehicle =   $vehicle_rs->create( { vrn => 'PJ06KZV', type => 'bike' } );
 $vehicle =   $vehicle_rs->search( { vrn => 'PJ06KZV' } )->first;
 
 is $vehicle, 'PJ06KZV', 'Creates vehicle';

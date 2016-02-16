@@ -11,6 +11,8 @@ use Scalar::Util       qw( blessed );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
+my $left_join = { join_type => 'left' };
+
 $class->table( 'vehicle' );
 
 $class->add_columns
@@ -27,40 +29,12 @@ $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'vrn' ] );
 
-$class->belongs_to( owner => "${result}::Person", 'owner_id',
-                    { join_type => 'left' } );
+$class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
 $class->belongs_to( type  => "${result}::Type", 'type_id' );
 
 # Private methods
 sub _as_string {
    return $_[ 0 ]->name ? $_[ 0 ]->name : $_[ 0 ]->vrn;
-}
-
-my $_find_type_by = sub {
-   my ($self, $name, $type) = @_;
-
-   return $self->result_source->schema->resultset( 'Type' )->search
-      ( { name => $name, type => $type } )->single;
-};
-
-my $_find_vehicle_type = sub {
-   return $_[ 0 ]->$_find_type_by( $_[ 1 ], 'vehicle' );
-};
-
-# Public methods
-sub insert {
-   my $self    = shift;
-   my $columns = { $self->get_inflated_columns };
-   my $type    = $columns->{type_id};
-
-   $type and $type !~ m{ \A \d+ \z }mx
-         and $columns->{type_id} = $self->$_find_vehicle_type( $type )->id;
-
-   $self->set_inflated_columns( $columns );
-
-#   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
-
-   return $self->next::method;
 }
 
 1;

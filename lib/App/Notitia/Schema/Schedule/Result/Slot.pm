@@ -12,6 +12,8 @@ use App::Notitia::Util      qw( bool_data_type enumerated_data_type
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
+my $left_join = { join_type => 'left' };
+
 $class->table( 'slot' );
 
 $class->add_columns
@@ -25,12 +27,11 @@ $class->add_columns
 
 $class->set_primary_key( 'shift_id', 'type', 'subslot' );
 
-$class->belongs_to( shift            => "${result}::Shift", 'shift_id' );
-$class->belongs_to( operator         => "${result}::Person", 'operator_id' );
+$class->belongs_to( shift    => "${result}::Shift",  'shift_id' );
+$class->belongs_to( operator => "${result}::Person", 'operator_id' );
 $class->belongs_to( vehicle_assigner => "${result}::Person",
-                    'vehicle_assigner_id', { join_type => 'left' } );
-$class->belongs_to( vehicle          => "${result}::Vehicle",
-                    'vehicle_id', { join_type => 'left' } );
+                    'vehicle_assigner_id', $left_join );
+$class->belongs_to( vehicle  => "${result}::Vehicle", 'vehicle_id', $left_join);
 
 # Private methods
 sub _as_string {

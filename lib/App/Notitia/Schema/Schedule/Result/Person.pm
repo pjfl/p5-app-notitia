@@ -43,13 +43,12 @@ $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'name' ] );
 
-$class->belongs_to( next_of_kin    => "${class}" );
-$class->has_many  ( certifications => "${result}::Certification",
-                    'recipient_id' );
-$class->has_many  ( endorsements   => "${result}::Endorsement",
-                    'recipient_id' );
-$class->has_many  ( roles          => "${result}::Role",          'member_id' );
-$class->has_many  ( vehicles       => "${result}::Vehicle",       'owner_id'  );
+$class->belongs_to( next_of_kin => "${class}" );
+
+$class->has_many( certs        => "${result}::Certification", 'recipient_id' );
+$class->has_many( endorsements => "${result}::Endorsement",   'recipient_id' );
+$class->has_many( roles        => "${result}::Role",          'member_id'    );
+$class->has_many( vehicles     => "${result}::Vehicle",       'owner_id'     );
 
 # Private functions
 my $_new_salt = sub {
@@ -123,7 +122,7 @@ sub add_certification_for {
                [ $self->name, $type ];
 
    # TODO: Add the optional completed and notes fields
-   return $self->certifications->create
+   return $self->certs->create
       ( { recipient_id => $self->id, type_id => $type->id } );
 }
 
@@ -138,8 +137,8 @@ sub add_member_to {
 
    $self->$_assert_membership_allowed( $type );
 
-   return $self->roles->create( {
-      member_id => $self->id, type_id => $type->id } );
+   return $self->roles->create
+      ( { member_id => $self->id, type_id => $type->id } );
 }
 
 sub assert_certification_for {
@@ -147,7 +146,7 @@ sub assert_certification_for {
 
    $type //= $self->$_find_cert_type( $cert_name );
 
-   my $cert = $self->certifications->find( $self->id, $type->id )
+   my $cert = $self->certs->find( $self->id, $type->id )
       or throw 'Person [_1] has no certification for [_2]',
                [ $self->name, $type ];
 
@@ -177,6 +176,7 @@ sub authenticate {
 
    $supplied eq $stored
       or throw IncorrectPassword, [ $name ], rv => HTTP_UNAUTHORIZED;
+
    return;
 }
 

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added vehicle resultset
           - Tests for creating a vehicle
           - Tests for certification
           - Tests for person / role membership
