@@ -4,7 +4,7 @@ use Test::More;
 use English qw( -no_match_vars );
 
 BEGIN {
-   $ENV{SCHEMA_TESTING} or plan skip_all => 'POD test only for developers';
+   $ENV{SCHEMA_TESTING} or plan skip_all => 'Schema test only for developers';
 }
 
 use App::Notitia::Schema;

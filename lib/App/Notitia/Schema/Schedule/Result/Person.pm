@@ -6,10 +6,10 @@ use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia;
 use App::Notitia::Constants    qw( EXCEPTION_CLASS TRUE FALSE NUL );
-use App::Notitia::Util         qw( bool_data_type get_salt
+use App::Notitia::Util         qw( bool_data_type get_salt is_encrypted new_salt
                                    nullable_foreign_key_data_type
                                    serial_data_type varchar_data_type );
-use Class::Usul::Functions     qw( create_token throw );
+use Class::Usul::Functions     qw( throw );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use HTTP::Status               qw( HTTP_UNAUTHORIZED );
 use Try::Tiny;
@@ -51,22 +51,20 @@ $class->has_many( endorsements => "${result}::Endorsement",   'recipient_id' );
 $class->has_many( roles        => "${result}::Role",          'member_id'    );
 $class->has_many( vehicles     => "${result}::Vehicle",       'owner_id'     );
 
-# Private functions
-my $_new_salt = sub {
-   my ($type, $lf) = @_;
-
-   return "\$${type}\$${lf}\$"
-        . (en_base64( pack( 'H*', substr( create_token, 0, 32 ) ) ) );
-};
-
-my $_is_encrypted = sub {
-   return $_[ 0 ] =~ m{ \A \$\d+[a]?\$ }mx ? TRUE : FALSE;
-};
-
 # Private methods
 sub _as_string {
    return $_[ 0 ]->name;
 }
+
+my $_assert_claim_allowed = sub {
+   my ($self, $slot_type, $bike_wanted) = @_;
+
+   $slot_type eq 'rider' and $self->assert_member_of( 'bike_rider' );
+   $slot_type ne 'rider' and $bike_wanted
+      and throw 'Cannot request a bike for slot type [_1]', [ $slot_type ];
+
+   return;
+};
 
 my $_assert_membership_allowed = sub {
    my ($self, $type) = @_;
@@ -80,7 +78,7 @@ my $_encrypt_password = sub {
    my ($self, $name, $password, $stored) = @_;
 
    my $lf   = $self->result_source->schema->config->load_factor;
-   my $salt = defined $stored ? get_salt( $stored ) : $_new_salt->( '2a', $lf );
+   my $salt = defined $stored ? get_salt( $stored ) : new_salt( '2a', $lf );
 
    return bcrypt( $password, $salt );
 };
@@ -184,6 +182,8 @@ sub authenticate {
 sub claim_slot {
    my ($self, $rota_type, $date, $shift_type, $slot_type, $subslot, $bike) = @_;
 
+   $self->$_assert_claim_allowed( $slot_type, $bike );
+
    my $schema       =  $self->result_source->schema;
    my $rota_type_id =  $schema->resultset( 'Type' )->search
       ( { name      => $rota_type, type => 'rota' } )->first->id;
@@ -205,9 +205,6 @@ sub claim_slot {
 
    $slot and throw SlotTaken,
       [ $rota_type, $date, $shift_type, $slot_type, $subslot, $slot->operator ];
-
-   $slot_type ne 'rider' and $bike
-      and throw 'Cannot request a bike for slot type [_1]', [ $slot_type ];
 
    $slot = $slot_rs->create
       ( { shift_id    => $shift->id, type           => $slot_type,
@@ -241,7 +238,7 @@ sub insert {
    my $password = $columns->{password};
    my $name     = $columns->{name};
 
-   $password and not $_is_encrypted->( $password ) and $columns->{password}
+   $password and not is_encrypted( $password ) and $columns->{password}
       = $self->$_encrypt_password( $name, $password );
    $self->set_inflated_columns( $columns );
 

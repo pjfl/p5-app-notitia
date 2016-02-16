@@ -3,15 +3,16 @@ package App::Notitia::Util;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use App::Notitia::Constants qw( FALSE NUL TRUE VARCHAR_MAX_SIZE );
-use Class::Usul::Functions  qw( class2appdir find_apphome
-                                get_cfgfiles is_member );
-use Class::Usul::Time       qw( str2time time2str );
-use Scalar::Util            qw( weaken );
+use App::Notitia::Constants    qw( FALSE NUL TRUE VARCHAR_MAX_SIZE );
+use Class::Usul::Functions     qw( class2appdir create_token find_apphome
+                                   get_cfgfiles is_member );
+use Class::Usul::Time          qw( str2time time2str );
+use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
+use Scalar::Util               qw( weaken );
 
 our @EXPORT_OK = qw( bool_data_type enumerated_data_type enhance
                      foreign_key_data_type get_hashed_pw get_salt
-                     nullable_foreign_key_data_type
+                     is_encrypted new_salt nullable_foreign_key_data_type
                      nullable_varchar_data_type numerical_id_data_type
                      serial_data_type set_on_create_datetime_data_type
                      stash_functions varchar_data_type );
@@ -65,6 +66,17 @@ sub get_salt ($) {
    $parts[ -1 ] = substr $parts[ -1 ], 0, 22;
 
    return join '$', @parts;
+}
+
+sub is_encrypted ($) {
+   return $_[ 0 ] =~ m{ \A \$\d+[a]?\$ }mx ? TRUE : FALSE;
+}
+
+sub new_salt ($$) {
+   my ($type, $lf) = @_;
+
+   return "\$${type}\$${lf}\$"
+        . (en_base64( pack( 'H*', substr( create_token, 0, 32 ) ) ) );
 }
 
 sub nullable_foreign_key_data_type () {
