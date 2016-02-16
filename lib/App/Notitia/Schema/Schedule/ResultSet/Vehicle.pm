@@ -8,22 +8,27 @@ use Class::Usul::Functions  qw( throw );
 use HTTP::Status            qw( HTTP_NOT_FOUND );
 
 # Private methods
-my $_find_type_by = sub {
-   my ($self, $name, $type) = @_;
-
-   return $self->result_source->schema->resultset( 'Type' )->search
-      ( { name => $name, type => $type } )->single;
+my $_find_owner = sub {
+   return $_[ 0 ]->result_source->schema->resultset( 'Person' )->search
+      ( { name => $_[ 1 ] } )->single;
 };
 
 my $_find_vehicle_type = sub {
-   return $_[ 0 ]->$_find_type_by( $_[ 1 ], 'vehicle' );
+   return $_[ 0 ]->result_source->schema->resultset( 'Type' )->search
+      ( { name => $_[ 1 ], type => 'vehicle' } )->single;
 };
 
 # Public methods
 sub new_result {
-   my ($self, $columns) = @_; my $type = delete $columns->{type};
+   my ($self, $columns) = @_;
+
+   my $type = delete $columns->{type};
 
    $type and $columns->{type_id} = $self->$_find_vehicle_type( $type )->id;
+
+   my $owner = delete $columns->{owner};
+
+   $owner and $columns->{owner_id} = $self->$_find_owner( $owner )->id;
 
    return $self->next::method( $columns );
 }

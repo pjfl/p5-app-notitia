@@ -19,6 +19,10 @@ has_exception 'AccountInactive'   => parents => [ 'Authentication' ],
 has_exception 'IncorrectPassword' => parents => [ 'Authentication' ],
    error   => 'User [_1] authentication failed';
 
+has_exception 'SlotTaken'         => parents => [ $class ],
+   error   => 'Rota [_1] date [_2] shift [_3] slot type [_4] subslot [_5] '
+            . 'alredy taken by [_6]';
+
 has '+class' => default => $class;
 
 sub code {

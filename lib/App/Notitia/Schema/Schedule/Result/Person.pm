@@ -13,7 +13,8 @@ use Class::Usul::Functions     qw( create_token throw );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use HTTP::Status               qw( HTTP_UNAUTHORIZED );
 use Try::Tiny;
-use Unexpected::Functions      qw( AccountInactive IncorrectPassword );
+use Unexpected::Functions      qw( AccountInactive IncorrectPassword
+                                   SlotTaken );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -67,14 +68,6 @@ sub _as_string {
    return $_[ 0 ]->name;
 }
 
-my $_apply = sub {
-   my ($self, $method, @args) = @_; my $r = FALSE;
-
-   try { $self->$method( @args ) } catch { $r = TRUE };
-
-   return $r;
-};
-
 my $_assert_membership_allowed = sub {
    my ($self, $type) = @_;
 
@@ -107,6 +100,14 @@ my $_find_role_type = sub {
    return $_[ 0 ]->$_find_type_by( $_[ 1 ], 'role' );
 };
 
+my $_make_predicate = sub {
+   my ($self, $method, @args) = @_; my $r = FALSE;
+
+   try { $self->$method( @args ) } catch { $r = TRUE };
+
+   return $r;
+};
+
 # Public methods
 sub activate {
    my $self = shift; $self->active( TRUE ); return $self->update;
@@ -117,7 +118,7 @@ sub add_certification_for {
 
    my $type = $self->$_find_cert_type( $cert_name );
 
-   $self->$_apply( 'assert_certification_for', $cert_name, $type )
+   $self->$_make_predicate( 'assert_certification_for', $cert_name, $type )
       or throw 'Person [_1] already has certification [_2]',
                [ $self->name, $type ];
 
@@ -131,7 +132,7 @@ sub add_member_to {
 
    my $type = $self->$_find_role_type( $role_name );
 
-   $self->$_apply( 'assert_member_of', $role_name, $type )
+   $self->$_make_predicate( 'assert_member_of', $role_name, $type )
       or throw 'Person [_1] already a member of role [_2]',
                [ $self->name, $type ];
 
@@ -178,6 +179,42 @@ sub authenticate {
       or throw IncorrectPassword, [ $name ], rv => HTTP_UNAUTHORIZED;
 
    return;
+}
+
+sub claim_slot {
+   my ($self, $rota_type, $date, $shift_type, $slot_type, $subslot, $bike) = @_;
+
+   my $schema       =  $self->result_source->schema;
+   my $rota_type_id =  $schema->resultset( 'Type' )->search
+      ( { name      => $rota_type, type => 'rota' } )->first->id;
+   my $dtf          =  $schema->storage->datetime_parser;
+   my $rota_rs      =  $schema->resultset( 'Rota' );
+   my $rota         =  $rota_rs->search
+      ( { date      => $dtf->format_datetime( $date ),
+          type_id   => $rota_type_id } )->first;
+
+   $rota or $rota   =  $rota_rs->create
+      ( { date      => $date, type_id => $rota_type_id } );
+
+   my $shift        =  $schema->resultset( 'Shift' )->find_or_create
+      ( { rota_id   => $rota->id, type => $shift_type } );
+   my $slot_rs      =  $schema->resultset( 'Slot' );
+   my $slot         =  $slot_rs->search
+      ( { shift_id  => $shift->id, type => $slot_type,
+          subslot   => $subslot } )->first;
+
+   $slot and throw SlotTaken,
+      [ $rota_type, $date, $shift_type, $slot_type, $subslot, $slot->operator ];
+
+   $slot_type ne 'rider' and $bike
+      and throw 'Cannot request a bike for slot type [_1]', [ $slot_type ];
+
+   $slot = $slot_rs->create
+      ( { shift_id    => $shift->id, type           => $slot_type,
+          subslot     => $subslot,   bike_requested => $bike,
+          operator_id => $self->id } );
+
+   return $slot;
 }
 
 sub deactivate {
