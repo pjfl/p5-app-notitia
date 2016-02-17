@@ -119,6 +119,18 @@ sub add_certification_for {
       ( { recipient_id => $self->id, type_id => $type->id } );
 }
 
+sub add_endorsement_for {
+   my ($self, $code_name) = @_;
+
+   $self->is_endorsed_for( $code_name )
+      and throw 'Person [_1] already has endorsement for [_2]',
+                [ $self->name, $code_name ];
+
+   # TODO: Add the fields endorsed, points, and notes
+   return $self->endorsements->create
+      ( { recipient_id => $self->id, code => $code_name } );
+}
+
 sub add_member_to {
    my ($self, $role_name) = @_;
 
@@ -146,6 +158,16 @@ sub assert_certified_for {
    return $cert;
 }
 
+sub assert_endorsement_for {
+   my ($self, $code_name, $type) = @_;
+
+   my $endorsement = $self->endorsements->find( $self->id, $code_name )
+      or throw 'Person [_1] has no endorsement for [_2]',
+               [ $self->name, $code_name ], level => 2;
+
+   return $endorsement;
+}
+
 sub assert_member_of {
    my ($self, $role_name, $type) = @_;
 
@@ -159,20 +181,19 @@ sub assert_member_of {
 }
 
 sub authenticate {
-   my ($self, $passwd, $for_update) = @_;
+   my ($self, $passwd, $for_update) = @_; my $name = $self->name;
 
    $self->active
-      or  throw AccountInactive, [ $self->name ], rv => HTTP_UNAUTHORIZED;
+      or  throw AccountInactive,   [ $name ], rv => HTTP_UNAUTHORIZED;
 
    $self->password_expired and not $for_update
-      and throw PasswordExpired, [ $self->name ], rv => HTTP_UNAUTHORIZED;
+      and throw PasswordExpired,   [ $name ], rv => HTTP_UNAUTHORIZED;
 
-   my $name     = $self->name;
    my $stored   = $self->password || NUL;
    my $supplied = $self->$_encrypt_password( $name, $passwd, $stored );
 
    $supplied eq $stored
-      or throw IncorrectPassword, [ $name ], rv => HTTP_UNAUTHORIZED;
+      or  throw IncorrectPassword, [ $name ], rv => HTTP_UNAUTHORIZED;
 
    return;
 }
@@ -199,6 +220,10 @@ sub deactivate {
 
 sub delete_certification_for {
    return $_[ 0 ]->assert_certified_for( $_[ 1 ] )->delete;
+}
+
+sub delete_endorsement_for {
+   return $_[ 0 ]->assert_endorsement_for( $_[ 1 ] )->delete;
 }
 
 sub delete_member_from {
@@ -232,6 +257,10 @@ sub is_certified_for {
    $type //= $self->$_find_cert_type( $cert_name );
 
    return $self->certs->find( $self->id, $type->id ) ? TRUE : FALSE;
+}
+
+sub is_endorsed_for {
+   return $_[ 0 ]->endorsements->find( $_[ 0 ]->id, $_[ 1 ] ) ? TRUE : FALSE;
 }
 
 sub is_member_of {

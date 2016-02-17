@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added support for endorsements
           - Moved find_rota to ResultSet::Rota
           - Added vehicle assigning
           - Added password changing
