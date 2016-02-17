@@ -178,11 +178,11 @@ sub authenticate {
 }
 
 sub claim_slot {
-   my ($self, $rota_type, $date, $shift_type, $slot_type, $subslot, $bike) = @_;
+   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $bike) = @_;
 
    $self->$_assert_claim_allowed( $slot_type, $bike );
 
-   my $shift = $self->find_shift( $rota_type, $date, $shift_type );
+   my $shift = $self->find_shift( $rota_name, $date, $shift_type );
    my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
 
    $slot and throw SlotTaken, [ $slot, $slot->operator ];

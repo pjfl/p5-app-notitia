@@ -36,7 +36,7 @@ DROP TABLE "endorsement" CASCADE;
 CREATE TABLE "endorsement" (
   "recipient_id" integer NOT NULL,
   "points" smallint NOT NULL,
-  "endorsed" timestamp NOT NULL,
+  "endorsed" timestamp DEFAULT '0000-00-00',
   "code" character varying(16) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("recipient_id", "code")
@@ -47,7 +47,7 @@ DROP TABLE "rota" CASCADE;
 CREATE TABLE "rota" (
   "id" serial NOT NULL,
   "type_id" integer NOT NULL,
-  "date" timestamp NOT NULL,
+  "date" timestamp DEFAULT '0000-00-00',
   PRIMARY KEY ("id")
 );
 CREATE INDEX "rota_idx_type_id" on "rota" ("type_id");
@@ -56,7 +56,7 @@ DROP TABLE "certification" CASCADE;
 CREATE TABLE "certification" (
   "recipient_id" integer NOT NULL,
   "type_id" integer NOT NULL,
-  "completed" timestamp NOT NULL,
+  "completed" timestamp DEFAULT '0000-00-00',
   "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("recipient_id", "type_id")
 );
@@ -86,8 +86,8 @@ CREATE TABLE "vehicle" (
   "id" serial NOT NULL,
   "type_id" integer NOT NULL,
   "owner_id" integer,
-  "aquired" timestamp NOT NULL,
-  "disposed" timestamp NOT NULL,
+  "aquired" timestamp DEFAULT '0000-00-00',
+  "disposed" timestamp DEFAULT '0000-00-00',
   "vrn" character varying(16) DEFAULT '' NOT NULL,
   "name" character varying(64) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,
@@ -102,8 +102,8 @@ CREATE TABLE "event" (
   "id" serial NOT NULL,
   "rota_id" integer NOT NULL,
   "owner_id" integer NOT NULL,
-  "start" timestamp NOT NULL,
-  "end" timestamp NOT NULL,
+  "start" timestamp DEFAULT '0000-00-00',
+  "end" timestamp DEFAULT '0000-00-00',
   "name" character varying(64) DEFAULT '' NOT NULL,
   "description" character varying(128) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,

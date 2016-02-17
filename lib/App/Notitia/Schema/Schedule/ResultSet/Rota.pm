@@ -1,13 +1,24 @@
-package App::Notitia;
+package App::Notitia::Schema::Schedule::ResultSet::Rota;
 
-use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 13 $ =~ /\d+/gmx );
+use parent 'DBIx::Class::ResultSet';
 
-use Class::Usul::Functions  qw( ns_environment );
+# Public methods
+sub find_rota {
+   my ($self, $name, $date) = @_;
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+   my $schema     =  $self->result_source->schema;
+   my $rota_type  =  $schema->resultset( 'Type' )->search
+      ( { name    => $name, type => 'rota' } )->single;
+   my $dtp        =  $schema->storage->datetime_parser;
+   my $rota       =  $self->search
+      ( { date    => $dtp->format_datetime( $date ),
+          type_id => $rota_type->id } )->first;
+
+   $rota or $rota =  $self->create
+      ( { date    => $date, type_id => $rota_type->id } );
+
+   return $rota;
 }
 
 1;
@@ -20,11 +31,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Schema::Schedule::ResultSet::Rota - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Schema::Schedule::ResultSet::Rota;
    # Brief but working code examples
 
 =head1 Description

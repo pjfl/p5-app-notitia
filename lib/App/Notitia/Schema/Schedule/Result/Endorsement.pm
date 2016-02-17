@@ -4,8 +4,8 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Util qw( foreign_key_data_type numerical_id_data_type
-                           varchar_data_type );
+use App::Notitia::Util qw( date_data_type foreign_key_data_type
+                           numerical_id_data_type varchar_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -14,7 +14,7 @@ $class->table( 'endorsement' );
 $class->add_columns
    ( recipient_id => foreign_key_data_type,
      points       => numerical_id_data_type,
-     endorsed     => { data_type => 'datetime' },
+     endorsed     => date_data_type,
      code         => varchar_data_type( 16 ),
      notes        => varchar_data_type, );
 

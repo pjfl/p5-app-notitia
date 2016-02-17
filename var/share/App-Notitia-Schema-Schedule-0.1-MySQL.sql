@@ -42,7 +42,7 @@ DROP TABLE IF EXISTS `endorsement`;
 CREATE TABLE `endorsement` (
   `recipient_id` integer unsigned NOT NULL,
   `points` smallint NOT NULL,
-  `endorsed` datetime NOT NULL,
+  `endorsed` datetime NULL DEFAULT '0000-00-00',
   `code` varchar(16) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',
   INDEX `endorsement_idx_recipient_id` (`recipient_id`),
@@ -55,7 +55,7 @@ DROP TABLE IF EXISTS `rota`;
 CREATE TABLE `rota` (
   `id` integer unsigned NOT NULL auto_increment,
   `type_id` integer unsigned NOT NULL,
-  `date` datetime NOT NULL,
+  `date` datetime NULL DEFAULT '0000-00-00',
   INDEX `rota_idx_type_id` (`type_id`),
   PRIMARY KEY (`id`),
   CONSTRAINT `rota_fk_type_id` FOREIGN KEY (`type_id`) REFERENCES `type` (`id`)
@@ -66,7 +66,7 @@ DROP TABLE IF EXISTS `certification`;
 CREATE TABLE `certification` (
   `recipient_id` integer unsigned NOT NULL,
   `type_id` integer unsigned NOT NULL,
-  `completed` datetime NOT NULL,
+  `completed` datetime NULL DEFAULT '0000-00-00',
   `notes` varchar(255) NOT NULL DEFAULT '',
   INDEX `certification_idx_recipient_id` (`recipient_id`),
   INDEX `certification_idx_type_id` (`type_id`),
@@ -104,8 +104,8 @@ CREATE TABLE `vehicle` (
   `id` integer unsigned NOT NULL auto_increment,
   `type_id` integer unsigned NOT NULL,
   `owner_id` integer unsigned NULL,
-  `aquired` datetime NOT NULL,
-  `disposed` datetime NOT NULL,
+  `aquired` datetime NULL DEFAULT '0000-00-00',
+  `disposed` datetime NULL DEFAULT '0000-00-00',
   `vrn` varchar(16) NOT NULL DEFAULT '',
   `name` varchar(64) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',
@@ -123,8 +123,8 @@ CREATE TABLE `event` (
   `id` integer unsigned NOT NULL auto_increment,
   `rota_id` integer unsigned NOT NULL,
   `owner_id` integer unsigned NOT NULL,
-  `start` datetime NOT NULL,
-  `end` datetime NOT NULL,
+  `start` datetime NULL DEFAULT '0000-00-00',
+  `end` datetime NULL DEFAULT '0000-00-00',
   `name` varchar(64) NOT NULL DEFAULT '',
   `description` varchar(128) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',

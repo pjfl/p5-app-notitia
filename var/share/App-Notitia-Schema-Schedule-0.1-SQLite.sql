@@ -43,7 +43,7 @@ DROP TABLE "endorsement";
 CREATE TABLE "endorsement" (
   "recipient_id" integer NOT NULL,
   "points" smallint NOT NULL,
-  "endorsed" datetime NOT NULL,
+  "endorsed" datetime DEFAULT '0000-00-00',
   "code" varchar(16) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY ("recipient_id", "code"),
@@ -57,7 +57,7 @@ DROP TABLE "rota";
 CREATE TABLE "rota" (
   "id" INTEGER PRIMARY KEY NOT NULL,
   "type_id" integer NOT NULL,
-  "date" datetime NOT NULL,
+  "date" datetime DEFAULT '0000-00-00',
   FOREIGN KEY ("type_id") REFERENCES "type"("id")
 );
 
@@ -68,7 +68,7 @@ DROP TABLE "certification";
 CREATE TABLE "certification" (
   "recipient_id" integer NOT NULL,
   "type_id" integer NOT NULL,
-  "completed" datetime NOT NULL,
+  "completed" datetime DEFAULT '0000-00-00',
   "notes" varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY ("recipient_id", "type_id"),
   FOREIGN KEY ("recipient_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE,
@@ -110,8 +110,8 @@ CREATE TABLE "vehicle" (
   "id" INTEGER PRIMARY KEY NOT NULL,
   "type_id" integer NOT NULL,
   "owner_id" integer,
-  "aquired" datetime NOT NULL,
-  "disposed" datetime NOT NULL,
+  "aquired" datetime DEFAULT '0000-00-00',
+  "disposed" datetime DEFAULT '0000-00-00',
   "vrn" varchar(16) NOT NULL DEFAULT '',
   "name" varchar(64) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
@@ -131,8 +131,8 @@ CREATE TABLE "event" (
   "id" INTEGER PRIMARY KEY NOT NULL,
   "rota_id" integer NOT NULL,
   "owner_id" integer NOT NULL,
-  "start" datetime NOT NULL,
-  "end" datetime NOT NULL,
+  "start" datetime DEFAULT '0000-00-00',
+  "end" datetime DEFAULT '0000-00-00',
   "name" varchar(64) NOT NULL DEFAULT '',
   "description" varchar(128) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',

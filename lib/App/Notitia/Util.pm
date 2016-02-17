@@ -118,8 +118,7 @@ sub serial_data_type () {
 }
 
 sub set_on_create_datetime_data_type () {
-   return { data_type         => 'datetime',
-            set_on_create     => TRUE, };
+   return { %{ date_data_type() }, set_on_create => TRUE };
 }
 
 sub stash_functions ($$$) {

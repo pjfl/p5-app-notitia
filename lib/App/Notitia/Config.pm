@@ -190,6 +190,11 @@ has 'workers'         => is => 'ro',   isa => NonZeroPositiveInt, default => 5;
 has '_components'     => is => 'ro',   isa => HashRef,
    builder            => sub { {} }, init_arg => 'components';
 
+# Attribute constructors
+sub _build__l10n_attributes {
+   return { gettext_catagory => NUL, };
+}
+
 1;
 
 __END__

@@ -4,7 +4,7 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Util qw( foreign_key_data_type serial_data_type
+use App::Notitia::Util qw( date_data_type foreign_key_data_type serial_data_type
                            varchar_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -15,8 +15,8 @@ $class->add_columns
    ( id          => serial_data_type,
      rota_id     => foreign_key_data_type,
      owner_id    => foreign_key_data_type,
-     start       => { data_type => 'datetime' },
-     end         => { data_type => 'datetime' },
+     start       => date_data_type,
+     end         => date_data_type,
      name        => varchar_data_type(  64 ),
      description => varchar_data_type( 128 ),
      notes       => varchar_data_type, );

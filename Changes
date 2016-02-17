@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Moved find_rota to ResultSet::Rota
           - Added vehicle assigning
           - Added password changing
           - Added claim slot

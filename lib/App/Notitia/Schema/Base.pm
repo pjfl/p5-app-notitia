@@ -9,19 +9,10 @@ use Data::Validation;
 __PACKAGE__->load_components( qw( InflateColumn::Object::Enum TimeStamp ) );
 
 sub find_shift {
-   my ($self, $rota_type, $date, $shift_type) = @_;
+   my ($self, $rota_name, $date, $shift_type) = @_;
 
-   my $schema       =  $self->result_source->schema;
-   my $rota_type_id =  $schema->resultset( 'Type' )->search
-      ( { name      => $rota_type, type => 'rota' } )->first->id;
-   my $dtp          =  $schema->storage->datetime_parser;
-   my $rota_rs      =  $schema->resultset( 'Rota' );
-   my $rota         =  $rota_rs->search
-      ( { date      => $dtp->format_datetime( $date ),
-          type_id   => $rota_type_id } )->first;
-
-   $rota or $rota   =  $rota_rs->create
-      ( { date      => $date, type_id => $rota_type_id } );
+   my $schema = $self->result_source->schema;
+   my $rota   = $schema->resultset( 'Rota' )->find_rota( $rota_name, $date );
 
    return $schema->resultset( 'Shift' )->find_or_create
       ( { rota_id   => $rota->id, type => $shift_type } );

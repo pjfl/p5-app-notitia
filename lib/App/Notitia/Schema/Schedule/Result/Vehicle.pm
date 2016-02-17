@@ -4,7 +4,7 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Util     qw( foreign_key_data_type
+use App::Notitia::Util     qw( date_data_type foreign_key_data_type
                                nullable_foreign_key_data_type
                                serial_data_type varchar_data_type );
 use Class::Usul::Functions qw( throw );
@@ -20,8 +20,8 @@ $class->add_columns
    ( id       => serial_data_type,
      type_id  => foreign_key_data_type,
      owner_id => nullable_foreign_key_data_type,
-     aquired  => { data_type => 'datetime' },
-     disposed => { data_type => 'datetime' },
+     aquired  => date_data_type,
+     disposed => date_data_type,
      vrn      => varchar_data_type( 16 ),
      name     => varchar_data_type( 64 ),
      notes    => varchar_data_type, );
@@ -109,9 +109,9 @@ sub assign_to_event {
 }
 
 sub assign_to_slot {
-   my ($self, $rota_type, $date, $shift_type, $slot_type, $subslot, $name) = @_;
+   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $name) = @_;
 
-   my $shift = $self->find_shift( $rota_type, $date, $shift_type );
+   my $shift = $self->find_shift( $rota_name, $date, $shift_type );
    my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
 
    $slot or throw 'Slot [_1] has not been claimed', [ $slot ];
