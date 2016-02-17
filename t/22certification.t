@@ -17,7 +17,7 @@ my $person     =  $person_rs->search( { name => 'john' } )->first;
 
 eval { $person->delete_certification_for( 'catagory_b' ) };
 
-eval { $person->assert_certification_for( 'catagory_b' ) }; my $e = $EVAL_ERROR;
+eval { $person->assert_certified_for( 'catagory_b' ) }; my $e = $EVAL_ERROR;
 
 like $e, qr{ \Qno certification\E }mx, 'John has no catagory_b certification';
 
@@ -26,7 +26,7 @@ $person->add_certification_for( 'catagory_b' );
 $person = $person_rs->search
    ( { name => 'john' }, { prefetch => 'certs' } )->first;
 
-my $certification = $person->assert_certification_for( 'catagory_b' );
+my $certification = $person->assert_certified_for( 'catagory_b' );
 
 is $certification, 'catagory_b', 'John has catagory_b certification';
 

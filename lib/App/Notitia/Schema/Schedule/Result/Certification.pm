@@ -26,6 +26,16 @@ sub _as_string {
    return $_[ 0 ]->type;
 }
 
+sub delete {
+   my $self = shift;
+
+   $self->type eq 'catagory_b'
+      and $self->recipient->is_member_of( 'bike_rider' )
+      and $self->recipient->delete_member_from( 'bike_rider' );
+
+   return $self->next::method;
+}
+
 1;
 
 __END__

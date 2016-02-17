@@ -3,7 +3,7 @@ package App::Notitia::Schema::Base;
 use strictures;
 use parent 'DBIx::Class::Core';
 
-use App::Notitia::Constants qw( NUL );
+use App::Notitia::Constants qw( NUL TRUE );
 use Data::Validation;
 
 __PACKAGE__->load_components( qw( InflateColumn::Object::Enum TimeStamp ) );
@@ -11,7 +11,7 @@ __PACKAGE__->load_components( qw( InflateColumn::Object::Enum TimeStamp ) );
 sub validate {
    my $self = shift; my $attr = $self->validation_attributes;
 
-   defined $attr->{fields} or return;
+   defined $attr->{fields} or return TRUE;
 
    my $columns = { $self->get_inflated_columns };
 
@@ -22,7 +22,7 @@ sub validate {
 
    $columns = Data::Validation->new( $attr )->check_form( NUL, $columns );
    $self->set_inflated_columns( $columns );
-   return;
+   return TRUE;
 }
 
 sub validation_attributes {

@@ -23,11 +23,15 @@ eval { $person->authenticate( '12345678' ) }; my $e = $EVAL_ERROR;
 
 is $e->class, 'AccountInactive', 'Inactive account throws on authentication';
 
-is $person->authenticate( '12345678', 1 ), undef, 'Authenticates for update';
-
 $person->activate;
 
-is $person->authenticate( '12345678' ), undef, 'Authenticates when activated';
+eval { $person->authenticate( '12345678' ) }; $e = $EVAL_ERROR;
+
+is $e->class, 'PasswordExpired', 'Password expired throws on authentication';
+
+$person->set_password( '12345678', 'abcdefgh' );
+
+is $person->authenticate( 'abcdefgh' ), undef, 'Authenticates if password set';
 
 eval { $person->authenticate( 'nonono' ) }; $e = $EVAL_ERROR;
 

@@ -4,7 +4,7 @@
          "driver" : "mysql",
          "host" : "localhost",
          "name" : "schedule",
-         "password" : "{Twofish2}U2FsdGVkX185PajEeZHGtGOuvRBG3IgbbJYbEFf4dm0=",
+         "password" : "{Twofish2}U2FsdGVkX1/0XXFt/1HmPDLXMvS7tBbcy+T25NSl4s8=",
          "port" : 3306,
          "user" : "notitia"
       }

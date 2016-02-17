@@ -1,4 +1,4 @@
-package App::Notitia::Schema::Schedule::ResultSet::Vehicle;
+package App::Notitia::Schema::Schedule::ResultSet::Event;
 
 use strictures;
 use parent 'DBIx::Class::ResultSet';
@@ -9,18 +9,32 @@ my $_find_owner = sub {
       ( { name => $_[ 1 ] } )->single;
 };
 
-my $_find_vehicle_type = sub {
-   return $_[ 0 ]->result_source->schema->resultset( 'Type' )->search
-      ( { name => $_[ 1 ], type => 'vehicle' } )->single;
+my $_find_rota = sub {
+   my ($self, $rota_name, $date) = @_;
+
+   my $schema     =  $self->result_source->schema;
+   my $dtf        =  $schema->storage->datetime_parser;
+   my $rota_type  =  $schema->resultset( 'Type' )->search
+      ( { name    => $rota_name, type => 'rota' } )->single;
+   my $rota_rs    =  $schema->resultset( 'Rota' );
+   my $rota       =  $rota_rs->search
+      ( { date    => $dtf->format_datetime( $date ),
+          type_id => $rota_type->id } )->first;
+
+   $rota or $rota =  $rota_rs->create
+      ( { date    => $date, type_id => $rota_type->id } );
+
+   return $rota;
 };
 
 # Public methods
 sub new_result {
    my ($self, $columns) = @_;
 
-   my $type = delete $columns->{type};
+   my $name = delete $columns->{rota}; my $date = delete $columns->{date};
 
-   $type and $columns->{type_id} = $self->$_find_vehicle_type( $type )->id;
+   $name and $date
+         and $columns->{rota_id} = $self->$_find_rota( $name, $date )->id;
 
    my $owner = delete $columns->{owner};
 
@@ -28,6 +42,7 @@ sub new_result {
 
    return $self->next::method( $columns );
 }
+
 
 1;
 
@@ -39,11 +54,11 @@ __END__
 
 =head1 Name
 
-App::Notitia::Schema::Schedule::ResultSet::Vehicle - People and resource scheduling
+App::Notitia::Schema::Schedule::ResultSet::Event - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia::Schema::Schedule::ResultSet::Vehicle;
+   use App::Notitia::Schema::Schedule::ResultSet::Event;
    # Brief but working code examples
 
 =head1 Description

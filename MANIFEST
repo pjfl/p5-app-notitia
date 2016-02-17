@@ -22,6 +22,7 @@ lib/App/Notitia/Schema/Schedule/Result/Slot.pm
 lib/App/Notitia/Schema/Schedule/Result/Transport.pm
 lib/App/Notitia/Schema/Schedule/Result/Type.pm
 lib/App/Notitia/Schema/Schedule/Result/Vehicle.pm
+lib/App/Notitia/Schema/Schedule/ResultSet/Event.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Vehicle.pm
 lib/App/Notitia/Util.pm
 lib/App/Notitia/app-notitia.json
@@ -35,7 +36,9 @@ t/20person.t
 t/21role.t
 t/22certification.t
 t/23role.t
-t/30vehicle.t
+t/24person.t
+t/30event.t
+t/40vehicle.t
 t/boilerplate.pm
 var/etc/connect-info.json
 var/root/img/logo-wave.gif

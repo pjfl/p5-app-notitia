@@ -35,7 +35,10 @@ $class->belongs_to( vehicle  => "${result}::Vehicle", 'vehicle_id', $left_join);
 
 # Private methods
 sub _as_string {
-   return $_[ 0 ]->type.'_'.$_[ 0 ]->subslot;
+   my $self = shift; my $shift = $self->shift; my $rota = $shift->rota;
+
+   return $rota->type.'_'.$rota->date->dmy.'_'.$shift.'_'
+        . $self->type.'_'.$self->subslot;
 }
 
 1;

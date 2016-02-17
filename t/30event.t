@@ -13,11 +13,16 @@ use Class::Usul::Time qw( str2date_time time2str );
 my $connection =  App::Notitia::Schema->new
    ( config    => { appclass => 'App::Notitia', tempdir => 't' } );
 my $schema     =  $connection->schedule;
-my $person_rs  =  $schema->resultset( 'Person' );
-my $person     =  $person_rs->search( { name => 'john' } )->first;
+my $event_rs   =  $schema->resultset( 'Event' );
+my $event      =  $event_rs->search( { name => 'tinshaking' } )->first;
 my $date       =  str2date_time time2str '%Y-%m-%d';
 
-$person->claim_slot( 'main', $date, 'day', 'rider', 0, 1 );
+$event and $event_rs->delete;
+$event =   $event_rs->create
+   ( { name => 'tinshaking', rota => 'main', date => $date, owner => 'john' } );
+$event =   $event_rs->search( { name => 'tinshaking' } )->first;
+
+is $event, 'tinshaking', 'Creates event';
 
 done_testing;
 

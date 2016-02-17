@@ -6,7 +6,8 @@ use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia;
 use App::Notitia::Constants    qw( EXCEPTION_CLASS TRUE FALSE NUL );
-use App::Notitia::Util         qw( bool_data_type get_salt is_encrypted new_salt
+use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
+                                   is_encrypted new_salt
                                    nullable_foreign_key_data_type
                                    serial_data_type varchar_data_type );
 use Class::Usul::Functions     qw( throw );
@@ -14,7 +15,7 @@ use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use HTTP::Status               qw( HTTP_UNAUTHORIZED );
 use Try::Tiny;
 use Unexpected::Functions      qw( AccountInactive IncorrectPassword
-                                   SlotTaken );
+                                   PasswordExpired SlotTaken );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -25,10 +26,10 @@ $class->add_columns
      next_of_kin      => nullable_foreign_key_data_type,
      active           => bool_data_type,
      password_expired => bool_data_type( TRUE ),
-     dob              => { data_type => 'datetime' },
-     joined           => { data_type => 'datetime' },
-     resigned         => { data_type => 'datetime' },
-     subscription     => { data_type => 'datetime' },
+     dob              => date_data_type,
+     joined           => date_data_type,
+     resigned         => date_data_type,
+     subscription     => date_data_type,
      name             => varchar_data_type(  64 ),
      password         => varchar_data_type( 128 ),
      first_name       => varchar_data_type(  64 ),
@@ -69,7 +70,7 @@ my $_assert_claim_allowed = sub {
 my $_assert_membership_allowed = sub {
    my ($self, $type) = @_;
 
-   $type eq 'bike_rider' and $self->assert_certification_for( 'catagory_b' );
+   $type eq 'bike_rider' and $self->assert_certified_for( 'catagory_b' );
 
    return;
 };
@@ -98,14 +99,6 @@ my $_find_role_type = sub {
    return $_[ 0 ]->$_find_type_by( $_[ 1 ], 'role' );
 };
 
-my $_make_predicate = sub {
-   my ($self, $method, @args) = @_; my $r = FALSE;
-
-   try { $self->$method( @args ) } catch { $r = TRUE };
-
-   return $r;
-};
-
 # Public methods
 sub activate {
    my $self = shift; $self->active( TRUE ); return $self->update;
@@ -116,8 +109,8 @@ sub add_certification_for {
 
    my $type = $self->$_find_cert_type( $cert_name );
 
-   $self->$_make_predicate( 'assert_certification_for', $cert_name, $type )
-      or throw 'Person [_1] already has certification [_2]',
+   $self->is_certified_for( $cert_name, $type )
+      and throw 'Person [_1] already has certification [_2]',
                [ $self->name, $type ];
 
    # TODO: Add the optional completed and notes fields
@@ -130,9 +123,9 @@ sub add_member_to {
 
    my $type = $self->$_find_role_type( $role_name );
 
-   $self->$_make_predicate( 'assert_member_of', $role_name, $type )
-      or throw 'Person [_1] already a member of role [_2]',
-               [ $self->name, $type ];
+   $self->is_member_of( $role_name, $type )
+      and throw 'Person [_1] already a member of role [_2]',
+                [ $self->name, $type ];
 
    $self->$_assert_membership_allowed( $type );
 
@@ -140,7 +133,7 @@ sub add_member_to {
       ( { member_id => $self->id, type_id => $type->id } );
 }
 
-sub assert_certification_for {
+sub assert_certified_for {
    my ($self, $cert_name, $type) = @_;
 
    $type //= $self->$_find_cert_type( $cert_name );
@@ -166,8 +159,11 @@ sub assert_member_of {
 sub authenticate {
    my ($self, $passwd, $for_update) = @_;
 
-   $self->active or $for_update
-      or throw AccountInactive, [ $self->name ], rv => HTTP_UNAUTHORIZED;
+   $self->active
+      or  throw AccountInactive, [ $self->name ], rv => HTTP_UNAUTHORIZED;
+
+   $self->password_expired and not $for_update
+      and throw PasswordExpired, [ $self->name ], rv => HTTP_UNAUTHORIZED;
 
    my $name     = $self->name;
    my $stored   = $self->password || NUL;
@@ -203,13 +199,12 @@ sub claim_slot {
       ( { shift_id  => $shift->id, type => $slot_type,
           subslot   => $subslot } )->first;
 
-   $slot and throw SlotTaken,
-      [ $rota_type, $date, $shift_type, $slot_type, $subslot, $slot->operator ];
+   $slot and throw SlotTaken, [ $slot, $slot->operator ];
 
    $slot = $slot_rs->create
-      ( { shift_id    => $shift->id, type           => $slot_type,
-          subslot     => $subslot,   bike_requested => $bike,
-          operator_id => $self->id } );
+      ( { bike_requested => $bike,      operator_id => $self->id,
+          shift_id       => $shift->id, subslot     => $subslot,
+          type           => $slot_type, } );
 
    return $slot;
 }
@@ -219,7 +214,7 @@ sub deactivate {
 }
 
 sub delete_certification_for {
-   return $_[ 0 ]->assert_certification_for( $_[ 1 ] )->delete;
+   return $_[ 0 ]->assert_certified_for( $_[ 1 ] )->delete;
 }
 
 sub delete_member_from {
@@ -247,11 +242,55 @@ sub insert {
    return $self->next::method;
 }
 
+sub is_certified_for {
+   my ($self, $cert_name, $type) = @_;
+
+   $type //= $self->$_find_cert_type( $cert_name );
+
+   return $self->certs->find( $self->id, $type->id ) ? TRUE : FALSE;
+}
+
+sub is_member_of {
+   my ($self, $role_name, $type) = @_;
+
+   $type //= $self->$_find_role_type( $role_name );
+
+   return $self->roles->find( $self->id, $type->id ) ? TRUE : FALSE;
+}
+
 sub list_roles {
    my $self = shift;
 
    return [ map { $_->type->name }
             $self->roles->search( { member => $self->id } )->all ];
+}
+
+sub set_password {
+   my ($self, $old, $new) = @_;
+
+   $self->authenticate( $old, TRUE );
+   $self->password( $self->$_encrypt_password( $self->name, $new ) );
+   $self->password_expired( FALSE );
+
+   return $self->update;
+}
+
+sub update {
+   my ($self, $columns) = @_;
+
+   unless ($columns) { $self->validate; return $self->next::method }
+
+   my $name; my $password;
+
+   exists $columns->{name    } and $name     = $columns->{name};
+   exists $columns->{password} and $password = $columns->{password};
+
+   $password and not is_encrypted( $password ) and $columns->{password}
+      = $self->$_encrypt_password( $name, $password );
+
+   $self->set_inflated_columns( $columns ); $self->validate;
+
+   return $self->next::method;
 }
 
 sub validation_attributes {

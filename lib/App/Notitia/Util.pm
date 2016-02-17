@@ -10,7 +10,7 @@ use Class::Usul::Time          qw( str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
 use Scalar::Util               qw( weaken );
 
-our @EXPORT_OK = qw( bool_data_type enumerated_data_type enhance
+our @EXPORT_OK = qw( bool_data_type date_data_type enumerated_data_type enhance
                      foreign_key_data_type get_hashed_pw get_salt
                      is_encrypted new_salt nullable_foreign_key_data_type
                      nullable_varchar_data_type numerical_id_data_type
@@ -22,6 +22,13 @@ sub bool_data_type (;$) {
    return { data_type     => 'boolean',
             default_value => $_[ 0 ] // FALSE,
             is_nullable   => FALSE, };
+}
+
+sub date_data_type () {
+   return { data_type     => 'datetime',
+            default_value => '0000-00-00',
+            is_nullable   => TRUE,
+            datetime_undef_if_invalid => TRUE, }
 }
 
 sub enumerated_data_type ($;$) {
