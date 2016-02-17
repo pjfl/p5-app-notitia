@@ -153,7 +153,7 @@ CREATE TABLE "participent" (
   "participent_id" integer NOT NULL,
   PRIMARY KEY ("event_id", "participent_id"),
   FOREIGN KEY ("event_id") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY ("participent_id") REFERENCES "person"("id")
+  FOREIGN KEY ("participent_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE INDEX "participent_idx_event_id" ON "participent" ("event_id");

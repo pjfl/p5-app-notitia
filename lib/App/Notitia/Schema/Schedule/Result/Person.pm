@@ -47,10 +47,11 @@ $class->add_unique_constraint( [ 'name' ] );
 
 $class->belongs_to( next_of_kin => "${class}" );
 
-$class->has_many( certs        => "${result}::Certification", 'recipient_id' );
-$class->has_many( endorsements => "${result}::Endorsement",   'recipient_id' );
-$class->has_many( roles        => "${result}::Role",          'member_id'    );
-$class->has_many( vehicles     => "${result}::Vehicle",       'owner_id'     );
+$class->has_many( certs        => "${result}::Certification", 'recipient_id'  );
+$class->has_many( endorsements => "${result}::Endorsement",   'recipient_id'  );
+$class->has_many( participents => "${result}::Participent",   'participent_id');
+$class->has_many( roles        => "${result}::Role",          'member_id'     );
+$class->has_many( vehicles     => "${result}::Vehicle",       'owner_id'      );
 
 # Private methods
 sub _as_string {
@@ -85,6 +86,13 @@ my $_encrypt_password = sub {
    return bcrypt( $password, $salt );
 };
 
+my $_find_event_by = sub {
+   my ($self, $name) = @_;
+
+   return $self->result_source->schema->resultset( 'Event' )->search
+      ( { name => $name } )->single;
+};
+
 my $_find_type_by = sub {
    my ($self, $name, $type) = @_;
 
@@ -111,8 +119,7 @@ sub add_certification_for {
    my $type = $self->$_find_cert_type( $cert_name );
 
    $self->is_certified_for( $cert_name, $type )
-      and throw 'Person [_1] already has certification [_2]',
-               [ $self->name, $type ];
+      and throw 'Person [_1] already has certification [_2]', [ $self, $type ];
 
    # TODO: Add the optional completed and notes fields
    return $self->certs->create
@@ -124,7 +131,7 @@ sub add_endorsement_for {
 
    $self->is_endorsed_for( $code_name )
       and throw 'Person [_1] already has endorsement for [_2]',
-                [ $self->name, $code_name ];
+                [ $self, $code_name ];
 
    # TODO: Add the fields endorsed, points, and notes
    return $self->endorsements->create
@@ -137,13 +144,24 @@ sub add_member_to {
    my $type = $self->$_find_role_type( $role_name );
 
    $self->is_member_of( $role_name, $type )
-      and throw 'Person [_1] already a member of role [_2]',
-                [ $self->name, $type ];
+      and throw 'Person [_1] already a member of role [_2]', [ $self, $type ];
 
    $self->$_assert_membership_allowed( $type );
 
    return $self->roles->create
       ( { member_id => $self->id, type_id => $type->id } );
+}
+
+sub add_participent_for {
+   my ($self, $event_name) = @_;
+
+   my $event = $self->$_find_event_by( $event_name );
+
+   $self->is_participent_of( $event_name, $event )
+      and throw 'Person [_1] already participating in [_2]', [ $self, $event ];
+
+   return $self->participents->create
+      ( { event_id => $event->id, participent_id => $self->id } );
 }
 
 sub assert_certified_for {
@@ -153,17 +171,17 @@ sub assert_certified_for {
 
    my $cert = $self->certs->find( $self->id, $type->id )
       or throw 'Person [_1] has no certification for [_2]',
-               [ $self->name, $type ], level => 2;
+               [ $self, $type ], level => 2;
 
    return $cert;
 }
 
 sub assert_endorsement_for {
-   my ($self, $code_name, $type) = @_;
+   my ($self, $code_name) = @_;
 
    my $endorsement = $self->endorsements->find( $self->id, $code_name )
       or throw 'Person [_1] has no endorsement for [_2]',
-               [ $self->name, $code_name ], level => 2;
+               [ $self, $code_name ], level => 2;
 
    return $endorsement;
 }
@@ -175,25 +193,36 @@ sub assert_member_of {
 
    my $role = $self->roles->find( $self->id, $type->id )
       or throw 'Person [_1] is not a member of role [_2]',
-               [ $self->name, $type ], level => 2;
+               [ $self, $type ], level => 2;
 
    return $role;
 }
 
+sub assert_participent_for {
+   my ($self, $event_name) = @_;
+
+   my $event       = $self->$_find_event_by( $event_name );
+   my $participent = $self->participents->find( $event->id, $self->id )
+      or throw 'Person [_1] is not participating in [_2]',
+               [ $self, $event ], level => 2;
+
+   return $participent;
+}
+
 sub authenticate {
-   my ($self, $passwd, $for_update) = @_; my $name = $self->name;
+   my ($self, $passwd, $for_update) = @_;
 
    $self->active
-      or  throw AccountInactive,   [ $name ], rv => HTTP_UNAUTHORIZED;
+      or  throw AccountInactive,   [ $self ], rv => HTTP_UNAUTHORIZED;
 
    $self->password_expired and not $for_update
-      and throw PasswordExpired,   [ $name ], rv => HTTP_UNAUTHORIZED;
+      and throw PasswordExpired,   [ $self ], rv => HTTP_UNAUTHORIZED;
 
    my $stored   = $self->password || NUL;
-   my $supplied = $self->$_encrypt_password( $name, $passwd, $stored );
+   my $supplied = $self->$_encrypt_password( $self->name, $passwd, $stored );
 
    $supplied eq $stored
-      or  throw IncorrectPassword, [ $name ], rv => HTTP_UNAUTHORIZED;
+      or  throw IncorrectPassword, [ $self ], rv => HTTP_UNAUTHORIZED;
 
    return;
 }
@@ -236,6 +265,10 @@ sub delete_member_from {
    return $role->delete;
 }
 
+sub delete_participent_for {
+   return $_[ 0 ]->assert_participent_for( $_[ 1 ] )->delete;
+}
+
 sub insert {
    my $self     = shift;
    my $columns  = { $self->get_inflated_columns };
@@ -269,6 +302,14 @@ sub is_member_of {
    $type //= $self->$_find_role_type( $role_name );
 
    return $self->roles->find( $self->id, $type->id ) ? TRUE : FALSE;
+}
+
+sub is_participent_of {
+   my ($self, $event_name, $event) = @_;
+
+   $event //= $self->$_find_event_by( $event_name );
+
+   return $self->participents->find( $event->id, $self->id ) ? TRUE : FALSE;
 }
 
 sub list_roles {

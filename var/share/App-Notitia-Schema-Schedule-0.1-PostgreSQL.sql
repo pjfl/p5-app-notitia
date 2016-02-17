@@ -189,7 +189,7 @@ ALTER TABLE "participent" ADD CONSTRAINT "participent_fk_event_id" FOREIGN KEY (
   REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE "participent" ADD CONSTRAINT "participent_fk_participent_id" FOREIGN KEY ("participent_id")
-  REFERENCES "person" ("id") DEFERRABLE;
+  REFERENCES "person" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE "slot" ADD CONSTRAINT "slot_fk_operator_id" FOREIGN KEY ("operator_id")
   REFERENCES "person" ("id") DEFERRABLE;

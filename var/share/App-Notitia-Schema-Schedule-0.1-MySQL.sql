@@ -145,7 +145,7 @@ CREATE TABLE `participent` (
   INDEX `participent_idx_participent_id` (`participent_id`),
   PRIMARY KEY (`event_id`, `participent_id`),
   CONSTRAINT `participent_fk_event_id` FOREIGN KEY (`event_id`) REFERENCES `event` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `participent_fk_participent_id` FOREIGN KEY (`participent_id`) REFERENCES `person` (`id`)
+  CONSTRAINT `participent_fk_participent_id` FOREIGN KEY (`participent_id`) REFERENCES `person` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `slot`;

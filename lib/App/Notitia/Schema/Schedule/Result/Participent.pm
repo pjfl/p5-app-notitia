@@ -1,7 +1,8 @@
 package App::Notitia::Schema::Schedule::Result::Participent;
 
 use strictures;
-use parent 'App::Notitia::Schema::Base';
+use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
+use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Util qw( foreign_key_data_type );
 
@@ -17,6 +18,11 @@ $class->set_primary_key( 'event_id', 'participent_id' );
 
 $class->belongs_to( event       => "${result}::Event",  'event_id' );
 $class->belongs_to( participent => "${result}::Person", 'participent_id' );
+
+# Private methods
+sub _as_string {
+   return $_[ 0 ]->event;
+}
 
 1;
 
