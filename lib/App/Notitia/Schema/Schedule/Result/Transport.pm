@@ -17,14 +17,14 @@ $class->add_columns
 
 $class->set_primary_key( 'event_id', 'vehicle_id' );
 
-$class->belongs_to( event            => "${result}::Event", 'event_id' );
-$class->belongs_to( vehicle_assigner => "${result}::Person",
-                    'vehicle_assigner_id'  );
-$class->belongs_to( vehicle          => "${result}::Vehicle", 'vehicle_id' );
+$class->belongs_to(   event => "${result}::Event",   'event_id' );
+$class->belongs_to
+   (       vehicle_assigner => "${result}::Person",  'vehicle_assigner_id' );
+$class->belongs_to( vehicle => "${result}::Vehicle", 'vehicle_id' );
 
 # Private methods
 sub _as_string {
-   return $_[ 0 ]->type;
+   return $_[ 0 ]->vehicle;
 }
 
 1;

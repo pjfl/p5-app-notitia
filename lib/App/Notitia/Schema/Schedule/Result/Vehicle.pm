@@ -4,10 +4,11 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Util qw( foreign_key_data_type
-                           nullable_foreign_key_data_type
-                           serial_data_type varchar_data_type );
-use Scalar::Util       qw( blessed );
+use App::Notitia::Util     qw( foreign_key_data_type
+                               nullable_foreign_key_data_type
+                               serial_data_type varchar_data_type );
+use Class::Usul::Functions qw( throw );
+use Scalar::Util           qw( blessed );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -35,6 +36,94 @@ $class->belongs_to( type  => "${result}::Type", 'type_id' );
 # Private methods
 sub _as_string {
    return $_[ 0 ]->name ? $_[ 0 ]->name : $_[ 0 ]->vrn;
+}
+
+my $_assert_event_assignment_allowed = sub {
+   my ($self, $event, $assigner) = @_;
+
+   $assigner->assert_member_of( 'asset_manager' );
+
+   my $schema     = $self->result_source->schema;
+   my $dtp        = $schema->storage->datetime_parser;
+   my $event_date = $dtp->format_datetime( $event->rota->date );
+   my $event_rs   = $schema->resultset( 'Event' );
+   my $rota_rs    = $schema->resultset( 'Rota'  );
+
+   for my $rota ($rota_rs->search( { date => $event_date } )){
+      for my $other ($event_rs->search( { rota_id  => $rota->id },
+                                        { prefetch => 'transports' } )) {
+         for my $transport ($other->transports) {
+            $transport->vehicle_id != $self->id and next;
+
+            $transport->event_id == $event->id
+               and throw 'Vehicle [_1] already assigned to this event',
+                         [ $self ], level => 2;
+            # TODO: Test for overlapping times
+            throw 'Vehicle [_1] already assigned to event [_2]',
+                  [ $self, $event ], level => 2;
+         }
+      }
+   }
+
+   return;
+};
+
+my $_assert_slot_assignment_allowed = sub {
+   my ($self, $assigner, $slot_type, $bike_requested) = @_;
+
+   $assigner->assert_member_of( 'asset_manager' );
+
+   $slot_type eq 'rider' and $bike_requested and $self->type ne 'bike'
+      and throw 'Vehicle [_1] is not a bike and one was requested', [ $self ];
+
+   return;
+};
+
+my $_find_assigner = sub {
+   my ($self, $name) = @_;
+
+   my $schema    = $self->result_source->schema;
+   my $person_rs = $schema->resultset( 'Person' );
+   my $assigner  = $person_rs->search( { name => $name } )->first
+      or throw 'Person [_1] is unknown', [ $name ], level => 2;
+
+   return $assigner;
+};
+
+# Public methods
+sub assign_to_event {
+   my ($self, $event_name, $assigner_name) = @_;
+
+   my $schema   = $self->result_source->schema;
+   my $event_rs = $schema->resultset( 'Event' );
+   my $event    = $event_rs->search
+      ( { name => $event_name }, { prefetch => 'rota' } )->first
+      or throw 'Event [_1] is unknown', [ $event_name ];
+   my $assigner = $self->$_find_assigner( $assigner_name );
+
+   $self->$_assert_event_assignment_allowed( $event, $assigner );
+
+   return $schema->resultset( 'Transport' )->create
+      ( { event_id => $event->id, vehicle_id => $self->id,
+          vehicle_assigner_id => $assigner->id } );
+}
+
+sub assign_to_slot {
+   my ($self, $rota_type, $date, $shift_type, $slot_type, $subslot, $name) = @_;
+
+   my $shift = $self->find_shift( $rota_type, $date, $shift_type );
+   my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
+
+   $slot or throw 'Slot [_1] has not been claimed', [ $slot ];
+
+   my $assigner = $self->$_find_assigner( $name );
+
+   $self->$_assert_slot_assignment_allowed
+      ( $assigner, $slot_type, $slot->bike_requested );
+
+   $slot->vehicle_id( $self->id ); $slot->vehicle_assigner_id( $assigner->id );
+
+   return $slot->update;
 }
 
 1;

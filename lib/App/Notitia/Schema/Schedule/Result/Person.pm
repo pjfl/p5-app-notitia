@@ -78,6 +78,7 @@ my $_assert_membership_allowed = sub {
 my $_encrypt_password = sub {
    my ($self, $name, $password, $stored) = @_;
 
+   # Name attribute used by alternative encryption schemes
    my $lf   = $self->result_source->schema->config->load_factor;
    my $salt = defined $stored ? get_salt( $stored ) : new_salt( '2a', $lf );
 
@@ -140,7 +141,7 @@ sub assert_certified_for {
 
    my $cert = $self->certs->find( $self->id, $type->id )
       or throw 'Person [_1] has no certification for [_2]',
-               [ $self->name, $type ];
+               [ $self->name, $type ], level => 2;
 
    return $cert;
 }
@@ -151,7 +152,8 @@ sub assert_member_of {
    $type //= $self->$_find_role_type( $role_name );
 
    my $role = $self->roles->find( $self->id, $type->id )
-      or throw 'Person [_1] not member of role [_2]', [ $self->name, $type ];
+      or throw 'Person [_1] is not a member of role [_2]',
+               [ $self->name, $type ], level => 2;
 
    return $role;
 }
@@ -180,33 +182,15 @@ sub claim_slot {
 
    $self->$_assert_claim_allowed( $slot_type, $bike );
 
-   my $schema       =  $self->result_source->schema;
-   my $rota_type_id =  $schema->resultset( 'Type' )->search
-      ( { name      => $rota_type, type => 'rota' } )->first->id;
-   my $dtf          =  $schema->storage->datetime_parser;
-   my $rota_rs      =  $schema->resultset( 'Rota' );
-   my $rota         =  $rota_rs->search
-      ( { date      => $dtf->format_datetime( $date ),
-          type_id   => $rota_type_id } )->first;
-
-   $rota or $rota   =  $rota_rs->create
-      ( { date      => $date, type_id => $rota_type_id } );
-
-   my $shift        =  $schema->resultset( 'Shift' )->find_or_create
-      ( { rota_id   => $rota->id, type => $shift_type } );
-   my $slot_rs      =  $schema->resultset( 'Slot' );
-   my $slot         =  $slot_rs->search
-      ( { shift_id  => $shift->id, type => $slot_type,
-          subslot   => $subslot } )->first;
+   my $shift = $self->find_shift( $rota_type, $date, $shift_type );
+   my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
 
    $slot and throw SlotTaken, [ $slot, $slot->operator ];
 
-   $slot = $slot_rs->create
+   return $self->result_source->schema->resultset( 'Slot' )->create
       ( { bike_requested => $bike,      operator_id => $self->id,
           shift_id       => $shift->id, subslot     => $subslot,
           type           => $slot_type, } );
-
-   return $slot;
 }
 
 sub deactivate {

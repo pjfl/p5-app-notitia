@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added vehicle assigning
           - Added password changing
           - Added claim slot
           - Added vehicle resultset

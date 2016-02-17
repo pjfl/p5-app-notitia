@@ -13,12 +13,12 @@ my $_find_rota = sub {
    my ($self, $rota_name, $date) = @_;
 
    my $schema     =  $self->result_source->schema;
-   my $dtf        =  $schema->storage->datetime_parser;
+   my $dtp        =  $schema->storage->datetime_parser;
    my $rota_type  =  $schema->resultset( 'Type' )->search
       ( { name    => $rota_name, type => 'rota' } )->single;
    my $rota_rs    =  $schema->resultset( 'Rota' );
    my $rota       =  $rota_rs->search
-      ( { date    => $dtf->format_datetime( $date ),
+      ( { date    => $dtp->format_datetime( $date ),
           type_id => $rota_type->id } )->first;
 
    $rota or $rota =  $rota_rs->create

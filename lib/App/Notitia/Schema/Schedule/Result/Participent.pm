@@ -1,7 +1,7 @@
 package App::Notitia::Schema::Schedule::Result::Participent;
 
 use strictures;
-use parent   'App::Notitia::Schema::Base';
+use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Util qw( foreign_key_data_type );
 
