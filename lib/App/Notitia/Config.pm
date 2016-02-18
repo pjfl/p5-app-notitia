@@ -141,6 +141,8 @@ has 'owner'           => is => 'lazy', isa => NonEmptySimpleStr,
 has 'port'            => is => 'lazy', isa => NonZeroPositiveInt,
    default            => 8085;
 
+has 'repo_url'        => is => 'ro',   isa => SimpleStr, default => NUL;
+
 has 'request_roles'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    builder            => sub { [ 'L10N', 'Session', 'JSON', 'Cookie' ] };
 
@@ -177,7 +179,7 @@ has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
       session         => [ sort keys %{ $_[ 0 ]->session_attr } ], } };
 
 has 'title'           => is => 'ro',   isa => NonEmptySimpleStr,
-   default            => 'Notitia - Scheduling';
+   default            => 'Notitia';
 
 has 'user'            => is => 'ro',   isa => SimpleStr, default => NUL;
 

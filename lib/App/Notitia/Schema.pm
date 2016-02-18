@@ -4,14 +4,13 @@ use namespace::autoclean;
 
 use App::Notitia;
 use App::Notitia::Constants qw( OK TRUE );
-use Class::Usul::Functions  qw( class2appdir );
 use Class::Usul::Types      qw( LoadableClass Object );
 use Moo;
 
 extends q(Class::Usul::Schema);
 
-our $VERSION          = $App::Notitia::VERSION;
-my ($schema_version)  = $VERSION =~ m{ (\d+\.\d+) }mx;
+our $VERSION         = $App::Notitia::VERSION;
+my ($schema_version) = $VERSION =~ m{ (\d+\.\d+) }mx;
 
 # Attribute constructors
 my $_build_schedule = sub {
@@ -20,6 +19,10 @@ my $_build_schedule = sub {
    $self->schedule_class->config( $self->config );
 
    return $self->schedule_class->connect( @{ $self->connect_info }, $extra );
+};
+
+my $_build_schedule_class = sub {
+   return $_[ 0 ]->schema_classes->{ $_[ 0 ]->config->database };
 };
 
 # Public attributes (override defaults in base class)
@@ -35,13 +38,13 @@ has 'schedule'        => is => 'lazy', isa => Object,
    builder            => $_build_schedule;
 
 has 'schedule_class'  => is => 'lazy', isa => LoadableClass,
-   builder            => sub { $_[ 0 ]->schema_classes->{ 'schedule' } };
+   builder            => $_build_schedule_class;
 
 # Construction
 around 'deploy_file' => sub {
    my ($orig, $self, @args) = @_;
 
-   $self->config->appclass->env_var( 'BULK_INSERT', TRUE );
+   $self->config->appclass->env_var( 'buld_insert', TRUE );
 
    return $orig->( $self, @args );
 };

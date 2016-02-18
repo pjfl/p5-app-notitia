@@ -1,0 +1,72 @@
+<!-- Footer -->
+<footer role="contentinfo">
+   <div class="grid">
+      <div class="unit one-third center-on-mobiles">
+[% IF config.links.0 -%]
+         <ul class="footer-nav">
+[%    FOREACH link IN config.links -%]
+            <li><a href="[% link.url | eval %]" target="_blank">
+               [% link.name %]</a></li>
+[%    END -%]
+         </ul>
+[% END -%]
+      </div>
+   </div>
+</footer>
+<div id="page-status" class="page-status"></div>
+<script src="[% links.cdnjs.moocore %]"></script>
+<script src="[% links.cdnjs.moomore %]"></script>
+<script src="[% links.js %]mooclasses.js"></script>
+<script src="[% links.js %][% skin %].js"></script>
+<script>
+      var behaviour = new Behaviour( {
+         baseURI     : "[% links.base_uri %]",
+         cookieDomain: '[% page.host %]',
+         cookiePath  : '[% config.mount_point %]',
+         cookiePrefix: '[% config.prefix %]',
+         formName    : "[% page.form_name %]",
+         message     : "[% page.status_message %]"
+      } );
+      behaviour.config.anchors[ 'create-user' ]
+         = { method    : 'modalDialog',
+             args      : [ '[% uri_for( 'user' ) %]?name=create', {
+                name   : 'create-user',
+                title  : '[% loc( 'Register User' ) %]',
+                useIcon: true } ] };
+      behaviour.config.anchors[ 'login-user' ]
+         = { method    : 'modalDialog',
+             args      : [ '[% uri_for( 'user' ) %]?name=login', {
+                name   : 'login-user',
+                title  : '[% loc( 'Login User' ) %]',
+                useIcon: true } ] };
+      behaviour.config.anchors[ 'profile-user' ]
+         = { method    : 'modalDialog',
+             args      : [ '[% uri_for( 'user' ) %]?name=profile', {
+                name   : 'profile-user',
+                title  : '[% loc( 'User Profile' ) %]',
+                useIcon: true } ] };
+      behaviour.config.inputs[ 'again' ]
+         = { event     : [ 'focus', 'blur' ],
+             method    : [ 'show_password', 'hide_password' ] };
+      behaviour.config.inputs[ 'password' ]
+         = { event     : [ 'focus', 'blur' ],
+             method    : [ 'show_password', 'hide_password' ] };
+      behaviour.config.anchors[ 'users' ]
+         = { event     : 'change', method: 'submitForm', args: [ '' ] };
+</script>
+[% IF config.analytics -%]
+<script>
+      ( function( w, d, t, s, f) {
+           w[ 'GoogleAnalyticsObject' ] = f;
+           w[ f ] = w[ f ] || function() {
+              ( w[ f ].q = w[ f ].q || [] ).push( arguments ) };
+           w[ f ].l = 1 * new Date();
+           var e = d.createElement( t ); e.async = 1; e.src = s;
+           var m = d.getElementsByTagName( t )[ 0 ];
+           m.parentNode.insertBefore( e, m );
+        } )( window, document, 'script',
+                '//www.google-analytics.com/analytics.js', 'ga' );
+      ga( 'create', '[% config.analytics %]', '[% page.host %]' );
+      ga( 'send', 'pageview' );
+</script>
+[% END -%]

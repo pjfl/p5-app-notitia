@@ -1,0 +1,135 @@
+#!/usr/bin/env perl
+
+use English qw( -no_match_vars );
+use FindBin qw( $Bin );
+use File::Spec;
+
+BEGIN {
+   my $bind = $Bin; $bind =~ m{ \A ([^\$%&\*;<>\`|]+) \z }mx and $bind = $1;
+   my $path = File::Spec->catfile( $bind, 'notitia-localenv' );
+
+   -f $path and (do $path or die $EVAL_ERROR || "Path ${path} not done\n");
+}
+
+use App::Notitia::Daemon;
+
+exit App::Notitia::Daemon->new_with_options
+   ( appclass => 'App::Notitia', noask => 1 )->run;
+
+__END__
+
+=pod
+
+=encoding utf-8
+
+=head1 Name
+
+notitia-daemon - Control the web application server
+
+=head1 Synopsis
+
+=over 3
+
+=item B<notitia-daemon> I<start | stop | restart | status | show-warnings>
+
+Start / stop the scheduling server
+
+=item B<notitia-daemon> I<get-init-file>
+
+Prints a SYSV initialisation script to stdout
+
+=item B<notitia-daemon> B<-H> | B<-h> I<[method]> | B<-?>
+
+Display man page / method help  / usage strings
+
+=item B<notitia-daemon> I<list-methods>
+
+Lists the methods available in this program
+
+=back
+
+=head1 Description
+
+Control the Documentation Server daemon
+
+=head1 Required Arguments
+
+=over 3
+
+=item I<A command to perform>
+
+=back
+
+=head1 Options
+
+=over 3
+
+=item B<--app>
+
+Name of the PSGI file in the bin directory to start
+
+=item B<-D>
+
+Turn debugging on
+
+=item B<-p --port>
+
+Set the port number for the server to listen on
+
+=item B<-s --server>
+
+Name of the Plack engine to use
+
+=item B<-w --workers>
+
+Number of workers to start in pre-forking servers
+
+=back
+
+=head1 Diagnostics
+
+Prints errors to standard error
+
+=head1 Exit Status
+
+Returns zero on success, non zero on failure
+
+=head1 Configuration
+
+Uses the constructor's C<appclass> attribute to locate a configuration file
+
+=head1 Dependencies
+
+=over 3
+
+=item L<App::Notitia::Daemon>
+
+=back
+
+=head1 Incompatibilities
+
+None
+
+=head1 Bugs and limitations
+
+Please report problems to
+http://rt.cpan.org/NoAuth/Bugs.html?Dist=App-Notitia
+
+=head1 Author
+
+Peter Flanigan, C<< <pjfl@cpan.org> >>
+
+=head1 License and copyright
+
+Copyright (c) 2016 Peter Flanigan
+
+This is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
+
+# Local Variables:
+# mode: perl
+# tab-width: 3
+# End:
+# vim: expandtab shiftwidth=3:

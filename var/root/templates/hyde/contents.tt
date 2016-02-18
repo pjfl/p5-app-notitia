@@ -1,0 +1,30 @@
+<!-- Contents -->
+<div class="unit one-fifth hide-on-mobiles">
+   <aside>
+[% depth        = 0 -%]
+[% class        = 'aj-nav folder fade' -%]
+[% file_title   = loc( 'File Path' ) -%]
+[% folder_title = loc( 'Folder Path' ) -%]
+      <ul class="nav nav-list">
+[% FOREACH node = nav -%]
+[%    WHILE node.depth < depth; depth = depth - 1 -%]
+            </ul>
+         </li>
+[%    END -%]
+         <li class="[% node.class %]">
+[%    IF node.type == 'folder'; depth = depth + 1 -%]
+            <h4>[% node.title %]</h4>
+            <ul class="nav nav-list">
+[%    ELSE -%]
+[%       uri = uri_for( node.url ) -%]
+[%       LinkWithTips( uri, 'fade', node.title, file_title, node.tip ) -%]
+         </li>
+[%    END -%]
+[% END -%]
+[% WHILE depth > 0; depth = depth - 1 -%]
+            </ul>
+         </li>
+[% END -%]
+      </ul>
+   </aside>
+</div>

@@ -43,7 +43,7 @@ sub enhance ($) {
    my $attr = { config => { %{ $conf } }, }; $conf = $attr->{config};
 
    $conf->{appclass    } //= 'App::Notitia';
-   $attr->{config_class} //= $conf->{appclass}.'::Notitia';
+   $attr->{config_class} //= $conf->{appclass}.'::Config';
    $conf->{name        } //= class2appdir $conf->{appclass};
    $conf->{home        } //= find_apphome $conf->{appclass}, $conf->{home};
    $conf->{cfgfiles    } //= get_cfgfiles $conf->{appclass}, $conf->{home};

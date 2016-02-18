@@ -1,0 +1,16 @@
+[% PROCESS 'hyde/macros.tt' -%]
+[% WRAPPER 'hyde/wrapper.tt' -%]
+[%    INCLUDE 'hyde/header.tt' -%]
+<!-- Layout [% page.layout %] -->
+<section class="docs">
+   <div class="grid">
+[%    INCLUDE 'hyde/contents_mobile.tt' -%]
+      <!-- Template [% page.template.1 %] -->
+[%    path = 'hyde/' _ page.template.1  _ '_content.tt'; INCLUDE $path -%]
+[%    INCLUDE 'hyde/contents.tt' -%]
+      <div class="clear"></div>
+   </div>
+</section>
+[%    INCLUDE 'hyde/footer.tt' -%]
+<!-- End of application templates -->
+[% END -%]

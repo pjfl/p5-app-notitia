@@ -1,0 +1,17 @@
+[% MACRO FormWithButton( href, class, content, form, tip, id, value ) BLOCK -%]
+<form action="[% href %]" enctype="application/x-www-form-urlencoded"
+      method="post" name="[% form %]">
+   <span class="tips" title="[% page.hint _ ' ~ ' _ tip %]">
+      <button class="[% class %]" id="[% id %]" name="_method"
+               type="submit" value="[% value %]">[% content %]</button></span>
+</form>
+[% END -%]
+[% MACRO Link( href, class, content, id ) BLOCK -%]
+<a class="[% class %]" href="[% href %]"[% IF id -%]
+ id="[% id %]"[% END %]>[% content %]</a>
+[% END -%]
+[% MACRO LinkWithTips( href, class, content, title, tip, id ) BLOCK -%]
+<span class="tips" title="[% title _ ' ~ ' _ tip %]">
+   [% Link( href, class, content, id ) -%]
+</span>
+[% END -%]

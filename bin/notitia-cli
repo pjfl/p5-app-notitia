@@ -1,0 +1,115 @@
+#!/usr/bin/env perl
+
+use English qw( -no_match_vars );
+use FindBin qw( $Bin );
+use File::Spec;
+
+BEGIN {
+   my $bind = $Bin; $bind =~ m{ \A ([^\$%&\*;<>\`|]+) \z }mx and $bind = $1;
+   my $path = File::Spec->catfile( $bind, 'notitia-localenv' );
+
+   -f $path and (do $path or die $EVAL_ERROR || "Path ${path} not done\n");
+}
+
+use App::Notitia::CLI;
+
+exit App::Notitia::CLI->new_with_options
+   ( appclass => 'App::Notitia', noask => 1 )->run;
+
+__END__
+
+=pod
+
+=encoding utf-8
+
+=head1 Name
+
+notitia-cli - One-line description of the programs purpose
+
+=head1 Synopsis
+
+=over 3
+
+=item B<notitia-cli> B<> I<>
+
+I<Command line description>
+
+=item B<notitia-cli> B<-H> | B<-h> I<[method]> | B<-?>
+
+Display man page / method help  / usage strings
+
+=item B<notitia-cli> B<list-methods>
+
+Lists the methods available in this program
+
+=back
+
+=head1 Description
+
+I<Program description>
+
+=head1 Required arguments
+
+=over 3
+
+=item I<>
+
+=back
+
+=head1 Options
+
+=over 3
+
+=item B<-D>
+
+Turn debugging on
+
+=back
+
+=head1 Diagnostics
+
+Prints errors to stderr
+
+=head1 Exit status
+
+Returns zero on success, non zero on failure
+
+=head1 Configuration
+
+Uses the constructor's C<appclass> attribute to locate a configuration file
+
+=head1 Dependencies
+
+=over 3
+
+=item L<Class::Usul>
+
+=back
+
+=head1 Incompatibilities
+
+None
+
+=head1 Bugs and limitations
+
+Please report problems to
+http://rt.cpan.org/NoAuth/Bugs.html?Dist=App-Notitia
+
+=head1 Author
+
+Peter Flanigan, C<< <pjfl@cpan.org> >>
+
+=head1 License and copyright
+
+Copyright (c) 2016 Peter Flanigan
+
+This is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
+
+# Local Variables:
+# mode: perl
+# tab-width: 3
+# End:
+# vim: expandtab shiftwidth=3:

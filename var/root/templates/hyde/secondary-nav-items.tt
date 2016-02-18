@@ -1,0 +1,34 @@
+<!-- Secondary Navigation -->
+[% IF page.mode != 'static' -%]
+<ul>
+[%    class = 'windows fade' -%]
+[%    IF page.authenticated -%]
+[%       text = loc( 'Admin' ) -%]
+[%       tip  = loc( 'Admininstration interface' ) -%]
+   <li>
+[%       LinkWithTips( uri_for( 'admin' ), 'fade', text, page.hint, tip ) -%]
+   </li>
+[%       text = loc( 'Profile' ) -%]
+[%       tip  = loc( 'Configure user profile' ) -%]
+   <li>
+[%       LinkWithTips( '#', class, text, page.hint, tip, 'profile-user') -%]
+   </li>
+   <li>
+[%       FormWithButton( uri_for( 'logout' ), class, loc( 'Logout' ),
+                        'authentication', loc( 'Logout from the application' ),
+                        'logout-user', 'logout' ) -%]
+   </li>
+[%    ELSE -%]
+[%       text = loc( 'Login' ) -%]
+[%       tip  = loc( 'Authenticate with the application' ) -%]
+   <li>
+[%       LinkWithTips( '#', class, text, page.hint, tip, 'login-user' ) -%]
+   </li>
+[%       text = loc( 'Register' ) -%]
+[%       tip  = loc( 'Register with the application' ) -%]
+   <li>
+[%       LinkWithTips( '#', class, text, page.hint, tip, 'create-user' ) -%]
+   </li>
+[%    END -%]
+</ul>
+[% END -%]

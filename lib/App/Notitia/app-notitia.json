@@ -1,0 +1,16 @@
+{
+   "cdn": "http://cdnjs.cloudflare.com/ajax/libs/",
+   "description": "People and resource scheduling",
+   "jslibs": [
+      [ "moocore", "mootools/1.4.5/mootools-core-full-nocompat.min.js" ],
+      [ "moomore", "mootools-more/1.4.0.1/mootools-more-yui-compressed.min.js" ]
+   ],
+   "keywords": "people resource scheduling",
+   "links": {
+      "Built Using Perl": "http://www.perl.org",
+      "Download": "https://github.com/pjfl/p5-app-notitia/archive/master.zip",
+      "Github Repo": "https://github.com/pjfl/p5-app-notitia.git",
+      "Issues/Wishlist": "http://github.com/pjfl/p5-notitia-doh/issues"
+   },
+   "repo_url": "https://github.com/pjfl/p5-app-notitia"
+}

@@ -1,0 +1,20 @@
+<!-- Contents Mobile -->
+<div class="docs-nav-mobile unit whole show-on-mobiles">
+[% depth = 0 -%]
+   <select onchange="if (this.value) window.location.href=this.value">
+      <option value="">[% loc( 'Navigate the docs') %]…</option>
+[% FOREACH node IN nav -%]
+[%    WHILE node.depth < depth; depth = depth - 1 -%]
+      </optgroup>
+[%    END -%]
+[%    IF node.type == 'folder'; depth = depth + 1 -%]
+      <optgroup label="[% node.title %]">
+[%    ELSE -%]
+      <option value="[% uri_for( node.url ) %]">[% node.title %]</option>
+[%    END -%]
+[% END -%]
+[% WHILE depth > 0; depth = depth - 1 -%]
+      </optgroup>
+[% END -%]
+   </select>
+</div>

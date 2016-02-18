@@ -1,0 +1,92 @@
+/* Perl Artistic license except where stated otherwise */
+/*  Elements - Reset styling */
+a, abbr, acronym, address, article, aside, audio, b, big, blockquote,
+body, button, caption, cite, code, dd, del, dfn, dialog, div, dl, dt, em,
+fieldset, figure, footer, form, h1, h2, h3, h4, h5, h6, header,
+hgroup, html, i, iframe, img, ins, kbd, label, legend, li, mark, menu,
+nav, object, ol, p, pre, q, samp, section, small, span, strong, sub,
+sup, table, tbody, td, tfoot, th, thead, time, tr, tt, ul, var, video {
+   background: transparent; border: 0; .box-sizing; margin: 0; outline: 0;
+   padding: 0; text-align: left; vertical-align: baseline; white-space: normal;
+/* color: inherit; font-family: inherit; font-size: inherit;
+   font-style: inherit; font-weight: inherit; */
+}
+
+article, aside, details, dialog, div, figcaption, figure, footer, header,
+hgroup, main, menu, nav, section, summary { display: block; }
+audio, canvas, img, progress, video { display: inline-block; }
+audio:not([controls]) { display: none; height: 0; }
+blockquote p:before, blockquote p:after, q:before, q:after { content: ''; }
+blockquote, q { quotes: "" ""; }
+button::-moz-focus-inner { border: 0; margin: -1px; padding: 0; }
+del, ins { text-decoration: none; }
+hr { border: 0; }
+input { margin: 0; }
+img { vertical-align: middle; }
+dl, ol, ul { list-style: none; }
+table { border-collapse: collapse; border-spacing: 0; }
+
+/*  Elements - Base styling */
+a:focus { outline: thin dotted; }
+a:active, a:hover { outline: 0; text-decoration: underline; }
+abbr, acronym {
+   border-bottom: 1px dotted; font-variant: normal;
+   letter-spacing: 1px; text-transform: uppercase;
+}
+address, blockquote, cite, dfn, em, i, q, var { font-style: italic; }
+article, aside, dialog, footer, header, hgroup, menu, nav, section {
+   float: left;
+}
+b, caption, dt, legend, strong, th, thead { font-weight: bold; }
+big { font-size: 1.8em; line-height: 1em; }
+blockquote { margin: 1em 36px; }
+body {
+   font-size: 62.5%; font-weight: normal; height: 100%; line-height: 1.8em;
+   max-height: 100%; overflow: hidden; .sans-font;
+}
+br { clear: left; }
+button { overflow: visible; }
+button, input, optgroup, select, textarea { color: inherit; font: inherit }
+button, input, select { cursor: pointer; line-height: normal; }
+button, select { text-transform: none; }
+button[disabled], html input[disabled] { cursor: default; }
+canvas { margin: 0; }
+caption { margin: 9px; }
+code, kbd, pre, samp, tt, var { .mono-font; font-size: 1em; }
+del { text-decoration: line-through; }
+dl, ol, ul { margin-bottom: 18px; }
+dfn { font-style: italic; }
+fieldset {
+   border: 1px solid #c0c0c0; margin-bottom: 2px;
+   padding: 0.35em 0.625em 0.75em;
+}
+figure { margin: 1em 40px; }
+form { display: block; overflow: auto; }
+h1, h2, h3, h4, h5, h6 { font-weight: normal; .header-font; }
+h1 { font-size: 3.6em; line-height: 1em;     margin: 0.5em    0; } /* 36 36 */
+h2 { font-size: 3.2em; line-height: 1.125em; margin: 0.5625em 0; } /* 32 36 */
+h3 { font-size: 2.8em; line-height: 1.286em; margin: 0.6428em 0; } /* 28 36 */
+h4 { font-size: 2.4em; line-height: 1.5em;   margin: 0.75em   0; } /* 24 36 */
+h5 { font-size: 2.0em; line-height: 1.8em;   margin: 0.9em    0; } /* 20 36 */
+h6 { font-size: 1.6em; line-height: 1.125em; margin: 0.5em    0; } /* 16 18 */
+hr {
+   border-bottom: 1px solid; border-top: 1px solid; .box-sizing(content-box);
+   height: 0; margin: 8px 0; width: auto;
+}
+html { height: 100%; max-height: 100%; }
+ins { border-bottom: 3px double; }
+ol { list-style-position: outside; list-style-type: decimal; }
+option { margin: 3px 0; padding: 0 3px; }
+p { margin: 9px 0; }
+pre { overflow: auto; white-space: pre; word-wrap: break-word; }
+select { margin: 0; padding: 3px; }
+small { font-size: 1em; line-height: 1.8em; }
+sub, sup { font-size: 0.75em; line-height: 0; position: relative; }
+sub { bottom: -0.25em; }
+sup { top: -0.5em; }
+table { height: auto; width: auto; }
+td { vertical-align: middle; }
+textarea { overflow: auto; }
+tfoot { font-style: italic; }
+th { padding: 3px 6px; }
+ul { list-style-position: outside; list-style-type: disc; }

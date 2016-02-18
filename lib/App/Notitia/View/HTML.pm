@@ -1,13 +1,29 @@
-package App::Notitia;
+package App::Notitia::View::HTML;
 
-use 5.010001;
-use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 16 $ =~ /\d+/gmx );
+use namespace::autoclean;
 
-use Class::Usul::Functions  qw( ns_environment );
+use App::Notitia::Util qw( stash_functions );
+use Encode             qw( encode );
+use Moo;
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+with q(Web::Components::Role);
+with q(Web::Components::Role::TT);
+with q(Web::Components::Role::Forms::View);
+
+has '+moniker' => default => 'html';
+
+# Private functions
+my $_header = sub {
+   return [ 'Content-Type' => 'text/html', @{ $_[ 0 ] // [] } ];
+};
+
+# Public methods
+sub serialize {
+   my ($self, $req, $stash) = @_; stash_functions $self, $req, $stash;
+
+   my $html = encode( $self->encoding, $self->render_template( $stash ) );
+
+   return [ $stash->{code}, $_header->( $stash->{http_headers} ), [ $html ] ];
 }
 
 1;
@@ -20,11 +36,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::View::HTML - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::View::HTML;
    # Brief but working code examples
 
 =head1 Description

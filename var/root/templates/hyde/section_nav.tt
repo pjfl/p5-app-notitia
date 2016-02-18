@@ -1,0 +1,23 @@
+<!-- Section Nav -->
+[% FOREACH node IN nav -%]
+[%    IF node.url == page.url -%]
+<div class="section-nav">
+   <div class="left align-right">
+[%       IF loop.first -%]
+      <span class="prev disabled">[% loc( 'Back' ) %]</span>
+[%       ELSE -%]
+      <a href="[% uri_for( loop.prev.url ) %]" class="prev">[% loc( 'Back' ) %]</a>
+[%       END -%]
+   </div>
+   <div class="right align-left">
+[%       IF loop.last -%]
+      <span class="next disabled">[% loc( 'Next' ) %]</span>
+[%       ELSE -%]
+      <a href="[% uri_for( loop.next.url ) %]" class="next">[% loc( 'Next' ) %]</a>
+[%       END -%]
+   </div>
+</div>
+<div class="clear"></div>
+[%       LAST -%]
+[%    END -%]
+[% END -%]

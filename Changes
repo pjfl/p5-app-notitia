@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added web application server
           - Added support for participents
           - Added support for endorsements
           - Moved find_rota to ResultSet::Rota
