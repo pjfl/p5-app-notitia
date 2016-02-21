@@ -55,11 +55,15 @@ my $_events = sub {
    my ($req, $rota, $rota_dt, $todays_events) = @_;
 
    my $events = $rota->{events};
+   my $date   = $rota_dt->day_abbr.' '.$rota_dt->day;
 
-   push @{ $events }, [ { val => $rota_dt->day_abbr, class => 'rota-day-abbr' },
+   push @{ $events }, [ { val => $date, class => 'rota-date' },
                         { val => $todays_events->next, colspan => 4 } ];
-   push @{ $events }, [ { val => $rota_dt->day, class => 'rota-day' },
-                        { val => $todays_events->next, colspan => 4 } ];
+
+   while (defined (my $event = $todays_events->next)) {
+      push @{ $events }, [ { val => undef }, { val => $event, colspan => 4 } ];
+   }
+
 
    return;
 };

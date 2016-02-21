@@ -323,7 +323,7 @@ footer {
          display: block; margin: 0; padding: 0;
          span { display: inline-block; }
       }
-      .output { color: #888; }
+      .output { color: @heavy; }
       .path {
          color: #87ceeb; .user-select(none);
       }
@@ -445,7 +445,7 @@ aside {
       color: @foreground; font-size: 16px; font-weight: 700;
       padding: 8px 12px 10px; text-transform: uppercase;
    }
-   a:hover { background-color: #888; color: @brighter; }
+   a:hover { background-color: @heavy; color: @brighter; }
    > div { width: 49.5%; }
    .disabled { cursor: default; opacity: .5; }
    .next, .prev { position: relative; }
@@ -505,9 +505,10 @@ article h2:first-child, { margin-top: 0; }
 }
 /* Rota */
 article h4:first-child { margin-top: 0; margin-bottom: 0.5em; }
-td.rota-day { border-top: 0; }
-td.rota-day-abbr { .box-shadow-right; }
-td.rota-header { white-space: nowrap; width: 1%; }
+td.rota-date { font-weight: 700; white-space: nowrap; width: 1%; }
+td.rota-header {
+   color: @subtle; font-size: 16px; white-space: nowrap; width: 1%;
+}
 td.narrow { width: 1%; }
 th.rota-header { white-space: nowrap; }
 /* Code Highlighting */
@@ -598,7 +599,7 @@ thead {
 td { padding: .5em .75em; }
 td p { margin: 0; }
 th {
-   color: #888; font-size: 16px; padding: .5em .75em;
+   color: @heavy; font-size: 16px; padding: .5em .75em;
    text-shadow: 0 -1px 0 rgba(0,0,0,.9); text-transform: uppercase;
 }
 tbody td {

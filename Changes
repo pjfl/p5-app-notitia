@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Displays all events on day rota
           - Can display the rota for a given day
           - Added web application server
           - Added support for participents
