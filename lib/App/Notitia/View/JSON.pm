@@ -2,6 +2,7 @@ package App::Notitia::View::JSON;
 
 use namespace::autoclean;
 
+use App::Notitia::Util     qw( stash_functions );
 use Class::Usul::Constants qw( FALSE );
 use Class::Usul::Types     qw( Object );
 use Encode                 qw( encode );
@@ -9,7 +10,6 @@ use JSON::MaybeXS          qw( );
 use Moo;
 
 with q(Web::Components::Role);
-with q(Web::Components::Role::Forms::View);
 
 # Public attributes
 has '+moniker' => default => 'json';
@@ -25,9 +25,10 @@ my $_header = sub {
 
 # Public methods
 sub serialize {
-   my ($self, $req, $stash) = @_;
+   my ($self, $req, $stash) = @_; stash_functions $self, $req, $stash;
 
-   my $content = $stash->{form} ? $stash->{form}->[ 0 ] : $stash->{content};
+   my $content = defined $stash->{content} ? $stash->{content}
+               : { html => $self->render_template( $stash ) };
    my $meta    = $stash->{page}->{meta} // {};
 
    $content->{ $_ } = $meta->{ $_ } for (keys %{ $meta });

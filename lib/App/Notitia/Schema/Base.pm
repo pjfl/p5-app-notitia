@@ -23,7 +23,7 @@ sub find_slot {
 
    return $self->result_source->schema->resultset( 'Slot' )->search
       ( { shift_id  => $shift->id, type => $slot_type,
-          subslot   => $subslot } )->first;
+          subslot   => $subslot } )->single;
 }
 
 sub validate {

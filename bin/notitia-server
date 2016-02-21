@@ -23,45 +23,33 @@ __END__
 
 =head1 Name
 
-notitia-server - One-line description of the programs purpose
+notitia-server - PSGI People and resource scheduling application
 
 =head1 Synopsis
 
 =over 3
 
-=item B<notitia-server> B<> I<>
+=item B<plackup> I<bin/notitia-server>
 
-I<Command line description>
-
-=item B<notitia-server> B<-H> | B<-h> I<[method]> | B<-?>
-
-Display man page / method help  / usage strings
-
-=item B<notitia-server> B<list-methods>
-
-Lists the methods available in this program
+Start the application on the development server
 
 =back
 
 =head1 Description
 
-I<Program description>
+People and resource scheduling application
 
 =head1 Required arguments
 
-=over 3
-
-=item I<>
-
-=back
+None
 
 =head1 Options
 
 =over 3
 
-=item B<-D>
+=item B<--access-log>
 
-Turn debugging on
+Sets the path to the access log
 
 =back
 
@@ -81,7 +69,7 @@ Uses the constructor's C<appclass> attribute to locate a configuration file
 
 =over 3
 
-=item L<Class::Usul>
+=item L<App::Notitia::Server>
 
 =back
 

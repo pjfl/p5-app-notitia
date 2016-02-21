@@ -5,7 +5,7 @@ use namespace::autoclean;
 use Unexpected::Functions qw( has_exception );
 use Moo;
 
-extends 'Class::Usul::Exception';
+extends q(Class::Usul::Exception);
 
 my $class = __PACKAGE__;
 

@@ -48,7 +48,8 @@ CREATE TABLE "rota" (
   "id" serial NOT NULL,
   "type_id" integer NOT NULL,
   "date" timestamp DEFAULT '0000-00-00',
-  PRIMARY KEY ("id")
+  PRIMARY KEY ("id"),
+  CONSTRAINT "rota_type_id_date" UNIQUE ("type_id", "date")
 );
 CREATE INDEX "rota_idx_type_id" on "rota" ("type_id");
 

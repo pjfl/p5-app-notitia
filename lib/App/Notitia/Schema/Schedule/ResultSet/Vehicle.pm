@@ -6,12 +6,13 @@ use parent 'DBIx::Class::ResultSet';
 # Private methods
 my $_find_owner = sub {
    return $_[ 0 ]->result_source->schema->resultset( 'Person' )->search
-      ( { name => $_[ 1 ] } )->single;
+      ( { name => $_[ 1 ] }, { columns => [ 'id' ] } )->single;
 };
 
 my $_find_vehicle_type = sub {
    return $_[ 0 ]->result_source->schema->resultset( 'Type' )->search
-      ( { name => $_[ 1 ], type => 'vehicle' } )->single;
+      ( { name    => $_[ 1 ], type => 'vehicle' },
+        { columns => [ 'id' ] } )->single;
 };
 
 # Public methods

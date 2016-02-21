@@ -6,7 +6,7 @@ use parent 'DBIx::Class::ResultSet';
 # Private methods
 my $_find_owner = sub {
    return $_[ 0 ]->result_source->schema->resultset( 'Person' )->search
-      ( { name => $_[ 1 ] } )->single;
+      ( { name => $_[ 1 ] }, { columns => [ 'id' ] } )->single;
 };
 
 my $_find_rota = sub {

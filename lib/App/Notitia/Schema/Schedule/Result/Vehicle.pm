@@ -49,7 +49,8 @@ my $_assert_event_assignment_allowed = sub {
    my $event_rs   = $schema->resultset( 'Event' );
    my $rota_rs    = $schema->resultset( 'Rota'  );
 
-   for my $rota ($rota_rs->search( { date => $event_date } )){
+   for my $rota ($rota_rs->search( { date    => $event_date },
+                                   { columns => [ 'id' ]    } )) {
       for my $other ($event_rs->search( { rota_id  => $rota->id },
                                         { prefetch => 'transports' } )) {
          for my $transport ($other->transports) {
@@ -84,7 +85,7 @@ my $_find_assigner = sub {
 
    my $schema    = $self->result_source->schema;
    my $person_rs = $schema->resultset( 'Person' );
-   my $assigner  = $person_rs->search( { name => $name } )->first
+   my $assigner  = $person_rs->search( { name => $name } )->single
       or throw 'Person [_1] is unknown', [ $name ], level => 2;
 
    return $assigner;
@@ -97,7 +98,7 @@ sub assign_to_event {
    my $schema   = $self->result_source->schema;
    my $event_rs = $schema->resultset( 'Event' );
    my $event    = $event_rs->search
-      ( { name => $event_name }, { prefetch => 'rota' } )->first
+      ( { name => $event_name }, { prefetch => 'rota' } )->single
       or throw 'Event [_1] is unknown', [ $event_name ];
    my $assigner = $self->$_find_assigner( $assigner_name );
 

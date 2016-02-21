@@ -1,0 +1,22 @@
+<!-- Rota Table -->
+<table>
+[% FOR event IN page.rota.events -%]
+[%    RotaTableRow( event ) -%]
+[% END -%]
+[% FOR controller IN page.rota.controllers -%]
+[%    RotaTableRow( controller ) -%]
+[% END -%]
+   <tr>
+[%    FOR cell IN page.rota.headers -%]
+      <th class="rota-header">[% cell.val %]</th>
+[%    END -%]
+   </tr>
+[% FOR shift IN page.rota.shifts -%]
+[%    FOR rider IN shift.riders -%]
+[%       RotaTableRow( rider ) -%]
+[%    END -%]
+[%    FOR driver IN shift.drivers -%]
+[%       RotaTableRow( driver ) -%]
+[%    END -%]
+[% END -%]
+</table>

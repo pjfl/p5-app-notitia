@@ -20,14 +20,13 @@ has 'application' => is => 'ro', isa => Plinth,
 sub exception_handler {
    my ($self, $req, $e) = @_;
 
-   my $title = $req->loc( 'Exception Handler' );
-   my $page  = { code  => $e->rv, created  => time,
-                 error => "${e}", template => [ 'nav_panel', 'exception' ],
-                 title => $title };
+   my $page  = { error    => $e,
+                 template => [ 'nav_panel', 'exception' ],
+                 title    => $req->loc( 'Exception Handler' ) };
 
    $e->class eq ValidationErrors->() and $page->{validation_error} = $e->args;
 
-   my $stash = $self->get_stash( $req, $page, exception => {} );
+   my $stash = $self->get_stash( $req, $page );
 
    $stash->{code} = $e->rv >= HTTP_OK ? $e->rv : HTTP_BAD_REQUEST;
 

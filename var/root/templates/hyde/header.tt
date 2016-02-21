@@ -8,7 +8,7 @@
       <div class="unit one-third center-on-mobiles">
          <h1>
 [% text = '<span class="sr-only">' _ config.title _ '</span><img src="'
-        _ links.images _ 'logo.png" width="272" height="99" alt="'
+        _ links.images _ 'logo-transparent.png" width="272" height="99" alt="'
         _ config.title _ ' Logo">' -%]
 [% tip  = loc( 'Application home page' ) -%]
 [%          LinkWithTips( uri_for( 'index' ), '', text, page.hint, tip ) -%]

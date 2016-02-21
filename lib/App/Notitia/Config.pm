@@ -5,7 +5,7 @@ use namespace::autoclean;
 use Class::Usul::Constants       qw( NUL TRUE );
 use Class::Usul::Crypt::Util     qw( decrypt_from_config encrypt_for_config );
 use Class::Usul::File;
-use Class::Usul::Functions       qw( create_token );
+use Class::Usul::Functions       qw( class2appdir create_token );
 use Data::Validation::Constants  qw( );
 use File::DataClass::Types       qw( ArrayRef Bool CodeRef Directory File
                                      HashRef NonEmptySimpleStr
@@ -171,6 +171,9 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
 has 'skin'            => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'hyde';
 
+has 'slot_limits'     => is => 'ro',   isa => ArrayRef[PositiveInt],
+   builder            => sub { [ 2, 1, 3, 3, 1, 1 ] };
+
 has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
    builder            => sub { {
       config          => [ qw( description keywords ) ],
@@ -193,6 +196,13 @@ has '_components'     => is => 'ro',   isa => HashRef,
    builder            => sub { {} }, init_arg => 'components';
 
 # Attribute constructors
+sub _build_ctlfile {
+   my $name      = class2appdir $_[ 0 ]->inflate_symbol( $_[ 1 ], 'appclass' );
+   my $extension = $_[ 0 ]->inflate_symbol( $_[ 1 ], 'extension' );
+
+   return $_[ 0 ]->inflate_path( $_[ 1 ], 'ctrldir', $name.$extension );
+}
+
 sub _build__l10n_attributes {
    return { gettext_catagory => NUL, };
 }

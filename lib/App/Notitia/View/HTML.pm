@@ -8,7 +8,6 @@ use Moo;
 
 with q(Web::Components::Role);
 with q(Web::Components::Role::TT);
-with q(Web::Components::Role::Forms::View);
 
 has '+moniker' => default => 'html';
 

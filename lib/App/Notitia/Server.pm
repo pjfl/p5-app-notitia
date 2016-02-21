@@ -13,7 +13,7 @@ use Web::Simple;
 
 # Private attributes
 has '_config_attr' => is => 'ro',   isa => HashRef,
-   builder         => sub { {} }, init_arg => 'config';
+   builder         => sub { { name => 'server' } }, init_arg => 'config';
 
 has '_usul'        => is => 'lazy', isa => Plinth,
    builder         => sub { Class::Usul->new( enhance $_[ 0 ]->_config_attr ) },

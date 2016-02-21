@@ -15,3 +15,11 @@
    [% Link( href, class, content, id ) -%]
 </span>
 [% END -%]
+[% MACRO RotaTableRow( row ) BLOCK -%]
+   <tr>
+[%    FOR cell IN row -%]
+      <td class="[% cell.class %]" colspan=[% cell.colspan %]>
+         [% cell.val %]</td>
+[%    END -%]
+   </tr>
+[% END -%]

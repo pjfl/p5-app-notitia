@@ -58,6 +58,7 @@ CREATE TABLE `rota` (
   `date` datetime NULL DEFAULT '0000-00-00',
   INDEX `rota_idx_type_id` (`type_id`),
   PRIMARY KEY (`id`),
+  UNIQUE `rota_type_id_date` (`type_id`, `date`),
   CONSTRAINT `rota_fk_type_id` FOREIGN KEY (`type_id`) REFERENCES `type` (`id`)
 ) ENGINE=InnoDB;
 
@@ -153,7 +154,7 @@ DROP TABLE IF EXISTS `slot`;
 CREATE TABLE `slot` (
   `shift_id` integer unsigned NOT NULL,
   `operator_id` integer unsigned NOT NULL,
-  `type` enum('controller', 'driver', 'rider', '0') NOT NULL DEFAULT '0',
+  `type` enum('controller', 'rider', 'driver', '0') NOT NULL DEFAULT '0',
   `subslot` smallint NOT NULL,
   `bike_requested` enum('0','1') NOT NULL DEFAULT '0',
   `vehicle_assigner_id` integer unsigned NULL,

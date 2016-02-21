@@ -35,7 +35,7 @@ sub HASH_CHAR () { chr 35     }
 
 sub VARCHAR_MAX_SIZE () { 255 }
 sub SHIFT_TYPE_ENUM  () { [ qw( day night ) ] }
-sub SLOT_TYPE_ENUM   () { [ qw( controller driver rider ) ] }
+sub SLOT_TYPE_ENUM   () { [ qw( controller rider driver ) ] }
 sub TYPE_TYPE_ENUM   () { [ qw( certification role rota vehicle ) ] }
 
 1;

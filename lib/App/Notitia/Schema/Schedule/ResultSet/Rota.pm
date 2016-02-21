@@ -13,7 +13,7 @@ sub find_rota {
    my $dtp        =  $schema->storage->datetime_parser;
    my $rota       =  $self->search
       ( { date    => $dtp->format_datetime( $date ),
-          type_id => $rota_type->id } )->first;
+          type_id => $rota_type->id } )->single;
 
    $rota or $rota =  $self->create
       ( { date    => $date, type_id => $rota_type->id } );

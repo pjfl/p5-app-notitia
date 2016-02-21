@@ -1,8 +1,7 @@
 <!-- Secondary Navigation -->
-[% IF page.mode != 'static' -%]
 <ul>
 [%    class = 'windows fade' -%]
-[%    IF page.authenticated -%]
+[% IF page.authenticated -%]
 [%       text = loc( 'Admin' ) -%]
 [%       tip  = loc( 'Admininstration interface' ) -%]
    <li>
@@ -18,17 +17,17 @@
                         'authentication', loc( 'Logout from the application' ),
                         'logout-user', 'logout' ) -%]
    </li>
-[%    ELSE -%]
+[% ELSE -%]
 [%       text = loc( 'Login' ) -%]
 [%       tip  = loc( 'Authenticate with the application' ) -%]
    <li>
 [%       LinkWithTips( '#', class, text, page.hint, tip, 'login-user' ) -%]
    </li>
-[%       text = loc( 'Register' ) -%]
-[%       tip  = loc( 'Register with the application' ) -%]
+[%       href = uri_for( 'change_password' ) -%]
+[%       text = loc( 'Change Password' ) -%]
+[%       tip  = loc( 'Change the password used to acess the application' ) -%]
    <li>
-[%       LinkWithTips( '#', class, text, page.hint, tip, 'create-user' ) -%]
+[%       LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
-[%    END -%]
-</ul>
 [% END -%]
+</ul>

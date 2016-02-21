@@ -1,14 +1,16 @@
 package App::Notitia::Model::Schedule;
 
 #use App::Notitia::Attributes;  # Will do namespace cleaning
-use Class::Usul::Types qw( LoadableClass Object );
+use App::Notitia::Constants qw( EXCEPTION_CLASS NUL SHIFT_TYPE_ENUM TRUE );
+use Class::Usul::Functions  qw( throw );
+use Class::Usul::Types      qw( LoadableClass Object );
+use Class::Usul::Time       qw( str2date_time time2str );
 use Moo;
 
 extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 #with    q(App::Notitia::Role::WebAuthorisation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
-with    q(Web::Components::Role::Forms);
 
 # Attribute constructors
 my $_build_schema = sub {
@@ -16,11 +18,11 @@ my $_build_schema = sub {
 
    $self->schema_class->config( $self->config );
 
-   return $self->schema_class->connect( @{ $self->connect_info }, $extra );
+   return $self->schema_class->connect( @{ $self->get_connect_info }, $extra );
 };
 
 my $_build_schema_class = sub {
-   return $_[ 0 ]->schema_classes->{ $_[ 0 ]->config->database };
+   return $_[ 0 ]->config->schema_classes->{ $_[ 0 ]->config->database };
 };
 
 # Public attributes
@@ -32,18 +34,162 @@ has 'schema'       => is => 'lazy', isa => Object,
 has 'schema_class' => is => 'lazy', isa => LoadableClass,
    builder         => $_build_schema_class;
 
-around 'load_page' => sub {
-   my ($orig, $self, $req, $page, @args) = @_;
+# Private class attributes
+my $_rota_types_id = {};
+my $_translations  = {};
 
-   $page = $orig->( $self, $req, $page, @args);
+# Private functions
+my $_loc = sub {
+   my ($req, $k) = @_; $_translations->{ my $locale = $req->locale } //= {};
 
-   $page->{template} = [ 'nav_panel', 'rota' ];
-   $page->{title   } = $req->loc( 'Rotas' );
+   return exists $_translations->{ $locale }->{ $k }
+               ? $_translations->{ $locale }->{ $k }
+               : $_translations->{ $locale }->{ $k } = $req->loc( $k );
+};
+
+my $_headers = sub {
+   return [ map { { val => $_loc->( $_[ 0 ], "rota_heading_${_}" ) } } 0 .. 4 ];
+};
+
+my $_events = sub {
+   my ($req, $rota, $rota_dt, $todays_events) = @_;
+
+   my $events = $rota->{events};
+
+   push @{ $events }, [ { val => $rota_dt->day_abbr, class => 'rota-day-abbr' },
+                        { val => $todays_events->next, colspan => 4 } ];
+   push @{ $events }, [ { val => $rota_dt->day, class => 'rota-day' },
+                        { val => $todays_events->next, colspan => 4 } ];
+
+   return;
+};
+
+my $_controllers = sub {
+   my ($req, $rota, $slot_rows, $limits) = @_;
+
+   my $shift_no = 0; my $controls = $rota->{controllers};
+
+   for my $shift_type (@{ SHIFT_TYPE_ENUM() }) {
+      my $max_slots = $limits->[ $shift_no++ ];
+
+      for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
+         my $k = "${shift_type}_controller_${subslot}";
+
+         push @{ $controls },
+            [ { val => $_loc->( $req, $k ), class => 'rota-header' },
+              { val => $slot_rows->{ $k }, colspan => 4 } ];
+      }
+   }
+
+   return;
+};
+
+my $_riders_n_drivers = sub {
+   my ($req, $rota, $slot_rows, $limits) = @_;
+
+   my $shift_no = 0; my $shifts = $rota->{shifts};
+
+   for my $shift_type (@{ SHIFT_TYPE_ENUM() }) {
+      my $max_slots = $limits->[ 2 + $shift_no ];
+      my $shift     = $shifts->[ $shift_no ] = {};
+      my $riders    = $shift->{riders } = [];
+      my $drivers   = $shift->{drivers} = [];
+
+      for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
+         my $k = "${shift_type}_rider_${subslot}";
+
+         push @{ $riders },
+            [ { val => $_loc->( $req, $k ), class => 'rota-header' },
+              { val => $slot_rows->{ $k }->{vehicle}, class => 'narrow' },
+              { val => $slot_rows->{ $k }->{operator} },
+              { val => $slot_rows->{ $k }->{bike_req}, class => 'narrow' },
+              { val => undef, class => 'narrow' }, ];
+      }
+
+      $max_slots = $limits->[ 4 + $shift_no ];
+
+      for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
+         my $k = "${shift_type}_driver_${subslot}";
+
+         push @{ $drivers },
+            [ { val => $_loc->( $req, $k ), class => 'rota-header' },
+              { val => undef },
+              { val => $slot_rows->{ $k }->{operator} },
+              { val => undef, class => 'narrow' },
+              { val => undef, class => 'narrow' }, ];
+      }
+
+      $shift_no++;
+   }
+
+   return;
+};
+
+my $_get_page = sub {
+   my ($req, $rota_name, $rota_date, $todays_events, $slot_rows, $limits) = @_;
+
+   my $rota_dt =  str2date_time $rota_date;
+   my $title   = (ucfirst $_loc->( $req, $rota_name )).' '
+               .  $_loc->( $req, 'rota for' ).' '.$rota_dt->month_name;
+   my $page    =  {
+      rota     => { controllers => [],
+                    events      => [],
+                    headers     => $_headers->( $req ),
+                    shifts      => [], },
+      template => [ 'nav_panel', 'rota' ],
+      title    => $title };
+   my $rota    =  $page->{rota};
+
+   $_events->( $req, $rota, $rota_dt, $todays_events );
+   $_controllers->( $req, $rota, $slot_rows, $limits );
+   $_riders_n_drivers->( $req, $rota, $slot_rows, $limits );
+
    return $page;
 };
 
+# Private methods
+my $_find_rota_type_id_for = sub {
+   exists $_rota_types_id->{ $_[ 1 ] } or $_rota_types_id->{ $_[ 1 ] }
+      = $_[ 0 ]->schema->resultset( 'Type' )->search
+         ( { name    => $_[ 1 ], type => 'rota' },
+           { columns => [ 'id' ] } )->single->id;
+
+   return $_rota_types_id->{ $_[ 1 ] };
+};
+
+# Public methods
 sub get_content {
-   my ($self, $req) = @_; return $self->get_stash( $req );
+   my ($self, $req) = @_;
+
+   my $params    = $req->uri_params;
+   my $today     = time2str '%Y-%m-%d';
+   my $name      = $params->( 0, { optional => TRUE } ) // 'main';
+   my $date      = $params->( 1, { optional => TRUE } ) // $today;
+   my $type_id   = $self->$_find_rota_type_id_for( $name );
+   my $slot_rs   = $self->schema->resultset( 'Slot' );
+   my $slots     = $slot_rs->search
+      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
+        { columns  => [ qw( bike_requested operator.name
+                            type vehicle.name subslot ) ],
+          join     => [ { 'shift' => 'rota' }, 'operator', 'vehicle' ],
+          prefetch => [ { 'shift' => 'rota' }, 'operator', 'vehicle' ] } );
+   my $event_rs  = $self->schema->resultset( 'Event' );
+   my $events    = $event_rs->search
+      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
+        { columns  => [ 'name' ], join => [ 'rota' ] } );
+   my $limits    = $self->config->slot_limits;
+   my $slot_rows = {};
+
+   for my $slot ($slots->all) {
+      $slot_rows->{ $slot->shift->type.'_'.$slot->type.'_'.$slot->subslot }
+         = { vehicle  =>  $slot->vehicle,
+             operator =>  $slot->operator,
+             bike_req => ($slot->bike_requested ? 'Y' : 'N') };
+   }
+
+   my $page = $_get_page->( $req, $name, $date, $events, $slot_rows, $limits );
+
+   return $self->get_stash( $req, $page );
 }
 
 1;

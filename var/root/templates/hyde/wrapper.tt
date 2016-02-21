@@ -8,8 +8,7 @@
    <meta name="description" content="[% loc( page.description ) %]">
    <meta name="keywords" content="[% page.keywords %]">
    <meta name="generator" content="[% config.title %] v[% page.application_version %]">
-   <link href="[% links.images %]favicon-[% prefs.theme %].png"
-          rel="icon" type="image/png">
+   <link href="[% links.images %]favicon.ico" rel="shortcut icon">
 [%    IF config.font -%]
    <link href="[% config.font %]" rel="stylesheet" type="text/css">
 [%    END -%]

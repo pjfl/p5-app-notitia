@@ -63,6 +63,8 @@ CREATE TABLE "rota" (
 
 CREATE INDEX "rota_idx_type_id" ON "rota" ("type_id");
 
+CREATE UNIQUE INDEX "rota_type_id_date" ON "rota" ("type_id", "date");
+
 DROP TABLE "certification";
 
 CREATE TABLE "certification" (

@@ -1,0 +1,70 @@
+# GNU Gettext Portable Object.
+# Copyright (C) 2016 RoxSoft.
+# Lazarus Long <lazarus@RoxSoft.co.uk>, 2016.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: App::Notitia 0.1\n"
+"PO-Revision-Date: 2016-02-21 00:00+0000\n"
+"Last-Translator: Lazarus Long <lazarus@RoxSoft.co.uk>\n"
+"Language-Team: English <Support@RoxSoft.co.uk>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Hint"
+msgstr "Information"
+
+msgid "Site Description"
+msgstr "People and resource scheduling"
+
+msgid "day_controller_0"
+msgstr "Ctrl. AM"
+
+msgid "day_controller_1"
+msgstr "Ctrl. PM"
+
+msgid "day_driver_0"
+msgstr "Day SD"
+
+msgid "day_rider_0"
+msgstr "Day North"
+
+msgid "day_rider_1"
+msgstr "Day Central"
+
+msgid "day_rider_2"
+msgstr "Day South"
+
+msgid "night_controller_0"
+msgstr "Ctrl. Night"
+
+msgid "night_driver_0"
+msgstr "Night SD"
+
+msgid "night_rider_0"
+msgstr "Night North"
+
+msgid "night_rider_1"
+msgstr "Night Central"
+
+msgid "night_rider_2"
+msgstr "Night South"
+
+msgid "rota_heading_0"
+msgstr "Shift"
+
+msgid "rota_heading_1"
+msgstr "Bike"
+
+msgid "rota_heading_2"
+msgstr "Name"
+
+msgid "rota_heading_3"
+msgstr "Bike Req."
+
+msgid "rota_heading_4"
+msgstr "C4"
