@@ -1,5 +1,5 @@
 <!-- Profile User -->
-<form action="[% links.base_uri %]user"
+<form action="[% links.base_uri %]user/profile"
      enctype="application/x-www-form-urlencoded"
       method="post" name="profile-user">
    <label  class="label" for="email">[% loc( 'Address' ) %]</label>

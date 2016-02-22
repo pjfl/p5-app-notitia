@@ -326,7 +326,7 @@ sub set_password {
    my ($self, $old, $new) = @_;
 
    $self->authenticate( $old, TRUE );
-   $self->password( $self->$_encrypt_password( $self->name, $new ) );
+   $self->password( $new );
    $self->password_expired( FALSE );
 
    return $self->update;
@@ -335,12 +335,10 @@ sub set_password {
 sub update {
    my ($self, $columns) = @_;
 
-   unless ($columns) { $self->validate; return $self->next::method }
+   $columns and $self->set_inflated_columns( $columns );
+   $columns = { $self->get_inflated_columns };
 
-   my $name; my $password;
-
-   exists $columns->{name    } and $name     = $columns->{name};
-   exists $columns->{password} and $password = $columns->{password};
+   my $name = $columns->{name}; my $password = $columns->{password};
 
    $password and not is_encrypted( $password ) and $columns->{password}
       = $self->$_encrypt_password( $name, $password );

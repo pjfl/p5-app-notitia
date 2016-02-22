@@ -45,9 +45,8 @@ is $e->args->[ 0 ]->class, 'ValidLength', 'Invalid name length';
 
 $person =   $person_rs->search( { name => 'admin' } )->first;
 $person and $person->delete;
-$person =   $person_rs->create( { name => 'admin', password => 'abcdefgh' } );
+$person =   $person_rs->create( { name => 'admin', password => '12345678' } );
 $person->activate;
-$person->set_password( 'abcdefgh', 'admin123' );
 
 done_testing;
 

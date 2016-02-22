@@ -13,7 +13,7 @@
 [%       LinkWithTips( '#', class, text, page.hint, tip, 'profile-user') -%]
    </li>
    <li>
-[%       FormWithButton( uri_for( 'logout' ), class, loc( 'Logout' ),
+[%       FormWithButton( uri_for( 'user/logout' ), class, loc( 'Logout' ),
                         'authentication', loc( 'Logout from the application' ),
                         'logout-user', 'logout' ) -%]
    </li>
@@ -23,7 +23,7 @@
    <li>
 [%       LinkWithTips( '#', class, text, page.hint, tip, 'login-user' ) -%]
    </li>
-[%       href = uri_for( 'change_password' ) -%]
+[%       href = uri_for( 'user/password' ) -%]
 [%       text = loc( 'Change Password' ) -%]
 [%       tip  = loc( 'Change the password used to acess the application' ) -%]
    <li>

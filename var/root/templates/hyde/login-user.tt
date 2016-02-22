@@ -1,5 +1,5 @@
 <!-- Login User -->
-<form action="[% links.base_uri %]login"
+<form action="[% links.base_uri %]user/login"
      enctype="application/x-www-form-urlencoded"
       method="post" name="login-user">
    <label  class="label" for="username">[% loc( 'User name' ) %]</label>

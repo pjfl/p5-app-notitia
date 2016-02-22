@@ -4,7 +4,7 @@ package App::Notitia::Model::User;
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( set_element_focus );
 use Class::Usul::Functions  qw( merge_attributes throw );
-use Class::Usul::Types      qw( LoadableClass Object );
+use Class::Usul::Types      qw( ArrayRef LoadableClass Object );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Unexpected::Functions   qw( Unspecified );
 use Moo;
@@ -30,15 +30,14 @@ my $_build_schema_class = sub {
 # Public attributes
 has '+moniker'     => default => 'user';
 
+has 'profile_keys' => is => 'ro',   isa => ArrayRef, builder => sub {
+   [ qw( address postcode email_address mobile_phone home_phone ) ] };
+
 has 'schema'       => is => 'lazy', isa => Object,
    builder         => $_build_schema;
 
 has 'schema_class' => is => 'lazy', isa => LoadableClass,
    builder         => $_build_schema_class;
-
-# Private class attributes
-my $_profile_keys = [ qw( address postcode email_address
-                          mobile_phone home_phone ) ];
 
 # Private methods
 my $_find_user_by_name = sub {
@@ -52,7 +51,38 @@ my $_find_user_by_name = sub {
 };
 
 # Public methods
-sub get_dialog { #  : Role(anon)
+sub change_password { # : Role(anon)
+   my ($self, $req) = @_;
+
+   my $page    =  {
+      user     => { username => $req->username },
+      template => [ 'nav_panel', 'change-password' ],
+      title    => $req->loc( 'Change Password' ) };
+
+   return $self->get_stash( $req, $page );
+}
+
+sub change_password_action {
+   my ($self, $req) = @_;
+
+   my $name     = $req->username;
+   my $params   = $req->body_params;
+   my $oldpass  = $params->( 'oldpass',  { raw => TRUE } );
+   my $password = $params->( 'password', { raw => TRUE } );
+   my $again    = $params->( 'again',    { raw => TRUE } );
+   my $user     = $self->$_find_user_by_name( $name );
+
+   $password eq $again
+      or throw 'Passwords do not match', rv => HTTP_EXPECTATION_FAILED;
+   $user->set_password( $oldpass, $password );
+   $req->session->username( $name ); $req->session->authenticated( TRUE );
+
+   my $message = [ 'User [_1] password changed', $name ];
+
+   return { redirect => { location => $req->base, message => $message } };
+}
+
+sub dialog { #  : Role(anon)
    my ($self, $req) = @_;
 
    my $params =  $req->query_params;
@@ -67,7 +97,7 @@ sub get_dialog { #  : Role(anon)
       if ($req->authenticated) {
          my $user = $self->$_find_user_by_name( $req->username );
 
-         merge_attributes $page->{user}, $user, $_profile_keys;
+         merge_attributes $page->{user}, $user, $self->profile_keys;
       }
 
       $page->{literal_js} = set_element_focus "${name}-user", 'address';
@@ -113,7 +143,7 @@ sub update_profile_action { # : Role(any)
    my $user   = $self->$_find_user_by_name( $name );
    my $args   = { raw => TRUE, optional => TRUE };
 
-   $user->$_( $params->( $_, $args ) ) for (@{ $_profile_keys });
+   $user->$_( $params->( $_, $args ) ) for (@{ $self->profile_keys });
 
    $user->update;
 
