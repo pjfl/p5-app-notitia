@@ -10,6 +10,7 @@ use JSON::MaybeXS          qw( );
 use Moo;
 
 with q(Web::Components::Role);
+with q(Web::Components::Role::TT);
 
 # Public attributes
 has '+moniker' => default => 'json';

@@ -1,7 +1,7 @@
 package App::Notitia::Model::Schedule;
 
 #use App::Notitia::Attributes;  # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS NUL SHIFT_TYPE_ENUM TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS NUL SHIFT_TYPE_ENUM SPC TRUE );
 use Class::Usul::Functions  qw( throw );
 use Class::Usul::Types      qw( LoadableClass Object );
 use Class::Usul::Time       qw( str2date_time time2str );
@@ -55,15 +55,16 @@ my $_events = sub {
    my ($req, $rota, $rota_dt, $todays_events) = @_;
 
    my $events = $rota->{events};
-   my $date   = $rota_dt->day_abbr.' '.$rota_dt->day;
+   my $date   = $rota_dt->day_abbr.SPC.$rota_dt->day;
 
-   push @{ $events }, [ { val => $date, class => 'rota-date' },
-                        { val => $todays_events->next, colspan => 4 } ];
+   push @{ $events }, [ { val     => $date, class => 'rota-date' },
+                        { val     => ucfirst( $todays_events->next // NUL ),
+                          colspan => 4 } ];
 
    while (defined (my $event = $todays_events->next)) {
-      push @{ $events }, [ { val => undef }, { val => $event, colspan => 4 } ];
+      push @{ $events }, [ { val => undef },
+                           { val => ucfirst( $event ), colspan => 4 } ];
    }
-
 
    return;
 };
@@ -103,11 +104,12 @@ my $_riders_n_drivers = sub {
          my $k = "${shift_type}_rider_${subslot}";
 
          push @{ $riders },
-            [ { val => $_loc->( $req, $k ), class => 'rota-header' },
-              { val => $slot_rows->{ $k }->{vehicle}, class => 'narrow' },
-              { val => $slot_rows->{ $k }->{operator} },
-              { val => $slot_rows->{ $k }->{bike_req}, class => 'narrow' },
-              { val => undef, class => 'narrow' }, ];
+            [ { val   => $_loc->( $req, $k ), class => 'rota-header' },
+              { val   => $slot_rows->{ $k }->{vehicle }, class => 'narrow' },
+              { val   => $slot_rows->{ $k }->{operator} },
+              { val   => $slot_rows->{ $k }->{bike_req},
+                class => 'centre narrow' },
+              { val   => $slot_rows->{ $k }->{ops_veh }, class => 'narrow' }, ];
       }
 
       $max_slots = $limits->[ 4 + $shift_no ];
@@ -120,7 +122,7 @@ my $_riders_n_drivers = sub {
               { val => undef },
               { val => $slot_rows->{ $k }->{operator} },
               { val => undef, class => 'narrow' },
-              { val => undef, class => 'narrow' }, ];
+              { val => $slot_rows->{ $k }->{ops_veh }, class => 'narrow' }, ];
       }
 
       $shift_no++;
@@ -133,8 +135,8 @@ my $_get_page = sub {
    my ($req, $rota_name, $rota_date, $todays_events, $slot_rows, $limits) = @_;
 
    my $rota_dt =  str2date_time $rota_date;
-   my $title   = (ucfirst $_loc->( $req, $rota_name )).' '
-               .  $_loc->( $req, 'rota for' ).' '.$rota_dt->month_name;
+   my $title   =  ucfirst( $_loc->( $req, $rota_name ) ).SPC
+               .  $_loc->( $req, 'rota for' ).SPC.$rota_dt->month_name;
    my $page    =  {
       rota     => { controllers => [],
                     events      => [],
@@ -149,6 +151,15 @@ my $_get_page = sub {
    $_riders_n_drivers->( $req, $rota, $slot_rows, $limits );
 
    return $page;
+};
+
+my $_operators_vehicle = sub {
+   my $slot    = shift;
+   my $pv      = $slot->personal_vehicles->first;
+   my $pv_type = $pv ? $pv->type : NUL;
+
+   return $pv_type eq '4x4' ? $pv_type
+        : $pv_type eq 'car' ? ucfirst( $pv_type ) : undef;
 };
 
 # Private methods
@@ -175,8 +186,9 @@ sub get_content {
       ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
         { columns  => [ qw( bike_requested operator.name
                             type vehicle.name subslot ) ],
-          join     => [ { 'shift' => 'rota' }, 'operator', 'vehicle' ],
-          prefetch => [ { 'shift' => 'rota' }, 'operator', 'vehicle' ] } );
+          join     => [ { 'shift' => 'rota' }, 'operator', 'vehicle', ],
+          prefetch => [ { 'shift' => 'rota' }, 'operator', 'vehicle',
+                        'personal_vehicles' ] } );
    my $event_rs  = $self->schema->resultset( 'Event' );
    my $events    = $event_rs->search
       ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
@@ -188,7 +200,8 @@ sub get_content {
       $slot_rows->{ $slot->shift->type.'_'.$slot->type.'_'.$slot->subslot }
          = { vehicle  =>  $slot->vehicle,
              operator =>  $slot->operator,
-             bike_req => ($slot->bike_requested ? 'Y' : 'N') };
+             bike_req => ($slot->bike_requested ? 'Y' : 'N'),
+             ops_veh  =>  $_operators_vehicle->( $slot ) };
    }
 
    my $page = $_get_page->( $req, $name, $date, $events, $slot_rows, $limits );

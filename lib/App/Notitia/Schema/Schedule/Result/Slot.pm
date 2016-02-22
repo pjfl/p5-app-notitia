@@ -29,9 +29,12 @@ $class->set_primary_key( 'shift_id', 'type', 'subslot' );
 
 $class->belongs_to( shift    => "${result}::Shift",   'shift_id' );
 $class->belongs_to( operator => "${result}::Person",  'operator_id' );
+$class->belongs_to( vehicle  => "${result}::Vehicle", 'vehicle_id', $left_join);
 $class->belongs_to( vehicle_assigner => "${result}::Person",
                     'vehicle_assigner_id', $left_join );
-$class->belongs_to( vehicle  => "${result}::Vehicle", 'vehicle_id', $left_join);
+
+$class->has_many  ( personal_vehicles => "${result}::Vehicle",
+                    { 'foreign.owner_id' => 'self.operator_id' } );
 
 # Private methods
 sub _as_string {

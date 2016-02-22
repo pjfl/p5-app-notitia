@@ -7,17 +7,10 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'root';
 
 sub dispatch_request {
-   sub (POST + /admin  | /admin/*  + ?*) { [ 'admin', 'from_request', @_ ] },
-   sub (GET  + /admin  | /admin/*  + ?*) { [ 'admin', 'get_content',  @_ ] },
-   sub (GET  + /dialog             + ?*) { [ 'sched', 'get_dialog',   @_ ] },
-   sub (POST + /login  | /logout   + ?*) { [ 'admin', 'from_request', @_ ] },
-   sub (GET  + /help/  | /help/**  + ?*) { [ 'help',  'get_content',  @_ ] },
+   sub (POST + /login  | /logout   + ?*) { [ 'user',  'from_request', @_ ] },
+   sub (GET  + /user/dialog        + ?*) { [ 'user',  'get_dialog',   @_ ] },
+   sub (POST + /user               + ?*) { [ 'user',  'from_request', @_ ] },
    sub (GET  + /rota   | /rota/**  + ?*) { [ 'sched', 'get_content',  @_ ] },
-   sub (GET  + /rss                + ?*) { [ 'sched', 'get_rss_feed', @_ ] },
-   sub (GET  + /search             + ?*) { [ 'sched', 'search',       @_ ] },
-   sub (POST + /user   | /user/*   + ?*) { [ 'admin', 'from_request', @_ ] },
-   sub (GET  + /user   | /user/*   + ?*) { [ 'admin', 'get_profile',  @_ ] },
-   sub (POST + /       | /**       + ?*) { [ 'sched', 'from_request', @_ ] },
    sub (GET  + /       | /index    + ?*) { [ 'sched', 'index',        @_ ] },
    sub (GET  + /**                 + ?*) { [ 'sched', 'not_found',    @_ ] };
 }

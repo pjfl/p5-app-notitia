@@ -67,4 +67,4 @@ msgid "rota_heading_3"
 msgstr "Bike Req."
 
 msgid "rota_heading_4"
-msgstr "C4"
+msgstr "Veh."

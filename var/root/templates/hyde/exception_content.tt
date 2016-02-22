@@ -1,7 +1,7 @@
 <!-- Exception Content -->
 <div class="unit four-fifths">
    <article>
-      <h1>[% page.title %]</h1>
+      <h4>[% page.title %]</h4>
       <!-- Content -->
 [% IF page.validation_error -%]
       <h3>[% loc( 'Form validation errors' ) %]</h3>
@@ -10,11 +10,11 @@
       <p>[% error %]</p>
 [% END -%]
 [% ELSE -%]
-      <h4>[% loc( 'Error Message' ) %]</h4>
+      <h5>[% loc( 'The following exception was thrown' ) %]</h5>
       <p>[% page.error %]</p>
 [% END %]
-      <p>[% loc( 'Exception thrown' ) _
-            time2str( ' on %Y-%m-%d at %H:%M hours', page.error.time ) %]</p>
-      <p>[% loc( 'HTTP status code' ) _  '&nbsp;' _ page.error.rv %]</p>
+      <h5>[% loc( 'Exception thrown' ) _
+            time2str( ' on %Y-%m-%d at %H:%M hours', page.error.time ) %]</h5>
+      <h5>[% loc( 'HTTP status code' ) _  '&nbsp;' _ page.error.rv %]</h5>
    </article>
 </div>

@@ -14,8 +14,9 @@ our @EXPORT_OK = qw( bool_data_type date_data_type enumerated_data_type enhance
                      foreign_key_data_type get_hashed_pw get_salt
                      is_encrypted new_salt nullable_foreign_key_data_type
                      nullable_varchar_data_type numerical_id_data_type
-                     serial_data_type set_on_create_datetime_data_type
-                     stash_functions varchar_data_type );
+                     serial_data_type set_element_focus
+                     set_on_create_datetime_data_type stash_functions
+                     varchar_data_type );
 
 # Public functions
 sub bool_data_type (;$) {
@@ -115,6 +116,14 @@ sub serial_data_type () {
             is_auto_increment => TRUE,
             is_nullable       => FALSE,
             is_numeric        => TRUE, };
+}
+
+sub set_element_focus ($$) {
+   my ($form, $name) = @_;
+
+   return [ "var form = document.forms[ '${form}' ];",
+            "var f = function() { behaviour.rebuild(); form.${name}.focus() };",
+            'f.delay( 100 );', ];
 }
 
 sub set_on_create_datetime_data_type () {

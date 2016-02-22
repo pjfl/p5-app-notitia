@@ -289,11 +289,12 @@ sub is_certified_for {
 
    $type //= $self->$_find_cert_type( $cert_name );
 
-   return $self->certs->find( $self->id, $type->id ) ? TRUE : FALSE;
+   return $type && $self->certs->find( $self->id, $type->id ) ? TRUE : FALSE;
 }
 
 sub is_endorsed_for {
-   return $_[ 0 ]->endorsements->find( $_[ 0 ]->id, $_[ 1 ] ) ? TRUE : FALSE;
+   return $_[ 1 ] && $_[ 0 ]->endorsements->find( $_[ 0 ]->id, $_[ 1 ] )
+        ? TRUE : FALSE;
 }
 
 sub is_member_of {
@@ -301,7 +302,7 @@ sub is_member_of {
 
    $type //= $self->$_find_role_type( $role_name );
 
-   return $self->roles->find( $self->id, $type->id ) ? TRUE : FALSE;
+   return $type && $self->roles->find( $self->id, $type->id ) ? TRUE : FALSE;
 }
 
 sub is_participent_of {
@@ -309,7 +310,8 @@ sub is_participent_of {
 
    $event //= $self->$_find_event_by( $event_name );
 
-   return $self->participents->find( $event->id, $self->id ) ? TRUE : FALSE;
+   return $event && $self->participents->find( $event->id, $self->id )
+        ? TRUE : FALSE;
 }
 
 sub list_roles {

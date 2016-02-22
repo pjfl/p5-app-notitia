@@ -43,6 +43,12 @@ $e = $EVAL_ERROR; is $e->class, 'ValidationErrors', 'Validation errors';
 
 is $e->args->[ 0 ]->class, 'ValidLength', 'Invalid name length';
 
+$person =   $person_rs->search( { name => 'admin' } )->first;
+$person and $person->delete;
+$person =   $person_rs->create( { name => 'admin', password => 'abcdefgh' } );
+$person->activate;
+$person->set_password( 'abcdefgh', 'admin123' );
+
 done_testing;
 
 # Local Variables:

@@ -2,36 +2,22 @@
 <form action="[% links.base_uri %]user"
      enctype="application/x-www-form-urlencoded"
       method="post" name="profile-user">
-   <label  class="label" for="email">[% loc( 'Email address' ) %]</label>
+   <label  class="label" for="email">[% loc( 'Address' ) %]</label>
    <input  class="standard-field" name="email" type="textfield"
-           value="[% page.email %]"><br/>
-   <label  class="label" for="password">[% loc( 'Password' ) %]</label>
-   <input  autocomplete="off" class="standard-field reveal" id="password"
-            name="password" type="password"><br/>
-   <label  class="label" for="again">[% loc( 'Again' ) %]</label>
-   <input  class="standard-field reveal" id="again"
-            name="again" type="password">
-   <br>
-   <label class="label" for="binding">[% loc( 'Key Bindings' ) %]</label>
-   <div class="container-group">
-[% FOR binding = page.keybindings -%]
-      <input name="binding" type="radio" value="[% binding %]"
-[%    IF binding == page.binding %]checked[% END %]>
-         <span class="label">[% ucfirst( binding ) %]</span><br>
-[% END -%]
-   </div>
+           value="[% page.user.address %]"><br/>
+   <label  class="label" for="email">[% loc( 'Postcode' ) %]</label>
+   <input  class="standard-field" name="email" type="textfield"
+           value="[% page.user.postcode %]"><br/>
+   <label  class="label" for="email">[% loc( 'Email Address' ) %]</label>
+   <input  class="standard-field" name="email" type="textfield"
+           value="[% page.user.email_address %]"><br/>
+   <label  class="label" for="email">[% loc( 'Mobile Phone' ) %]</label>
+   <input  class="standard-field" name="email" type="textfield"
+           value="[% page.user.mobile_phone %]"><br/>
+   <label  class="label" for="email">[% loc( 'Home Phone' ) %]</label>
+   <input  class="standard-field" name="email" type="textfield"
+           value="[% page.user.home_phone %]"><br/>
    <br>
    <button class="pull-right button" name="_method" type="submit"
            value="update_profile">[% loc( 'Update' ) %]</button>
-   <span class="label">[% loc( 'Language' ) %]</span>
-[% IF prefs.use_flags -%]
-[%    tip = loc( 'National flag of requested the language' ) -%]
-         <div class="info-container tips"
-              title="[% page.hint _ ' ~ ' _ tip %]">
-            <span class="flag_[% page.language %]"></span></div>
-[% ELSE -%]
-[%    tip = loc( 'Requested language' ) -%]
-         <div class="info-container tips"
-              title="[% page.hint _ ' ~ ' _ tip %]">[% page.language %]</div>
-[% END -%]
 </form>
