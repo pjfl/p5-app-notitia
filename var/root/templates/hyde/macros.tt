@@ -7,7 +7,7 @@
    <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
    <input [% IF field.checked %]checked="checked"[% END %]
       name="[% field.name %]" type="checkbox" value="[% field.value %]"></div>
-[%    IF field.clear %]<br/>[% END %]
+[%    IF !field.nobreak %]<br/>[% END %]
 [% END -%]
 [% MACRO DateField( field ) BLOCK -%]
    <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>

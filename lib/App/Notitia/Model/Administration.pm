@@ -1,7 +1,7 @@
 package App::Notitia::Model::Administration;
 
 #use App::Notitia::Attributes;  # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS NUL SPC TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE TRUE );
 use App::Notitia::Util      qw( loc );
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref throw );
@@ -59,7 +59,8 @@ my $_bind_person_fields = sub {
 
    return {
       active           => $_bind->( 'active', TRUE,
-                                    { checked     => $user->active } ),
+                                    { checked     => $user->active,
+                                      nobreak     => TRUE, } ),
       address          => $_bind->( 'address',       $user->address ),
       dob              => $_bind->( 'dob',           $user->dob ),
       email_address    => $_bind->( 'email_address', $user->email_address ),
@@ -74,7 +75,6 @@ my $_bind_person_fields = sub {
                                     { class       => 'autosize' } ),
       password_expired => $_bind->( 'password_expired', TRUE,
                                     { checked     => $user->password_expired,
-                                      clear       => TRUE,
                                       container_class => 'right' } ),
       postcode         => $_bind->( 'postcode',      $user->postcode ),
       resigned         => $_bind->( 'resigned',      $user->resigned ),
