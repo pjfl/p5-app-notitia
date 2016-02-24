@@ -12,11 +12,14 @@ use Scalar::Util               qw( weaken );
 
 our @EXPORT_OK = qw( bool_data_type date_data_type enumerated_data_type enhance
                      foreign_key_data_type get_hashed_pw get_salt
-                     is_encrypted new_salt nullable_foreign_key_data_type
+                     is_encrypted loc new_salt nullable_foreign_key_data_type
                      nullable_varchar_data_type numerical_id_data_type
                      serial_data_type set_element_focus
                      set_on_create_datetime_data_type stash_functions
                      varchar_data_type );
+
+# Private class attributes
+my $_translations  = {};
 
 # Public functions
 sub bool_data_type (;$) {
@@ -80,6 +83,14 @@ sub is_encrypted ($) {
    return $_[ 0 ] =~ m{ \A \$\d+[a]?\$ }mx ? TRUE : FALSE;
 }
 
+sub loc ($$) {
+   my ($req, $k) = @_; $_translations->{ my $locale = $req->locale } //= {};
+
+   return exists $_translations->{ $locale }->{ $k }
+               ? $_translations->{ $locale }->{ $k }
+               : $_translations->{ $locale }->{ $k } = $req->loc( $k );
+}
+
 sub new_salt ($$) {
    my ($type, $lf) = @_;
 
@@ -131,14 +142,14 @@ sub set_on_create_datetime_data_type () {
 }
 
 sub stash_functions ($$$) {
-   my ($app, $src, $dest) = @_; weaken $src;
+   my ($app, $req, $dest) = @_; weaken $req;
 
    $dest->{is_member} = \&is_member;
-   $dest->{loc      } = sub { $src->loc( @_ ) };
+   $dest->{loc      } = sub { loc( $req, $_[ 0 ] ) };
    $dest->{str2time } = \&str2time;
    $dest->{time2str } = \&time2str;
    $dest->{ucfirst  } = sub { ucfirst $_[ 0 ] };
-   $dest->{uri_for  } = sub { $src->uri_for( @_ ), };
+   $dest->{uri_for  } = sub { $req->uri_for( @_ ), };
    return;
 }
 

@@ -11,7 +11,7 @@ use App::Notitia::Schema;
 
 my $connection =  App::Notitia::Schema->new
    ( config    => { appclass => 'App::Notitia', tempdir => 't' } );
-my $schema     =  $connection->schedule;
+my $schema     =  $connection->schema;
 my $person_rs  =  $schema->resultset( 'Person' );
 my $person     =  $person_rs->search( { name => 'john' } )->first;
 

@@ -12,7 +12,7 @@ use Class::Usul::Time qw( str2date_time time2str );
 
 my $connection =  App::Notitia::Schema->new
    ( config    => { appclass => 'App::Notitia', tempdir => 't' } );
-my $schema     =  $connection->schedule;
+my $schema     =  $connection->schema;
 my $vehicle_rs =  $schema->resultset( 'Vehicle' );
 my $vehicle    =  $vehicle_rs->search( { vrn => 'PJ06KZV' } )->first;
 my $date       =  str2date_time time2str '%Y-%m-%d';

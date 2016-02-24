@@ -12,7 +12,7 @@ use Class::Usul::Time qw( str2date_time time2str );
 
 my $connection =  App::Notitia::Schema->new
    ( config    => { appclass => 'App::Notitia', tempdir => 't' } );
-my $schema     =  $connection->schedule;
+my $schema     =  $connection->schema;
 my $event_rs   =  $schema->resultset( 'Event' );
 my $event      =  $event_rs->search( { name => 'tinshaking' } )->first;
 my $date       =  str2date_time time2str '%Y-%m-%d';

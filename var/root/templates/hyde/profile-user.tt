@@ -1,23 +1,13 @@
+[% PROCESS 'hyde/macros.tt' -%]
 <!-- Profile User -->
 <form action="[% links.base_uri %]user/profile"
      enctype="application/x-www-form-urlencoded"
       method="post" name="profile-user">
-   <label  class="label" for="email">[% loc( 'Address' ) %]</label>
-   <input  class="standard-field" name="email" type="textfield"
-           value="[% page.user.address %]"><br/>
-   <label  class="label" for="email">[% loc( 'Postcode' ) %]</label>
-   <input  class="standard-field" name="email" type="textfield"
-           value="[% page.user.postcode %]"><br/>
-   <label  class="label" for="email">[% loc( 'Email Address' ) %]</label>
-   <input  class="standard-field" name="email" type="textfield"
-           value="[% page.user.email_address %]"><br/>
-   <label  class="label" for="email">[% loc( 'Mobile Phone' ) %]</label>
-   <input  class="standard-field" name="email" type="textfield"
-           value="[% page.user.mobile_phone %]"><br/>
-   <label  class="label" for="email">[% loc( 'Home Phone' ) %]</label>
-   <input  class="standard-field" name="email" type="textfield"
-           value="[% page.user.home_phone %]"><br/>
-   <br>
-   <button class="pull-right button" name="_method" type="submit"
-           value="update_profile">[% loc( 'Update' ) %]</button>
+[% TextField( page.fields.username ) -%]
+[% TextField( page.fields.address ) -%]
+[% TextField( page.fields.postcode ) -%]
+[% TextField( page.fields.email_address ) -%]
+[% TextField( page.fields.mobile_phone ) -%]
+[% TextField( page.fields.home_phone ) -%]
+[%    Button( page.fields.update ) -%]
 </form>

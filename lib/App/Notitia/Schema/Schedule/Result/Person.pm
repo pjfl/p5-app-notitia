@@ -318,8 +318,7 @@ sub list_roles {
    my $self = shift;
 
    return [ map { $_->type->name }
-            $self->roles->search( { member   => $self->id },
-                                  { prefetch => 'type'    } )->all ];
+            $self->roles->search( {}, { prefetch => 'type' } )->all ];
 }
 
 sub set_password {

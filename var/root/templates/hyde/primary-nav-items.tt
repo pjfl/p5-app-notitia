@@ -3,24 +3,25 @@
 [%    class = 'windows fade' -%]
 [%    text  = loc( 'Documentation' ) -%]
 [%    tip   = loc( 'Documentation pages for the application' ) -%]
+[%    href  = uri_for( 'docs' ) -%]
    <li>
-[%    LinkWithTips( links.docs_url, 'fade', text, page.hint, tip ) -%]
+[%    LinkWithTips( href, 'fade', text, page.hint, tip ) -%]
    </li>
-[%    text = loc( 'Events' ) -%]
-[%    tip  = loc( 'Blog posts about upcoming events' ) -%]
-[%    href = uri_for( 'posts' ) -%]
-   <li>
-[%    LinkWithTips( href, class, text, page.hint, tip ) -%]
-   </li>
-[%    text = loc( 'Rota' ) -%]
-[%    tip  = loc( 'Scheduled rotas' ) -%]
-[%    href = uri_for( 'rota' ) -%]
+[%    text  = loc( 'Events' ) -%]
+[%    tip   = loc( 'Blog posts about upcoming events' ) -%]
+[%    href  = uri_for( 'posts' ) -%]
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
-[%    text = '<span class="hide-on-mobiles">' _ loc( 'View on' )
-           _ ' </span>GitHub' -%]
-[%    tip  = loc( 'View the source code repository' ) -%]
+[%    text  = loc( 'Rota' ) -%]
+[%    tip   = loc( 'Scheduled rotas' ) -%]
+[%    href  = uri_for( 'rota' ) -%]
+   <li>
+[%    LinkWithTips( href, class, text, page.hint, tip ) -%]
+   </li>
+[%    text  = '<span class="hide-on-mobiles">' _ loc( 'View on' )
+            _ ' </span>GitHub' -%]
+[%    tip   = loc( 'View the source code repository' ) -%]
    <li>
 [%    LinkWithTips( config.repo_url, 'fade', text, page.hint, tip ) -%]
    </li>

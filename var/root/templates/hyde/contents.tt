@@ -3,10 +3,10 @@
    <aside>
 [% depth        = 0 -%]
 [% class        = 'aj-nav folder fade' -%]
-[% file_title   = loc( 'File Path' ) -%]
-[% folder_title = loc( 'Folder Path' ) -%]
+[% file_title   = loc( 'Menu Item' ) -%]
+[% folder_title = loc( 'Menu Group' ) -%]
       <ul class="nav nav-list">
-[% FOREACH node = nav -%]
+[% FOR node IN nav -%]
 [%    WHILE node.depth < depth; depth = depth - 1 -%]
             </ul>
          </li>

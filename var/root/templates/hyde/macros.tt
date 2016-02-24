@@ -1,3 +1,22 @@
+[% MACRO Button( field ) BLOCK -%]
+   <button class="button [% field.class %]" name="_method" type="submit"
+           value="[% field.value %]">[% loc( field.label ) %]</button>
+[% END -%]
+[% MACRO CheckBox( field ) BLOCK -%]
+   <div class="container-group [% field.container_class %]">
+   <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
+   <input [% IF field.checked %]checked="checked"[% END %]
+      name="[% field.name %]" type="checkbox" value="[% field.value %]"></div>
+[%    IF field.clear %]<br/>[% END %]
+[% END -%]
+[% MACRO DateField( field ) BLOCK -%]
+   <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
+   <input
+[%    IF field.autocomplete %]autocomplete="[% field.autocomplete %]"[% END -%]
+[%    IF field.disabled %]disabled="disabled"[% END -%]
+      class="standard-field [% field.class %]" id="[% field.name %]"
+       name="[% field.name %]" type="date" value="[% field.value %]"><br/>
+[% END -%]
 [% MACRO FormWithButton( href, class, content, form, tip, id, value ) BLOCK -%]
 <form action="[% href %]" enctype="application/x-www-form-urlencoded"
       method="post" name="[% form %]">
@@ -15,11 +34,37 @@
    [% Link( href, class, content, id ) -%]
 </span>
 [% END -%]
-[% MACRO RotaTableRow( row ) BLOCK -%]
+[% MACRO PasswordField( field ) BLOCK -%]
+   <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
+   <input class="standard-field [% field.class %]" id="[% field.name %]"
+           name="[% field.name %]" type="password"><br/>
+[% END -%]
+[% MACRO Select( field ) BLOCK -%]
+   <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
+   <select class="standard-field">
+[%    FOR option IN field.value %]
+      <option value="[% option.value %]">[% loc( option.label ) %]</option>
+[%    END -%]
+   </select><br/>
+[% END -%]
+[% MACRO TableRow( row ) BLOCK -%]
    <tr>
 [%    FOR cell IN row -%]
       <td class="[% cell.class %]" colspan=[% cell.colspan %]>
          [% cell.val %]</td>
 [%    END -%]
    </tr>
+[% END -%]
+[% MACRO TextArea( field ) BLOCK -%]
+   <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
+   <input class="standard-field [% field.class %]" id="[% field.name %]"
+      name="[% field.name %]" type="textarea" value="[% field.value %]"><br/>
+[% END -%]
+[% MACRO TextField( field ) BLOCK -%]
+   <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
+   <input
+[%    IF field.autocomplete %]autocomplete="[% field.autocomplete %]"[% END -%]
+[%    IF field.disabled %]disabled="disabled"[% END -%]
+      class="standard-field [% field.class %]" id="[% field.name %]"
+       name="[% field.name %]" type="textfield" value="[% field.value %]"><br/>
 [% END -%]

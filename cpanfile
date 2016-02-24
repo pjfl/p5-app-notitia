@@ -1,3 +1,4 @@
+requires "Class::Null" => "2.110730";
 requires "Class::Usul" => "v0.72.0";
 requires "Cpanel::JSON::XS" => "3.0115";
 requires "Crypt::Eksblowfish" => "0.009";

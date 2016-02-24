@@ -3,9 +3,9 @@ package App::Notitia::Model;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use Class::Usul::Functions  qw( throw );
+use Class::Usul::Functions  qw( exception throw );
 use Class::Usul::Types      qw( Plinth );
-use HTTP::Status            qw( HTTP_BAD_REQUEST HTTP_OK );
+use HTTP::Status            qw( HTTP_BAD_REQUEST HTTP_NOT_FOUND HTTP_OK );
 use Scalar::Util            qw( blessed );
 use Unexpected::Functions   qw( ValidationErrors );
 use Moo;
@@ -57,6 +57,15 @@ sub initialise_stash {
 
 sub load_page {
    my ($self, $req, $page) = @_; $page //= {}; return $page;
+}
+
+sub not_found {
+   my ($self, $req) = @_;
+
+   my $want = join '/', @{ $req->uri_params->() // [] };
+   my $e    = exception 'URI [_1] not found', [ $want ], rv => HTTP_NOT_FOUND;
+
+   return $self->exception_handler( $req, $e );
 }
 
 1;

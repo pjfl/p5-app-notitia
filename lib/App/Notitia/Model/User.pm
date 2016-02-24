@@ -2,9 +2,9 @@ package App::Notitia::Model::User;
 
 #use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Util      qw( set_element_focus );
-use Class::Usul::Functions  qw( merge_attributes throw );
-use Class::Usul::Types      qw( ArrayRef LoadableClass Object );
+use App::Notitia::Util      qw( loc set_element_focus );
+use Class::Usul::Functions  qw( throw );
+use Class::Usul::Types      qw( ArrayRef );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Unexpected::Functions   qw( Unspecified );
 use Moo;
@@ -13,33 +13,35 @@ extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 #with    q(App::Notitia::Role::WebAuthorisation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
-
-# Attribute constructors
-my $_build_schema = sub {
-   my $self = shift; my $extra = $self->config->connect_params;
-
-   $self->schema_class->config( $self->config );
-
-   return $self->schema_class->connect( @{ $self->get_connect_info }, $extra );
-};
-
-my $_build_schema_class = sub {
-   return $_[ 0 ]->config->schema_classes->{ $_[ 0 ]->config->database };
-};
+with    q(App::Notitia::Role::Schema);
 
 # Public attributes
-has '+moniker'     => default => 'user';
+has '+moniker' => default => 'user';
 
-has 'profile_keys' => is => 'ro',   isa => ArrayRef, builder => sub {
+has 'profile_keys' => is => 'ro', isa => ArrayRef, builder => sub {
    [ qw( address postcode email_address mobile_phone home_phone ) ] };
 
-has 'schema'       => is => 'lazy', isa => Object,
-   builder         => $_build_schema;
+# Private functions
+my $_bind_value = sub {
+   my ($fields, $src, $k) = @_;
 
-has 'schema_class' => is => 'lazy', isa => LoadableClass,
-   builder         => $_build_schema_class;
+   $fields->{ $k } = { label => $k,  name => $k, value => $src->$k()  };
+
+   return;
+};
 
 # Private methods
+my $_dialog_stash = sub {
+   my ($self, $req, $layout) = @_; my $stash = $self->initialise_stash( $req );
+
+   $stash->{page} = $self->load_page( $req, {
+      fields  => {}, layout  => $layout,
+      meta    => { id => $req->query_params->( 'id' ), }, } );
+   $stash->{view} = 'json';
+
+   return $stash;
+};
+
 my $_find_user_by_name = sub {
    my ($self, $name) = @_;
 
@@ -54,10 +56,26 @@ my $_find_user_by_name = sub {
 sub change_password { # : Role(anon)
    my ($self, $req) = @_;
 
-   my $page    =  {
-      user     => { username => $req->username },
-      template => [ 'nav_panel', 'change-password' ],
-      title    => $req->loc( 'Change Password' ) };
+   my $page          =  {
+      fields         => {
+         again       => { class    => 'reveal',
+                          label    => 'again',        name => 'again' },
+         oldpass     => { label    => 'old_password', name => 'oldpass' },
+         password    => { autocomplete => 'off',     class => 'reveal',
+                          label    => 'new_password', name => 'password' },
+         update      => { class    => 'right',       label => 'update',
+                          value    => 'change_password' },
+         username    => { disabled => TRUE,          label => 'username',
+                          name     => 'username',    value => $req->username }},
+      literal_js     =>
+         "behaviour.config.inputs[ 'again' ]
+             = { event     : [ 'focus', 'blur' ],
+                 method    : [ 'show_password', 'hide_password' ] };
+          behaviour.config.inputs[ 'password' ]
+             = { event     : [ 'focus', 'blur' ],
+                 method    : [ 'show_password', 'hide_password' ] };",
+      template       => [ 'nav_panel', 'change-password' ],
+      title          => loc( $req, 'change_password_title' ) };
 
    return $self->get_stash( $req, $page );
 }
@@ -82,31 +100,6 @@ sub change_password_action {
    return { redirect => { location => $req->base, message => $message } };
 }
 
-sub dialog { #  : Role(anon)
-   my ($self, $req) = @_;
-
-   my $params =  $req->query_params;
-   my $name   =  $params->( 'name' );
-   my $stash  =  $self->initialise_stash( $req ); $stash->{view} = 'json';
-   my $page   =  $stash->{page} = $self->load_page( $req, {
-      layout  => "${name}-user",
-      meta    => { id => $params->( 'id' ), },
-      user    => {}, } );
-
-   if ($name eq 'profile') {
-      if ($req->authenticated) {
-         my $user = $self->$_find_user_by_name( $req->username );
-
-         merge_attributes $page->{user}, $user, $self->profile_keys;
-      }
-
-      $page->{literal_js} = set_element_focus "${name}-user", 'address';
-   }
-   else { $page->{literal_js} = set_element_focus "${name}-user", 'username' }
-
-   return $stash;
-}
-
 sub login_action  { # : Role(anon)
    my ($self, $req) = @_; my $message;
 
@@ -122,17 +115,59 @@ sub login_action  { # : Role(anon)
    return { redirect => { location => $req->base, message => $message } };
 }
 
+sub login_dialog { #  : Role(anon)
+   my ($self, $req) = @_;
+
+   my $stash = $self->$_dialog_stash( $req, 'login-user' );
+   my $page  = $stash->{page};
+
+   $page->{fields}->{login   } = {
+      class => 'right', label => 'login', value => 'login', };
+   $page->{fields}->{password} = {
+      label => 'password',  name => 'password', };
+   $page->{fields}->{username} = {
+      label => 'username', name => 'username', value => $req->username, };
+   $page->{literal_js} = set_element_focus 'login-user', 'username';
+
+   return $stash;
+}
+
 sub logout_action { # : Role(any)
-   my ($self, $req) = @_; my ($location, $message);
+   my ($self, $req) = @_; my $location = $req->base; my $message;
 
    if ($req->authenticated) {
-      $location = $req->base;
       $message  = [ 'User [_1] logged out', $req->username ];
       $req->session->authenticated( FALSE );
    }
-   else { $location = $req->uri; $message = [ 'User not logged in' ] }
+   else { $message = [ 'User not logged in' ] }
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub profile_dialog { #  : Role(anon)
+   my ($self, $req) = @_;
+
+   my $stash = $self->$_dialog_stash( $req, 'profile-user' );
+   my $page  = $stash->{page};
+
+   if ($req->authenticated) {
+      my $user   = $self->$_find_user_by_name( $req->username );
+      my $fields = $page->{fields};
+
+      $fields->{username} = { disabled => TRUE, label => 'username',
+                              name     => 'username', value => $user->name };
+      $_bind_value->( $fields, $user, 'address' );
+      $_bind_value->( $fields, $user, 'postcode' );
+      $_bind_value->( $fields, $user, 'email_address' );
+      $_bind_value->( $fields, $user, 'mobile_phone' );
+      $_bind_value->( $fields, $user, 'home_phone' );
+      $fields->{update} = {
+         class => 'right', label => 'update', value => 'update_profile', };
+   }
+
+   $page->{literal_js} = set_element_focus 'profile-user', 'address';
+
+   return $stash;
 }
 
 sub update_profile_action { # : Role(any)
@@ -145,9 +180,7 @@ sub update_profile_action { # : Role(any)
 
    $user->$_( $params->( $_, $args ) ) for (@{ $self->profile_keys });
 
-   $user->update;
-
-   my $message = [ 'User [_1] profile updated', $name ];
+   $user->update; my $message = [ 'User [_1] profile updated', $name ];
 
    return { redirect => { location => $req->base, message => $message } };
 }

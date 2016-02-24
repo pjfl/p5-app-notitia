@@ -7,10 +7,9 @@
 [%    INCLUDE 'hyde/contents_mobile.tt' -%]
       <div class="unit four-fifths">
          <article>
-            <h1>[% loc( config.description ) %]</h1>
+            <h4>[% page.title %]</h4>
             <!-- Template [% page.template.1 %] -->
 [%    path = 'hyde/' _ page.template.1  _ '_content.tt'; INCLUDE $path -%]
-[%    INCLUDE 'hyde/section_nav.tt' -%]
          </article>
       </div>
 [%    INCLUDE 'hyde/contents.tt' -%]

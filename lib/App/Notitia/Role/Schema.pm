@@ -1,14 +1,31 @@
-package App::Notitia;
+package App::Notitia::Role::Schema;
 
-use 5.010001;
-use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 22 $ =~ /\d+/gmx );
+use namespace::autoclean;
 
-use Class::Usul::Functions  qw( ns_environment );
+use Class::Usul::Types qw( LoadableClass Object );
+use Moo::Role;
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
-}
+requires qw( config get_connect_info );
+
+# Attribute constructors
+my $_build_schema = sub {
+   my $self = shift; my $extra = $self->config->connect_params;
+
+   $self->schema_class->config( $self->config );
+
+   return $self->schema_class->connect( @{ $self->get_connect_info }, $extra );
+};
+
+my $_build_schema_class = sub {
+   return $_[ 0 ]->config->schema_classes->{ $_[ 0 ]->config->database };
+};
+
+# Public attributes
+has 'schema'       => is => 'lazy', isa => Object,
+   builder         => $_build_schema;
+
+has 'schema_class' => is => 'lazy', isa => LoadableClass,
+   builder         => $_build_schema_class;
 
 1;
 
@@ -20,11 +37,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Role::Schema - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Role::Schema;
    # Brief but working code examples
 
 =head1 Description

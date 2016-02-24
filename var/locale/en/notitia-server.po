@@ -21,6 +21,27 @@ msgstr "Information"
 msgid "Site Description"
 msgstr "People and resource scheduling"
 
+msgid "active"
+msgstr "Active"
+
+msgid "address"
+msgstr "Address"
+
+msgid "again"
+msgstr "Again"
+
+msgid "asset_manager"
+msgstr "Asset Manager"
+
+msgid "bike_rider"
+msgstr "Bike Rider"
+
+msgid "change_password_title"
+msgstr "Change Password"
+
+msgid "create"
+msgstr "Create"
+
 msgid "day_controller_0"
 msgstr "Ctrl. AM"
 
@@ -39,6 +60,39 @@ msgstr "Day Central"
 msgid "day_rider_2"
 msgstr "Day South"
 
+msgid "dob"
+msgstr "Date of Birth"
+
+msgid "email_address"
+msgstr "Email Address"
+
+msgid "first_name"
+msgstr "First Name"
+
+msgid "home_phone"
+msgstr "Home Phone"
+
+msgid "joined"
+msgstr "Joined"
+
+msgid "last_name"
+msgstr "Last Name"
+
+msgid "login"
+msgstr "Login"
+
+msgid "main_index_title"
+msgstr "Welcome"
+
+msgid "mobile_phone"
+msgstr "Mobile Phone"
+
+msgid "new_password"
+msgstr "New Password"
+
+msgid "next_of_kin"
+msgstr "Next of Kin"
+
 msgid "night_controller_0"
 msgstr "Ctrl. Night"
 
@@ -54,6 +108,33 @@ msgstr "Night Central"
 msgid "night_rider_2"
 msgstr "Night South"
 
+msgid "notes"
+msgstr "Notes"
+
+msgid "old_password"
+msgstr "Old Password"
+
+msgid "password"
+msgstr "Password"
+
+msgid "password_expired"
+msgstr "Password Expired"
+
+msgid "person_administration"
+msgstr "Person Administration"
+
+msgid "person_administration_tip"
+msgstr "Administer person records"
+
+msgid "postcode"
+msgstr "Postcode"
+
+msgid "resigned"
+msgstr "Resigned"
+
+msgid "roles"
+msgstr "Roles"
+
 msgid "rota_heading_0"
 msgstr "Shift"
 
@@ -68,3 +149,12 @@ msgstr "Bike Req."
 
 msgid "rota_heading_4"
 msgstr "Veh."
+
+msgid "subscription"
+msgstr "Subscription"
+
+msgid "update"
+msgstr "Update"
+
+msgid "username"
+msgstr "User Name"

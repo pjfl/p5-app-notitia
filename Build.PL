@@ -20,6 +20,7 @@ my $prereqs  = {
     'CSS::LESS' => 'v0.0.3'
   },
   'requires' => {
+    'Class::Null' => '2.110730',
     'Class::Usul' => 'v0.72.0',
     'Cpanel::JSON::XS' => '3.0115',
     'Crypt::Eksblowfish' => '0.009',

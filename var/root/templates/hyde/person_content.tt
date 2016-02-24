@@ -1,0 +1,30 @@
+<!-- Person Content -->
+<div class="unit four-fifths">
+   <article class="skinny">
+      <h4>[% page.title %]</h4>
+      <form action="[% uri_for( 'user' ) %]"
+           enctype="application/x-www-form-urlencoded"
+            method="post" name="person-admin">
+[% TextField( page.fields.username ) -%]
+[% IF page.fields.username.value -%]
+[%    CheckBox( page.fields.active ) -%]
+[%    CheckBox( page.fields.password_expired ) -%]
+[% END -%]
+[% TextField( page.fields.first_name ) -%]
+[% TextField( page.fields.last_name ) -%]
+[% TextField( page.fields.address ) -%]
+[% TextField( page.fields.postcode ) -%]
+[% TextField( page.fields.email_address ) -%]
+[% TextField( page.fields.mobile_phone ) -%]
+[% TextField( page.fields.home_phone ) -%]
+[% Select( page.fields.roles ) -%]
+[% TextField( page.fields.next_of_kin ) -%]
+[% DateField( page.fields.dob ) -%]
+[% DateField( page.fields.joined ) -%]
+[% DateField( page.fields.resigned ) -%]
+[% DateField( page.fields.subscription ) -%]
+[% TextArea( page.fields.notes ) -%]
+[% Button( page.fields.save ) -%]
+      </form>
+   </article>
+</div>

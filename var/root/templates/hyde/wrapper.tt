@@ -2,7 +2,7 @@
 <html lang="[% page.language %]">
 <head>
    <meta charset="utf-8">
-   <title>[% config.title %] - [% loc( page.title ) %]</title>
+   <title>[% config.title %] - [% page.title %]</title>
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <meta name="apple-mobile-web-app-capable" content="yes" />
    <meta name="description" content="[% loc( page.description ) %]">

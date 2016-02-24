@@ -4,26 +4,13 @@ use namespace::autoclean;
 
 use App::Notitia;
 use App::Notitia::Constants qw( OK TRUE );
-use Class::Usul::Types      qw( LoadableClass Object );
 use Moo;
 
 extends q(Class::Usul::Schema);
+with    q(App::Notitia::Role::Schema);
 
 our $VERSION         = $App::Notitia::VERSION;
 my ($schema_version) = $VERSION =~ m{ (\d+\.\d+) }mx;
-
-# Attribute constructors
-my $_build_schedule = sub {
-   my $self = shift; my $extra = $self->config->connect_params;
-
-   $self->schedule_class->config( $self->config );
-
-   return $self->schedule_class->connect( @{ $self->connect_info }, $extra );
-};
-
-my $_build_schedule_class = sub {
-   return $_[ 0 ]->schema_classes->{ $_[ 0 ]->config->database };
-};
 
 # Public attributes (override defaults in base class)
 has '+config_class'   => default => 'App::Notitia::Config';
@@ -34,23 +21,17 @@ has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
 has '+schema_version' => default => $schema_version;
 
-has 'schedule'        => is => 'lazy', isa => Object,
-   builder            => $_build_schedule;
-
-has 'schedule_class'  => is => 'lazy', isa => LoadableClass,
-   builder            => $_build_schedule_class;
-
 # Construction
 around 'deploy_file' => sub {
    my ($orig, $self, @args) = @_;
 
-   $self->config->appclass->env_var( 'buld_insert', TRUE );
+   $self->config->appclass->env_var( 'bulk_insert', TRUE );
 
    return $orig->( $self, @args );
 };
 
 # Public methods
-sub display_connect_info : method {
+sub dump_connect_attr : method {
    my $self = shift; $self->dumper( $self->connect_info ); return OK;
 }
 
@@ -83,7 +64,7 @@ Defines the following attributes;
 
 =head1 Subroutines/Methods
 
-=head2 C<display_connect_info> - Displays database connection information
+=head2 C<dump_connect_attr> - Displays database connection information
 
 =head1 Diagnostics
 

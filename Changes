@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added User maintainence form
           - Added change password to user model
           - Added User model
           - Displays all events on day rota

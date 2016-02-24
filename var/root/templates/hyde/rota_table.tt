@@ -1,10 +1,10 @@
 <!-- Rota Table -->
 <table>
 [% FOR event IN page.rota.events -%]
-[%    RotaTableRow( event ) -%]
+[%    TableRow( event ) -%]
 [% END -%]
 [% FOR controller IN page.rota.controllers -%]
-[%    RotaTableRow( controller ) -%]
+[%    TableRow( controller ) -%]
 [% END -%]
    <tr>
 [%    FOR cell IN page.rota.headers -%]
@@ -13,10 +13,10 @@
    </tr>
 [% FOR shift IN page.rota.shifts -%]
 [%    FOR rider IN shift.riders -%]
-[%       RotaTableRow( rider ) -%]
+[%       TableRow( rider ) -%]
 [%    END -%]
 [%    FOR driver IN shift.drivers -%]
-[%       RotaTableRow( driver ) -%]
+[%       TableRow( driver ) -%]
 [%    END -%]
 [% END -%]
 </table>

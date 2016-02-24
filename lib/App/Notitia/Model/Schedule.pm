@@ -2,8 +2,8 @@ package App::Notitia::Model::Schedule;
 
 #use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS NUL SHIFT_TYPE_ENUM SPC TRUE );
+use App::Notitia::Util      qw( loc );
 use Class::Usul::Functions  qw( throw );
-use Class::Usul::Types      qw( LoadableClass Object );
 use Class::Usul::Time       qw( str2date_time time2str );
 use Moo;
 
@@ -11,44 +11,17 @@ extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 #with    q(App::Notitia::Role::WebAuthorisation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
-
-# Attribute constructors
-my $_build_schema = sub {
-   my $self = shift; my $extra = $self->config->connect_params;
-
-   $self->schema_class->config( $self->config );
-
-   return $self->schema_class->connect( @{ $self->get_connect_info }, $extra );
-};
-
-my $_build_schema_class = sub {
-   return $_[ 0 ]->config->schema_classes->{ $_[ 0 ]->config->database };
-};
+with    q(App::Notitia::Role::Schema);
 
 # Public attributes
-has '+moniker'     => default => 'sched';
-
-has 'schema'       => is => 'lazy', isa => Object,
-   builder         => $_build_schema;
-
-has 'schema_class' => is => 'lazy', isa => LoadableClass,
-   builder         => $_build_schema_class;
+has '+moniker' => default => 'sched';
 
 # Private class attributes
 my $_rota_types_id = {};
-my $_translations  = {};
 
 # Private functions
-my $_loc = sub {
-   my ($req, $k) = @_; $_translations->{ my $locale = $req->locale } //= {};
-
-   return exists $_translations->{ $locale }->{ $k }
-               ? $_translations->{ $locale }->{ $k }
-               : $_translations->{ $locale }->{ $k } = $req->loc( $k );
-};
-
 my $_headers = sub {
-   return [ map { { val => $_loc->( $_[ 0 ], "rota_heading_${_}" ) } } 0 .. 4 ];
+   return [ map { { val => loc( $_[ 0 ], "rota_heading_${_}" ) } } 0 .. 4 ];
 };
 
 my $_events = sub {
@@ -81,7 +54,7 @@ my $_controllers = sub {
          my $k = "${shift_type}_controller_${subslot}";
 
          push @{ $controls },
-            [ { val => $_loc->( $req, $k ), class => 'rota-header' },
+            [ { val => loc( $req, $k ), class => 'rota-header' },
               { val => $slot_rows->{ $k }, colspan => 4 } ];
       }
    }
@@ -104,7 +77,7 @@ my $_riders_n_drivers = sub {
          my $k = "${shift_type}_rider_${subslot}";
 
          push @{ $riders },
-            [ { val   => $_loc->( $req, $k ), class => 'rota-header' },
+            [ { val   => loc( $req, $k ), class => 'rota-header' },
               { val   => $slot_rows->{ $k }->{vehicle }, class => 'narrow' },
               { val   => $slot_rows->{ $k }->{operator} },
               { val   => $slot_rows->{ $k }->{bike_req},
@@ -118,7 +91,7 @@ my $_riders_n_drivers = sub {
          my $k = "${shift_type}_driver_${subslot}";
 
          push @{ $drivers },
-            [ { val => $_loc->( $req, $k ), class => 'rota-header' },
+            [ { val => loc( $req, $k ), class => 'rota-header' },
               { val => undef },
               { val => $slot_rows->{ $k }->{operator} },
               { val => undef, class => 'narrow' },
@@ -135,8 +108,8 @@ my $_get_page = sub {
    my ($req, $rota_name, $rota_date, $todays_events, $slot_rows, $limits) = @_;
 
    my $rota_dt =  str2date_time $rota_date;
-   my $title   =  ucfirst( $_loc->( $req, $rota_name ) ).SPC
-               .  $_loc->( $req, 'rota for' ).SPC.$rota_dt->month_name;
+   my $title   =  ucfirst( loc( $req, $rota_name ) ).SPC
+               .  loc( $req, 'rota for' ).SPC.$rota_dt->month_name;
    my $page    =  {
       rota     => { controllers => [],
                     events      => [],
@@ -173,7 +146,7 @@ my $_find_rota_type_id_for = sub {
 };
 
 # Public methods
-sub get_content {
+sub day_rota {
    my ($self, $req) = @_;
 
    my $params    = $req->uri_params;
@@ -207,6 +180,14 @@ sub get_content {
    my $page = $_get_page->( $req, $name, $date, $events, $slot_rows, $limits );
 
    return $self->get_stash( $req, $page );
+}
+
+sub index {
+   my ($self, $req) = @_;
+
+   return $self->get_stash( $req, {
+      layout => 'index', template => [ 'nav_panel', 'splash' ],
+      title  => loc( $req, 'main_index_title' ), } );
 }
 
 1;
