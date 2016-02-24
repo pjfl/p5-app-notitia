@@ -41,7 +41,8 @@
 [% END -%]
 [% MACRO Select( field ) BLOCK -%]
    <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
-   <select class="standard-field">
+   <select class="standard-field" [% IF field.onchange -%]
+      onchange="if (this.value) window.location.href=this.value"[% END %]>
 [%    FOR option IN field.value %]
       <option value="[% option.value %]">[% loc( option.label ) %]</option>
 [%    END -%]

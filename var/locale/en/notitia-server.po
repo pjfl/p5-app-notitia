@@ -60,6 +60,9 @@ msgstr "Day Central"
 msgid "day_rider_2"
 msgstr "Day South"
 
+msgid "delete"
+msgstr "Delete"
+
 msgid "dob"
 msgstr "Date of Birth"
 
@@ -149,6 +152,9 @@ msgstr "Bike Req."
 
 msgid "rota_heading_4"
 msgstr "Veh."
+
+msgid "select_person"
+msgstr "Select Person"
 
 msgid "subscription"
 msgstr "Subscription"

@@ -41,16 +41,24 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_bind = sub {
-   my ($name, $v, $opts) = @_; my $class;
+my $_bind_option = sub {
+   my $v = shift;
 
-   my $params = { label => $name, name => $name };
+   is_arrayref $v and return { label => $v->[ 0 ], value => $v->[ 1  ] };
+
+   return { label => $v, value => $v }
+};
+
+my $_bind = sub {
+   my ($name, $v, $opts) = @_;
+
+   my $params = { label => $name, name => $name }; my $class;
 
    if (defined $v and $class = blessed $v and $class eq 'DateTime') {
       $params->{value} = $v->ymd;
    }
    elsif (is_arrayref $v) {
-      $params->{value} = [ map { { label => $_, value => $_ } } @{ $v } ];
+      $params->{value} = [ map { $_bind_option->( $_ ) } @{ $v } ];
    }
    else { defined $v and $params->{value} = $v }
 
@@ -89,10 +97,50 @@ my $_bind_person_fields = sub {
    };
 };
 
-my $_bind_save_button = sub {
+my $_delete_person_button = sub {
+   return { class => 'right', label => 'delete', value => 'delete_person' };
+};
+
+my $_save_person_button = sub {
    my $name = shift; my $k = $name ? 'update' : 'create';
 
    return { class => 'right', label => $k, value => "${k}_person" };
+};
+
+my $_select_person_list = sub {
+   my $schema = shift; my $person_rs = $schema->resultset( 'Person' );
+
+   my $names = [ [ '', '' ],
+                 map { [ $_, "user/${_}" ] }
+                 $person_rs->search( {}, { columns => [ 'name' ] } )->all ];
+
+   return $_bind->( 'select_person', $names, { onchange => TRUE } );
+};
+
+my $_user_update = sub {
+   my ($req, $user) = @_; my $params = $req->body_params;
+
+   my $args = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
+
+   $user->name( $params->( 'username' ) );
+
+   for my $attr (qw( active address dob email_address first_name home_phone
+                     joined last_name mobile_phone notes password_expired
+                     postcode resigned subscription )) {
+      my $v = $params->( $attr, $args );
+
+      not defined $v and is_member $attr, [ qw( active password_expired ) ]
+          and $v = FALSE;
+
+      defined $v or next;
+
+      length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
+         and $v = str2date_time( "${v} 00:00", 'GMT' );
+
+      $user->$attr( $v );
+   }
+
+   return;
 };
 
 # Private methods
@@ -107,6 +155,35 @@ my $_find_user_by_name = sub {
 };
 
 # Public methods
+sub create_person_action {
+   my ($self, $req) = @_;
+
+   my $user = $self->schema->resultset( 'Person' )->new_result( {} );
+
+   $_user_update->( $req, $user );
+
+   $user->password( '12345678' ); $user->password_expired( TRUE );
+
+   $user->insert; my $message = [ 'User [_1] created', $user->name ];
+
+   my $location = $req->uri_for( 'user/'.$user->name );
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub delete_person_action {
+   my ($self, $req) = @_;
+
+   my $name = $req->uri_params->( 0 );
+   my $user = $self->$_find_user_by_name( $name );
+
+   $user->delete; my $message = [ 'User [_1] deleted', $name ];
+
+   my $location = $req->uri_for( 'user' );
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub index {
    my ($self, $req) = @_;
 
@@ -118,14 +195,17 @@ sub index {
 sub person {
    my ($self, $req) = @_;
 
-   my $name = $req->uri_params->( 0, { optional => TRUE } );
-   my $user = $name ? $self->$_find_user_by_name( $name ) : Class::Null->new;
-   my $page = {
+   my $name    = $req->uri_params->( 0, { optional => TRUE } );
+   my $user    = $name ? $self->$_find_user_by_name( $name ) : Class::Null->new;
+   my $page    = {
       fields   => $_bind_person_fields->( $user ),
       template => [ 'nav_panel', 'person' ],
       title    => loc( $req, 'person_administration' ), };
+   my $fields  = $page->{fields};
 
-   $page->{fields}->{save} = $_bind_save_button->( $name );
+   $name or  $fields->{select} = $_select_person_list->( $self->schema );
+   $name and $fields->{delete} = $_delete_person_button->();
+             $fields->{save  } = $_save_person_button->( $name );
 
    return $self->get_stash( $req, $page );
 }
@@ -144,25 +224,12 @@ sub vehicle {
 sub update_person_action {
    my ($self, $req) = @_;
 
-   my $name   = $req->uri_params->( 0 );
-   my $user   = $self->$_find_user_by_name( $name );
-   my $params = $req->body_params;
-   my $args   = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
+   my $name = $req->uri_params->( 0 );
+   my $user = $self->$_find_user_by_name( $name );
 
-   $user->name( $params->( 'username' ) );
+   $_user_update->( $req, $user ); $user->update;
 
-   for my $attr (qw( active address dob email_address first_name home_phone
-                     joined last_name mobile_phone notes password_expired
-                     postcode resigned subscription )) {
-      my $v = $params->( $attr, $args ); defined $v or next;
-
-      is_member $attr, [ qw( dob joined resigned subscription ) ] and length $v
-         and $v = str2date_time( "${v} 00:00", 'GMT' );
-
-      $user->$attr( $v );
-   }
-
-   $user->update; my $message = [ 'User [_1] updated', $name ];
+   my $message = [ 'User [_1] updated', $name ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
