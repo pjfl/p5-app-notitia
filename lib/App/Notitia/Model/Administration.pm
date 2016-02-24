@@ -4,8 +4,10 @@ package App::Notitia::Model::Administration;
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE TRUE );
 use App::Notitia::Util      qw( loc );
 use Class::Null;
-use Class::Usul::Functions  qw( is_arrayref throw );
+use Class::Usul::Functions  qw( is_arrayref is_member throw );
+use Class::Usul::Time       qw( str2date_time );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
+use Scalar::Util            qw( blessed );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -40,14 +42,17 @@ around 'get_stash' => sub {
 
 # Private functions
 my $_bind = sub {
-   my ($name, $value, $opts) = @_;
+   my ($name, $v, $opts) = @_; my $class;
 
    my $params = { label => $name, name => $name };
 
-   if (is_arrayref $value) {
-      $params->{value} = [ map { { label => $_, value => $_ } } @{ $value } ];
+   if (defined $v and $class = blessed $v and $class eq 'DateTime') {
+      $params->{value} = $v->ymd;
    }
-   else { defined $value and $params->{value} = $value }
+   elsif (is_arrayref $v) {
+      $params->{value} = [ map { { label => $_, value => $_ } } @{ $v } ];
+   }
+   else { defined $v and $params->{value} = $v }
 
    $params->{ $_ } = $opts->{ $_ } for (keys %{ $opts });
 
@@ -139,9 +144,25 @@ sub vehicle {
 sub update_person_action {
    my ($self, $req) = @_;
 
-   my $params  = $req->body_params;
-   my $name    = $params->( 'username' );
-   my $message = [ 'User [_1] updated', $name ];
+   my $name   = $req->uri_params->( 0 );
+   my $user   = $self->$_find_user_by_name( $name );
+   my $params = $req->body_params;
+   my $args   = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
+
+   $user->name( $params->( 'username' ) );
+
+   for my $attr (qw( active address dob email_address first_name home_phone
+                     joined last_name mobile_phone notes password_expired
+                     postcode resigned subscription )) {
+      my $v = $params->( $attr, $args ); defined $v or next;
+
+      is_member $attr, [ qw( dob joined resigned subscription ) ] and length $v
+         and $v = str2date_time( "${v} 00:00", 'GMT' );
+
+      $user->$attr( $v );
+   }
+
+   $user->update; my $message = [ 'User [_1] updated', $name ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }

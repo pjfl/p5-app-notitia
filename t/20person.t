@@ -14,16 +14,36 @@ my $connection =  App::Notitia::Schema->new
 my $schema     =  $connection->schema;
 my $person_rs  =  $schema->resultset( 'Person' );
 my $person     =  $person_rs->search( { name => 'john' } )->first;
+my $e;
 
 $person and $person->delete;
-$person =   $person_rs->create( { name => 'john', password => '12345678' } );
-$person =   $person_rs->search( { name => 'john' } )->first;
+$person = eval { $person_rs->create
+                    ( { first_name => 'john', last_name => 'smith',
+                        name => 'john', password => '12345678' } ) };
 
-eval { $person->authenticate( '12345678' ) }; my $e = $EVAL_ERROR;
+if ($e = $EVAL_ERROR) {
+   if ($e->can( 'class' ) and $e->class eq 'ValidationErrors') {
+      warn "${_}\n" for (@{ $e->args });
+      exit 1;
+   }
+   else { die $e }
+}
+
+$person = $person_rs->search( { name => 'john' } )->first;
+
+eval { $person->authenticate( '12345678' ) }; $e = $EVAL_ERROR;
 
 is $e->class, 'AccountInactive', 'Inactive account throws on authentication';
 
-$person->activate;
+eval { $person->activate };
+
+if ($e = $EVAL_ERROR) {
+   if ($e->can( 'class' ) and $e->class eq 'ValidationErrors') {
+      warn "${_}\n" for (@{ $e->args });
+      exit 1;
+   }
+   else { die $e }
+}
 
 eval { $person->authenticate( '12345678' ) }; $e = $EVAL_ERROR;
 
@@ -37,7 +57,9 @@ eval { $person->authenticate( 'nonono' ) }; $e = $EVAL_ERROR;
 
 is $e->class, 'IncorrectPassword', 'Authenticate throws on incorrect password';
 
-eval { $person_rs->create( { name => 'x', password => '12345678' } ) };
+eval { $person_rs->create
+          ( { first_name => 'a', last_name => 'user',
+              name       => 'x', password => '12345678' } ) };
 
 $e = $EVAL_ERROR; is $e->class, 'ValidationErrors', 'Validation errors';
 
@@ -45,7 +67,9 @@ is $e->args->[ 0 ]->class, 'ValidLength', 'Invalid name length';
 
 $person =   $person_rs->search( { name => 'admin' } )->first;
 $person and $person->delete;
-$person =   $person_rs->create( { name => 'admin', password => '12345678' } );
+$person =   $person_rs->create
+   ( { first_name => 'Admin', last_name => 'User',
+       name       => 'admin', password  => '12345678' } );
 $person->activate;
 
 done_testing;

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Can update person record
           - Added stubs for vehicle administration
           - Added User maintainence form
           - Added change password to user model

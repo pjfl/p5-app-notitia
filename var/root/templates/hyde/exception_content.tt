@@ -4,9 +4,8 @@
       <h4>[% page.title %]</h4>
       <!-- Content -->
 [% IF page.validation_error -%]
-      <h3>[% loc( 'Form validation errors' ) %]</h3>
+      <h5>[% loc( 'Form validation errors' ) %]</h5>
 [% FOR error IN page.validation_error -%]
-      <h4>[% loc( 'Error Message' ) %]</h4>
       <p>[% error %]</p>
 [% END -%]
 [% ELSE -%]

@@ -17,7 +17,7 @@ sub dispatch_request {
    sub (GET  + /user/password    + ?*) { [ 'user',  'change_password', @_ ] },
    sub (POST + /user/profile     + ?*) { [ 'user',  'from_request',    @_ ] },
    sub (GET  + /user/profile     + ?*) { [ 'user',  'profile_dialog',  @_ ] },
-   sub (POST + /user             + ?*) { [ 'admin', 'from_request',    @_ ] },
+   sub (POST + /user  | /user/*  + ?*) { [ 'admin', 'from_request',    @_ ] },
    sub (GET  + /user  | /user/*  + ?*) { [ 'admin', 'person',          @_ ] },
    sub (GET  + /vehicle          + ?*) { [ 'admin', 'vehicle',         @_ ] },
    sub (GET  + /vehicle/*        + ?*) { [ 'admin', 'vehicle',         @_ ] },

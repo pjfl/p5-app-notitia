@@ -5,7 +5,8 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia;
-use App::Notitia::Constants    qw( EXCEPTION_CLASS TRUE FALSE NUL );
+use App::Notitia::Constants    qw( EXCEPTION_CLASS TRUE
+                                   FALSE NUL VARCHAR_MAX_SIZE );
 use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
                                    is_encrypted new_salt
                                    nullable_foreign_key_data_type
@@ -349,12 +350,39 @@ sub update {
 
 sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
-      constraints    => {
-         name        => { max_length => 64, min_length => 3, } },
-      fields         => {
-         password    => { validate => 'isMandatory' },
-         name        => {
-            validate => 'isMandatory isValidIdentifier isValidLength' }, },
+      constraints      => {
+         address       => { max_length =>  64, min_length => 0, },
+         email_address => { max_length =>  64, min_length => 0, },
+         first_name    => { max_length =>  64, min_length => 1, },
+         last_name     => { max_length =>  64, min_length => 1, },
+         name          => { max_length =>  64, min_length => 3, },
+         notes         => { max_length =>  VARCHAR_MAX_SIZE(),
+                            min_length =>   0, },
+         password      => { max_length => 128, min_length => 8, },
+         postcode      => { max_length =>  16, min_length => 0, },
+      },
+      fields           => {
+         address       => { validate => 'isValidLength isPrintable' },
+         dob           => { validate => 'isValidDate' },
+         email_address => { validate => 'isValidLength isValidEmail' },
+         first_name    => {
+            validate   => 'isMandatory isValidLength isPrintable' },
+         home_phone    => { filters  => 'filterNonNumeric',
+                            validate => 'isValidInteger' },
+         joined        => { validate => 'isValidDate' },
+         last_name     => {
+            validate   => 'isMandatory isValidLength isPrintable' },
+         mobile_phone  => { filters  => 'filterNonNumeric',
+                            validate => 'isValidInteger' },
+         name          => {
+            validate   => 'isMandatory isValidLength isValidIdentifier' },
+         notes         => { validate => 'isValidLength isPrintable' },
+         password      => {
+            validate   => 'isMandatory isValidLength isValidPassword' },
+         postcode      => { validate => 'isValidLength isValidPostcode' },
+         resigned      => { validate => 'isValidDate' },
+         subscription  => { validate => 'isValidDate' },
+      },
    };
 }
 
