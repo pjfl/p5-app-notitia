@@ -121,7 +121,7 @@ msgid "password_expired"
 msgstr "Password Expired"
 
 msgid "person_administration"
-msgstr "Person Administration"
+msgstr "People"
 
 msgid "person_administration_tip"
 msgstr "Administer person records"
@@ -158,3 +158,9 @@ msgstr "Update"
 
 msgid "username"
 msgstr "User Name"
+
+msgid "vehicle_administration"
+msgstr "Vehicles"
+
+msgid "vehicle_administration_tip"
+msgstr "Administer vehicle records"

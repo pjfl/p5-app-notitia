@@ -1,0 +1,10 @@
+<!-- Vehicle Content -->
+<div class="unit four-fifths">
+   <article class="skinny">
+      <h4>[% page.title %]</h4>
+      <form action="[% uri_for( 'vehicle' ) %]"
+           enctype="application/x-www-form-urlencoded"
+            method="post" name="vehicle-admin">
+      </form>
+   </article>
+</div>

@@ -23,12 +23,17 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{nav} = [ {
-      depth => 0,
-      tip   => loc( $req, 'person_administration_tip' ),
-      title => loc( $req, 'person_administration' ),
-      type  => 'link',
-      url   => 'user', } ];
+   $stash->{nav} =
+      [ { depth => 0,
+          tip   => loc( $req, 'person_administration_tip' ),
+          title => loc( $req, 'person_administration' ),
+          type  => 'link',
+          url   => 'user', },
+        { depth => 0,
+          tip   => loc( $req, 'vehicle_administration_tip' ),
+          title => loc( $req, 'vehicle_administration' ),
+          type  => 'link',
+          url   => 'vehicle', }, ];
 
    return $stash;
 };
@@ -49,7 +54,7 @@ my $_bind = sub {
    return $params;
 };
 
-my $_bind_fields = sub {
+my $_bind_person_fields = sub {
    my $user = shift;
 
    return {
@@ -111,7 +116,7 @@ sub person {
    my $name = $req->uri_params->( 0, { optional => TRUE } );
    my $user = $name ? $self->$_find_user_by_name( $name ) : Class::Null->new;
    my $page = {
-      fields   => $_bind_fields->( $user ),
+      fields   => $_bind_person_fields->( $user ),
       template => [ 'nav_panel', 'person' ],
       title    => loc( $req, 'person_administration' ), };
 
@@ -120,13 +125,33 @@ sub person {
    return $self->get_stash( $req, $page );
 }
 
+sub vehicle {
+   my ($self, $req) = @_;
+
+   my $page = {
+      fields   => {},
+      template => [ 'nav_panel', 'vehicle' ],
+      title    => loc( $req, 'vehicle_administration' ), };
+
+   return $self->get_stash( $req, $page );
+}
+
 sub update_person_action {
    my ($self, $req) = @_;
 
-   my $session = $req->session;
    my $params  = $req->body_params;
    my $name    = $params->( 'username' );
    my $message = [ 'User [_1] updated', $name ];
+
+   return { redirect => { location => $req->uri, message => $message } };
+}
+
+sub update_vehicle_action {
+   my ($self, $req) = @_;
+
+   my $params  = $req->body_params;
+   my $name    = $params->( 'vrn' );
+   my $message = [ 'Vehicle [_1] updated', $name ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
