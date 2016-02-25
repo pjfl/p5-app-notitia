@@ -59,8 +59,10 @@
 TAGS
 Thumbs.db
 \bipc_srlock
+\blib/App/Notitia/app-notitia_local.json
 \bvar/etc/app-notitia.json
 \bvar/logs
+\bvar/session
 \bvar/tmp
 
 # Avoid archives of this distribution

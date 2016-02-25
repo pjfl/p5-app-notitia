@@ -19,8 +19,10 @@ nytprof.out
 pm_to_blib
 README
 README.pod
+lib/App/Notitia/app-notitia_local.json
 t/ipc_srlock*
 var/etc/app-notitia.json
+var/session
 var/tmp
 var/logs
 var/run

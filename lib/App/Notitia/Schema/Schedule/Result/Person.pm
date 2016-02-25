@@ -1,7 +1,8 @@
 package App::Notitia::Schema::Schedule::Result::Person;
 
 use strictures;
-use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
+use overload '""' => sub { $_[ 0 ]->_as_string },
+             '+'  => sub { $_[ 0 ]->_as_number }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia;
@@ -55,6 +56,10 @@ $class->has_many( roles        => "${result}::Role",          'member_id'     );
 $class->has_many( vehicles     => "${result}::Vehicle",       'owner_id'      );
 
 # Private methods
+sub _as_number {
+   return $_[ 0 ]->id;
+}
+
 sub _as_string {
    return $_[ 0 ]->name;
 }
@@ -380,6 +385,7 @@ sub validation_attributes {
          resigned      => { validate => 'isValidDate' },
          subscription  => { validate => 'isValidDate' },
       },
+      level => 8,
    };
 }
 

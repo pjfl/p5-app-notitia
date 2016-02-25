@@ -2,7 +2,7 @@ package App::Notitia::Config;
 
 use namespace::autoclean;
 
-use Class::Usul::Constants       qw( NUL TRUE );
+use Class::Usul::Constants       qw( FALSE NUL TRUE );
 use Class::Usul::Crypt::Util     qw( decrypt_from_config encrypt_for_config );
 use Class::Usul::File;
 use Class::Usul::Functions       qw( class2appdir create_token );
@@ -134,6 +134,8 @@ has 'mount_point'     => is => 'ro',   isa => NonEmptySimpleStr,
 has 'no_index'        => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    builder            => sub {
       [ qw( \.git$ \.htpasswd$ \.json$ \.mtime$ \.svn$ assets$ posts$ ) ] };
+
+has 'no_user_email'   => is => 'ro',   isa => Bool, default => FALSE;
 
 has 'owner'           => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => sub { $_[ 0 ]->prefix };

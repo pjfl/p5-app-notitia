@@ -43,25 +43,30 @@ around 'get_stash' => sub {
 
 # Private functions
 my $_bind_option = sub {
-   my $v = shift;
+   my ($v, $prefix, $numify) = @_;
 
    return is_arrayref $v
-        ? { label => $v->[ 0 ], selected => $v->[ 2 ], value => $v->[ 1 ] }
-        : { label => $v, value => $v };
+        ? { label => $v->[ 0 ].NUL, selected => $v->[ 2 ],
+            value => ($v->[ 1 ] ? ($numify ? 0 + $v->[ 1 ] : $prefix.$v->[ 1 ])
+                                : undef) }
+        : { label => "${v}", value => ($numify ? 0 + $v : $prefix.$v) };
 };
 
 my $_bind = sub {
-   my ($name, $v, $opts) = @_;
+   my ($name, $v, $opts) = @_; $opts //= {};
 
+   my $prefix = delete $opts->{prefix} // NUL;
+   my $numify = delete $opts->{numify} // FALSE;
    my $params = { label => $name, name => $name }; my $class;
 
    if (defined $v and $class = blessed $v and $class eq 'DateTime') {
       $params->{value} = $v->ymd;
    }
    elsif (is_arrayref $v) {
-      $params->{value} = [ map { $_bind_option->( $_ ) } @{ $v } ];
+      $params->{value}
+         = [ map { $_bind_option->( $_, $prefix, $numify ) } @{ $v } ];
    }
-   else { defined $v and $params->{value} = $v }
+   else { defined $v and $params->{value} = $numify ? 0 + $v : "${v}" }
 
    $params->{ $_ } = $opts->{ $_ } for (keys %{ $opts });
 
@@ -115,30 +120,13 @@ my $_save_person_button = sub {
             tip => $tip, value => "${k}_person" };
 };
 
-my $_update_person_from_request = sub {
-   my ($req, $person) = @_; my $params = $req->body_params;
+my $_select_next_of_kin_list = sub {
+   return $_bind->( 'next_of_kin', $_[ 0 ], { numify => TRUE } );
+};
 
-   my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
-
-   $person->name( $params->( 'username' ) );
-
-   for my $attr (qw( active address dob email_address first_name home_phone
-                     joined last_name mobile_phone notes password_expired
-                     postcode resigned subscription )) {
-      my $v = $params->( $attr, $opts );
-
-      not defined $v and is_member $attr, [ qw( active password_expired ) ]
-          and $v = FALSE;
-
-      defined $v or next;
-
-      length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
-         and $v = str2date_time( "${v} 00:00", 'GMT' );
-
-      $person->$attr( $v );
-   }
-
-   return;
+my $_select_person_list = sub {
+   return $_bind->( 'select_person', $_[ 0 ],
+                    { onchange => TRUE, prefix => 'user/' } );
 };
 
 # Private methods
@@ -194,12 +182,11 @@ my $_list_all_roles = sub {
 };
 
 my $_person_tuple = sub {
-   my ($person, $selected) = @_; $selected //= NUL;
+   my ($person, $selected) = @_; $selected //= 0;
 
    my $label = $person->first_name.SPC.$person->last_name." (${person})";
-   my $value = "user/${person}";
 
-   return [ $label, $value, "${person}" eq "${selected}" ? TRUE : FALSE ];
+   return [ $label, $person, ($selected eq $person ? TRUE : FALSE) ];
 };
 
 my $_list_all_people = sub {
@@ -207,15 +194,41 @@ my $_list_all_people = sub {
 
    my $person_rs = $self->schema->resultset( 'Person' );
    my @people    = map { $_person_tuple->( $_, $selected ) } $person_rs->search
-      ( {}, { columns => [ 'first_name', 'last_name', 'name' ] } )->all;
+      ( {}, { columns => [ 'first_name', 'id', 'last_name', 'name' ] } )->all;
 
    return [ [ NUL, NUL ], @people ];
 };
 
-my $_select_person_list = sub {
-   my ($self, $people) = @_;
+my $_update_person_from_request = sub {
+   my ($self, $req, $person) = @_; my $params = $req->body_params;
 
-   return $_bind->( 'select_person', $people, { onchange => TRUE } );
+   my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
+
+   $person->name( $params->( 'username' ) );
+
+   for my $attr (qw( active address dob email_address first_name home_phone
+                     joined last_name mobile_phone notes
+                     password_expired postcode resigned subscription )) {
+      my $v = $params->( $attr, $opts );
+
+      not defined $v and is_member $attr, [ qw( active password_expired ) ]
+          and $v = FALSE;
+
+      defined $v or next;
+
+      length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
+         and $v = str2date_time( "${v} 00:00", 'GMT' );
+
+      $person->$attr( $v );
+   }
+
+   my $v = $params->( 'next_of_kin', $opts ) or return;
+
+   $person->id and $v == $person->id
+      and throw 'Cannot set self as next of kin', rv => HTTP_EXPECTATION_FAILED;
+
+   $person->next_of_kin( $v );
+   return;
 };
 
 # Public methods
@@ -238,7 +251,7 @@ sub create_person_action {
 
    my $person = $self->schema->resultset( 'Person' )->new_result( {} );
 
-   $_update_person_from_request->( $req, $person );
+   $self->$_update_person_from_request( $req, $person );
 
    my $role = $req->body_params->( 'roles' );
 
@@ -248,7 +261,8 @@ sub create_person_action {
    # TODO: This can throw which will fuck shit up. Needs a transaction
    $person->add_member_to( $role );
 
-   $self->$_create_user_email( $req, $person, $password );
+   $self->config->no_user_email
+      or $self->$_create_user_email( $req, $person, $password );
 
    my $location = $req->uri_for( 'user/'.$person->name );
    my $message  = [ 'User [_1] created', $person->name ];
@@ -294,12 +308,11 @@ sub person {
    else {
       $people = $self->$_list_all_people();
       $fields->{roles } = $_bind->( 'roles', $self->$_list_all_roles() );
-      $fields->{select} = $self->$_select_person_list( $people );
+      $fields->{select} = $_select_person_list->( $people );
    }
 
-   $fields->{next_of_kin} = $_bind->( 'next_of_kin', $people );
-
-   $fields->{save} = $_save_person_button->( $req, $name );
+   $fields->{next_of_kin} = $_select_next_of_kin_list->( $people );
+   $fields->{save       } = $_save_person_button->( $req, $name );
 
    return $self->get_stash( $req, $page );
 }
@@ -321,7 +334,7 @@ sub update_person_action {
    my $name   = $req->uri_params->( 0 );
    my $person = $self->$_find_person_by( $name );
 
-   $_update_person_from_request->( $req, $person ); $person->update;
+   $self->$_update_person_from_request( $req, $person ); $person->update;
 
    my $message = [ 'User [_1] updated', $name ];
 
