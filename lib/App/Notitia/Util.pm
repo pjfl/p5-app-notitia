@@ -83,12 +83,14 @@ sub is_encrypted ($) {
    return $_[ 0 ] =~ m{ \A \$\d+[a]?\$ }mx ? TRUE : FALSE;
 }
 
-sub loc ($$) {
-   my ($req, $k) = @_; $_translations->{ my $locale = $req->locale } //= {};
+sub loc ($$;@) {
+   my ($req, $k, @args) = @_;
+
+   $_translations->{ my $locale = $req->locale } //= {};
 
    return exists $_translations->{ $locale }->{ $k }
                ? $_translations->{ $locale }->{ $k }
-               : $_translations->{ $locale }->{ $k } = $req->loc( $k );
+               : $_translations->{ $locale }->{ $k } = $req->loc( $k, @args );
 }
 
 sub new_salt ($$) {

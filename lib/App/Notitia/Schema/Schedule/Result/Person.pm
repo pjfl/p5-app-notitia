@@ -364,7 +364,8 @@ sub validation_attributes {
       fields           => {
          address       => { validate => 'isValidLength isPrintable' },
          dob           => { validate => 'isValidDate' },
-         email_address => { validate => 'isValidLength isValidEmail' },
+         email_address => {
+            validate   => 'isMandatory isValidLength isValidEmail' },
          first_name    => {
             validate   => 'isMandatory isValidLength isPrintable' },
          home_phone    => { filters  => 'filterNonNumeric',

@@ -56,17 +56,18 @@ my $_find_user_by_name = sub {
 sub change_password { # : Role(anon)
    my ($self, $req) = @_;
 
+   my $name          = $req->uri_params->( 0, { optional => TRUE } ) // NUL;
    my $page          =  {
       fields         => {
-         again       => { class    => 'reveal',
-                          label    => 'again',        name => 'again' },
-         oldpass     => { label    => 'old_password', name => 'oldpass' },
-         password    => { autocomplete => 'off',     class => 'reveal',
-                          label    => 'new_password', name => 'password' },
-         update      => { class    => 'right',       label => 'update',
-                          value    => 'change_password' },
-         username    => { disabled => TRUE,          label => 'username',
-                          name     => 'username',    value => $req->username }},
+         again       => { class  => 'reveal',
+                          label  => 'again',        name => 'again' },
+         oldpass     => { label  => 'old_password', name => 'oldpass' },
+         password    => { autocomplete => 'off',   class => 'reveal',
+                          label  => 'new_password', name => 'password' },
+         update      => { class  => 'right',       label => 'update',
+                          value  => 'change_password' },
+         username    => { label  => 'username',
+                          name   => 'username',    value => $name } },
       literal_js     =>
          "behaviour.config.inputs[ 'again' ]
              = { event     : [ 'focus', 'blur' ],
@@ -83,8 +84,8 @@ sub change_password { # : Role(anon)
 sub change_password_action {
    my ($self, $req) = @_;
 
-   my $name     = $req->username;
    my $params   = $req->body_params;
+   my $name     = $params->( 'username' );
    my $oldpass  = $params->( 'oldpass',  { raw => TRUE } );
    my $password = $params->( 'password', { raw => TRUE } );
    my $again    = $params->( 'again',    { raw => TRUE } );

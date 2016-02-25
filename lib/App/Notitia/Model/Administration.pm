@@ -4,7 +4,7 @@ package App::Notitia::Model::Administration;
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE TRUE );
 use App::Notitia::Util      qw( loc );
 use Class::Null;
-use Class::Usul::Functions  qw( is_arrayref is_member throw );
+use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
 use Class::Usul::Time       qw( str2date_time );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Scalar::Util            qw( blessed );
@@ -15,6 +15,7 @@ with    q(App::Notitia::Role::PageConfiguration);
 #with    q(App::Notitia::Role::WebAuthorisation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
+with    q(Web::Components::Role::Email);
 
 # Public attributes
 has '+moniker' => default => 'admin';
@@ -117,7 +118,7 @@ my $_select_person_list = sub {
    return $_bind->( 'select_person', $names, { onchange => TRUE } );
 };
 
-my $_user_update = sub {
+my $_update_user_from_request = sub {
    my ($req, $user) = @_; my $params = $req->body_params;
 
    my $args = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
@@ -144,6 +145,40 @@ my $_user_update = sub {
 };
 
 # Private methods
+my $_create_user_email = sub {
+   my ($self, $req, $user, $password) = @_;
+
+   my $conf    = $self->config;
+   my $key     = substr create_token, 0, 32;
+   my $opts    = { params => [ $conf->title ], no_quote_bind_values => TRUE };
+   my $from    = loc( $req, 'UserRegistration@[_1]', $opts );
+   my $subject = loc( $req, 'Account activation for [_1]', $opts );
+   my $post    = {
+      attributes      => {
+         charset      => $conf->encoding,
+         content_type => 'text/html', },
+      from            => $from,
+      stash           => {
+         app_name     => $conf->title,
+         first_name   => $user->first_name,
+         link         => $req->uri_for( 'user/activate', [ $key ] ),
+         password     => $password,
+         title        => $subject,
+         username     => $user->name, },
+      subject         => $subject,
+      template        => 'user_email',
+      to              => $user->email_address, };
+
+   $conf->sessdir->catfile( $key )->println( $user->name );
+
+   my $r = $self->send_email( $post );
+   my ($id) = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
+
+   $self->log->info( loc( $req, 'New user email sent - [_1]', [ $id ] ) );
+
+   return;
+};
+
 my $_find_user_by_name = sub {
    my ($self, $name) = @_;
 
@@ -155,17 +190,33 @@ my $_find_user_by_name = sub {
 };
 
 # Public methods
+sub activate {
+   my ($self, $req) = @_;
+
+   my $file = $self->config->sessdir->catfile( $req->uri_params->( 0 ) );
+   my $name = $file->chomp->getline; $file->unlink;
+
+   $self->$_find_user_by_name( $name )->activate;
+
+   my $location = $req->uri_for( "user/password/${name}" );
+   my $message  = [ 'User [_1] account activated', $name ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub create_person_action {
    my ($self, $req) = @_;
 
    my $user = $self->schema->resultset( 'Person' )->new_result( {} );
 
-   $_user_update->( $req, $user );
+   $_update_user_from_request->( $req, $user );
 
-   $user->password( '12345678' ); $user->password_expired( TRUE );
+   $user->password( my $password = substr create_token, 0, 12 );
+   $user->password_expired( TRUE );
+   $user->insert;
+   $self->$_create_user_email( $req, $user, $password );
 
-   $user->insert; my $message = [ 'User [_1] created', $user->name ];
-
+   my $message  = [ 'User [_1] created', $user->name ];
    my $location = $req->uri_for( 'user/'.$user->name );
 
    return { redirect => { location => $location, message => $message } };
@@ -227,7 +278,7 @@ sub update_person_action {
    my $name = $req->uri_params->( 0 );
    my $user = $self->$_find_user_by_name( $name );
 
-   $_user_update->( $req, $user ); $user->update;
+   $_update_user_from_request->( $req, $user ); $user->update;
 
    my $message = [ 'User [_1] updated', $name ];
 
