@@ -63,8 +63,8 @@
 [% END -%]
 [% MACRO TextArea( field ) BLOCK -%]
    <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
-   <input class="standard-field [% field.class %]" id="[% field.name %]"
-      name="[% field.name %]" type="textarea" value="[% field.value %]"><br/>
+   <textarea class="standard-field [% field.class %]" id="[% field.name %]"
+      name="[% field.name %]">[% field.value %]</textarea><br/>
 [% END -%]
 [% MACRO TextField( field ) BLOCK -%]
    <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>

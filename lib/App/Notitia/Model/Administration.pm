@@ -222,12 +222,12 @@ my $_update_person_from_request = sub {
       $person->$attr( $v );
    }
 
-   my $v = $params->( 'next_of_kin', $opts ) or return;
+   my $v = $params->( 'next_of_kin', $opts );
 
-   $person->id and $v == $person->id
+   $v and $person->id and $v == $person->id
       and throw 'Cannot set self as next of kin', rv => HTTP_EXPECTATION_FAILED;
+   $v or  undef $v; $person->next_of_kin( $v );
 
-   $person->next_of_kin( $v );
    return;
 };
 

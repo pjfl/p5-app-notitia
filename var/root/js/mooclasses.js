@@ -711,7 +711,7 @@ var Replacements = new Class( {
          return;
       }
 
-      if (el.type == 'textarea') {
+      if (el.type == 'textarea' || el.type == 'text') {
          var div  = new Element( 'div',  { 'class': opt.textarea_container } );
          var pre  = new Element( 'pre',  { 'class': opt.textarea_preformat } );
          var span = new Element( 'span', { id: new_id } );
@@ -727,7 +727,7 @@ var Replacements = new Class( {
    attach: function( el ) {
       var opt = this.mergeOptions( el.id );
 
-      if (el.type == 'textarea') {
+      if (el.type == 'textarea' || el.type == 'text') {
          this._add_events( el, el, 'keyup', 'set_text' );
       }
       else {

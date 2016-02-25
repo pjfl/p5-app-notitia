@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Expanding textarea notes field working
           - Next of kin working
           - Added tips for buttons
           - Creates related role when user created

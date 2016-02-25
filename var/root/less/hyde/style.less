@@ -113,12 +113,12 @@ footer {
    }
 }
 .page-status {
-   color: @contrast; bottom: 0; display: none; font-size: 14px;
+   color: @contrast; bottom: 0; font-size: 14px;
    font-weight: bold; padding: 9px; position: fixed; right: 18px;
-   z-index: 100;
+   visibility: hidden; z-index: 100;
 }
 .page-status:hover {
-   display: block;
+   visibility: visible;
 }
 @media (max-width: 568px) {
    footer {
@@ -515,9 +515,6 @@ pre, code {
    display: inline-block; .mono-font;
    margin: 0; padding: 0 0.5em; white-space: pre;
 }
-@media (min-width: 768px) {
-   pre, code { font-size: 16px; }
-}
 .highlight {
    margin: 1em 0; overflow: auto; padding: 10px 0; width: 100%;
 }
@@ -543,6 +540,24 @@ strong { font-weight: 700; }
 .align-center { text-align: center; }
 .align-left { text-align: left; }
 .align-right { text-align: right; }
+.expanding_area {
+   display: inline-block; margin: 0.25em 0; max-width: 400px;
+   min-width: 400px; overflow: hidden;
+   position: relative; vertical-align: middle;
+}
+.expanding_area > textarea, .expanding_area > input[type=textarea],
+.expanding_spacer, .expanding_spacer > span {
+   white-space: pre-wrap; word-wrap: break-word;
+}
+.expanding_area > textarea, .expanding_area > input[type=textarea], {
+   height: 100%; left: 0; margin: 0; overflow: hidden;
+   position: absolute; resize: none; top: 0;
+}
+.expanding_spacer {
+   border: 2px solid transparent; display: block; visibility: hidden;
+   margin: 0 !important; min-width: 400px;
+   padding: 3.25px 0.75em !important; text-align: left;
+}
 .left { float: left; }
 .right { float: right; margin-left: 0.5em; }
 /* Article HTML */
