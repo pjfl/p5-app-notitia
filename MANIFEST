@@ -42,6 +42,7 @@ lib/App/Notitia/Util.pm
 lib/App/Notitia/View/HTML.pm
 lib/App/Notitia/View/JSON.pm
 lib/App/Notitia/app-notitia.json
+lib/Web/Components/Role/Email.pm
 t/02pod.t
 t/03podcoverage.t
 t/05kwalitee.t
@@ -96,6 +97,8 @@ var/root/templates/hyde/secondary-nav-items.tt
 var/root/templates/hyde/section_nav.tt
 var/root/templates/hyde/splash_content.tt
 var/root/templates/hyde/standard.tt
+var/root/templates/hyde/user_email.tt
+var/root/templates/hyde/vehicle_content.tt
 var/root/templates/hyde/wrapper.tt
 var/share/App-Notitia-Schema-Schedule-0.1-MySQL.sql
 var/share/App-Notitia-Schema-Schedule-0.1-PostgreSQL.sql

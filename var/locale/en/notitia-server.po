@@ -27,6 +27,12 @@ msgstr "Active"
 msgid "address"
 msgstr "Address"
 
+msgid "address_viewer"
+msgstr "Address Viewer"
+
+msgid "administrator"
+msgstr "Administrator"
+
 msgid "again"
 msgstr "Again"
 
@@ -38,6 +44,9 @@ msgstr "Bike Rider"
 
 msgid "change_password_title"
 msgstr "Change Password"
+
+msgid "controller"
+msgstr "Controller"
 
 msgid "create"
 msgstr "Create"
@@ -66,11 +75,20 @@ msgstr "Delete"
 msgid "dob"
 msgstr "Date of Birth"
 
+msgid "driver"
+msgstr "Driver"
+
 msgid "email_address"
 msgstr "Email Address"
 
+msgid "event_manager"
+msgstr "Event Manager"
+
 msgid "first_name"
 msgstr "First Name"
+
+msgid "fund_raiser"
+msgstr "Fund Raiser"
 
 msgid "home_phone"
 msgstr "Home Phone"
@@ -128,6 +146,9 @@ msgstr "People"
 
 msgid "person_administration_tip"
 msgstr "Administer person records"
+
+msgid "person_manager"
+msgstr "Person Manager"
 
 msgid "postcode"
 msgstr "Postcode"

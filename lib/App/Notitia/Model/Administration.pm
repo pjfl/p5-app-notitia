@@ -1,7 +1,7 @@
 package App::Notitia::Model::Administration;
 
 #use App::Notitia::Attributes;  # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( loc );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
@@ -92,7 +92,6 @@ my $_bind_person_fields = sub {
                                       container_class => 'right' } ),
       postcode         => $_bind->( 'postcode',      $user->postcode ),
       resigned         => $_bind->( 'resigned',      $user->resigned ),
-      roles            => $_bind->( 'roles',         $user->list_roles ),
       subscription     => $_bind->( 'subscription',  $user->subscription ),
       username         => $_bind->( 'username',      $user->name ),
    };
@@ -111,7 +110,7 @@ my $_save_person_button = sub {
 my $_select_person_list = sub {
    my $schema = shift; my $person_rs = $schema->resultset( 'Person' );
 
-   my $names = [ [ '', '' ],
+   my $names = [ [ NUL, NUL ],
                  map { [ $_, "user/${_}" ] }
                  $person_rs->search( {}, { columns => [ 'name' ] } )->all ];
 
@@ -121,14 +120,14 @@ my $_select_person_list = sub {
 my $_update_user_from_request = sub {
    my ($req, $user) = @_; my $params = $req->body_params;
 
-   my $args = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
+   my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
 
    $user->name( $params->( 'username' ) );
 
    for my $attr (qw( active address dob email_address first_name home_phone
                      joined last_name mobile_phone notes password_expired
                      postcode resigned subscription )) {
-      my $v = $params->( $attr, $args );
+      my $v = $params->( $attr, $opts );
 
       not defined $v and is_member $attr, [ qw( active password_expired ) ]
           and $v = FALSE;
@@ -189,6 +188,13 @@ my $_find_user_by_name = sub {
    return $person;
 };
 
+my $_list_all_roles = sub {
+   my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
+
+   return [ [ NUL, NUL ], $type_rs->search( { type => 'role' },
+                                            { columns => [ 'name' ] } )->all ];
+};
+
 # Public methods
 sub activate {
    my ($self, $req) = @_;
@@ -211,9 +217,13 @@ sub create_person_action {
 
    $_update_user_from_request->( $req, $user );
 
+   my $role = $req->body_params->( 'roles' );
+
    $user->password( my $password = substr create_token, 0, 12 );
    $user->password_expired( TRUE );
    $user->insert;
+   $user->add_member_to( $role );
+
    $self->$_create_user_email( $req, $user, $password );
 
    my $message  = [ 'User [_1] created', $user->name ];
@@ -254,9 +264,16 @@ sub person {
       title    => loc( $req, 'person_administration' ), };
    my $fields  = $page->{fields};
 
-   $name or  $fields->{select} = $_select_person_list->( $self->schema );
-   $name and $fields->{delete} = $_delete_person_button->();
-             $fields->{save  } = $_save_person_button->( $name );
+   if ($name) {
+      $fields->{delete} = $_delete_person_button->();
+      $fields->{roles } = $_bind->( 'roles', $user->list_roles );
+   }
+   else {
+      $fields->{roles } = $_bind->( 'roles', $self->$_list_all_roles() );
+      $fields->{select} = $_select_person_list->( $self->schema );
+   }
+
+   $fields->{save} = $_save_person_button->( $name );
 
    return $self->get_stash( $req, $page );
 }

@@ -123,8 +123,7 @@ sub add_certification_for {
       and throw 'Person [_1] already has certification [_2]', [ $self, $type ];
 
    # TODO: Add the optional completed and notes fields
-   return $self->certs->create
-      ( { recipient_id => $self->id, type_id => $type->id } );
+   return $self->create_related( 'certs', { type_id => $type->id } );
 }
 
 sub add_endorsement_for {
@@ -135,8 +134,7 @@ sub add_endorsement_for {
                 [ $self, $code_name ];
 
    # TODO: Add the fields endorsed, points, and notes
-   return $self->endorsements->create
-      ( { recipient_id => $self->id, code => $code_name } );
+   return $self->create_related( 'endorsements', { code => $code_name } );
 }
 
 sub add_member_to {
@@ -149,8 +147,7 @@ sub add_member_to {
 
    $self->$_assert_membership_allowed( $type );
 
-   return $self->roles->create
-      ( { member_id => $self->id, type_id => $type->id } );
+   return $self->create_related( 'roles', { type_id => $type->id } );
 }
 
 sub add_participent_for {
@@ -161,8 +158,7 @@ sub add_participent_for {
    $self->is_participent_of( $event_name, $event )
       and throw 'Person [_1] already participating in [_2]', [ $self, $event ];
 
-   return $self->participents->create
-      ( { event_id => $event->id, participent_id => $self->id } );
+   return $self->create_related( 'participents', { event_id => $event->id } );
 }
 
 sub assert_certified_for {

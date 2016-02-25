@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Creates related role when user created
           - Sends emails when users created
           - Can select people records
           - Can update person record

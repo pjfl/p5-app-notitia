@@ -34,7 +34,7 @@
 <p>Welcome [% first_name %].</p>
 
 <p>An account has been created using your email address on the [% app_name %]
-   application with a login id of [% username %] password [% password %].</p>
+   application with a login id of [% username %] password [% password %]</p>
 
 <p>Click on this
    <a class="link" href="[% link %]" target ="_blank" title="Activate Account">

@@ -18,8 +18,9 @@ my $e;
 
 $person and $person->delete;
 $person = eval { $person_rs->create
-                    ( { first_name => 'john', last_name => 'smith',
-                        name => 'john', password => '12345678' } ) };
+                    ( { email_address => 'john@ex.com', first_name => 'john',
+                        last_name => 'smith', name => 'john',
+                        password => '12345678' } ) };
 
 if ($e = $EVAL_ERROR) {
    if ($e->can( 'class' ) and $e->class eq 'ValidationErrors') {
@@ -58,8 +59,8 @@ eval { $person->authenticate( 'nonono' ) }; $e = $EVAL_ERROR;
 is $e->class, 'IncorrectPassword', 'Authenticate throws on incorrect password';
 
 eval { $person_rs->create
-          ( { first_name => 'a', last_name => 'user',
-              name       => 'x', password => '12345678' } ) };
+          ( { email_address => 'john@ex.com', first_name => 'a',
+              last_name  => 'user', name => 'x', password => '12345678' } ) };
 
 $e = $EVAL_ERROR; is $e->class, 'ValidationErrors', 'Validation errors';
 
@@ -68,7 +69,8 @@ is $e->args->[ 0 ]->class, 'ValidLength', 'Invalid name length';
 $person =   $person_rs->search( { name => 'admin' } )->first;
 $person and $person->delete;
 $person =   $person_rs->create
-   ( { first_name => 'Admin', last_name => 'User',
+   ( { email_address => 'admin@example.com',
+       first_name => 'Admin', last_name => 'User',
        name       => 'admin', password  => '12345678' } );
 $person->activate;
 
