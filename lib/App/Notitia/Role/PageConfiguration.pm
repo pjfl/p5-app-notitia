@@ -2,6 +2,7 @@ package App::Notitia::Role::PageConfiguration;
 
 use namespace::autoclean;
 
+use App::Notitia::Util qw( loc );
 use Try::Tiny;
 use Moo::Role;
 
@@ -52,7 +53,7 @@ around 'load_page' => sub {
    $page->{status_message     } = $req->session->collect_status_message( $req );
 
 #   $page->{form_name} //= 'markdown';
-   $page->{hint     } //= $req->loc( 'Hint' );
+   $page->{hint     } //= loc( $req, 'Hint' );
    $page->{wanted   } //= join '/', @{ $req->uri_params->() // [] };
 
    return $page;

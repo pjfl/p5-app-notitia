@@ -13,7 +13,7 @@ Data::Validation::Constants->Exception_Class( 'App::Notitia::Exception' );
 Web::ComposableRequest::Constants->Exception_Class( 'App::Notitia::Exception' );
 
 our @EXPORT = qw( DOTS HASH_CHAR SHIFT_TYPE_ENUM SLOT_TYPE_ENUM
-                  TYPE_TYPE_ENUM VARCHAR_MAX_SIZE );
+                  TILDE TYPE_TYPE_ENUM VARCHAR_MAX_SIZE );
 
 sub import {
    my $class       = shift;
@@ -32,6 +32,7 @@ sub import {
 
 sub DOTS      () { "\x{2026}" }
 sub HASH_CHAR () { chr 35     }
+sub TILDE     () { chr 126    }
 
 sub VARCHAR_MAX_SIZE () { 255 }
 sub SHIFT_TYPE_ENUM  () { [ qw( day night ) ] }

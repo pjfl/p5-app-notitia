@@ -1,7 +1,7 @@
 package App::Notitia::Model::Administration;
 
 #use App::Notitia::Attributes;  # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
 use App::Notitia::Util      qw( loc );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
@@ -45,9 +45,9 @@ around 'get_stash' => sub {
 my $_bind_option = sub {
    my $v = shift;
 
-   is_arrayref $v and return { label => $v->[ 0 ], value => $v->[ 1  ] };
-
-   return { label => $v, value => $v }
+   return is_arrayref $v
+        ? { label => $v->[ 0 ], selected => $v->[ 2 ], value => $v->[ 1 ] }
+        : { label => $v, value => $v };
 };
 
 my $_bind = sub {
@@ -69,60 +69,58 @@ my $_bind = sub {
 };
 
 my $_bind_person_fields = sub {
-   my $user = shift;
+   my $person = shift;
 
    return {
       active           => $_bind->( 'active', TRUE,
-                                    { checked     => $user->active,
+                                    { checked     => $person->active,
                                       nobreak     => TRUE, } ),
-      address          => $_bind->( 'address',       $user->address ),
-      dob              => $_bind->( 'dob',           $user->dob ),
-      email_address    => $_bind->( 'email_address', $user->email_address ),
-      first_name       => $_bind->( 'first_name',    $user->first_name ),
-      home_phone       => $_bind->( 'home_phone',    $user->home_phone ),
-      joined           => $_bind->( 'joined',        $user->joined ),
-      last_name        => $_bind->( 'last_name',     $user->last_name ),
-      mobile_phone     => $_bind->( 'mobile_phone',  $user->mobile_phone ),
-      next_of_kin      => $_bind->( 'next_of_kin',   $user->next_of_kin,
-                                    { disabled    => TRUE } ),
-      notes            => $_bind->( 'notes',         $user->notes,
+      address          => $_bind->( 'address',       $person->address ),
+      dob              => $_bind->( 'dob',           $person->dob ),
+      email_address    => $_bind->( 'email_address', $person->email_address ),
+      first_name       => $_bind->( 'first_name',    $person->first_name ),
+      home_phone       => $_bind->( 'home_phone',    $person->home_phone ),
+      joined           => $_bind->( 'joined',        $person->joined ),
+      last_name        => $_bind->( 'last_name',     $person->last_name ),
+      mobile_phone     => $_bind->( 'mobile_phone',  $person->mobile_phone ),
+      notes            => $_bind->( 'notes',         $person->notes,
                                     { class       => 'autosize' } ),
       password_expired => $_bind->( 'password_expired', TRUE,
-                                    { checked     => $user->password_expired,
+                                    { checked     => $person->password_expired,
                                       container_class => 'right' } ),
-      postcode         => $_bind->( 'postcode',      $user->postcode ),
-      resigned         => $_bind->( 'resigned',      $user->resigned ),
-      subscription     => $_bind->( 'subscription',  $user->subscription ),
-      username         => $_bind->( 'username',      $user->name ),
+      postcode         => $_bind->( 'postcode',      $person->postcode ),
+      resigned         => $_bind->( 'resigned',      $person->resigned ),
+      subscription     => $_bind->( 'subscription',  $person->subscription ),
+      username         => $_bind->( 'username',      $person->name ),
    };
 };
 
 my $_delete_person_button = sub {
-   return { class => 'right', label => 'delete', value => 'delete_person' };
+   my ($req, $name) = @_;
+
+   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
+           . loc( $req, 'delete_tip', [ 'person', $name ] );
+
+   return { container_class => 'right', label => 'delete',
+            tip => $tip, value => 'delete_person' };
 };
 
 my $_save_person_button = sub {
-   my $name = shift; my $k = $name ? 'update' : 'create';
+   my ($req, $name) = @_; my $k = $name ? 'update' : 'create';
 
-   return { class => 'right', label => $k, value => "${k}_person" };
+   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
+           . loc( $req, "${k}_tip", [ 'person', $name ] );
+
+   return { container_class => 'right', label => $k,
+            tip => $tip, value => "${k}_person" };
 };
 
-my $_select_person_list = sub {
-   my $schema = shift; my $person_rs = $schema->resultset( 'Person' );
-
-   my $names = [ [ NUL, NUL ],
-                 map { [ $_, "user/${_}" ] }
-                 $person_rs->search( {}, { columns => [ 'name' ] } )->all ];
-
-   return $_bind->( 'select_person', $names, { onchange => TRUE } );
-};
-
-my $_update_user_from_request = sub {
-   my ($req, $user) = @_; my $params = $req->body_params;
+my $_update_person_from_request = sub {
+   my ($req, $person) = @_; my $params = $req->body_params;
 
    my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
 
-   $user->name( $params->( 'username' ) );
+   $person->name( $params->( 'username' ) );
 
    for my $attr (qw( active address dob email_address first_name home_phone
                      joined last_name mobile_phone notes password_expired
@@ -137,7 +135,7 @@ my $_update_user_from_request = sub {
       length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
          and $v = str2date_time( "${v} 00:00", 'GMT' );
 
-      $user->$attr( $v );
+      $person->$attr( $v );
    }
 
    return;
@@ -145,7 +143,7 @@ my $_update_user_from_request = sub {
 
 # Private methods
 my $_create_user_email = sub {
-   my ($self, $req, $user, $password) = @_;
+   my ($self, $req, $person, $password) = @_;
 
    my $conf    = $self->config;
    my $key     = substr create_token, 0, 32;
@@ -159,16 +157,16 @@ my $_create_user_email = sub {
       from            => $from,
       stash           => {
          app_name     => $conf->title,
-         first_name   => $user->first_name,
+         first_name   => $person->first_name,
          link         => $req->uri_for( 'user/activate', [ $key ] ),
          password     => $password,
          title        => $subject,
-         username     => $user->name, },
+         username     => $person->name, },
       subject         => $subject,
       template        => 'user_email',
-      to              => $user->email_address, };
+      to              => $person->email_address, };
 
-   $conf->sessdir->catfile( $key )->println( $user->name );
+   $conf->sessdir->catfile( $key )->println( $person->name );
 
    my $r = $self->send_email( $post );
    my ($id) = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
@@ -178,7 +176,7 @@ my $_create_user_email = sub {
    return;
 };
 
-my $_find_user_by_name = sub {
+my $_find_person_by = sub {
    my ($self, $name) = @_;
 
    my $person_rs = $self->schema->resultset( 'Person' );
@@ -191,8 +189,33 @@ my $_find_user_by_name = sub {
 my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
-   return [ [ NUL, NUL ], $type_rs->search( { type => 'role' },
-                                            { columns => [ 'name' ] } )->all ];
+   return [ [ NUL, NUL ], $type_rs->search
+            ( { type => 'role' }, { columns => [ 'name' ] } )->all ];
+};
+
+my $_person_tuple = sub {
+   my ($person, $selected) = @_; $selected //= NUL;
+
+   my $label = $person->first_name.SPC.$person->last_name." (${person})";
+   my $value = "user/${person}";
+
+   return [ $label, $value, "${person}" eq "${selected}" ? TRUE : FALSE ];
+};
+
+my $_list_all_people = sub {
+   my ($self, $selected) = @_;
+
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my @people    = map { $_person_tuple->( $_, $selected ) } $person_rs->search
+      ( {}, { columns => [ 'first_name', 'last_name', 'name' ] } )->all;
+
+   return [ [ NUL, NUL ], @people ];
+};
+
+my $_select_person_list = sub {
+   my ($self, $people) = @_;
+
+   return $_bind->( 'select_person', $people, { onchange => TRUE } );
 };
 
 # Public methods
@@ -202,7 +225,7 @@ sub activate {
    my $file = $self->config->sessdir->catfile( $req->uri_params->( 0 ) );
    my $name = $file->chomp->getline; $file->unlink;
 
-   $self->$_find_user_by_name( $name )->activate;
+   $self->$_find_person_by( $name )->activate;
 
    my $location = $req->uri_for( "user/password/${name}" );
    my $message  = [ 'User [_1] account activated', $name ];
@@ -213,21 +236,22 @@ sub activate {
 sub create_person_action {
    my ($self, $req) = @_;
 
-   my $user = $self->schema->resultset( 'Person' )->new_result( {} );
+   my $person = $self->schema->resultset( 'Person' )->new_result( {} );
 
-   $_update_user_from_request->( $req, $user );
+   $_update_person_from_request->( $req, $person );
 
    my $role = $req->body_params->( 'roles' );
 
-   $user->password( my $password = substr create_token, 0, 12 );
-   $user->password_expired( TRUE );
-   $user->insert;
-   $user->add_member_to( $role );
+   $person->password( my $password = substr create_token, 0, 12 );
+   $person->password_expired( TRUE );
+   $person->insert;
+   # TODO: This can throw which will fuck shit up. Needs a transaction
+   $person->add_member_to( $role );
 
-   $self->$_create_user_email( $req, $user, $password );
+   $self->$_create_user_email( $req, $person, $password );
 
-   my $message  = [ 'User [_1] created', $user->name ];
-   my $location = $req->uri_for( 'user/'.$user->name );
+   my $location = $req->uri_for( 'user/'.$person->name );
+   my $message  = [ 'User [_1] created', $person->name ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -235,12 +259,10 @@ sub create_person_action {
 sub delete_person_action {
    my ($self, $req) = @_;
 
-   my $name = $req->uri_params->( 0 );
-   my $user = $self->$_find_user_by_name( $name );
-
-   $user->delete; my $message = [ 'User [_1] deleted', $name ];
-
+   my $name     = $req->uri_params->( 0 );
+   my $person   = $self->$_find_person_by( $name ); $person->delete;
    my $location = $req->uri_for( 'user' );
+   my $message  = [ 'User [_1] deleted', $name ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -254,26 +276,30 @@ sub index {
 }
 
 sub person {
-   my ($self, $req) = @_;
+   my ($self, $req) = @_; my $people;
 
-   my $name    = $req->uri_params->( 0, { optional => TRUE } );
-   my $user    = $name ? $self->$_find_user_by_name( $name ) : Class::Null->new;
-   my $page    = {
-      fields   => $_bind_person_fields->( $user ),
+   my $name    =  $req->uri_params->( 0, { optional => TRUE } );
+   my $person  =  $name ? $self->$_find_person_by( $name ) : Class::Null->new;
+   my $page    =  {
+      fields   => $_bind_person_fields->( $person ),
       template => [ 'nav_panel', 'person' ],
       title    => loc( $req, 'person_administration' ), };
-   my $fields  = $page->{fields};
+   my $fields  =  $page->{fields};
 
    if ($name) {
-      $fields->{delete} = $_delete_person_button->();
-      $fields->{roles } = $_bind->( 'roles', $user->list_roles );
+      $people = $self->$_list_all_people( $person->next_of_kin );
+      $fields->{delete} = $_delete_person_button->( $req, $name );
+      $fields->{roles } = $_bind->( 'roles', $person->list_roles );
    }
    else {
+      $people = $self->$_list_all_people();
       $fields->{roles } = $_bind->( 'roles', $self->$_list_all_roles() );
-      $fields->{select} = $_select_person_list->( $self->schema );
+      $fields->{select} = $self->$_select_person_list( $people );
    }
 
-   $fields->{save} = $_save_person_button->( $name );
+   $fields->{next_of_kin} = $_bind->( 'next_of_kin', $people );
+
+   $fields->{save} = $_save_person_button->( $req, $name );
 
    return $self->get_stash( $req, $page );
 }
@@ -292,10 +318,10 @@ sub vehicle {
 sub update_person_action {
    my ($self, $req) = @_;
 
-   my $name = $req->uri_params->( 0 );
-   my $user = $self->$_find_user_by_name( $name );
+   my $name   = $req->uri_params->( 0 );
+   my $person = $self->$_find_person_by( $name );
 
-   $_update_user_from_request->( $req, $user ); $user->update;
+   $_update_person_from_request->( $req, $person ); $person->update;
 
    my $message = [ 'User [_1] updated', $name ];
 

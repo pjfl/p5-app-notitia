@@ -1,6 +1,9 @@
 [% MACRO Button( field ) BLOCK -%]
-   <button class="button [% field.class %]" name="_method" type="submit"
-           value="[% field.value %]">[% loc( field.label ) %]</button>
+[%    IF field.tip %]<span class="tips [% field.container_class %]"
+                           title="[% field.tip %]">[% END -%]
+      <button class="button [% field.class %]" name="_method" type="submit"
+              value="[% field.value %]">[% loc( field.label ) %]</button>
+[%    IF field.tip %]</span>[% END -%]
 [% END -%]
 [% MACRO CheckBox( field ) BLOCK -%]
    <div class="container-group [% field.container_class %]">
@@ -44,8 +47,9 @@
    <select class="standard-field" name="[% field.name %]"
 [%    IF field.onchange -%]
       onchange="if (this.value) window.location.href=this.value"[% END %]>
-[%    FOR option IN field.value %]
-      <option value="[% option.value %]">[% loc( option.label ) %]</option>
+[%    FOR option IN field.value -%]
+      <option [% IF option.selected %]selected="selected" [% END -%]
+          value="[% option.value %]">[% loc( option.label ) %]</option>
 [%    END -%]
    </select><br/>
 [% END -%]

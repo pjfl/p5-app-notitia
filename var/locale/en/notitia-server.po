@@ -51,6 +51,9 @@ msgstr "Controller"
 msgid "create"
 msgstr "Create"
 
+msgid "create_tip"
+msgstr "Create a new [_1] record"
+
 msgid "day_controller_0"
 msgstr "Ctrl. AM"
 
@@ -71,6 +74,9 @@ msgstr "Day South"
 
 msgid "delete"
 msgstr "Delete"
+
+msgid "delete_tip"
+msgstr "Delete the [_1] record for [_2]"
 
 msgid "dob"
 msgstr "Date of Birth"
@@ -182,6 +188,9 @@ msgstr "Subscription"
 
 msgid "update"
 msgstr "Update"
+
+msgid "update_tip"
+msgstr "Update the [_1] record for [_2]"
 
 msgid "username"
 msgstr "User Name"

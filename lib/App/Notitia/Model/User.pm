@@ -47,7 +47,8 @@ my $_find_user_by_name = sub {
 
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->search( { name => $name } )->single
-      or throw 'User [_1] unknown', [ $name ], rv => HTTP_EXPECTATION_FAILED;
+      or throw 'User [_1] unknown', [ $name ], level => 2,
+               rv => HTTP_EXPECTATION_FAILED;
 
    return $person;
 };

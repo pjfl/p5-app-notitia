@@ -26,7 +26,7 @@
 [% TextField( page.fields.postcode ) -%]
 [% TextField( page.fields.mobile_phone ) -%]
 [% TextField( page.fields.home_phone ) -%]
-[% TextField( page.fields.next_of_kin ) -%]
+[% Select( page.fields.next_of_kin ) -%]
 [% DateField( page.fields.dob ) -%]
 [% DateField( page.fields.joined ) -%]
 [% DateField( page.fields.resigned ) -%]
