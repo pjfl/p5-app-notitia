@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Added role management form
+          - Added people list view
           - Expanding textarea notes field working
           - Next of kin working
           - Added tips for buttons

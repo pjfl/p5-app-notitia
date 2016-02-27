@@ -1,0 +1,20 @@
+<!-- Role Content -->
+<div class="unit four-fifths">
+   <article class="skinny">
+      <h4>[% page.title %]</h4>
+[% IF page.fields.username.value -%]
+[%    href = 'role/' _ page.fields.username.value -%]
+[% ELSE %]
+[%    href = 'role' -%]
+[% END %]
+      <form action="[% uri_for( href ) %]"
+           enctype="application/x-www-form-urlencoded"
+            method="post" name="person-admin">
+[% Select( page.fields.roles ) -%]
+[% Button( page.fields.add ) -%]
+         <div class="form_separator"><hr/></div>
+[% Select( page.fields.person_roles ) -%]
+[% Button( page.fields.remove ) -%]
+      </form>
+   </article>
+</div>

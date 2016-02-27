@@ -9,6 +9,8 @@ has '+moniker' => default => 'root';
 sub dispatch_request {
    sub (GET  + /admin            + ?*) { [ 'admin', 'index',           @_ ] },
    sub (GET  + /admin/index      + ?*) { [ 'admin', 'index',           @_ ] },
+   sub (POST + /role/*           + ?*) { [ 'admin', 'from_request',    @_ ] },
+   sub (GET  + /role/*           + ?*) { [ 'admin', 'role',            @_ ] },
    sub (GET  + /rota  | /rota/** + ?*) { [ 'sched', 'day_rota',        @_ ] },
    sub (GET  + /user/activate/*  + ?*) { [ 'admin', 'activate',        @_ ] },
    sub (POST + /user/login       + ?*) { [ 'user',  'login_action',    @_ ] },
@@ -21,6 +23,7 @@ sub dispatch_request {
    sub (GET  + /user/profile     + ?*) { [ 'user',  'profile_dialog',  @_ ] },
    sub (POST + /user  | /user/*  + ?*) { [ 'admin', 'from_request',    @_ ] },
    sub (GET  + /user  | /user/*  + ?*) { [ 'admin', 'person',          @_ ] },
+   sub (GET  + /users            + ?*) { [ 'admin', 'people',          @_ ] },
    sub (GET  + /vehicle          + ?*) { [ 'admin', 'vehicle',         @_ ] },
    sub (GET  + /vehicle/*        + ?*) { [ 'admin', 'vehicle',         @_ ] },
    sub (GET  + /index | /        + ?*) { [ 'sched', 'index',           @_ ] },

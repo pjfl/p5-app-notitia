@@ -1,0 +1,16 @@
+<!-- People Content -->
+<div class="unit four-fifths">
+   <article class="skinny">
+      <h4>[% page.title %]</h4>
+      <table>
+         <tr>
+[% FOR cell IN page.fields.headers -%]
+      <th class="people-header">[% cell.value %]</th>
+[% END -%]
+         </tr>
+[% FOR person IN page.fields.rows -%]
+[%       TableRow( person ) -%]
+[% END -%]
+      </table>
+   </article>
+</div>

@@ -20,6 +20,11 @@
       class="standard-field [% field.class %]" id="[% field.name %]"
        name="[% field.name %]" type="date" value="[% field.value %]"><br/>
 [% END -%]
+[% MACRO Dispatch( f ) BLOCK -%]
+[%    IF f.type == 'link' -%]
+[%       LinkWithTips( f.href, f.class, f.value, f.hint, f.tip, f.name ) -%]
+[%    END -%]
+[% END -%]
 [% MACRO FormWithButton( href, class, content, form, tip, id, value ) BLOCK -%]
 <form action="[% href %]" enctype="application/x-www-form-urlencoded"
       method="post" name="[% form %]">
@@ -45,6 +50,7 @@
 [% MACRO Select( field ) BLOCK -%]
    <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
    <select class="standard-field" name="[% field.name %]"
+[%    IF field.multiple %]multiple="multiple" [% END -%]
 [%    IF field.onchange -%]
       onchange="if (this.value) window.location.href=this.value"[% END %]>
 [%    FOR option IN field.value -%]
@@ -57,7 +63,8 @@
    <tr>
 [%    FOR cell IN row -%]
       <td class="[% cell.class %]" colspan=[% cell.colspan %]>
-         [% cell.val %]</td>
+[%    IF reference( cell.value ) == 'HASH'; Dispatch( cell.value ) %]
+[%    ELSE; cell.value; END %]</td>
 [%    END -%]
    </tr>
 [% END -%]

@@ -21,7 +21,7 @@ my $_rota_types_id = {};
 
 # Private functions
 my $_headers = sub {
-   return [ map { { val => loc( $_[ 0 ], "rota_heading_${_}" ) } } 0 .. 4 ];
+   return [ map { { value => loc( $_[ 0 ], "rota_heading_${_}" ) } } 0 .. 4 ];
 };
 
 my $_events = sub {
@@ -30,13 +30,13 @@ my $_events = sub {
    my $events = $rota->{events};
    my $date   = $rota_dt->day_abbr.SPC.$rota_dt->day;
 
-   push @{ $events }, [ { val     => $date, class => 'rota-date' },
-                        { val     => ucfirst( $todays_events->next // NUL ),
+   push @{ $events }, [ { value   => $date, class => 'rota-date' },
+                        { value   => ucfirst( $todays_events->next // NUL ),
                           colspan => 4 } ];
 
    while (defined (my $event = $todays_events->next)) {
-      push @{ $events }, [ { val => undef },
-                           { val => ucfirst( $event ), colspan => 4 } ];
+      push @{ $events }, [ { value => undef },
+                           { value => ucfirst( $event ), colspan => 4 } ];
    }
 
    return;
@@ -54,8 +54,8 @@ my $_controllers = sub {
          my $k = "${shift_type}_controller_${subslot}";
 
          push @{ $controls },
-            [ { val => loc( $req, $k ), class => 'rota-header' },
-              { val => $slot_rows->{ $k }, colspan => 4 } ];
+            [ { value => loc( $req, $k ), class => 'rota-header' },
+              { value => $slot_rows->{ $k }, colspan => 4 } ];
       }
    }
 
@@ -77,12 +77,12 @@ my $_riders_n_drivers = sub {
          my $k = "${shift_type}_rider_${subslot}";
 
          push @{ $riders },
-            [ { val   => loc( $req, $k ), class => 'rota-header' },
-              { val   => $slot_rows->{ $k }->{vehicle }, class => 'narrow' },
-              { val   => $slot_rows->{ $k }->{operator} },
-              { val   => $slot_rows->{ $k }->{bike_req},
+            [ { value => loc( $req, $k ), class => 'rota-header' },
+              { value => $slot_rows->{ $k }->{vehicle }, class => 'narrow' },
+              { value => $slot_rows->{ $k }->{operator} },
+              { value => $slot_rows->{ $k }->{bike_req},
                 class => 'centre narrow' },
-              { val   => $slot_rows->{ $k }->{ops_veh }, class => 'narrow' }, ];
+              { value => $slot_rows->{ $k }->{ops_veh }, class => 'narrow' }, ];
       }
 
       $max_slots = $limits->[ 4 + $shift_no ];
@@ -91,11 +91,11 @@ my $_riders_n_drivers = sub {
          my $k = "${shift_type}_driver_${subslot}";
 
          push @{ $drivers },
-            [ { val => loc( $req, $k ), class => 'rota-header' },
-              { val => undef },
-              { val => $slot_rows->{ $k }->{operator} },
-              { val => undef, class => 'narrow' },
-              { val => $slot_rows->{ $k }->{ops_veh }, class => 'narrow' }, ];
+            [ { value => loc( $req, $k ), class => 'rota-header' },
+              { value => undef },
+              { value => $slot_rows->{ $k }->{operator} },
+              { value => undef, class => 'narrow' },
+              { value => $slot_rows->{ $k }->{ops_veh }, class => 'narrow' }, ];
       }
 
       $shift_no++;
@@ -115,7 +115,7 @@ my $_get_page = sub {
                     events      => [],
                     headers     => $_headers->( $req ),
                     shifts      => [], },
-      template => [ 'nav_panel', 'rota' ],
+      template => [ 'contents', 'rota' ],
       title    => $title };
    my $rota    =  $page->{rota};
 
@@ -186,7 +186,7 @@ sub index {
    my ($self, $req) = @_;
 
    return $self->get_stash( $req, {
-      layout => 'index', template => [ 'nav_panel', 'splash' ],
+      layout => 'index', template => [ 'contents', 'splash' ],
       title  => loc( $req, 'main_index_title' ), } );
 }
 

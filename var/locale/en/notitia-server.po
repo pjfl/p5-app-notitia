@@ -1,31 +1,31 @@
 # GNU Gettext Portable Object.
-# Copyright (C) 2016 RoxSoft.
-# Lazarus Long <lazarus@RoxSoft.co.uk>, 2016.
+# Copyright (C) 2016 Lazarus Long.
+# Lazarus Long <lazarus@roxsoft.co.uk>, 2016.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: App::Notitia 0.1\n"
 "PO-Revision-Date: 2016-02-21 00:00+0000\n"
-"Last-Translator: Lazarus Long <lazarus@RoxSoft.co.uk>\n"
-"Language-Team: English <Support@RoxSoft.co.uk>\n"
+"Last-Translator: Lazarus Long <lazarus@roxsoft.co.uk>\n"
+"Language-Team: English <support@roxsoft.co.uk>\n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "Hint"
-msgstr "Information"
-
-msgid "Site Description"
-msgstr "People and resource scheduling"
-
 msgid "active"
 msgstr "Active"
 
 msgid "address"
 msgstr "Address"
+
+msgid "add_role"
+msgstr "Add Role"
+
+msgid "add_role_tip"
+msgstr "Add [_2] to the selected role(s)"
 
 msgid "address_viewer"
 msgstr "Address Viewer"
@@ -41,6 +41,15 @@ msgstr "Asset Manager"
 
 msgid "bike_rider"
 msgstr "Bike Rider"
+
+msgid "certification_management_heading"
+msgstr "Certificates"
+
+msgid "certification_management_link"
+msgstr "Certs"
+
+msgid "certification_management_tip"
+msgstr "Administer 'certification' records"
 
 msgid "change_password_title"
 msgstr "Change Password"
@@ -87,14 +96,41 @@ msgstr "Driver"
 msgid "email_address"
 msgstr "Email Address"
 
+msgid "endorsement_management_heading"
+msgstr "Endorsements"
+
+msgid "endorsement_management_link"
+msgstr "Tickets"
+
+msgid "endorsement_management_tip"
+msgstr "Administer 'endorsement' records"
+
+msgid "event_create_link"
+msgstr "Add Event"
+
+msgid "event_create_tip"
+msgstr "Create new 'event' records"
+
 msgid "event_manager"
 msgstr "Event Manager"
+
+msgid "events_list_link"
+msgstr "List Events"
+
+msgid "events_list_tip"
+msgstr "Displays 'event' records"
+
+msgid "events_management_heading"
+msgstr "Events"
 
 msgid "first_name"
 msgstr "First Name"
 
 msgid "fund_raiser"
 msgstr "Fund Raiser"
+
+msgid "Hint"
+msgstr "Information"
 
 msgid "home_phone"
 msgstr "Home Phone"
@@ -147,20 +183,71 @@ msgstr "Password"
 msgid "password_expired"
 msgstr "Password Expired"
 
-msgid "person_administration"
+msgid "people_list_link"
+msgstr "List People"
+
+msgid "people_list_tip"
+msgstr "Display 'people' records"
+
+msgid "people_management_heading"
 msgstr "People"
 
-msgid "person_administration_tip"
-msgstr "Administer person records"
+msgid "people_heading_0"
+msgstr "People"
+
+msgid "people_heading_1"
+msgstr "Edit"
+
+msgid "people_heading_2"
+msgstr "Roles"
+
+msgid "people_heading_3"
+msgstr "Certs"
+
+msgid "people_heading_4"
+msgstr "Tickets"
+
+msgid "person_create_link"
+msgstr "Add Person"
+
+msgid "person_create_tip"
+msgstr "Create new 'person' records"
+
+msgid "person_management_heading"
+msgstr "Person"
+
+msgid "person_management_link"
+msgstr "Edit"
+
+msgid "person_management_tip"
+msgstr "Administer 'person' records"
 
 msgid "person_manager"
 msgstr "Person Manager"
 
+msgid "person_roles"
+msgstr "Person Roles"
+
 msgid "postcode"
 msgstr "Postcode"
 
+msgid "remove_role"
+msgstr "Remove Role"
+
+msgid "remove_role_tip"
+msgstr "Remove [_2] from the selected role(s)"
+
 msgid "resigned"
 msgstr "Resigned"
+
+msgid "role_management_heading"
+msgstr "Roles"
+
+msgid "role_management_link"
+msgstr "Roles"
+
+msgid "role_management_tip"
+msgstr "Add and remove roles for this person"
 
 msgid "roles"
 msgstr "Roles"
@@ -183,6 +270,9 @@ msgstr "Veh."
 msgid "select_person"
 msgstr "Select Person"
 
+msgid "Site Description"
+msgstr "People and resource scheduling"
+
 msgid "subscription"
 msgstr "Subscription"
 
@@ -193,10 +283,22 @@ msgid "update_tip"
 msgstr "Update the [_1] record for [_2]"
 
 msgid "username"
-msgstr "User Name"
+msgstr "Username"
 
-msgid "vehicle_administration"
+msgid "vehicle_create_link"
+msgstr "Add Vehicle"
+
+msgid "vehicle_create_tip"
+msgstr "Create new 'vehicle' records"
+
+msgid "vehicle_management_heading"
+msgstr "Vehicle"
+
+msgid "vehicles_management_heading"
 msgstr "Vehicles"
 
-msgid "vehicle_administration_tip"
-msgstr "Administer vehicle records"
+msgid "vehicles_list_link"
+msgstr "List Vehicles"
+
+msgid "vehicles_list_tip"
+msgstr "Displays 'vehicle' records"

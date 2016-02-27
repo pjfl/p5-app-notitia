@@ -20,6 +20,40 @@ with    q(Web::Components::Role::Email);
 # Public attributes
 has '+moniker' => default => 'admin';
 
+# Private class attributes
+my $_action_link_map   = {
+   certification => 'certification',
+   endorsement   => 'endorsement',
+   event         => 'event',   events   => 'events',
+   password      => 'user/password',
+   person        => 'user',    people   => 'users',
+   role          => 'role',
+   activate      => 'user/activate',
+   vehicle       => 'vehicle', vehicles => 'vehicles', };
+
+my $_admin_links_cache = {};
+
+# Private functions
+my $_nav_folder = sub {
+   return { depth => $_[ 2 ] // 0,
+            title => loc( $_[ 0 ], $_[ 1 ].'_management_heading' ),
+            type  => 'folder', };
+};
+
+my $_nav_link = sub {
+   return { depth => $_[ 3 ] // 1,
+            tip   => loc( $_[ 0 ], $_[ 2 ].'_tip' ),
+            title => loc( $_[ 0 ], $_[ 2 ].'_link' ),
+            type  => 'link',
+            url   => $_action_link_map->{ $_[ 1 ] }, };
+};
+
+my $_uri_for_action = sub {
+   my ($req, $action, @args) = @_;
+
+   return $req->uri_for( $_action_link_map->{ $action }, @args );
+};
+
 # Construction
 around 'get_stash' => sub {
    my ($orig, $self, $req, @args) = @_;
@@ -27,46 +61,59 @@ around 'get_stash' => sub {
    my $stash = $orig->( $self, $req, @args );
 
    $stash->{nav} =
-      [ { depth => 0,
-          tip   => loc( $req, 'person_administration_tip' ),
-          title => loc( $req, 'person_administration' ),
-          type  => 'link',
-          url   => 'user', },
-        { depth => 0,
-          tip   => loc( $req, 'vehicle_administration_tip' ),
-          title => loc( $req, 'vehicle_administration' ),
-          type  => 'link',
-          url   => 'vehicle', }, ];
+      [ $_nav_folder->( $req, 'events' ),
+        $_nav_link->( $req, 'events', 'events_list' ),
+        $_nav_link->( $req, 'event', 'event_create' ),
+        $_nav_folder->( $req, 'people' ),
+        $_nav_link->( $req, 'people', 'people_list' ),
+        $_nav_link->( $req, 'person', 'person_create' ),
+        $_nav_folder->( $req, 'vehicles' ),
+        $_nav_link->( $req, 'vehicles', 'vehicles_list' ),
+        $_nav_link->( $req, 'vehicle', 'vehicle_create' ), ];
 
    return $stash;
 };
 
 # Private functions
+my $_add_role_button = sub {
+   my ($req, $name) = @_;
+
+   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
+           . loc( $req, 'add_role_tip', [ 'role', $name ] );
+
+   return { container_class => 'right', label => 'add_role',
+            tip             => $tip,    value => 'add_role' };
+};
+
 my $_bind_option = sub {
-   my ($v, $prefix, $numify) = @_;
+   my ($v, $opts) = @_;
+
+   my $prefix = $opts->{prefix} // NUL;
+   my $numify = $opts->{numify} // FALSE;
 
    return is_arrayref $v
-        ? { label => $v->[ 0 ].NUL, selected => $v->[ 2 ],
+        ? { label =>  $v->[ 0 ].NUL,
             value => ($v->[ 1 ] ? ($numify ? 0 + $v->[ 1 ] : $prefix.$v->[ 1 ])
-                                : undef) }
+                                : undef),
+            %{ $v->[ 2 ] // {} } }
         : { label => "${v}", value => ($numify ? 0 + $v : $prefix.$v) };
 };
 
 my $_bind = sub {
    my ($name, $v, $opts) = @_; $opts //= {};
 
-   my $prefix = delete $opts->{prefix} // NUL;
-   my $numify = delete $opts->{numify} // FALSE;
+   my $numify = $opts->{numify} // FALSE;
    my $params = { label => $name, name => $name }; my $class;
 
    if (defined $v and $class = blessed $v and $class eq 'DateTime') {
       $params->{value} = $v->ymd;
    }
    elsif (is_arrayref $v) {
-      $params->{value}
-         = [ map { $_bind_option->( $_, $prefix, $numify ) } @{ $v } ];
+      $params->{value} = [ map { $_bind_option->( $_, $opts ) } @{ $v } ];
    }
    else { defined $v and $params->{value} = $numify ? 0 + $v : "${v}" }
+
+   delete $opts->{numify}; delete $opts->{prefix};
 
    $params->{ $_ } = $opts->{ $_ } for (keys %{ $opts });
 
@@ -107,7 +154,46 @@ my $_delete_person_button = sub {
            . loc( $req, 'delete_tip', [ 'person', $name ] );
 
    return { container_class => 'right', label => 'delete',
-            tip => $tip, value => 'delete_person' };
+            tip             => $tip,    value => 'delete_person' };
+};
+
+my $_people_headers = sub {
+   return [ map { { value => loc( $_[ 0 ], "people_heading_${_}" ) } } 0 .. 4 ];
+};
+
+my $_person_admin_links = sub {
+   my ($req, $name) = @_;
+
+   my $links = $_admin_links_cache->{ $name };
+
+   $links and return @{ $links }; $links = [];
+
+   for my $action ( qw( person role certification endorsement ) ) {
+      my $link = $_uri_for_action->( $req, $action, [ $name ] );
+
+      push @{ $links }, {
+         value => { class => 'button fade',
+                    hint  => loc( $req, 'Hint' ),
+                    href  => $link,
+                    name  => "${name}-${action}",
+                    tip   => loc( $req, "${action}_management_tip" ),
+                    type  => 'link',
+                    value => loc( $req, "${action}_management_link" ), }, };
+   }
+
+   $_admin_links_cache->{ $name } = $links;
+
+   return @{ $links };
+};
+
+my $_remove_role_button = sub {
+   my ($req, $name) = @_;
+
+   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
+           . loc( $req, 'remove_role_tip', [ 'role', $name ] );
+
+   return { container_class => 'right', label => 'remove_role',
+            tip             => $tip,    value => 'remove_role' };
 };
 
 my $_save_person_button = sub {
@@ -117,16 +203,12 @@ my $_save_person_button = sub {
            . loc( $req, "${k}_tip", [ 'person', $name ] );
 
    return { container_class => 'right', label => $k,
-            tip => $tip, value => "${k}_person" };
+            tip             => $tip,    value => "${k}_person" };
 };
 
 my $_select_next_of_kin_list = sub {
-   return $_bind->( 'next_of_kin', $_[ 0 ], { numify => TRUE } );
-};
-
-my $_select_person_list = sub {
-   return $_bind->( 'select_person', $_[ 0 ],
-                    { onchange => TRUE, prefix => 'user/' } );
+   return $_bind->( 'next_of_kin', [ [ NUL, NUL ], @{ $_[ 0 ] } ],
+                    { numify => TRUE } );
 };
 
 # Private methods
@@ -146,7 +228,7 @@ my $_create_user_email = sub {
       stash           => {
          app_name     => $conf->title,
          first_name   => $person->first_name,
-         link         => $req->uri_for( 'user/activate', [ $key ] ),
+         link         => $_uri_for_action->( $req, 'activate', [ $key ] ),
          password     => $password,
          title        => $subject,
          username     => $person->name, },
@@ -182,21 +264,23 @@ my $_list_all_roles = sub {
 };
 
 my $_person_tuple = sub {
-   my ($person, $selected) = @_; $selected //= 0;
+   my ($person, $opts) = @_; $opts //= {}; $opts->{selected} //= NUL;
 
    my $label = $person->first_name.SPC.$person->last_name." (${person})";
 
-   return [ $label, $person, ($selected eq $person ? TRUE : FALSE) ];
+   $opts->{selected} = $opts->{selected} eq $person ? TRUE : FALSE;
+
+   return [ $label, $person, $opts ];
 };
 
 my $_list_all_people = sub {
-   my ($self, $selected) = @_;
+   my ($self, $opts) = @_;
 
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my @people    = map { $_person_tuple->( $_, $selected ) } $person_rs->search
-      ( {}, { columns => [ 'first_name', 'id', 'last_name', 'name' ] } )->all;
+   my $people = $self->schema->resultset( 'Person' )->search
+      ( {}, { columns => [ 'first_name', 'id', 'last_name', 'name' ] } );
 
-   return [ [ NUL, NUL ], @people ];
+   return [ map { $_person_tuple->( $_, $opts ) } $people->all ];
+
 };
 
 my $_update_person_from_request = sub {
@@ -240,8 +324,19 @@ sub activate {
 
    $self->$_find_person_by( $name )->activate;
 
-   my $location = $req->uri_for( "user/password/${name}" );
+   my $location = $_uri_for_action->( $req, 'password', [ $name ] );
    my $message  = [ 'User [_1] account activated', $name ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub add_role_action {
+   my ($self, $req) = @_;
+
+   my $name     = $req->uri_params->( 0 );
+   my $person   = $self->$_find_person_by( $name );
+   my $location = $_uri_for_action->( $req, 'role', [ $name ] );
+   my $message  = [ 'Person [_1] role(s) added', $name ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -264,8 +359,8 @@ sub create_person_action {
    $self->config->no_user_email
       or $self->$_create_user_email( $req, $person, $password );
 
-   my $location = $req->uri_for( 'user/'.$person->name );
-   my $message  = [ 'User [_1] created', $person->name ];
+   my $location = $_uri_for_action->( $req, 'person', [ $person->name ] );
+   my $message  = [ 'Person [_1] created', $person->name ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -275,8 +370,8 @@ sub delete_person_action {
 
    my $name     = $req->uri_params->( 0 );
    my $person   = $self->$_find_person_by( $name ); $person->delete;
-   my $location = $req->uri_for( 'user' );
-   my $message  = [ 'User [_1] deleted', $name ];
+   my $location = $_uri_for_action->( $req, 'people' );
+   my $message  = [ 'Person [_1] deleted', $name ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -285,7 +380,7 @@ sub index {
    my ($self, $req) = @_;
 
    return $self->get_stash( $req, {
-      layout => 'index', template => [ 'nav_panel', 'admin' ],
+      layout => 'index', template => [ 'contents', 'admin' ],
       title  => loc( $req, 'Administration' ) } );
 }
 
@@ -296,23 +391,77 @@ sub person {
    my $person  =  $name ? $self->$_find_person_by( $name ) : Class::Null->new;
    my $page    =  {
       fields   => $_bind_person_fields->( $person ),
-      template => [ 'nav_panel', 'person' ],
-      title    => loc( $req, 'person_administration' ), };
+      template => [ 'contents', 'person' ],
+      title    => loc( $req, 'person_management_heading' ), };
    my $fields  =  $page->{fields};
 
    if ($name) {
-      $people = $self->$_list_all_people( $person->next_of_kin );
+      $people = $self->$_list_all_people( { selected => $person->next_of_kin });
       $fields->{delete} = $_delete_person_button->( $req, $name );
       $fields->{roles } = $_bind->( 'roles', $person->list_roles );
    }
    else {
       $people = $self->$_list_all_people();
       $fields->{roles } = $_bind->( 'roles', $self->$_list_all_roles() );
-      $fields->{select} = $_select_person_list->( $people );
    }
 
    $fields->{next_of_kin} = $_select_next_of_kin_list->( $people );
    $fields->{save       } = $_save_person_button->( $req, $name );
+
+   return $self->get_stash( $req, $page );
+}
+
+sub people {
+   my ($self, $req) = @_;
+
+   my $page    =  {
+      fields   => { headers => $_people_headers->( $req ),
+                    rows    => [], },
+      template => [ 'contents', 'people' ],
+      title    => loc( $req, 'people_management_heading' ), };
+   my $rows    =  $page->{fields}->{rows};
+   my $people  =  $self->$_list_all_people();
+
+   for my $person (@{ $people }) {
+      push @{ $rows }, [ { value => $person->[ 0 ]  },
+                         $_person_admin_links->( $req, $person->[ 1 ]->name ) ];
+   }
+
+   return $self->get_stash( $req, $page );
+}
+
+sub remove_role_action {
+   my ($self, $req) = @_;
+
+   my $name     = $req->uri_params->( 0 );
+   my $person   = $self->$_find_person_by( $name );
+   my $location = $_uri_for_action->( $req, 'role', [ $person->name ] );
+   my $message  = [ 'Person [_1] role(s) removed', $person->name ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub role {
+   my ($self, $req) = @_;
+
+   my $name    =  $req->uri_params->( 0 );
+   my $person  =  $self->$_find_person_by( $name );
+   my $page    =  {
+      fields   => { username => { value => $name } },
+      template => [ 'contents', 'role' ],
+      title    => loc( $req, 'role_management_heading' ), };
+   my $fields  =  $page->{fields};
+   my $people  =  $self->$_list_all_people( { selected => $person } );
+
+   my $person_roles = $person->list_roles;
+   my $available    = $self->$_list_all_roles();
+
+   $fields->{roles}
+      = $_bind->( 'roles', $available, { multiple => TRUE } );
+   $fields->{person_roles}
+      = $_bind->( 'person_roles', $person_roles, { multiple => TRUE } );
+   $fields->{add   } = $_add_role_button->( $req, $name );
+   $fields->{remove} = $_remove_role_button->( $req, $name );
 
    return $self->get_stash( $req, $page );
 }
@@ -322,8 +471,8 @@ sub vehicle {
 
    my $page = {
       fields   => {},
-      template => [ 'nav_panel', 'vehicle' ],
-      title    => loc( $req, 'vehicle_administration' ), };
+      template => [ 'contents', 'vehicle' ],
+      title    => loc( $req, 'vehicle_management_heading' ), };
 
    return $self->get_stash( $req, $page );
 }

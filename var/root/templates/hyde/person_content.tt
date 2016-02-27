@@ -10,9 +10,6 @@
       <form action="[% uri_for( href ) %]"
            enctype="application/x-www-form-urlencoded"
             method="post" name="person-admin">
-[% IF !page.fields.username.value -%]
-[%    Select( page.fields.select ) -%]
-[% END -%]
 [% TextField( page.fields.username ) -%]
 [% IF page.fields.username.value -%]
 [%    CheckBox( page.fields.active ) -%]

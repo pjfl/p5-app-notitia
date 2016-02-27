@@ -18,10 +18,15 @@ has 'application' => is => 'ro', isa => Plinth,
 
 # Public methods
 sub exception_handler {
-   my ($self, $req, $e) = @_;
+   my ($self, $req, $e) = @_; my ($leader, $message);
+
+   if ($e =~ m{ : }mx) { ($leader, $message) = split m{ : }mx, "${e}", 2 }
+   else { $leader = NUL; $message = "${e}" }
 
    my $page  = { error    => $e,
-                 template => [ 'nav_panel', 'exception' ],
+                 leader   => $leader,
+                 message  => $message,
+                 template => [ 'contents', 'exception' ],
                  title    => $req->loc( 'Exception Handler' ) };
 
    $e->class eq ValidationErrors->() and $page->{validation_error} = $e->args;
@@ -62,7 +67,8 @@ sub load_page {
 sub not_found {
    my ($self, $req) = @_;
 
-   my $want = join '/', @{ $req->uri_params->() // [] };
+  (my $mp   = $self->config->mount_point) =~ s{ \A / \z }{}mx;
+   my $want = join '/', $mp, @{ $req->uri_params->() // [] };
    my $e    = exception 'URI [_1] not found', [ $want ], rv => HTTP_NOT_FOUND;
 
    return $self->exception_handler( $req, $e );

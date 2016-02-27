@@ -8,7 +8,7 @@
 [% END -%]
    <tr>
 [%    FOR cell IN page.rota.headers -%]
-      <th class="rota-header">[% cell.val %]</th>
+      <th class="rota-header">[% cell.value %]</th>
 [%    END -%]
    </tr>
 [% FOR shift IN page.rota.shifts -%]

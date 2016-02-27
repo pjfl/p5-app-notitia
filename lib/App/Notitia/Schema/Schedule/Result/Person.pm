@@ -14,7 +14,7 @@ use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
                                    serial_data_type varchar_data_type );
 use Class::Usul::Functions     qw( throw );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
-use HTTP::Status               qw( HTTP_UNAUTHORIZED );
+use HTTP::Status               qw( HTTP_EXPECTATION_FAILED HTTP_UNAUTHORIZED );
 use Try::Tiny;
 use Unexpected::Functions      qw( AccountInactive IncorrectPassword
                                    PasswordExpired SlotTaken );
@@ -173,7 +173,7 @@ sub assert_certified_for {
 
    my $cert = $self->certs->find( $self->id, $type->id )
       or throw 'Person [_1] has no certification for [_2]',
-               [ $self, $type ], level => 2;
+               [ $self, $type ], level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return $cert;
 }
@@ -183,7 +183,7 @@ sub assert_endorsement_for {
 
    my $endorsement = $self->endorsements->find( $self->id, $code_name )
       or throw 'Person [_1] has no endorsement for [_2]',
-               [ $self, $code_name ], level => 2;
+               [ $self, $code_name ], level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return $endorsement;
 }
@@ -195,7 +195,7 @@ sub assert_member_of {
 
    my $role = $self->roles->find( $self->id, $type->id )
       or throw 'Person [_1] is not a member of role [_2]',
-               [ $self, $type ], level => 2;
+               [ $self, $type ], level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return $role;
 }
@@ -206,7 +206,7 @@ sub assert_participent_for {
    my $event       = $self->$_find_event_by( $event_name );
    my $participent = $self->participents->find( $event->id, $self->id )
       or throw 'Person [_1] is not participating in [_2]',
-               [ $self, $event ], level => 2;
+               [ $self, $event ], level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return $participent;
 }

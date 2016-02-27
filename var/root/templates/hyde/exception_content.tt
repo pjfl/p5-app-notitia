@@ -10,10 +10,15 @@
 [% END -%]
 [% ELSE -%]
       <h5>[% loc( 'The following exception was thrown' ) %]</h5>
-      <p>[% page.error %]</p>
-[% END %]
-      <h5>[% loc( 'Exception thrown' ) _
-            time2str( ' on %Y-%m-%d at %H:%M hours', page.error.time ) %]</h5>
+      <p>[% page.message %]</p>
+[% END -%]
+[% text = loc( 'Exception thrown' ) _ ' ' -%]
+[% IF page.leader -%]
+[%    text = text _  loc( 'from' ) _ ' ' _ page.leader _ ' ' -%]
+[% END -%]
+[% text = text _ time2str( ' on %Y-%m-%d at %H:%M hours', page.error.time ) -%]
+      <h5>[% text %]</h5>
       <h5>[% loc( 'HTTP status code' ) _  '&nbsp;' _ page.error.rv %]</h5>
+      <h5>[% loc( 'Have a nice day' ) %]...</h5>
    </article>
 </div>

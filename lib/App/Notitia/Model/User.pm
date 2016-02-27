@@ -76,7 +76,7 @@ sub change_password { # : Role(anon)
           behaviour.config.inputs[ 'password' ]
              = { event     : [ 'focus', 'blur' ],
                  method    : [ 'show_password', 'hide_password' ] };",
-      template       => [ 'nav_panel', 'change-password' ],
+      template       => [ 'contents', 'change-password' ],
       title          => loc( $req, 'change_password_title' ) };
 
    return $self->get_stash( $req, $page );
