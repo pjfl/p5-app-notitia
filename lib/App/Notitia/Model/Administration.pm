@@ -339,6 +339,10 @@ sub add_role_action {
 
    my $name     = $req->uri_params->( 0 );
    my $person   = $self->$_find_person_by( $name );
+   my $roles    = $req->body_params->( 'roles', { multiple => TRUE } );
+
+   $person->add_member_to( $_ ) for (@{ $roles });
+
    my $location = $_uri_for_action->( $req, 'role', [ $name ] );
    my $message  = [ 'Person [_1] role(s) added', $name ];
 
@@ -439,8 +443,12 @@ sub remove_role_action {
 
    my $name     = $req->uri_params->( 0 );
    my $person   = $self->$_find_person_by( $name );
-   my $location = $_uri_for_action->( $req, 'role', [ $person->name ] );
-   my $message  = [ 'Person [_1] role(s) removed', $person->name ];
+   my $roles    = $req->body_params->( 'person_roles', { multiple => TRUE } );
+
+   $person->delete_member_from( $_ ) for (@{ $roles });
+
+   my $location = $_uri_for_action->( $req, 'role', [ $name ] );
+   my $message  = [ 'Person [_1] role(s) removed', $name ];
 
    return { redirect => { location => $location, message => $message } };
 }

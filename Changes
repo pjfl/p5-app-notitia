@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Add and removes users from roles
           - Fixed label markup
           - Added role management form
           - Added people list view
