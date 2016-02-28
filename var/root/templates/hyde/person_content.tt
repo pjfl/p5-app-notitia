@@ -1,13 +1,13 @@
 <!-- Person Content -->
 <div class="unit four-fifths">
-   <article class="skinny">
+   <article>
       <h4>[% page.title %]</h4>
 [% IF page.fields.username.value -%]
 [%    href = 'user/' _ page.fields.username.value -%]
 [% ELSE %]
 [%    href = 'user' -%]
 [% END %]
-      <form action="[% uri_for( href ) %]"
+      <form action="[% uri_for( href ) %]" class="skinny"
            enctype="application/x-www-form-urlencoded"
             method="post" name="person-admin">
 [% TextField( page.fields.username ) -%]

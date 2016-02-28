@@ -6,19 +6,21 @@
 [%    IF field.tip %]</span>[% END -%]
 [% END -%]
 [% MACRO CheckBox( field ) BLOCK -%]
-   <div class="container-group [% field.container_class %]">
-   <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
-   <input [% IF field.checked %]checked="checked"[% END %]
-      name="[% field.name %]" type="checkbox" value="[% field.value %]"></div>
-[%    IF !field.nobreak %]<br/>[% END %]
+      <label class="label [% field.container_class %]">
+         <span class="field-label">[% loc( field.label ) %]</span>
+         <input [% IF field.checked %]checked="checked"[% END %]
+            name="[% field.name %]" type="checkbox" value="[% field.value %]">
+      </label>[% IF !field.nobreak %]<br/>[% END %]
 [% END -%]
 [% MACRO DateField( field ) BLOCK -%]
-   <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
-   <input
+   <label class="label">
+      <span class="field-label">[% loc( field.label ) %]</span>
+      <input
 [%    IF field.autocomplete %]autocomplete="[% field.autocomplete %]"[% END -%]
 [%    IF field.disabled %]disabled="disabled"[% END -%]
-      class="standard-field [% field.class %]" id="[% field.name %]"
-       name="[% field.name %]" type="date" value="[% field.value %]"><br/>
+         class="standard-field [% field.class %]" id="[% field.name %]"
+          name="[% field.name %]" type="date" value="[% field.value %]">
+   </label><br/>
 [% END -%]
 [% MACRO Dispatch( f ) BLOCK -%]
 [%    IF f.type == 'link' -%]
@@ -43,21 +45,23 @@
 </span>
 [% END -%]
 [% MACRO PasswordField( field ) BLOCK -%]
-   <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
+   <label class="label">
+      <span class="field-label">[% loc( field.label ) %]</span>
    <input class="standard-field [% field.class %]" id="[% field.name %]"
-           name="[% field.name %]" type="password"><br/>
+           name="[% field.name %]" type="password"></label><br/>
 [% END -%]
 [% MACRO Select( field ) BLOCK -%]
-   <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
-   <select class="standard-field" name="[% field.name %]"
-[%    IF field.multiple %]multiple="multiple" [% END -%]
+   <label class="label">
+      <span class="field-label">[% loc( field.label ) %]</span>
+      <select class="standard-field [% field.class %]" name="[% field.name %]"
+[%    IF field.multiple %]multiple="multiple" size="[% field.size %]" [% END -%]
 [%    IF field.onchange -%]
-      onchange="if (this.value) window.location.href=this.value"[% END %]>
+         onchange="if (this.value) window.location.href=this.value"[% END %]>
 [%    FOR option IN field.value -%]
-      <option [% IF option.selected %]selected="selected" [% END -%]
-          value="[% option.value %]">[% loc( option.label ) %]</option>
+         <option [% IF option.selected %]selected="selected" [% END -%]
+             value="[% option.value %]">[% loc( option.label ) %]</option>
 [%    END -%]
-   </select><br/>
+   </select></label><br/>
 [% END -%]
 [% MACRO TableRow( row ) BLOCK -%]
    <tr>
@@ -69,15 +73,18 @@
    </tr>
 [% END -%]
 [% MACRO TextArea( field ) BLOCK -%]
-   <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
-   <textarea class="standard-field [% field.class %]" id="[% field.name %]"
-      name="[% field.name %]">[% field.value %]</textarea><br/>
+   <label class="label">
+      <span class="field-label">[% loc( field.label ) %]</span>
+      <textarea class="standard-field [% field.class %]" id="[% field.name %]"
+         name="[% field.name %]">[% field.value %]</textarea></label><br/>
 [% END -%]
 [% MACRO TextField( field ) BLOCK -%]
-   <label class="label" for="[% field.name %]">[% loc( field.label ) %]</label>
-   <input
+   <label class="label">
+      <span class="field-label">[% loc( field.label ) %]</span>
+      <input
 [%    IF field.autocomplete %]autocomplete="[% field.autocomplete %]"[% END -%]
 [%    IF field.disabled %]disabled="disabled"[% END -%]
-      class="standard-field [% field.class %]" id="[% field.name %]"
-       name="[% field.name %]" type="textfield" value="[% field.value %]"><br/>
+         class="standard-field [% field.class %]" id="[% field.name %]"
+          name="[% field.name %]" type="textfield" value="[% field.value %]">
+   </label><br/>
 [% END -%]

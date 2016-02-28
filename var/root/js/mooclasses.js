@@ -702,12 +702,13 @@ var Replacements = new Class( {
       var opt = this.mergeOptions( el.id ), new_id = el.id + opt.suffix;
 
       if (el.type == 'checkbox' || el.type == 'radio') {
-         el.setStyles( { position: 'absolute', left: '-9999px' } );
+         el.setStyles( { margin: 0, padding: 0,
+                         position: 'absolute', left: '-9999px' } );
          new Element( 'span', {
             'class': 'checkbox' + (el.checked ? ' checked' : ''),
             id     : new_id,
             name   : el.name
-         } ).inject( el, 'after' );
+         } ).inject( el, 'before' );
          return;
       }
 

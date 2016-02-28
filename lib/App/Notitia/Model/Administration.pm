@@ -211,6 +211,10 @@ my $_select_next_of_kin_list = sub {
                     { numify => TRUE } );
 };
 
+my $_subtract = sub {
+   return [ grep { is_arrayref $_ or not is_member $_, $_[ 1 ] } @{ $_[ 0 ] } ];
+};
+
 # Private methods
 my $_create_user_email = sub {
    my ($self, $req, $person, $password) = @_;
@@ -454,12 +458,13 @@ sub role {
    my $people  =  $self->$_list_all_people( { selected => $person } );
 
    my $person_roles = $person->list_roles;
-   my $available    = $self->$_list_all_roles();
+   my $available    = $_subtract->( $self->$_list_all_roles(), $person_roles );
 
-   $fields->{roles}
-      = $_bind->( 'roles', $available, { multiple => TRUE } );
+   $fields->{roles} = $_bind->( 'roles', $available,
+                                { multiple => TRUE, size => 10 } );
    $fields->{person_roles}
-      = $_bind->( 'person_roles', $person_roles, { multiple => TRUE } );
+      = $_bind->( 'person_roles', $person_roles,
+                  { multiple => TRUE, size => 10 } );
    $fields->{add   } = $_add_role_button->( $req, $name );
    $fields->{remove} = $_remove_role_button->( $req, $name );
 
