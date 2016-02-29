@@ -17,6 +17,18 @@ has 'application' => is => 'ro', isa => Plinth,
    required       => TRUE,  weak_ref => TRUE;
 
 # Public methods
+sub dialog_stash {
+   my ($self, $req, $layout) = @_; my $stash = $self->initialise_stash( $req );
+
+   $stash->{page} = $self->load_page( $req, {
+      fields => {},
+      layout => $layout,
+      meta   => { id => $req->query_params->( 'id' ), }, } );
+   $stash->{view} = 'json';
+
+   return $stash;
+}
+
 sub exception_handler {
    my ($self, $req, $e) = @_; my ($leader, $message);
 
@@ -68,7 +80,8 @@ sub not_found {
    my ($self, $req) = @_;
 
   (my $mp   = $self->config->mount_point) =~ s{ \A / \z }{}mx;
-   my $want = join '/', $mp, @{ $req->uri_params->() // [] };
+   my $want =
+      join '/', $mp, @{ $req->uri_params->( { optional => TRUE } ) // [] };
    my $e    = exception 'URI [_1] not found', [ $want ], rv => HTTP_NOT_FOUND;
 
    return $self->exception_handler( $req, $e );

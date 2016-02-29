@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Yields slots
           - Can claim a slot
           - Add and removes users from roles
           - Fixed label markup

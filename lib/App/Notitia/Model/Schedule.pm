@@ -27,6 +27,15 @@ my $_slot_claimed = sub {
        && exists $_[ 0 ]->{ $_[ 1 ] }->{operator} ? TRUE : FALSE;
 };
 
+my $_slot_identifier = sub {
+   my ($rota_name, $rota_date, $shift_type, $slot_type, $subslot) = @_;
+
+   $rota_name =~ s{ _ }{ }gmx;
+
+   return sprintf '%s rota on %s %s shift %s slot %s',
+          ucfirst( $rota_name ), $rota_date, $shift_type, $slot_type, $subslot;
+};
+
 my $_slot_label = sub {
    return $_slot_claimed->( $_[ 1 ], $_[ 2 ] )
         ? $_[ 1 ]->{ $_[ 2 ] }->{operator}->label : loc( $_[ 0 ], 'Vacant' );
@@ -47,12 +56,13 @@ my $_dialog_link = sub {
    my ($req, $slot_rows, $k) = @_;
 
    my $claimed = $_slot_claimed->( $slot_rows, $k );
+   my $tip     = loc( $req, ($claimed ? 'yield_slot_tip' : 'claim_slot_tip') );
 
-   return { class => 'button'.($claimed ? NUL : ' windows'),
+   return { class => 'table-link windows',
             hint  => loc( $req, 'Hint' ),
             href  => HASH_CHAR,
             name  => $k,
-            tip   => loc( $req, "claim_slot_tip" ),
+            tip   => $tip,
             type  => 'link',
             value => $_slot_label->( $req, $slot_rows, $k ), };
 };
@@ -80,13 +90,28 @@ my $_events = sub {
    return;
 };
 
+my $_add_js_dialog = sub {
+   my ($req, $page, $args, $slot_rows, $name, $title) = @_;
+
+   my $js = $page->{literal_js} //= []; my $k = $args->[ 2 ];
+
+   my $action = $_slot_claimed->( $slot_rows, $k ) ? 'yield' : 'claim';
+
+   $name = "${action}-${name}"; $title = (ucfirst $action).SPC.$title;
+
+   my $href = uri_for_action( $req, 'claim', $args, { action => $action } );
+
+   push @{ $js }, $_dialog->( $req, $k, $href, $name, $title );
+
+   return;
+};
+
 my $_controllers = sub {
    my ($req, $page, $rota_name, $rota_date, $slot_rows, $limits) = @_;
 
    my $shift_no = 0;
    my $rota     = $page->{rota};
    my $controls = $rota->{controllers};
-   my $js       = $page->{literal_js} //= [];
 
    for my $shift_type (@{ SHIFT_TYPE_ENUM() }) {
       my $max_slots = $limits->[ $shift_no++ ];
@@ -94,16 +119,14 @@ my $_controllers = sub {
       for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
          my $k    = "${shift_type}_controller_${subslot}";
          my $args = [ $rota_name, $rota_date, $k ];
-         my $href = uri_for_action( $req, 'claim', $args );
 
          push @{ $controls },
             [ { class => 'rota-header', value   => loc( $req, $k ), },
               { class => 'centre',      colspan => 4,
                 value => $_dialog_link->( $req, $slot_rows, $k ) } ];
 
-         $_slot_claimed->( $slot_rows, $k ) or push @{ $js },
-            $_dialog->( $req, $k, $href, 'claim-controller-slot',
-                        'Claim Controller Slot' );
+         $_add_js_dialog->( $req, $page, $args, $slot_rows,
+                            'controller-slot', 'Controller Slot' );
       }
    }
 
@@ -140,7 +163,7 @@ my $_push_rider_row = sub {
 my $_riders_n_drivers = sub {
    my ($req, $page, $rota_name, $rota_date, $slot_rows, $limits) = @_;
 
-   my $shift_no = 0; my $js = $page->{literal_js} //= [];
+   my $shift_no = 0;
 
    for my $shift_type (@{ SHIFT_TYPE_ENUM() }) {
       my $shift     = $page->{rota}->{shifts}->[ $shift_no ] = {};
@@ -151,12 +174,10 @@ my $_riders_n_drivers = sub {
       for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
          my $k    = "${shift_type}_rider_${subslot}";
          my $args = [ $rota_name, $rota_date, $k ];
-         my $href = uri_for_action( $req, 'claim', $args );
 
          $_push_rider_row->( $riders, $req, $slot_rows, $k );
-         $_slot_claimed->( $slot_rows, $k )
-            or push @{ $js }, $_dialog->( $req, $k, $href, 'claim-rider-slot',
-                                          'Claim Rider Slot' );
+         $_add_js_dialog->( $req, $page, $args, $slot_rows,
+                            'rider-slot', 'Rider Slot' );
       }
 
       $max_slots = $limits->[ 4 + $shift_no ];
@@ -164,12 +185,10 @@ my $_riders_n_drivers = sub {
       for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
          my $k    = "${shift_type}_driver_${subslot}";
          my $args = [ $rota_name, $rota_date, $k ];
-         my $href = uri_for_action( $req, 'claim', $args );
 
          $_push_driver_row->( $drivers, $req, $slot_rows, $k );
-         $_slot_claimed->( $slot_rows, $k )
-            or push @{ $js }, $_dialog->( $req, $k, $href, 'claim-driver-slot',
-                                          'Claim Driver Slot' );
+         $_add_js_dialog->( $req, $page, $args, $slot_rows,
+                            'driver-slot', 'Driver Slot' );
       }
 
       $shift_no++;
@@ -230,33 +249,33 @@ my $_find_rota_type_id_for = sub {
 };
 
 my $_confirm_slot_button = sub {
-   my ($req, $slot_type) = @_;
+   my ($req, $slot_type, $action) = @_;
 
    my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
-           . loc( $req, 'confirm_tip', [ $slot_type ] );
+           . loc( $req, "confirm_${action}_tip", [ $slot_type ] );
 
    return { container_class => 'right', label => 'confirm',
-            tip             => $tip,    value => 'claim_slot' };
+            tip             => $tip,    value => "${action}_slot" };
 };
 
 # Public methods
 sub claim_slot {
    my ($self, $req) = @_;
 
-   my $params = $req->uri_params;
-   my $name   = $params->( 2 );
-   my $stash  = $self->dialog_stash( $req, 'claim-slot' );
+   my $action = $req->query_params->( 'action' );
+   my $stash  = $self->dialog_stash( $req, "${action}-slot" );
    my $page   = $stash->{page};
    my $fields = $page->{fields};
+   my $name   = $req->uri_params->( 2 );
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
-   $fields->{confirm  } = $_confirm_slot_button->( $req, $slot_type );
-   $fields->{rota_date} = $params->( 1 );
-   $fields->{rota_name} = $params->( 0 );
+   $fields->{confirm  } = $_confirm_slot_button->( $req, $slot_type, $action );
+   $fields->{rota_date} = $req->uri_params->( 1 );
+   $fields->{rota_name} = $req->uri_params->( 0 );
    $fields->{slot_name} = $name;
 
-   $slot_type eq 'rider' and $fields->{request_bike} = {
+   $action eq 'claim' and $slot_type eq 'rider' and $fields->{request_bike} = {
       label => 'request_bike', value => 'request_bike', };
 
    return $stash;
@@ -278,8 +297,10 @@ sub claim_slot_action {
    $person->claim_slot( $rota_name, str2date_time( $rota_date ),
                         $shift_type, $slot_type, $subslot, $bike );
 
+   my $label    = $_slot_identifier->( $rota_name, $rota_date,
+                                       $shift_type, $slot_type, $subslot );
    my $location = uri_for_action( $req, 'rota', [ $rota_name, $rota_date ] );
-   my $message  = [ 'User [_1] slot claimed', $req->username ];
+   my $message  = [ 'User [_1] claimed slot [_2]', $req->username, $label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -327,6 +348,28 @@ sub index {
       layout   => 'index',
       template => [ 'contents', 'splash' ],
       title    => loc( $req, 'main_index_title' ), } );
+}
+
+sub yield_slot_action {
+   my ($self, $req) = @_;
+
+   my $params    = $req->uri_params;
+   my $rota_name = $params->( 0 );
+   my $rota_date = $params->( 1 );
+   my $slot_name = $params->( 2 );
+   my $person    = $self->$_find_person_by( $req->username );
+
+   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
+
+   $person->yield_slot( $rota_name, str2date_time( $rota_date ),
+                        $shift_type, $slot_type, $subslot );
+
+   my $label    = $_slot_identifier->( $rota_name, $rota_date,
+                                       $shift_type, $slot_type, $subslot );
+   my $location = uri_for_action( $req, 'rota', [ $rota_name, $rota_date ] );
+   my $message  = [ 'User [_1] yielded slot [_2]', $req->username, $label ];
+
+   return { redirect => { location => $location, message => $message } };
 }
 
 1;

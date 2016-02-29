@@ -34,7 +34,9 @@ sub action_link_map ($) {
                activate      => 'user/activate',
                vehicle       => 'vehicle', vehicles => 'vehicles', };
 
-   return $map->{ $_[ 0 ] };
+   my $uri = $map->{ $_[ 0 ] } // 'action_link_undefined';
+
+   return $uri;
 }
 
 sub bool_data_type (;$) {

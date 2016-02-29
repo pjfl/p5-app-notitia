@@ -54,6 +54,15 @@ msgstr "Administer 'certification' records"
 msgid "change_password_title"
 msgstr "Change Password"
 
+msgid "confirm"
+msgstr "Confirm"
+
+msgid "confirm_claim_tip"
+msgstr "Confirm you want to claim this [_1] slot"
+
+msgid "confirm_yield_tip"
+msgstr "Confirm you want to yield this [_1] slot"
+
 msgid "controller"
 msgstr "Controller"
 

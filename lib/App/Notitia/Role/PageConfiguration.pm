@@ -2,7 +2,8 @@ package App::Notitia::Role::PageConfiguration;
 
 use namespace::autoclean;
 
-use App::Notitia::Util qw( loc );
+use App::Notitia::Constants qw( TRUE );
+use App::Notitia::Util      qw( loc );
 use Try::Tiny;
 use Moo::Role;
 
@@ -53,22 +54,11 @@ around 'load_page' => sub {
    $page->{status_message     } = $req->session->collect_status_message( $req );
 
    $page->{hint  } //= loc( $req, 'Hint' );
-   $page->{wanted} //= join '/', @{ $req->uri_params->() // [] };
+   $page->{wanted} //=
+      join '/', @{ $req->uri_params->( { optional => TRUE } ) // [] };
 
    return $page;
 };
-
-sub dialog_stash {
-   my ($self, $req, $layout) = @_; my $stash = $self->initialise_stash( $req );
-
-   $stash->{page} = $self->load_page( $req, {
-      fields => {},
-      layout => $layout,
-      meta   => { id => $req->query_params->( 'id' ), }, } );
-   $stash->{view} = 'json';
-
-   return $stash;
-}
 
 1;
 

@@ -154,7 +154,7 @@ my $_person_admin_links = sub {
 
    for my $action ( qw( person role certification endorsement ) ) {
       push @{ $links }, {
-         value => { class => 'button fade',
+         value => { class => 'table-link fade',
                     hint  => loc( $req, 'Hint' ),
                     href  => uri_for_action( $req, $action, [ $name ] ),
                     name  => "${name}-${action}",

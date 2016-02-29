@@ -17,7 +17,7 @@ use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use HTTP::Status               qw( HTTP_EXPECTATION_FAILED HTTP_UNAUTHORIZED );
 use Try::Tiny;
 use Unexpected::Functions      qw( AccountInactive IncorrectPassword
-                                   PasswordExpired SlotTaken );
+                                   PasswordExpired SlotFree SlotTaken );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -78,6 +78,15 @@ my $_assert_membership_allowed = sub {
    my ($self, $type) = @_;
 
    $type eq 'bike_rider' and $self->assert_certified_for( 'catagory_b' );
+
+   return;
+};
+
+my $_assert_yield_allowed = sub {
+   my ($self, $slot) = @_;
+
+   $self->is_member_of( 'administrator' ) or $self->id == $slot->operator_id
+      or throw 'Yield slot - permission denied', rv => HTTP_UNAUTHORIZED;
 
    return;
 };
@@ -391,6 +400,17 @@ sub validation_attributes {
       },
       level => 8,
    };
+}
+
+sub yield_slot {
+   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot) = @_;
+
+   my $shift = $self->find_shift( $rota_name, $date, $shift_type );
+   my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
+
+   $slot or throw SlotFree, [ $slot ]; $self->$_assert_yield_allowed( $slot );
+
+   return $slot->delete;
 }
 
 1;
