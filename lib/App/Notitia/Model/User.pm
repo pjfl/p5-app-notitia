@@ -31,17 +31,6 @@ my $_bind_value = sub {
 };
 
 # Private methods
-my $_dialog_stash = sub {
-   my ($self, $req, $layout) = @_; my $stash = $self->initialise_stash( $req );
-
-   $stash->{page} = $self->load_page( $req, {
-      fields  => {}, layout  => $layout,
-      meta    => { id => $req->query_params->( 'id' ), }, } );
-   $stash->{view} = 'json';
-
-   return $stash;
-};
-
 my $_find_user_by_name = sub {
    my ($self, $name) = @_;
 
@@ -120,7 +109,7 @@ sub login_action  { # : Role(anon)
 sub login_dialog { #  : Role(anon)
    my ($self, $req) = @_;
 
-   my $stash = $self->$_dialog_stash( $req, 'login-user' );
+   my $stash = $self->dialog_stash( $req, 'login-user' );
    my $page  = $stash->{page};
 
    $page->{fields}->{login   } = {
@@ -149,7 +138,7 @@ sub logout_action { # : Role(any)
 sub profile_dialog { #  : Role(anon)
    my ($self, $req) = @_;
 
-   my $stash = $self->$_dialog_stash( $req, 'profile-user' );
+   my $stash = $self->dialog_stash( $req, 'profile-user' );
    my $page  = $stash->{page};
 
    if ($req->authenticated) {

@@ -2,7 +2,7 @@ package App::Notitia::Model::Administration;
 
 #use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
-use App::Notitia::Util      qw( loc );
+use App::Notitia::Util      qw( action_link_map loc uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
 use Class::Usul::Time       qw( str2date_time );
@@ -21,16 +21,6 @@ with    q(Web::Components::Role::Email);
 has '+moniker' => default => 'admin';
 
 # Private class attributes
-my $_action_link_map   = {
-   certification => 'certification',
-   endorsement   => 'endorsement',
-   event         => 'event',   events   => 'events',
-   password      => 'user/password',
-   person        => 'user',    people   => 'users',
-   role          => 'role',
-   activate      => 'user/activate',
-   vehicle       => 'vehicle', vehicles => 'vehicles', };
-
 my $_admin_links_cache = {};
 
 # Private functions
@@ -45,13 +35,7 @@ my $_nav_link = sub {
             tip   => loc( $_[ 0 ], $_[ 2 ].'_tip' ),
             title => loc( $_[ 0 ], $_[ 2 ].'_link' ),
             type  => 'link',
-            url   => $_action_link_map->{ $_[ 1 ] }, };
-};
-
-my $_uri_for_action = sub {
-   my ($req, $action, @args) = @_;
-
-   return $req->uri_for( $_action_link_map->{ $action }, @args );
+            url   => action_link_map( $_[ 1 ] ), };
 };
 
 # Construction
@@ -169,12 +153,10 @@ my $_person_admin_links = sub {
    $links and return @{ $links }; $links = [];
 
    for my $action ( qw( person role certification endorsement ) ) {
-      my $link = $_uri_for_action->( $req, $action, [ $name ] );
-
       push @{ $links }, {
          value => { class => 'button fade',
                     hint  => loc( $req, 'Hint' ),
-                    href  => $link,
+                    href  => uri_for_action( $req, $action, [ $name ] ),
                     name  => "${name}-${action}",
                     tip   => loc( $req, "${action}_management_tip" ),
                     type  => 'link',
@@ -232,7 +214,7 @@ my $_create_user_email = sub {
       stash           => {
          app_name     => $conf->title,
          first_name   => $person->first_name,
-         link         => $_uri_for_action->( $req, 'activate', [ $key ] ),
+         link         => uri_for_action( $req, 'activate', [ $key ] ),
          password     => $password,
          title        => $subject,
          username     => $person->name, },
@@ -270,11 +252,9 @@ my $_list_all_roles = sub {
 my $_person_tuple = sub {
    my ($person, $opts) = @_; $opts //= {}; $opts->{selected} //= NUL;
 
-   my $label = $person->first_name.SPC.$person->last_name." (${person})";
-
    $opts->{selected} = $opts->{selected} eq $person ? TRUE : FALSE;
 
-   return [ $label, $person, $opts ];
+   return [ $person->label, $person, $opts ];
 };
 
 my $_list_all_people = sub {
@@ -328,7 +308,7 @@ sub activate {
 
    $self->$_find_person_by( $name )->activate;
 
-   my $location = $_uri_for_action->( $req, 'password', [ $name ] );
+   my $location = uri_for_action( $req, 'password', [ $name ] );
    my $message  = [ 'User [_1] account activated', $name ];
 
    return { redirect => { location => $location, message => $message } };
@@ -343,7 +323,7 @@ sub add_role_action {
 
    $person->add_member_to( $_ ) for (@{ $roles });
 
-   my $location = $_uri_for_action->( $req, 'role', [ $name ] );
+   my $location = uri_for_action( $req, 'role', [ $name ] );
    my $message  = [ 'Person [_1] role(s) added', $name ];
 
    return { redirect => { location => $location, message => $message } };
@@ -367,7 +347,7 @@ sub create_person_action {
    $self->config->no_user_email
       or $self->$_create_user_email( $req, $person, $password );
 
-   my $location = $_uri_for_action->( $req, 'person', [ $person->name ] );
+   my $location = uri_for_action( $req, 'person', [ $person->name ] );
    my $message  = [ 'Person [_1] created', $person->name ];
 
    return { redirect => { location => $location, message => $message } };
@@ -378,7 +358,7 @@ sub delete_person_action {
 
    my $name     = $req->uri_params->( 0 );
    my $person   = $self->$_find_person_by( $name ); $person->delete;
-   my $location = $_uri_for_action->( $req, 'people' );
+   my $location = uri_for_action( $req, 'people' );
    my $message  = [ 'Person [_1] deleted', $name ];
 
    return { redirect => { location => $location, message => $message } };
@@ -447,7 +427,7 @@ sub remove_role_action {
 
    $person->delete_member_from( $_ ) for (@{ $roles });
 
-   my $location = $_uri_for_action->( $req, 'role', [ $name ] );
+   my $location = uri_for_action( $req, 'role', [ $name ] );
    my $message  = [ 'Person [_1] role(s) removed', $name ];
 
    return { redirect => { location => $location, message => $message } };

@@ -52,12 +52,23 @@ around 'load_page' => sub {
    $page->{application_version} = $conf->appclass->VERSION;
    $page->{status_message     } = $req->session->collect_status_message( $req );
 
-#   $page->{form_name} //= 'markdown';
-   $page->{hint     } //= loc( $req, 'Hint' );
-   $page->{wanted   } //= join '/', @{ $req->uri_params->() // [] };
+   $page->{hint  } //= loc( $req, 'Hint' );
+   $page->{wanted} //= join '/', @{ $req->uri_params->() // [] };
 
    return $page;
 };
+
+sub dialog_stash {
+   my ($self, $req, $layout) = @_; my $stash = $self->initialise_stash( $req );
+
+   $stash->{page} = $self->load_page( $req, {
+      fields => {},
+      layout => $layout,
+      meta   => { id => $req->query_params->( 'id' ), }, } );
+   $stash->{view} = 'json';
+
+   return $stash;
+}
 
 1;
 

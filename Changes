@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Can claim a slot
           - Add and removes users from roles
           - Fixed label markup
           - Added role management form

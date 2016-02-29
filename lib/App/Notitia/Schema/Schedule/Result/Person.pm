@@ -6,7 +6,7 @@ use overload '""' => sub { $_[ 0 ]->_as_string },
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia;
-use App::Notitia::Constants    qw( EXCEPTION_CLASS TRUE
+use App::Notitia::Constants    qw( EXCEPTION_CLASS SPC TRUE
                                    FALSE NUL VARCHAR_MAX_SIZE );
 use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
                                    is_encrypted new_salt
@@ -314,6 +314,10 @@ sub is_participent_of {
 
    return $event && $self->participents->find( $event->id, $self->id )
         ? TRUE : FALSE;
+}
+
+sub label {
+   return $_[ 0 ]->first_name.SPC.$_[ 0 ]->last_name.' ('.$_[ 0 ].')';
 }
 
 sub list_roles {

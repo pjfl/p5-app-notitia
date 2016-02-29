@@ -10,18 +10,33 @@ use Class::Usul::Time          qw( str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
 use Scalar::Util               qw( weaken );
 
-our @EXPORT_OK = qw( bool_data_type date_data_type enumerated_data_type enhance
-                     foreign_key_data_type get_hashed_pw get_salt
-                     is_encrypted loc new_salt nullable_foreign_key_data_type
-                     nullable_varchar_data_type numerical_id_data_type
-                     serial_data_type set_element_focus
+our @EXPORT_OK = qw( action_link_map bool_data_type date_data_type
+                     enumerated_data_type enhance foreign_key_data_type
+                     get_hashed_pw get_salt is_encrypted loc new_salt
+                     nullable_foreign_key_data_type nullable_varchar_data_type
+                     numerical_id_data_type serial_data_type set_element_focus
                      set_on_create_datetime_data_type stash_functions
-                     varchar_data_type );
+                     uri_for_action varchar_data_type );
 
 # Private class attributes
 my $_translations  = {};
 
 # Public functions
+sub action_link_map ($) {
+   my $map = { certification => 'certification',
+               claim         => 'slot',
+               endorsement   => 'endorsement',
+               event         => 'event',   events   => 'events',
+               password      => 'user/password',
+               person        => 'user',    people   => 'users',
+               role          => 'role',
+               rota          => 'rota',
+               activate      => 'user/activate',
+               vehicle       => 'vehicle', vehicles => 'vehicles', };
+
+   return $map->{ $_[ 0 ] };
+}
+
 sub bool_data_type (;$) {
    return { data_type     => 'boolean',
             default_value => $_[ 0 ] // FALSE,
@@ -154,6 +169,12 @@ sub stash_functions ($$$) {
    $dest->{ucfirst  } = sub { ucfirst $_[ 0 ] };
    $dest->{uri_for  } = sub { $req->uri_for( @_ ), };
    return;
+}
+
+sub uri_for_action ($$;@) {
+   my ($req, $action, @args) = @_;
+
+   return $req->uri_for( action_link_map( $action ), @args );
 }
 
 sub varchar_data_type (;$$) {

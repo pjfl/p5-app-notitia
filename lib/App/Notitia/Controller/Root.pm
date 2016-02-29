@@ -12,6 +12,8 @@ sub dispatch_request {
    sub (POST + /role/*           + ?*) { [ 'admin', 'from_request',    @_ ] },
    sub (GET  + /role/*           + ?*) { [ 'admin', 'role',            @_ ] },
    sub (GET  + /rota  | /rota/** + ?*) { [ 'sched', 'day_rota',        @_ ] },
+   sub (POST + /slot/**          + ?*) { [ 'sched', 'from_request',    @_ ] },
+   sub (GET  + /slot/**          + ?*) { [ 'sched', 'claim_slot',      @_ ] },
    sub (GET  + /user/activate/*  + ?*) { [ 'admin', 'activate',        @_ ] },
    sub (POST + /user/login       + ?*) { [ 'user',  'login_action',    @_ ] },
    sub (GET  + /user/login       + ?*) { [ 'user',  'login_dialog',    @_ ] },
