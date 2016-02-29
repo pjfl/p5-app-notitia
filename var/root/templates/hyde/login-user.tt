@@ -1,6 +1,6 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Login User -->
-<form action="[% links.base_uri %]user/login"
+<form action="[% uri_for_action( 'user/login' ) %]"
      enctype="application/x-www-form-urlencoded"
       method="post" name="login-user">
 [% TextField( page.fields.username ) -%]

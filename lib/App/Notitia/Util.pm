@@ -3,40 +3,98 @@ package App::Notitia::Util;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use App::Notitia::Constants    qw( FALSE NUL TRUE VARCHAR_MAX_SIZE );
+use App::Notitia::Constants    qw( FALSE NUL SPC TILDE TRUE VARCHAR_MAX_SIZE );
 use Class::Usul::Functions     qw( class2appdir create_token find_apphome
-                                   get_cfgfiles is_member );
+                                   get_cfgfiles is_arrayref is_hashref
+                                   is_member );
 use Class::Usul::Time          qw( str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
-use Scalar::Util               qw( weaken );
+use Scalar::Util               qw( blessed weaken );
 
-our @EXPORT_OK = qw( action_link_map bool_data_type date_data_type
-                     enumerated_data_type enhance foreign_key_data_type
-                     get_hashed_pw get_salt is_encrypted loc new_salt
-                     nullable_foreign_key_data_type nullable_varchar_data_type
-                     numerical_id_data_type serial_data_type set_element_focus
-                     set_on_create_datetime_data_type stash_functions
-                     uri_for_action varchar_data_type );
+our @EXPORT_OK = qw( admin_navigation_links bind bool_data_type
+                     date_data_type delete_button enumerated_data_type enhance
+                     foreign_key_data_type get_hashed_pw get_salt is_encrypted
+                     loc new_salt nullable_foreign_key_data_type
+                     nullable_varchar_data_type numerical_id_data_type
+                     save_button serial_data_type set_element_focus
+                     set_on_create_datetime_data_type register_action_paths
+                     stash_functions uri_for_action varchar_data_type );
 
 # Private class attributes
 my $_translations  = {};
+# Key is an action path, value a partial URI
+my $_action_path_uri_map = {};
 
-# Public functions
-sub action_link_map ($) {
-   my $map = { certification => 'certification',
-               claim         => 'slot',
-               endorsement   => 'endorsement',
-               event         => 'event',   events   => 'events',
-               password      => 'user/password',
-               person        => 'user',    people   => 'users',
-               role          => 'role',
-               rota          => 'rota',
-               activate      => 'user/activate',
-               vehicle       => 'vehicle', vehicles => 'vehicles', };
+# Private functions
+my $_action_path2uri = sub {
 
-   my $uri = $map->{ $_[ 0 ] } // 'action_link_undefined';
+   my $uri = $_action_path_uri_map->{ $_[ 0 ] } // 'action_path_undefined';
 
    return $uri;
+};
+
+my $_bind_option = sub {
+   my ($v, $opts) = @_;
+
+   my $prefix = $opts->{prefix} // NUL;
+   my $numify = $opts->{numify} // FALSE;
+
+   return is_arrayref $v
+        ? { label =>  $v->[ 0 ].NUL,
+            value => ($v->[ 1 ] ? ($numify ? 0 + $v->[ 1 ] : $prefix.$v->[ 1 ])
+                                : undef),
+            %{ $v->[ 2 ] // {} } }
+        : { label => "${v}", value => ($numify ? 0 + $v : $prefix.$v) };
+};
+
+my $_nav_folder = sub {
+   return { depth => $_[ 2 ] // 0,
+            title => loc( $_[ 0 ], $_[ 1 ].'_management_heading' ),
+            type  => 'folder', };
+};
+
+my $_nav_link = sub {
+   return { depth => $_[ 3 ] // 1,
+            tip   => loc( $_[ 0 ], $_[ 2 ].'_tip' ),
+            title => loc( $_[ 0 ], $_[ 2 ].'_link' ),
+            type  => 'link',
+            url   => uri_for_action( $_[ 0 ], $_[ 1 ] ), };
+};
+
+# Public functions
+sub admin_navigation_links ($) {
+   my $req = shift;
+
+   return [ $_nav_folder->( $req, 'events' ),
+            $_nav_link->( $req, 'event/event', 'event_create' ),
+            $_nav_link->( $req, 'event/events', 'events_list' ),
+            $_nav_folder->( $req, 'people' ),
+            $_nav_link->( $req, 'admin/person', 'person_create' ),
+            $_nav_link->( $req, 'admin/people', 'people_list' ),
+            $_nav_folder->( $req, 'vehicles' ),
+            $_nav_link->( $req, 'admin/vehicle', 'vehicle_create' ),
+            $_nav_link->( $req, 'admin/vehicles', 'vehicles_list' ), ];
+}
+
+sub bind {
+   my ($name, $v, $opts) = @_; $opts //= {};
+
+   my $numify = $opts->{numify} // FALSE;
+   my $params = { label => $name, name => $name }; my $class;
+
+   if (defined $v and $class = blessed $v and $class eq 'DateTime') {
+      $params->{value} = $v->ymd;
+   }
+   elsif (is_arrayref $v) {
+      $params->{value} = [ map { $_bind_option->( $_, $opts ) } @{ $v } ];
+   }
+   else { defined $v and $params->{value} = $numify ? 0 + $v : "${v}" }
+
+   delete $opts->{numify}; delete $opts->{prefix};
+
+   $params->{ $_ } = $opts->{ $_ } for (keys %{ $opts });
+
+   return $params;
 }
 
 sub bool_data_type (;$) {
@@ -51,6 +109,18 @@ sub date_data_type () {
             is_nullable   => TRUE,
             datetime_undef_if_invalid => TRUE, }
 }
+
+sub delete_button ($$;$) {
+   my ($req, $name, $type) = @_;
+
+   my $button = { container_class => 'right', label => 'delete',
+                  value           => "delete_${type}" };
+
+   $type and $button->{tip} = loc( $req, 'Hint' ).SPC.TILDE.SPC
+                            . loc( $req, 'delete_tip', [ $type, $name ] );
+
+   return $button;
+};
 
 sub enumerated_data_type ($;$) {
    return { data_type     => 'enum',
@@ -139,6 +209,28 @@ sub numerical_id_data_type (;$) {
             is_numeric        => TRUE, };
 }
 
+sub register_action_paths (;@) {
+   my $args = (is_hashref $_[ 0 ]) ? $_[ 0 ] : { @_ };
+
+   for my $k (keys %{ $args }) {
+      $_action_path_uri_map->{ $k } = $args->{ $k };
+   }
+
+   return;
+}
+
+sub save_button ($$;$) {
+   my ($req, $name, $type) = @_; my $k = $name ? 'update' : 'create';
+
+   my $button = { container_class => 'right', label => $k,
+                  value           => "${k}_${type}" };
+
+   $type and $button->{tip} = loc( $req, 'Hint' ).SPC.TILDE.SPC
+                            . loc( $req, "${k}_tip", [ $type, $name ] );
+
+   return $button;
+}
+
 sub serial_data_type () {
    return { data_type         => 'integer',
             default_value     => undef,
@@ -163,20 +255,21 @@ sub set_on_create_datetime_data_type () {
 sub stash_functions ($$$) {
    my ($app, $req, $dest) = @_; weaken $req;
 
-   $dest->{is_member} = \&is_member;
-   $dest->{loc      } = sub { loc( $req, $_[ 0 ] ) };
-   $dest->{reference} = sub { ref $_[ 0 ] };
-   $dest->{str2time } = \&str2time;
-   $dest->{time2str } = \&time2str;
-   $dest->{ucfirst  } = sub { ucfirst $_[ 0 ] };
-   $dest->{uri_for  } = sub { $req->uri_for( @_ ), };
+   $dest->{is_member     } = \&is_member;
+   $dest->{loc           } = sub { loc( $req, $_[ 0 ] ) };
+   $dest->{reference     } = sub { ref $_[ 0 ] };
+   $dest->{str2time      } = \&str2time;
+   $dest->{time2str      } = \&time2str;
+   $dest->{ucfirst       } = sub { ucfirst $_[ 0 ] };
+   $dest->{uri_for       } = sub { $req->uri_for( @_ ), };
+   $dest->{uri_for_action} = sub { uri_for_action( $req, @_ ), };
    return;
 }
 
 sub uri_for_action ($$;@) {
    my ($req, $action, @args) = @_;
 
-   return $req->uri_for( action_link_map( $action ), @args );
+   return $req->uri_for( $_action_path2uri->( $action ), @args );
 }
 
 sub varchar_data_type (;$$) {

@@ -2,7 +2,7 @@ package App::Notitia::Model::User;
 
 #use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Util      qw( loc set_element_focus );
+use App::Notitia::Util      qw( loc register_action_paths set_element_focus );
 use Class::Usul::Functions  qw( throw );
 use Class::Usul::Types      qw( ArrayRef );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
@@ -20,6 +20,12 @@ has '+moniker' => default => 'user';
 
 has 'profile_keys' => is => 'ro', isa => ArrayRef, builder => sub {
    [ qw( address postcode email_address mobile_phone home_phone ) ] };
+
+register_action_paths
+   'user/login'           => 'user/login',
+   'user/logout_action'   => 'user/logout',
+   'user/change_password' => 'user/password',
+   'user/profile'         => 'user/profile';
 
 # Private functions
 my $_bind_value = sub {
@@ -106,7 +112,7 @@ sub login_action  { # : Role(anon)
    return { redirect => { location => $req->base, message => $message } };
 }
 
-sub login_dialog { #  : Role(anon)
+sub login { #  : Role(anon)
    my ($self, $req) = @_;
 
    my $stash = $self->dialog_stash( $req, 'login-user' );
@@ -135,7 +141,7 @@ sub logout_action { # : Role(any)
    return { redirect => { location => $location, message => $message } };
 }
 
-sub profile_dialog { #  : Role(anon)
+sub profile { #  : Role(anon)
    my ($self, $req) = @_;
 
    my $stash = $self->dialog_stash( $req, 'profile-user' );

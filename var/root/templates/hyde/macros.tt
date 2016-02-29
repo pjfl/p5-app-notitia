@@ -16,7 +16,6 @@
    <label class="label">
       <span class="field-label">[% loc( field.label ) %]</span>
       <input
-[%    IF field.autocomplete %]autocomplete="[% field.autocomplete %]"[% END -%]
 [%    IF field.disabled %]disabled="disabled"[% END -%]
          class="standard-field [% field.class %]" id="[% field.name %]"
           name="[% field.name %]" type="date" value="[% field.value %]">
@@ -47,7 +46,9 @@
 [% MACRO PasswordField( field ) BLOCK -%]
    <label class="label">
       <span class="field-label">[% loc( field.label ) %]</span>
-   <input class="standard-field [% field.class %]" id="[% field.name %]"
+   <input
+[%    IF field.autocomplete %]autocomplete="[% field.autocomplete %]"[% END -%]
+          class="standard-field [% field.class %]" id="[% field.name %]"
            name="[% field.name %]" type="password"></label><br/>
 [% END -%]
 [% MACRO Select( field ) BLOCK -%]
@@ -62,6 +63,18 @@
              value="[% option.value %]">[% loc( option.label ) %]</option>
 [%    END -%]
    </select></label><br/>
+[% END -%]
+[% MACRO Table( table ) BLOCK -%]
+   <table>
+      <tr>
+[% FOR cell IN table.headers -%]
+        <th class="[% cell.class %]">[% cell.value %]</th>
+[% END -%]
+      </tr>
+[% FOR row IN table.rows -%]
+[%    TableRow( row ) -%]
+[% END -%]
+   </table>
 [% END -%]
 [% MACRO TableRow( row ) BLOCK -%]
    <tr>
@@ -82,9 +95,17 @@
    <label class="label">
       <span class="field-label">[% loc( field.label ) %]</span>
       <input
-[%    IF field.autocomplete %]autocomplete="[% field.autocomplete %]"[% END -%]
 [%    IF field.disabled %]disabled="disabled"[% END -%]
          class="standard-field [% field.class %]" id="[% field.name %]"
           name="[% field.name %]" type="textfield" value="[% field.value %]">
+   </label><br/>
+[% END -%]
+[% MACRO TimeField( field ) BLOCK -%]
+   <label class="label">
+      <span class="field-label">[% loc( field.label ) %]</span>
+      <input
+[%    IF field.disabled %]disabled="disabled"[% END -%]
+         class="standard-field [% field.class %]" id="[% field.name %]"
+          name="[% field.name %]" type="time" value="[% field.value %]">
    </label><br/>
 [% END -%]

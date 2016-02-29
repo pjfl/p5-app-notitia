@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Have uri_for_action and register_action_paths
           - Yields slots
           - Can claim a slot
           - Add and removes users from roles

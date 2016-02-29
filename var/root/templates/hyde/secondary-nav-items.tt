@@ -1,33 +1,35 @@
 <!-- Secondary Navigation -->
 <ul>
-[%    class = 'windows fade' -%]
+[% class = 'windows fade' -%]
 [% IF page.authenticated -%]
-[%       text = loc( 'Admin' ) -%]
-[%       tip  = loc( 'Admininstration interface' ) -%]
+[%    text = loc( 'Admin' ) -%]
+[%    tip  = loc( 'Admininstration interface' ) -%]
+[%    href = uri_for_action( 'admin/index' ) -%]
    <li>
-[%       LinkWithTips( uri_for( 'admin' ), 'fade', text, page.hint, tip ) -%]
+[%    LinkWithTips( href, 'fade', text, page.hint, tip ) -%]
    </li>
-[%       text = loc( 'Profile' ) -%]
-[%       tip  = loc( 'Configure user profile' ) -%]
+[%    text = loc( 'Profile' ) -%]
+[%    tip  = loc( 'Configure user profile' ) -%]
    <li>
-[%       LinkWithTips( '#', class, text, page.hint, tip, 'profile-user') -%]
+[%    LinkWithTips( '#', class, text, page.hint, tip, 'profile-user') -%]
    </li>
    <li>
-[%       FormWithButton( uri_for( 'user/logout' ), class, loc( 'Logout' ),
-                        'authentication', loc( 'Logout from the application' ),
-                        'logout-user', 'logout' ) -%]
+[%    href = uri_for_action( 'user/logout_action' ) -%]
+[%    FormWithButton( href, class, loc( 'Logout' ), 'authentication',
+                      loc( 'Logout from the application' ),
+                     'logout-user', 'logout' ) -%]
    </li>
 [% ELSE -%]
-[%       text = loc( 'Login' ) -%]
-[%       tip  = loc( 'Authenticate with the application' ) -%]
+[%    text = loc( 'Login' ) -%]
+[%    tip  = loc( 'Authenticate with the application' ) -%]
    <li>
-[%       LinkWithTips( '#', class, text, page.hint, tip, 'login-user' ) -%]
+[%    LinkWithTips( '#', class, text, page.hint, tip, 'login-user' ) -%]
    </li>
-[%       href = uri_for( 'user/password' ) -%]
-[%       text = loc( 'Change Password' ) -%]
-[%       tip  = loc( 'Change the password used to acess the application' ) -%]
+[%    href = uri_for_action( 'user/change_password' ) -%]
+[%    text = loc( 'Change Password' ) -%]
+[%    tip  = loc( 'Change the password used to acess the application' ) -%]
    <li>
-[%       LinkWithTips( href, class, text, page.hint, tip ) -%]
+[%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
 [% END -%]
 </ul>

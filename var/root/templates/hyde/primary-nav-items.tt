@@ -3,19 +3,19 @@
 [%    class = 'windows fade' -%]
 [%    text  = loc( 'Documentation' ) -%]
 [%    tip   = loc( 'Documentation pages for the application' ) -%]
-[%    href  = uri_for( 'docs' ) -%]
+[%    href  = uri_for_action( 'docs/docs' ) -%]
    <li>
 [%    LinkWithTips( href, 'fade', text, page.hint, tip ) -%]
    </li>
 [%    text  = loc( 'Events' ) -%]
 [%    tip   = loc( 'Blog posts about upcoming events' ) -%]
-[%    href  = uri_for( 'posts' ) -%]
+[%    href  = uri_for_action( 'posts/posts' ) -%]
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
 [%    text  = loc( 'Rota' ) -%]
 [%    tip   = loc( 'Scheduled rotas' ) -%]
-[%    href  = uri_for( 'rota' ) -%]
+[%    href  = uri_for_action( 'sched/day_rota' ) -%]
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>

@@ -54,6 +54,9 @@ msgstr "Administer 'certification' records"
 msgid "change_password_title"
 msgstr "Change Password"
 
+msgid "claim_slot_tip"
+msgstr "Claim this [_1] slot"
+
 msgid "confirm"
 msgstr "Confirm"
 
@@ -246,6 +249,9 @@ msgstr "Remove Role"
 msgid "remove_role_tip"
 msgstr "Remove [_2] from the selected role(s)"
 
+msgid "request_bike"
+msgstr "Do you want a bike?"
+
 msgid "resigned"
 msgstr "Resigned"
 
@@ -311,3 +317,6 @@ msgstr "List Vehicles"
 
 msgid "vehicles_list_tip"
 msgstr "Displays 'vehicle' records"
+
+msgid "yield_slot_tip"
+msgstr "Yield this [_1] slot"

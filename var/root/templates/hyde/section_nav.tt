@@ -6,14 +6,14 @@
 [%       IF loop.first -%]
       <span class="prev disabled">[% loc( 'Back' ) %]</span>
 [%       ELSE -%]
-[%    Link( uri_for( loop.prev.url ), 'prev', loc( 'Back' ) ) -%]
+[%    Link( loop.prev.url, 'prev', loc( 'Back' ) ) -%]
 [%       END -%]
    </div>
    <div class="right align-left">
 [%       IF loop.last -%]
       <span class="next disabled">[% loc( 'Next' ) %]</span>
 [%       ELSE -%]
-[%    Link( uri_for( loop.next.url ), 'next', loc( 'Next' ) ) -%]
+[%    Link( loop.next.url, 'next', loc( 'Next' ) ) -%]
 [%       END -%]
    </div>
 </div>

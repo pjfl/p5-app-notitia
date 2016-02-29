@@ -2,12 +2,9 @@
 <div class="unit four-fifths">
    <article>
       <h4>[% page.title %]</h4>
-[% IF page.fields.username.value -%]
-[%    href = 'user/' _ page.fields.username.value -%]
-[% ELSE %]
-[%    href = 'user' -%]
-[% END %]
-      <form action="[% uri_for( href ) %]" class="skinny"
+[% IF page.fields.user_href; href = page.fields.user_href -%]
+[% ELSE; href = uri_for_action( 'admin/person' ); END -%]
+      <form action="[% href %]" class="skinny"
            enctype="application/x-www-form-urlencoded"
             method="post" name="person-admin">
 [% TextField( page.fields.username ) -%]

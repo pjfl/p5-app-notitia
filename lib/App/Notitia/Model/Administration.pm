@@ -2,12 +2,13 @@ package App::Notitia::Model::Administration;
 
 #use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
-use App::Notitia::Util      qw( action_link_map loc uri_for_action );
+use App::Notitia::Util      qw( admin_navigation_links bind delete_button
+                                loc register_action_paths save_button
+                                uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
 use Class::Usul::Time       qw( str2date_time );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
-use Scalar::Util            qw( blessed );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -20,23 +21,19 @@ with    q(Web::Components::Role::Email);
 # Public attributes
 has '+moniker' => default => 'admin';
 
+register_action_paths
+   'admin/activate'     => 'user/activate',
+   'admin/certification'=> 'certification',
+   'admin/endorsement'  => 'endorsement',
+   'admin/index'        => 'admin/index',
+   'admin/people'       => 'users',
+   'admin/person'       => 'user',
+   'admin/role'         => 'role',
+   'admin/vehicle'      => 'vehicle',
+   'admin/vehicles'     => 'vehicles';
+
 # Private class attributes
 my $_admin_links_cache = {};
-
-# Private functions
-my $_nav_folder = sub {
-   return { depth => $_[ 2 ] // 0,
-            title => loc( $_[ 0 ], $_[ 1 ].'_management_heading' ),
-            type  => 'folder', };
-};
-
-my $_nav_link = sub {
-   return { depth => $_[ 3 ] // 1,
-            tip   => loc( $_[ 0 ], $_[ 2 ].'_tip' ),
-            title => loc( $_[ 0 ], $_[ 2 ].'_link' ),
-            type  => 'link',
-            url   => action_link_map( $_[ 1 ] ), };
-};
 
 # Construction
 around 'get_stash' => sub {
@@ -44,16 +41,7 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{nav} =
-      [ $_nav_folder->( $req, 'events' ),
-        $_nav_link->( $req, 'events', 'events_list' ),
-        $_nav_link->( $req, 'event', 'event_create' ),
-        $_nav_folder->( $req, 'people' ),
-        $_nav_link->( $req, 'people', 'people_list' ),
-        $_nav_link->( $req, 'person', 'person_create' ),
-        $_nav_folder->( $req, 'vehicles' ),
-        $_nav_link->( $req, 'vehicles', 'vehicles_list' ),
-        $_nav_link->( $req, 'vehicle', 'vehicle_create' ), ];
+   $stash->{nav} = admin_navigation_links $req;
 
    return $stash;
 };
@@ -69,103 +57,43 @@ my $_add_role_button = sub {
             tip             => $tip,    value => 'add_role' };
 };
 
-my $_bind_option = sub {
-   my ($v, $opts) = @_;
-
-   my $prefix = $opts->{prefix} // NUL;
-   my $numify = $opts->{numify} // FALSE;
-
-   return is_arrayref $v
-        ? { label =>  $v->[ 0 ].NUL,
-            value => ($v->[ 1 ] ? ($numify ? 0 + $v->[ 1 ] : $prefix.$v->[ 1 ])
-                                : undef),
-            %{ $v->[ 2 ] // {} } }
-        : { label => "${v}", value => ($numify ? 0 + $v : $prefix.$v) };
-};
-
-my $_bind = sub {
-   my ($name, $v, $opts) = @_; $opts //= {};
-
-   my $numify = $opts->{numify} // FALSE;
-   my $params = { label => $name, name => $name }; my $class;
-
-   if (defined $v and $class = blessed $v and $class eq 'DateTime') {
-      $params->{value} = $v->ymd;
-   }
-   elsif (is_arrayref $v) {
-      $params->{value} = [ map { $_bind_option->( $_, $opts ) } @{ $v } ];
-   }
-   else { defined $v and $params->{value} = $numify ? 0 + $v : "${v}" }
-
-   delete $opts->{numify}; delete $opts->{prefix};
-
-   $params->{ $_ } = $opts->{ $_ } for (keys %{ $opts });
-
-   return $params;
-};
-
 my $_bind_person_fields = sub {
    my $person = shift;
 
    return {
-      active           => $_bind->( 'active', TRUE,
-                                    { checked     => $person->active,
-                                      nobreak     => TRUE, } ),
-      address          => $_bind->( 'address',       $person->address ),
-      dob              => $_bind->( 'dob',           $person->dob ),
-      email_address    => $_bind->( 'email_address', $person->email_address ),
-      first_name       => $_bind->( 'first_name',    $person->first_name ),
-      home_phone       => $_bind->( 'home_phone',    $person->home_phone ),
-      joined           => $_bind->( 'joined',        $person->joined ),
-      last_name        => $_bind->( 'last_name',     $person->last_name ),
-      mobile_phone     => $_bind->( 'mobile_phone',  $person->mobile_phone ),
-      notes            => $_bind->( 'notes',         $person->notes,
-                                    { class       => 'autosize' } ),
-      password_expired => $_bind->( 'password_expired', TRUE,
-                                    { checked     => $person->password_expired,
-                                      container_class => 'right' } ),
-      postcode         => $_bind->( 'postcode',      $person->postcode ),
-      resigned         => $_bind->( 'resigned',      $person->resigned ),
-      subscription     => $_bind->( 'subscription',  $person->subscription ),
-      username         => $_bind->( 'username',      $person->name ),
+      active           => bind( 'active', TRUE,
+                                { checked     => $person->active,
+                                  nobreak     => TRUE, } ),
+      address          => bind( 'address',       $person->address ),
+      dob              => bind( 'dob',           $person->dob ),
+      email_address    => bind( 'email_address', $person->email_address ),
+      first_name       => bind( 'first_name',    $person->first_name ),
+      home_phone       => bind( 'home_phone',    $person->home_phone ),
+      joined           => bind( 'joined',        $person->joined ),
+      last_name        => bind( 'last_name',     $person->last_name ),
+      mobile_phone     => bind( 'mobile_phone',  $person->mobile_phone ),
+      notes            => bind( 'notes',         $person->notes,
+                                { class       => 'autosize' } ),
+      password_expired => bind( 'password_expired', TRUE,
+                                { checked     => $person->password_expired,
+                                  container_class => 'right' } ),
+      postcode         => bind( 'postcode',      $person->postcode ),
+      resigned         => bind( 'resigned',      $person->resigned ),
+      subscription     => bind( 'subscription',  $person->subscription ),
+      username         => bind( 'username',      $person->name ),
    };
-};
-
-my $_delete_person_button = sub {
-   my ($req, $name) = @_;
-
-   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
-           . loc( $req, 'delete_tip', [ 'person', $name ] );
-
-   return { container_class => 'right', label => 'delete',
-            tip             => $tip,    value => 'delete_person' };
 };
 
 my $_people_headers = sub {
    return [ map { { value => loc( $_[ 0 ], "people_heading_${_}" ) } } 0 .. 4 ];
 };
 
-my $_person_admin_links = sub {
-   my ($req, $name) = @_;
+my $_person_tuple = sub {
+   my ($person, $opts) = @_; $opts //= {}; $opts->{selected} //= NUL;
 
-   my $links = $_admin_links_cache->{ $name };
+   $opts->{selected} = $opts->{selected} eq $person ? TRUE : FALSE;
 
-   $links and return @{ $links }; $links = [];
-
-   for my $action ( qw( person role certification endorsement ) ) {
-      push @{ $links }, {
-         value => { class => 'table-link fade',
-                    hint  => loc( $req, 'Hint' ),
-                    href  => uri_for_action( $req, $action, [ $name ] ),
-                    name  => "${name}-${action}",
-                    tip   => loc( $req, "${action}_management_tip" ),
-                    type  => 'link',
-                    value => loc( $req, "${action}_management_link" ), }, };
-   }
-
-   $_admin_links_cache->{ $name } = $links;
-
-   return @{ $links };
+   return [ $person->label, $person, $opts ];
 };
 
 my $_remove_role_button = sub {
@@ -178,19 +106,9 @@ my $_remove_role_button = sub {
             tip             => $tip,    value => 'remove_role' };
 };
 
-my $_save_person_button = sub {
-   my ($req, $name) = @_; my $k = $name ? 'update' : 'create';
-
-   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
-           . loc( $req, "${k}_tip", [ 'person', $name ] );
-
-   return { container_class => 'right', label => $k,
-            tip             => $tip,    value => "${k}_person" };
-};
-
 my $_select_next_of_kin_list = sub {
-   return $_bind->( 'next_of_kin', [ [ NUL, NUL ], @{ $_[ 0 ] } ],
-                    { numify => TRUE } );
+   return bind( 'next_of_kin', [ [ NUL, NUL ], @{ $_[ 0 ] } ],
+                { numify => TRUE } );
 };
 
 my $_subtract = sub {
@@ -206,6 +124,7 @@ my $_create_user_email = sub {
    my $opts    = { params => [ $conf->title ], no_quote_bind_values => TRUE };
    my $from    = loc( $req, 'UserRegistration@[_1]', $opts );
    my $subject = loc( $req, 'Account activation for [_1]', $opts );
+   my $href    = uri_for_action( $req, $self->moniker.'/activate', [ $key ] );
    my $post    = {
       attributes      => {
          charset      => $conf->encoding,
@@ -214,7 +133,7 @@ my $_create_user_email = sub {
       stash           => {
          app_name     => $conf->title,
          first_name   => $person->first_name,
-         link         => uri_for_action( $req, 'activate', [ $key ] ),
+         link         => $href,
          password     => $password,
          title        => $subject,
          username     => $person->name, },
@@ -249,12 +168,27 @@ my $_list_all_roles = sub {
             ( { type => 'role' }, { columns => [ 'name' ] } )->all ];
 };
 
-my $_person_tuple = sub {
-   my ($person, $opts) = @_; $opts //= {}; $opts->{selected} //= NUL;
+my $_person_admin_links = sub {
+   my ($self, $req, $name) = @_; my $links = $_admin_links_cache->{ $name };
 
-   $opts->{selected} = $opts->{selected} eq $person ? TRUE : FALSE;
+   $links and return @{ $links }; $links = [];
 
-   return [ $person->label, $person, $opts ];
+   for my $action ( qw( person role certification endorsement ) ) {
+      my $href = uri_for_action( $req, $self->moniker."/${action}", [ $name ] );
+
+      push @{ $links }, {
+         value => { class => 'table-link fade',
+                    hint  => loc( $req, 'Hint' ),
+                    href  => $href,
+                    name  => "${name}-${action}",
+                    tip   => loc( $req, "${action}_management_tip" ),
+                    type  => 'link',
+                    value => loc( $req, "${action}_management_link" ), }, };
+   }
+
+   $_admin_links_cache->{ $name } = $links;
+
+   return @{ $links };
 };
 
 my $_list_all_people = sub {
@@ -308,7 +242,7 @@ sub activate {
 
    $self->$_find_person_by( $name )->activate;
 
-   my $location = uri_for_action( $req, 'password', [ $name ] );
+   my $location = uri_for_action( $req, 'user/change_password', [ $name ] );
    my $message  = [ 'User [_1] account activated', $name ];
 
    return { redirect => { location => $location, message => $message } };
@@ -323,7 +257,7 @@ sub add_role_action {
 
    $person->add_member_to( $_ ) for (@{ $roles });
 
-   my $location = uri_for_action( $req, 'role', [ $name ] );
+   my $location = uri_for_action( $req, $self->moniker.'/role', [ $name ] );
    my $message  = [ 'Person [_1] role(s) added', $name ];
 
    return { redirect => { location => $location, message => $message } };
@@ -347,7 +281,8 @@ sub create_person_action {
    $self->config->no_user_email
       or $self->$_create_user_email( $req, $person, $password );
 
-   my $location = uri_for_action( $req, 'person', [ $person->name ] );
+   my $action   = $self->moniker.'/person';
+   my $location = uri_for_action( $req, $action, [ $person->name ] );
    my $message  = [ 'Person [_1] created', $person->name ];
 
    return { redirect => { location => $location, message => $message } };
@@ -358,7 +293,7 @@ sub delete_person_action {
 
    my $name     = $req->uri_params->( 0 );
    my $person   = $self->$_find_person_by( $name ); $person->delete;
-   my $location = uri_for_action( $req, 'people' );
+   my $location = uri_for_action( $req, $self->moniker.'/people' );
    my $message  = [ 'Person [_1] deleted', $name ];
 
    return { redirect => { location => $location, message => $message } };
@@ -382,19 +317,21 @@ sub person {
       template => [ 'contents', 'person' ],
       title    => loc( $req, 'person_management_heading' ), };
    my $fields  =  $page->{fields};
+   my $action  =  $self->moniker.'/person';
 
    if ($name) {
       $people = $self->$_list_all_people( { selected => $person->next_of_kin });
-      $fields->{delete} = $_delete_person_button->( $req, $name );
-      $fields->{roles } = $_bind->( 'roles', $person->list_roles );
+      $fields->{user_href} = uri_for_action( $req, $action, [ $name ] );
+      $fields->{delete   } = delete_button( $req, $name, 'person' );
+      $fields->{roles    } = bind( 'roles', $person->list_roles );
    }
    else {
       $people = $self->$_list_all_people();
-      $fields->{roles } = $_bind->( 'roles', $self->$_list_all_roles() );
+      $fields->{roles    } = bind( 'roles', $self->$_list_all_roles() );
    }
 
    $fields->{next_of_kin} = $_select_next_of_kin_list->( $people );
-   $fields->{save       } = $_save_person_button->( $req, $name );
+   $fields->{save       } = save_button( $req, $name, 'person' );
 
    return $self->get_stash( $req, $page );
 }
@@ -405,14 +342,15 @@ sub people {
    my $page    =  {
       fields   => { headers => $_people_headers->( $req ),
                     rows    => [], },
-      template => [ 'contents', 'people' ],
+      template => [ 'contents', 'table' ],
       title    => loc( $req, 'people_management_heading' ), };
    my $rows    =  $page->{fields}->{rows};
    my $people  =  $self->$_list_all_people();
 
    for my $person (@{ $people }) {
       push @{ $rows }, [ { value => $person->[ 0 ]  },
-                         $_person_admin_links->( $req, $person->[ 1 ]->name ) ];
+                         $self->$_person_admin_links
+                         ( $req, $person->[ 1 ]->name ) ];
    }
 
    return $self->get_stash( $req, $page );
@@ -427,7 +365,7 @@ sub remove_role_action {
 
    $person->delete_member_from( $_ ) for (@{ $roles });
 
-   my $location = uri_for_action( $req, 'role', [ $name ] );
+   my $location = uri_for_action( $req, $self->moniker.'/role', [ $name ] );
    my $message  = [ 'Person [_1] role(s) removed', $name ];
 
    return { redirect => { location => $location, message => $message } };
@@ -438,8 +376,9 @@ sub role {
 
    my $name    =  $req->uri_params->( 0 );
    my $person  =  $self->$_find_person_by( $name );
+   my $href    =  uri_for_action( $req, $self->moniker.'/role', [ $name ] );
    my $page    =  {
-      fields   => { username => { value => $name } },
+      fields   => { username => { href => $href } },
       template => [ 'contents', 'role' ],
       title    => loc( $req, 'role_management_heading' ), };
    my $fields  =  $page->{fields};
@@ -448,11 +387,10 @@ sub role {
    my $person_roles = $person->list_roles;
    my $available    = $_subtract->( $self->$_list_all_roles(), $person_roles );
 
-   $fields->{roles} = $_bind->( 'roles', $available,
-                                { multiple => TRUE, size => 10 } );
+   $fields->{roles}
+      = bind( 'roles', $available, { multiple => TRUE, size => 10 } );
    $fields->{person_roles}
-      = $_bind->( 'person_roles', $person_roles,
-                  { multiple => TRUE, size => 10 } );
+      = bind( 'person_roles', $person_roles, { multiple => TRUE, size => 10 } );
    $fields->{add   } = $_add_role_button->( $req, $name );
    $fields->{remove} = $_remove_role_button->( $req, $name );
 
