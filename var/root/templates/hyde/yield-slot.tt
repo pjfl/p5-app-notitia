@@ -1,0 +1,7 @@
+[% PROCESS 'hyde/macros.tt' -%]
+<!-- Yield Slot -->
+<form action="[% links.base_uri %]slot/[% page.fields.rota_name %]/[% page.fields.rota_date %]/[% page.fields.slot_name %]"
+     enctype="application/x-www-form-urlencoded"
+      method="post" name="yield-slot">
+[% Button( page.fields.confirm ) -%]
+</form>
