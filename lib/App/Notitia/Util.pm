@@ -11,14 +11,15 @@ use Class::Usul::Time          qw( str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
 use Scalar::Util               qw( blessed weaken );
 
-our @EXPORT_OK = qw( admin_navigation_links bind bool_data_type
-                     date_data_type delete_button enumerated_data_type enhance
+our @EXPORT_OK = qw( admin_navigation_links bind bool_data_type date_data_type
+                     delete_button enumerated_data_type enhance
                      foreign_key_data_type get_hashed_pw get_salt is_encrypted
                      loc new_salt nullable_foreign_key_data_type
                      nullable_varchar_data_type numerical_id_data_type
-                     save_button serial_data_type set_element_focus
-                     set_on_create_datetime_data_type register_action_paths
-                     stash_functions uri_for_action varchar_data_type );
+                     rota_navigation_links save_button serial_data_type
+                     set_element_focus set_on_create_datetime_data_type
+                     slot_limit_index register_action_paths stash_functions
+                     uri_for_action varchar_data_type );
 
 # Private class attributes
 my $_translations  = {};
@@ -26,13 +27,6 @@ my $_translations  = {};
 my $_action_path_uri_map = {};
 
 # Private functions
-my $_action_path2uri = sub {
-
-   my $uri = $_action_path_uri_map->{ $_[ 0 ] } // 'action_path_undefined';
-
-   return $uri;
-};
-
 my $_bind_option = sub {
    my ($v, $opts) = @_;
 
@@ -54,11 +48,11 @@ my $_nav_folder = sub {
 };
 
 my $_nav_link = sub {
-   return { depth => $_[ 3 ] // 1,
-            tip   => loc( $_[ 0 ], $_[ 2 ].'_tip' ),
-            title => loc( $_[ 0 ], $_[ 2 ].'_link' ),
+   return { depth => $_[ 4 ] // 1,
+            tip   => loc( $_[ 0 ], $_[ 3 ].'_tip' ),
+            title => loc( $_[ 0 ], $_[ 3 ].'_link' ),
             type  => 'link',
-            url   => uri_for_action( $_[ 0 ], $_[ 1 ] ), };
+            url   => uri_for_action( $_[ 0 ], $_[ 1 ], $_[ 2 ] ), };
 };
 
 # Public functions
@@ -66,14 +60,14 @@ sub admin_navigation_links ($) {
    my $req = shift;
 
    return [ $_nav_folder->( $req, 'events' ),
-            $_nav_link->( $req, 'event/event', 'event_create' ),
-            $_nav_link->( $req, 'event/events', 'events_list' ),
+            $_nav_link->( $req, 'event/event',    [], 'event_create' ),
+            $_nav_link->( $req, 'event/events',   [], 'events_list' ),
             $_nav_folder->( $req, 'people' ),
-            $_nav_link->( $req, 'admin/person', 'person_create' ),
-            $_nav_link->( $req, 'admin/people', 'people_list' ),
+            $_nav_link->( $req, 'admin/person',   [], 'person_create' ),
+            $_nav_link->( $req, 'admin/people',   [], 'people_list' ),
             $_nav_folder->( $req, 'vehicles' ),
-            $_nav_link->( $req, 'admin/vehicle', 'vehicle_create' ),
-            $_nav_link->( $req, 'admin/vehicles', 'vehicles_list' ), ];
+            $_nav_link->( $req, 'admin/vehicle',  [], 'vehicle_create' ),
+            $_nav_link->( $req, 'admin/vehicles', [], 'vehicles_list' ), ];
 }
 
 sub bind {
@@ -219,6 +213,29 @@ sub register_action_paths (;@) {
    return;
 }
 
+sub rota_navigation_links ($$) {
+   my ($req, $name) = @_; my $args = []; my $year = time2str '%Y';
+
+   for my $month (0 .. 11) {
+      $args->[ $month ] = [ $name, sprintf '%s-%0.2d-01', $year, 1 + $month ];
+   }
+
+   return
+      [ $_nav_folder->( $req, 'months' ),
+        $_nav_link->( $req, 'sched/day_rota', $args->[  0 ], 'month_jan' ),
+        $_nav_link->( $req, 'sched/day_rota', $args->[  1 ], 'month_feb' ),
+        $_nav_link->( $req, 'sched/day_rota', $args->[  2 ], 'month_mar' ),
+        $_nav_link->( $req, 'sched/day_rota', $args->[  3 ], 'month_apr' ),
+        $_nav_link->( $req, 'sched/day_rota', $args->[  4 ], 'month_may' ),
+        $_nav_link->( $req, 'sched/day_rota', $args->[  5 ], 'month_jun' ),
+        $_nav_link->( $req, 'sched/day_rota', $args->[  6 ], 'month_jul' ),
+        $_nav_link->( $req, 'sched/day_rota', $args->[  7 ], 'month_aug' ),
+        $_nav_link->( $req, 'sched/day_rota', $args->[  8 ], 'month_sep' ),
+        $_nav_link->( $req, 'sched/day_rota', $args->[  9 ], 'month_oct' ),
+        $_nav_link->( $req, 'sched/day_rota', $args->[ 10 ], 'month_nov' ),
+        $_nav_link->( $req, 'sched/day_rota', $args->[ 11 ], 'month_dec' ) ];
+}
+
 sub save_button ($$;$) {
    my ($req, $name, $type) = @_; my $k = $name ? 'update' : 'create';
 
@@ -252,6 +269,15 @@ sub set_on_create_datetime_data_type () {
    return { %{ date_data_type() }, set_on_create => TRUE };
 }
 
+sub slot_limit_index ($$) {
+   my ($shift_type, $slot_type) = @_;
+
+   my $shift_map = { day => 0, night => 1 };
+   my $slot_map  = { controller => 0, driver => 4, rider => 2 };
+
+   return $shift_map->{ $shift_type } + $slot_map->{ $slot_type };
+}
+
 sub stash_functions ($$$) {
    my ($app, $req, $dest) = @_; weaken $req;
 
@@ -269,7 +295,9 @@ sub stash_functions ($$$) {
 sub uri_for_action ($$;@) {
    my ($req, $action, @args) = @_;
 
-   return $req->uri_for( $_action_path2uri->( $action ), @args );
+   my $uri = $_action_path_uri_map->{ $action } // $action;
+
+   return $req->uri_for( $uri, @args );
 }
 
 sub varchar_data_type (;$$) {

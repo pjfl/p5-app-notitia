@@ -30,14 +30,18 @@ sub dialog_stash {
 }
 
 sub exception_handler {
-   my ($self, $req, $e) = @_; my ($leader, $message);
+   my ($self, $req, $e) = @_; my ($leader, $message, $summary);
 
-   if ($e =~ m{ : }mx) { ($leader, $message) = split m{ : }mx, "${e}", 2 }
-   else { $leader = NUL; $message = "${e}" }
+   if ($e =~ m{ : }mx) {
+      ($leader, $message) = split m{ : }mx, "${e}", 2;
+      $summary = substr $message, 0, 500;
+   }
+   else { $leader = NUL; $summary = $message = "${e}" }
 
    my $page  = { error    => $e,
                  leader   => $leader,
                  message  => $message,
+                 summary  => $summary,
                  template => [ 'contents', 'exception' ],
                  title    => $req->loc( 'Exception Handler' ) };
 

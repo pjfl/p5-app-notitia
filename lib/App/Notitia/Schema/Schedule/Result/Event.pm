@@ -4,10 +4,12 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Util qw( date_data_type foreign_key_data_type serial_data_type
-                           varchar_data_type );
+use App::Notitia::Util qw( date_data_type foreign_key_data_type
+                           serial_data_type varchar_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
+
+my $left_join = { join_type => 'left' };
 
 $class->table( 'event' );
 
@@ -25,14 +27,19 @@ $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'name' ] );
 
-$class->belongs_to( rota         => "${result}::Rota", 'rota_id' );
-$class->belongs_to( owner        => "${result}::Person", 'owner_id' );
+$class->belongs_to( rota  => "${result}::Rota", 'rota_id' );
+$class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
 $class->has_many  ( participents => "${result}::Participent", 'event_id' );
 $class->has_many  ( transports   => "${result}::Transport",   'event_id' );
 
 # Private methods
 sub _as_string {
    return $_[ 0 ]->name;
+}
+
+# Public methods
+sub label {
+   return $_[ 0 ]->name.' ('.$_[ 0 ]->rota->date->dmy.')';
 }
 
 1;

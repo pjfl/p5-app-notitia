@@ -3,6 +3,20 @@ package App::Notitia::Schema::Schedule::ResultSet::Event;
 use strictures;
 use parent 'DBIx::Class::ResultSet';
 
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use Class::Usul::Functions  qw( throw );
+use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
+
+# Private functions
+my $_event_tuple = sub {
+   my ($event, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   $opts->{selected} //= NUL;
+   $opts->{selected}   = $opts->{selected} eq $event ? TRUE : FALSE;
+
+   return [ $event->label, $event, $opts ];
+};
+
 # Private methods
 my $_find_owner = sub {
    return $_[ 0 ]->result_source->schema->resultset( 'Person' )->search
@@ -28,6 +42,24 @@ sub new_result {
    $owner and $columns->{owner_id} = $self->$_find_owner( $owner )->id;
 
    return $self->next::method( $columns );
+}
+
+sub find_event_by {
+   my ($self, $name, $opts) = @_; $opts //= {};
+
+   my $event = $self->search( { 'me.name' => $name }, $opts )->single
+      or throw 'Event [_1] unknown', [ $name ], rv => HTTP_EXPECTATION_FAILED;
+
+   return $event;
+}
+
+sub list_all_events {
+   my ($self, $opts) = @_;
+
+   my $events = $self->search
+      ( {}, { columns => [ 'name', 'rota.date' ], prefetch => [ 'rota' ] } );
+
+   return [ map { $_event_tuple->( $_, $opts ) } $events->all ];
 }
 
 1;

@@ -3,8 +3,9 @@ package App::Notitia::Model::Schedule;
 #use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE HASH_CHAR NUL
                                 SHIFT_TYPE_ENUM SPC TILDE TRUE );
-use App::Notitia::Util      qw( loc register_action_paths
-                                set_element_focus uri_for_action );
+use App::Notitia::Util      qw( loc register_action_paths rota_navigation_links
+                                set_element_focus slot_limit_index
+                                uri_for_action );
 use Class::Usul::Functions  qw( throw );
 use Class::Usul::Time       qw( str2date_time time2str );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
@@ -23,6 +24,17 @@ register_action_paths
    'sched/slot'     => 'slot',
    'sched/index'    => 'index',
    'sched/day_rota' => 'rota';
+
+# Construction
+around 'get_stash' => sub {
+   my ($orig, $self, $req, @args) = @_;
+
+   my $stash = $orig->( $self, $req, @args );
+
+   $stash->{nav} = rota_navigation_links $req, 'main'; # TODO: Naughty
+
+   return $stash;
+};
 
 # Private class attributes
 my $_rota_types_id = {};
@@ -54,8 +66,7 @@ my $_confirm_slot_button = sub {
            . loc( $req, "confirm_${action}_tip", [ $slot_type ] );
 
    # Have left tip off as too noisey
-   return { container_class => 'right', label => 'confirm',
-            value           => "${action}_slot" };
+   return { class => 'right', label => 'confirm', value => "${action}_slot" };
 };
 
 my $_dialog = sub {
@@ -165,12 +176,10 @@ my $_add_js_dialog = sub {
 my $_controllers = sub {
    my ($self, $req, $page, $rota_name, $rota_date, $slot_rows, $limits) = @_;
 
-   my $shift_no = 0;
-   my $rota     = $page->{rota};
-   my $controls = $rota->{controllers};
+   my $rota = $page->{rota}; my $controls = $rota->{controllers};
 
    for my $shift_type (@{ SHIFT_TYPE_ENUM() }) {
-      my $max_slots = $limits->[ $shift_no++ ];
+      my $max_slots = $limits->[ slot_limit_index $shift_type, 'controller' ];
 
       for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
          my $k    = "${shift_type}_controller_${subslot}";
@@ -189,16 +198,6 @@ my $_controllers = sub {
    return;
 };
 
-my $_find_person_by = sub {
-   my ($self, $name) = @_;
-
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->search( { name => $name } )->single
-      or throw 'User [_1] unknown', [ $name ], rv => HTTP_EXPECTATION_FAILED;
-
-   return $person;
-};
-
 my $_find_rota_type_id_for = sub {
    exists $_rota_types_id->{ $_[ 1 ] } or $_rota_types_id->{ $_[ 1 ] }
       = $_[ 0 ]->schema->resultset( 'Type' )->search
@@ -214,10 +213,10 @@ my $_riders_n_drivers = sub {
    my $shift_no = 0;
 
    for my $shift_type (@{ SHIFT_TYPE_ENUM() }) {
-      my $shift     = $page->{rota}->{shifts}->[ $shift_no ] = {};
+      my $shift     = $page->{rota}->{shifts}->[ $shift_no++ ] = {};
       my $riders    = $shift->{riders } = [];
       my $drivers   = $shift->{drivers} = [];
-      my $max_slots = $limits->[ 2 + $shift_no ];
+      my $max_slots = $limits->[ slot_limit_index $shift_type, 'rider' ];
 
       for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
          my $k    = "${shift_type}_rider_${subslot}";
@@ -228,7 +227,7 @@ my $_riders_n_drivers = sub {
                                  'rider-slot', 'Rider Slot' );
       }
 
-      $max_slots = $limits->[ 4 + $shift_no ];
+      $max_slots = $limits->[ slot_limit_index $shift_type, 'driver' ];
 
       for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
          my $k    = "${shift_type}_driver_${subslot}";
@@ -238,8 +237,6 @@ my $_riders_n_drivers = sub {
          $self->$_add_js_dialog( $req, $page, $args, $slot_rows,
                                  'driver-slot', 'Driver Slot' );
       }
-
-      $shift_no++;
    }
 
    return;
@@ -248,7 +245,7 @@ my $_riders_n_drivers = sub {
 my $_get_page = sub {
    my ($self, $req, $name, $date, $todays_events, $slot_rows, $limits) = @_;
 
-   my $rota_dt =  str2date_time $date;
+   my $rota_dt =  str2date_time $date, 'GMT';
    my $title   =  ucfirst( loc( $req, $name ) ).SPC
                .  loc( $req, 'rota for' ).SPC.$rota_dt->month_name;
    my $page    =  {
@@ -276,11 +273,13 @@ sub claim_slot_action {
    my $name      = $params->( 2 );
    my $opts      = { optional => TRUE };
    my $bike      = $req->body_params->( 'request_bike', $opts ) // FALSE;
-   my $person    = $self->$_find_person_by( $req->username );
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person    = $person_rs->find_person_by( $req->username );
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
-   $person->claim_slot( $rota_name, str2date_time( $rota_date ),
+   # Without tz will create rota records prev. day @ 23:00 during summer time
+   $person->claim_slot( $rota_name, str2date_time( $rota_date, 'GMT' ),
                         $shift_type, $slot_type, $subslot, $bike );
 
    my $args     = [ $rota_name, $rota_date ];
@@ -340,21 +339,21 @@ sub index {
 sub slot {
    my ($self, $req) = @_;
 
+   my $params = $req->uri_params;
+   my $name   = $params->( 2 );
+   my $args   = [ $params->( 0 ), $params->( 1 ), $name ];
    my $action = $req->query_params->( 'action' );
    my $stash  = $self->dialog_stash( $req, "${action}-slot" );
    my $page   = $stash->{page};
    my $fields = $page->{fields};
-   my $name   = $req->uri_params->( 2 );
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
    $fields->{confirm  } = $_confirm_slot_button->( $req, $slot_type, $action );
-   $fields->{rota_date} = $req->uri_params->( 1 );
-   $fields->{rota_name} = $req->uri_params->( 0 );
-   $fields->{slot_name} = $name;
+   $fields->{slot_href} = uri_for_action( $req, $self->moniker.'/slot', $args );
 
-   $action eq 'claim' and $slot_type eq 'rider' and $fields->{request_bike} =
-      { label => 'request_bike', name => 'request_bike', value => 1 };
+   $action eq 'claim' and $slot_type eq 'rider'
+      and $fields->{request_bike} = bind( 'request_bike', TRUE );
 
    return $stash;
 }
@@ -366,7 +365,8 @@ sub yield_slot_action {
    my $rota_name = $params->( 0 );
    my $rota_date = $params->( 1 );
    my $slot_name = $params->( 2 );
-   my $person    = $self->$_find_person_by( $req->username );
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person    = $person_rs->find_person_by( $req->username );
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
 

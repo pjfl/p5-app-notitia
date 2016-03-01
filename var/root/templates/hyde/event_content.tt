@@ -2,23 +2,23 @@
 <div class="unit four-fifths">
    <article>
       <h4>[% page.title %]</h4>
-[% IF page.fields.event_href; href = page.fields.event_href -%]
+[% IF page.fields.href; href = page.fields.href -%]
 [% ELSE; href = uri_for_action( 'event/event' ) -%]
 [% END %]
       <form action="[% href %]" class="skinny"
            enctype="application/x-www-form-urlencoded"
             method="post" name="event-admin">
-[% TextField( page.fields.event_name ) -%]
+[% TextField( page.fields.name ) -%]
 [% TextArea( page.fields.description ) -%]
 [% DateField( page.fields.date ) -%]
 [% TimeField( page.fields.start ) -%]
 [% TimeField( page.fields.end ) -%]
 [% TextArea( page.fields.notes ) -%]
-[% IF page.fields.event_name.value -%]
-[%    TextField( page.fields.owner ) -%]
+[% IF page.fields.name.value -%]
+[%    Select( page.fields.owner ) -%]
 [% END -%]
 [% Button( page.fields.save ) -%]
-[% IF page.fields.event_name.value -%]
+[% IF page.fields.name.value -%]
 [%    Button( page.fields.delete ) -%]
 [% END -%]
       </form>

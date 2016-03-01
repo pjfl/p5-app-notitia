@@ -11,7 +11,8 @@ use App::Notitia::Constants    qw( EXCEPTION_CLASS SPC TRUE
 use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
                                    is_encrypted new_salt
                                    nullable_foreign_key_data_type
-                                   serial_data_type varchar_data_type );
+                                   serial_data_type slot_limit_index
+                                   varchar_data_type );
 use Class::Usul::Functions     qw( throw );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use HTTP::Status               qw( HTTP_EXPECTATION_FAILED HTTP_UNAUTHORIZED );
@@ -65,11 +66,18 @@ sub _as_string {
 }
 
 my $_assert_claim_allowed = sub {
-   my ($self, $slot_type, $bike_wanted) = @_;
+   my ($self, $shift_type, $slot_type, $subslot, $bike_wanted) = @_;
 
    $slot_type eq 'rider' and $self->assert_member_of( 'bike_rider' );
    $slot_type ne 'rider' and $bike_wanted
       and throw 'Cannot request a bike for slot type [_1]', [ $slot_type ];
+
+   my $i    = slot_limit_index $shift_type, $slot_type;
+   my $conf = $self->result_source->schema->config;
+
+   $subslot > $conf->slot_limits->[ $i ] - 1
+      and throw 'Cannot claim subslot [_1] greater than slot limit [_2]',
+          [ $subslot, $conf->slot_limits->[ $i ] - 1 ];
 
    return;
 };
@@ -99,13 +107,6 @@ my $_encrypt_password = sub {
    my $salt = defined $stored ? get_salt( $stored ) : new_salt( '2a', $lf );
 
    return bcrypt( $password, $salt );
-};
-
-my $_find_event_by = sub {
-   my ($self, $name) = @_;
-
-   return $self->result_source->schema->resultset( 'Event' )->search
-      ( { name => $name } )->single;
 };
 
 my $_find_type_by = sub {
@@ -167,7 +168,8 @@ sub add_member_to {
 sub add_participent_for {
    my ($self, $event_name) = @_;
 
-   my $event = $self->$_find_event_by( $event_name );
+   my $event_rs = $self->result_source->schema->resultset( 'Event' );
+   my $event    = $event_rs->find_event_by( $event_name );
 
    $self->is_participent_of( $event_name, $event )
       and throw 'Person [_1] already participating in [_2]', [ $self, $event ];
@@ -212,7 +214,8 @@ sub assert_member_of {
 sub assert_participent_for {
    my ($self, $event_name) = @_;
 
-   my $event       = $self->$_find_event_by( $event_name );
+   my $event_rs    = $self->result_source->schema->resultset( 'Event' );
+   my $event       = $event_rs->find_event_by( $event_name );
    my $participent = $self->participents->find( $event->id, $self->id )
       or throw 'Person [_1] is not participating in [_2]',
                [ $self, $event ], level => 2, rv => HTTP_EXPECTATION_FAILED;
@@ -241,7 +244,7 @@ sub authenticate {
 sub claim_slot {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $bike) = @_;
 
-   $self->$_assert_claim_allowed( $slot_type, $bike );
+   $self->$_assert_claim_allowed( $shift_type, $slot_type, $subslot, $bike );
 
    my $shift = $self->find_shift( $rota_name, $date, $shift_type );
    my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
@@ -319,7 +322,8 @@ sub is_member_of {
 sub is_participent_of {
    my ($self, $event_name, $event) = @_;
 
-   $event //= $self->$_find_event_by( $event_name );
+   $event //= $self->result_source->schema->resultset( 'Event' )
+                   ->find_event_by( $event_name );
 
    return $event && $self->participents->find( $event->id, $self->id )
         ? TRUE : FALSE;

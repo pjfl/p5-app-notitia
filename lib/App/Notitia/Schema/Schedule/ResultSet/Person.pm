@@ -1,13 +1,40 @@
-package App::Notitia;
+package App::Notitia::Schema::Schedule::ResultSet::Person;
 
-use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 39 $ =~ /\d+/gmx );
+use parent 'DBIx::Class::ResultSet';
 
-use Class::Usul::Functions  qw( ns_environment );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use Class::Usul::Functions  qw( throw );
+use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+# Private functions
+my $_person_tuple = sub {
+   my ($person, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   $opts->{selected} //= NUL;
+   $opts->{selected}   = $opts->{selected} eq $person ? TRUE : FALSE;
+
+   return [ $person->label, $person, $opts ];
+};
+
+# Public methods
+sub find_person_by {
+   my ($self, $name) = @_;
+
+   my $person = $self->search( { name => $name } )->single
+      or throw 'Person [_1] unknown', [ $name ], level => 2,
+               rv => HTTP_EXPECTATION_FAILED;
+
+   return $person;
+}
+
+sub list_all_people {
+   my ($self, $opts) = @_;
+
+   my $people = $self->search
+      ( {}, { columns => [ 'first_name', 'id', 'last_name', 'name' ] } );
+
+   return [ map { $_person_tuple->( $_, $opts ) } $people->all ];
 }
 
 1;
@@ -20,11 +47,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Schema::Schedule::ResultSet::Person - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Schema::Schedule::ResultSet::Person;
    # Brief but working code examples
 
 =head1 Description

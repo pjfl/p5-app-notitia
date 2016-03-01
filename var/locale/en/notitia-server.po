@@ -99,6 +99,9 @@ msgstr "Delete"
 msgid "delete_tip"
 msgstr "Delete the [_1] record for [_2]"
 
+msgid "description"
+msgstr "Description"
+
 msgid "dob"
 msgstr "Date of Birth"
 
@@ -107,6 +110,9 @@ msgstr "Driver"
 
 msgid "email_address"
 msgstr "Email Address"
+
+msgid "end_time"
+msgstr "End Time"
 
 msgid "endorsement_management_heading"
 msgstr "Endorsements"
@@ -123,8 +129,29 @@ msgstr "Add Event"
 msgid "event_create_tip"
 msgstr "Create new 'event' records"
 
+msgid "event_date"
+msgstr "Event Date"
+
+msgid "event_management_heading"
+msgstr "Event"
+
+msgid "event_management_link"
+msgstr "Edit"
+
 msgid "event_manager"
 msgstr "Event Manager"
+
+msgid "event_name"
+msgstr "Event Name"
+
+msgid "events_heading_0"
+msgstr "Event"
+
+msgid "events_heading_1"
+msgstr "Edit"
+
+msgid "events_heading_2"
+msgstr "Participate"
 
 msgid "events_list_link"
 msgstr "List Events"
@@ -162,6 +189,45 @@ msgstr "Welcome"
 msgid "mobile_phone"
 msgstr "Mobile Phone"
 
+msgid "month_jan_link"
+msgstr "January"
+
+msgid "month_feb_link"
+msgstr "February"
+
+msgid "month_mar_link"
+msgstr "March"
+
+msgid "month_apr_link"
+msgstr "April"
+
+msgid "month_may_link"
+msgstr "May"
+
+msgid "month_jun_link"
+msgstr "June"
+
+msgid "month_jul_link"
+msgstr "July"
+
+msgid "month_aug_link"
+msgstr "August"
+
+msgid "month_sep_link"
+msgstr "September"
+
+msgid "month_oct_link"
+msgstr "October"
+
+msgid "month_nov_link"
+msgstr "November"
+
+msgid "month_dec_link"
+msgstr "December"
+
+msgid "months_management_heading"
+msgstr "Select Month"
+
 msgid "new_password"
 msgstr "New Password"
 
@@ -188,6 +254,12 @@ msgstr "Notes"
 
 msgid "old_password"
 msgstr "Old Password"
+
+msgid "owner"
+msgstr "Owner"
+
+msgid "participent_management_link"
+msgstr "Participate"
 
 msgid "password"
 msgstr "Password"
@@ -287,6 +359,9 @@ msgstr "Select Person"
 
 msgid "Site Description"
 msgstr "People and resource scheduling"
+
+msgid "start_time"
+msgstr "Start Time"
 
 msgid "subscription"
 msgstr "Subscription"

@@ -10,7 +10,7 @@
 [% END -%]
 [% ELSE -%]
       <h5>[% loc( 'The following exception was thrown' ) %]</h5>
-      <p>[% page.message %]</p>
+      <p>[% page.summary %]</p>
 [% END -%]
 [% text = loc( 'Exception thrown' ) _ ' ' -%]
 [% IF page.leader -%]

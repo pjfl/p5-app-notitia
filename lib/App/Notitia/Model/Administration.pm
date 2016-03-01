@@ -32,9 +32,6 @@ register_action_paths
    'admin/vehicle'      => 'vehicle',
    'admin/vehicles'     => 'vehicles';
 
-# Private class attributes
-my $_admin_links_cache = {};
-
 # Construction
 around 'get_stash' => sub {
    my ($orig, $self, $req, @args) = @_;
@@ -45,6 +42,9 @@ around 'get_stash' => sub {
 
    return $stash;
 };
+
+# Private class attributes
+my $_admin_links_cache = {};
 
 # Private functions
 my $_add_role_button = sub {
@@ -86,14 +86,6 @@ my $_bind_person_fields = sub {
 
 my $_people_headers = sub {
    return [ map { { value => loc( $_[ 0 ], "people_heading_${_}" ) } } 0 .. 4 ];
-};
-
-my $_person_tuple = sub {
-   my ($person, $opts) = @_; $opts //= {}; $opts->{selected} //= NUL;
-
-   $opts->{selected} = $opts->{selected} eq $person ? TRUE : FALSE;
-
-   return [ $person->label, $person, $opts ];
 };
 
 my $_remove_role_button = sub {
@@ -151,16 +143,6 @@ my $_create_user_email = sub {
    return;
 };
 
-my $_find_person_by = sub {
-   my ($self, $name) = @_;
-
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->search( { name => $name } )->single
-      or throw 'User [_1] unknown', [ $name ], rv => HTTP_EXPECTATION_FAILED;
-
-   return $person;
-};
-
 my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
@@ -191,16 +173,6 @@ my $_person_admin_links = sub {
    return @{ $links };
 };
 
-my $_list_all_people = sub {
-   my ($self, $opts) = @_;
-
-   my $people = $self->schema->resultset( 'Person' )->search
-      ( {}, { columns => [ 'first_name', 'id', 'last_name', 'name' ] } );
-
-   return [ map { $_person_tuple->( $_, $opts ) } $people->all ];
-
-};
-
 my $_update_person_from_request = sub {
    my ($self, $req, $person) = @_; my $params = $req->body_params;
 
@@ -219,7 +191,7 @@ my $_update_person_from_request = sub {
       defined $v or next;
 
       length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
-         and $v = str2date_time( "${v} 00:00", 'GMT' );
+         and $v = str2date_time( "${v} 00:00" );
 
       $person->$attr( $v );
    }
@@ -240,7 +212,7 @@ sub activate {
    my $file = $self->config->sessdir->catfile( $req->uri_params->( 0 ) );
    my $name = $file->chomp->getline; $file->unlink;
 
-   $self->$_find_person_by( $name )->activate;
+   $self->schema->resultset( 'Person' )->find_person_by( $name )->activate;
 
    my $location = uri_for_action( $req, 'user/change_password', [ $name ] );
    my $message  = [ 'User [_1] account activated', $name ];
@@ -252,7 +224,7 @@ sub add_role_action {
    my ($self, $req) = @_;
 
    my $name     = $req->uri_params->( 0 );
-   my $person   = $self->$_find_person_by( $name );
+   my $person   = $self->schema->resultset( 'Person' )->find_person_by( $name );
    my $roles    = $req->body_params->( 'roles', { multiple => TRUE } );
 
    $person->add_member_to( $_ ) for (@{ $roles });
@@ -292,7 +264,10 @@ sub delete_person_action {
    my ($self, $req) = @_;
 
    my $name     = $req->uri_params->( 0 );
-   my $person   = $self->$_find_person_by( $name ); $person->delete;
+   my $person   = $self->schema->resultset( 'Person' )->find_person_by( $name );
+
+   $person->delete;
+
    my $location = uri_for_action( $req, $self->moniker.'/people' );
    my $message  = [ 'Person [_1] deleted', $name ];
 
@@ -310,23 +285,26 @@ sub index {
 sub person {
    my ($self, $req) = @_; my $people;
 
-   my $name    =  $req->uri_params->( 0, { optional => TRUE } );
-   my $person  =  $name ? $self->$_find_person_by( $name ) : Class::Null->new;
-   my $page    =  {
-      fields   => $_bind_person_fields->( $person ),
-      template => [ 'contents', 'person' ],
-      title    => loc( $req, 'person_management_heading' ), };
-   my $fields  =  $page->{fields};
-   my $action  =  $self->moniker.'/person';
+   my $person_rs =  $self->schema->resultset( 'Person' );
+   my $name      =  $req->uri_params->( 0, { optional => TRUE } );
+   my $person    =  $name ? $person_rs->find_person_by( $name )
+                          :  Class::Null->new;
+   my $page      =  {
+      fields     => $_bind_person_fields->( $person ),
+      template   => [ 'contents', 'person' ],
+      title      => loc( $req, 'person_management_heading' ), };
+   my $fields    =  $page->{fields};
+   my $action    =  $self->moniker.'/person';
 
    if ($name) {
-      $people = $self->$_list_all_people( { selected => $person->next_of_kin });
+      $people = $person_rs->list_all_people
+         ( { selected => $person->next_of_kin } );
       $fields->{user_href} = uri_for_action( $req, $action, [ $name ] );
       $fields->{delete   } = delete_button( $req, $name, 'person' );
       $fields->{roles    } = bind( 'roles', $person->list_roles );
    }
    else {
-      $people = $self->$_list_all_people();
+      $people = $person_rs->list_all_people();
       $fields->{roles    } = bind( 'roles', $self->$_list_all_roles() );
    }
 
@@ -339,15 +317,14 @@ sub person {
 sub people {
    my ($self, $req) = @_;
 
-   my $page    =  {
-      fields   => { headers => $_people_headers->( $req ),
-                    rows    => [], },
-      template => [ 'contents', 'table' ],
-      title    => loc( $req, 'people_management_heading' ), };
-   my $rows    =  $page->{fields}->{rows};
-   my $people  =  $self->$_list_all_people();
+   my $page      =  {
+      fields     => { headers => $_people_headers->( $req ), rows => [], },
+      template   => [ 'contents', 'table' ],
+      title      => loc( $req, 'people_management_heading' ), };
+   my $rows      =  $page->{fields}->{rows};
+   my $person_rs =  $self->schema->resultset( 'Person' );
 
-   for my $person (@{ $people }) {
+   for my $person (@{ $person_rs->list_all_people() }) {
       push @{ $rows }, [ { value => $person->[ 0 ]  },
                          $self->$_person_admin_links
                          ( $req, $person->[ 1 ]->name ) ];
@@ -360,7 +337,7 @@ sub remove_role_action {
    my ($self, $req) = @_;
 
    my $name     = $req->uri_params->( 0 );
-   my $person   = $self->$_find_person_by( $name );
+   my $person   = $self->schema->resultset( 'Person' )->find_person_by( $name );
    my $roles    = $req->body_params->( 'person_roles', { multiple => TRUE } );
 
    $person->delete_member_from( $_ ) for (@{ $roles });
@@ -374,15 +351,16 @@ sub remove_role_action {
 sub role {
    my ($self, $req) = @_;
 
-   my $name    =  $req->uri_params->( 0 );
-   my $person  =  $self->$_find_person_by( $name );
-   my $href    =  uri_for_action( $req, $self->moniker.'/role', [ $name ] );
-   my $page    =  {
-      fields   => { username => { href => $href } },
-      template => [ 'contents', 'role' ],
-      title    => loc( $req, 'role_management_heading' ), };
-   my $fields  =  $page->{fields};
-   my $people  =  $self->$_list_all_people( { selected => $person } );
+   my $name      =  $req->uri_params->( 0 );
+   my $person_rs =  $self->schema->resultset( 'Person' );
+   my $person    =  $person_rs->find_person_by( $name );
+   my $href      =  uri_for_action( $req, $self->moniker.'/role', [ $name ] );
+   my $page      =  {
+      fields     => { username => { href => $href } },
+      template   => [ 'contents', 'role' ],
+      title      => loc( $req, 'role_management_heading' ), };
+   my $fields    =  $page->{fields};
+   my $people    =  $person_rs->list_all_people( { selected => $person } );
 
    my $person_roles = $person->list_roles;
    my $available    = $_subtract->( $self->$_list_all_roles(), $person_roles );
@@ -412,7 +390,7 @@ sub update_person_action {
    my ($self, $req) = @_;
 
    my $name   = $req->uri_params->( 0 );
-   my $person = $self->$_find_person_by( $name );
+   my $person = $self->schema->resultset( 'Person' )->find_person_by( $name );
 
    $self->$_update_person_from_request( $req, $person ); $person->update;
 

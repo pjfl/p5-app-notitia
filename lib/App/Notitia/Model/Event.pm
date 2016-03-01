@@ -7,8 +7,7 @@ use App::Notitia::Util      qw( admin_navigation_links bind delete_button
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( throw );
-use Class::Usul::Time       qw( str2date_time );
-use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
+use Class::Usul::Time       qw( str2date_time time2str );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -21,35 +20,9 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'event';
 
 register_action_paths
-   'event/event'  => 'event',
-   'event/events' => 'events';
-
-# Private functions
-my $_bind_event_fields = sub {
-   my $event = shift;
-
-   return {
-      description => bind( 'description', $event->description,
-                           { class     => 'autosize' } ),
-      end         => bind( 'end',         $event->end ),
-      event_name  => bind( 'event_name',  $event->name ),
-      owner       => bind( 'owner',       $event->owner ),
-      notes       => bind( 'notes',       $event->notes,
-                           { class     => 'autosize' } ),
-      start       => bind( 'start',       $event->start ),
-   };
-};
-
-# Private methods
-my $_find_event_by = sub {
-   my ($self, $name) = @_;
-
-   my $event_rs = $self->schema->resultset( 'Event' );
-   my $event    = $event_rs->search( { name => $name } )->single
-      or throw 'Event [_1] unknown', [ $name ], rv => HTTP_EXPECTATION_FAILED;
-
-   return $event;
-};
+   'event/event'       => 'event',
+   'event/events'      => 'events',
+   'event/participent' => 'participate';
 
 # Construction
 around 'get_stash' => sub {
@@ -62,22 +35,118 @@ around 'get_stash' => sub {
    return $stash;
 };
 
+# Private class attributes
+my $_admin_links_cache = {};
+
+# Private functions
+my $_bind_event_fields = sub {
+   my $event = shift;
+
+   return {
+      description => bind( 'description', $event->description,
+                           { class     => 'autosize' } ),
+      end         => bind( 'end_time',    $event->end ),
+      name        => bind( 'event_name',  $event->name ),
+      notes       => bind( 'notes',       $event->notes,
+                           { class     => 'autosize' } ),
+      start       => bind( 'start_time',  $event->start ),
+   };
+};
+
+my $_events_headers = sub {
+   return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 2 ];
+};
+
+my $_select_owner_list = sub {
+   return bind( 'owner', [ [ NUL, NUL ], @{ $_[ 0 ] } ], { numify => TRUE } );
+};
+
+# Private methods
+my $_event_admin_links = sub {
+   my ($self, $req, $name) = @_; my $links = $_admin_links_cache->{ $name };
+
+   $links and return @{ $links }; $links = [];
+
+   for my $action ( qw( event participent ) ) {
+      my $href = uri_for_action( $req, $self->moniker."/${action}", [ $name ] );
+
+      push @{ $links }, {
+         value => { class => 'table-link fade',
+                    hint  => loc( $req, 'Hint' ),
+                    href  => $href,
+                    name  => "${name}-${action}",
+                    tip   => loc( $req, "${action}_management_tip" ),
+                    type  => 'link',
+                    value => loc( $req, "${action}_management_link" ), }, };
+   }
+
+   $_admin_links_cache->{ $name } = $links;
+
+   return @{ $links };
+};
+
+my $_update_event_from_request = sub {
+   my ($self, $req, $event) = @_; my $params = $req->body_params;
+
+   my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
+
+   $event->name( $params->( 'event_name' ) );
+
+   for my $attr (qw( description end notes start )) {
+      my $v = $params->( $attr, $opts ); defined $v and $event->$attr( $v );
+   }
+
+   return;
+};
+
 # Public methods
+sub create_event_action {
+   my ($self, $req) = @_;
+
+   my $date     =  $req->body_params->( 'event_date' );
+   my $event    =  $self->schema->resultset( 'Event' )->new_result
+      ( { rota  => 'main', # TODO: Naughty
+          date  => str2date_time( $date ),
+          owner => $req->username, } );
+
+   $self->$_update_event_from_request( $req, $event ); $event->insert;
+
+   my $action   =  $self->moniker.'/event';
+   my $location =  uri_for_action( $req, $action, [ $event->name ] );
+   my $message  =  [ 'Event [_1] created', $event->name ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub event {
    my ($self, $req) = @_;
 
-   my $name    =  $req->uri_params->( 0, { optional => TRUE } );
-   my $event   =  $name ? $self->$_find_event_by( $name ) : Class::Null->new;
-   my $page    =  {
-      fields   => $_bind_event_fields->( $event ),
-      template => [ 'contents', 'event' ],
-      title    => loc( $req, 'event_management_heading' ), };
-   my $fields  =  $page->{fields};
+   my $event_rs =  $self->schema->resultset( 'Event' );
+   my $name     =  $req->uri_params->( 0, { optional => TRUE } );
+   my $opts     =  { prefetch => [ 'owner' ] };
+   my $event    =  $name ? $event_rs->find_event_by( $name, $opts )
+                         : Class::Null->new;
+   my $page     =  {
+      fields    => $_bind_event_fields->( $event ),
+      template  => [ 'contents', 'event' ],
+      title     => loc( $req, 'event_management_heading' ), };
+   my $fields   =  $page->{fields};
+   my $action   =  $self->moniker.'/event';
 
-   $name and $fields->{date      } = bind( 'date', $event->rota->date );
-   $name and $fields->{delete    } = delete_button( $req, $name, 'event' );
-   $name and $fields->{event_href} = uri_for_action( 'event/event', [ $name ] );
-             $fields->{save      } = save_button( $req, $name, 'event' );
+   if ($name) {
+      my $person_rs = $self->schema->resultset( 'Person' );
+
+      $fields->{date  } = bind( 'event_date', $event->rota->date );
+      $fields->{delete} = delete_button( $req, $name, 'event' );
+      $fields->{href  } = uri_for_action( $req, $action, [ $name ] );
+      $fields->{owner } = $_select_owner_list->( $person_rs->list_all_people
+         ( { selected => $event->owner } ) );
+   }
+   else {
+      $fields->{date  } = bind( 'event_date', time2str '%Y-%m-%d' );
+   }
+
+   $fields->{save}  = save_button( $req, $name, 'event' );
 
    return $self->get_stash( $req, $page );
 }
@@ -85,7 +154,18 @@ sub event {
 sub events {
    my ($self, $req) = @_;
 
-   my $page = { template => [ 'contents', 'table' ] };
+   my $page     =  {
+      fields    => { headers => $_events_headers->( $req ), rows => [], },
+      template  => [ 'contents', 'table' ],
+      title     => loc( $req, 'events_management_heading' ), };
+   my $rows     =  $page->{fields}->{rows};
+   my $event_rs =  $self->schema->resultset( 'Event' );
+
+   for my $event (@{ $event_rs->list_all_events() }) {
+      push @{ $rows }, [ { value => $event->[ 0 ]  },
+                         $self->$_event_admin_links
+                         ( $req, $event->[ 1 ]->name ) ];
+   }
 
    return $self->get_stash( $req, $page );
 }
