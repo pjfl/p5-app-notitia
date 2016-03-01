@@ -4,8 +4,9 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Util qw( date_data_type foreign_key_data_type
-                           serial_data_type varchar_data_type );
+use App::Notitia::Constants qw( VARCHAR_MAX_SIZE );
+use App::Notitia::Util      qw( date_data_type foreign_key_data_type
+                                serial_data_type varchar_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -17,8 +18,8 @@ $class->add_columns
    ( id          => serial_data_type,
      rota_id     => foreign_key_data_type,
      owner_id    => foreign_key_data_type,
-     start       => date_data_type,
-     end         => date_data_type,
+     start_time  => varchar_data_type(   5 ),
+     end_time    => varchar_data_type(   5 ),
      name        => varchar_data_type(  64 ),
      description => varchar_data_type( 128 ),
      notes       => varchar_data_type, );
@@ -29,8 +30,9 @@ $class->add_unique_constraint( [ 'name' ] );
 
 $class->belongs_to( rota  => "${result}::Rota", 'rota_id' );
 $class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
-$class->has_many  ( participents => "${result}::Participent", 'event_id' );
-$class->has_many  ( transports   => "${result}::Transport",   'event_id' );
+
+$class->has_many( participents => "${result}::Participent", 'event_id' );
+$class->has_many( transports   => "${result}::Transport",   'event_id' );
 
 # Private methods
 sub _as_string {
@@ -38,8 +40,50 @@ sub _as_string {
 }
 
 # Public methods
+sub insert {
+   my $self = shift;
+
+   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   return $self->next::method;
+}
+
 sub label {
    return $_[ 0 ]->name.' ('.$_[ 0 ]->rota->date->dmy.')';
+}
+
+sub update {
+   my ($self, $columns) = @_;
+
+   $columns and $self->set_inflated_columns( $columns ); $self->validate;
+
+   return $self->next::method;
+}
+
+sub validation_attributes {
+   return { # Keys: constraints, fields, and filters (all hashes)
+      constraints    => {
+         description => { max_length => 128, min_length => 10, },
+         end_time    => { max_length =>   5, min_length =>  0,
+                          pattern    => '\A \d\d : \d\d (?: : \d\d )? \z', },
+         name        => { max_length =>  64, min_length =>  3, },
+         notes       => { max_length =>  VARCHAR_MAX_SIZE(), min_length => 0, },
+         start_time  => { max_length =>   5, min_length =>  0,
+                          pattern    => '\A \d\d : \d\d (?: : \d\d )? \z', },
+      },
+      fields         => {
+         description => {
+            filters  => 'filterUCFirst',
+            validate => 'isMandatory isValidLength isPrintable' },
+         end_time    => { validate => 'isValidLength isMatchingRegex' },
+         name        => {
+            filters  => 'filterTitleCase',
+            validate => 'isMandatory isValidLength isSimpleText' },
+         notes       => { validate => 'isValidLength isPrintable' },
+         end_time    => { validate => 'isValidLength isMatchingRegex' },
+      },
+      level => 8,
+   };
 }
 
 1;

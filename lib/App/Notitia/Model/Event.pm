@@ -6,7 +6,7 @@ use App::Notitia::Util      qw( admin_navigation_links bind delete_button
                                 loc register_action_paths
                                 save_button uri_for_action );
 use Class::Null;
-use Class::Usul::Functions  qw( throw );
+use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( str2date_time time2str );
 use Moo;
 
@@ -45,11 +45,11 @@ my $_bind_event_fields = sub {
    return {
       description => bind( 'description', $event->description,
                            { class     => 'autosize' } ),
-      end         => bind( 'end_time',    $event->end ),
+      end_time    => bind( 'end_time',    $event->end_time ),
       name        => bind( 'event_name',  $event->name ),
       notes       => bind( 'notes',       $event->notes,
                            { class     => 'autosize' } ),
-      start       => bind( 'start_time',  $event->start ),
+      start_time  => bind( 'start_time',  $event->start_time ),
    };
 };
 
@@ -92,9 +92,16 @@ my $_update_event_from_request = sub {
 
    $event->name( $params->( 'event_name' ) );
 
-   for my $attr (qw( description end notes start )) {
-      my $v = $params->( $attr, $opts ); defined $v and $event->$attr( $v );
+   for my $attr (qw( description end_time notes start_time )) {
+      my $v = $params->( $attr, $opts ); defined $v or next;
+
+      is_member $attr, [ 'end_time', 'start_time' ]
+          and $v =~ s{ \A (\d\d) (\d\d) \z }{$1:$2}mx;
+
+      $event->$attr( $v );
    }
+
+   my $v = $params->( 'owner', $opts ); defined $v and $event->owner_id( $v );
 
    return;
 };
@@ -106,14 +113,29 @@ sub create_event_action {
    my $date     =  $req->body_params->( 'event_date' );
    my $event    =  $self->schema->resultset( 'Event' )->new_result
       ( { rota  => 'main', # TODO: Naughty
-          date  => str2date_time( $date ),
+          date  => str2date_time( $date, 'GMT' ),
           owner => $req->username, } );
 
    $self->$_update_event_from_request( $req, $event ); $event->insert;
 
    my $action   =  $self->moniker.'/event';
    my $location =  uri_for_action( $req, $action, [ $event->name ] );
-   my $message  =  [ 'Event [_1] created', $event->name ];
+   my $message  =
+      [ 'Event [_1] created by [_2]', $event->name, $req->username ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub delete_event_action {
+   my ($self, $req) = @_;
+
+   my $name  = $req->uri_params->( 0 );
+   my $event = $self->schema->resultset( 'Event' )->find_event_by( $name );
+
+   $event->delete;
+
+   my $location = uri_for_action( $req, $self->moniker.'/events' );
+   my $message  = [ 'Event [_1] deleted by [_2]', $name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -143,10 +165,10 @@ sub event {
          ( { selected => $event->owner } ) );
    }
    else {
-      $fields->{date  } = bind( 'event_date', time2str '%Y-%m-%d' );
+      $fields->{date} = bind( 'event_date', time2str '%Y-%m-%d' );
    }
 
-   $fields->{save}  = save_button( $req, $name, 'event' );
+   $fields->{save} = save_button( $req, $name, 'event' );
 
    return $self->get_stash( $req, $page );
 }
@@ -168,6 +190,19 @@ sub events {
    }
 
    return $self->get_stash( $req, $page );
+}
+
+sub update_event_action {
+   my ($self, $req) = @_;
+
+   my $name  = $req->uri_params->( 0 );
+   my $event = $self->schema->resultset( 'Event' )->find_event_by( $name );
+
+   $self->$_update_event_from_request( $req, $event ); $event->update;
+
+   my $message = [ 'Event [_1] updated by [_2]', $name, $req->username ];
+
+   return { redirect => { location => $req->uri, message => $message } };
 }
 
 1;

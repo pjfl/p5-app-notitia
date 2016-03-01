@@ -190,8 +190,9 @@ my $_update_person_from_request = sub {
 
       defined $v or next;
 
+      # No tz and 1/1/1970 is the last day in 69
       length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
-         and $v = str2date_time( "${v} 00:00" );
+         and $v = str2date_time( $v, 'GMT' );
 
       $person->$attr( $v );
    }
@@ -206,21 +207,30 @@ my $_update_person_from_request = sub {
 };
 
 # Public methods
-sub activate {
-   my ($self, $req) = @_;
+sub activate { # Role(anon)
+   my ($self, $req) = @_; my ($location, $message);
 
-   my $file = $self->config->sessdir->catfile( $req->uri_params->( 0 ) );
-   my $name = $file->chomp->getline; $file->unlink;
+   my $file = $req->uri_params->( 0 );
+   my $path = $self->config->sessdir->catfile( $file );
 
-   $self->schema->resultset( 'Person' )->find_person_by( $name )->activate;
+   if ($path->exists and $path->is_file) {
+      my $name = $path->chomp->getline; $path->unlink;
 
-   my $location = uri_for_action( $req, 'user/change_password', [ $name ] );
-   my $message  = [ 'User [_1] account activated', $name ];
+      $self->schema->resultset( 'Person' )->find_person_by( $name )->activate;
+
+      $location = uri_for_action( $req, 'user/change_password', [ $name ] );
+      $message  = [ 'User [_1] account activated', $name ];
+   }
+   else {
+      $location = $req->base_uri;
+      $message  = [ 'Key [_1] unknown activation attempt', $file ];
+   }
+
 
    return { redirect => { location => $location, message => $message } };
 }
 
-sub add_role_action {
+sub add_role_action { # : Role(administrator) Role(person_manager)
    my ($self, $req) = @_;
 
    my $name     = $req->uri_params->( 0 );
@@ -230,12 +240,13 @@ sub add_role_action {
    $person->add_member_to( $_ ) for (@{ $roles });
 
    my $location = uri_for_action( $req, $self->moniker.'/role', [ $name ] );
-   my $message  = [ 'Person [_1] role(s) added', $name ];
+   my $message  =
+      [ 'Person [_1] role(s) added by [_2]', $name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_person_action {
+sub create_person_action { # : Role(administrator) Role(person_manager)
    my ($self, $req) = @_;
 
    my $person = $self->schema->resultset( 'Person' )->new_result( {} );
@@ -255,12 +266,13 @@ sub create_person_action {
 
    my $action   = $self->moniker.'/person';
    my $location = uri_for_action( $req, $action, [ $person->name ] );
-   my $message  = [ 'Person [_1] created', $person->name ];
+   my $message  =
+      [ 'Person [_1] created by [_2]', $person->name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_person_action {
+sub delete_person_action { # : Role(administrator) Role(person_manager)
    my ($self, $req) = @_;
 
    my $name     = $req->uri_params->( 0 );
@@ -269,12 +281,12 @@ sub delete_person_action {
    $person->delete;
 
    my $location = uri_for_action( $req, $self->moniker.'/people' );
-   my $message  = [ 'Person [_1] deleted', $name ];
+   my $message  = [ 'Person [_1] deleted by [_2]', $name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
 
-sub index {
+sub index { # : Role(any)
    my ($self, $req) = @_;
 
    return $self->get_stash( $req, {
@@ -282,7 +294,7 @@ sub index {
       title  => loc( $req, 'Administration' ) } );
 }
 
-sub person {
+sub person { # : Role(administrator) Role(person_manager)
    my ($self, $req) = @_; my $people;
 
    my $person_rs =  $self->schema->resultset( 'Person' );
@@ -314,7 +326,7 @@ sub person {
    return $self->get_stash( $req, $page );
 }
 
-sub people {
+sub people { # : Role(any)
    my ($self, $req) = @_;
 
    my $page      =  {
@@ -333,7 +345,7 @@ sub people {
    return $self->get_stash( $req, $page );
 }
 
-sub remove_role_action {
+sub remove_role_action { # : Role(administrator) Role(person_manager)
    my ($self, $req) = @_;
 
    my $name     = $req->uri_params->( 0 );
@@ -343,12 +355,13 @@ sub remove_role_action {
    $person->delete_member_from( $_ ) for (@{ $roles });
 
    my $location = uri_for_action( $req, $self->moniker.'/role', [ $name ] );
-   my $message  = [ 'Person [_1] role(s) removed', $name ];
+   my $message  =
+      [ 'Person [_1] role(s) removed by [_2]', $name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
 
-sub role {
+sub role { # : Role(administrator) Role(person_manager)
    my ($self, $req) = @_;
 
    my $name      =  $req->uri_params->( 0 );
@@ -375,7 +388,7 @@ sub role {
    return $self->get_stash( $req, $page );
 }
 
-sub vehicle {
+sub vehicle { # : Role(administrator) Role(vehicle_manager)
    my ($self, $req) = @_;
 
    my $page = {
@@ -386,7 +399,7 @@ sub vehicle {
    return $self->get_stash( $req, $page );
 }
 
-sub update_person_action {
+sub update_person_action { # : Role(administrator) Role(person_manager)
    my ($self, $req) = @_;
 
    my $name   = $req->uri_params->( 0 );
@@ -394,17 +407,17 @@ sub update_person_action {
 
    $self->$_update_person_from_request( $req, $person ); $person->update;
 
-   my $message = [ 'User [_1] updated', $name ];
+   my $message = [ 'Person [_1] updated by [_2]', $name, $req->username ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub update_vehicle_action {
+sub update_vehicle_action { # : Role(administrator) Role(vehicle_manager)
    my ($self, $req) = @_;
 
    my $params  = $req->body_params;
    my $name    = $params->( 'vrn' );
-   my $message = [ 'Vehicle [_1] updated', $name ];
+   my $message = [ 'Vehicle [_1] updated by [_2]', $name, $req->username ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }

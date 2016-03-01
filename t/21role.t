@@ -22,10 +22,6 @@ eval { $person->add_member_to( 'bike_rider' ) }; my $e = $EVAL_ERROR;
 like $e, qr{ \Qno certification\E }mx,
    'Need catagory_b certification to be a bike_rider';
 
-$person = $person_rs->search( { name => 'admin' } )->single;
-$person and eval { $person->delete_member_from( 'administrator' ) };
-$person->add_member_to( 'administrator' );
-
 done_testing;
 
 # Local Variables:

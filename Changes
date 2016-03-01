@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Now handling event start and end times
           - Lists, creates and displays event records
           - Have uri_for_action and register_action_paths
           - Yields slots

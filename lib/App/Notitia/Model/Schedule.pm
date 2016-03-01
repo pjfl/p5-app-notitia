@@ -3,9 +3,9 @@ package App::Notitia::Model::Schedule;
 #use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE HASH_CHAR NUL
                                 SHIFT_TYPE_ENUM SPC TILDE TRUE );
-use App::Notitia::Util      qw( loc register_action_paths rota_navigation_links
-                                set_element_focus slot_limit_index
-                                uri_for_action );
+use App::Notitia::Util      qw( bind loc register_action_paths
+                                rota_navigation_links set_element_focus
+                                slot_limit_index uri_for_action );
 use Class::Usul::Functions  qw( throw );
 use Class::Usul::Time       qw( str2date_time time2str );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );

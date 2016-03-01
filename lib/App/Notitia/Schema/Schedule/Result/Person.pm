@@ -385,11 +385,13 @@ sub validation_attributes {
          email_address => {
             validate   => 'isMandatory isValidLength isValidEmail' },
          first_name    => {
+            filters    => 'filterUCFirst',
             validate   => 'isMandatory isValidLength isPrintable' },
          home_phone    => { filters  => 'filterNonNumeric',
                             validate => 'isValidInteger' },
          joined        => { validate => 'isValidDate' },
          last_name     => {
+            filters    => 'filterUCFirst',
             validate   => 'isMandatory isValidLength isPrintable' },
          mobile_phone  => { filters  => 'filterNonNumeric',
                             validate => 'isValidInteger' },
