@@ -1,13 +1,36 @@
-package App::Notitia;
+package App::Notitia::View::HTML::Markdown;
 
-use 5.010001;
-use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 41 $ =~ /\d+/gmx );
+use namespace::autoclean;
 
-use Class::Usul::Functions  qw( ns_environment );
+use App::Notitia::Markdown;
+use Class::Usul::Types qw( ArrayRef Object );
+use Scalar::Util       qw( blessed );
+use Moo;
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+with q(Web::Components::Role);
+
+# Public attributes
+has '+moniker'   => default => 'markdown';
+
+has 'extensions' => is => 'lazy', isa => ArrayRef,
+   builder       => sub { $_[ 0 ]->config->extensions->{markdown} };
+
+has 'formatter'  => is => 'lazy', isa => Object, builder => sub {
+   App::Notitia::Markdown->new( tab_width => $_[ 0 ]->config->mdn_tab_width ) };
+
+# Public methods
+sub serialize {
+   my ($self, $req, $page) = @_; my $content = $page->{content};
+
+   my $markdown = blessed $content ? $content->all : $content;
+
+   $page->{editing} and return $markdown;
+
+   $markdown =~ s{ \A --- $ ( .* ) ^ --- $ }{}msx;
+
+   $page->{filter} and $markdown = $page->{filter}->( $self, $markdown );
+
+   return $self->formatter->markdown( $markdown );
 }
 
 1;
@@ -20,11 +43,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::View::HTML::Markdown - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::View::HTML::Markdown;
    # Brief but working code examples
 
 =head1 Description

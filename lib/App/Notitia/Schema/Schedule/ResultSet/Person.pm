@@ -3,7 +3,7 @@ package App::Notitia::Schema::Schedule::ResultSet::Person;
 use strictures;
 use parent 'DBIx::Class::ResultSet';
 
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::Functions  qw( throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
@@ -28,6 +28,18 @@ sub find_person_by {
    return $person;
 }
 
+sub is_person {
+   my ($self, $name, $cache) = @_;
+
+   unless ($cache->{people}) {
+      for my $person (map { $_->[ 1 ] } @{ $self->list_all_people }) {
+         $cache->{people}->{ $person->name } = TRUE;
+      }
+   }
+
+   return exists $cache->{people}->{ $name } ? TRUE : FALSE;
+}
+
 sub list_all_people {
    my ($self, $opts) = @_;
 
@@ -35,6 +47,48 @@ sub list_all_people {
       ( {}, { columns => [ 'first_name', 'id', 'last_name', 'name' ] } );
 
    return [ map { $_person_tuple->( $_, $opts ) } $people->all ];
+}
+
+sub new_person_id {
+   my ($self, $first_name, $last_name) = @_; my $cache = {}; my $lid;
+
+   my $conf = $self->result_source->schema->config;
+   my $name = lc "${last_name}${first_name}"; $name =~ s{ [ \-\'] }{}gmx;
+
+   if ((length $name) < $conf->min_name_length) {
+      throw 'Person name [_1] too short [_2] character min.',
+            [ $first_name.SPC.$last_name, $conf->min_name_length ];
+   }
+
+   my $min_id_len = $conf->min_id_length;
+   my $prefix     = $conf->person_prefix; $prefix or return;
+   my $lastp      = length $name < $min_id_len ? length $name : $min_id_len;
+   my @chars      = (); $chars[ $_ ] = $_ for (0 .. $lastp - 1);
+
+   while ($chars[ $lastp - 1 ] < length $name) {
+      my $i = 0; $lid = NUL;
+
+      while ($i < $lastp) { $lid .= substr $name, $chars[ $i++ ], 1 }
+
+      $self->is_person( $prefix.$lid, $cache ) or last;
+
+      $i = $lastp - 1; $chars[ $i ] += 1;
+
+      while ($i >= 0 and $chars[ $i ] >= length $name) {
+         my $ripple = $i - 1; $chars[ $ripple ] += 1;
+
+         while ($ripple < $lastp) {
+            my $carry = $ripple + 1; $chars[ $carry ] = $chars[ $ripple++ ] + 1;
+         }
+
+         $i--;
+      }
+   }
+
+   $chars[ $lastp - 1 ] >= length $name
+       and throw 'Person name [_1] no ids left', [ $first_name.SPC.$last_name ];
+   $lid or throw 'Person name [_1] no id', [ $name ];
+   return $prefix.$lid;
 }
 
 1;

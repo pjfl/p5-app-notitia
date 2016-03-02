@@ -1,6 +1,6 @@
 package App::Notitia::Model::User;
 
-#use App::Notitia::Attributes;  # Will do namespace cleaning
+use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( bind loc register_action_paths
                                 set_element_focus );
@@ -12,7 +12,7 @@ use Moo;
 
 extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
-#with    q(App::Notitia::Role::WebAuthorisation);
+with    q(App::Notitia::Role::WebAuthorisation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
 
@@ -29,7 +29,7 @@ register_action_paths
    'user/profile'         => 'user/profile';
 
 # Public methods
-sub change_password { # : Role(anon)
+sub change_password : Role(anon) {
    my ($self, $req) = @_;
 
    my $name       =  $req->uri_params->( 0, { optional => TRUE } )
@@ -56,7 +56,7 @@ sub change_password { # : Role(anon)
    return $self->get_stash( $req, $page );
 }
 
-sub change_password_action {
+sub change_password_action : Role(anon) {
    my ($self, $req) = @_;
 
    my $params   = $req->body_params;
@@ -76,7 +76,16 @@ sub change_password_action {
    return { redirect => { location => $req->base, message => $message } };
 }
 
-sub login_action  { # : Role(anon)
+sub index : Role(anon) {
+   my ($self, $req) = @_;
+
+   return $self->get_stash( $req, {
+      layout   => 'index',
+      template => [ 'contents', 'splash' ],
+      title    => loc( $req, 'main_index_title' ), } );
+}
+
+sub login_action : Role(anon) {
    my ($self, $req) = @_; my $message;
 
    my $session   = $req->session;
@@ -92,7 +101,7 @@ sub login_action  { # : Role(anon)
    return { redirect => { location => $req->base, message => $message } };
 }
 
-sub login { #  : Role(anon)
+sub login : Role(anon) {
    my ($self, $req) = @_;
 
    my $stash  = $self->dialog_stash( $req, 'login-user' );
@@ -107,7 +116,7 @@ sub login { #  : Role(anon)
    return $stash;
 }
 
-sub logout_action { # : Role(any)
+sub logout_action : Role(any) {
    my ($self, $req) = @_; my $location = $req->base; my $message;
 
    if ($req->authenticated) {
@@ -119,7 +128,7 @@ sub logout_action { # : Role(any)
    return { redirect => { location => $location, message => $message } };
 }
 
-sub profile { #  : Role(any)
+sub profile : Role(any) {
    my ($self, $req) = @_;
 
    my $stash     = $self->dialog_stash( $req, 'profile-user' );
@@ -142,7 +151,7 @@ sub profile { #  : Role(any)
    return $stash;
 }
 
-sub update_profile_action { # : Role(any)
+sub update_profile_action : Role(any) {
    my ($self, $req) = @_;
 
    my $name   = $req->username;

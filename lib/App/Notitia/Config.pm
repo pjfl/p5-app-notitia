@@ -65,6 +65,12 @@ sub _build_l10n_domains {
 }
 
 # Public attributes
+has 'assetdir'        => is => 'lazy', isa => Path, coerce => TRUE,
+   builder            => sub { $_[ 0 ]->docs_root->catdir( $_[ 0 ]->assets ) };
+
+has 'assets'          => is => 'ro',   isa => NonEmptySimpleStr,
+   default            => 'assets',
+
 has 'brand'           => is => 'ro',   isa => SimpleStr, default => NUL;
 
 has 'cdn'             => is => 'ro',   isa => SimpleStr, default => NUL;
@@ -98,6 +104,18 @@ has 'deflate_types'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
 
 has 'description'     => is => 'ro',   isa => SimpleStr, default => NUL;
 
+has 'docs_mtime'      => is => 'lazy', isa => Path, coerce => TRUE,
+   builder            => sub { $_[ 0 ]->docs_root->catfile( '.mtime' ) };
+
+has 'docs_root'       => is => 'lazy', isa => Directory, coerce => TRUE,
+   builder            => sub { $_[ 0 ]->root->catdir( 'docs' ) };
+
+has 'drafts'          => is => 'ro',   isa => NonEmptySimpleStr,
+   default            => 'drafts';
+
+has 'extensions'      => is => 'ro',   isa => HashRef[ArrayRef],
+   builder            => sub { { markdown => [ qw( md mkdn ) ] } };
+
 has 'images'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'img';
 
@@ -124,9 +142,17 @@ has 'less_files'      => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
 has 'load_factor'     => is => 'ro',   isa => NonZeroPositiveInt,
    default            => 14;
 
+has 'max_asset_size'  => is => 'ro',   isa => PositiveInt, default => 4_194_304;
+
 has 'max_messages'    => is => 'ro',   isa => NonZeroPositiveInt, default => 3;
 
 has 'max_sess_time'   => is => 'ro',   isa => PositiveInt, default => 3_600;
+
+has 'mdn_tab_width'   => is => 'ro',   isa => NonZeroPositiveInt, default => 3;
+
+has 'min_id_length'   => is => 'ro',   isa => PositiveInt, default => 3;
+
+has 'min_name_length' => is => 'ro',   isa => PositiveInt, default => 5;
 
 has 'mount_point'     => is => 'ro',   isa => NonEmptySimpleStr,
    default            => '/notitia';
@@ -140,8 +166,13 @@ has 'no_user_email'   => is => 'ro',   isa => Bool, default => FALSE;
 has 'owner'           => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => sub { $_[ 0 ]->prefix };
 
+has 'person_prefix'   => is => 'ro',   isa => SimpleStr, default => NUL;
+
 has 'port'            => is => 'lazy', isa => NonZeroPositiveInt,
    default            => 8085;
+
+has 'posts'           => is => 'ro',   isa => NonEmptySimpleStr,
+   default            => 'posts';
 
 has 'repo_url'        => is => 'ro',   isa => SimpleStr, default => NUL;
 
@@ -179,7 +210,7 @@ has 'slot_limits'     => is => 'ro',   isa => ArrayRef[PositiveInt],
 has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
    builder            => sub { {
       config          => [ qw( description keywords ) ],
-      links           => [ qw( css images js ) ],
+      links           => [ qw( assets css images js ) ],
       request         => [ qw( authenticated host language locale username ) ],
       session         => [ sort keys %{ $_[ 0 ]->session_attr } ], } };
 

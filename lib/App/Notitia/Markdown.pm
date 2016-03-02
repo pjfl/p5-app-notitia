@@ -1,13 +1,33 @@
-package App::Notitia;
+package App::Notitia::Markdown;
 
-use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 41 $ =~ /\d+/gmx );
+use parent 'Text::MultiMarkdown';
 
-use Class::Usul::Functions  qw( ns_environment );
+sub _DoCodeBlocks { # Add support for triple graves
+   my ($self, $text) = @_;
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+   $text =~ s{
+      (?:(?:\n```(.*)\n)|\n\n|\A)
+         (
+           (?:
+            (?:[ ]{$self->{tab_width}} | \t)
+            .*\n+
+            )+
+           )
+         (?:^```(.*)?|(?=^[ ]{0,$self->{tab_width}}\S)|\Z)
+      }{
+         my $class = $1 || $3 || q(); my $codeblock = $2; my $result;
+
+         $codeblock = $self->_EncodeCode( $self->_Outdent( $codeblock ) );
+         $codeblock = $self->_Detab( $codeblock );
+         $codeblock =~ s/\A\n+//;
+         $codeblock =~ s/\n+\z//;
+         $class and $class = " class=\"${class}\"";
+         $result = "\n\n<pre><code${class}>${codeblock}\n</code></pre>\n\n";
+         $result;
+      }egmx;
+
+   return $text;
 }
 
 1;
@@ -20,11 +40,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Markdown - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Markdown;
    # Brief but working code examples
 
 =head1 Description

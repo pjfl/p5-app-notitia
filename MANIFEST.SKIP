@@ -62,6 +62,7 @@ Thumbs.db
 \blib/App/Notitia/app-notitia_local.json
 \bvar/etc/app-notitia.json
 \bvar/logs
+\bvar/root/docs/.mtime
 \bvar/session
 \bvar/tmp
 

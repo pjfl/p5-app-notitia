@@ -1,0 +1,36 @@
+<!-- Editing Links -->
+[% IF ! page.editing && page.authenticated -%]
+<div class="right hide-on-mobiles">
+[%    text = '<i class="edit-panel-icon false" id="edit-panelIcon"></i>' -%]
+[%    tip  = loc( 'Improve this page' ) -%]
+[%    LinkWithTips( '#', 'togglers', text, page.hint, tip, 'toggle-edit' ) -%]
+</div>
+<div class="hidden panel" id="edit-panelDisp">
+[%    class = 'windows fade' -%]
+[%    text  = loc( 'Search' ) -%]
+[%    tip   = loc( 'Search for text in markdown files' ) -%]
+[%    LinkWithTips( '#', class, text, page.hint, tip, 'search-file' ) -%]
+      &nbsp;|&nbsp;
+[%    text  = loc( 'Create' ) -%]
+[%    tip   = loc( 'Create a new markdown file' ) -%]
+[%    LinkWithTips( '#', class, text, page.hint, tip, 'create-file' ) -%]
+      &nbsp;|&nbsp;
+[%    text  = loc( 'Rename' ) -%]
+[%    tip   = loc( 'Rename this markdown file' ) -%]
+[%    LinkWithTips( '#', class, text, page.hint, tip, 'rename-file' ) -%]
+      &nbsp;|&nbsp;
+[%    text  = loc( 'Upload' ) -%]
+[%    tip   = loc( 'Upload an asset file' ) -%]
+[%    LinkWithTips( '#', class, text, page.hint, tip, 'upload-file' ) -%]
+      &nbsp;|&nbsp;
+[%    text  = loc( 'Edit' ) -%]
+[%    tip   = loc( 'Edit the markdown for this page' ) -%]
+[%    LinkWithTips( links.edit_uri, 'fade', text, page.hint, tip ) -%]
+      &nbsp;|&nbsp;
+[%    class = 'fade submit' -%]
+[%    text  = loc( 'Delete' ) -%]
+[%    tip   = loc( 'Delete this markdown file' ) -%]
+[%    FormWithButton( links.req_uri, class, text, page.form_name, tip,
+                      'delete-file', 'delete_file' ) -%]
+</div>
+[% END -%]

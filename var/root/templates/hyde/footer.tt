@@ -24,7 +24,6 @@
          cookieDomain: '[% page.host %]',
          cookiePath  : '[% config.mount_point %]',
          cookiePrefix: '[% config.prefix %]',
-         formName    : "[% page.form_name %]",
          message     : "[% page.status_message %]"
       } );
 [% IF page.authenticated -%]
@@ -34,6 +33,11 @@
             name   : 'profile-user',
             title  : '[% loc( 'User Profile' ) %]',
             useIcon: true } ] };
+      behaviour.config.anchors[ 'toggle-edit' ] = {
+         method    : 'toggleSwapText',
+         args      : [ 'toggle-edit', 'edit-panel',
+                       '<i class="edit-panel-icon true"></i>',
+                       '<i class="edit-panel-icon false"></i>' ] };
 [% ELSE -%]
       behaviour.config.anchors[ 'login-user' ] = {
          method    : 'modalDialog',

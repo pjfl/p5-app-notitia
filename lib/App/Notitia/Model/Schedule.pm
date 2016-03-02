@@ -1,6 +1,6 @@
 package App::Notitia::Model::Schedule;
 
-#use App::Notitia::Attributes;  # Will do namespace cleaning
+use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE HASH_CHAR NUL
                                 SHIFT_TYPE_ENUM SPC TILDE TRUE );
 use App::Notitia::Util      qw( bind loc register_action_paths
@@ -13,7 +13,7 @@ use Moo;
 
 extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
-#with    q(App::Notitia::Role::WebAuthorisation);
+with    q(App::Notitia::Role::WebAuthorisation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
 
@@ -264,7 +264,8 @@ my $_get_page = sub {
 };
 
 # Public methods
-sub claim_slot_action {
+sub claim_slot_action : Role(administrator) Role(bike_rider) Role(controller)
+                        Role(driver) {
    my ($self, $req) = @_;
 
    my $params    = $req->uri_params;
@@ -291,7 +292,7 @@ sub claim_slot_action {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub day_rota {
+sub day_rota : Role(any) {
    my ($self, $req) = @_;
 
    my $params    = $req->uri_params;
@@ -327,16 +328,7 @@ sub day_rota {
    return $self->get_stash( $req, $page );
 }
 
-sub index {
-   my ($self, $req) = @_;
-
-   return $self->get_stash( $req, {
-      layout   => 'index',
-      template => [ 'contents', 'splash' ],
-      title    => loc( $req, 'main_index_title' ), } );
-}
-
-sub slot {
+sub slot : Role(administrator) Role(bike_rider) Role(controller) Role(driver) {
    my ($self, $req) = @_;
 
    my $params = $req->uri_params;
@@ -358,7 +350,8 @@ sub slot {
    return $stash;
 }
 
-sub yield_slot_action {
+sub yield_slot_action : Role(administrator) Role(bike_rider) Role(controller)
+                        Role(driver) {
    my ($self, $req) = @_;
 
    my $params    = $req->uri_params;

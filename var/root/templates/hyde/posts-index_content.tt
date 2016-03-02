@@ -1,0 +1,38 @@
+<!-- Posts Index Content -->
+<div class="unit four-fifths">
+   <article>
+[% depth        = page.wanted_depth -%]
+[% file_title   = loc( 'File Path' ) -%]
+[% folder_title = loc( 'Folder Path' ) -%]
+      <ul class="posts post-list">
+[% FOREACH node IN nav -%]
+[%    IF node.depth >= page.wanted_depth -%]
+[%       WHILE node.depth < depth; depth = depth - 1 -%]
+            </ul>
+         </li>
+[%       END -%]
+[%       IF show_node( node, page.wanted, page.wanted_depth ) -%]
+         <li class="[% node.class %]">
+[%          uri = uri_for( node.url ) -%]
+[%          IF node.type == 'folder'; depth = depth + 1 -%]
+[%         LinkWithTips( uri, 'folder', node.title, folder_title, node.tip ) -%]
+                 &nbsp;([% node.fcount -%])
+            <ul class="posts post-list">
+[%          ELSE -%]
+[%          LinkWithTips( uri, '', node.title, file_title, node.tip ) -%]
+            <br>
+            <span class="sub-text">
+[%-               time2str( '%A, %B %e, %Y', node.modified ) -%]</span>
+            <span class="sub-text pull-right">&nbsp;[% node.author %]</span>
+         </li>
+[%          END -%]
+[%       END -%]
+[%    END -%]
+[% END -%]
+[% WHILE depth > page.wanted_depth; depth = depth - 1 -%]
+            </ul>
+         </li>
+[% END -%]
+      </ul>
+   </article>
+</div>

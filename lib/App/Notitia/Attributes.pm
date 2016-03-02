@@ -1,13 +1,43 @@
-package App::Notitia;
+package App::Notitia::Attributes;
 
-use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 41 $ =~ /\d+/gmx );
+use namespace::autoclean ();
+use parent 'Exporter::Tiny';
 
-use Class::Usul::Functions  qw( ns_environment );
+our @EXPORT = qw( FETCH_CODE_ATTRIBUTES MODIFY_CODE_ATTRIBUTES );
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+my $Code_Attr = {};
+
+sub import {
+   my $class   = shift;
+   my $caller  = caller;
+   my $globals = { $_[ 0 ] && ref $_[ 0 ] eq 'HASH' ? %{+ shift } : () };
+
+   namespace::autoclean->import( -cleanee => $caller, -except => [ @EXPORT ] );
+   $globals->{into} //= $caller; $class->SUPER::import( $globals );
+   return;
+}
+
+sub FETCH_CODE_ATTRIBUTES {
+   my ($class, $code) = @_; return $Code_Attr->{ 0 + $code } // {};
+}
+
+sub MODIFY_CODE_ATTRIBUTES {
+   my ($class, $code, @attrs) = @_;
+
+   for my $attr (@attrs) {
+      my ($k, $v) = $attr =~ m{ \A ([^\(]+) (?: [\(] ([^\)]+) [\)] )? \z }mx;
+
+      my $vals = $Code_Attr->{ 0 + $code }->{ $k } //= []; defined $v or next;
+
+         $v =~ s{ \A \` (.*) \` \z }{$1}msx
+      or $v =~ s{ \A \" (.*) \" \z }{$1}msx
+      or $v =~ s{ \A \' (.*) \' \z }{$1}msx; push @{ $vals }, $v;
+
+      $Code_Attr->{ 0 + $code }->{ $k } = $vals;
+   }
+
+   return ();
 }
 
 1;
@@ -20,11 +50,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Attributes - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Attributes;
    # Brief but working code examples
 
 =head1 Description

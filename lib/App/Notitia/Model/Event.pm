@@ -1,6 +1,6 @@
 package App::Notitia::Model::Event;
 
-#use App::Notitia::Attributes;  # Will do namespace cleaning
+use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
                                 loc register_action_paths
@@ -12,7 +12,7 @@ use Moo;
 
 extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
-#with    q(App::Notitia::Role::WebAuthorisation);
+with    q(App::Notitia::Role::WebAuthorisation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
 
@@ -85,6 +85,10 @@ my $_event_admin_links = sub {
    return @{ $links };
 };
 
+my $_find_rota = sub {
+   return $_[ 0 ]->schema->resultset( 'Rota' )->find_rota( $_[ 1 ], $_[ 2 ] );
+};
+
 my $_update_event_from_request = sub {
    my ($self, $req, $event) = @_; my $params = $req->body_params;
 
@@ -107,7 +111,7 @@ my $_update_event_from_request = sub {
 };
 
 # Public methods
-sub create_event_action {
+sub create_event_action : Role(administrator) Role(event_manager) {
    my ($self, $req) = @_;
 
    my $date     =  $req->body_params->( 'event_date' );
@@ -126,7 +130,7 @@ sub create_event_action {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_event_action {
+sub delete_event_action : Role(administrator) Role(event_manager) {
    my ($self, $req) = @_;
 
    my $name  = $req->uri_params->( 0 );
@@ -140,7 +144,7 @@ sub delete_event_action {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub event {
+sub event : Role(administrator) Role(event_manager) {
    my ($self, $req) = @_;
 
    my $event_rs =  $self->schema->resultset( 'Event' );
@@ -173,7 +177,7 @@ sub event {
    return $self->get_stash( $req, $page );
 }
 
-sub events {
+sub events : Role(any) {
    my ($self, $req) = @_;
 
    my $page     =  {
@@ -184,21 +188,24 @@ sub events {
    my $event_rs =  $self->schema->resultset( 'Event' );
 
    for my $event (@{ $event_rs->list_all_events() }) {
-      push @{ $rows }, [ { value => $event->[ 0 ]  },
-                         $self->$_event_admin_links
-                         ( $req, $event->[ 1 ]->name ) ];
+      push @{ $rows },
+         [ { value => $event->[ 0 ] },
+           $self->$_event_admin_links( $req, $event->[ 1 ]->name ) ];
    }
 
    return $self->get_stash( $req, $page );
 }
 
-sub update_event_action {
+sub update_event_action : Role(administrator) Role(event_manager) {
    my ($self, $req) = @_;
 
    my $name  = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $name );
+   my $date  = str2date_time $req->body_params->( 'event_date' ) , 'GMT';
 
-   $self->$_update_event_from_request( $req, $event ); $event->update;
+   $self->$_update_event_from_request( $req, $event );
+   $event->rota_id( $self->$_find_rota( 'main', $date )->id ); # TODO: Naughty
+   $event->update;
 
    my $message = [ 'Event [_1] updated by [_2]', $name, $req->username ];
 

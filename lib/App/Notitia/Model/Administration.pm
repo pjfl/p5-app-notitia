@@ -1,6 +1,6 @@
 package App::Notitia::Model::Administration;
 
-#use App::Notitia::Attributes;  # Will do namespace cleaning
+use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
                                 loc register_action_paths save_button
@@ -13,7 +13,7 @@ use Moo;
 
 extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
-#with    q(App::Notitia::Role::WebAuthorisation);
+with    q(App::Notitia::Role::WebAuthorisation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
 with    q(Web::Components::Role::Email);
@@ -85,7 +85,9 @@ my $_bind_person_fields = sub {
 };
 
 my $_people_headers = sub {
-   return [ map { { value => loc( $_[ 0 ], "people_heading_${_}" ) } } 0 .. 4 ];
+   my $req = shift;
+
+   return [ map { { value => loc( $req, "people_heading_${_}" ) } } 0 .. 4 ];
 };
 
 my $_remove_role_button = sub {
@@ -178,8 +180,6 @@ my $_update_person_from_request = sub {
 
    my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
 
-   $person->name( $params->( 'username' ) );
-
    for my $attr (qw( active address dob email_address first_name home_phone
                      joined last_name mobile_phone notes
                      password_expired postcode resigned subscription )) {
@@ -189,7 +189,6 @@ my $_update_person_from_request = sub {
           and $v = FALSE;
 
       defined $v or next;
-
       # No tz and 1/1/1970 is the last day in 69
       length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
          and $v = str2date_time( $v, 'GMT' );
@@ -197,17 +196,24 @@ my $_update_person_from_request = sub {
       $person->$attr( $v );
    }
 
-   my $v = $params->( 'next_of_kin', $opts );
+   my $name; unless ($name = $params->( 'username', { optional => TRUE } )) {
+      my $rs = $self->schema->resultset( 'Person' );
 
-   $v and $person->id and $v == $person->id
-      and throw 'Cannot set self as next of kin', rv => HTTP_EXPECTATION_FAILED;
-   $v or  undef $v; $person->next_of_kin( $v );
+      $name = $rs->new_person_id( $person->first_name, $person->last_name );
+   }
+
+   $person->name( $name ); my $nok = $params->( 'next_of_kin', $opts );
+
+   $nok and $person->id and $nok == $person->id
+        and throw 'Cannot set self as next of kin',
+                  rv => HTTP_EXPECTATION_FAILED;
+   $nok or  undef $nok; $person->next_of_kin( $nok );
 
    return;
 };
 
 # Public methods
-sub activate { # Role(anon)
+sub activate : Role(anon) {
    my ($self, $req) = @_; my ($location, $message);
 
    my $file = $req->uri_params->( 0 );
@@ -216,10 +222,10 @@ sub activate { # Role(anon)
    if ($path->exists and $path->is_file) {
       my $name = $path->chomp->getline; $path->unlink;
 
-      $self->schema->resultset( 'Person' )->find_person_by( $name )->activate;
+      $self->find_person_by( $name )->activate;
 
       $location = uri_for_action( $req, 'user/change_password', [ $name ] );
-      $message  = [ 'User [_1] account activated', $name ];
+      $message  = [ 'Person [_1] account activated', $name ];
    }
    else {
       $location = $req->base_uri;
@@ -230,12 +236,12 @@ sub activate { # Role(anon)
    return { redirect => { location => $location, message => $message } };
 }
 
-sub add_role_action { # : Role(administrator) Role(person_manager)
+sub add_role_action : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
-   my $name     = $req->uri_params->( 0 );
-   my $person   = $self->schema->resultset( 'Person' )->find_person_by( $name );
-   my $roles    = $req->body_params->( 'roles', { multiple => TRUE } );
+   my $name   = $req->uri_params->( 0 );
+   my $person = $self->find_person_by( $name );
+   my $roles  = $req->body_params->( 'roles', { multiple => TRUE } );
 
    $person->add_member_to( $_ ) for (@{ $roles });
 
@@ -246,7 +252,7 @@ sub add_role_action { # : Role(administrator) Role(person_manager)
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_person_action { # : Role(administrator) Role(person_manager)
+sub create_person_action : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
    my $person = $self->schema->resultset( 'Person' )->new_result( {} );
@@ -272,11 +278,11 @@ sub create_person_action { # : Role(administrator) Role(person_manager)
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_person_action { # : Role(administrator) Role(person_manager)
+sub delete_person_action : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
-   my $name     = $req->uri_params->( 0 );
-   my $person   = $self->schema->resultset( 'Person' )->find_person_by( $name );
+   my $name   = $req->uri_params->( 0 );
+   my $person = $self->find_person_by( $name );
 
    $person->delete;
 
@@ -286,7 +292,11 @@ sub delete_person_action { # : Role(administrator) Role(person_manager)
    return { redirect => { location => $location, message => $message } };
 }
 
-sub index { # : Role(any)
+sub find_person_by {
+   return $_[ 0 ]->schema->resultset( 'Person' )->find_person_by( $_[ 1 ] );
+}
+
+sub index : Role(any) {
    my ($self, $req) = @_;
 
    return $self->get_stash( $req, {
@@ -294,7 +304,7 @@ sub index { # : Role(any)
       title  => loc( $req, 'Administration' ) } );
 }
 
-sub person { # : Role(administrator) Role(person_manager)
+sub person : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_; my $people;
 
    my $person_rs =  $self->schema->resultset( 'Person' );
@@ -326,7 +336,7 @@ sub person { # : Role(administrator) Role(person_manager)
    return $self->get_stash( $req, $page );
 }
 
-sub people { # : Role(any)
+sub people : Role(any) {
    my ($self, $req) = @_;
 
    my $page      =  {
@@ -345,12 +355,12 @@ sub people { # : Role(any)
    return $self->get_stash( $req, $page );
 }
 
-sub remove_role_action { # : Role(administrator) Role(person_manager)
+sub remove_role_action : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
-   my $name     = $req->uri_params->( 0 );
-   my $person   = $self->schema->resultset( 'Person' )->find_person_by( $name );
-   my $roles    = $req->body_params->( 'person_roles', { multiple => TRUE } );
+   my $name   = $req->uri_params->( 0 );
+   my $person = $self->find_person_by( $name );
+   my $roles  = $req->body_params->( 'person_roles', { multiple => TRUE } );
 
    $person->delete_member_from( $_ ) for (@{ $roles });
 
@@ -361,7 +371,7 @@ sub remove_role_action { # : Role(administrator) Role(person_manager)
    return { redirect => { location => $location, message => $message } };
 }
 
-sub role { # : Role(administrator) Role(person_manager)
+sub role : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name      =  $req->uri_params->( 0 );
@@ -388,7 +398,7 @@ sub role { # : Role(administrator) Role(person_manager)
    return $self->get_stash( $req, $page );
 }
 
-sub vehicle { # : Role(administrator) Role(vehicle_manager)
+sub vehicle : Role(administrator) Role(asset_manager) {
    my ($self, $req) = @_;
 
    my $page = {
@@ -399,11 +409,11 @@ sub vehicle { # : Role(administrator) Role(vehicle_manager)
    return $self->get_stash( $req, $page );
 }
 
-sub update_person_action { # : Role(administrator) Role(person_manager)
+sub update_person_action : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name   = $req->uri_params->( 0 );
-   my $person = $self->schema->resultset( 'Person' )->find_person_by( $name );
+   my $person = $self->find_person_by( $name );
 
    $self->$_update_person_from_request( $req, $person ); $person->update;
 
@@ -412,7 +422,7 @@ sub update_person_action { # : Role(administrator) Role(person_manager)
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub update_vehicle_action { # : Role(administrator) Role(vehicle_manager)
+sub update_vehicle_action : Role(administrator) Role(asset_manager) {
    my ($self, $req) = @_;
 
    my $params  = $req->body_params;

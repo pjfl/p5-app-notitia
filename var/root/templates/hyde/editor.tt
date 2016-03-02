@@ -1,0 +1,10 @@
+<!-- Editor -->
+<div class="editor-panel container">
+   <form action="[% links.edit_uri %]"
+        enctype="application/x-www-form-urlencoded" method="post" name="edit">
+      <textarea class="editor" id="markdown-editor"
+                 name="content">[% page.content | html %]</textarea>
+      <button class="button" name="_method" type="submit"
+               value="save_file">[% loc( 'Save' ) %]</button>
+   </form>
+</div>

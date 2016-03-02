@@ -3,13 +3,13 @@
 [%    class = 'windows fade' -%]
 [%    text  = loc( 'Documentation' ) -%]
 [%    tip   = loc( 'Documentation pages for the application' ) -%]
-[%    href  = uri_for_action( 'docs/docs' ) -%]
+[%    href  = uri_for_action( 'docs/index' ) -%]
    <li>
 [%    LinkWithTips( href, 'fade', text, page.hint, tip ) -%]
    </li>
 [%    text  = loc( 'Events' ) -%]
 [%    tip   = loc( 'Blog posts about upcoming events' ) -%]
-[%    href  = uri_for_action( 'posts/posts' ) -%]
+[%    href  = uri_for_action( 'posts/page' ) -%]
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>

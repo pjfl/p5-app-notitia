@@ -9,12 +9,20 @@ has '+moniker' => default => 'root';
 sub dispatch_request {
    sub (GET  + /admin            + ?*) { [ 'admin', 'index',           @_ ] },
    sub (GET  + /admin/index      + ?*) { [ 'admin', 'index',           @_ ] },
+   sub (GET  + /docs             + ?*) { [ 'docs',  'index',           @_ ] },
+   sub (GET  + /docs/dialog      + ?*) { [ 'docs',  'dialog',          @_ ] },
+   sub (GET  + /docs/**          + ?*) { [ 'docs',  'page',            @_ ] },
    sub (GET  + /events           + ?*) { [ 'event', 'events',          @_ ] },
    sub (POST + /event | /event/* + ?*) { [ 'event', 'from_request',    @_ ] },
    sub (GET  + /event | /event/* + ?*) { [ 'event', 'event',           @_ ] },
+   sub (GET  + /posts            + ?*) { [ 'posts', 'page',            @_ ] },
+   sub (GET  + /posts/dialog     + ?*) { [ 'posts', 'dialog',          @_ ] },
+   sub (GET  + /posts/rss        + ?*) { [ 'posts', 'rss_feed',        @_ ] },
+   sub (GET  + /posts/**         + ?*) { [ 'posts', 'page',            @_ ] },
    sub (POST + /role/*           + ?*) { [ 'admin', 'from_request',    @_ ] },
    sub (GET  + /role/*           + ?*) { [ 'admin', 'role',            @_ ] },
    sub (GET  + /rota  | /rota/** + ?*) { [ 'sched', 'day_rota',        @_ ] },
+   sub (GET  + /rss              + ?*) { [ 'posts', 'rss_feed',        @_ ] },
    sub (POST + /slot/**          + ?*) { [ 'sched', 'from_request',    @_ ] },
    sub (GET  + /slot/**          + ?*) { [ 'sched', 'slot',            @_ ] },
    sub (GET  + /user/activate/*  + ?*) { [ 'admin', 'activate',        @_ ] },
@@ -31,8 +39,8 @@ sub dispatch_request {
    sub (GET  + /users            + ?*) { [ 'admin', 'people',          @_ ] },
    sub (GET  + /vehicle          + ?*) { [ 'admin', 'vehicle',         @_ ] },
    sub (GET  + /vehicle/*        + ?*) { [ 'admin', 'vehicle',         @_ ] },
-   sub (GET  + /index | /        + ?*) { [ 'sched', 'index',           @_ ] },
-   sub (GET  + /**               + ?*) { [ 'sched', 'not_found',       @_ ] };
+   sub (GET  + /index | /        + ?*) { [ 'user',  'index',           @_ ] },
+   sub (GET  + /**               + ?*) { [ 'user',  'not_found',       @_ ] };
 }
 
 1;

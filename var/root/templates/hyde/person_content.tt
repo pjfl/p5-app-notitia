@@ -7,11 +7,6 @@
       <form action="[% href %]" class="skinny"
            enctype="application/x-www-form-urlencoded"
             method="post" name="person-admin">
-[% TextField( page.fields.username ) -%]
-[% IF page.fields.username.value -%]
-[%    CheckBox( page.fields.active ) -%]
-[%    CheckBox( page.fields.password_expired ) -%]
-[% END -%]
 [% TextField( page.fields.first_name ) -%]
 [% TextField( page.fields.last_name ) -%]
 [% Select( page.fields.roles ) -%]
@@ -26,6 +21,12 @@
 [% DateField( page.fields.resigned ) -%]
 [% DateField( page.fields.subscription ) -%]
 [% TextArea( page.fields.notes ) -%]
+[% TextField( page.fields.username ) -%]
+[% IF page.fields.username.value -%]
+[%    CheckBox( page.fields.active ) -%]
+[%    CheckBox( page.fields.password_expired ) -%]
+[% END -%]
+<br/>
 [% Button( page.fields.save ) -%]
 [% IF page.fields.username.value -%]
 [%    Button( page.fields.delete ) -%]

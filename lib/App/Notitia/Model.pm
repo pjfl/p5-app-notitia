@@ -1,13 +1,12 @@
 package App::Notitia::Model;
 
-use namespace::autoclean;
-
+use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions  qw( exception throw );
 use Class::Usul::Types      qw( Plinth );
 use HTTP::Status            qw( HTTP_BAD_REQUEST HTTP_NOT_FOUND HTTP_OK );
 use Scalar::Util            qw( blessed );
-use Unexpected::Functions   qw( ValidationErrors );
+use Unexpected::Functions   qw( URINotFound ValidationErrors );
 use Moo;
 
 with q(Web::Components::Role);
@@ -80,12 +79,11 @@ sub load_page {
    my ($self, $req, $page) = @_; $page //= {}; return $page;
 }
 
-sub not_found {
+sub not_found : Role(anon) {
    my ($self, $req) = @_;
 
   (my $mp   = $self->config->mount_point) =~ s{ \A / \z }{}mx;
-   my $want =
-      join '/', $mp, @{ $req->uri_params->( { optional => TRUE } ) // [] };
+   my $want = join '/', $mp, $req->path;
    my $e    = exception 'URI [_1] not found', [ $want ], rv => HTTP_NOT_FOUND;
 
    return $self->exception_handler( $req, $e );
