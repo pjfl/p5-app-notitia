@@ -157,9 +157,9 @@ sub update_profile_action : Role(any) {
    my $name   = $req->username;
    my $params = $req->body_params;
    my $person = $self->schema->resultset( 'Person' )->find_person_by( $name );
-   my $args   = { raw => TRUE, optional => TRUE };
+   my $opts   = { raw => TRUE, optional => TRUE };
 
-   $person->$_( $params->( $_, $args ) ) for (@{ $self->profile_keys });
+   $person->$_( $params->( $_, $opts ) ) for (@{ $self->profile_keys });
 
    $person->update; my $message = [ 'Person [_1] profile updated', $name ];
 

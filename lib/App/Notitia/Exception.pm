@@ -28,9 +28,6 @@ has_exception 'SlotFree'          => parents => [ $class ],
 has_exception 'SlotTaken'         => parents => [ $class ],
    error   => 'Slot [_1] alredy taken by [_2]';
 
-has_exception 'URINotFound'       => parents => [ $class ],
-   error   => 'URI [_1] not found';
-
 has '+class' => default => $class;
 
 sub code {

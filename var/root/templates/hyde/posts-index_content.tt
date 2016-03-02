@@ -1,6 +1,7 @@
 <!-- Posts Index Content -->
 <div class="unit four-fifths">
    <article>
+      <h4>[% page.title %]</h4>
 [% depth        = page.wanted_depth -%]
 [% file_title   = loc( 'File Path' ) -%]
 [% folder_title = loc( 'Folder Path' ) -%]

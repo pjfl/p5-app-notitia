@@ -166,7 +166,7 @@ sub event : Role(administrator) Role(event_manager) {
       $fields->{delete} = delete_button( $req, $name, 'event' );
       $fields->{href  } = uri_for_action( $req, $action, [ $name ] );
       $fields->{owner } = $_select_owner_list->( $person_rs->list_all_people
-         ( { selected => $event->owner } ) );
+         ( { fields => { selected => $event->owner } } ) );
    }
    else {
       $fields->{date} = bind( 'event_date', time2str '%Y-%m-%d' );
@@ -187,7 +187,7 @@ sub events : Role(any) {
    my $rows     =  $page->{fields}->{rows};
    my $event_rs =  $self->schema->resultset( 'Event' );
 
-   for my $event (@{ $event_rs->list_all_events() }) {
+   for my $event (@{ $event_rs->list_all_events( { order_by => 'date' } ) }) {
       push @{ $rows },
          [ { value => $event->[ 0 ] },
            $self->$_event_admin_links( $req, $event->[ 1 ]->name ) ];

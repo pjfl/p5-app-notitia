@@ -1,3 +1,4 @@
+<!-- Macros -->
 [% MACRO Button( field ) BLOCK -%]
 [%    IF field.tip %]<span class="tips [% field.container_class %]"
                            title="[% field.tip %]">[% END -%]

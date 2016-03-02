@@ -1,0 +1,8 @@
+<!-- Search File -->
+<form action="[% links.base_uri %]search"
+     enctype="application/x-www-form-urlencoded"
+      method="get" name="search-file">
+   <input  class="standard-field" name="query"
+            type="textfield" value="[% prefs.query %]">
+   <button class="button" type="submit">[% loc( 'Search' ) %]</button>
+</form>

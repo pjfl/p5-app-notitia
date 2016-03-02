@@ -3,19 +3,34 @@ package App::Notitia::Model;
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions  qw( exception throw );
-use Class::Usul::Types      qw( Plinth );
+use Class::Usul::Types      qw( Object Plinth );
 use HTTP::Status            qw( HTTP_BAD_REQUEST HTTP_NOT_FOUND HTTP_OK );
+use JSON::MaybeXS;
 use Scalar::Util            qw( blessed );
-use Unexpected::Functions   qw( URINotFound ValidationErrors );
+use Unexpected::Functions   qw( ValidationErrors );
 use Moo;
 
 with q(Web::Components::Role);
 
 # Public attributes
-has 'application' => is => 'ro', isa => Plinth,
-   required       => TRUE,  weak_ref => TRUE;
+has 'application' => is => 'ro',   isa => Plinth,
+   required       => TRUE,    weak_ref => TRUE;
+
+# Private attributes
+has '_transcoder' => is => 'lazy', isa => Object,
+   builder        => sub { JSON::MaybeXS->new( utf8 => FALSE ) };
 
 # Public methods
+sub dialog_anchor {
+   my ($self, $k, $href, $opts) = @_;
+
+   my $args = $self->_transcoder->encode( [ "${href}", $opts ] );
+
+   return "   behaviour.config.anchors[ '${k}' ] = {",
+          "      method    : 'modalDialog',",
+          "      args      : ${args} };";
+};
+
 sub dialog_stash {
    my ($self, $req, $layout) = @_; my $stash = $self->initialise_stash( $req );
 

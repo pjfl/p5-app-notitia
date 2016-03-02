@@ -152,7 +152,7 @@ my $_list_all_roles = sub {
             ( { type => 'role' }, { columns => [ 'name' ] } )->all ];
 };
 
-my $_person_admin_links = sub {
+my $_people_links = sub {
    my ($self, $req, $name) = @_; my $links = $_admin_links_cache->{ $name };
 
    $links and return @{ $links }; $links = [];
@@ -320,7 +320,7 @@ sub person : Role(administrator) Role(person_manager) {
 
    if ($name) {
       $people = $person_rs->list_all_people
-         ( { selected => $person->next_of_kin } );
+         ( { fields => { selected => $person->next_of_kin } } );
       $fields->{user_href} = uri_for_action( $req, $action, [ $name ] );
       $fields->{delete   } = delete_button( $req, $name, 'person' );
       $fields->{roles    } = bind( 'roles', $person->list_roles );
@@ -346,10 +346,9 @@ sub people : Role(any) {
    my $rows      =  $page->{fields}->{rows};
    my $person_rs =  $self->schema->resultset( 'Person' );
 
-   for my $person (@{ $person_rs->list_all_people() }) {
+   for my $person (@{ $person_rs->list_all_people( { order_by => 'name' } ) }) {
       push @{ $rows }, [ { value => $person->[ 0 ]  },
-                         $self->$_person_admin_links
-                         ( $req, $person->[ 1 ]->name ) ];
+                         $self->$_people_links( $req, $person->[ 1 ]->name ) ];
    }
 
    return $self->get_stash( $req, $page );
@@ -383,7 +382,8 @@ sub role : Role(administrator) Role(person_manager) {
       template   => [ 'contents', 'role' ],
       title      => loc( $req, 'role_management_heading' ), };
    my $fields    =  $page->{fields};
-   my $people    =  $person_rs->list_all_people( { selected => $person } );
+   my $people    =  $person_rs->list_all_people
+      ( { fields => { selected => $person } } );
 
    my $person_roles = $person->list_roles;
    my $available    = $_subtract->( $self->$_list_all_roles(), $person_roles );

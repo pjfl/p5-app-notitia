@@ -16,8 +16,8 @@ with    q(App::Notitia::Role::RSS);
 has '+moniker' => default => 'posts';
 
 register_action_paths
-   'posts/dialog' => 'posts/dialog', 'posts/index' => 'posts',
-   'posts/page'   => 'posts',        'posts/rss'   => 'posts/rss';
+   'posts/dialog' => 'posts/dialog', 'posts/page' => 'posts',
+   'posts/rss'    => 'posts/rss';
 
 # Construction
 around 'initialise_stash' => sub {
@@ -27,7 +27,6 @@ around 'initialise_stash' => sub {
 
    $links->{rss_uri}
       = uri_for_action( $req, 'posts/rss', { extension => '.xml' } );
-   $links->{dialog } = uri_for_action( $req, 'posts/dialog' );
 
    return $stash;
 };
@@ -35,15 +34,15 @@ around 'initialise_stash' => sub {
 around 'load_page' => sub {
    my ($orig, $self, $req, @args) = @_;
 
-   my $page = $orig->( $self, $req, @args );
-   my @ids  = @{ $req->uri_params->() // [] };
-   my $type = $page->{type} // 'folder';
+   my $page  = $orig->( $self, $req, @args );
+   my @ids   = @{ $req->uri_params->() // [] };
+   my $type  = $page->{type} // 'folder';
+   my $plate = $type eq 'folder' ? 'posts-index' : 'docs';
 
    $ids[ 0 ] and $ids[ 0 ] eq 'index' and @ids = ();
    $page->{wanted_depth}   = () = @ids;
    $page->{wanted      }   = join '/', $self->config->posts, @ids;
-   $page->{template    } //= [ 'contents', 'docs' ];
-   $type eq 'folder' and $page->{template}->[ 1 ] = 'posts-index';
+   $page->{template    } //= [ 'contents', $plate ];
 
    return $page;
 };
@@ -65,7 +64,7 @@ my $_chain_nodes = sub {
 
 # Public methods
 sub base_uri {
-   return uri_for_action( $_[ 1 ], 'posts/page', $_[ 2 ] );
+   return uri_for_action( $_[ 1 ], 'posts/page' );
 }
 
 sub create_file_action : Role(administrator) {
@@ -82,10 +81,6 @@ sub delete_file_action : Role(administrator) {
 
 sub dialog : Role(any) {
    return $_[ 0 ]->get_dialog( $_[ 1 ] );
-}
-
-sub index : Role(anon) {
-   return { redirect => { location => '/' } };
 }
 
 sub localised_tree {

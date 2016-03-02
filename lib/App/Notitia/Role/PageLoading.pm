@@ -8,10 +8,9 @@ use Class::Usul::File;
 use Class::Usul::Functions qw( throw );
 use Class::Usul::Types     qw( HashRef );
 use HTTP::Status           qw( HTTP_NOT_FOUND );
-use Unexpected::Functions  qw( URINotFound );
 use Moo::Role;
 
-requires qw( config initialise_stash load_page localised_tree not_found );
+requires qw( config initialise_stash load_page localised_tree );
 
 has 'type_map' => is => 'ro', isa => HashRef, builder => sub { {} };
 
@@ -71,10 +70,7 @@ around 'load_page' => sub {
       return $orig->( $self, $req, $page );
    }
 
-  (my $mp   = $self->config->mount_point) =~ s{ \A / \z }{}mx;
-   my $want = join '/', $mp, $req->path;
-
-   throw URINotFound, [ $want ], rv => HTTP_NOT_FOUND;
+   throw 'Page [_1] not found', [ $req->path ], rv => HTTP_NOT_FOUND;
 };
 
 # Public methods

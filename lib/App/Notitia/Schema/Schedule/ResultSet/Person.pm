@@ -41,12 +41,14 @@ sub is_person {
 }
 
 sub list_all_people {
-   my ($self, $opts) = @_;
+   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
 
+   my $fields = delete $opts->{fields} // {};
    my $people = $self->search
-      ( {}, { columns => [ 'first_name', 'id', 'last_name', 'name' ] } );
+      ( {}, { columns => [ 'first_name', 'id', 'last_name', 'name' ],
+           %{ $opts } } );
 
-   return [ map { $_person_tuple->( $_, $opts ) } $people->all ];
+   return [ map { $_person_tuple->( $_, $fields ) } $people->all ];
 }
 
 sub new_person_id {

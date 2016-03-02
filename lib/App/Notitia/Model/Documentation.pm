@@ -23,16 +23,6 @@ register_action_paths
    'docs/page'   => 'docs';
 
 # Construction
-around 'initialise_stash' => sub {
-   my ($orig, $self, $req, @args) = @_;
-
-   my $stash = $orig->( $self, $req, @args ); my $links = $stash->{links};
-
-   $links->{dialog} = uri_for_action( $req, $self->moniker.'/dialog' );
-
-   return $stash;
-};
-
 around 'load_page' => sub {
    my ($orig, $self, $req, @args) = @_;
 
@@ -82,7 +72,7 @@ my $_docs_url = sub {
 
 # Public methods
 sub base_uri {
-   return $_[ 1 ]->uri_for( NUL, $_[ 2 ] );
+   return uri_for_action( $_[ 1 ], 'docs/page' );
 }
 
 sub create_file_action : Role(administrator) {

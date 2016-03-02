@@ -69,17 +69,6 @@ my $_confirm_slot_button = sub {
    return { class => 'right', label => 'confirm', value => "${action}_slot" };
 };
 
-my $_dialog = sub {
-   my ($req, $k, $href, $name, $title) = @_; $title = loc( $req, $title );
-
-   return "   behaviour.config.anchors[ '${k}' ] = {",
-          "      method    : 'modalDialog',",
-          "      args      : [ '${href}', {",
-          "         name   : '${name}',",
-          "         title  : '${title}',",
-          "         useIcon: true } ] };";
-};
-
 my $_dialog_link = sub {
    my ($req, $slot_rows, $k, $slot_type) = @_;
 
@@ -168,7 +157,8 @@ my $_add_js_dialog = sub {
    my $path = $self->moniker.'/slot';
    my $href = uri_for_action( $req, $path, $args, { action => $action } );
 
-   push @{ $js }, $_dialog->( $req, $k, $href, $name, $title );
+   push @{ $js }, $self->dialog_anchor( $k, $href, {
+      name => $name, title => loc( $req, $title ), useIcon => \1 } );
 
    return;
 };

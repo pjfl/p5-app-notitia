@@ -54,12 +54,13 @@ sub find_event_by {
 }
 
 sub list_all_events {
-   my ($self, $opts) = @_;
+   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
 
+   my $fields = delete $opts->{fields} // {};
    my $events = $self->search
-      ( {}, { columns => [ 'name', 'rota.date' ], prefetch => [ 'rota' ] } );
+      ( {}, { columns => [ 'name' ], prefetch => [ 'rota' ], %{ $opts } } );
 
-   return [ map { $_event_tuple->( $_, $opts ) } $events->all ];
+   return [ map { $_event_tuple->( $_, $fields ) } $events->all ];
 }
 
 1;

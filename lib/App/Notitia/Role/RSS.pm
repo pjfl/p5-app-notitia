@@ -13,9 +13,6 @@ use Moo::Role;
 
 requires qw( base_uri config initialise_page localised_tree );
 
-has 'feed_domain'      => is => 'ro', isa => NonEmptySimpleStr,
-   default             => 'http://localhost:5000';
-
 has 'feed_subtitle'    => is => 'ro', isa => Str, default => NUL;
 
 has 'feed_title'       => is => 'ro', isa => Str, default => NUL;

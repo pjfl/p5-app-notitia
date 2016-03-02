@@ -358,32 +358,6 @@ footer {
       }
    }
 }
-/* Free Hosting */
-.free-hosting {
-   h2    { font-size: 28px; }
-   img   { height: 150px; margin: -30px 0 0; width: 180px; }
-   p     { margin: .75em 0; }
-   p, a  { font-size: 16px; }
-   .pane {
-      background-color: #3e3e3e; .border-radius(10px);
-      padding: 0 20px 30px; position: relative; text-shadow: none;
-   }
-}
-@media (min-width: 768px) {
-   .free-hosting {
-      img {
-         float: left; height: 251px; margin: -20px -30px -30px -50px;
-         width: 300px;
-      }
-      p, a { font-size: 18px; }
-      .pane:after {
-         background: url(../img/footer-arrow.png) top left no-repeat;
-         bottom: -30px; content: " "; float: right; height: 186px;
-         position: absolute; right: 0; width: 73px;
-      }
-      .pane-content { margin-top: 35px; padding-right: 30px; }
-   }
-}
 /* Article - Used for both docs and news */
 article {
    background-color: @lighter; .border-radius(10px);
@@ -503,7 +477,6 @@ article h2:first-child, { margin-top: 0; }
   .box-shadow;
 }
 /* Rota */
-article h4:first-child { margin-top: 0; margin-bottom: 0.5em; }
 td.rota-date { font-weight: 700; white-space: nowrap; width: 1%; }
 td.rota-header {
    color: @subtle; font-size: 16px; white-space: nowrap; width: 1%;
@@ -565,7 +538,7 @@ strong { font-weight: 700; }
 .right { float: right; margin-left: 0.5em; }
 /* Article HTML */
 article {
-   h2, h3, h4, h5, h6 { margin: 1em 0; }
+   h2, h3, h4, h5, h6 { margin: 0 0 0.5em 0; }
    h4 { color: @brighter; }
    ul li {
       p { margin: 0; }

@@ -3,9 +3,10 @@ package App::Notitia::Role::Editor;
 use namespace::autoclean;
 
 use App::Notitia::Util     qw( loc make_id_from make_name_from mtime
-                               set_element_focus stash_functions );
+                               set_element_focus stash_functions
+                               uri_for_action );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use Class::Usul::Functions qw( io is_member throw trim untaint_path );
+use Class::Usul::Functions qw( io throw trim untaint_path );
 use Class::Usul::IPC;
 use Class::Usul::Time      qw( time2str );
 use Class::Usul::Types     qw( ProcCommer );
@@ -24,16 +25,49 @@ with q(Web::Components::Role::TT);
 has '_ipc' => is => 'lazy', isa => ProcCommer, handles => [ 'run_cmd' ],
    builder => sub { Class::Usul::IPC->new( builder => $_[ 0 ]->application ) };
 
+# Private methods
+my $_add_dialog_js = sub {
+   my ($self, $req, $page, $name, $opts) = @_;
+
+   my $action = $self->moniker.'/dialog';
+   my $href   = uri_for_action( $req, $action, [], { name => $name } );
+
+   push @{ $page->{literal_js} }, $self->dialog_anchor
+      ( "${name}-file", $href, { name => "${name}-file", %{ $opts } } );
+
+   return;
+};
+
+my $_add_editing_js = sub {
+   my ($self, $req, $page) = @_; defined $page->{content} or return;
+
+   my $conf = $self->config;
+   my $root = $conf->docs_root->catdir( $conf->locale );
+   my $map  = { create => 'Create File',      rename => 'Rename File',
+                search => 'Search Documents', upload => 'Upload File', };
+
+   for my $name (keys %{ $map }) {
+      my $opts = { title => loc( $req, $map->{ $name } ) };
+
+      $name eq 'rename'and $opts->{value} = $page->{content}->abs2rel( $root );
+      $self->$_add_dialog_js( $req, $page, $name, $opts);
+   }
+
+   return;
+};
+
 # Construction
 around 'load_page' => sub {
    my ($orig, $self, $req, @args) = @_;
 
    my $page    = $orig->( $self, $req, @args );
-   my $editing = $req->query_params->( 'edit', { optional => TRUE } ) // FALSE;
+   my $editing = $req->query_params->( 'edit', { optional => TRUE } )
+               ? TRUE : FALSE;
 
-   $page->{editing} //= !!$editing;
+   $page->{editing}   = $editing;
    $page->{editing} and $page->{user}
       = $self->components->{admin}->find_person_by( $req->username );
+   $page->{editing}  or $self->$_add_editing_js( $req, $page );
 
    return $page;
 };
@@ -183,15 +217,13 @@ sub delete_file {
 sub get_dialog {
    my ($self, $req) = @_;
 
-   my $params =  $req->query_params;
-   my $name   =  $params->( 'name' );
-   my $stash  =  $self->initialise_stash( $req );
-   my $links  =  $stash->{links};
-   my $page   =  $stash->{page} = $self->load_page( $req, {
-      layout  => "${name}-file",
-      meta    => { id => $params->( 'id' ), }, } );
+   my $params = $req->query_params;
+   my $name   = $params->( 'name' );
+   my $stash  = $self->dialog_stash( $req, "${name}-file" );
+   my $page   = $stash->{page};
+   my $links  = $stash->{links};
 
-   if    ($name eq 'create') {
+   if ($name eq 'create') {
       $page->{literal_js } = set_element_focus "${name}-file", 'pathname';
    }
    elsif ($name eq 'rename') {
@@ -206,7 +238,6 @@ sub get_dialog {
       $page->{literal_js } = $_copy_element_value->();
    }
 
-   $stash->{view} = 'json';
    return $stash;
 }
 
