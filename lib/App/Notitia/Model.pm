@@ -76,7 +76,7 @@ sub check_form_field {
    };
 
    return { code    => HTTP_OK,
-            content => { fields => [ { content => $mesg } ] },
+            content => { html => $mesg },
             page    => { meta => $meta },
             view    => 'json' };
 }

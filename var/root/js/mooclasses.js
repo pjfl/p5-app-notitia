@@ -538,11 +538,7 @@ var LoadMore = new Class( {
    },
 
    _response: function( resp ) {
-      var html = ''; resp.fields.each( function( field ) {
-         html += field.content;
-      } );
-
-      $( resp.id ).set( 'html', html );
+      $( resp.id ).set( 'html', resp.html );
 
       if (resp.script) Browser.exec( resp.script );
 
