@@ -1,5 +1,5 @@
 <!-- Create File -->
-<form action="[% links.base_uri %]"
+<form action="[% links.root_uri %]"
      enctype="application/x-www-form-urlencoded"
       method="post" name="create-file">
    <input  class="pathname" name="pathname" type="textfield">

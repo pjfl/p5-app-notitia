@@ -19,8 +19,9 @@ with    q(App::Notitia::Role::Editor);
 has '+moniker' => default => 'docs';
 
 register_action_paths
-   'docs/dialog' => 'docs/dialog', 'docs/index' => 'docs',
-   'docs/page'   => 'docs';
+   'docs/dialog' => 'docs/dialog', 'docs/index'  => 'docs',
+   'docs/page'   => 'docs',        'docs/search' => 'docs/search',
+   'docs/upload' => 'assets';
 
 # Construction
 around 'load_page' => sub {
@@ -72,7 +73,7 @@ my $_docs_url = sub {
 
 # Public methods
 sub base_uri {
-   return uri_for_action( $_[ 1 ], 'docs/page' );
+   return uri_for_action( $_[ 1 ], 'docs/page', $_[ 2 ] );
 }
 
 sub create_file_action : Role(administrator) {

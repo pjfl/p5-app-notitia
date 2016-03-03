@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added server side field validation
           - Added templates for editing dialogs
           - Added documentation and posts support
           - Now handling event start and end times

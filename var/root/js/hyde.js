@@ -5,7 +5,8 @@ var Behaviour = new Class( {
 
    config    : {
       anchors: {},
-      inputs : {}
+      inputs : {},
+      server : {}
    },
 
    options           : {
@@ -110,6 +111,9 @@ var Behaviour = new Class( {
          tolerance      : 10 } );
       this.noticeBoard  = new NoticeBoard( { context: this } );
       this.replacements = new Replacements( { context: this } );
+      this.server       = new ServerUtils( {
+         context        : this,
+         url            : opt.baseURL } );
       this.togglers     = new Togglers( { context: this } );
       this.linkFade     = new LinkFader( { context: this } );
       this.tips         = new Tips( {

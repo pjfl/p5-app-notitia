@@ -80,7 +80,6 @@ nav {
 }
 .panel button { color: @contrast; }
 .panel form { display: inline; }
-.skinny { display: inline-block; }
 .header-link {
    font-size: 0.8em; left: 0.5em; opacity: 0; position: relative;
    .transition(0.2, 0.1);
@@ -171,6 +170,15 @@ footer {
 }
 .dialog-close { float: right; margin-left: 1em; }
 .dialog-title { margin-bottom: 10px; }
+.field-error {
+    background-color: #fcc; border-color: @darker;
+   .border-radius; border: 1px solid; color: @darker; display: block;
+   font-size: 0.825em; margin: 5px 0 0 165px;  max-width: 400px;
+   overflow: hidden; padding: 5px; white-space: nowrap;
+}
+.field-group {
+   display: block;
+}
 .label {
    display: inline-block; margin: 0.25em 0; padding: 0;
    text-align: left; text-decoration: none;
@@ -182,6 +190,8 @@ footer {
    padding: 3.25px 0.75em; vertical-align: middle;
 }
 .pathname[disabled], .standard-field[disabled] { background-color: @subtle; }
+.required { border-right: 3px solid @divider; }
+.skinny { display: inline-block; max-width: 566px; overflow: hidden; }
 .upload-file { margin: 0.25em 0; overflow: hidden; position: relative; }
 .upload-file .upload {
    cursor: pointer; .opacity( 0 ); position: absolute; top: 0; right: 0;
@@ -514,7 +524,8 @@ strong { font-weight: 700; }
 .align-left { text-align: left; }
 .align-right { text-align: right; }
 .expanding_area {
-   display: inline-block; margin: 0.25em 0; max-width: 400px;
+   .border-radius;
+   display: inline-block; margin: 0; max-width: 400px;
    min-width: 400px; overflow: hidden;
    position: relative; vertical-align: middle;
 }

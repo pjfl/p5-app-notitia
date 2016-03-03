@@ -3,7 +3,7 @@ package App::Notitia::Model::Event;
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
-                                loc register_action_paths
+                                field_options loc register_action_paths
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
@@ -36,21 +36,28 @@ around 'get_stash' => sub {
 };
 
 # Private class attributes
-my $_admin_links_cache = {};
+my $_event_links_cache = {};
 
 # Private functions
 my $_bind_event_fields = sub {
-   my $event = shift;
+   my ($schema, $event) = @_; my $fields = {};
 
-   return {
-      description => bind( 'description', $event->description,
-                           { class     => 'autosize' } ),
-      end_time    => bind( 'end_time',    $event->end_time ),
-      name        => bind( 'event_name',  $event->name ),
-      notes       => bind( 'notes',       $event->notes,
-                           { class     => 'autosize' } ),
-      start_time  => bind( 'start_time',  $event->start_time ),
+   my $map = {
+      description => { class => 'autosize' },
+      end_time    => {},
+      name        => { class => 'server' },
+      notes       => { class => 'autosize' },
+      start_time  => {},
    };
+
+   for my $k (keys %{ $map }) {
+      my $value = exists $map->{ $k }->{checked} ? TRUE : $event->$k();
+      my $opts  = field_options( $schema, 'Event', $k, $map->{ $k } );
+
+      $fields->{ $k } = bind( $k, $value, $opts );
+   }
+
+   return $fields;
 };
 
 my $_events_headers = sub {
@@ -62,8 +69,8 @@ my $_select_owner_list = sub {
 };
 
 # Private methods
-my $_event_admin_links = sub {
-   my ($self, $req, $name) = @_; my $links = $_admin_links_cache->{ $name };
+my $_event_links = sub {
+   my ($self, $req, $name) = @_; my $links = $_event_links_cache->{ $name };
 
    $links and return @{ $links }; $links = [];
 
@@ -80,7 +87,7 @@ my $_event_admin_links = sub {
                     value => loc( $req, "${action}_management_link" ), }, };
    }
 
-   $_admin_links_cache->{ $name } = $links;
+   $_event_links_cache->{ $name } = $links;
 
    return @{ $links };
 };
@@ -94,9 +101,7 @@ my $_update_event_from_request = sub {
 
    my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
 
-   $event->name( $params->( 'event_name' ) );
-
-   for my $attr (qw( description end_time notes start_time )) {
+   for my $attr (qw( description end_time name notes start_time )) {
       my $v = $params->( $attr, $opts ); defined $v or next;
 
       is_member $attr, [ 'end_time', 'start_time' ]
@@ -147,17 +152,19 @@ sub delete_event_action : Role(administrator) Role(event_manager) {
 sub event : Role(administrator) Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $event_rs =  $self->schema->resultset( 'Event' );
-   my $name     =  $req->uri_params->( 0, { optional => TRUE } );
-   my $opts     =  { prefetch => [ 'owner' ] };
-   my $event    =  $name ? $event_rs->find_event_by( $name, $opts )
-                         : Class::Null->new;
-   my $page     =  {
-      fields    => $_bind_event_fields->( $event ),
-      template  => [ 'contents', 'event' ],
-      title     => loc( $req, 'event_management_heading' ), };
-   my $fields   =  $page->{fields};
-   my $action   =  $self->moniker.'/event';
+   my $event_rs  =  $self->schema->resultset( 'Event' );
+   my $name      =  $req->uri_params->( 0, { optional => TRUE } );
+   my $opts      =  { prefetch => [ 'owner' ] };
+   my $event     =  $name ? $event_rs->find_event_by( $name, $opts )
+                          : Class::Null->new;
+   my $page      =  {
+      fields     => $_bind_event_fields->( $self->schema, $event ),
+      literal_js => [ $self->check_field_server( 'name', {
+         domain  => 'schedule', form => 'Event' } ) ],
+      template   => [ 'contents', 'event' ],
+      title      => loc( $req, 'event_management_heading' ), };
+   my $fields    =  $page->{fields};
+   my $action    =  $self->moniker.'/event';
 
    if ($name) {
       my $person_rs = $self->schema->resultset( 'Person' );
@@ -190,7 +197,7 @@ sub events : Role(any) {
    for my $event (@{ $event_rs->list_all_events( { order_by => 'date' } ) }) {
       push @{ $rows },
          [ { value => $event->[ 0 ] },
-           $self->$_event_admin_links( $req, $event->[ 1 ]->name ) ];
+           $self->$_event_links( $req, $event->[ 1 ]->name ) ];
    }
 
    return $self->get_stash( $req, $page );

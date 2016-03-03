@@ -9,8 +9,12 @@ has '+moniker' => default => 'root';
 sub dispatch_request {
    sub (GET  + /admin             + ?*) { [ 'admin', 'index',           @_ ] },
    sub (GET  + /admin/index       + ?*) { [ 'admin', 'index',           @_ ] },
+   sub (POST + /assets + *file~   + ?*) { [ 'docs',  'upload',          @_ ] },
+   sub (GET  + /check_field       + ?*) { [ 'user',  'check_field',     @_ ] },
+   sub (POST + /docs  | /docs/**  + ?*) { [ 'docs',  'from_request',    @_ ] },
    sub (GET  + /docs              + ?*) { [ 'docs',  'index',           @_ ] },
    sub (GET  + /docs/dialog       + ?*) { [ 'docs',  'dialog',          @_ ] },
+   sub (GET  + /docs/search       + ?*) { [ 'docs',  'search',          @_ ] },
    sub (GET  + /docs/**           + ?*) { [ 'docs',  'page',            @_ ] },
    sub (GET  + /events            + ?*) { [ 'event', 'events',          @_ ] },
    sub (POST + /event | /event/*  + ?*) { [ 'event', 'from_request',    @_ ] },

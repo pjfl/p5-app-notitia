@@ -1,5 +1,5 @@
 <!-- Upload File -->
-<form action="[% uri_for( config.assets ) %]"
+<form action="[% uri_for_action( 'docs/upload' ) %]"
      enctype="multipart/form-data" method="post" name="upload-file">
    <input class="pathname" disabled="disabled"
              id="upload-path" placeholder="Choose File">

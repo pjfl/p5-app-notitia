@@ -538,7 +538,11 @@ var LoadMore = new Class( {
    },
 
    _response: function( resp ) {
-      $( resp.id ).set( 'html', resp.html.unescapeHTML() );
+      var html = ''; resp.fields.each( function( field ) {
+         html += field.content;
+      } );
+
+      $( resp.id ).set( 'html', html );
 
       if (resp.script) Browser.exec( resp.script );
 
@@ -793,6 +797,30 @@ var Replacements = new Class( {
          }
       }
       else el.removeProperty( 'checked' );
+   }
+} );
+
+var ServerUtils = new Class( {
+   Implements: [ Options, LoadMore ],
+
+   options: { config_attr: 'server', selector: '.server', url: null },
+
+   initialize: function( options ) {
+      this.aroundSetOptions( options ); this.build();
+   },
+
+   checkField: function( id, form, domain ) {
+      var url = 'check_field';
+
+      if (form && domain) url += '?domain=' + domain + '&form=' + form;
+
+      this.request( url, id, $( id ).value, function( resp ) {
+         $( resp.id ).className = resp.class_name ? resp.class_name : 'hidden';
+      }.bind( this ) );
+   },
+
+   requestIfVisible: function( action, id, val, on_complete ) {
+      if ($( id ).isVisible()) this.request( action, id, val, on_complete );
    }
 } );
 

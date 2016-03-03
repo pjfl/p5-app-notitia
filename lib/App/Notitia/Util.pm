@@ -14,7 +14,7 @@ use YAML::Tiny;
 
 our @EXPORT_OK = qw( admin_navigation_links bind bool_data_type
                      build_navigation build_tree clone date_data_type
-                     delete_button enumerated_data_type enhance
+                     delete_button enumerated_data_type enhance field_options
                      foreign_key_data_type get_hashed_pw get_salt is_draft
                      is_encrypted iterator loc localise_tree make_id_from
                      make_name_from mtime new_salt
@@ -26,9 +26,9 @@ our @EXPORT_OK = qw( admin_navigation_links bind bool_data_type
                      uri_for_action varchar_data_type );
 
 # Private class attributes
+my $_action_path_uri_map = {}; # Key is an action path, value a partial URI
+my $_field_option_cache = {};
 my $_translations  = {};
-# Key is an action path, value a partial URI
-my $_action_path_uri_map = {};
 
 # Private functions
 my $_bind_option = sub {
@@ -265,6 +265,23 @@ sub enhance ($) {
    $conf->{cfgfiles    } //= get_cfgfiles $conf->{appclass}, $conf->{home};
 
    return $attr;
+}
+
+sub field_options {
+   my ($schema, $result, $name, $opts) = @_;
+
+   exists $_field_option_cache->{ $result }->{ $name }
+      and return $_field_option_cache->{ $result }->{ $name };
+
+   my $class       = blessed $schema->resultset( $result )->new_result( {} );
+   my $constraints = $class->validation_attributes->{fields}->{ $name };
+
+   if (exists $constraints->{validate}
+          and $constraints->{validate} =~ m{ isMandatory }mx) {
+      $opts->{class} //= NUL; $opts->{class} .= ' required';
+   }
+
+   return $_field_option_cache->{ $result }->{ $name } = $opts;
 }
 
 sub foreign_key_data_type (;$$) {

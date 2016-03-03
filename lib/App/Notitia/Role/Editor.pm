@@ -13,6 +13,7 @@ use Class::Usul::Types     qw( ProcCommer );
 use HTTP::Status           qw( HTTP_EXPECTATION_FAILED HTTP_NOT_FOUND
                                HTTP_PRECONDITION_FAILED
                                HTTP_REQUEST_ENTITY_TOO_LARGE );
+use Scalar::Util           qw( blessed );
 use Unexpected::Functions  qw( Unspecified );
 use Moo::Role;
 
@@ -39,17 +40,17 @@ my $_add_dialog_js = sub {
 };
 
 my $_add_editing_js = sub {
-   my ($self, $req, $page) = @_; defined $page->{content} or return;
+   my ($self, $req, $page) = @_;
 
-   my $conf = $self->config;
-   my $root = $conf->docs_root->catdir( $conf->locale );
-   my $map  = { create => 'Create File',      rename => 'Rename File',
-                search => 'Search Documents', upload => 'Upload File', };
+  (defined $page->{content} and blessed $page->{content}) or return;
+
+   my $map = { create => 'Create File',      rename => 'Rename File',
+               search => 'Search Documents', upload => 'Upload File', };
 
    for my $name (keys %{ $map }) {
       my $opts = { title => loc( $req, $map->{ $name } ) };
 
-      $name eq 'rename'and $opts->{value} = $page->{content}->abs2rel( $root );
+      $name eq 'rename'and $opts->{value} = $page->{url};
       $self->$_add_dialog_js( $req, $page, $name, $opts);
    }
 
@@ -57,6 +58,17 @@ my $_add_editing_js = sub {
 };
 
 # Construction
+around 'initialise_stash' => sub {
+   my ($orig, $self, $req, @args) = @_;
+
+   my $stash  = $orig->( $self, $req, @args ); my $links = $stash->{links};
+
+   $links->{root_uri} = $self->base_uri( $req );
+   $links->{edit_uri} = $req->uri_for( $req->path, [], edit => TRUE );
+
+   return $stash;
+};
+
 around 'load_page' => sub {
    my ($orig, $self, $req, @args) = @_;
 
@@ -104,7 +116,8 @@ my $_prepare_search_results = sub {
       my $actionp  = join '/', @filepath;
       my $name     = make_name_from $actionp; $name =~ s{/}{ / }gmx;
 
-      $tuple->[ 0 ] = $name; $tuple->[ 1 ] = $req->uri_for( $actionp );
+      $tuple->[ 0 ] = $name;
+      $tuple->[ 1 ] = uri_for_action( $req, 'docs/page', [ $actionp ] );
    }
 
    return @tuples;
@@ -181,7 +194,7 @@ sub create_file {
    my $created  = time2str '%Y-%m-%d %H:%M:%S %z', time, 'UTC';
    my $stash    = { page => { author  => $req->username,
                               created => $created,
-                              layout  => $conf->blank_template, }, };
+                              layout  => 'blank-page', }, };
 
    stash_functions $self, $req, $stash;
 
@@ -193,7 +206,7 @@ sub create_file {
 
    my $rel_path = $path->abs2rel( $conf->docs_root );
    my $message  = [ 'File [_1] created by [_2]', $rel_path, $req->username ];
-   my $location = $req->uri_for( $new_node->{url} );
+   my $location = $self->base_uri( $req, [ $new_node->{url} ] );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -208,10 +221,11 @@ sub delete_file {
    $path->exists and $path->unlink; $_prune->( $path );
    $self->invalidate_docs_cache;
 
+   my $location = $self->base_uri( $req );
    my $rel_path = $path->abs2rel( $self->config->docs_root );
    my $message  = [ 'File [_1] deleted by [_2]', $rel_path, $req->username ];
 
-   return { redirect => { location => $req->base, message => $message } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub get_dialog {
@@ -229,7 +243,7 @@ sub get_dialog {
    elsif ($name eq 'rename') {
       $page->{literal_js } = set_element_focus "${name}-file", 'pathname';
       $page->{old_path   } = $params->( 'val' );
-      $links->{rename_uri} = $self->base_uri( $req );
+      $links->{rename_uri} = $self->base_uri( $req, [ $page->{old_path} ] );
    }
    elsif ($name eq 'search') {
       $page->{literal_js } = set_element_focus "${name}-file", 'query';
@@ -258,7 +272,7 @@ sub rename_file {
 
    my $rel_path = $node->{path}->abs2rel( $conf->docs_root );
    my $message  = [ 'File [_1] renamed by [_2]', $rel_path, $req->username ];
-   my $location = $req->uri_for( $new_node->{url} );
+   my $location = $self->base_uri( $req, [ $new_node->{url} ] );
 
    return { redirect => { location => $location, message => $message } };
 }

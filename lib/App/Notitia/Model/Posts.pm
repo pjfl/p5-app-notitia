@@ -64,7 +64,7 @@ my $_chain_nodes = sub {
 
 # Public methods
 sub base_uri {
-   return uri_for_action( $_[ 1 ], 'posts/page' );
+   return uri_for_action( $_[ 1 ], 'posts/page', $_[ 2 ] );
 }
 
 sub create_file_action : Role(administrator) {

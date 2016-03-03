@@ -76,6 +76,10 @@ sub change_password_action : Role(anon) {
    return { redirect => { location => $req->base, message => $message } };
 }
 
+sub check_field : Role(any) {
+   return $_[ 0 ]->check_form_field( $_[ 1 ], 'App::Notitia::Schema::Schedule::Result' );
+}
+
 sub index : Role(anon) {
    my ($self, $req) = @_;
 

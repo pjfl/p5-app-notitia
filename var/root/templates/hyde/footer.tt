@@ -20,7 +20,7 @@
 <script src="[% links.js %][% skin %].js"></script>
 <script>
       var behaviour = new Behaviour( {
-         baseURI     : "[% links.base_uri %]",
+         baseURL     : "[% links.base_uri %]",
          cookieDomain: '[% page.host %]',
          cookiePath  : '[% config.mount_point %]',
          cookiePrefix: '[% config.prefix %]',

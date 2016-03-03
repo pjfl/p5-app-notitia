@@ -3,8 +3,8 @@ package App::Notitia::Model::Administration;
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
-                                loc register_action_paths save_button
-                                uri_for_action );
+                                field_options loc register_action_paths
+                                save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
 use Class::Usul::Time       qw( str2date_time );
@@ -44,7 +44,7 @@ around 'get_stash' => sub {
 };
 
 # Private class attributes
-my $_admin_links_cache = {};
+my $_people_links_cache = {};
 
 # Private functions
 my $_add_role_button = sub {
@@ -58,30 +58,37 @@ my $_add_role_button = sub {
 };
 
 my $_bind_person_fields = sub {
-   my $person = shift;
+   my ($schema, $person) = @_; my $fields = {};
 
-   return {
-      active           => bind( 'active', TRUE,
-                                { checked     => $person->active,
-                                  nobreak     => TRUE, } ),
-      address          => bind( 'address',       $person->address ),
-      dob              => bind( 'dob',           $person->dob ),
-      email_address    => bind( 'email_address', $person->email_address ),
-      first_name       => bind( 'first_name',    $person->first_name ),
-      home_phone       => bind( 'home_phone',    $person->home_phone ),
-      joined           => bind( 'joined',        $person->joined ),
-      last_name        => bind( 'last_name',     $person->last_name ),
-      mobile_phone     => bind( 'mobile_phone',  $person->mobile_phone ),
-      notes            => bind( 'notes',         $person->notes,
-                                { class       => 'autosize' } ),
-      password_expired => bind( 'password_expired', TRUE,
-                                { checked     => $person->password_expired,
-                                  container_class => 'right' } ),
-      postcode         => bind( 'postcode',      $person->postcode ),
-      resigned         => bind( 'resigned',      $person->resigned ),
-      subscription     => bind( 'subscription',  $person->subscription ),
-      username         => bind( 'username',      $person->name ),
+   my $map = {
+      active           => { checked => $person->active, nobreak => TRUE, },
+      address          => {},
+      dob              => {},
+      email_address    => {},
+      first_name       => {},
+      home_phone       => {},
+      joined           => {},
+      last_name        => {},
+      mobile_phone     => {},
+      notes            => { class => 'autosize' },
+      password_expired => { checked => $person->password_expired,
+                            container_class => 'right' },
+      postcode         => {},
+      resigned         => {},
+      subscription     => {},
    };
+
+   for my $k (keys %{ $map }) {
+      my $value = exists $map->{ $k }->{checked} ? TRUE : $person->$k();
+      my $opts  = field_options( $schema, 'Person', $k, $map->{ $k } );
+
+      $fields->{ $k } = bind( $k, $value, $opts );
+   }
+
+   $fields->{username} = bind( 'username', $person->name,
+                               field_options( $schema, 'Person', 'name', {} ) );
+
+   return $fields;
 };
 
 my $_people_headers = sub {
@@ -153,7 +160,7 @@ my $_list_all_roles = sub {
 };
 
 my $_people_links = sub {
-   my ($self, $req, $name) = @_; my $links = $_admin_links_cache->{ $name };
+   my ($self, $req, $name) = @_; my $links = $_people_links_cache->{ $name };
 
    $links and return @{ $links }; $links = [];
 
@@ -170,7 +177,7 @@ my $_people_links = sub {
                     value => loc( $req, "${action}_management_link" ), }, };
    }
 
-   $_admin_links_cache->{ $name } = $links;
+   $_people_links_cache->{ $name } = $links;
 
    return @{ $links };
 };
@@ -312,7 +319,7 @@ sub person : Role(administrator) Role(person_manager) {
    my $person    =  $name ? $person_rs->find_person_by( $name )
                           :  Class::Null->new;
    my $page      =  {
-      fields     => $_bind_person_fields->( $person ),
+      fields     => $_bind_person_fields->( $self->schema, $person ),
       template   => [ 'contents', 'person' ],
       title      => loc( $req, 'person_management_heading' ), };
    my $fields    =  $page->{fields};

@@ -20,7 +20,7 @@
 [%    IF field.disabled %]disabled="disabled"[% END -%]
          class="standard-field [% field.class %]" id="[% field.name %]"
           name="[% field.name %]" type="date" value="[% field.value %]">
-   </label><br/>
+   </label>
 [% END -%]
 [% MACRO Dispatch( f ) BLOCK -%]
 [%    IF f.type == 'link' -%]
@@ -50,7 +50,7 @@
    <input
 [%    IF field.autocomplete %]autocomplete="[% field.autocomplete %]"[% END -%]
           class="standard-field [% field.class %]" id="[% field.name %]"
-           name="[% field.name %]" type="password"></label><br/>
+           name="[% field.name %]" type="password"></label>
 [% END -%]
 [% MACRO Select( field ) BLOCK -%]
    <label class="label">
@@ -63,7 +63,7 @@
          <option [% IF option.selected %]selected="selected" [% END -%]
              value="[% option.value %]">[% loc( option.label ) %]</option>
 [%    END -%]
-   </select></label><br/>
+   </select></label>
 [% END -%]
 [% MACRO Table( table ) BLOCK -%]
    <table>
@@ -90,7 +90,7 @@
    <label class="label">
       <span class="field-label">[% loc( field.label ) %]</span>
       <textarea class="standard-field [% field.class %]" id="[% field.name %]"
-         name="[% field.name %]">[% field.value %]</textarea></label><br/>
+         name="[% field.name %]">[% field.value %]</textarea></label>
 [% END -%]
 [% MACRO TextField( field ) BLOCK -%]
    <label class="label">
@@ -99,7 +99,9 @@
 [%    IF field.disabled %]disabled="disabled"[% END -%]
          class="standard-field [% field.class %]" id="[% field.name %]"
           name="[% field.name %]" type="textfield" value="[% field.value %]">
-   </label><br/>
+   <div class="field-group">
+      <span class="hidden" id="[% field.name %]_ajax"></span></div>
+   </label>
 [% END -%]
 [% MACRO TimeField( field ) BLOCK -%]
    <label class="label">
@@ -108,5 +110,5 @@
 [%    IF field.disabled %]disabled="disabled"[% END -%]
          class="standard-field [% field.class %]" id="[% field.name %]"
           name="[% field.name %]" type="time" value="[% field.value %]">
-   </label><br/>
+   </label>
 [% END -%]
