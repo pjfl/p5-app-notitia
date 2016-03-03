@@ -126,7 +126,7 @@ sub admin_navigation_links ($) {
 }
 
 sub bind {
-   my ($name, $v, $opts) = @_; $opts //= {};
+   my ($name, $v, $opts) = @_; $opts = { %{ $opts // {} } };
 
    my $numify = $opts->{numify} // FALSE;
    my $params = { label => $name, name => $name }; my $class;
@@ -268,20 +268,21 @@ sub enhance ($) {
 }
 
 sub field_options {
-   my ($schema, $result, $name, $opts) = @_;
+   my ($schema, $result, $name, $opts) = @_; my $mandy;
 
-   exists $_field_option_cache->{ $result }->{ $name }
-      and return $_field_option_cache->{ $result }->{ $name };
+   unless (defined ($mandy = $_field_option_cache->{ $result }->{ $name })) {
+      my $class       = blessed $schema->resultset( $result )->new_result( {} );
+      my $constraints = $class->validation_attributes->{fields}->{ $name };
 
-   my $class       = blessed $schema->resultset( $result )->new_result( {} );
-   my $constraints = $class->validation_attributes->{fields}->{ $name };
-
-   if (exists $constraints->{validate}
-          and $constraints->{validate} =~ m{ isMandatory }mx) {
-      $opts->{class} //= NUL; $opts->{class} .= ' required';
+      $mandy = $_field_option_cache->{ $result }->{ $name }
+             = exists $constraints->{validate}
+                   && $constraints->{validate} =~ m{ isMandatory }mx
+             ? ' required' : NUL;
    }
 
-   return $_field_option_cache->{ $result }->{ $name } = $opts;
+   $opts->{class} //= NUL; $opts->{class} .= $mandy;
+
+   return $opts;
 }
 
 sub foreign_key_data_type (;$$) {
