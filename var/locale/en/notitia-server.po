@@ -36,6 +36,9 @@ msgstr "Address"
 msgid "address_viewer"
 msgstr "Address Viewer"
 
+msgid "admin_index_title"
+msgstr "Administration"
+
 msgid "administrator"
 msgstr "Administrator"
 

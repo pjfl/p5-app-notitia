@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Split out CMS controller from root
           - Split Administration model into separate classes
           - Added certifications
           - Fixed JSON serialisation

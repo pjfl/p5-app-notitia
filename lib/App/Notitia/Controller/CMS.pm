@@ -1,13 +1,21 @@
-package App::Notitia;
+package App::Notitia::Controller::CMS;
 
-use 5.010001;
-use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 48 $ =~ /\d+/gmx );
+use Web::Simple;
 
-use Class::Usul::Functions  qw( ns_environment );
+with q(Web::Components::Role);
 
-sub env_var {
-   return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+has '+moniker' => default => 'cms';
+
+sub dispatch_request {
+   sub (POST + /assets + *file~   + ?*) { [ 'docs',  'upload',       @_ ] },
+   sub (POST + /docs  | /docs/**  + ?*) { [ 'docs',  'from_request', @_ ] },
+   sub (GET  + /docs              + ?*) { [ 'docs',  'index',        @_ ] },
+   sub (GET  + /docs/dialog       + ?*) { [ 'docs',  'dialog',       @_ ] },
+   sub (GET  + /docs/search       + ?*) { [ 'docs',  'search',       @_ ] },
+   sub (GET  + /docs/**           + ?*) { [ 'docs',  'page',         @_ ] },
+   sub (GET  + /posts/dialog      + ?*) { [ 'posts', 'dialog',       @_ ] },
+   sub (GET  + /posts/rss         + ?*) { [ 'posts', 'rss_feed',     @_ ] },
+   sub (GET  + /posts | /posts/** + ?*) { [ 'posts', 'page',         @_ ] },
 }
 
 1;
@@ -20,11 +28,11 @@ __END__
 
 =head1 Name
 
-App::Notitia - People and resource scheduling
+App::Notitia::Controller::CMS - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia;
+   use App::Notitia::Controller::CMS;
    # Brief but working code examples
 
 =head1 Description

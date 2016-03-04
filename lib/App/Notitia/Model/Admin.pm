@@ -1,4 +1,4 @@
-package App::Notitia::Model::Administration;
+package App::Notitia::Model::Admin;
 
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
@@ -276,8 +276,8 @@ sub index : Role(any) {
    my ($self, $req) = @_;
 
    return $self->get_stash( $req, {
-      layout => 'index', template => [ 'contents', 'admin' ],
-      title  => loc( $req, 'Administration' ) } );
+      layout => 'index', template => [ 'contents', 'index' ],
+      title  => loc( $req, 'admin_index_title' ) } );
 }
 
 sub person : Role(administrator) Role(person_manager) {
@@ -353,11 +353,11 @@ __END__
 
 =head1 Name
 
-App::Notitia::Model::Administration - People and resource scheduling
+App::Notitia::Model::Admin - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia::Model::Administration;
+   use App::Notitia::Model::Admin;
    # Brief but working code examples
 
 =head1 Description

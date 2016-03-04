@@ -27,6 +27,7 @@ register_action_paths
    'user/login'           => 'user/login',
    'user/logout_action'   => 'user/logout',
    'user/change_password' => 'user/password',
+   'user/index'           => 'index',
    'user/profile'         => 'user/profile';
 
 # Public methods
@@ -88,7 +89,7 @@ sub index : Role(anon) {
 
    return $self->get_stash( $req, {
       layout   => 'index',
-      template => [ 'contents', 'splash' ],
+      template => [ 'contents', 'index' ],
       title    => loc( $req, 'main_index_title' ), } );
 }
 
