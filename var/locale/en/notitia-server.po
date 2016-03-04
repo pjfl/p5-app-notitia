@@ -18,14 +18,20 @@ msgstr ""
 msgid "active"
 msgstr "Active"
 
-msgid "address"
-msgstr "Address"
+msgid "add_cert"
+msgstr "Add Certification"
+
+msgid "add_cert_tip"
+msgstr "Create a new [_1] record for [_2]"
 
 msgid "add_role"
 msgstr "Add Role"
 
 msgid "add_role_tip"
 msgstr "Add [_2] to the selected role(s)"
+
+msgid "address"
+msgstr "Address"
 
 msgid "address_viewer"
 msgstr "Address Viewer"
@@ -36,26 +42,65 @@ msgstr "Administrator"
 msgid "again"
 msgstr "Again"
 
+msgid "assessment"
+msgstr "Assessment"
+
 msgid "asset_manager"
 msgstr "Asset Manager"
 
 msgid "bike_rider"
 msgstr "Bike Rider"
 
+msgid "bluelight"
+msgstr "Bluelight"
+
+msgid "c_advanced"
+msgstr "C Advanced"
+
+msgid "catagory_a"
+msgstr "Catagory A"
+
+msgid "catagory_b"
+msgstr "Catagory B"
+
+msgid "catagory_e"
+msgstr "Catagory E"
+
+msgid "cert_type"
+msgstr "Cert. Type"
+
+msgid "cert_types"
+msgstr "Cert. Types"
+
 msgid "certification_management_heading"
-msgstr "Certificates"
+msgstr "Certification"
 
 msgid "certification_management_link"
+msgstr "Edit"
+
+msgid "certificates_management_heading"
+msgstr "Certifications"
+
+msgid "certifications_management_link"
 msgstr "Certs"
 
-msgid "certification_management_tip"
+msgid "certifications_management_tip"
 msgstr "Administer 'certification' records"
+
+msgid "certs_heading_0"
+msgstr "Certification"
+
+msgid "certs_heading_1"
+msgstr "Edit"
 
 msgid "change_password_title"
 msgstr "Change Password"
 
 msgid "claim_slot_tip"
 msgstr "Claim this [_1] slot"
+
+msgid "completed"
+msgstr "Date Completed"
 
 msgid "confirm"
 msgstr "Confirm"
@@ -168,6 +213,9 @@ msgstr "First Name"
 msgid "fund_raiser"
 msgstr "Fund Raiser"
 
+msgid "gmp"
+msgstr "GMP"
+
 msgid "Hint"
 msgstr "Information"
 
@@ -182,6 +230,9 @@ msgstr "Last Name"
 
 msgid "login"
 msgstr "Login"
+
+msgid "m_advanced"
+msgstr "M Advanced"
 
 msgid "main_index_title"
 msgstr "Welcome"
@@ -257,6 +308,9 @@ msgstr "Old Password"
 
 msgid "owner"
 msgstr "Owner"
+
+msgid "Parameter [_1] is not a valid email address"
+msgstr "Not a valid email address"
 
 msgid "participent_management_link"
 msgstr "Participate"
@@ -353,6 +407,9 @@ msgstr "Bike Req."
 
 msgid "rota_heading_4"
 msgstr "Veh."
+
+msgid "route"
+msgstr "Route"
 
 msgid "select_person"
 msgstr "Select Person"

@@ -1,6 +1,6 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Yield Slot -->
-<form action="[% page.fields.slot_href %]"
+<form action="[% page.fields.slot_href %]" class="skinny"
      enctype="application/x-www-form-urlencoded"
       method="post" name="yield-slot">
 [% Button( page.fields.confirm ) -%]

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added certifications
           - Fixed JSON serialisation
           - Fixed field option caching
           - Added server side field validation

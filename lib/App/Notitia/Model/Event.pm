@@ -43,9 +43,9 @@ my $_bind_event_fields = sub {
    my ($schema, $event) = @_; my $fields = {};
 
    my $map = {
-      description => { class => 'autosize' },
+      description => { class => 'autosize server' },
       end_time    => {},
-      name        => { class => 'server' },
+      name        => { class => 'server', label => 'event_name' },
       notes       => { class => 'autosize' },
       start_time  => {},
    };
@@ -65,10 +65,22 @@ my $_events_headers = sub {
 };
 
 my $_select_owner_list = sub {
-   return bind( 'owner', [ [ NUL, NUL ], @{ $_[ 0 ] } ], { numify => TRUE } );
+   my ($schema, $event) = @_;
+
+   my $opts   = { fields => { selected => $event->owner } };
+   my $people = $schema->resultset( 'Person' )->list_all_people( $opts );
+
+   return bind( 'owner', [ [ NUL, NUL ], @{ $people } ], { numify => TRUE } );
 };
 
 # Private methods
+my $_add_event_js = sub {
+   my $self = shift; my $opts = { domain => 'schedule', form => 'Event' };
+
+   return [ $self->check_field_server( 'description', $opts ),
+            $self->check_field_server( 'name', $opts ) ];
+};
+
 my $_event_links = sub {
    my ($self, $req, $name) = @_; my $links = $_event_links_cache->{ $name };
 
@@ -90,6 +102,14 @@ my $_event_links = sub {
    $_event_links_cache->{ $name } = $links;
 
    return @{ $links };
+};
+
+my $_find_event = sub {
+   my ($self, $name) = @_; $name or return Class::Null->new;
+
+   my $opts = { prefetch => [ 'owner' ] };
+
+   return $self->schema->resultset( 'Event' )->find_event_by( $name, $opts );
 };
 
 my $_find_rota = sub {
@@ -152,32 +172,24 @@ sub delete_event_action : Role(administrator) Role(event_manager) {
 sub event : Role(administrator) Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $event_rs  =  $self->schema->resultset( 'Event' );
-   my $name      =  $req->uri_params->( 0, { optional => TRUE } );
-   my $opts      =  { prefetch => [ 'owner' ] };
-   my $event     =  $name ? $event_rs->find_event_by( $name, $opts )
-                          : Class::Null->new;
-   my $page      =  {
-      fields     => $_bind_event_fields->( $self->schema, $event ),
-      literal_js => [ $self->check_field_server( 'name', {
-         domain  => 'schedule', form => 'Event' } ) ],
-      template   => [ 'contents', 'event' ],
-      title      => loc( $req, 'event_management_heading' ), };
-   my $fields    =  $page->{fields};
-   my $action    =  $self->moniker.'/event';
+   my $name       =  $req->uri_params->( 0, { optional => TRUE } );
+   my $event      =  $self->$_find_event( $name );
+   my $page       =  {
+      fields      => $_bind_event_fields->( $self->schema, $event ),
+      first_field => 'name',
+      literal_js  => $self->$_add_event_js(),
+      template    => [ 'contents', 'event' ],
+      title       => loc( $req, 'event_management_heading' ), };
+   my $fields     =  $page->{fields};
+   my $action     =  $self->moniker.'/event';
 
    if ($name) {
-      my $person_rs = $self->schema->resultset( 'Person' );
-
       $fields->{date  } = bind( 'event_date', $event->rota->date );
       $fields->{delete} = delete_button( $req, $name, 'event' );
       $fields->{href  } = uri_for_action( $req, $action, [ $name ] );
-      $fields->{owner } = $_select_owner_list->( $person_rs->list_all_people
-         ( { fields => { selected => $event->owner } } ) );
+      $fields->{owner } = $_select_owner_list->( $self->schema, $event );
    }
-   else {
-      $fields->{date} = bind( 'event_date', time2str '%Y-%m-%d' );
-   }
+   else { $fields->{date} = bind( 'event_date', time2str '%Y-%m-%d' ) }
 
    $fields->{save} = save_button( $req, $name, 'event' );
 

@@ -1,5 +1,5 @@
 <!-- Rename File -->
-<form action="[% links.rename_uri %]"
+<form action="[% links.rename_uri %]" class="skinny"
      enctype="application/x-www-form-urlencoded"
       method="post" name="rename-file">
    <input   name="old_path" type="hidden"  value="[% page.old_path %]">

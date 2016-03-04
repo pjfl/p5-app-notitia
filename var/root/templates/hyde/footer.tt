@@ -24,6 +24,7 @@
          cookieDomain: '[% page.host %]',
          cookiePath  : '[% config.mount_point %]',
          cookiePrefix: '[% config.prefix %]',
+         firstField  : '[% page.first_field %]',
          message     : "[% page.status_message %]"
       } );
 [% IF page.authenticated -%]

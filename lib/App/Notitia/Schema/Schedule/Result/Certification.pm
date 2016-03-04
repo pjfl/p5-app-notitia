@@ -4,8 +4,9 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Util qw( date_data_type foreign_key_data_type
-                           varchar_data_type );
+use App::Notitia::Constants qw( VARCHAR_MAX_SIZE );
+use App::Notitia::Util      qw( date_data_type foreign_key_data_type loc
+                                varchar_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -27,14 +28,41 @@ sub _as_string {
    return $_[ 0 ]->type;
 }
 
-sub delete {
+sub insert {
    my $self = shift;
 
-   $self->type eq 'catagory_b'
-      and $self->recipient->is_member_of( 'bike_rider' )
-      and $self->recipient->delete_member_from( 'bike_rider' );
+   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
 
    return $self->next::method;
+}
+
+sub label {
+   my ($self, $req) = @_;
+
+   my $type = $req ? loc( $req, $self->type ) : $self->type;
+
+   return $type.' ('.$self->completed->dmy.')';
+}
+
+sub update {
+   my ($self, $columns) = @_;
+
+   $columns and $self->set_inflated_columns( $columns ); $self->validate;
+
+   return $self->next::method;
+}
+
+sub validation_attributes {
+   return { # Keys: constraints, fields, and filters (all hashes)
+      constraints  => {
+         notes     => { max_length => VARCHAR_MAX_SIZE(), min_length => 0, },
+      },
+      fields       => {
+         completed => { validate => 'isMandatory isValidDate' },
+         notes     => { validate => 'isValidLength isPrintable' },
+      },
+      level => 8,
+   };
 }
 
 1;

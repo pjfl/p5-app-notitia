@@ -20,6 +20,8 @@
 [%    IF field.disabled %]disabled="disabled"[% END -%]
          class="standard-field [% field.class %]" id="[% field.name %]"
           name="[% field.name %]" type="date" value="[% field.value %]">
+      <div class="field-group">
+         <span class="hidden" id="[% field.name %]_ajax"></span></div>
    </label>
 [% END -%]
 [% MACRO Dispatch( f ) BLOCK -%]
@@ -89,8 +91,14 @@
 [% MACRO TextArea( field ) BLOCK -%]
    <label class="label">
       <span class="field-label">[% loc( field.label ) %]</span>
-      <textarea class="standard-field [% field.class %]" id="[% field.name %]"
-         name="[% field.name %]">[% field.value %]</textarea></label>
+      <div class="field-container">
+         <textarea class="standard-field [% field.class %]"
+                      id="[% field.name %]"
+                    name="[% field.name %]">[% field.value %]</textarea>
+      </div>
+      <div class="field-group">
+         <span class="hidden" id="[% field.name %]_ajax"></span></div>
+   </label>
 [% END -%]
 [% MACRO TextField( field ) BLOCK -%]
    <label class="label">
@@ -99,8 +107,8 @@
 [%    IF field.disabled %]disabled="disabled"[% END -%]
          class="standard-field [% field.class %]" id="[% field.name %]"
           name="[% field.name %]" type="textfield" value="[% field.value %]">
-   <div class="field-group">
-      <span class="hidden" id="[% field.name %]_ajax"></span></div>
+      <div class="field-group">
+         <span class="hidden" id="[% field.name %]_ajax"></span></div>
    </label>
 [% END -%]
 [% MACRO TimeField( field ) BLOCK -%]

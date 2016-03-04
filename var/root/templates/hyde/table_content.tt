@@ -3,5 +3,6 @@
    <article>
       <h4>[% page.title %]</h4>
 [% Table( page.fields ) -%]
+[% IF page.fields.add; Dispatch( page.fields.add ); END -%]
    </article>
 </div>

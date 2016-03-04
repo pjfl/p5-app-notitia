@@ -8,7 +8,6 @@ use App::Notitia::Util     qw( date_data_type foreign_key_data_type
                                nullable_foreign_key_data_type
                                serial_data_type varchar_data_type );
 use Class::Usul::Functions qw( throw );
-use Scalar::Util           qw( blessed );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -83,8 +82,7 @@ my $_assert_slot_assignment_allowed = sub {
 my $_find_assigner = sub {
    my ($self, $name) = @_;
 
-   my $schema    = $self->result_source->schema;
-   my $person_rs = $schema->resultset( 'Person' );
+   my $person_rs = $self->result_source->schema->resultset( 'Person' );
    my $assigner  = $person_rs->search( { name => $name } )->single
       or throw 'Person [_1] is unknown', [ $name ], level => 2;
 

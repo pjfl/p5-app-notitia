@@ -7,6 +7,7 @@ use App::Notitia::Util      qw( bind loc register_action_paths
 use Class::Usul::Functions  qw( throw );
 use Class::Usul::Types      qw( ArrayRef );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
+use Scalar::Util            qw( blessed );
 use Unexpected::Functions   qw( Unspecified );
 use Moo;
 
@@ -77,7 +78,9 @@ sub change_password_action : Role(anon) {
 }
 
 sub check_field : Role(any) {
-   return $_[ 0 ]->check_form_field( $_[ 1 ], 'App::Notitia::Schema::Schedule::Result' );
+   my ($self, $req) = @_; my $result_class = (blessed $self->schema).'::Result';
+
+   return $self->check_form_field( $req, $result_class );
 }
 
 sub index : Role(anon) {

@@ -75,10 +75,9 @@ sub check_form_field {
       $meta->{class_name} = 'field-error';
    };
 
-   return { code    => HTTP_OK,
-            content => { html => $mesg },
-            page    => { meta => $meta },
-            view    => 'json' };
+   return { code => HTTP_OK,
+            page => { content => { html => $mesg }, meta => $meta },
+            view => 'json' };
 }
 
 sub dialog_anchor {

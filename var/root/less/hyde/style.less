@@ -176,8 +176,10 @@ footer {
    font-size: 0.825em; margin: 5px 0 0 165px;  max-width: 400px;
    overflow: hidden; padding: 5px; white-space: nowrap;
 }
-.field-group {
-   display: block;
+.field-container { display: inline-block; max-width: 400px; min-width: 400px; }
+.field-group { display: block; }
+.form-separator {
+   min-height: 2em; overflow: hidden; padding: 1em 0; width: 100%;
 }
 .label {
    display: inline-block; margin: 0.25em 0; padding: 0;
@@ -525,25 +527,21 @@ strong { font-weight: 700; }
 .align-right { text-align: right; }
 .expanding_area {
    .border-radius;
-   display: inline-block; margin: 0; max-width: 400px;
-   min-width: 400px; overflow: hidden;
-   position: relative; vertical-align: middle;
+   display: inline-block; margin: 0; overflow: hidden;
+   position: relative; vertical-align: middle; width: 100%;
 }
 .expanding_area > textarea, .expanding_area > input[type=textarea],
 .expanding_spacer, .expanding_spacer > span {
    white-space: pre-wrap; word-wrap: break-word;
 }
 .expanding_area > textarea, .expanding_area > input[type=textarea], {
-   height: 100%; left: 0; margin: 0; overflow: hidden;
-   position: absolute; resize: none; top: 0;
+   display: block; height: 100%; left: 0; margin: 0; min-width: 400px;
+   overflow: hidden; position: absolute; resize: none; top: 0; width: 100%;
 }
 .expanding_spacer {
    border: 2px solid transparent; display: block; visibility: hidden;
    margin: 0 !important; min-width: 400px;
    padding: 3.25px 0.75em !important; text-align: left;
-}
-.form_separator {
-   min-height: 2em; overflow: hidden; padding: 1em 0; width: 100%;
 }
 .left { float: left; }
 .right { float: right; margin-left: 0.5em; }
