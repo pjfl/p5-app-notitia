@@ -159,13 +159,13 @@ msgstr "Email Address"
 msgid "end_time"
 msgstr "End Time"
 
-msgid "endorsement_management_heading"
+msgid "endorsements_management_heading"
 msgstr "Endorsements"
 
-msgid "endorsement_management_link"
+msgid "endorsements_management_link"
 msgstr "Tickets"
 
-msgid "endorsement_management_tip"
+msgid "endorsements_management_tip"
 msgstr "Administer 'endorsement' records"
 
 msgid "event_create_link"

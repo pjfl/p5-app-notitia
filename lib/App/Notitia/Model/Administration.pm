@@ -1,7 +1,7 @@
 package App::Notitia::Model::Administration;
 
 use App::Notitia::Attributes;  # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
                                 field_options loc register_action_paths
                                 save_button uri_for_action );
@@ -22,16 +22,10 @@ with    q(Web::Components::Role::Email);
 has '+moniker' => default => 'admin';
 
 register_action_paths
-   'admin/activate'       => 'user/activate',
-   'admin/certification'  => 'certification',
-   'admin/certifications' => 'certifications',
-   'admin/endorsement'    => 'endorsement',
-   'admin/index'          => 'admin/index',
-   'admin/people'         => 'users',
-   'admin/person'         => 'user',
-   'admin/role'           => 'role',
-   'admin/vehicle'        => 'vehicle',
-   'admin/vehicles'       => 'vehicles';
+   'admin/activate' => 'user/activate',
+   'admin/index'    => 'admin/index',
+   'admin/people'   => 'users',
+   'admin/person'   => 'user';
 
 # Construction
 around 'get_stash' => sub {
@@ -45,50 +39,9 @@ around 'get_stash' => sub {
 };
 
 # Private class attributes
-my $_cert_links_cache = {};
 my $_people_links_cache = {};
 
 # Private functions
-my $_add_cert_button = sub {
-   my ($req, $action, $name) = @_;
-
-   return { class => 'fade',
-            hint  => loc( $req, 'Hint' ),
-            href  => uri_for_action( $req, $action, [ $name ] ),
-            name  => 'add_cert',
-            tip   => loc( $req, 'add_cert_tip', [ 'certification', $name ] ),
-            type  => 'link',
-            value => loc( $req, 'add_cert' ) };
-};
-
-my $_add_role_button = sub {
-   my ($req, $name) = @_;
-
-   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
-           . loc( $req, 'add_role_tip', [ 'role', $name ] );
-
-   return { container_class => 'right', label => 'add_role',
-            tip             => $tip,    value => 'add_role' };
-};
-
-my $_bind_cert_fields = sub {
-   my ($schema, $cert) = @_; my $fields = {};
-
-   my $map      =  {
-      completed => { class => 'server' },
-      notes     => { class => 'autosize' },
-   };
-
-   for my $k (keys %{ $map }) {
-      my $value = exists $map->{ $k }->{checked} ? TRUE : $cert->$k();
-      my $opts  = field_options( $schema, 'Certification', $k, $map->{ $k } );
-
-      $fields->{ $k } = bind( $k, $value, $opts );
-   }
-
-   return $fields;
-};
-
 my $_bind_person_fields = sub {
    my ($schema, $person) = @_; my $fields = {};
 
@@ -123,22 +76,12 @@ my $_bind_person_fields = sub {
    return $fields;
 };
 
-my $_certs_headers = sub {
-   my $req = shift;
-
-   return [ map { { value => loc( $req, "certs_heading_${_}" ) } } 0 .. 1 ];
-};
-
-my $_find_cert = sub {
-   return $_[ 2 ] ? $_[ 0 ]->find_cert_by( $_[ 1 ], $_[ 2 ]) : Class::Null->new;
-};
-
-my $_find_person = sub {
-   return $_[ 1 ] ? $_[ 0 ]->find_person_by( $_[ 1 ] ) : Class::Null->new;
-};
-
 my $_list_all_people = sub {
    return $_[ 0 ]->list_all_people( { fields => { selected => $_[ 1 ] } } );
+};
+
+my $_maybe_find_person = sub {
+   return $_[ 1 ] ? $_[ 0 ]->find_person_by( $_[ 1 ] ) : Class::Null->new;
 };
 
 my $_people_headers = sub {
@@ -147,74 +90,18 @@ my $_people_headers = sub {
    return [ map { { value => loc( $req, "people_heading_${_}" ) } } 0 .. 4 ];
 };
 
-my $_remove_role_button = sub {
-   my ($req, $name) = @_;
-
-   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
-           . loc( $req, 'remove_role_tip', [ 'role', $name ] );
-
-   return { container_class => 'right', label => 'remove_role',
-            tip             => $tip,    value => 'remove_role' };
-};
-
 my $_select_next_of_kin_list = sub {
    return bind( 'next_of_kin', [ [ NUL, NUL ], @{ $_[ 0 ] } ],
                 { numify => TRUE } );
 };
 
-my $_subtract = sub {
-   return [ grep { is_arrayref $_ or not is_member $_, $_[ 1 ] } @{ $_[ 0 ] } ];
-};
-
 # Private methods
-my $_add_certification_js = sub {
-   my $self = shift;
-   my $opts = { domain => 'schedule', form => 'Certification' };
-
-   return [ $self->check_field_server( 'completed', $opts ), ];
-};
-
 my $_add_person_js = sub {
    my $self = shift; my $opts = { domain => 'schedule', form => 'Person' };
 
    return [ $self->check_field_server( 'first_name',    $opts ),
             $self->check_field_server( 'last_name',     $opts ),
             $self->check_field_server( 'email_address', $opts ), ];
-};
-
-my $_cert_links = sub {
-   my ($self, $req, $name, $type) = @_;
-
-   my $links = $_cert_links_cache->{ $type };
-
-   $links and return @{ $links }; $links = [];
-
-   for my $action ( qw( certification ) ) {
-      my $path = $self->moniker."/${action}";
-      my $href = uri_for_action( $req, $path, [ $name, $type ] );
-
-      push @{ $links }, {
-         value => { class => 'table-link fade',
-                    hint  => loc( $req, 'Hint' ),
-                    href  => $href,
-                    name  => "${name}-${action}",
-                    tip   => loc( $req, "${action}_management_tip" ),
-                    type  => 'link',
-                    value => loc( $req, "${action}_management_link" ), }, };
-   }
-
-   $_cert_links_cache->{ $type } = $links;
-
-   return @{ $links };
-};
-
-my $_cert_tuple = sub {
-   my ($req, $cert, $opts) = @_; $opts = { %{ $opts // {} } };
-
-   $opts->{selected} //= NUL;
-   $opts->{selected}   = $opts->{selected} eq $cert ? TRUE : FALSE;
-
-   return [ $cert->label( $req ), $cert, $opts ];
 };
 
 my $_create_user_email = sub {
@@ -252,13 +139,6 @@ my $_create_user_email = sub {
    return;
 };
 
-my $_list_all_certs = sub {
-   my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
-
-   return [ [ NUL, NUL ], $type_rs->search
-            ( { type => 'certification' }, { columns => [ 'name' ] } )->all ];
-};
-
 my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
@@ -266,26 +146,15 @@ my $_list_all_roles = sub {
             ( { type => 'role' }, { columns => [ 'name' ] } )->all ];
 };
 
-my $_list_certification_for = sub {
-   my ($schema, $req, $name, $opts) = @_;
-
-   my $fields = delete $opts->{fields} // {};
-   my $certs  = $schema->resultset( 'Certification' )->search
-      ( { 'recipient.name' => $name },
-        { join     => [ 'recipient', 'type' ],
-          order_by => 'type.type',
-          prefetch => [ 'type' ] } );
-
-   return [ map { $_cert_tuple->( $req, $_, $fields ) } $certs->all ];
-};
-
 my $_people_links = sub {
    my ($self, $req, $name) = @_; my $links = $_people_links_cache->{ $name };
 
    $links and return @{ $links }; $links = [];
 
-   for my $action ( qw( person role certifications endorsement ) ) {
-      my $href = uri_for_action( $req, $self->moniker."/${action}", [ $name ] );
+   for my $path ( qw( admin/person role/role
+                      certs/certifications blots/endorsements ) ) {
+      my ($moniker, $action) = split m{ / }mx, $path, 2;
+      my $href = uri_for_action( $req, $path, [ $name ] );
 
       push @{ $links }, {
          value => { class => 'table-link fade',
@@ -300,23 +169,6 @@ my $_people_links = sub {
    $_people_links_cache->{ $name } = $links;
 
    return @{ $links };
-};
-
-my $_update_cert_from_request = sub {
-   my ($self, $req, $cert) = @_; my $params = $req->body_params;
-
-   my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
-
-   for my $attr (qw( completed notes )) {
-      my $v = $params->( $attr, $opts ); defined $v or next;
-
-      length $v and is_member $attr, [ qw( completed ) ]
-         and $v = str2date_time( $v, 'GMT' );
-
-      $cert->$attr( $v );
-   }
-
-   return;
 };
 
 my $_update_person_from_request = sub {
@@ -376,96 +228,6 @@ sub activate : Role(anon) {
       $message  = [ 'Key [_1] unknown activation attempt', $file ];
    }
 
-
-   return { redirect => { location => $location, message => $message } };
-}
-
-sub add_role_action : Role(administrator) Role(person_manager) {
-   my ($self, $req) = @_;
-
-   my $name   = $req->uri_params->( 0 );
-   my $person = $self->find_person_by( $name );
-   my $roles  = $req->body_params->( 'roles', { multiple => TRUE } );
-
-   $person->add_member_to( $_ ) for (@{ $roles });
-
-   my $location = uri_for_action( $req, $self->moniker.'/role', [ $name ] );
-   my $message  =
-      [ 'Person [_1] role(s) added by [_2]', $name, $req->username ];
-
-   return { redirect => { location => $location, message => $message } };
-}
-
-sub certification : Role(administrator) Role(person_manager) {
-   my ($self, $req) = @_;
-
-   my $name      =  $req->uri_params->( 0 );
-   my $type      =  $req->uri_params->( 1, { optional => TRUE } );
-   my $cert_rs   =  $self->schema->resultset( 'Certification' );
-   my $cert      =  $_find_cert->( $cert_rs, $name, $type );
-   my $page      =  {
-      fields     => $_bind_cert_fields->( $self->schema, $cert ),
-      literal_js => $self->$_add_certification_js(),
-      template   => [ 'contents', 'certification' ],
-      title      => loc( $req, 'certification_management_heading' ), };
-   my $fields    =  $page->{fields};
-
-   if ($type) {
-      my $opts = { disabled => TRUE };
-
-      $fields->{cert_type } = bind( 'cert_type', loc( $req, $type ), $opts );
-      $fields->{delete    } = delete_button( $req, $type, 'certification' );
-   }
-   else {
-      $fields->{cert_types} = bind( 'cert_types', $self->$_list_all_certs() );
-   }
-
-   $fields->{save    } = save_button( $req, $type, 'certification' );
-   $fields->{username} = bind( 'username', $name );
-
-   return $self->get_stash( $req, $page );
-}
-
-sub certifications : Role(administrator) Role(person_manager) {
-   my ($self, $req) = @_;
-
-   my $name    =  $req->uri_params->( 0 );
-   my $page    =  {
-      fields   => { headers  => $_certs_headers->( $req ),
-                    rows     => [],
-                    username => { name => $name }, },
-      template => [ 'contents', 'table' ],
-      title    => loc( $req, 'certificates_management_heading' ), };
-   my $cert_rs =  $self->schema->resultset( 'Certification' );
-   my $action  =  $self->moniker.'/certification';
-   my $rows    =  $page->{fields}->{rows};
-
-   for my $cert (@{ $_list_certification_for->( $self->schema, $req, $name )}) {
-      push @{ $rows },
-         [ { value => $cert->[ 0 ] },
-           $self->$_cert_links( $req, $name, $cert->[ 1 ]->type ) ];
-   }
-
-   $page->{fields}->{add} = $_add_cert_button->( $req, $action, $name );
-
-   return $self->get_stash( $req, $page );
-}
-
-sub create_certification_action : Role(administrator) Role(person_manager) {
-   my ($self, $req) = @_;
-
-   my $name    = $req->uri_params->( 0 );
-   my $type    = $req->body_params->( 'cert_types' );
-   my $cert_rs = $self->schema->resultset( 'Certification' );
-   my $cert    = $cert_rs->new_result( { recipient => $name, type => $type } );
-
-   $self->$_update_cert_from_request( $req, $cert ); $cert->insert;
-
-   my $action   = $self->moniker.'/certifications';
-   my $location = uri_for_action( $req, $action, [ $name ] );
-   my $message  =
-      [ 'Cert. [_1] for [_2] added by [_3]', $type, $name, $req->username ];
-
    return { redirect => { location => $location, message => $message } };
 }
 
@@ -495,20 +257,6 @@ sub create_person_action : Role(administrator) Role(person_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_certification_action : Role(administrator) Role(person_manager) {
-   my ($self, $req) = @_;
-
-   my $name     = $req->uri_params->( 0 );
-   my $type     = $req->uri_params->( 1 );
-   my $cert     = $self->find_cert_by( $name, $type ); $cert->delete;
-   my $action   = $self->moniker.'/certifications';
-   my $location = uri_for_action( $req, $action, [ $name ] );
-   my $message  = [ 'Cert. [_1] for [_2] deleted by [_3]',
-                    $type, $name, $req->username ];
-
-   return { redirect => { location => $location, message => $message } };
-}
-
 sub delete_person_action : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
@@ -518,12 +266,6 @@ sub delete_person_action : Role(administrator) Role(person_manager) {
    my $message  = [ 'Person [_1] deleted by [_2]', $name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
-}
-
-sub find_cert_by {
-   my $self = shift; my $rs = $self->schema->resultset( 'Certification' );
-
-   return $rs->find_cert_by( @_ );
 }
 
 sub find_person_by {
@@ -541,9 +283,9 @@ sub index : Role(any) {
 sub person : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_; my $people;
 
-   my $person_rs  =  $self->schema->resultset( 'Person' );
    my $name       =  $req->uri_params->( 0, { optional => TRUE } );
-   my $person     =  $_find_person->( $person_rs, $name );
+   my $person_rs  =  $self->schema->resultset( 'Person' );
+   my $person     =  $_maybe_find_person->( $person_rs, $name );
    my $page       =  {
       fields      => $_bind_person_fields->( $self->schema, $person ),
       first_field => 'first_name',
@@ -588,63 +330,6 @@ sub people : Role(any) {
    return $self->get_stash( $req, $page );
 }
 
-sub remove_role_action : Role(administrator) Role(person_manager) {
-   my ($self, $req) = @_;
-
-   my $name   = $req->uri_params->( 0 );
-   my $person = $self->find_person_by( $name );
-   my $roles  = $req->body_params->( 'person_roles', { multiple => TRUE } );
-
-   $person->delete_member_from( $_ ) for (@{ $roles });
-
-   my $location = uri_for_action( $req, $self->moniker.'/role', [ $name ] );
-   my $message  =
-      [ 'Person [_1] role(s) removed by [_2]', $name, $req->username ];
-
-   return { redirect => { location => $location, message => $message } };
-}
-
-sub role : Role(administrator) Role(person_manager) {
-   my ($self, $req) = @_;
-
-   my $name      =  $req->uri_params->( 0 );
-   my $person_rs =  $self->schema->resultset( 'Person' );
-   my $person    =  $person_rs->find_person_by( $name );
-   my $href      =  uri_for_action( $req, $self->moniker.'/role', [ $name ] );
-   my $page      =  {
-      fields     => { username => { href => $href } },
-      template   => [ 'contents', 'role' ],
-      title      => loc( $req, 'role_management_heading' ), };
-   my $fields    =  $page->{fields};
-
-   my $person_roles = $person->list_roles;
-   my $available    = $_subtract->( $self->$_list_all_roles(), $person_roles );
-
-   $fields->{roles}
-      = bind( 'roles', $available, { multiple => TRUE, size => 10 } );
-   $fields->{person_roles}
-      = bind( 'person_roles', $person_roles, { multiple => TRUE, size => 10 } );
-   $fields->{add   } = $_add_role_button->( $req, $name );
-   $fields->{remove} = $_remove_role_button->( $req, $name );
-
-   return $self->get_stash( $req, $page );
-}
-
-sub update_certification_action : Role(administrator) Role(person_manager) {
-   my ($self, $req) = @_;
-
-   my $name = $req->uri_params->( 0 );
-   my $type = $req->uri_params->( 1 );
-   my $cert = $self->find_cert_by( $name, $type );
-
-   $self->$_update_cert_from_request( $req, $cert ); $cert->update;
-
-   my $message = [ 'Cert. [_1] for [_2] updated by [_3]',
-                   $type, $name, $req->username ];
-
-   return { redirect => { location => $req->uri, message => $message } };
-}
-
 sub update_person_action : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
@@ -656,26 +341,6 @@ sub update_person_action : Role(administrator) Role(person_manager) {
    my $message = [ 'Person [_1] updated by [_2]', $name, $req->username ];
 
    return { redirect => { location => $req->uri, message => $message } };
-}
-
-sub update_vehicle_action : Role(administrator) Role(asset_manager) {
-   my ($self, $req) = @_;
-
-   my $name    = $req->uri_params->( 0 );
-   my $message = [ 'Vehicle [_1] updated by [_2]', $name, $req->username ];
-
-   return { redirect => { location => $req->uri, message => $message } };
-}
-
-sub vehicle : Role(administrator) Role(asset_manager) {
-   my ($self, $req) = @_;
-
-   my $page = {
-      fields   => {},
-      template => [ 'contents', 'vehicle' ],
-      title    => loc( $req, 'vehicle_management_heading' ), };
-
-   return $self->get_stash( $req, $page );
 }
 
 1;
