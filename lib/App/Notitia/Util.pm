@@ -513,6 +513,8 @@ sub stash_functions ($$$) {
 sub uri_for_action ($$;@) {
    my ($req, $action, @args) = @_;
 
+   blessed $req or throw 'Not a request object [_1]', [ $req ];
+
    my $uri = $_action_path_uri_map->{ $action } // $action;
 
    return $req->uri_for( $uri, @args );

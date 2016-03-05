@@ -69,6 +69,7 @@ my $_assert_claim_allowed = sub {
    my ($self, $shift_type, $slot_type, $subslot, $bike_wanted) = @_;
 
    $slot_type eq 'rider' and $self->assert_member_of( 'bike_rider' );
+   $slot_type eq 'rider' and $self->assert_certified_for( 'catagory_b' );
    $slot_type ne 'rider' and $bike_wanted
       and throw 'Cannot request a bike for slot type [_1]', [ $slot_type ];
 
@@ -85,7 +86,6 @@ my $_assert_claim_allowed = sub {
 my $_assert_membership_allowed = sub {
    my ($self, $type) = @_;
 
-   $type eq 'bike_rider' and $self->assert_certified_for( 'catagory_b' );
 
    return;
 };
@@ -127,29 +127,6 @@ my $_find_role_type = sub {
 # Public methods
 sub activate {
    my $self = shift; $self->active( TRUE ); return $self->update;
-}
-
-sub add_certification_for {
-   my ($self, $cert_name, $opts) = @_; $opts //= {};
-
-   my $type = $self->$_find_cert_type( $cert_name );
-
-   $self->is_certified_for( $cert_name, $type )
-      and throw 'Person [_1] already has certification [_2]', [ $self, $type ];
-
-   # TODO: Add the optional completed and notes fields
-   return $self->create_related( 'certs', { type_id => $type->id } );
-}
-
-sub add_endorsement_for {
-   my ($self, $code_name) = @_;
-
-   $self->is_endorsed_for( $code_name )
-      and throw 'Person [_1] already has endorsement for [_2]',
-                [ $self, $code_name ];
-
-   # TODO: Add the fields endorsed, points, and notes
-   return $self->create_related( 'endorsements', { code => $code_name } );
 }
 
 sub add_member_to {
@@ -261,22 +238,8 @@ sub deactivate {
    my $self = shift; $self->active( FALSE ); return $self->update;
 }
 
-sub delete_certification_for {
-   return $_[ 0 ]->assert_certified_for( $_[ 1 ] )->delete;
-}
-
-sub delete_endorsement_for {
-   return $_[ 0 ]->assert_endorsement_for( $_[ 1 ] )->delete;
-}
-
 sub delete_member_from {
-   my ($self, $role_name) = @_;
-
-   my $role = $self->assert_member_of( $role_name );
-
-   # TODO: Prevent deleting of last role
-
-   return $role->delete;
+   return $_[ 0 ]->assert_member_of( $_[ 1 ] )->delete;
 }
 
 sub delete_participent_for {

@@ -92,9 +92,9 @@
    <label class="label">
       <span class="field-label">[% loc( field.label ) %]</span>
       <div class="field-container">
-         <textarea class="standard-field [% field.class %]"
-                      id="[% field.name %]"
-                    name="[% field.name %]">[% field.value %]</textarea>
+         <textarea [% IF field.disabled %]disabled="disabled"[% END -%]
+            class="standard-field [% field.class %]" id="[% field.name %]"
+             name="[% field.name %]">[% field.value %]</textarea>
       </div>
       <div class="field-group">
          <span class="hidden" id="[% field.name %]_ajax"></span></div>

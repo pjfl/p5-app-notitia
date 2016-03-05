@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added event-summary and participation
           - Added endorsements
           - Split out CMS controller from root
           - Split Administration model into separate classes

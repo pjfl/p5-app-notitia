@@ -1,7 +1,7 @@
 package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;  # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
                                 field_options loc register_action_paths
                                 save_button uri_for_action );
@@ -22,7 +22,8 @@ has '+moniker' => default => 'event';
 register_action_paths
    'event/event'       => 'event',
    'event/events'      => 'events',
-   'event/participent' => 'participate';
+   'event/participate' => 'participate',
+   'event/summary'     => 'event-summary';
 
 # Construction
 around 'get_stash' => sub {
@@ -43,6 +44,19 @@ my $_events_headers = sub {
    return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 2 ];
 };
 
+my $_participate_button = sub {
+   my ($req, $name, $opts) = @_; $opts //= {};
+
+   my $k      = $opts->{cancel} ? 'unparticipate' : 'participate';
+   my $button = { container_class => 'right', label => $k,
+                  value           => "${k}_event" };
+
+   $button->{tip} = loc( $req, 'Hint' ).SPC.TILDE.SPC
+                  . loc( $req, "${k}_tip", [ $name ] );
+
+   return $button;
+};
+
 # Private methods
 my $_add_event_js = sub {
    my $self = shift; my $opts = { domain => 'schedule', form => 'Event' };
@@ -52,14 +66,16 @@ my $_add_event_js = sub {
 };
 
 my $_bind_event_fields = sub {
-   my ($self, $event) = @_;
+   my ($self, $event, $opts) = @_; $opts //= {};
 
-   my $map = {
-      description => { class => 'autosize server' },
-      end_time    => {},
-      name        => { class => 'server', label => 'event_name' },
-      notes       => { class => 'autosize' },
-      start_time  => {},
+   my $disabled = $opts->{disabled} // FALSE;
+   my $map      = {
+      description => { class    => 'autosize server', disabled => $disabled },
+      end_time    => { disabled => $disabled },
+      name        => { class    => 'server', disabled => $disabled,
+                       label    => 'event_name' },
+      notes       => { class    => 'autosize', disabled => $disabled },
+      start_time  => { disabled => $disabled},
    };
 
    return $self->bind_fields( $event, $map, 'Event' );
@@ -70,7 +86,7 @@ my $_event_links = sub {
 
    $links and return @{ $links }; $links = [];
 
-   for my $action ( qw( event participent ) ) {
+   for my $action ( qw( event summary ) ) {
       my $href = uri_for_action( $req, $self->moniker."/${action}", [ $name ] );
 
       push @{ $links }, {
@@ -88,16 +104,16 @@ my $_event_links = sub {
    return @{ $links };
 };
 
-my $_find_event = sub {
+my $_find_rota = sub {
+   return $_[ 0 ]->schema->resultset( 'Rota' )->find_rota( $_[ 1 ], $_[ 2 ] );
+};
+
+my $_maybe_find_event = sub {
    my ($self, $name) = @_; $name or return Class::Null->new;
 
    my $opts = { prefetch => [ 'owner' ] };
 
    return $self->schema->resultset( 'Event' )->find_event_by( $name, $opts );
-};
-
-my $_find_rota = sub {
-   return $_[ 0 ]->schema->resultset( 'Rota' )->find_rota( $_[ 1 ], $_[ 2 ] );
 };
 
 my $_select_owner_list = sub {
@@ -166,7 +182,7 @@ sub event : Role(administrator) Role(event_manager) {
    my ($self, $req) = @_;
 
    my $name       =  $req->uri_params->( 0, { optional => TRUE } );
-   my $event      =  $self->$_find_event( $name );
+   my $event      =  $self->$_maybe_find_event( $name );
    my $page       =  {
       fields      => $self->$_bind_event_fields( $event ),
       first_field => 'name',
@@ -206,6 +222,62 @@ sub events : Role(any) {
    }
 
    return $self->get_stash( $req, $page );
+}
+
+sub participate_event_action : Role(any) {
+   my ($self, $req) = @_;
+
+   my $name      = $req->uri_params->( 0 );
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person    = $person_rs->find_person_by( $req->username );
+
+   $person->add_participent_for( $name );
+
+   my $message   = [ 'Event [_1] attendee [_2]', $name, $req->username ];
+   my $location  = uri_for_action( $req, $self->moniker.'/summary', [ $name ] );
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub summary : Role(any) {
+   my ($self, $req) = @_;
+
+   my $schema  =  $self->schema;
+   my $user    =  $req->username;
+   my $name    =  $req->uri_params->( 0 );
+   my $event   =  $schema->resultset( 'Event' )->find_event_by( $name );
+   my $person  =  $schema->resultset( 'Person' )->find_person_by( $user );
+   my $opts    =  { disabled => TRUE };
+   my $page    =  {
+      fields   => $self->$_bind_event_fields( $event, $opts ),
+      template => [ 'contents', 'event' ],
+      title    => loc( $req, 'event_summary_heading' ), };
+   my $fields  =  $page->{fields};
+   my $action  =  $self->moniker.'/event';
+
+   $fields->{date} = bind( 'event_date', $event->rota->date, $opts );
+   $fields->{href} = uri_for_action( $req, $action, [ $name ] );
+   $opts = $person->is_participent_of( $name ) ? { cancel => TRUE } : {};
+   $fields->{participate} = $_participate_button->( $req, $name, $opts );
+   delete $fields->{notes};
+
+   return $self->get_stash( $req, $page );
+}
+
+sub unparticipate_event_action : Role(any) {
+   my ($self, $req) = @_;
+
+   my $user      = $req->username;
+   my $name      = $req->uri_params->( 0 );
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person    = $person_rs->find_person_by( $user );
+
+   $person->delete_participent_for( $name );
+
+   my $message   = [ 'Event [_1] attendence cancelled for [_2]', $name, $user ];
+   my $location  = uri_for_action( $req, $self->moniker.'/summary', [ $name ] );
+
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub update_event_action : Role(administrator) Role(event_manager) {

@@ -7,7 +7,7 @@ use App::Notitia::Util      qw( admin_navigation_links bind delete_button
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
-use Class::Usul::Time       qw( str2date_time );
+use Class::Usul::Time       qw( str2date_time time2str );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -168,6 +168,7 @@ sub certification : Role(administrator) Role(person_manager) {
       $fields->{delete    } = delete_button( $req, $type, 'certification' );
    }
    else {
+      $fields->{completed } = bind( 'completed', time2str '%Y-%m-%d' );
       $fields->{cert_types} = bind( 'cert_types', $self->$_list_all_certs() );
    }
 

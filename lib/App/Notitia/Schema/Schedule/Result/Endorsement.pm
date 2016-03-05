@@ -60,6 +60,7 @@ sub validation_attributes {
       },
       fields         => {
          code        => {
+            filters  => 'filterTitleCase',
             validate => 'isMandatory isValidLength isValidIdentifier' },
          endorsed    => { validate => 'isMandatory isValidDate' },
          notes       => { validate => 'isValidLength isPrintable' },

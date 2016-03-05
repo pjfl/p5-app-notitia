@@ -216,6 +216,9 @@ msgstr "Event Manager"
 msgid "event_name"
 msgstr "Event Name"
 
+msgid "event_summary_heading"
+msgstr "Event"
+
 msgid "events_heading_0"
 msgstr "Event"
 
@@ -223,7 +226,7 @@ msgid "events_heading_1"
 msgstr "Edit"
 
 msgid "events_heading_2"
-msgstr "Participate"
+msgstr "View"
 
 msgid "events_list_link"
 msgstr "List Events"
@@ -339,8 +342,11 @@ msgstr "Owner"
 msgid "Parameter [_1] is not a valid email address"
 msgstr "Not a valid email address"
 
-msgid "participent_management_link"
+msgid "participate"
 msgstr "Participate"
+
+msgid "participate_tip"
+msgstr "Participate in the [_1] event"
 
 msgid "password"
 msgstr "Password"
@@ -452,6 +458,15 @@ msgstr "Start Time"
 
 msgid "subscription"
 msgstr "Subscription"
+
+msgid "summary_management_link"
+msgstr "View"
+
+msgid "unparticipate"
+msgstr "Cancel"
+
+msgid "unparticipate_tip"
+msgstr "Cancel participation in the [_1] event"
 
 msgid "update"
 msgstr "Update"

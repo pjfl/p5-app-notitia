@@ -7,7 +7,7 @@ use App::Notitia::Util      qw( admin_navigation_links bind delete_button
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
-use Class::Usul::Time       qw( str2date_time );
+use Class::Usul::Time       qw( str2date_time time2str );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -135,8 +135,6 @@ my $_update_endorsement_from_request = sub {
       length $v and is_member $attr, [ qw( endorsed ) ]
          and $v = str2date_time( $v, 'GMT' );
 
-      $attr eq 'code' and $v = ucfirst $v;
-
       $blot->$attr( $v );
    }
 
@@ -161,6 +159,9 @@ sub endorsement : Role(administrator) Role(person_manager) {
    if ($code) {
       $fields->{code  }->{disabled} = TRUE;
       $fields->{delete} = delete_button( $req, $code, 'endorsement' );
+   }
+   else {
+      $fields->{endorsed} = bind( 'endorsed', time2str '%Y-%m-%d' );
    }
 
    $fields->{save    } = save_button( $req, $code, 'endorsement' );

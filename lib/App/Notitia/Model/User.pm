@@ -136,6 +136,8 @@ sub logout_action : Role(any) {
    return { redirect => { location => $location, message => $message } };
 }
 
+# TODO: Implement lost password
+
 sub profile : Role(any) {
    my ($self, $req) = @_;
 
