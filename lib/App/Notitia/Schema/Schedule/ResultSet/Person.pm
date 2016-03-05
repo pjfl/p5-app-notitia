@@ -17,6 +17,14 @@ my $_person_tuple = sub {
    return [ $person->label, $person, $opts ];
 };
 
+# Private methods
+my $_find_role_type = sub {
+   my ($self, $name) = @_;
+
+   return $self->result_source->schema->resultset( 'Type' )->search
+      ( { name => $name, type => 'role' } )->single;
+};
+
 # Public methods
 sub find_person_by {
    my ($self, $name) = @_;
@@ -49,6 +57,17 @@ sub list_all_people {
            %{ $opts } } );
 
    return [ map { $_person_tuple->( $_, $fields ) } $people->all ];
+}
+
+sub list_people {
+   my ($self, $role, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   $opts->{prefetch} = [ 'roles' ];
+
+   my $people = $self->list_all_people( $opts );
+   my $type   = $self->$_find_role_type( $role );
+
+   return [ grep { $_->[ 1 ]->is_member_of( $role, $type ) } @{ $people } ];
 }
 
 sub new_person_id {

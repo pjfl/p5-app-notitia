@@ -42,6 +42,18 @@ around 'get_stash' => sub {
 my $_people_links_cache = {};
 
 # Private functions
+my $_add_person_button = sub {
+   my ($req, $action) = @_;
+
+   return { class => 'fade',
+            hint  => loc( $req, 'Hint' ),
+            href  => uri_for_action( $req, $action ),
+            name  => 'create_person',
+            tip   => loc( $req, 'person_create_tip', [ 'person' ] ),
+            type  => 'link',
+            value => loc( $req, 'person_create_link' ) };
+};
+
 my $_list_all_people = sub {
    return $_[ 0 ]->list_all_people( { fields => { selected => $_[ 1 ] } } );
 };
@@ -311,13 +323,20 @@ sub people : Role(any) {
       fields     => { headers => $_people_headers->( $req ), rows => [], },
       template   => [ 'contents', 'table' ],
       title      => loc( $req, 'people_management_heading' ), };
-   my $rows      =  $page->{fields}->{rows};
    my $person_rs =  $self->schema->resultset( 'Person' );
+   my $action    =  $self->moniker.'/person';
+   my $rows      =  $page->{fields}->{rows};
+   my $opts      =  { order_by => 'name' };
+   my $role      =  $req->query_params->( 'role', { optional => TRUE } );
+   my $people    =  $role ? $person_rs->list_people( $role, $opts )
+                          : $person_rs->list_all_people( $opts );
 
-   for my $person (@{ $person_rs->list_all_people( { order_by => 'name' } ) }) {
+   for my $person (@{ $people }) {
       push @{ $rows }, [ { value => $person->[ 0 ]  },
                          $self->$_people_links( $req, $person->[ 1 ]->name ) ];
    }
+
+   $page->{fields}->{add} = $_add_person_button->( $req, $action );
 
    return $self->get_stash( $req, $page );
 }

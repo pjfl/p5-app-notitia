@@ -1,6 +1,6 @@
 package App::Notitia::Model::Vehicle;
 
-use App::Notitia::Attributes;  # Will do namespace cleaning
+use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
                                 field_options loc register_action_paths
@@ -35,12 +35,78 @@ around 'get_stash' => sub {
    return $stash;
 };
 
+# Private class attributes
+my $_vehicle_links_cache = {};
+
+# Private functions
+my $_add_vehicle_button = sub {
+   my ($req, $action) = @_;
+
+   return { class => 'fade',
+            hint  => loc( $req, 'Hint' ),
+            href  => uri_for_action( $req, $action ),
+            name  => 'create_vehicle',
+            tip   => loc( $req, 'vehicle_create_tip', [ 'vehicle' ] ),
+            type  => 'link',
+            value => loc( $req, 'vehicle_create_link' ) };
+};
+
+my $_vehicles_headers = sub {
+   my $req = shift;
+
+   return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } } 0 .. 1 ];
+};
+
+# Private methods
+my $_vehicle_links = sub {
+   my ($self, $req, $name) = @_; my $links = $_vehicle_links_cache->{ $name };
+
+   $links and return @{ $links }; $links = [];
+
+   for my $action ( qw( vehicle ) ) {
+      my $href = uri_for_action( $req, $self->moniker."/${action}", [ $name ] );
+
+      push @{ $links }, {
+         value => { class => 'table-link fade',
+                    hint  => loc( $req, 'Hint' ),
+                    href  => $href,
+                    name  => "${name}-${action}",
+                    tip   => loc( $req, "${action}_management_tip" ),
+                    type  => 'link',
+                    value => loc( $req, "${action}_management_link" ), }, };
+   }
+
+   $_vehicle_links_cache->{ $name } = $links;
+
+   return @{ $links };
+};
+
 # Public methods
+sub create_vehicle_action : Role(administrator) Role(asset_manager) {
+   my ($self, $req) = @_;
+
+   my $vrn      = $req->body_params->( 'vrn' );
+   my $message  = [ 'Vehicle [_1] created by [_2]', $vrn, $req->username ];
+   my $location = uri_for_action( $req, $self->moniker.'/vehicle', [ $vrn ] );
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub delete_vehicle_action : Role(administrator) Role(asset_manager) {
+   my ($self, $req) = @_;
+
+   my $vrn      = $req->uri_params->( 0 );
+   my $message  = [ 'Vehicle [_1] deleted by [_2]', $vrn, $req->username ];
+   my $location = uri_for_action( $req, $self->moniker.'/vehicles' );
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub update_vehicle_action : Role(administrator) Role(asset_manager) {
    my ($self, $req) = @_;
 
-   my $name    = $req->uri_params->( 0 );
-   my $message = [ 'Vehicle [_1] updated by [_2]', $name, $req->username ];
+   my $vrn     = $req->uri_params->( 0 );
+   my $message = [ 'Vehicle [_1] updated by [_2]', $vrn, $req->username ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
@@ -48,10 +114,32 @@ sub update_vehicle_action : Role(administrator) Role(asset_manager) {
 sub vehicle : Role(administrator) Role(asset_manager) {
    my ($self, $req) = @_;
 
-   my $page = {
+   my $page    =  {
       fields   => {},
       template => [ 'contents', 'vehicle' ],
       title    => loc( $req, 'vehicle_management_heading' ), };
+
+   return $self->get_stash( $req, $page );
+}
+
+sub vehicles : Role(administrator) Role(asset_manager) {
+   my ($self, $req) = @_;
+
+   my $page    =  {
+      fields   => { headers => $_vehicles_headers->( $req ), rows => [], },
+      template => [ 'contents', 'table' ],
+      title    => loc( $req, 'vehicles_management_heading' ), };
+   my $rs      =  $self->schema->resultset( 'Vehicle' );
+   my $action  =  $self->moniker.'/vehicle';
+   my $rows    =  $page->{fields}->{rows};
+
+   for my $vehicle (@{ $rs->list_all_vehicles( { order_by => 'vrn' } ) }) {
+      push @{ $rows },
+         [ { value => $vehicle->[ 0 ] },
+           $self->$_vehicle_links( $req, $vehicle->[ 1 ]->vrn ) ];
+   }
+
+   $page->{fields}->{add} = $_add_vehicle_button->( $req, $action );
 
    return $self->get_stash( $req, $page );
 }

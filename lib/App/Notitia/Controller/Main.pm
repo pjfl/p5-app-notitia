@@ -31,6 +31,7 @@ sub dispatch_request {
    sub (GET  + /slot/**            + ?*) { [ 'sched', 'slot',           @_ ] },
    sub (GET  + /vehicle            + ?*) { [ 'asset', 'vehicle',        @_ ] },
    sub (GET  + /vehicle/*          + ?*) { [ 'asset', 'vehicle',        @_ ] },
+   sub (GET  + /vehicles           + ?*) { [ 'asset', 'vehicles',       @_ ] },
 }
 
 1;

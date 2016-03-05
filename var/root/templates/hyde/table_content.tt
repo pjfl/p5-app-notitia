@@ -2,6 +2,7 @@
 <div class="unit four-fifths">
    <article>
       <h4>[% page.title %]</h4>
+[% IF page.fields.add; Dispatch( page.fields.add ); END -%]
 [% Table( page.fields ) -%]
 [% IF page.fields.add; Dispatch( page.fields.add ); END -%]
    </article>

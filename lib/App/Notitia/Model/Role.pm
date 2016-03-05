@@ -67,7 +67,7 @@ sub add_role_action : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name   = $req->uri_params->( 0 );
-   my $person = $self->find_person_by( $name );
+   my $person = $self->schema->resultset( 'Person' )->find_person_by( $name );
    my $roles  = $req->body_params->( 'roles', { multiple => TRUE } );
 
    $person->add_member_to( $_ ) for (@{ $roles });
@@ -83,7 +83,7 @@ sub remove_role_action : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name   = $req->uri_params->( 0 );
-   my $person = $self->find_person_by( $name );
+   my $person = $self->schema->resultset( 'Person' )->find_person_by( $name );
    my $roles  = $req->body_params->( 'person_roles', { multiple => TRUE } );
 
    $person->delete_member_from( $_ ) for (@{ $roles });

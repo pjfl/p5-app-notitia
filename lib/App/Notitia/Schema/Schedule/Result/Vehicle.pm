@@ -125,6 +125,10 @@ sub assign_to_slot {
    return $slot->update;
 }
 
+sub label {
+   return $_[ 0 ]->name ? $_[ 0 ]->name.' ('.$_[ 0 ]->vrn.')' : $_[ 0 ]->vrn;
+}
+
 1;
 
 __END__

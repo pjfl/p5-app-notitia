@@ -102,12 +102,14 @@ my $nav_folder = sub {
             type  => 'folder', };
 };
 
-my $nav_link = sub {
-   return { depth => $_[ 4 ] // 1,
-            tip   => loc( $_[ 0 ], $_[ 3 ].'_tip' ),
-            title => loc( $_[ 0 ], $_[ 3 ].'_link' ),
+my $l1_nav_link = sub {
+   my ($req, $k, $action, @args) = @_;
+
+   return { depth => 1,
+            tip   => loc( $req, "${k}_tip"  ),
+            title => loc( $req, "${k}_link" ),
             type  => 'link',
-            url   => uri_for_action( $_[ 0 ], $_[ 1 ], $_[ 2 ] ), };
+            url   => uri_for_action( $req, $action, @args ), };
 };
 
 # Public functions
@@ -115,14 +117,19 @@ sub admin_navigation_links ($) {
    my $req = shift;
 
    return [ $nav_folder->( $req, 'events' ),
-            $nav_link->( $req, 'event/events',   [], 'events_list' ),
-            $nav_link->( $req, 'event/event',    [], 'event_create' ),
+            $l1_nav_link->( $req, 'events_list', 'event/events',   [] ),
             $nav_folder->( $req, 'people' ),
-            $nav_link->( $req, 'admin/people',   [], 'people_list' ),
-            $nav_link->( $req, 'admin/person',   [], 'person_create' ),
+            $l1_nav_link->( $req, 'people_list', 'admin/people',   [] ),
+            $l1_nav_link->( $req, 'bike_rider_list',
+                            'admin/people', [], role => 'bike_rider' ),
+            $l1_nav_link->( $req, 'controller_list',
+                            'admin/people', [], role => 'controller' ),
+            $l1_nav_link->( $req, 'driver_list',
+                            'admin/people', [], role => 'driver' ),
+            $l1_nav_link->( $req, 'fund_raiser_list',
+                            'admin/people', [], role => 'fund_raiser' ),
             $nav_folder->( $req, 'vehicles' ),
-            $nav_link->( $req, 'admin/vehicles', [], 'vehicles_list' ),
-            $nav_link->( $req, 'admin/vehicle',  [], 'vehicle_create' ), ];
+            $l1_nav_link->( $req, 'vehicles_list', 'asset/vehicles', [] ), ];
 }
 
 sub bind ($;$$) {
@@ -430,18 +437,18 @@ sub rota_navigation_links ($$) {
 
    return
       [ $nav_folder->( $req, 'months' ),
-        $nav_link->( $req, 'sched/day_rota', $args->[  0 ], 'month_jan' ),
-        $nav_link->( $req, 'sched/day_rota', $args->[  1 ], 'month_feb' ),
-        $nav_link->( $req, 'sched/day_rota', $args->[  2 ], 'month_mar' ),
-        $nav_link->( $req, 'sched/day_rota', $args->[  3 ], 'month_apr' ),
-        $nav_link->( $req, 'sched/day_rota', $args->[  4 ], 'month_may' ),
-        $nav_link->( $req, 'sched/day_rota', $args->[  5 ], 'month_jun' ),
-        $nav_link->( $req, 'sched/day_rota', $args->[  6 ], 'month_jul' ),
-        $nav_link->( $req, 'sched/day_rota', $args->[  7 ], 'month_aug' ),
-        $nav_link->( $req, 'sched/day_rota', $args->[  8 ], 'month_sep' ),
-        $nav_link->( $req, 'sched/day_rota', $args->[  9 ], 'month_oct' ),
-        $nav_link->( $req, 'sched/day_rota', $args->[ 10 ], 'month_nov' ),
-        $nav_link->( $req, 'sched/day_rota', $args->[ 11 ], 'month_dec' ) ];
+        $l1_nav_link->( $req, 'month_jan', 'sched/day_rota', $args->[  0 ] ),
+        $l1_nav_link->( $req, 'month_feb', 'sched/day_rota', $args->[  1 ] ),
+        $l1_nav_link->( $req, 'month_mar', 'sched/day_rota', $args->[  2 ] ),
+        $l1_nav_link->( $req, 'month_apr', 'sched/day_rota', $args->[  3 ] ),
+        $l1_nav_link->( $req, 'month_may', 'sched/day_rota', $args->[  4 ] ),
+        $l1_nav_link->( $req, 'month_jun', 'sched/day_rota', $args->[  5 ] ),
+        $l1_nav_link->( $req, 'month_jul', 'sched/day_rota', $args->[  6 ] ),
+        $l1_nav_link->( $req, 'month_aug', 'sched/day_rota', $args->[  7 ] ),
+        $l1_nav_link->( $req, 'month_sep', 'sched/day_rota', $args->[  8 ] ),
+        $l1_nav_link->( $req, 'month_oct', 'sched/day_rota', $args->[  9 ] ),
+        $l1_nav_link->( $req, 'month_nov', 'sched/day_rota', $args->[ 10 ] ),
+        $l1_nav_link->( $req, 'month_dec', 'sched/day_rota', $args->[ 11 ] ) ];
 }
 
 sub save_button ($$;$) {

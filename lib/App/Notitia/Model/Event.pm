@@ -40,6 +40,18 @@ around 'get_stash' => sub {
 my $_event_links_cache = {};
 
 # Private functions
+my $_create_event_button = sub {
+   my ($req, $action) = @_;
+
+   return { class => 'fade',
+            hint  => loc( $req, 'Hint' ),
+            href  => uri_for_action( $req, $action ),
+            name  => 'create_event',
+            tip   => loc( $req, 'event_create_tip', [ 'event' ] ),
+            type  => 'link',
+            value => loc( $req, 'event_create_link' ) };
+};
+
 my $_events_headers = sub {
    return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 2 ];
 };
@@ -248,14 +260,17 @@ sub events : Role(any) {
       fields    => { headers => $_events_headers->( $req ), rows => [], },
       template  => [ 'contents', 'table' ],
       title     => loc( $req, 'events_management_heading' ), };
-   my $rows     =  $page->{fields}->{rows};
    my $event_rs =  $self->schema->resultset( 'Event' );
+   my $action   =  $self->moniker.'/event';
+   my $rows     =  $page->{fields}->{rows};
 
    for my $event (@{ $event_rs->list_all_events( { order_by => 'date' } ) }) {
       push @{ $rows },
          [ { value => $event->[ 0 ] },
            $self->$_event_links( $req, $event->[ 1 ]->name ) ];
    }
+
+   $page->{fields}->{add} = $_create_event_button->( $req, $action );
 
    return $self->get_stash( $req, $page );
 }

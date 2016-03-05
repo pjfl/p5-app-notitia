@@ -60,6 +60,9 @@ msgstr "Asset Manager"
 msgid "bike_rider"
 msgstr "Bike Rider"
 
+msgid "bike_rider_list_link"
+msgstr "Bike Riders"
+
 msgid "blots_heading_0"
 msgstr "Endorsement"
 
@@ -132,6 +135,9 @@ msgstr "Confirm you want to yield this [_1] slot"
 msgid "controller"
 msgstr "Controller"
 
+msgid "controller_list_link"
+msgstr "Controllers"
+
 msgid "create"
 msgstr "Create"
 
@@ -170,6 +176,9 @@ msgstr "Date of Birth"
 
 msgid "driver"
 msgstr "Driver"
+
+msgid "driver_list_link"
+msgstr "Drivers"
 
 msgid "email_address"
 msgstr "Email Address"
@@ -235,7 +244,7 @@ msgid "events_heading_2"
 msgstr "View"
 
 msgid "events_list_link"
-msgstr "List Events"
+msgstr "All Events"
 
 msgid "events_list_tip"
 msgstr "Displays 'event' records"
@@ -248,6 +257,9 @@ msgstr "First Name"
 
 msgid "fund_raiser"
 msgstr "Fund Raiser"
+
+msgid "fund_raiser_list_link"
+msgstr "Fund Raisers"
 
 msgid "gmp"
 msgstr "GMP"
@@ -361,7 +373,7 @@ msgid "password_expired"
 msgstr "Password Expired"
 
 msgid "people_list_link"
-msgstr "List People"
+msgstr "All People"
 
 msgid "people_list_tip"
 msgstr "Display 'people' records"
@@ -496,7 +508,7 @@ msgid "vehicles_management_heading"
 msgstr "Vehicles"
 
 msgid "vehicles_list_link"
-msgstr "List Vehicles"
+msgstr "All Vehicles"
 
 msgid "vehicles_list_tip"
 msgstr "Displays 'vehicle' records"

@@ -3,6 +3,18 @@ package App::Notitia::Schema::Schedule::ResultSet::Vehicle;
 use strictures;
 use parent 'DBIx::Class::ResultSet';
 
+use App::Notitia::Constants qw( FALSE NUL TRUE );
+
+# Private functions
+my $_vehicle_tuple = sub {
+   my ($vehicle, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   $opts->{selected} //= NUL;
+   $opts->{selected}   = $opts->{selected} eq $vehicle ? TRUE : FALSE;
+
+   return [ $vehicle->label, $vehicle, $opts ];
+};
+
 # Private methods
 my $_find_owner = sub {
    return $_[ 0 ]->result_source->schema->resultset( 'Person' )->search
@@ -28,6 +40,16 @@ sub new_result {
    $owner and $columns->{owner_id} = $self->$_find_owner( $owner )->id;
 
    return $self->next::method( $columns );
+}
+
+sub list_all_vehicles {
+   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   my $fields   = delete $opts->{fields} // {};
+   my $vehicles = $self->search
+      ( {}, { columns  => [ 'name', 'vrn' ], %{ $opts } } );
+
+   return [ map { $_vehicle_tuple->( $_, $fields ) } $vehicles->all ];
 }
 
 1;

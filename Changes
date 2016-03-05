@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added people navigation by role
           - New events create a blog post
           - Added event-summary and participation
           - Added endorsements
