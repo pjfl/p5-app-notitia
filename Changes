@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - New events create a blog post
           - Added event-summary and participation
           - Added endorsements
           - Split out CMS controller from root

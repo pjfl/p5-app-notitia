@@ -195,6 +195,12 @@ msgstr "Tickets"
 msgid "endorsements_management_tip"
 msgstr "Administer 'endorsement' records"
 
+msgid "event_blog_link"
+msgstr "Follow this [link]([_1]) to participate in the event"
+
+msgid "event_blog_when"
+msgstr "This event is on the [_1], starts at [_2] and finishes at [_3]"
+
 msgid "event_create_link"
 msgstr "Add Event"
 

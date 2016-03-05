@@ -84,7 +84,7 @@ sub check_form_field {
 
    try   { $self->$_check_field( $req, $result_class_base ) }
    catch {
-      my $e = $_; my $args = { params => $e->args, quote_bind_values => TRUE };
+      my $e = $_; my $args = { params => $e->args };
 
       $self->log->debug( "${e}" );
       $mesg = $req->loc( $e->error, $args );

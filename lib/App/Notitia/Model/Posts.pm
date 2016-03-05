@@ -83,6 +83,12 @@ sub dialog : Role(any) {
    return $_[ 0 ]->get_dialog( $_[ 1 ] );
 }
 
+sub localised_posts_dir {
+   my ($self, $locale, $opts) = @_; my $conf = $self->config; $opts //= {};
+
+   return $conf->docs_root->catdir( $locale, $conf->posts, $opts );
+}
+
 sub localised_tree {
    return localise_tree $_[ 0 ]->tree_root, $_[ 1 ];
 }
@@ -125,12 +131,11 @@ sub tree_root {
 
       for my $locale (@{ $conf->locales }) {
          my $lcache = $_posts_tree_cache->{ $locale } //= {};
-         my $dir    = $conf->docs_root
-                           ->catdir( $locale, $postd, { reverse => TRUE } )
+         my $dir    = $self->localised_posts_dir( $locale, { reverse => TRUE } )
                            ->filter( sub { not m{ (?: $no_index ) }mx } );
 
          $dir->exists or next;
-         $lcache->{tree} = build_tree( $self->type_map, $dir, 1, 0, $postd );
+         $lcache->{tree} = build_tree( $self->type_map, $dir, 2 );
          $lcache->{type} = 'folder';
          $self->$_chain_nodes( $lcache );
 

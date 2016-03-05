@@ -31,7 +31,7 @@ my $_field_option_cache = {};
 my $_translations  = {};
 
 # Private functions
-my $_bind_option = sub {
+my $bind_option = sub {
    my ($v, $opts) = @_;
 
    my $prefix = $opts->{prefix} // NUL;
@@ -96,13 +96,13 @@ my $make_tuple = sub {
    return [ 0, $keys, $node ];
 };
 
-my $_nav_folder = sub {
+my $nav_folder = sub {
    return { depth => $_[ 2 ] // 0,
             title => loc( $_[ 0 ], $_[ 1 ].'_management_heading' ),
             type  => 'folder', };
 };
 
-my $_nav_link = sub {
+my $nav_link = sub {
    return { depth => $_[ 4 ] // 1,
             tip   => loc( $_[ 0 ], $_[ 3 ].'_tip' ),
             title => loc( $_[ 0 ], $_[ 3 ].'_link' ),
@@ -114,15 +114,15 @@ my $_nav_link = sub {
 sub admin_navigation_links ($) {
    my $req = shift;
 
-   return [ $_nav_folder->( $req, 'events' ),
-            $_nav_link->( $req, 'event/events',   [], 'events_list' ),
-            $_nav_link->( $req, 'event/event',    [], 'event_create' ),
-            $_nav_folder->( $req, 'people' ),
-            $_nav_link->( $req, 'admin/people',   [], 'people_list' ),
-            $_nav_link->( $req, 'admin/person',   [], 'person_create' ),
-            $_nav_folder->( $req, 'vehicles' ),
-            $_nav_link->( $req, 'admin/vehicles', [], 'vehicles_list' ),
-            $_nav_link->( $req, 'admin/vehicle',  [], 'vehicle_create' ), ];
+   return [ $nav_folder->( $req, 'events' ),
+            $nav_link->( $req, 'event/events',   [], 'events_list' ),
+            $nav_link->( $req, 'event/event',    [], 'event_create' ),
+            $nav_folder->( $req, 'people' ),
+            $nav_link->( $req, 'admin/people',   [], 'people_list' ),
+            $nav_link->( $req, 'admin/person',   [], 'person_create' ),
+            $nav_folder->( $req, 'vehicles' ),
+            $nav_link->( $req, 'admin/vehicles', [], 'vehicles_list' ),
+            $nav_link->( $req, 'admin/vehicle',  [], 'vehicle_create' ), ];
 }
 
 sub bind ($;$$) {
@@ -135,7 +135,7 @@ sub bind ($;$$) {
       $params->{value} = $v->ymd;
    }
    elsif (is_arrayref $v) {
-      $params->{value} = [ map { $_bind_option->( $_, $opts ) } @{ $v } ];
+      $params->{value} = [ map { $bind_option->( $_, $opts ) } @{ $v } ];
    }
    else { defined $v and $params->{value} = $numify ? 0 + $v : "${v}" }
 
@@ -429,19 +429,19 @@ sub rota_navigation_links ($$) {
    }
 
    return
-      [ $_nav_folder->( $req, 'months' ),
-        $_nav_link->( $req, 'sched/day_rota', $args->[  0 ], 'month_jan' ),
-        $_nav_link->( $req, 'sched/day_rota', $args->[  1 ], 'month_feb' ),
-        $_nav_link->( $req, 'sched/day_rota', $args->[  2 ], 'month_mar' ),
-        $_nav_link->( $req, 'sched/day_rota', $args->[  3 ], 'month_apr' ),
-        $_nav_link->( $req, 'sched/day_rota', $args->[  4 ], 'month_may' ),
-        $_nav_link->( $req, 'sched/day_rota', $args->[  5 ], 'month_jun' ),
-        $_nav_link->( $req, 'sched/day_rota', $args->[  6 ], 'month_jul' ),
-        $_nav_link->( $req, 'sched/day_rota', $args->[  7 ], 'month_aug' ),
-        $_nav_link->( $req, 'sched/day_rota', $args->[  8 ], 'month_sep' ),
-        $_nav_link->( $req, 'sched/day_rota', $args->[  9 ], 'month_oct' ),
-        $_nav_link->( $req, 'sched/day_rota', $args->[ 10 ], 'month_nov' ),
-        $_nav_link->( $req, 'sched/day_rota', $args->[ 11 ], 'month_dec' ) ];
+      [ $nav_folder->( $req, 'months' ),
+        $nav_link->( $req, 'sched/day_rota', $args->[  0 ], 'month_jan' ),
+        $nav_link->( $req, 'sched/day_rota', $args->[  1 ], 'month_feb' ),
+        $nav_link->( $req, 'sched/day_rota', $args->[  2 ], 'month_mar' ),
+        $nav_link->( $req, 'sched/day_rota', $args->[  3 ], 'month_apr' ),
+        $nav_link->( $req, 'sched/day_rota', $args->[  4 ], 'month_may' ),
+        $nav_link->( $req, 'sched/day_rota', $args->[  5 ], 'month_jun' ),
+        $nav_link->( $req, 'sched/day_rota', $args->[  6 ], 'month_jul' ),
+        $nav_link->( $req, 'sched/day_rota', $args->[  7 ], 'month_aug' ),
+        $nav_link->( $req, 'sched/day_rota', $args->[  8 ], 'month_sep' ),
+        $nav_link->( $req, 'sched/day_rota', $args->[  9 ], 'month_oct' ),
+        $nav_link->( $req, 'sched/day_rota', $args->[ 10 ], 'month_nov' ),
+        $nav_link->( $req, 'sched/day_rota', $args->[ 11 ], 'month_dec' ) ];
 }
 
 sub save_button ($$;$) {

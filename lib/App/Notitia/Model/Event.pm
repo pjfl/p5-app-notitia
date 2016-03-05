@@ -1,6 +1,6 @@
 package App::Notitia::Model::Event;
 
-use App::Notitia::Attributes;  # Will do namespace cleaning
+use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
                                 field_options loc register_action_paths
@@ -108,6 +108,22 @@ my $_find_rota = sub {
    return $_[ 0 ]->schema->resultset( 'Rota' )->find_rota( $_[ 1 ], $_[ 2 ] );
 };
 
+my $_format_as_markdown = sub {
+   my ($self, $req, $event) = @_; my $name = $event->name;
+
+   my $yaml = "---\nauthor: ".$event->owner."\ntitle: ".$name."\n---\n";
+   my $desc = $event->description."\n\n";
+   my $opts = { params => [ $event->rota->date->dmy( '/' ),
+                            $event->start_time, $event->end_time ],
+                no_quote_bind_values => TRUE };
+   my $when = loc( $req, 'event_blog_when', $opts )."\n\n";
+   my $href = uri_for_action( $req, $self->moniker.'/summary', [ $name ] );
+      $opts = { params => [ $href ], no_quote_bind_values => TRUE };
+   my $link = loc( $req, 'event_blog_link', $opts )."\n\n";
+
+   return $yaml.$desc.$when.$link;
+};
+
 my $_maybe_find_event = sub {
    my ($self, $name) = @_; $name or return Class::Null->new;
 
@@ -144,6 +160,24 @@ my $_update_event_from_request = sub {
    return;
 };
 
+my $_write_blog_post = sub {
+   my ($self, $req, $event) = @_;
+
+   my $posts_model = $self->components->{posts};
+   my $dir         = $posts_model->localised_posts_dir( $req->locale );
+   my $file        = $event->rota->date->ymd.'_'.(lc $event->name);
+
+   $file =~ s{ [ ] }{-}gmx;
+
+   my $path        = $dir->catfile( 'events', $file.'.md' );
+   my $markdown    = $self->$_format_as_markdown( $req, $event );
+
+   $path->assert_filepath->println( $markdown );
+   $posts_model->invalidate_docs_cache( $path->stat->{mtime} );
+
+   return;
+};
+
 # Public methods
 sub create_event_action : Role(administrator) Role(event_manager) {
    my ($self, $req) = @_;
@@ -155,6 +189,7 @@ sub create_event_action : Role(administrator) Role(event_manager) {
           owner => $req->username, } );
 
    $self->$_update_event_from_request( $req, $event ); $event->insert;
+   $self->$_write_blog_post( $req, $event );
 
    my $action   =  $self->moniker.'/event';
    my $location =  uri_for_action( $req, $action, [ $event->name ] );
@@ -181,6 +216,7 @@ sub delete_event_action : Role(administrator) Role(event_manager) {
 sub event : Role(administrator) Role(event_manager) {
    my ($self, $req) = @_;
 
+   # TODO: Fix the event name so that it's good for the href - no space or %
    my $name       =  $req->uri_params->( 0, { optional => TRUE } );
    my $event      =  $self->$_maybe_find_event( $name );
    my $page       =  {

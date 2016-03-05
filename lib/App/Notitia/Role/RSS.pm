@@ -65,7 +65,7 @@ my $_format_page = sub {
 
    my $author = $page->{author} // 'admin';
    my $user   = $self->components->{admin}->find_person_by( $author );
-   my $email  = $user ? $user->email : "${author}\@example.com";
+   my $email  = $user ? $user->email_address : "${author}\@example.com";
 
    return {
       author     => "${email} (${author})",
@@ -74,7 +74,7 @@ my $_format_page = sub {
       created    => time2str( '%Y-%m-%dT%XZ', $page->{created} ),
       guid       => substr( create_token( $page->{url} ), 0, 32 ),
       modified   => time2str( '%Y-%m-%dT%XZ', $page->{modified} ),
-      link       => $req->uri_for( $page->{url} ),
+      link       => $self->base_uri( $req, [ $page->{url} ] ),
       title      => loc( $req, $page->{title} ), };
 };
 

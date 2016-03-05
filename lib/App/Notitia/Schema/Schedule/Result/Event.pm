@@ -26,6 +26,7 @@ $class->add_columns
 
 $class->set_primary_key( 'id' );
 
+# TODO: Bollocks, bollocks, bollocks - should have been name *and* rota_id
 $class->add_unique_constraint( [ 'name' ] );
 
 $class->belongs_to( rota  => "${result}::Rota", 'rota_id' );
