@@ -125,7 +125,7 @@ sub admin_navigation_links ($) {
             $_nav_link->( $req, 'admin/vehicle',  [], 'vehicle_create' ), ];
 }
 
-sub bind {
+sub bind ($;$$) {
    my ($name, $v, $opts) = @_; $opts = { %{ $opts // {} } };
 
    my $numify = $opts->{numify} // FALSE;

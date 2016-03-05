@@ -2,6 +2,7 @@ package App::Notitia::Model;
 
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Util      qw( bind field_options );
 use Class::Usul::Functions  qw( ensure_class_loaded exception
                                 first_char throw );
 use Class::Usul::Types      qw( Object Plinth );
@@ -49,6 +50,21 @@ my $_check_field = sub {
 };
 
 # Public methods
+sub bind_fields {
+   my ($self, $src, $map, $result) = @_;
+
+   my $schema = $self->schema; my $fields = {};
+
+   for my $k (keys %{ $map }) {
+      my $value = exists $map->{ $k }->{checked} ? TRUE : $src->$k();
+      my $opts  = field_options( $schema, $result, $k, $map->{ $k } );
+
+      $fields->{ $k } = bind( $k, $value, $opts );
+   }
+
+   return $fields;
+}
+
 sub check_field_server {
    my ($self, $k, $opts) = @_;
 

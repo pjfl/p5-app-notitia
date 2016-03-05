@@ -1,6 +1,6 @@
 package App::Notitia::Model::Role;
 
-use App::Notitia::Attributes;  # Will do namespace cleaning
+use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind loc
                                 register_action_paths uri_for_action );

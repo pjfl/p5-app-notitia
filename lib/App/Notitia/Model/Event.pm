@@ -39,8 +39,20 @@ around 'get_stash' => sub {
 my $_event_links_cache = {};
 
 # Private functions
+my $_events_headers = sub {
+   return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 2 ];
+};
+
+# Private methods
+my $_add_event_js = sub {
+   my $self = shift; my $opts = { domain => 'schedule', form => 'Event' };
+
+   return [ $self->check_field_server( 'description', $opts ),
+            $self->check_field_server( 'name', $opts ) ];
+};
+
 my $_bind_event_fields = sub {
-   my ($schema, $event) = @_; my $fields = {};
+   my ($self, $event) = @_;
 
    my $map = {
       description => { class => 'autosize server' },
@@ -50,35 +62,7 @@ my $_bind_event_fields = sub {
       start_time  => {},
    };
 
-   for my $k (keys %{ $map }) {
-      my $value = exists $map->{ $k }->{checked} ? TRUE : $event->$k();
-      my $opts  = field_options( $schema, 'Event', $k, $map->{ $k } );
-
-      $fields->{ $k } = bind( $k, $value, $opts );
-   }
-
-   return $fields;
-};
-
-my $_events_headers = sub {
-   return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 2 ];
-};
-
-my $_select_owner_list = sub {
-   my ($schema, $event) = @_;
-
-   my $opts   = { fields => { selected => $event->owner } };
-   my $people = $schema->resultset( 'Person' )->list_all_people( $opts );
-
-   return bind( 'owner', [ [ NUL, NUL ], @{ $people } ], { numify => TRUE } );
-};
-
-# Private methods
-my $_add_event_js = sub {
-   my $self = shift; my $opts = { domain => 'schedule', form => 'Event' };
-
-   return [ $self->check_field_server( 'description', $opts ),
-            $self->check_field_server( 'name', $opts ) ];
+   return $self->bind_fields( $event, $map, 'Event' );
 };
 
 my $_event_links = sub {
@@ -114,6 +98,15 @@ my $_find_event = sub {
 
 my $_find_rota = sub {
    return $_[ 0 ]->schema->resultset( 'Rota' )->find_rota( $_[ 1 ], $_[ 2 ] );
+};
+
+my $_select_owner_list = sub {
+   my ($self, $event) = @_; my $schema = $self->schema;
+
+   my $opts   = { fields => { selected => $event->owner } };
+   my $people = $schema->resultset( 'Person' )->list_all_people( $opts );
+
+   return bind( 'owner', [ [ NUL, NUL ], @{ $people } ], { numify => TRUE } );
 };
 
 my $_update_event_from_request = sub {
@@ -175,7 +168,7 @@ sub event : Role(administrator) Role(event_manager) {
    my $name       =  $req->uri_params->( 0, { optional => TRUE } );
    my $event      =  $self->$_find_event( $name );
    my $page       =  {
-      fields      => $_bind_event_fields->( $self->schema, $event ),
+      fields      => $self->$_bind_event_fields( $event ),
       first_field => 'name',
       literal_js  => $self->$_add_event_js(),
       template    => [ 'contents', 'event' ],
@@ -187,7 +180,7 @@ sub event : Role(administrator) Role(event_manager) {
       $fields->{date  } = bind( 'event_date', $event->rota->date );
       $fields->{delete} = delete_button( $req, $name, 'event' );
       $fields->{href  } = uri_for_action( $req, $action, [ $name ] );
-      $fields->{owner } = $_select_owner_list->( $self->schema, $event );
+      $fields->{owner } = $self->$_select_owner_list( $event );
    }
    else { $fields->{date} = bind( 'event_date', time2str '%Y-%m-%d' ) }
 

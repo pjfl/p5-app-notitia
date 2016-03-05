@@ -18,6 +18,12 @@ msgstr ""
 msgid "active"
 msgstr "Active"
 
+msgid "add_blot"
+msgstr "Add Endorsement"
+
+msgid "add_blot_tip"
+msgstr "Create a new [_1] record for [_2]"
+
 msgid "add_cert"
 msgstr "Add Certification"
 
@@ -53,6 +59,12 @@ msgstr "Asset Manager"
 
 msgid "bike_rider"
 msgstr "Bike Rider"
+
+msgid "blots_heading_0"
+msgstr "Endorsement"
+
+msgid "blots_heading_1"
+msgstr "Edit"
 
 msgid "bluelight"
 msgstr "Bluelight"
@@ -101,6 +113,9 @@ msgstr "Change Password"
 
 msgid "claim_slot_tip"
 msgstr "Claim this [_1] slot"
+
+msgid "code"
+msgstr "Code"
 
 msgid "completed"
 msgstr "Date Completed"
@@ -161,6 +176,15 @@ msgstr "Email Address"
 
 msgid "end_time"
 msgstr "End Time"
+
+msgid "endorsed"
+msgstr "Endorsed"
+
+msgid "endorsement_management_heading"
+msgstr "Endorsement"
+
+msgid "endorsement_management_link"
+msgstr "Edit"
 
 msgid "endorsements_management_heading"
 msgstr "Endorsements"
@@ -368,6 +392,9 @@ msgstr "Person Manager"
 
 msgid "person_roles"
 msgstr "Person Roles"
+
+msgid "points"
+msgstr "Points"
 
 msgid "postcode"
 msgstr "Postcode"

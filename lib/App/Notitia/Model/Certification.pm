@@ -3,8 +3,8 @@ package App::Notitia::Model::Certification;
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
-                                field_options loc register_action_paths
-                                save_button uri_for_action );
+                                loc register_action_paths save_button
+                                uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( str2date_time );
@@ -50,24 +50,6 @@ my $_add_cert_button = sub {
             value => loc( $req, 'add_cert' ) };
 };
 
-my $_bind_cert_fields = sub {
-   my ($schema, $cert) = @_; my $fields = {};
-
-   my $map      =  {
-      completed => { class => 'server' },
-      notes     => { class => 'autosize' },
-   };
-
-   for my $k (keys %{ $map }) {
-      my $value = exists $map->{ $k }->{checked} ? TRUE : $cert->$k();
-      my $opts  = field_options( $schema, 'Certification', $k, $map->{ $k } );
-
-      $fields->{ $k } = bind( $k, $value, $opts );
-   }
-
-   return $fields;
-};
-
 my $_certs_headers = sub {
    my $req = shift;
 
@@ -84,6 +66,17 @@ my $_add_certification_js = sub {
    my $opts = { domain => 'schedule', form => 'Certification' };
 
    return [ $self->check_field_server( 'completed', $opts ), ];
+};
+
+my $_bind_cert_fields = sub {
+   my ($self, $cert) = @_;
+
+   my $map      =  {
+      completed => { class => 'server' },
+      notes     => { class => 'autosize' },
+   };
+
+   return $self->bind_fields( $cert, $map, 'Certification' );
 };
 
 my $_cert_links = sub {
@@ -113,12 +106,7 @@ my $_cert_links = sub {
 };
 
 my $_cert_tuple = sub {
-   my ($req, $cert, $opts) = @_; $opts = { %{ $opts // {} } };
-
-   $opts->{selected} //= NUL;
-   $opts->{selected}   = $opts->{selected} eq $cert ? TRUE : FALSE;
-
-   return [ $cert->label( $req ), $cert, $opts ];
+   my ($req, $cert) = @_; return [ $cert->label( $req ), $cert ];
 };
 
 my $_list_all_certs = sub {
@@ -126,19 +114,6 @@ my $_list_all_certs = sub {
 
    return [ [ NUL, NUL ], $type_rs->search
             ( { type => 'certification' }, { columns => [ 'name' ] } )->all ];
-};
-
-my $_list_certification_for = sub {
-   my ($schema, $req, $name, $opts) = @_;
-
-   my $fields = delete $opts->{fields} // {};
-   my $certs  = $schema->resultset( 'Certification' )->search
-      ( { 'recipient.name' => $name },
-        { join     => [ 'recipient', 'type' ],
-          order_by => 'type.type',
-          prefetch => [ 'type' ] } );
-
-   return [ map { $_cert_tuple->( $req, $_, $fields ) } $certs->all ];
 };
 
 my $_update_cert_from_request = sub {
@@ -158,6 +133,19 @@ my $_update_cert_from_request = sub {
    return;
 };
 
+# Private methods
+my $_list_certification_for = sub {
+   my ($self, $req, $name) = @_;
+
+   my $certs = $self->schema->resultset( 'Certification' )->search
+      ( { 'recipient.name' => $name },
+        { join     => [ 'recipient', 'type' ],
+          order_by => 'type.type',
+          prefetch => [ 'type' ] } );
+
+   return [ map { $_cert_tuple->( $req, $_ ) } $certs->all ];
+};
+
 # Public functions
 sub certification : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
@@ -167,7 +155,7 @@ sub certification : Role(administrator) Role(person_manager) {
    my $cert_rs   =  $self->schema->resultset( 'Certification' );
    my $cert      =  $_find_cert->( $cert_rs, $name, $type );
    my $page      =  {
-      fields     => $_bind_cert_fields->( $self->schema, $cert ),
+      fields     => $self->$_bind_cert_fields( $cert ),
       literal_js => $self->$_add_certification_js(),
       template   => [ 'contents', 'certification' ],
       title      => loc( $req, 'certification_management_heading' ), };
@@ -199,11 +187,10 @@ sub certifications : Role(administrator) Role(person_manager) {
                     username => { name => $name }, },
       template => [ 'contents', 'table' ],
       title    => loc( $req, 'certificates_management_heading' ), };
-   my $cert_rs =  $self->schema->resultset( 'Certification' );
    my $action  =  $self->moniker.'/certification';
    my $rows    =  $page->{fields}->{rows};
 
-   for my $cert (@{ $_list_certification_for->( $self->schema, $req, $name )}) {
+   for my $cert (@{ $self->$_list_certification_for( $req, $name ) }) {
       push @{ $rows },
          [ { value => $cert->[ 0 ] },
            $self->$_cert_links( $req, $name, $cert->[ 1 ]->type ) ];

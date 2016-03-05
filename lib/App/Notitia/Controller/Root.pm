@@ -7,36 +7,17 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'root';
 
 sub dispatch_request {
-   sub (GET  + /admin             + ?*) { [ 'admin', 'index',           @_ ] },
-   sub (GET  + /admin/index       + ?*) { [ 'admin', 'index',           @_ ] },
-   sub (POST + /certification/**  + ?*) { [ 'certs', 'from_request',    @_ ] },
-   sub (GET  + /certification/**  + ?*) { [ 'certs', 'certification',   @_ ] },
-   sub (GET  + /certifications/*  + ?*) { [ 'certs', 'certifications',  @_ ] },
-   sub (GET  + /check_field       + ?*) { [ 'user',  'check_field',     @_ ] },
-   sub (POST + /event | /event/*  + ?*) { [ 'event', 'from_request',    @_ ] },
-   sub (GET  + /event | /event/*  + ?*) { [ 'event', 'event',           @_ ] },
-   sub (GET  + /events            + ?*) { [ 'event', 'events',          @_ ] },
-   sub (POST + /role/*            + ?*) { [ 'role',  'from_request',    @_ ] },
-   sub (GET  + /role/*            + ?*) { [ 'role',  'role',            @_ ] },
-   sub (GET  + /rota  | /rota/**  + ?*) { [ 'sched', 'day_rota',        @_ ] },
-   sub (POST + /slot/**           + ?*) { [ 'sched', 'from_request',    @_ ] },
-   sub (GET  + /slot/**           + ?*) { [ 'sched', 'slot',            @_ ] },
-   sub (GET  + /user/activate/*   + ?*) { [ 'admin', 'activate',        @_ ] },
-   sub (POST + /user/login        + ?*) { [ 'user',  'login_action',    @_ ] },
-   sub (GET  + /user/login        + ?*) { [ 'user',  'login',           @_ ] },
-   sub (POST + /user/logout       + ?*) { [ 'user',  'logout_action',   @_ ] },
-   sub (POST + /user/password     + ?*) { [ 'user',  'from_request',    @_ ] },
-   sub (GET  + /user/password     + ?*) { [ 'user',  'change_password', @_ ] },
-   sub (GET  + /user/password/*   + ?*) { [ 'user',  'change_password', @_ ] },
-   sub (POST + /user/profile      + ?*) { [ 'user',  'from_request',    @_ ] },
-   sub (GET  + /user/profile      + ?*) { [ 'user',  'profile',         @_ ] },
-   sub (POST + /user  | /user/*   + ?*) { [ 'admin', 'from_request',    @_ ] },
-   sub (GET  + /user  | /user/*   + ?*) { [ 'admin', 'person',          @_ ] },
-   sub (GET  + /users             + ?*) { [ 'admin', 'people',          @_ ] },
-   sub (GET  + /vehicle           + ?*) { [ 'asset', 'vehicle',         @_ ] },
-   sub (GET  + /vehicle/*         + ?*) { [ 'asset', 'vehicle',         @_ ] },
-   sub (GET  + /index | /         + ?*) { [ 'user',  'index',           @_ ] },
-   sub (GET  + /**                + ?*) { [ 'user',  'not_found',       @_ ] };
+   sub (GET  + /check_field     + ?*) { [ 'user', 'check_field',     @_ ] },
+   sub (POST + /user/login      + ?*) { [ 'user', 'login_action',    @_ ] },
+   sub (GET  + /user/login      + ?*) { [ 'user', 'login',           @_ ] },
+   sub (POST + /user/logout     + ?*) { [ 'user', 'logout_action',   @_ ] },
+   sub (POST + /user/password   + ?*) { [ 'user', 'from_request',    @_ ] },
+   sub (GET  + /user/password   + ?*) { [ 'user', 'change_password', @_ ] },
+   sub (GET  + /user/password/* + ?*) { [ 'user', 'change_password', @_ ] },
+   sub (POST + /user/profile    + ?*) { [ 'user', 'from_request',    @_ ] },
+   sub (GET  + /user/profile    + ?*) { [ 'user', 'profile',         @_ ] },
+   sub (GET  + /index | /       + ?*) { [ 'user', 'index',           @_ ] },
+   sub (GET  + /**              + ?*) { [ 'user', 'not_found',       @_ ] };
 }
 
 1;

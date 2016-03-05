@@ -1,6 +1,6 @@
 package App::Notitia::Model::Admin;
 
-use App::Notitia::Attributes;  # Will do namespace cleaning
+use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
                                 field_options loc register_action_paths
@@ -22,10 +22,10 @@ with    q(Web::Components::Role::Email);
 has '+moniker' => default => 'admin';
 
 register_action_paths
-   'admin/activate' => 'user/activate',
+   'admin/activate' => 'person/activate',
    'admin/index'    => 'admin/index',
-   'admin/people'   => 'users',
-   'admin/person'   => 'user';
+   'admin/people'   => 'people',
+   'admin/person'   => 'person';
 
 # Construction
 around 'get_stash' => sub {
@@ -42,40 +42,6 @@ around 'get_stash' => sub {
 my $_people_links_cache = {};
 
 # Private functions
-my $_bind_person_fields = sub {
-   my ($schema, $person) = @_; my $fields = {};
-
-   my $map = {
-      active           => { checked => $person->active, nobreak => TRUE, },
-      address          => {},
-      dob              => {},
-      email_address    => { class => 'server' },
-      first_name       => { class => 'server' },
-      home_phone       => {},
-      joined           => {},
-      last_name        => { class => 'server' },
-      mobile_phone     => {},
-      notes            => { class => 'autosize' },
-      password_expired => { checked => $person->password_expired,
-                            container_class => 'right' },
-      postcode         => {},
-      resigned         => {},
-      subscription     => {},
-   };
-
-   for my $k (keys %{ $map }) {
-      my $value = exists $map->{ $k }->{checked} ? TRUE : $person->$k();
-      my $opts  = field_options( $schema, 'Person', $k, $map->{ $k } );
-
-      $fields->{ $k } = bind( $k, $value, $opts );
-   }
-
-   $fields->{username} = bind( 'username', $person->name,
-                               field_options( $schema, 'Person', 'name', {} ) );
-
-   return $fields;
-};
-
 my $_list_all_people = sub {
    return $_[ 0 ]->list_all_people( { fields => { selected => $_[ 1 ] } } );
 };
@@ -102,6 +68,30 @@ my $_add_person_js = sub {
    return [ $self->check_field_server( 'first_name',    $opts ),
             $self->check_field_server( 'last_name',     $opts ),
             $self->check_field_server( 'email_address', $opts ), ];
+};
+
+my $_bind_person_fields = sub {
+   my ($self, $person) = @_;
+
+   my $map = {
+      active           => { checked => $person->active, nobreak => TRUE, },
+      address          => {},
+      dob              => {},
+      email_address    => { class => 'server' },
+      first_name       => { class => 'server' },
+      home_phone       => {},
+      joined           => {},
+      last_name        => { class => 'server' },
+      mobile_phone     => {},
+      notes            => { class => 'autosize' },
+      password_expired => { checked => $person->password_expired,
+                            container_class => 'right' },
+      postcode         => {},
+      resigned         => {},
+      subscription     => {},
+   };
+
+   return $self->bind_fields( $person, $map, 'Person' );
 };
 
 my $_create_user_email = sub {
@@ -287,13 +277,14 @@ sub person : Role(administrator) Role(person_manager) {
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $_maybe_find_person->( $person_rs, $name );
    my $page       =  {
-      fields      => $_bind_person_fields->( $self->schema, $person ),
+      fields      => $self->$_bind_person_fields( $person ),
       first_field => 'first_name',
       literal_js  => $self->$_add_person_js(),
       template    => [ 'contents', 'person' ],
       title       => loc( $req, 'person_management_heading' ), };
    my $fields     =  $page->{fields};
    my $action     =  $self->moniker.'/person';
+   my $opts       =  field_options( $self->schema, 'Person', 'name', {} );
 
    if ($name) {
       $people = $_list_all_people->( $person_rs, $person->next_of_kin );
@@ -308,6 +299,7 @@ sub person : Role(administrator) Role(person_manager) {
 
    $fields->{next_of_kin} = $_select_next_of_kin_list->( $people );
    $fields->{save       } = save_button( $req, $name, 'person' );
+   $fields->{username   } = bind( 'username', $person->name, $opts );
 
    return $self->get_stash( $req, $page );
 }
