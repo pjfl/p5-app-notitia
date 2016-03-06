@@ -1,5 +1,11 @@
 {
    "cdn": "http://cdnjs.cloudflare.com/ajax/libs/",
+   "components": {
+      "Model::Posts": {
+         "feed_subtitle": "Recent news and events",
+         "feed_title": "Blood Bike Events"
+      }
+   },
    "description": "People and resource scheduling",
    "jslibs": [
       [ "moocore", "mootools/1.4.5/mootools-core-full-nocompat.min.js" ],
