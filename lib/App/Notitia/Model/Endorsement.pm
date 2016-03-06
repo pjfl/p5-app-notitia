@@ -3,7 +3,7 @@ package App::Notitia::Model::Endorsement;
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
-                                loc register_action_paths
+                                loc management_button register_action_paths
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
@@ -77,13 +77,7 @@ my $_endorsement_links = sub {
       my $href = uri_for_action( $req, $path, [ $name, $code ] );
 
       push @{ $links }, {
-         value => { class => 'table-link fade',
-                    hint  => loc( $req, 'Hint' ),
-                    href  => $href,
-                    name  => "${name}-${action}",
-                    tip   => loc( $req, "${action}_management_tip" ),
-                    type  => 'link',
-                    value => loc( $req, "${action}_management_link" ), }, };
+         value => management_button( $req, $name, $action, $href ) };
    }
 
    $_endorsement_links_cache->{ $code } = $links;

@@ -29,10 +29,6 @@ nav {
 .clear:after {
    clear: both; content: " "; display: block; height: 0; visibility: hidden;
 }
-.field-label {
-   border: 2px solid transparent; .box-sizing; display: inline-block;
-   margin: 0; min-width: 160px; padding: 3.25px 0; vertical-align: top;
-}
 .hidden { display: none; }
 .main-nav {
    margin-top: 36px;
@@ -174,10 +170,14 @@ footer {
     background-color: #fcc; border-color: @darker;
    .border-radius; border: 1px solid; color: @darker; display: block;
    font-size: 0.825em; margin: 5px 0 0 165px;  max-width: 400px;
-   overflow: hidden; padding: 5px; white-space: nowrap;
+   overflow: hidden; padding: 5px 1em; white-space: nowrap;
 }
 .field-container { display: inline-block; max-width: 400px; min-width: 400px; }
 .field-group { display: block; }
+.field-label {
+   border: 2px solid transparent; .box-sizing; display: inline-block;
+   margin: 0; min-width: 160px; padding: 3.25px 0; vertical-align: top;
+}
 .form-separator {
    min-height: 2em; overflow: hidden; padding: 1em 0; width: 100%;
 }
@@ -521,6 +521,7 @@ a {
 }
 h1, h2, h3, h4, h5, h6 { margin: 0; }
 p { line-height: 1.5em; }
+select.standard-field { padding-left: 0.5em; }
 strong { font-weight: 700; }
 .align-center { text-align: center; }
 .align-left { text-align: left; }

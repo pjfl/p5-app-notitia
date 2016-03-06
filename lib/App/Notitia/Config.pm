@@ -71,8 +71,6 @@ has 'assetdir'        => is => 'lazy', isa => Path, coerce => TRUE,
 has 'assets'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'assets',
 
-has 'brand'           => is => 'ro',   isa => SimpleStr, default => NUL;
-
 has 'cdn'             => is => 'ro',   isa => SimpleStr, default => NUL;
 
 has 'cdnjs'           => is => 'lazy', isa => HashRef,
@@ -250,32 +248,398 @@ __END__
 
 =head1 Name
 
-App::Notitia::Config - People and resource scheduling
+App::Notitia::Config - Defines the configuration file options and their defaults
 
 =head1 Synopsis
 
-   use App::Notitia::Config;
-   # Brief but working code examples
+   use Class::Usul;
+
+   my $usul   = Class::Usul->new( config_class => 'App::Notitia::Config' );
+   my $vardir = $usul->config->vardir;
 
 =head1 Description
 
+Each of the attributes defined here, plus the ones inherited from
+L<Class::Usul::Config>, can have their default value overridden
+by the value in the configuration file
+
 =head1 Configuration and Environment
+
+The configuration file is, by default, in JSON format
+
+It is found by calling the L<find_apphome|Class::Usul::Functions/find_apphome>
+function
 
 Defines the following attributes;
 
 =over 3
 
+=item C<assetdir>
+
+Defaults to F<var/root/docs/assets>. Path object for the directory
+containing user uploaded files
+
+=item C<assets>
+
+A non empty simple string that defaults to F<assets>. Relative URI
+that locates the asset files uploaded by users
+
+=item C<cdn>
+
+A simple string containing the URI prefix for the content delivery network.
+Defaults to null. This needs to set in the configuration file otherwise
+the JavaScript libraries used by this application will not be found
+
+=item C<cdnjs>
+
+A hash reference of URIs for JavaScript libraries stored on the
+content delivery network. Created prepending L</cdn> to each of the
+L</jslibs> values
+
+=item C<components>
+
+A hash reference containing component specific configuration options. Keyed
+by component classname with the leading application class removed. e.g.
+
+   $self->config->components->{ 'Controller::Root' };
+
+Defines attributes for these components;
+
+=over 3
+
+=item C<Model::Posts>
+
+Defines these attributes;
+
+=over 3
+
+=item C<feed_subtitle>
+
+The RSS event feed subtitle
+
+=item C<feed_title>
+
+The RSS event feed title
+
 =back
+
+=back
+
+=item C<compress_css>
+
+Boolean default to true. Should the command line C<make-css> method compress
+it's output
+
+=item C<connect_params>
+
+A hash reference which defaults to C<< { quote_names => TRUE } >>. These
+are extra connection parameters passed to the database
+
+=item C<css>
+
+A non empty simple string that defaults to F<css>. Relative URI that locates
+the static CSS files
+
+=item C<database>
+
+A non empty simple string which defaults to C<schedule>.
+
+=item C<default_route>
+
+A non empty simple string that defaults to F</notitia/index> assuming that the
+L</mount_point> is F</notitia>. What to redirect to for all paths outside the
+mount point
+
+=item C<default_view>
+
+Simple string that defaults to C<html>. The moniker of the view that will be
+used by default to render the response
+
+=item C<deflate_types>
+
+An array reference of non empty simple strings. The list of mime types to
+deflate in L<Plack> middleware
+
+=item C<description>
+
+A simple string that defaults to null. The HTML meta attributes description
+value
+
+=item C<docs_mtime>
+
+Path object for the document tree modification time file. The indexing program
+touches this file setting it to modification time of the most recently changed
+file in the document tree
+
+=item C<docs_root>
+
+The project's document root.  A lazily evaluated directory that defaults to
+F<var/root/docs>. The document root for the microformat content pages
+
+=item C<drafts>
+
+A non empty simple string. Prepended to the pathname of files created in
+draft mode. Draft mode files are ignored by the static site generator
+
+=item C<extensions>
+
+A hash reference. The keys are microformat names and the values are an
+array reference of filename extensions that the corresponding view can
+render
+
+=item C<images>
+
+A non empty simple string that defaults to F<img>. Relative URI that
+locates the static image files
+
+=item C<js>
+
+A non empty simple string that defaults to F<js>. Relative URI that
+locates the static JavaScript files
+
+=item C<jslibs>
+
+An array reference of tuples. The first element is the library name, the second
+is a partial URI for a JavaScript library stored on the content delivery
+network. Defaults to an empty list
+
+=item C<keywords>
+
+A simple string that defaults to null. The HTML meta attributes keyword
+list value
+
+=item C<languages>
+
+A array reference of string derived from the list of configuration locales
+The value is constructed on demand and has no initial argument
+
+=item C<layout>
+
+A non empty simple string that defaults to F<standard>. The name of the
+L<Template::Toolkit> template used to render the HTML response page. The
+template will be wrapped by F<wrapper.tt>
+
+=item C<less>
+
+A non empty simple string that defaults to F<less>. Relative URI that
+locates the static Less files
+
+=item C<less_files>
+
+The list of predefined colour schemes and feature specific less files
+
+=item C<load_factor>
+
+Defaults to 14. A non zero positive integer passed to the C<bcrypt> function
+
+=item C<max_asset_size>
+
+Integer defaults to 4Mb. Maximum size in bytes of the file upload
+
+=item C<max_messages>
+
+Non zero positive integer defaults to 3. The maximum number of messages to
+store in the session between requests
+
+=item C<max_sess_time>
+
+Time in seconds before a session expires. Defaults to 15 minutes
+
+=item C<mdn_tab_width>
+
+Non zero positive integer defaults to 3. The number of spaces required to
+indent a code block in the markdown class
+
+=item C<min_id_length>
+
+The length of the automatically generated user names. Defaults to three
+characters
+
+=item C<min_name_length>
+
+The minimum length of a person name (last name plus first name). The
+automatic user name generator will refuse to operate on fewer characters
+than this. Defaults to five characters
+
+=item C<mount_point>
+
+A non empty simple string that defaults to F</notitia>. The root of the URI on
+which the application is mounted
+
+=item C<no_index>
+
+An array reference that defaults to C<[ .git .svn cgi-bin  ]>.
+List of files and directories under the document root to ignore
+
+=item C<no_user_email>
+
+Suppress the sending of user activation emails. Used in development only
+
+=item C<owner>
+
+A non empty simple string that defaults to the configuration C<prefix>
+attribute. Name of the user and group that should own all files and
+directories in the application when installed
+
+=item C<person_prefix>
+
+This non empty simple string must be set in the configuration file for
+the automatic user name generator to work. It is the "sphere of authority"
+prefix which is prepended to the shortcodes created by the generator. This
+should be a unique value for each installation of this application
+
+=item C<port>
+
+A lazily evaluated non zero positive integer that defaults to 8085. This
+is the port number that the application server will listen on by default
+when started by the control daemon
+
+=item C<posts>
+
+A non empty simple string the defaults to F<posts>.  The directory
+name where dated markdown files are created in category
+directories. These are the blogs posts or news articles
+
+=item C<repo_url>
+
+A simple string that defaults to null. The URI of the source code repository
+for this project
+
+=item C<request_roles>
+
+Defaults to C<L10N>, C<Session>, C<JSON>, and C<Cookie>. The list of roles to
+apply to the default request base class
+
+=item C<schema_classes>
+
+A hash reference of non empty simple strings which defaults to
+C<< { 'schedule' => 'App::MCP::Schema::Schedule' } >>. Maps database
+names onto DBIC schema classes
+
+=item C<scrubber>
+
+A string used as a character class in a regular expression. These character
+are scrubber from user input so they cannot appear in any user supplied
+pathnames or query terms. Defaults to C<[;\$\`&\r\n]>
+
+=item C<serve_as_static>
+
+A non empty simple string which defaults to
+C<css | favicon.ico | img | js | less>. Selects the resources that are served
+by L<Plack::Middleware::Static>
+
+=item C<server>
+
+A non empty simple string that defaults to C<Starman>. The L<Plack> engine
+name to load when the documentation server is started in production mode
+
+=item C<session_attr>
+
+A hash reference of array references. These attributes are added to the ones in
+L<Web::ComposableRequest::Session> to created the session class. The hash key
+is the attribute name and the tuple consists of a type and a optional default
+value. The values of these attributes persist between requests. The default
+list of attributes is;
+
+=over 3
+
+=item C<query>
+
+Default search string
+
+=item C<skin>
+
+Name of the default skin. Defaults to C<hyde> which is derived from
+Jekyll
+
+=item C<theme>
+
+A non empty simple string that defaults to C<yellow>. The name of the
+default colour scheme
+
+=back
+
+=item C<skin>
+
+A non empty simple string that defaults to C<hyde>. The name of the default
+skin used to theme the appearance of the application
+
+=item C<slot_limits>
+
+An array reference containing six integers. These are the limits on the number
+of rota slots allowed for each type human resource. In order they are;
+controllers day, controllers night, riders day, riders night, spare drivers
+day, and spare drivers night
+
+=item C<stash_attr>
+
+A hash reference of array references. The keys indicate a data source and the
+values are lists of attribute names. The values of the named attributes are
+copied into the stash. Defines the following keys and values;
+
+=over 3
+
+=item C<config>
+
+The list of configuration attributes whose values are copied to the C<page>
+hash reference in the stash
+
+=item C<links>
+
+An array reference that defaults to
+C<[ assets css images js ]>.  The application pre-calculates
+URIs for these static directories for use in the HTML templates
+
+=item C<request>
+
+The list of request attributes whose values are copied to the C<page> hash
+reference in the stash
+
+=item C<session>
+
+An array reference that defaults to the keys of the L</session_attr> hash
+reference. List of attributes that can be specified as query parameters in
+URIs. Their values are persisted between requests stored in the session store
+
+=back
+
+=item C<title>
+
+A non empty simple string that defaults to C<Notitia>. The applcation's
+title as displayed in the title bar of all pages
+
+=item C<user>
+
+Simple string that defaults to null. If set the daemon process will change
+to running as this user when it forks into the background
+
+=item C<user_home>
+
+The home directory of the user who owns the files and directories in the
+the application
+
+=item C<workers>
+
+A non zero positive integer. The number of processes to start when running
+under a pre-forking server. Defaults to 5
 
 =head1 Subroutines/Methods
 
+None
+
 =head1 Diagnostics
+
+None
 
 =head1 Dependencies
 
 =over 3
 
-=item L<Class::Usul>
+=item L<Class::Usul::Config>
+
+=item L<File::DataClass>
+
+=item L<Moo>
 
 =back
 

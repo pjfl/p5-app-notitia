@@ -4,10 +4,12 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Util     qw( date_data_type foreign_key_data_type
-                               nullable_foreign_key_data_type
-                               serial_data_type varchar_data_type );
-use Class::Usul::Functions qw( throw );
+use App::Notitia::Constants qw( VARCHAR_MAX_SIZE );
+use App::Notitia::Util      qw( date_data_type foreign_key_data_type
+                                nullable_foreign_key_data_type
+                                serial_data_type varchar_data_type );
+use Class::Usul::Functions  qw( throw );
+use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -64,6 +66,15 @@ my $_assert_event_assignment_allowed = sub {
          }
       }
    }
+
+   return;
+};
+
+my $_assert_public_or_private = sub {
+   my $self = shift;
+
+   $self->name and $self->owner_id and throw
+      'Cannot set name and owner', level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return;
 };
@@ -125,8 +136,49 @@ sub assign_to_slot {
    return $slot->update;
 }
 
+sub insert {
+   my $self = shift;
+
+   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   $self->$_assert_public_or_private();
+
+   return $self->next::method;
+}
+
 sub label {
-   return $_[ 0 ]->name ? $_[ 0 ]->name.' ('.$_[ 0 ]->vrn.')' : $_[ 0 ]->vrn;
+   return $_[ 0 ]->name  ? $_[ 0 ]->vrn.' ('.$_[ 0 ]->name.')'
+        : $_[ 0 ]->owner ? $_[ 0 ]->vrn.' ('.$_[ 0 ]->owner.')'
+                         : $_[ 0 ]->vrn;
+}
+
+sub update {
+   my ($self, $columns) = @_;
+
+   $columns and $self->set_inflated_columns( $columns ); $self->validate;
+
+   $self->$_assert_public_or_private();
+
+   return $self->next::method;
+}
+
+sub validation_attributes {
+   return { # Keys: constraints, fields, and filters (all hashes)
+      constraints      => {
+         name          => { max_length => 64, min_length => 3, },
+         notes         => { max_length => VARCHAR_MAX_SIZE(), min_length => 0 },
+         vrn           => { max_length => 16, min_length => 3, },
+      },
+      fields           => {
+         aquired       => { validate => 'isValidDate' },
+         disposed      => { validate => 'isValidDate' },
+         name          => { validate => 'isValidLength isValidIdentifier' },
+         notes         => { validate => 'isValidLength isPrintable' },
+         vrn           => {
+            validate   => 'isMandatory isValidLength isValidIdentifier' },
+      },
+      level => 8,
+   };
 }
 
 1;

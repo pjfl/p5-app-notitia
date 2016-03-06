@@ -3,8 +3,7 @@
    <article>
       <h4>[% page.title %]</h4>
 [% IF page.fields.href; href = page.fields.href -%]
-[% ELSE; href = uri_for_action( 'event/event' ) -%]
-[% END %]
+[% ELSE; href = uri_for_action( 'event/event' ); END %]
       <form action="[% href %]" class="skinny"
            enctype="application/x-www-form-urlencoded"
             method="post" name="event-admin">

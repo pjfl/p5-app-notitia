@@ -3,8 +3,8 @@ package App::Notitia::Model::Certification;
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
-                                loc register_action_paths save_button
-                                uri_for_action );
+                                loc management_button register_action_paths
+                                save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( str2date_time time2str );
@@ -56,10 +56,6 @@ my $_certs_headers = sub {
    return [ map { { value => loc( $req, "certs_heading_${_}" ) } } 0 .. 1 ];
 };
 
-my $_find_cert = sub {
-   return $_[ 2 ] ? $_[ 0 ]->find_cert_by( $_[ 1 ], $_[ 2 ]) : Class::Null->new;
-};
-
 # Private methods
 my $_add_certification_js = sub {
    my $self = shift;
@@ -91,13 +87,7 @@ my $_cert_links = sub {
       my $href = uri_for_action( $req, $path, [ $name, $type ] );
 
       push @{ $links }, {
-         value => { class => 'table-link fade',
-                    hint  => loc( $req, 'Hint' ),
-                    href  => $href,
-                    name  => "${name}-${action}",
-                    tip   => loc( $req, "${action}_management_tip" ),
-                    type  => 'link',
-                    value => loc( $req, "${action}_management_link" ), }, };
+         value => management_button( $req, $name, $action, $href ) };
    }
 
    $_cert_links_cache->{ $type } = $links;
@@ -114,6 +104,12 @@ my $_list_all_certs = sub {
 
    return [ [ NUL, NUL ], $type_rs->search
             ( { type => 'certification' }, { columns => [ 'name' ] } )->all ];
+};
+
+my $_maybe_find_cert = sub {
+   my ($self, $name, $type) = @_;
+
+   return $type ? $self->find_cert_by( $name, $type ) : Class::Null->new;
 };
 
 my $_update_cert_from_request = sub {
@@ -152,8 +148,7 @@ sub certification : Role(administrator) Role(person_manager) {
 
    my $name      =  $req->uri_params->( 0 );
    my $type      =  $req->uri_params->( 1, { optional => TRUE } );
-   my $cert_rs   =  $self->schema->resultset( 'Certification' );
-   my $cert      =  $_find_cert->( $cert_rs, $name, $type );
+   my $cert      =  $self->$_maybe_find_cert( $name, $type );
    my $page      =  {
       fields     => $self->$_bind_cert_fields( $cert ),
       literal_js => $self->$_add_certification_js(),

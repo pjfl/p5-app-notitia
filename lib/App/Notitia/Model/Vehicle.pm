@@ -2,11 +2,12 @@ package App::Notitia::Model::Vehicle;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( admin_navigation_links bind delete_button
-                                field_options loc register_action_paths
+use App::Notitia::Util      qw( admin_navigation_links bind create_button
+                                delete_button field_options loc
+                                management_button register_action_paths
                                 save_button uri_for_action );
 use Class::Null;
-use Class::Usul::Functions  qw( throw );
+use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( str2date_time );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Moo;
@@ -39,25 +40,92 @@ around 'get_stash' => sub {
 my $_vehicle_links_cache = {};
 
 # Private functions
-my $_add_vehicle_button = sub {
-   my ($req, $action) = @_;
-
-   return { class => 'fade',
-            hint  => loc( $req, 'Hint' ),
-            href  => uri_for_action( $req, $action ),
-            name  => 'create_vehicle',
-            tip   => loc( $req, 'vehicle_create_tip', [ 'vehicle' ] ),
-            type  => 'link',
-            value => loc( $req, 'vehicle_create_link' ) };
-};
-
 my $_vehicles_headers = sub {
    my $req = shift;
 
    return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } } 0 .. 1 ];
 };
 
+my $_vehicle_type_tuple = sub {
+   my ($type, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   $opts->{selected} //= NUL;
+   $opts->{selected}   = $opts->{selected} eq $type ? TRUE : FALSE;
+
+   return [ $type->name, $type, $opts ];
+};
+
 # Private methods
+my $_add_vehicle_js = sub {
+   my $self = shift; my $opts = { domain => 'schedule', form => 'Vehicle' };
+
+   return [ $self->check_field_server( 'vrn', $opts ) ];
+};
+
+my $_bind_vehicle_fields = sub {
+   my ($self, $vehicle, $opts) = @_; $opts //= {};
+
+   my $disabled =  $opts->{disabled} // FALSE;
+   my $map      =  {
+      aquired   => { disabled => $disabled },
+      disposed  => { disabled => $disabled },
+      name      => { disabled => $disabled,  label    => 'vehicle_name' },
+      notes     => { class    => 'autosize', disabled => $disabled },
+      vrn       => { class    => 'server',   disabled => $disabled },
+   };
+
+   return $self->bind_fields( $vehicle, $map, 'Vehicle' );
+};
+
+my $_list_vehicle_types = sub {
+   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   my $fields  = delete $opts->{fields} // {};
+   my $type_rs = $self->schema->resultset( 'Type' );
+
+   return [ map { $_vehicle_type_tuple->( $_, $fields ) }
+            $type_rs->search( { type    => 'vehicle'  },
+                              { columns => [ 'id', 'name' ], %{ $opts } } )
+                    ->all ];
+};
+
+my $_maybe_find_vehicle = sub {
+   my ($self, $vrn) = @_; $vrn or return Class::Null->new;
+
+   my $rs = $self->schema->resultset( 'Vehicle' );
+
+   return $rs->find_vehicle_by( $vrn, { prefetch => [ 'type' ] } );
+};
+
+my $_select_owner_list = sub {
+   my ($self, $vehicle) = @_; my $schema = $self->schema;
+
+   my $opts   = { fields => { selected => $vehicle->owner } };
+   my $people = $schema->resultset( 'Person' )->list_all_people( $opts );
+
+   return bind( 'owner_id', [ [ NUL, NUL ], @{ $people } ], { numify => TRUE });
+};
+
+my $_update_vehicle_from_request = sub {
+   my ($self, $req, $vehicle) = @_; my $params = $req->body_params; my $v;
+
+   my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
+
+   for my $attr (qw( aquired disposed name notes vrn )) {
+      my $v = $params->( $attr, $opts ); defined $v or next;
+
+      length $v and is_member $attr, [ qw( aquired disposed ) ]
+         and $v = str2date_time( $v, 'GMT' );
+
+      $vehicle->$attr( $v );
+   }
+
+   $v = $params->( 'owner_id', $opts ); $vehicle->owner_id( $v ? $v : undef );
+   $v = $params->( 'type', $opts ); defined $v and $vehicle->type_id( $v );
+
+   return;
+};
+
 my $_vehicle_links = sub {
    my ($self, $req, $name) = @_; my $links = $_vehicle_links_cache->{ $name };
 
@@ -67,13 +135,7 @@ my $_vehicle_links = sub {
       my $href = uri_for_action( $req, $self->moniker."/${action}", [ $name ] );
 
       push @{ $links }, {
-         value => { class => 'table-link fade',
-                    hint  => loc( $req, 'Hint' ),
-                    href  => $href,
-                    name  => "${name}-${action}",
-                    tip   => loc( $req, "${action}_management_tip" ),
-                    type  => 'link',
-                    value => loc( $req, "${action}_management_link" ), }, };
+         value => management_button( $req, $name, $action, $href ) };
    }
 
    $_vehicle_links_cache->{ $name } = $links;
@@ -81,11 +143,25 @@ my $_vehicle_links = sub {
    return @{ $links };
 };
 
+my $_vehicle_type_list = sub {
+   my ($self, $vehicle) = @_;
+
+   my $opts   = { fields => { selected => $vehicle->type } };
+   my $types  = $self->$_list_vehicle_types( $opts );
+   my $values = [ [ NUL, NUL ], @{ $types } ];
+
+   return bind( 'type', $values, { label => 'vehicle_type', numify => TRUE } );
+};
+
 # Public methods
 sub create_vehicle_action : Role(administrator) Role(asset_manager) {
    my ($self, $req) = @_;
 
-   my $vrn      = $req->body_params->( 'vrn' );
+   my $vehicle  = $self->schema->resultset( 'Vehicle' )->new_result( {} );
+
+   $self->$_update_vehicle_from_request( $req, $vehicle ); $vehicle->insert;
+
+   my $vrn      = $vehicle->vrn;
    my $message  = [ 'Vehicle [_1] created by [_2]', $vrn, $req->username ];
    my $location = uri_for_action( $req, $self->moniker.'/vehicle', [ $vrn ] );
 
@@ -96,6 +172,10 @@ sub delete_vehicle_action : Role(administrator) Role(asset_manager) {
    my ($self, $req) = @_;
 
    my $vrn      = $req->uri_params->( 0 );
+   my $vehicle = $self->schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+
+   $vehicle->delete;
+
    my $message  = [ 'Vehicle [_1] deleted by [_2]', $vrn, $req->username ];
    my $location = uri_for_action( $req, $self->moniker.'/vehicles' );
 
@@ -106,6 +186,10 @@ sub update_vehicle_action : Role(administrator) Role(asset_manager) {
    my ($self, $req) = @_;
 
    my $vrn     = $req->uri_params->( 0 );
+   my $vehicle = $self->schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+
+   $self->$_update_vehicle_from_request( $req, $vehicle ); $vehicle->update;
+
    my $message = [ 'Vehicle [_1] updated by [_2]', $vrn, $req->username ];
 
    return { redirect => { location => $req->uri, message => $message } };
@@ -114,10 +198,24 @@ sub update_vehicle_action : Role(administrator) Role(asset_manager) {
 sub vehicle : Role(administrator) Role(asset_manager) {
    my ($self, $req) = @_;
 
-   my $page    =  {
-      fields   => {},
-      template => [ 'contents', 'vehicle' ],
-      title    => loc( $req, 'vehicle_management_heading' ), };
+   my $action    =  $self->moniker.'/vehicle';
+   my $vrn       =  $req->uri_params->( 0, { optional => TRUE } );
+   my $vehicle   =  $self->$_maybe_find_vehicle( $vrn );
+   my $page      =  {
+      fields     => $self->$_bind_vehicle_fields( $vehicle ),
+      literal_js => $self->$_add_vehicle_js(),
+      template   => [ 'contents', 'vehicle' ],
+      title      => loc( $req, 'vehicle_management_heading' ), };
+   my $fields    =  $page->{fields};
+
+   if ($vrn) {
+      $fields->{delete} = delete_button( $req, $vrn, 'vehicle' );
+      $fields->{href  } = uri_for_action( $req, $action, [ $vrn ] );
+   }
+
+   $fields->{owner} = $self->$_select_owner_list( $vehicle );
+   $fields->{type } = $self->$_vehicle_type_list( $vehicle );
+   $fields->{save } = save_button( $req, $vrn, 'vehicle' );
 
    return $self->get_stash( $req, $page );
 }
@@ -129,17 +227,18 @@ sub vehicles : Role(administrator) Role(asset_manager) {
       fields   => { headers => $_vehicles_headers->( $req ), rows => [], },
       template => [ 'contents', 'table' ],
       title    => loc( $req, 'vehicles_management_heading' ), };
+   my $opts    =  { order_by => 'vrn', prefetch => [ 'owner' ] };
    my $rs      =  $self->schema->resultset( 'Vehicle' );
    my $action  =  $self->moniker.'/vehicle';
    my $rows    =  $page->{fields}->{rows};
 
-   for my $vehicle (@{ $rs->list_all_vehicles( { order_by => 'vrn' } ) }) {
+   for my $vehicle (@{ $rs->list_all_vehicles( $opts ) }) {
       push @{ $rows },
          [ { value => $vehicle->[ 0 ] },
            $self->$_vehicle_links( $req, $vehicle->[ 1 ]->vrn ) ];
    }
 
-   $page->{fields}->{add} = $_add_vehicle_button->( $req, $action );
+   $page->{fields}->{add} = create_button( $req, $action, 'vehicle' );
 
    return $self->get_stash( $req, $page );
 }

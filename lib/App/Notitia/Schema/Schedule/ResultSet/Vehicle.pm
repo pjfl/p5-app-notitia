@@ -4,6 +4,8 @@ use strictures;
 use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( FALSE NUL TRUE );
+use Class::Usul::Functions  qw( throw );
+use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Private functions
 my $_vehicle_tuple = sub {
@@ -40,6 +42,15 @@ sub new_result {
    $owner and $columns->{owner_id} = $self->$_find_owner( $owner )->id;
 
    return $self->next::method( $columns );
+}
+
+sub find_vehicle_by {
+   my ($self, $vrn, $opts) = @_; $opts //= {};
+
+   my $vehicle = $self->search( { 'vrn' => $vrn }, $opts )->single
+     or throw 'Vehicle [_1] not found', [ $vrn ], rv => HTTP_EXPECTATION_FAILED;
+
+   return $vehicle;
 }
 
 sub list_all_vehicles {

@@ -13,17 +13,17 @@ use Scalar::Util               qw( blessed weaken );
 use YAML::Tiny;
 
 our @EXPORT_OK = qw( admin_navigation_links bind bool_data_type
-                     build_navigation build_tree clone date_data_type
-                     delete_button enumerated_data_type enhance field_options
-                     foreign_key_data_type get_hashed_pw get_salt is_draft
-                     is_encrypted iterator loc localise_tree make_id_from
-                     make_name_from mtime new_salt
-                     nullable_foreign_key_data_type nullable_varchar_data_type
-                     numerical_id_data_type rota_navigation_links save_button
-                     serial_data_type set_element_focus
-                     set_on_create_datetime_data_type slot_limit_index
-                     register_action_paths show_node stash_functions
-                     uri_for_action varchar_data_type );
+                     build_navigation build_tree clone create_button
+                     date_data_type delete_button enumerated_data_type enhance
+                     field_options foreign_key_data_type get_hashed_pw get_salt
+                     is_draft is_encrypted iterator loc localise_tree
+                     make_id_from make_name_from management_button mtime
+                     new_salt nullable_foreign_key_data_type
+                     nullable_varchar_data_type numerical_id_data_type
+                     rota_navigation_links save_button serial_data_type
+                     set_element_focus set_on_create_datetime_data_type
+                     slot_limit_index register_action_paths show_node
+                     stash_functions uri_for_action varchar_data_type );
 
 # Private class attributes
 my $_action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -235,6 +235,18 @@ sub clone (;$) {
    return $v;
 }
 
+sub create_button ($$$) {
+   my ($req, $action, $k) = @_;
+
+   return { class => 'fade',
+            hint  => loc( $req, 'Hint' ),
+            href  => uri_for_action( $req, $action ),
+            name  => "create_${k}",
+            tip   => loc( $req, "${k}_create_tip", [ $k ] ),
+            type  => 'link',
+            value => loc( $req, "${k}_create_link" ) };
+}
+
 sub date_data_type () {
    return { data_type     => 'datetime',
             default_value => '0000-00-00',
@@ -383,6 +395,18 @@ sub make_id_from ($) {
 
 sub make_name_from ($) {
    my $v = shift; $v =~ s{ [_\-] }{ }gmx; return $v;
+}
+
+sub management_button ($$$$) {
+   my ($req, $name, $action, $href) = @_;
+
+   return { class => 'table-link fade',
+            hint  => loc( $req, 'Hint' ),
+            href  => $href,
+            name  => "${name}-${action}",
+            tip   => loc( $req, "${action}_management_tip" ),
+            type  => 'link',
+            value => loc( $req, "${action}_management_link" ), };
 }
 
 sub mtime ($) {

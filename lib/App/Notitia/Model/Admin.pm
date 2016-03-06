@@ -2,8 +2,9 @@ package App::Notitia::Model::Admin;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( admin_navigation_links bind delete_button
-                                field_options loc register_action_paths
+use App::Notitia::Util      qw( admin_navigation_links bind create_button
+                                delete_button field_options loc
+                                management_button register_action_paths
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
@@ -42,22 +43,6 @@ around 'get_stash' => sub {
 my $_people_links_cache = {};
 
 # Private functions
-my $_add_person_button = sub {
-   my ($req, $action) = @_;
-
-   return { class => 'fade',
-            hint  => loc( $req, 'Hint' ),
-            href  => uri_for_action( $req, $action ),
-            name  => 'create_person',
-            tip   => loc( $req, 'person_create_tip', [ 'person' ] ),
-            type  => 'link',
-            value => loc( $req, 'person_create_link' ) };
-};
-
-my $_list_all_people = sub {
-   return $_[ 0 ]->list_all_people( { fields => { selected => $_[ 1 ] } } );
-};
-
 my $_maybe_find_person = sub {
    return $_[ 1 ] ? $_[ 0 ]->find_person_by( $_[ 1 ] ) : Class::Null->new;
 };
@@ -106,7 +91,7 @@ my $_bind_person_fields = sub {
    return $self->bind_fields( $person, $map, 'Person' );
 };
 
-my $_create_user_email = sub {
+my $_create_person_email = sub {
    my ($self, $req, $person, $password) = @_;
 
    my $conf    = $self->config;
@@ -159,13 +144,7 @@ my $_people_links = sub {
       my $href = uri_for_action( $req, $path, [ $name ] );
 
       push @{ $links }, {
-         value => { class => 'table-link fade',
-                    hint  => loc( $req, 'Hint' ),
-                    href  => $href,
-                    name  => "${name}-${action}",
-                    tip   => loc( $req, "${action}_management_tip" ),
-                    type  => 'link',
-                    value => loc( $req, "${action}_management_link" ), }, };
+         value => management_button( $req, $name, $action, $href ) };
    }
 
    $_people_links_cache->{ $name } = $links;
@@ -240,16 +219,16 @@ sub create_person_action : Role(administrator) Role(person_manager) {
 
    $self->$_update_person_from_request( $req, $person );
 
-   my $role = $req->body_params->( 'roles' );
+   my $role = $req->body_params->( 'roles', { optional => TRUE } );
 
    $person->password( my $password = substr create_token, 0, 12 );
    $person->password_expired( TRUE );
    $person->insert;
    # TODO: This can throw which will fuck shit up. Needs a transaction
-   $person->add_member_to( $role );
+   $role and $person->add_member_to( $role );
 
    $self->config->no_user_email
-      or $self->$_create_user_email( $req, $person, $password );
+      or $self->$_create_person_email( $req, $person, $password );
 
    my $action   = $self->moniker.'/person';
    my $location = uri_for_action( $req, $action, [ $person->name ] );
@@ -271,7 +250,7 @@ sub delete_person_action : Role(administrator) Role(person_manager) {
 }
 
 sub find_person_by {
-   return $_[ 0 ]->schema->resultset( 'Person' )->find_person_by( $_[ 1 ] );
+   return shift->schema->resultset( 'Person' )->find_person_by( @_ );
 }
 
 sub index : Role(any) {
@@ -298,20 +277,23 @@ sub person : Role(administrator) Role(person_manager) {
    my $action     =  $self->moniker.'/person';
    my $opts       =  field_options( $self->schema, 'Person', 'name', {} );
 
+   $fields->{username} = bind( 'username', $person->name, $opts );
+
    if ($name) {
-      $people = $_list_all_people->( $person_rs, $person->next_of_kin );
+      my $opts = { fields => { selected => $person->next_of_kin } };
+
+      $people  = $person_rs->list_all_people( $opts );
       $fields->{user_href} = uri_for_action( $req, $action, [ $name ] );
       $fields->{delete   } = delete_button( $req, $name, 'person' );
       $fields->{roles    } = bind( 'roles', $person->list_roles );
    }
    else {
-      $people = $person_rs->list_all_people();
+      $people  = $person_rs->list_all_people();
       $fields->{roles    } = bind( 'roles', $self->$_list_all_roles() );
    }
 
    $fields->{next_of_kin} = $_select_next_of_kin_list->( $people );
-   $fields->{save       } = save_button( $req, $name, 'person' );
-   $fields->{username   } = bind( 'username', $person->name, $opts );
+   $fields->{save} = save_button( $req, $name, 'person' );
 
    return $self->get_stash( $req, $page );
 }
@@ -336,7 +318,7 @@ sub people : Role(any) {
                          $self->$_people_links( $req, $person->[ 1 ]->name ) ];
    }
 
-   $page->{fields}->{add} = $_add_person_button->( $req, $action );
+   $page->{fields}->{add} = create_button( $req, $action, 'person' );
 
    return $self->get_stash( $req, $page );
 }

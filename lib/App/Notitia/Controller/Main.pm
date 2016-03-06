@@ -29,6 +29,8 @@ sub dispatch_request {
    sub (GET  + /rota  | /rota/**   + ?*) { [ 'sched', 'day_rota',       @_ ] },
    sub (POST + /slot/**            + ?*) { [ 'sched', 'from_request',   @_ ] },
    sub (GET  + /slot/**            + ?*) { [ 'sched', 'slot',           @_ ] },
+   sub (POST + /vehicle            + ?*) { [ 'asset', 'from_request',   @_ ] },
+   sub (POST + /vehicle/*          + ?*) { [ 'asset', 'from_request',   @_ ] },
    sub (GET  + /vehicle            + ?*) { [ 'asset', 'vehicle',        @_ ] },
    sub (GET  + /vehicle/*          + ?*) { [ 'asset', 'vehicle',        @_ ] },
    sub (GET  + /vehicles           + ?*) { [ 'asset', 'vehicles',       @_ ] },

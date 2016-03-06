@@ -57,6 +57,12 @@ msgstr "Assessment"
 msgid "asset_manager"
 msgstr "Asset Manager"
 
+msgid "aquired"
+msgstr "Aquired"
+
+msgid "bike"
+msgstr "Bike"
+
 msgid "bike_rider"
 msgstr "Bike Rider"
 
@@ -74,6 +80,9 @@ msgstr "Bluelight"
 
 msgid "c_advanced"
 msgstr "C Advanced"
+
+msgid "car"
+msgstr "Car"
 
 msgid "catagory_a"
 msgstr "Catagory A"
@@ -170,6 +179,9 @@ msgstr "Delete the [_1] record for [_2]"
 
 msgid "description"
 msgstr "Description"
+
+msgid "disposed"
+msgstr "Disposed"
 
 msgid "dob"
 msgstr "Date of Birth"
@@ -354,7 +366,7 @@ msgstr "Notes"
 msgid "old_password"
 msgstr "Old Password"
 
-msgid "owner"
+msgid "owner_id"
 msgstr "Owner"
 
 msgid "Parameter [_1] is not a valid email address"
@@ -480,6 +492,9 @@ msgstr "Subscription"
 msgid "summary_management_link"
 msgstr "View"
 
+msgid "trailer"
+msgstr "Trailer"
+
 msgid "unparticipate"
 msgstr "Cancel"
 
@@ -504,6 +519,21 @@ msgstr "Create new 'vehicle' records"
 msgid "vehicle_management_heading"
 msgstr "Vehicle"
 
+msgid "vehicle_management_link"
+msgstr "Edit"
+
+msgid "vehicle_name"
+msgstr "Nickname"
+
+msgid "vehicle_type"
+msgstr "Type"
+
+msgid "vehicles_heading_0"
+msgstr "Vehicle"
+
+msgid "vehicles_heading_1"
+msgstr "Edit"
+
 msgid "vehicles_management_heading"
 msgstr "Vehicles"
 
@@ -512,6 +542,9 @@ msgstr "All Vehicles"
 
 msgid "vehicles_list_tip"
 msgstr "Displays 'vehicle' records"
+
+msgid "vrn"
+msgstr "Registration"
 
 msgid "yield_slot_tip"
 msgstr "Yield this [_1] slot"

@@ -2,8 +2,9 @@ package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
-use App::Notitia::Util      qw( admin_navigation_links bind delete_button
-                                field_options loc register_action_paths
+use App::Notitia::Util      qw( admin_navigation_links bind create_button
+                                delete_button field_options loc
+                                management_button register_action_paths
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
@@ -40,18 +41,6 @@ around 'get_stash' => sub {
 my $_event_links_cache = {};
 
 # Private functions
-my $_create_event_button = sub {
-   my ($req, $action) = @_;
-
-   return { class => 'fade',
-            hint  => loc( $req, 'Hint' ),
-            href  => uri_for_action( $req, $action ),
-            name  => 'create_event',
-            tip   => loc( $req, 'event_create_tip', [ 'event' ] ),
-            type  => 'link',
-            value => loc( $req, 'event_create_link' ) };
-};
-
 my $_events_headers = sub {
    return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 2 ];
 };
@@ -102,13 +91,7 @@ my $_event_links = sub {
       my $href = uri_for_action( $req, $self->moniker."/${action}", [ $name ] );
 
       push @{ $links }, {
-         value => { class => 'table-link fade',
-                    hint  => loc( $req, 'Hint' ),
-                    href  => $href,
-                    name  => "${name}-${action}",
-                    tip   => loc( $req, "${action}_management_tip" ),
-                    type  => 'link',
-                    value => loc( $req, "${action}_management_link" ), }, };
+         value => management_button( $req, $name, $action, $href ) };
    }
 
    $_event_links_cache->{ $name } = $links;
@@ -270,7 +253,7 @@ sub events : Role(any) {
            $self->$_event_links( $req, $event->[ 1 ]->name ) ];
    }
 
-   $page->{fields}->{add} = $_create_event_button->( $req, $action );
+   $page->{fields}->{add} = create_button( $req, $action, 'event' );
 
    return $self->get_stash( $req, $page );
 }

@@ -2,9 +2,20 @@
 <div class="unit four-fifths">
    <article>
       <h4>[% page.title %]</h4>
-      <form action="[% uri_for_action( 'admin/vehicle' ) %]" class="skinny"
+[% IF page.fields.href; href = page.fields.href -%]
+[% ELSE; href = uri_for_action( 'asset/vehicle' ); END %]
+      <form action="[% href %]" class="skinny"
            enctype="application/x-www-form-urlencoded"
             method="post" name="vehicle-admin">
+[% TextField( page.fields.vrn ) -%]
+[% Select( page.fields.type ) -%]
+[% TextField( page.fields.name ) -%]
+[% Select( page.fields.owner ) -%]
+[% DateField( page.fields.aquired ) -%]
+[% DateField( page.fields.disposed ) -%]
+[% IF page.fields.notes; TextArea( page.fields.notes ); END -%]
+[% IF page.fields.save; Button( page.fields.save ); END -%]
+[% IF page.fields.delete; Button( page.fields.delete ); END -%]
       </form>
    </article>
 </div>
