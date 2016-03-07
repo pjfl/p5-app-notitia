@@ -8,8 +8,7 @@ sub find_rota {
    my ($self, $name, $date) = @_;
 
    my $schema     =  $self->result_source->schema;
-   my $rota_type  =  $schema->resultset( 'Type' )->search
-      ( { name    => $name, type => 'rota' } )->single;
+   my $rota_type  =  $schema->resultset( 'Type' )->find_rota_by( $name );
    my $dtp        =  $schema->storage->datetime_parser;
    my $rota       =  $self->search
       ( { date    => $dtp->format_datetime( $date ),

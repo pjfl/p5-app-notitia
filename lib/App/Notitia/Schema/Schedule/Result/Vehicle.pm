@@ -1,7 +1,8 @@
 package App::Notitia::Schema::Schedule::Result::Vehicle;
 
 use strictures;
-use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
+use overload '""' => sub { $_[ 0 ]->_as_string },
+             '+'  => sub { $_[ 0 ]->_as_number }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( VARCHAR_MAX_SIZE );
@@ -35,8 +36,12 @@ $class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
 $class->belongs_to( type  => "${result}::Type", 'type_id' );
 
 # Private methods
+sub _as_number {
+   return $_[ 0 ]->id;
+}
+
 sub _as_string {
-   return $_[ 0 ]->name ? $_[ 0 ]->name : $_[ 0 ]->vrn;
+   return $_[ 0 ]->vrn;
 }
 
 my $_assert_event_assignment_allowed = sub {
@@ -91,13 +96,9 @@ my $_assert_slot_assignment_allowed = sub {
 };
 
 my $_find_assigner = sub {
-   my ($self, $name) = @_;
+   my ($self, $name) = @_; my $schema = $self->result_source->schema;
 
-   my $person_rs = $self->result_source->schema->resultset( 'Person' );
-   my $assigner  = $person_rs->search( { name => $name } )->single
-      or throw 'Person [_1] is unknown', [ $name ], level => 2;
-
-   return $assigner;
+   return $schema->resultset( 'Person' )->find_person_by( $name );
 };
 
 # Public methods

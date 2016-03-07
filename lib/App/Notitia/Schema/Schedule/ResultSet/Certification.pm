@@ -7,9 +7,6 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions  qw( throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
-# Private class attributes
-my $_type_id_cache = {};
-
 # Private methods
 my $_find_recipient = sub {
    return $_[ 0 ]->result_source->schema->resultset( 'Person' )->search
@@ -17,15 +14,9 @@ my $_find_recipient = sub {
 };
 
 my $_find_cert_type_id = sub {
-   my ($self, $name) = @_;
+   my ($self, $name) = @_; my $schema = $self->result_source->schema;
 
-   exists $_type_id_cache->{ $name } and return $_type_id_cache->{ $name };
-
-   my $type = $self->result_source->schema->resultset( 'Type' )->search
-      ( { name    => $name, type => 'certification' },
-        { columns => [ 'id' ] } )->single;
-
-   return $_type_id_cache->{ $name } = $type->id;
+   return $schema->resultset( 'Type' )->find_certification_by( $name )->id;
 };
 
 # Public methods

@@ -22,8 +22,9 @@ our @EXPORT_OK = qw( admin_navigation_links bind bool_data_type
                      nullable_varchar_data_type numerical_id_data_type
                      rota_navigation_links save_button serial_data_type
                      set_element_focus set_on_create_datetime_data_type
-                     slot_limit_index register_action_paths show_node
-                     stash_functions uri_for_action varchar_data_type );
+                     slot_identifier slot_limit_index register_action_paths
+                     show_node stash_functions uri_for_action varchar_data_type
+                     );
 
 # Private class attributes
 my $_action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -286,8 +287,8 @@ sub enhance ($) {
    return $attr;
 }
 
-sub field_options {
-   my ($schema, $result, $name, $opts) = @_; my $mandy;
+sub field_options ($$$;$) {
+   my ($schema, $result, $name, $opts) = @_; my $mandy; $opts //= {};
 
    unless (defined ($mandy = $_field_option_cache->{ $result }->{ $name })) {
       my $class       = blessed $schema->resultset( $result )->new_result( {} );
@@ -515,6 +516,15 @@ sub show_node ($;$$) {
 
    return $node->{depth} >= $wanted_depth
        && $node->{url  } =~ m{ \A $wanted }mx ? TRUE : FALSE;
+}
+
+sub slot_identifier ($$$$$) {
+   my ($rota_name, $rota_date, $shift_type, $slot_type, $subslot) = @_;
+
+   $rota_name =~ s{ _ }{ }gmx;
+
+   return sprintf '%s rota on %s %s shift %s slot %s',
+          ucfirst( $rota_name ), $rota_date, $shift_type, $slot_type, $subslot;
 }
 
 sub slot_limit_index ($$) {

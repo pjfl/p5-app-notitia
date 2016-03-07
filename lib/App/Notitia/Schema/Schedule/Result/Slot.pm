@@ -16,6 +16,7 @@ my $left_join = { join_type => 'left' };
 
 $class->table( 'slot' );
 
+# TODO: Rename type attribute since it's an SQL reserved word
 $class->add_columns
    ( shift_id            => foreign_key_data_type,
      operator_id         => foreign_key_data_type,

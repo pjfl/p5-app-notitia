@@ -19,10 +19,9 @@ my $_person_tuple = sub {
 
 # Private methods
 my $_find_role_type = sub {
-   my ($self, $name) = @_;
+   my ($self, $name) = @_; my $schema = $self->result_source->schema;
 
-   return $self->result_source->schema->resultset( 'Type' )->search
-      ( { name => $name, type => 'role' } )->single;
+   return $schema->resultset( 'Type' )->find_role_by( $name );
 };
 
 # Public methods

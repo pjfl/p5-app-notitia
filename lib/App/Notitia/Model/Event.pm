@@ -83,12 +83,14 @@ my $_bind_event_fields = sub {
 };
 
 my $_event_links = sub {
-   my ($self, $req, $name) = @_; my $links = $_event_links_cache->{ $name };
+   my ($self, $req, $event) = @_; my $name = $event->[ 1 ]->name;
+
+   my $links = $_event_links_cache->{ $name };
 
    $links and return @{ $links }; $links = [];
 
    for my $action ( qw( event summary ) ) {
-      my $href = uri_for_action( $req, $self->moniker."/${action}", [ $name ] );
+      my $href = uri_for_action $req, $self->moniker."/${action}", [ $name ];
 
       push @{ $links }, {
          value => management_button( $req, $name, $action, $href ) };
@@ -112,7 +114,7 @@ my $_format_as_markdown = sub {
                             $event->start_time, $event->end_time ],
                 no_quote_bind_values => TRUE };
    my $when = loc( $req, 'event_blog_when', $opts )."\n\n";
-   my $href = uri_for_action( $req, $self->moniker.'/summary', [ $name ] );
+   my $href = uri_for_action $req, $self->moniker.'/summary', [ $name ];
       $opts = { params => [ $href ], no_quote_bind_values => TRUE };
    my $link = loc( $req, 'event_blog_link', $opts )."\n\n";
 
@@ -187,7 +189,7 @@ sub create_event_action : Role(administrator) Role(event_manager) {
    $self->$_write_blog_post( $req, $event );
 
    my $action   =  $self->moniker.'/event';
-   my $location =  uri_for_action( $req, $action, [ $event->name ] );
+   my $location =  uri_for_action $req, $action, [ $event->name ];
    my $message  =
       [ 'Event [_1] created by [_2]', $event->name, $req->username ];
 
@@ -202,7 +204,7 @@ sub delete_event_action : Role(administrator) Role(event_manager) {
 
    $event->delete;
 
-   my $location = uri_for_action( $req, $self->moniker.'/events' );
+   my $location = uri_for_action $req, $self->moniker.'/events';
    my $message  = [ 'Event [_1] deleted by [_2]', $name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
@@ -224,14 +226,14 @@ sub event : Role(administrator) Role(event_manager) {
    my $action     =  $self->moniker.'/event';
 
    if ($name) {
-      $fields->{date  } = bind( 'event_date', $event->rota->date );
-      $fields->{delete} = delete_button( $req, $name, 'event' );
-      $fields->{href  } = uri_for_action( $req, $action, [ $name ] );
+      $fields->{date  } = bind 'event_date', $event->rota->date;
+      $fields->{delete} = delete_button $req, $name, 'event';
+      $fields->{href  } = uri_for_action $req, $action, [ $name ];
       $fields->{owner } = $self->$_select_owner_list( $event );
    }
-   else { $fields->{date} = bind( 'event_date', time2str '%Y-%m-%d' ) }
+   else { $fields->{date} = bind 'event_date', time2str '%Y-%m-%d' }
 
-   $fields->{save} = save_button( $req, $name, 'event' );
+   $fields->{save} = save_button $req, $name, 'event';
 
    return $self->get_stash( $req, $page );
 }
@@ -239,21 +241,21 @@ sub event : Role(administrator) Role(event_manager) {
 sub events : Role(any) {
    my ($self, $req) = @_;
 
-   my $page     =  {
-      fields    => { headers => $_events_headers->( $req ), rows => [], },
-      template  => [ 'contents', 'table' ],
-      title     => loc( $req, 'events_management_heading' ), };
-   my $event_rs =  $self->schema->resultset( 'Event' );
-   my $action   =  $self->moniker.'/event';
-   my $rows     =  $page->{fields}->{rows};
+   my $action    =  $self->moniker.'/event';
+   my $page      =  {
+      fields     => {
+         add     => create_button( $req, $action, 'event' ),
+         headers => $_events_headers->( $req ),
+         rows    => [], },
+      template   => [ 'contents', 'table' ],
+      title      => loc( $req, 'events_management_heading' ), };
+   my $event_rs  =  $self->schema->resultset( 'Event' );
+   my $rows      =  $page->{fields}->{rows};
 
    for my $event (@{ $event_rs->list_all_events( { order_by => 'date' } ) }) {
       push @{ $rows },
-         [ { value => $event->[ 0 ] },
-           $self->$_event_links( $req, $event->[ 1 ]->name ) ];
+         [ { value => $event->[ 0 ] }, $self->$_event_links( $req, $event ) ];
    }
-
-   $page->{fields}->{add} = create_button( $req, $action, 'event' );
 
    return $self->get_stash( $req, $page );
 }
@@ -268,7 +270,7 @@ sub participate_event_action : Role(any) {
    $person->add_participent_for( $name );
 
    my $message   = [ 'Event [_1] attendee [_2]', $name, $req->username ];
-   my $location  = uri_for_action( $req, $self->moniker.'/summary', [ $name ] );
+   my $location  = uri_for_action $req, $self->moniker.'/summary', [ $name ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -289,8 +291,8 @@ sub summary : Role(any) {
    my $fields  =  $page->{fields};
    my $action  =  $self->moniker.'/event';
 
-   $fields->{date} = bind( 'event_date', $event->rota->date, $opts );
-   $fields->{href} = uri_for_action( $req, $action, [ $name ] );
+   $fields->{date} = bind 'event_date', $event->rota->date, $opts;
+   $fields->{href} = uri_for_action $req, $action, [ $name ];
    $opts = $person->is_participent_of( $name ) ? { cancel => TRUE } : {};
    $fields->{participate} = $_participate_button->( $req, $name, $opts );
    delete $fields->{notes};
@@ -309,7 +311,7 @@ sub unparticipate_event_action : Role(any) {
    $person->delete_participent_for( $name );
 
    my $message   = [ 'Event [_1] attendence cancelled for [_2]', $name, $user ];
-   my $location  = uri_for_action( $req, $self->moniker.'/summary', [ $name ] );
+   my $location  = uri_for_action $req, $self->moniker.'/summary', [ $name ];
 
    return { redirect => { location => $location, message => $message } };
 }

@@ -24,9 +24,9 @@ my $_find_owner = sub {
 };
 
 my $_find_vehicle_type = sub {
-   return $_[ 0 ]->result_source->schema->resultset( 'Type' )->search
-      ( { name    => $_[ 1 ], type => 'vehicle' },
-        { columns => [ 'id' ] } )->single;
+   my ($self, $name) = @_; my $schema = $self->result_source->schema;
+
+   return $schema->resultset( 'Type' )->find_vehicle_by( $name );
 };
 
 # Public methods
@@ -54,11 +54,13 @@ sub find_vehicle_by {
 }
 
 sub list_all_vehicles {
-   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
+   my ($self, $opts) = @_;
+
+   $opts = { columns  => [ 'id', 'name', 'vrn' ], order_by => 'vrn',
+             prefetch => [ 'owner' ], %{ $opts // {} } };
 
    my $fields   = delete $opts->{fields} // {};
-   my $vehicles = $self->search
-      ( {}, { columns  => [ 'name', 'vrn' ], %{ $opts } } );
+   my $vehicles = $self->search( {}, $opts );
 
    return [ map { $_vehicle_tuple->( $_, $fields ) } $vehicles->all ];
 }

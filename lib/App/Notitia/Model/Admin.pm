@@ -53,9 +53,8 @@ my $_people_headers = sub {
    return [ map { { value => loc( $req, "people_heading_${_}" ) } } 0 .. 4 ];
 };
 
-my $_select_next_of_kin_list = sub {
-   return bind( 'next_of_kin', [ [ NUL, NUL ], @{ $_[ 0 ] } ],
-                { numify => TRUE } );
+my $_next_of_kin_list = sub {
+   return bind 'next_of_kin', [ [ NUL, NUL ], @{ $_[ 0 ] } ], { numify => TRUE};
 };
 
 # Private methods
@@ -99,7 +98,7 @@ my $_create_person_email = sub {
    my $opts    = { params => [ $conf->title ], no_quote_bind_values => TRUE };
    my $from    = loc( $req, 'UserRegistration@[_1]', $opts );
    my $subject = loc( $req, 'Account activation for [_1]', $opts );
-   my $href    = uri_for_action( $req, $self->moniker.'/activate', [ $key ] );
+   my $href    = uri_for_action $req, $self->moniker.'/activate', [ $key ];
    my $post    = {
       attributes      => {
          charset      => $conf->encoding,
@@ -129,19 +128,20 @@ my $_create_person_email = sub {
 my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
-   return [ [ NUL, NUL ], $type_rs->search
-            ( { type => 'role' }, { columns => [ 'name' ] } )->all ];
+   return [ [ NUL, NUL ], $type_rs->list_role_types->all ];
 };
 
 my $_people_links = sub {
-   my ($self, $req, $name) = @_; my $links = $_people_links_cache->{ $name };
+   my ($self, $req, $person) = @_; my $name = $person->[ 1 ]->name;
+
+   my $links = $_people_links_cache->{ $name };
 
    $links and return @{ $links }; $links = [];
 
    for my $path ( qw( admin/person role/role
                       certs/certifications blots/endorsements ) ) {
       my ($moniker, $action) = split m{ / }mx, $path, 2;
-      my $href = uri_for_action( $req, $path, [ $name ] );
+      my $href = uri_for_action $req, $path, [ $name ];
 
       push @{ $links }, {
          value => management_button( $req, $name, $action, $href ) };
@@ -168,7 +168,7 @@ my $_update_person_from_request = sub {
       defined $v or next;
       # No tz and 1/1/1970 is the last day in 69
       length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
-         and $v = str2date_time( $v, 'GMT' );
+         and $v = str2date_time $v, 'GMT';
 
       $person->$attr( $v );
    }
@@ -201,7 +201,7 @@ sub activate : Role(anon) {
 
       $self->find_person_by( $name )->activate;
 
-      $location = uri_for_action( $req, 'user/change_password', [ $name ] );
+      $location = uri_for_action $req, 'user/change_password', [ $name ];
       $message  = [ 'Person [_1] account activated', $name ];
    }
    else {
@@ -230,8 +230,8 @@ sub create_person_action : Role(administrator) Role(person_manager) {
    $self->config->no_user_email
       or $self->$_create_person_email( $req, $person, $password );
 
-   my $action   = $self->moniker.'/person';
-   my $location = uri_for_action( $req, $action, [ $person->name ] );
+   my $actionp  = $self->moniker.'/person';
+   my $location = uri_for_action $req, $actionp, [ $person->name ];
    my $message  =
       [ 'Person [_1] created by [_2]', $person->name, $req->username ];
 
@@ -243,7 +243,7 @@ sub delete_person_action : Role(administrator) Role(person_manager) {
 
    my $name     = $req->uri_params->( 0 );
    my $person   = $self->find_person_by( $name ); $person->delete;
-   my $location = uri_for_action( $req, $self->moniker.'/people' );
+   my $location = uri_for_action $req, $self->moniker.'/people';
    my $message  = [ 'Person [_1] deleted by [_2]', $name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
@@ -275,25 +275,25 @@ sub person : Role(administrator) Role(person_manager) {
       title       => loc( $req, 'person_management_heading' ), };
    my $fields     =  $page->{fields};
    my $action     =  $self->moniker.'/person';
-   my $opts       =  field_options( $self->schema, 'Person', 'name', {} );
+   my $opts       =  field_options $self->schema, 'Person', 'name', {};
 
-   $fields->{username} = bind( 'username', $person->name, $opts );
+   $fields->{username} = bind 'username', $person->name, $opts;
 
    if ($name) {
       my $opts = { fields => { selected => $person->next_of_kin } };
 
       $people  = $person_rs->list_all_people( $opts );
-      $fields->{user_href} = uri_for_action( $req, $action, [ $name ] );
-      $fields->{delete   } = delete_button( $req, $name, 'person' );
-      $fields->{roles    } = bind( 'roles', $person->list_roles );
+      $fields->{user_href} = uri_for_action $req, $action, [ $name ];
+      $fields->{delete   } = delete_button $req, $name, 'person';
+      $fields->{roles    } = bind 'roles', $person->list_roles;
    }
    else {
       $people  = $person_rs->list_all_people();
-      $fields->{roles    } = bind( 'roles', $self->$_list_all_roles() );
+      $fields->{roles    } = bind 'roles', $self->$_list_all_roles();
    }
 
-   $fields->{next_of_kin} = $_select_next_of_kin_list->( $people );
-   $fields->{save} = save_button( $req, $name, 'person' );
+   $fields->{next_of_kin} = $_next_of_kin_list->( $people );
+   $fields->{save} = save_button $req, $name, 'person';
 
    return $self->get_stash( $req, $page );
 }
@@ -302,11 +302,13 @@ sub people : Role(any) {
    my ($self, $req) = @_;
 
    my $page      =  {
-      fields     => { headers => $_people_headers->( $req ), rows => [], },
+      fields     => {
+         add     => create_button( $req, $self->moniker.'/person', 'person' ),
+         headers => $_people_headers->( $req ),
+         rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => loc( $req, 'people_management_heading' ), };
    my $person_rs =  $self->schema->resultset( 'Person' );
-   my $action    =  $self->moniker.'/person';
    my $rows      =  $page->{fields}->{rows};
    my $opts      =  { order_by => 'name' };
    my $role      =  $req->query_params->( 'role', { optional => TRUE } );
@@ -315,10 +317,8 @@ sub people : Role(any) {
 
    for my $person (@{ $people }) {
       push @{ $rows }, [ { value => $person->[ 0 ]  },
-                         $self->$_people_links( $req, $person->[ 1 ]->name ) ];
+                         $self->$_people_links( $req, $person ) ];
    }
-
-   $page->{fields}->{add} = create_button( $req, $action, 'person' );
 
    return $self->get_stash( $req, $page );
 }

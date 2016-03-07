@@ -109,19 +109,16 @@ my $_encrypt_password = sub {
    return bcrypt( $password, $salt );
 };
 
-my $_find_type_by = sub {
-   my ($self, $name, $type) = @_;
-
-   return $self->result_source->schema->resultset( 'Type' )->search
-      ( { name => $name, type => $type } )->single;
-};
-
 my $_find_cert_type = sub {
-   return $_[ 0 ]->$_find_type_by( $_[ 1 ], 'certification' );
+   my ($self, $name) = @_; my $schema = $self->result_source->schema;
+
+   return $schema->resultset( 'Type' )->find_certification_by( $name );
 };
 
 my $_find_role_type = sub {
-   return $_[ 0 ]->$_find_type_by( $_[ 1 ], 'role' );
+   my ($self, $name) = @_; my $schema = $self->result_source->schema;
+
+   return $schema->resultset( 'Type' )->find_role_by( $name );
 };
 
 # Public methods

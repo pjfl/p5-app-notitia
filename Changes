@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Can assign a vehicle to a slot
           - Added vehicle management
           - Added people navigation by role
           - New events create a blog post

@@ -2,13 +2,19 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 54 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 55 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
 sub env_var {
    return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
 }
+
+# TODO: Either use DBIC::Helpers or drop as a dependency
+# TODO: Oh god, Microsoft and their fucking excuse for a browser
+# TODO: Datepicker.js shim for Explorer *and* Failfox
+# TODO: Implement lost password
+# TODO: Make redirect to wanted after login work
 
 1;
 

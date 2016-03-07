@@ -2,7 +2,7 @@
 <div class="docs-nav-mobile unit whole show-on-mobiles">
 [% depth = 0 -%]
    <select onchange="if (this.value) window.location.href=this.value">
-      <option value="">[% loc( 'Navigate the docs') %]…</option>
+      <option value="">[% loc( 'Navigate the application') %]…</option>
 [% FOR node IN nav -%]
 [%    WHILE node.depth < depth; depth = depth - 1 -%]
       </optgroup>

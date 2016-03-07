@@ -58,8 +58,7 @@ my $_subtract = sub {
 my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
-   return [ [ NUL, NUL ], $type_rs->search
-            ( { type => 'role' }, { columns => [ 'name' ] } )->all ];
+   return [ [ NUL, NUL ], $type_rs->list_role_types->all ];
 };
 
 # Public methods
@@ -109,7 +108,7 @@ sub role : Role(administrator) Role(person_manager) {
    my $fields    =  $page->{fields};
 
    my $person_roles = $person->list_roles;
-   my $available    = $_subtract->( $self->$_list_all_roles(), $person_roles );
+   my $available    = $_subtract->( $self->$_list_all_roles, $person_roles );
 
    $fields->{roles}
       = bind( 'roles', $available, { multiple => TRUE, size => 10 } );

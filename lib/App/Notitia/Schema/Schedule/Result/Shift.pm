@@ -14,6 +14,7 @@ my $slot_join = { 'foreign.shift_id' => 'self.id' };
 
 $class->table( 'shift' );
 
+# TODO: Rename type attribute since it's an SQL reserved word
 $class->add_columns
    ( id      => serial_data_type,
      rota_id => foreign_key_data_type,

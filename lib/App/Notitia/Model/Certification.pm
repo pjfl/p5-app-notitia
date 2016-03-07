@@ -102,8 +102,7 @@ my $_cert_tuple = sub {
 my $_list_all_certs = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
-   return [ [ NUL, NUL ], $type_rs->search
-            ( { type => 'certification' }, { columns => [ 'name' ] } )->all ];
+   return [ [ NUL, NUL ], $type_rs->list_certification_types->all ];
 };
 
 my $_maybe_find_cert = sub {
