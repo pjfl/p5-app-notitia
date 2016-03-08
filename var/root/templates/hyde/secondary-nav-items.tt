@@ -11,7 +11,7 @@
 [%    text = loc( 'Profile' ) -%]
 [%    tip  = loc( 'Configure user profile' ) -%]
    <li>
-[%    LinkWithTips( '#', class, text, page.hint, tip, 'profile-user') -%]
+[%    LinkWithTips( '#', class, text, page.hint, tip, 'profile-user' ) -%]
    </li>
    <li>
 [%    href = uri_for_action( 'user/logout_action' ) -%]
@@ -26,11 +26,10 @@
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
-[%    href = uri_for_action( 'user/forgot_password' ) -%]
 [%    text = loc( 'Forgot Password?' ) -%]
 [%    tip  = loc( 'Follow the link to reset your password' ) -%]
    <li>
-[%    LinkWithTips( href, class, text, page.hint, tip ) -%]
+[%    LinkWithTips( '#', class, text, page.hint, tip, 'request-reset' ) -%]
    </li>
 [% END -%]
 </ul>

@@ -15,6 +15,9 @@ sub dispatch_request {
    sub (GET  + /user/password/* + ?*) { [ 'user', 'change_password', @_ ] },
    sub (POST + /user/profile    + ?*) { [ 'user', 'from_request',    @_ ] },
    sub (GET  + /user/profile    + ?*) { [ 'user', 'profile',         @_ ] },
+   sub (GET  + /user/reset/*    + ?*) { [ 'user', 'reset_password',  @_ ] },
+   sub (POST + /user/reset      + ?*) { [ 'user', 'from_request',    @_ ] },
+   sub (GET  + /user/reset      + ?*) { [ 'user', 'request_reset',   @_ ] },
    sub (GET  + /index | /       + ?*) { [ 'user', 'index',           @_ ] },
    sub (GET  + /**              + ?*) { [ 'user', 'not_found',       @_ ] };
 }

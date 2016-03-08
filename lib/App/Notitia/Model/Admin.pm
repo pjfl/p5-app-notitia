@@ -96,8 +96,8 @@ my $_create_person_email = sub {
    my $conf    = $self->config;
    my $key     = substr create_token, 0, 32;
    my $opts    = { params => [ $conf->title ], no_quote_bind_values => TRUE };
-   my $from    = loc( $req, 'UserRegistration@[_1]', $opts );
-   my $subject = loc( $req, 'Account activation for [_1]', $opts );
+   my $from    = loc $req, 'UserRegistration@[_1]', $opts;
+   my $subject = loc $req, 'Account activation for [_1]', $opts;
    my $href    = uri_for_action $req, $self->moniker.'/activate', [ $key ];
    my $post    = {
       attributes      => {

@@ -1,10 +1,10 @@
 package App::Notitia::Model::User;
 
-use App::Notitia::Attributes;  # Will do namespace cleaning
+use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( bind loc register_action_paths
                                 set_element_focus uri_for_action );
-use Class::Usul::Functions  qw( throw );
+use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Scalar::Util            qw( blessed );
@@ -16,6 +16,7 @@ with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
+with    q(Web::Components::Role::Email);
 
 # Public attributes
 has '+moniker' => default => 'user';
@@ -24,11 +25,64 @@ has 'profile_keys' => is => 'ro', isa => ArrayRef, builder => sub {
    [ qw( address postcode email_address mobile_phone home_phone ) ] };
 
 register_action_paths
+   'user/change_password' => 'user/password',
    'user/index'           => 'index',
    'user/login_action'    => 'user/login',
    'user/logout_action'   => 'user/logout',
-   'user/change_password' => 'user/password',
-   'user/profile'         => 'user/profile';
+   'user/profile'         => 'user/profile',
+   'user/request_reset'   => 'user/reset';
+
+# Construction
+around 'load_page' => sub {
+   my ($orig, $self, $req, @args) = @_;
+
+   my $page  = $orig->( $self, $req, @args );
+   my $js    = $page->{literal_js} //= [];
+   my $href  = uri_for_action $req, $self->moniker.'/reset';
+   my $title = 'Reset Password';
+
+   push @{ $js }, $self->dialog_anchor( 'request-reset', $href, {
+      name => 'request-reset', title => loc( $req, $title ), useIcon => \1 } );
+
+   return $page;
+};
+
+# Private methods
+my $_create_reset_email = sub {
+   my ($self, $req, $person, $password) = @_;
+
+   my $conf    = $self->config;
+   my $key     = substr create_token, 0, 32;
+   my $opts    = { params => [ $conf->title, $person->name ],
+                   no_quote_bind_values => TRUE };
+   my $from    = loc $req, 'UserRegistration@[_1]', $opts;
+   my $subject = loc $req, 'Password reset for [_2]@[_1]', $opts;
+   my $href    = uri_for_action $req, $self->moniker.'/reset', [ $key ];
+   my $post    = {
+      attributes      => {
+         charset      => $conf->encoding,
+         content_type => 'text/html', },
+      from            => $from,
+      stash           => {
+         app_name     => $conf->title,
+         first_name   => $person->first_name,
+         link         => $href,
+         password     => $password,
+         title        => $subject,
+         username     => $person->name, },
+      subject         => $subject,
+      template        => 'password_email',
+      to              => $person->email_address, };
+
+   $conf->sessdir->catfile( $key )->println( $person->name."/${password}" );
+
+   my $r = $self->send_email( $post );
+   my ($id) = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
+
+   $self->log->info( loc( $req, 'Reset password email sent - [_1]', [ $id ] ) );
+
+   return;
+};
 
 # Public methods
 sub change_password : Role(anon) {
@@ -46,12 +100,12 @@ sub change_password : Role(anon) {
          update   => bind( 'update', 'change_password', { class => 'right' } ),
          username => bind( 'username', $name ), },
       literal_js  =>
-         "   behaviour.config.inputs[ 'again' ]
-                = { event     : [ 'focus', 'blur' ],
-                    method    : [ 'show_password', 'hide_password' ] };
-             behaviour.config.inputs[ 'password' ]
-                = { event     : [ 'focus', 'blur' ],
-                    method    : [ 'show_password', 'hide_password' ] };",
+         [ "   behaviour.config.inputs[ 'again' ]",
+           "      = { event     : [ 'focus', 'blur' ],",
+           "          method    : [ 'show_password', 'hide_password' ] };",
+           "   behaviour.config.inputs[ 'password' ]",
+           "      = { event     : [ 'focus', 'blur' ],",
+           "          method    : [ 'show_password', 'hide_password' ] };", ],
       template    => [ 'contents', 'change-password' ],
       title       => loc( $req, 'change_password_title' ) };
 
@@ -87,16 +141,16 @@ sub check_field : Role(any) {
 sub index : Role(anon) {
    my ($self, $req) = @_;
 
-   my $page    =  {
-      fields   => {},
-      template => [ 'contents', 'index' ],
-      title    => loc( $req, 'main_index_title' ), };
-   my $fields  =  $page->{fields};
+   my $page       =  {
+      fields      => {},
+      first_field => 'username',
+      template    => [ 'contents', 'index' ],
+      title       => loc( $req, 'main_index_title' ), };
+   my $fields     =  $page->{fields};
 
-   $fields->{password} = bind( 'password', NUL );
-   $fields->{username} = bind( 'username', $req->username );
-   $fields->{login   } = bind( 'login',    'login', { class => 'right' } );
-   $page->{literal_js} = set_element_focus 'login-user', 'username';
+   $fields->{password} = bind 'password', NUL;
+   $fields->{username} = bind 'username', $req->username;
+   $fields->{login   } = bind 'login',    'login', { class => 'right' };
 
    return $self->get_stash( $req, $page );
 }
@@ -116,6 +170,8 @@ sub login_action : Role(anon) {
 
    my $actionp = $self->moniker.'/index';
    my $wanted  = uri_for_action $req, $req->session->wanted || $actionp;
+
+   $req->session->wanted( NUL );
 
    return { redirect => { location => $wanted, message => $message } };
 }
@@ -141,18 +197,73 @@ sub profile : Role(any) {
    my $page      = $stash->{page};
    my $fields    = $page->{fields};
 
-   $fields->{address      } = bind( 'address',       $person->address );
-   $fields->{email_address} = bind( 'email_address', $person->email_address );
-   $fields->{home_phone   } = bind( 'home_phone',    $person->home_phone );
-   $fields->{mobile_phone } = bind( 'mobile_phone',  $person->mobile_phone );
-   $fields->{postcode     } = bind( 'postcode',      $person->postcode );
-   $fields->{update       } = bind( 'update', 'update_profile',
-                                    { class => 'right' } );
-   $fields->{username     } = bind( 'username',      $person->name,
-                                    { disabled => TRUE } );
+   $fields->{address      } = bind 'address',       $person->address;
+   $fields->{email_address} = bind 'email_address', $person->email_address;
+   $fields->{home_phone   } = bind 'home_phone',    $person->home_phone;
+   $fields->{mobile_phone } = bind 'mobile_phone',  $person->mobile_phone;
+   $fields->{postcode     } = bind 'postcode',      $person->postcode;
+   $fields->{update       } = bind 'update', 'update_profile',
+                                    { class => 'right' };
+   $fields->{username     } = bind 'username',      $person->name,
+                                    { disabled => TRUE };
    $page->{literal_js     } = set_element_focus 'profile-user', 'address';
 
    return $stash;
+}
+
+sub request_reset : Role(anon) {
+   my ($self, $req) = @_;
+
+   my $stash  = $self->dialog_stash( $req, 'request-reset' );
+   my $page   = $stash->{page};
+   my $fields = $page->{fields};
+   my $opts   = { class => 'right' };
+
+   $fields->{username} = bind 'username', NUL;
+   $fields->{reset   } = bind 'request_reset', 'request_reset', $opts;
+   $page->{literal_js} = set_element_focus 'request-reset', 'username';
+
+   return $stash;
+}
+
+sub request_reset_action : Role(anon) {
+   my ($self, $req) = @_;
+
+   my $name     = $req->body_params->( 'username' );
+   my $person   = $self->schema->resultset( 'Person' )->find_person_by( $name );
+   my $password = substr create_token, 0, 12;
+
+   $self->config->no_user_email
+      or $self->$_create_reset_email( $req, $person, $password );
+
+   my $message  = [ 'Person [_1] password reset requested', $name ];
+
+   return { redirect => { location => $req->base, message => $message } };
+}
+
+sub reset_password : Role(anon) {
+   my ($self, $req) = @_; my ($location, $message);
+
+   my $file = $req->uri_params->( 0 );
+   my $path = $self->config->sessdir->catfile( $file );
+
+   if ($path->exists and $path->is_file) {
+      my $schema = $self->schema;
+      my $token  = $path->chomp->getline; $path->unlink;
+      my ($name, $password) = split m{ / }mx, $token, 2;
+      my $person = $schema->resultset( 'Person' )->find_person_by( $name );
+
+      $person->password( $password ); $person->password_expired( TRUE );
+      $person->update;
+      $location = uri_for_action $req, 'user/change_password', [ $name ];
+      $message  = [ 'Person [_1] password reset', $name ];
+   }
+   else {
+      $location = $req->base_uri;
+      $message  = [ 'Key [_1] unknown password reset attempt', $file ];
+   }
+
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub update_profile_action : Role(any) {
