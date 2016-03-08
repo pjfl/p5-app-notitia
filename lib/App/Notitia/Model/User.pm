@@ -24,10 +24,10 @@ has 'profile_keys' => is => 'ro', isa => ArrayRef, builder => sub {
    [ qw( address postcode email_address mobile_phone home_phone ) ] };
 
 register_action_paths
-   'user/login'           => 'user/login',
+   'user/index'           => 'index',
+   'user/login_action'    => 'user/login',
    'user/logout_action'   => 'user/logout',
    'user/change_password' => 'user/password',
-   'user/index'           => 'index',
    'user/profile'         => 'user/profile';
 
 # Public methods
@@ -84,15 +84,6 @@ sub check_field : Role(any) {
    return $self->check_form_field( $req, $result_class );
 }
 
-sub index : Role(anon) {
-   my ($self, $req) = @_;
-
-   return $self->get_stash( $req, {
-      layout   => 'index',
-      template => [ 'contents', 'index' ],
-      title    => loc( $req, 'main_index_title' ), } );
-}
-
 sub login_action : Role(anon) {
    my ($self, $req) = @_; my $message;
 
@@ -109,19 +100,21 @@ sub login_action : Role(anon) {
    return { redirect => { location => $req->base, message => $message } };
 }
 
-sub login : Role(anon) {
+sub index : Role(anon) {
    my ($self, $req) = @_;
 
-   my $stash  = $self->dialog_stash( $req, 'login-user' );
-   my $page   = $stash->{page};
-   my $fields = $page->{fields};
+   my $page    = {
+      fields   => {},
+      template => [ 'contents', 'index' ],
+      title    => loc( $req, 'main_index_title' ), };
+   my $fields  = $page->{fields};
 
    $fields->{password} = bind( 'password', NUL );
    $fields->{username} = bind( 'username', $req->username );
    $fields->{login   } = bind( 'login',    'login', { class => 'right' } );
    $page->{literal_js} = set_element_focus 'login-user', 'username';
 
-   return $stash;
+   return $self->get_stash( $req, $page );
 }
 
 sub logout_action : Role(any) {

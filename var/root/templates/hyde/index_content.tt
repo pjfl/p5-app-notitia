@@ -1,2 +1,15 @@
 <!-- Index Content -->
-<p>Index content needs filling in</p>
+<div class="unit four-fifths">
+   <article>
+      <h4>[% page.title %]</h4>
+      <form action="[% uri_for_action( 'user/login' ) %]" class="skinny"
+           enctype="application/x-www-form-urlencoded"
+            method="post" name="login-user">
+[% IF !page.authenticated -%]
+[%    TextField( page.fields.username ) -%]
+[%    PasswordField( page.fields.password ) -%]
+[%    Button( page.fields.login ) -%]
+[% END -%]
+      </form>
+   </article>
+</div>

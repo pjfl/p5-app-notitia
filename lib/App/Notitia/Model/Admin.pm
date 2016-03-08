@@ -257,8 +257,8 @@ sub index : Role(any) {
    my ($self, $req) = @_;
 
    return $self->get_stash( $req, {
-      layout => 'index', template => [ 'contents', 'index' ],
-      title  => loc( $req, 'admin_index_title' ) } );
+      template => [ 'contents', 'admin-index' ],
+      title    => loc( $req, 'admin_index_title' ) } );
 }
 
 sub person : Role(person_manager) {

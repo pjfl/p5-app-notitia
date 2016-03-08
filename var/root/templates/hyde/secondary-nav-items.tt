@@ -20,14 +20,15 @@
                      'logout-user', 'logout' ) -%]
    </li>
 [% ELSE -%]
-[%    text = loc( 'Login' ) -%]
-[%    tip  = loc( 'Authenticate with the application' ) -%]
-   <li>
-[%    LinkWithTips( '#', class, text, page.hint, tip, 'login-user' ) -%]
-   </li>
 [%    href = uri_for_action( 'user/change_password' ) -%]
 [%    text = loc( 'Change Password' ) -%]
 [%    tip  = loc( 'Change the password used to acess the application' ) -%]
+   <li>
+[%    LinkWithTips( href, class, text, page.hint, tip ) -%]
+   </li>
+[%    href = uri_for_action( 'user/forgot_password' ) -%]
+[%    text = loc( 'Forgot Password?' ) -%]
+[%    tip  = loc( 'Follow the link to reset your password' ) -%]
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>

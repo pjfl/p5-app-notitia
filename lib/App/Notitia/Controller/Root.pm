@@ -9,7 +9,6 @@ has '+moniker' => default => 'root';
 sub dispatch_request {
    sub (GET  + /check_field     + ?*) { [ 'user', 'check_field',     @_ ] },
    sub (POST + /user/login      + ?*) { [ 'user', 'login_action',    @_ ] },
-   sub (GET  + /user/login      + ?*) { [ 'user', 'login',           @_ ] },
    sub (POST + /user/logout     + ?*) { [ 'user', 'logout_action',   @_ ] },
    sub (POST + /user/password   + ?*) { [ 'user', 'from_request',    @_ ] },
    sub (GET  + /user/password   + ?*) { [ 'user', 'change_password', @_ ] },
