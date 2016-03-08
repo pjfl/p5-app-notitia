@@ -8,6 +8,7 @@ use Class::Usul::Functions  qw( is_member throw );
 use HTTP::Status            qw( HTTP_FORBIDDEN HTTP_NOT_FOUND
                                 HTTP_UNAUTHORIZED );
 use Scalar::Util            qw( blessed );
+use Unexpected::Functions   qw( AuthenticationRequired );
 use Moo::Role;
 
 requires qw( components config execute );
@@ -31,7 +32,7 @@ around 'execute' => sub {
 
    is_member 'anon', $method_roles and return $orig->( $self, $method, $req );
 
-   $req->authenticated or throw 'Resource [_1] authentication required',
+   $req->authenticated or throw AuthenticationRequired,
                                 [ $req->path ], rv => HTTP_UNAUTHORIZED;
 
    is_member 'any', $method_roles and return $orig->( $self, $method, $req );

@@ -2,7 +2,7 @@ package App::Notitia::Model;
 
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( bind field_options );
+use App::Notitia::Util      qw( bind field_options uri_for_action );
 use Class::Usul::Functions  qw( ensure_class_loaded exception
                                 first_char throw );
 use Class::Usul::Types      qw( Object Plinth );
@@ -11,7 +11,7 @@ use HTTP::Status            qw( HTTP_BAD_REQUEST HTTP_NOT_FOUND HTTP_OK );
 use JSON::MaybeXS;
 use Scalar::Util            qw( blessed );
 use Try::Tiny;
-use Unexpected::Functions   qw( ValidationErrors );
+use Unexpected::Functions   qw( AuthenticationRequired ValidationErrors );
 use Moo;
 
 with q(Web::Components::Role);
@@ -126,6 +126,14 @@ sub exception_handler {
       $summary = substr $message, 0, 500;
    }
    else { $leader = NUL; $summary = $message = "${e}" }
+
+   if ($e->class eq AuthenticationRequired->()) {
+      my $location = uri_for_action $req, 'user/index';
+
+      $req->session->wanted( $req->path );
+
+      return { redirect => { location => $location, message => [ $summary ] } };
+   }
 
    my $page  = { error    => $e,
                  leader   => $leader,

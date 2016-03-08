@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Make redirect to wanted after login work
           - Replaced login dialog with login page
           - Will not assign a bike to more than one slot per shift
           - Can unassign a vehicle from a slot

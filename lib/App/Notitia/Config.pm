@@ -197,7 +197,8 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
    builder            => sub { {
       query           => [ SimpleStr | Undef                ],
       skin            => [ NonEmptySimpleStr, $_[ 0 ]->skin ],
-      theme           => [ NonEmptySimpleStr, 'yellow'      ], } };
+      theme           => [ NonEmptySimpleStr, 'yellow'      ],
+      wanted          => [ SimpleStr | Undef                ], } };
 
 has 'skin'            => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'hyde';

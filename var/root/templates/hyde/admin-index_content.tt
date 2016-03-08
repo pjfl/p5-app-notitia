@@ -1,0 +1,6 @@
+<!-- Admin Index Content -->
+<div class="unit four-fifths">
+   <article>
+      <h4>[% page.title %]</h4>
+   </article>
+</div>

@@ -3,7 +3,7 @@ package App::Notitia::Model::User;
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( bind loc register_action_paths
-                                set_element_focus );
+                                set_element_focus uri_for_action );
 use Class::Usul::Functions  qw( throw );
 use Class::Usul::Types      qw( ArrayRef );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
@@ -84,6 +84,23 @@ sub check_field : Role(any) {
    return $self->check_form_field( $req, $result_class );
 }
 
+sub index : Role(anon) {
+   my ($self, $req) = @_;
+
+   my $page    =  {
+      fields   => {},
+      template => [ 'contents', 'index' ],
+      title    => loc( $req, 'main_index_title' ), };
+   my $fields  =  $page->{fields};
+
+   $fields->{password} = bind( 'password', NUL );
+   $fields->{username} = bind( 'username', $req->username );
+   $fields->{login   } = bind( 'login',    'login', { class => 'right' } );
+   $page->{literal_js} = set_element_focus 'login-user', 'username';
+
+   return $self->get_stash( $req, $page );
+}
+
 sub login_action : Role(anon) {
    my ($self, $req) = @_; my $message;
 
@@ -97,24 +114,10 @@ sub login_action : Role(anon) {
    $session->authenticated( TRUE ); $session->username( $name );
    $message = [ 'Person [_1] logged in', $name ];
 
-   return { redirect => { location => $req->base, message => $message } };
-}
+   my $actionp = $self->moniker.'/index';
+   my $wanted  = uri_for_action $req, $req->session->wanted || $actionp;
 
-sub index : Role(anon) {
-   my ($self, $req) = @_;
-
-   my $page    = {
-      fields   => {},
-      template => [ 'contents', 'index' ],
-      title    => loc( $req, 'main_index_title' ), };
-   my $fields  = $page->{fields};
-
-   $fields->{password} = bind( 'password', NUL );
-   $fields->{username} = bind( 'username', $req->username );
-   $fields->{login   } = bind( 'login',    'login', { class => 'right' } );
-   $page->{literal_js} = set_element_focus 'login-user', 'username';
-
-   return $self->get_stash( $req, $page );
+   return { redirect => { location => $wanted, message => $message } };
 }
 
 sub logout_action : Role(any) {

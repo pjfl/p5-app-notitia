@@ -9,23 +9,26 @@ extends q(Class::Usul::Exception);
 
 my $class = __PACKAGE__;
 
-has_exception $class              => parents => [ 'Class::Usul::Exception' ];
+has_exception $class => parents => [ 'Class::Usul::Exception' ];
 
-has_exception 'Authentication'    => parents => [ $class ];
+has_exception 'Authentication' => parents => [ $class ];
 
-has_exception 'AccountInactive'   => parents => [ 'Authentication' ],
+has_exception 'AccountInactive' => parents => [ 'Authentication' ],
    error   => 'User [_1] authentication failed';
+
+has_exception 'AuthenticationRequired' => parents => [ 'Authentication' ],
+   error   => 'Resource [_1] authentication required';
 
 has_exception 'IncorrectPassword' => parents => [ 'Authentication' ],
    error   => 'User [_1] authentication failed';
 
-has_exception 'PasswordExpired'   => parents => [ 'Authentication' ],
+has_exception 'PasswordExpired' => parents => [ 'Authentication' ],
    error   => 'User [_1] authentication failed';
 
-has_exception 'SlotFree'          => parents => [ $class ],
+has_exception 'SlotFree' => parents => [ $class ],
    error   => 'Slot [_1] is free';
 
-has_exception 'SlotTaken'         => parents => [ $class ],
+has_exception 'SlotTaken' => parents => [ $class ],
    error   => 'Slot [_1] alredy taken by [_2]';
 
 has '+class' => default => $class;

@@ -15,24 +15,7 @@ requires qw( config initialise_stash load_page localised_tree );
 has 'type_map' => is => 'ro', isa => HashRef, builder => sub { {} };
 
 # Private class attributes
-my $_docs_cache = {};
-
-# Private functions
-my $_cache_mtime_file = sub {
-   return $_[ 0 ]->catfile( '.mtime' );
-};
-
-# Private methods
-my $_update_filesys = sub {
-   my ($self, $text, $file, $mtime) = @_;
-
-   if ($mtime) { $file->touch( $mtime ) }
-   else { $file->exists and $file->unlink }
-
-   $self->log->debug( $text );
-
-   return;
-};
+my $_nav_cache = {};
 
 # Construction
 around 'BUILDARGS' => sub {
@@ -73,6 +56,18 @@ around 'load_page' => sub {
    throw 'Page [_1] not found', [ $req->path ], rv => HTTP_NOT_FOUND;
 };
 
+# Private methods
+my $_update_filesys = sub {
+   my ($self, $text, $file, $mtime) = @_;
+
+   if ($mtime) { $file->touch( $mtime ) }
+   else { $file->exists and $file->unlink }
+
+   $self->log->debug( $text );
+
+   return;
+};
+
 # Public methods
 sub find_node {
    my ($self, $locale, $ids) = @_;
@@ -99,7 +94,7 @@ sub initialise_page {
 }
 
 sub invalidate_docs_cache {
-   my ($self, $mtime) = @_; $_docs_cache = {};
+   my ($self, $mtime) = @_; $_nav_cache = {};
 
    my $filesys = $self->config->docs_mtime;
 
@@ -118,12 +113,12 @@ sub navigation {
                 rv => HTTP_NOT_FOUND;
    my $ids    = $req->uri_params->() // [];
    my $wanted = $stash->{page}->{wanted} // NUL;
-   my $tuple  = $_docs_cache->{ $wanted };
+   my $tuple  = $_nav_cache->{ $wanted };
 
    if (not $tuple or mtime $node > $tuple->{mtime}) {
       my $path = $self->moniker.'/page';
 
-      $tuple   =  $_docs_cache->{ $wanted } = {
+      $tuple   =  $_nav_cache->{ $wanted } = {
          list  => build_navigation( $req, $path, $conf, $node, $ids, $wanted ),
          mtime => mtime( $node ), };
    }
