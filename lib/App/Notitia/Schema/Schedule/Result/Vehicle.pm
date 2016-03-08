@@ -10,7 +10,6 @@ use App::Notitia::Util      qw( date_data_type foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 serial_data_type varchar_data_type );
 use Class::Usul::Functions  qw( throw );
-use Class::Usul::Time       qw( str2date_time );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -85,13 +84,38 @@ my $_assert_public_or_private = sub {
    return;
 };
 
+my $_find_rota_type_id_for = sub {
+   my ($self, $name) = @_; my $schema = $self->result_source->schema;
+
+   return $schema->resultset( 'Type' )->find_rota_by( $name )->id;
+};
+
 my $_assert_slot_assignment_allowed = sub {
-   my ($self, $assigner, $slot_type, $bike_requested) = @_;
+   my ($self, $rota_name, $date, $shift_type, $slot_type, $person, $bike) = @_;
 
-   $assigner->assert_member_of( 'asset_manager' );
+   $person->assert_member_of( 'asset_manager' );
 
-   $slot_type eq 'rider' and $bike_requested and $self->type ne 'bike'
+   $slot_type eq 'rider' and $bike and $self->type ne 'bike'
       and throw 'Vehicle [_1] is not a bike and one was requested', [ $self ];
+
+   if ($slot_type eq 'rider') {
+      my $schema  = $self->result_source->schema;
+      my $type_id = $self->$_find_rota_type_id_for( $rota_name );
+      my $slots   = $schema->resultset( 'Slot' )->search
+         ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
+           { columns  => [ qw( shift.type me.type subslot
+                               vehicle.name vehicle.vrn ) ],
+             join     => [ { 'shift' => 'rota' }, 'vehicle', ],
+             prefetch => [ { 'shift' => 'rota' }, 'vehicle', ] } );
+
+      for my $slot (grep { $_->type eq 'rider' } $slots->all) {
+         $slot->shift->type eq $shift_type
+            and $slot->vehicle and $slot->vehicle->vrn eq $self->vrn
+            and throw 'Vehicle [_1] already assigned to slot [_2]',
+                      [ $self, $slot->subslot ], level => 2,
+                      rv => HTTP_EXPECTATION_FAILED;
+      }
+   }
 
    return;
 };
@@ -104,8 +128,6 @@ my $_find_assigner = sub {
 
 my $_find_slot = sub {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot) = @_;
-
-   $date = str2date_time( $date, 'GMT' );
 
    my $shift = $self->find_shift( $rota_name, $date, $shift_type );
    my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
@@ -136,14 +158,15 @@ sub assign_to_event {
 sub assign_slot {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $name) = @_;
 
-   my $slot     = $self->$_find_slot
+   my $slot   = $self->$_find_slot
       ( $rota_name, $date, $shift_type, $slot_type, $subslot );
-   my $assigner = $self->$_find_assigner( $name );
+   my $person = $self->$_find_assigner( $name );
+   my $bike   = $slot->bike_requested;
 
    $self->$_assert_slot_assignment_allowed
-      ( $assigner, $slot_type, $slot->bike_requested );
+      ( $rota_name, $date, $shift_type, $slot_type, $person, $bike );
 
-   $slot->vehicle_id( $self->id ); $slot->vehicle_assigner_id( $assigner->id );
+   $slot->vehicle_id( $self->id ); $slot->vehicle_assigner_id( $person->id );
 
    return $slot->update;
 }

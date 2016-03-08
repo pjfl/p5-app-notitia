@@ -3,6 +3,8 @@ package App::Notitia::Schema::Schedule::ResultSet::Rota;
 use strictures;
 use parent 'DBIx::Class::ResultSet';
 
+use Class::Usul::Time qw( str2date_time );
+
 # Public methods
 sub find_rota {
    my ($self, $name, $date) = @_;
@@ -11,7 +13,7 @@ sub find_rota {
    my $rota_type  =  $schema->resultset( 'Type' )->find_rota_by( $name );
    my $dtp        =  $schema->storage->datetime_parser;
    my $rota       =  $self->search
-      ( { date    => $dtp->format_datetime( $date ),
+      ( { date    => $dtp->format_datetime( str2date_time $date, 'GMT' ),
           type_id => $rota_type->id } )->single;
 
    $rota or $rota =  $self->create

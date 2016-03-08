@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 56 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 57 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -15,6 +15,7 @@ sub env_var {
 # TODO: Datepicker.js shim for Explorer *and* Failfox
 # TODO: Implement lost password
 # TODO: Make redirect to wanted after login work
+# TODO: Determine how to request a vehicle for an event
 
 1;
 

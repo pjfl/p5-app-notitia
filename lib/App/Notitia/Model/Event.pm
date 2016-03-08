@@ -8,7 +8,7 @@ use App::Notitia::Util      qw( admin_navigation_links bind create_button
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
-use Class::Usul::Time       qw( str2date_time time2str );
+use Class::Usul::Time       qw( time2str );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -182,7 +182,7 @@ sub create_event_action : Role(event_manager) {
    my $date     =  $req->body_params->( 'event_date' );
    my $event    =  $self->schema->resultset( 'Event' )->new_result
       ( { rota  => 'main', # TODO: Naughty
-          date  => str2date_time( $date, 'GMT' ),
+          date  => $date,
           owner => $req->username, } );
 
    $self->$_update_event_from_request( $req, $event ); $event->insert;
@@ -321,7 +321,7 @@ sub update_event_action : Role(event_manager) {
 
    my $name  = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $name );
-   my $date  = str2date_time $req->body_params->( 'event_date' ) , 'GMT';
+   my $date  = $req->body_params->( 'event_date' );
 
    $self->$_update_event_from_request( $req, $event );
    $event->rota_id( $self->$_find_rota( 'main', $date )->id ); # TODO: Naughty
