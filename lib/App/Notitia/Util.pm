@@ -172,7 +172,7 @@ sub build_navigation ($$$$$$) {
 
       $link->{class}  = $node->{type} eq 'folder' ? 'folder-link' : 'file-link';
       $link->{tip  }  = $get_tip_text->( $conf->docs_root, $node );
-      $link->{url  }  = uri_for_action( $req, $path, [ $link->{url} ] );
+      $link->{uri  }  = uri_for_action( $req, $path, [ $link->{url} ] );
       $link->{depth} -= 2;
 
       if (defined $ids->[ 0 ] and $ids->[ 0 ] eq $node->{id}) {

@@ -1,23 +1,35 @@
 <!-- Section Nav -->
-[% FOR node IN nav -%]
-[%    IF node.url == page.url -%]
+[% IF page.fields.nav %]
 <div class="section-nav">
    <div class="left align-right">
-[%       IF loop.first -%]
-      <span class="prev disabled">[% loc( 'Back' ) %]</span>
-[%       ELSE -%]
-[%    Link( loop.prev.url, 'prev', loc( 'Back' ) ) -%]
-[%       END -%]
+[%    Link( page.fields.nav.prev, 'prev', loc( 'Prev' ) ) -%]
    </div>
    <div class="right align-left">
-[%       IF loop.last -%]
-      <span class="next disabled">[% loc( 'Next' ) %]</span>
-[%       ELSE -%]
-[%    Link( loop.next.url, 'next', loc( 'Next' ) ) -%]
-[%       END -%]
+[%    Link( page.fields.nav.next, 'next', loc( 'Next' ) ) -%]
    </div>
 </div>
 <div class="clear"></div>
-[%       LAST -%]
+[% ELSE -%]
+[%    FOREACH node IN nav -%]
+[%       IF node.url == page.url -%]
+<div class="section-nav">
+   <div class="left align-right">
+[%          IF loop.first -%]
+      <span class="prev disabled">[% loc( 'Back' ) %]</span>
+[%          ELSE -%]
+      <a href="[% loop.prev.uri %]" class="prev">[% loc( 'Back' ) %]</a>
+[%          END -%]
+   </div>
+   <div class="right align-left">
+[%          IF loop.last -%]
+      <span class="next disabled">[% loc( 'Next' ) %]</span>
+[%          ELSE -%]
+      <a href="[% loop.next.uri %]" class="next">[% loc( 'Next' ) %]</a>
+[%          END -%]
+   </div>
+</div>
+<div class="clear"></div>
+[%          LAST -%]
+[%       END -%]
 [%    END -%]
 [% END -%]

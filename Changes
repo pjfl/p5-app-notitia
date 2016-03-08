@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Section navigation starting to work
           - Added lost password support
           - Make redirect to wanted after login work
           - Replaced login dialog with login page

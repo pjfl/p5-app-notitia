@@ -43,7 +43,7 @@ msgid "address_viewer"
 msgstr "Address Viewer"
 
 msgid "admin_index_title"
-msgstr "Administration"
+msgstr "Administration Index"
 
 msgid "administrator"
 msgstr "Administrator"
@@ -56,6 +56,9 @@ msgstr "Assessment"
 
 msgid "asset_manager"
 msgstr "Asset Manager"
+
+msgid "assign_management_tip"
+msgstr "Assign a vehicle to this slot"
 
 msgid "aquired"
 msgstr "Aquired"
@@ -264,6 +267,9 @@ msgstr "Displays 'event' records"
 msgid "events_management_heading"
 msgstr "Events"
 
+msgid "Exception Handler"
+msgstr "I'm sorry Dave, I can't do that"
+
 msgid "first_name"
 msgstr "First Name"
 
@@ -291,11 +297,14 @@ msgstr "Last Name"
 msgid "login"
 msgstr "Login"
 
+msgid "login_title"
+msgstr "Stop! You have your papers?"
+
 msgid "m_advanced"
 msgstr "M Advanced"
 
 msgid "main_index_title"
-msgstr "Welcome"
+msgstr "Welcome to [_1]"
 
 msgid "mobile_phone"
 msgstr "Mobile Phone"
@@ -491,6 +500,9 @@ msgstr "View"
 
 msgid "trailer"
 msgstr "Trailer"
+
+msgid "unassign_management_tip"
+msgstr "Unassign a vehicle from this slot"
 
 msgid "unparticipate"
 msgstr "Cancel"

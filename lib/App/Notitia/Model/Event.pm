@@ -108,15 +108,17 @@ my $_find_rota = sub {
 my $_format_as_markdown = sub {
    my ($self, $req, $event) = @_; my $name = $event->name;
 
-   my $yaml = "---\nauthor: ".$event->owner."\ntitle: ".$name."\n---\n";
-   my $desc = $event->description."\n\n";
-   my $opts = { params => [ $event->rota->date->dmy( '/' ),
-                            $event->start_time, $event->end_time ],
-                no_quote_bind_values => TRUE };
-   my $when = loc( $req, 'event_blog_when', $opts )."\n\n";
-   my $href = uri_for_action $req, $self->moniker.'/summary', [ $name ];
-      $opts = { params => [ $href ], no_quote_bind_values => TRUE };
-   my $link = loc( $req, 'event_blog_link', $opts )."\n\n";
+   my $created = time2str '%Y-%m-%d %H:%M:%S %z', time, 'UTC';
+   my $yaml    = "---\nauthor: ".$event->owner."\n"
+               . "created: ${created}\ntitle: ${name}\n---\n";
+   my $desc    = $event->description."\n\n";
+   my $opts    = { params => [ $event->rota->date->dmy( '/' ),
+                               $event->start_time, $event->end_time ],
+                   no_quote_bind_values => TRUE };
+   my $when    = loc( $req, 'event_blog_when', $opts )."\n\n";
+   my $href    = uri_for_action $req, $self->moniker.'/summary', [ $name ];
+      $opts    = { params => [ $href ], no_quote_bind_values => TRUE };
+   my $link    = loc( $req, 'event_blog_link', $opts )."\n\n";
 
    return $yaml.$desc.$when.$link;
 };

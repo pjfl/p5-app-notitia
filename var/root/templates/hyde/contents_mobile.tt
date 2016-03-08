@@ -10,7 +10,7 @@
 [%    IF node.type == 'folder'; depth = depth + 1 -%]
       <optgroup label="[% node.title %]">
 [%    ELSE -%]
-      <option value="[% node.url %]">[% node.title %]</option>
+      <option value="[% node.uri %]">[% node.title %]</option>
 [%    END -%]
 [% END -%]
 [% WHILE depth > 0; depth = depth - 1 -%]

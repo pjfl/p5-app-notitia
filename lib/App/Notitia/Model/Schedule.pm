@@ -274,8 +274,15 @@ my $_get_page = sub {
 
    my $rota_dt =  str2date_time $date, 'GMT';
    my $title   =  ucfirst( loc( $req, $name ) ).SPC
-               .  loc( $req, 'rota for' ).SPC.$rota_dt->month_name;
+               .  loc( $req, 'rota for' ).SPC
+               .  $rota_dt->month_name.SPC.$rota_dt->day;
+   my $actionp =  $self->moniker.'/day_rota';
+   my $next    =  uri_for_action $req, $actionp,
+                  [ $name, $rota_dt->clone->add( days => 1 )->ymd ];
+   my $prev    =  uri_for_action $req, $actionp,
+                  [ $name, $rota_dt->clone->subtract( days => 1 )->ymd ];
    my $page    =  {
+      fields   => { nav => { next => $next, prev => $prev }, },
       rota     => { controllers => [],
                     events      => [],
                     headers     => $_headers->( $req ),

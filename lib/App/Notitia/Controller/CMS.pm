@@ -8,14 +8,15 @@ has '+moniker' => default => 'cms';
 
 sub dispatch_request {
    sub (POST + /assets + *file~   + ?*) { [ 'docs',  'upload',       @_ ] },
-   sub (POST + /docs  | /docs/**  + ?*) { [ 'docs',  'from_request', @_ ] },
+   sub (POST + /docs/**  | /docs  + ?*) { [ 'docs',  'from_request', @_ ] },
    sub (GET  + /docs              + ?*) { [ 'docs',  'index',        @_ ] },
    sub (GET  + /docs/dialog       + ?*) { [ 'docs',  'dialog',       @_ ] },
    sub (GET  + /docs/search       + ?*) { [ 'docs',  'search',       @_ ] },
    sub (GET  + /docs/**           + ?*) { [ 'docs',  'page',         @_ ] },
    sub (GET  + /posts/dialog      + ?*) { [ 'posts', 'dialog',       @_ ] },
    sub (GET  + /posts/rss         + ?*) { [ 'posts', 'rss_feed',     @_ ] },
-   sub (GET  + /posts | /posts/** + ?*) { [ 'posts', 'page',         @_ ] },
+   sub (POST + /posts             + ?*) { [ 'posts', 'from_request', @_ ] },
+   sub (GET  + /posts/** | /posts + ?*) { [ 'posts', 'page',         @_ ] },
 }
 
 1;

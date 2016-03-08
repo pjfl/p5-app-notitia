@@ -3,7 +3,7 @@ package App::Notitia::Role::PageConfiguration;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( TRUE );
-use App::Notitia::Util      qw( loc );
+use App::Notitia::Util      qw( loc uri_for_action );
 use Try::Tiny;
 use Moo::Role;
 
@@ -56,6 +56,23 @@ around 'load_page' => sub {
    $page->{hint  } //= loc( $req, 'Hint' );
    $page->{wanted} //=
       join '/', @{ $req->uri_params->( { optional => TRUE } ) // [] };
+
+   my $js = $page->{literal_js} //= []; my ($href, $title);
+
+   if ($req->authenticated) {
+      $href  = uri_for_action $req, 'user/profile';
+      $title = loc $req, 'Person Profile';
+
+      push @{ $js }, $self->dialog_anchor( 'profile-user', $href, {
+         name => 'profile-user', title => $title, useIcon => \1 } );
+   }
+   else {
+      $href  = uri_for_action $req, 'user/reset';
+      $title = loc $req, 'Reset Password';
+
+      push @{ $js }, $self->dialog_anchor( 'request-reset', $href, {
+         name => 'request-reset', title => $title, useIcon => \1 } );
+   }
 
    return $page;
 };

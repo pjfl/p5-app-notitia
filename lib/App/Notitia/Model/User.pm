@@ -32,21 +32,6 @@ register_action_paths
    'user/profile'         => 'user/profile',
    'user/request_reset'   => 'user/reset';
 
-# Construction
-around 'load_page' => sub {
-   my ($orig, $self, $req, @args) = @_;
-
-   my $page  = $orig->( $self, $req, @args );
-   my $js    = $page->{literal_js} //= [];
-   my $href  = uri_for_action $req, $self->moniker.'/reset';
-   my $title = 'Reset Password';
-
-   push @{ $js }, $self->dialog_anchor( 'request-reset', $href, {
-      name => 'request-reset', title => loc( $req, $title ), useIcon => \1 } );
-
-   return $page;
-};
-
 # Private methods
 my $_create_reset_email = sub {
    my ($self, $req, $person, $password) = @_;
@@ -88,9 +73,8 @@ my $_create_reset_email = sub {
 sub change_password : Role(anon) {
    my ($self, $req) = @_;
 
-   my $name       =  $req->uri_params->( 0, { optional => TRUE } )
-                 //  $req->username;
-   my $page       =  {
+   my $name = $req->uri_params->( 0, { optional => TRUE } ) // $req->username;
+   my $page = {
       fields      => {
          again    => bind( 'again',    NUL, { class => 'reveal' } ),
          oldpass  => bind( 'oldpass',  NUL, { label => 'old_password' } ),
@@ -141,11 +125,14 @@ sub check_field : Role(any) {
 sub index : Role(anon) {
    my ($self, $req) = @_;
 
+   my $title      =  $req->authenticated ? 'main_index_title' : 'login_title';
+   my $opts       =  { params => [ $self->config->title ],
+                       no_quote_bind_values => TRUE, };
    my $page       =  {
       fields      => {},
       first_field => 'username',
       template    => [ 'contents', 'index' ],
-      title       => loc( $req, 'main_index_title' ), };
+      title       => loc( $req, $title, $opts ), };
    my $fields     =  $page->{fields};
 
    $fields->{password} = bind 'password', NUL;
