@@ -110,7 +110,7 @@ my $l1_nav_link = sub {
             tip   => loc( $req, "${k}_tip"  ),
             title => loc( $req, "${k}_link" ),
             type  => 'link',
-            url   => uri_for_action( $req, $action, @args ), };
+            uri   => uri_for_action( $req, $action, @args ), };
 };
 
 # Public functions

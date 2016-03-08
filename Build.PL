@@ -116,7 +116,7 @@ use File::Spec::Functions qw( catdir catfile );
 sub ACTION_install {
    my $self = shift; umask oct '0007'; $self->SUPER::ACTION_install();
 
-   for my $dir (qw( logs run tmp )) {
+   for my $dir (qw( logs run session tmp )) {
       my $path = catdir( $self->install_path( 'var' ), $dir );
 
       $self->destdir and $path = catdir( $self->destdir, $path );
