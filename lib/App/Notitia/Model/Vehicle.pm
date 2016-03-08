@@ -24,6 +24,7 @@ has '+moniker' => default => 'asset';
 
 register_action_paths
    'asset/assign'   => 'vehicle/assign',
+   'asset/unassign' => 'vehicle/assign',
    'asset/vehicle'  => 'vehicle',
    'asset/vehicles' => 'vehicles';
 
@@ -116,6 +117,33 @@ my $_select_owner_list = sub {
    return bind 'owner_id', [ [ NUL, NUL ], @{ $people } ], { numify => TRUE };
 };
 
+my $_toggle_assignment = sub {
+   my ($self, $req, $action) = @_;
+
+   my $method    = "${action}_slot";
+   my $params    = $req->uri_params;
+   my $rota_name = $params->( 0 );
+   my $rota_date = $params->( 1 );
+   my $slot_name = $params->( 2 );
+   my $vrn       = $req->body_params->( 'vehicle' );
+   my $schema    = $self->schema;
+   my $vehicle   = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+
+   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
+
+   $vehicle->$method( $rota_name, $rota_date, $shift_type,
+                      $slot_type, $subslot, $req->username );
+
+   my $label     = slot_identifier
+      ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
+   my $message   = [ "Vehicle [_1] ${action}ed to [_2] by [_3]",
+                     $vrn, $label, $req->username ];
+   my $location  = uri_for_action
+      ( $req, 'sched/day_rota', [ $rota_name, $rota_date, $slot_name ] );
+
+   return { redirect => { location => $location, message => $message } };
+};
+
 my $_update_vehicle_from_request = sub {
    my ($self, $req, $vehicle) = @_; my $params = $req->body_params; my $v;
 
@@ -165,7 +193,7 @@ my $_vehicle_type_list = sub {
 };
 
 # Public methods
-sub assign : Role(administrator) Role(asset_manager) {
+sub assign : Role(asset_manager) {
    my ($self, $req) = @_;
 
    my $params = $req->uri_params;
@@ -183,6 +211,11 @@ sub assign : Role(administrator) Role(asset_manager) {
       $fields->{vehicle } = bind 'vehicle', $values, { label => NUL };
       $page->{literal_js} = set_element_focus 'assign-vehicle', 'vehicle';
    }
+   else {
+      my $vrn = $req->query_params->( 'vehicle' );
+
+      $fields->{vehicle } = { name => 'vehicle', value => $vrn };
+   }
 
    $fields->{href   } = uri_for_action $req, $self->moniker.'/vehicle', $args;
    $fields->{confirm} = $_confirm_vehicle_button->( $req, $action );
@@ -191,34 +224,11 @@ sub assign : Role(administrator) Role(asset_manager) {
    return $stash;
 }
 
-sub assign_vehicle_action : Role(administrator) Role(asset_manager) {
-   my ($self, $req) = @_;
-
-   my $params    = $req->uri_params;
-   my $rota_name = $params->( 0 );
-   my $rota_date = $params->( 1 );
-   my $slot_name = $params->( 2 );
-   my $vrn       = $req->body_params->( 'vehicle' );
-   my $schema    = $self->schema;
-   my $vehicle   = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
-
-   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
-
-   $vehicle->assign_to_slot( $rota_name, str2date_time( $rota_date, 'GMT' ),
-                             $shift_type, $slot_type, $subslot,
-                             $req->username );
-
-   my $label     = slot_identifier
-      ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
-   my $message   = [ 'Vehicle [_1] assigned to [_2] by [_3]',
-                     $vrn, $label, $req->username ];
-   my $location  = uri_for_action
-      ( $req, 'sched/day_rota', [ $rota_name, $rota_date, $slot_name ] );
-
-   return { redirect => { location => $location, message => $message } };
+sub assign_vehicle_action : Role(asset_manager) {
+   return $_[ 0 ]->$_toggle_assignment( $_[ 1 ], 'assign' );
 }
 
-sub create_vehicle_action : Role(administrator) Role(asset_manager) {
+sub create_vehicle_action : Role(asset_manager) {
    my ($self, $req) = @_;
 
    my $vehicle  = $self->schema->resultset( 'Vehicle' )->new_result( {} );
@@ -232,7 +242,7 @@ sub create_vehicle_action : Role(administrator) Role(asset_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_vehicle_action : Role(administrator) Role(asset_manager) {
+sub delete_vehicle_action : Role(asset_manager) {
    my ($self, $req) = @_;
 
    my $vrn     = $req->uri_params->( 0 );
@@ -246,7 +256,11 @@ sub delete_vehicle_action : Role(administrator) Role(asset_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub update_vehicle_action : Role(administrator) Role(asset_manager) {
+sub unassign_vehicle_action : Role(asset_manager) {
+   return $_[ 0 ]->$_toggle_assignment( $_[ 1 ], 'unassign' );
+}
+
+sub update_vehicle_action : Role(asset_manager) {
    my ($self, $req) = @_;
 
    my $vrn     = $req->uri_params->( 0 );
@@ -259,7 +273,7 @@ sub update_vehicle_action : Role(administrator) Role(asset_manager) {
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub vehicle : Role(administrator) Role(asset_manager) {
+sub vehicle : Role(asset_manager) {
    my ($self, $req) = @_;
 
    my $action    =  $self->moniker.'/vehicle';
@@ -284,7 +298,7 @@ sub vehicle : Role(administrator) Role(asset_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub vehicles : Role(administrator) Role(asset_manager) {
+sub vehicles : Role(asset_manager) {
    my ($self, $req) = @_;
 
    my $action    =  $self->moniker.'/vehicle';

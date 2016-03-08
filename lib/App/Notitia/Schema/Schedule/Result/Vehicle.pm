@@ -10,6 +10,7 @@ use App::Notitia::Util      qw( date_data_type foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 serial_data_type varchar_data_type );
 use Class::Usul::Functions  qw( throw );
+use Class::Usul::Time       qw( str2date_time );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -101,6 +102,19 @@ my $_find_assigner = sub {
    return $schema->resultset( 'Person' )->find_person_by( $name );
 };
 
+my $_find_slot = sub {
+   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot) = @_;
+
+   $date = str2date_time( $date, 'GMT' );
+
+   my $shift = $self->find_shift( $rota_name, $date, $shift_type );
+   my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
+
+   $slot or throw 'Slot [_1] has not been claimed', [ $slot ];
+
+   return $slot;
+};
+
 # Public methods
 sub assign_to_event {
    my ($self, $event_name, $assigner_name) = @_;
@@ -119,14 +133,11 @@ sub assign_to_event {
           vehicle_assigner_id => $assigner->id } );
 }
 
-sub assign_to_slot {
+sub assign_slot {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $name) = @_;
 
-   my $shift = $self->find_shift( $rota_name, $date, $shift_type );
-   my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
-
-   $slot or throw 'Slot [_1] has not been claimed', [ $slot ];
-
+   my $slot     = $self->$_find_slot
+      ( $rota_name, $date, $shift_type, $slot_type, $subslot );
    my $assigner = $self->$_find_assigner( $name );
 
    $self->$_assert_slot_assignment_allowed
@@ -151,6 +162,17 @@ sub label {
    return $_[ 0 ]->name  ? $_[ 0 ]->vrn.' ('.$_[ 0 ]->name.')'
         : $_[ 0 ]->owner ? $_[ 0 ]->vrn.' ('.$_[ 0 ]->owner.')'
                          : $_[ 0 ]->vrn;
+}
+
+sub unassign_slot {
+   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $name) = @_;
+
+   my $slot = $self->$_find_slot
+      ( $rota_name, $date, $shift_type, $slot_type, $subslot );
+
+   $slot->vehicle_id( undef ); $slot->vehicle_assigner_id( undef );
+
+   return $slot->update;
 }
 
 sub update {

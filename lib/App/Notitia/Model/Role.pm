@@ -58,7 +58,7 @@ my $_subtract = sub {
 my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
-   return [ [ NUL, NUL ], $type_rs->list_role_types->all ];
+   return [ $type_rs->list_role_types->all ];
 };
 
 # Public methods

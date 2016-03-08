@@ -176,7 +176,7 @@ my $_write_blog_post = sub {
 };
 
 # Public methods
-sub create_event_action : Role(administrator) Role(event_manager) {
+sub create_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
    my $date     =  $req->body_params->( 'event_date' );
@@ -196,7 +196,7 @@ sub create_event_action : Role(administrator) Role(event_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_event_action : Role(administrator) Role(event_manager) {
+sub delete_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
    my $name  = $req->uri_params->( 0 );
@@ -210,7 +210,7 @@ sub delete_event_action : Role(administrator) Role(event_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub event : Role(administrator) Role(event_manager) {
+sub event : Role(event_manager) {
    my ($self, $req) = @_;
 
    # TODO: Fix the event name so that it's good for the href - no space or %
@@ -316,7 +316,7 @@ sub unparticipate_event_action : Role(any) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub update_event_action : Role(administrator) Role(event_manager) {
+sub update_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
    my $name  = $req->uri_params->( 0 );

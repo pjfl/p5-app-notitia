@@ -142,7 +142,7 @@ my $_list_certification_for = sub {
 };
 
 # Public functions
-sub certification : Role(administrator) Role(person_manager) {
+sub certification : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name      =  $req->uri_params->( 0 );
@@ -172,7 +172,7 @@ sub certification : Role(administrator) Role(person_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub certifications : Role(administrator) Role(person_manager) {
+sub certifications : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name    =  $req->uri_params->( 0 );
@@ -196,7 +196,7 @@ sub certifications : Role(administrator) Role(person_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub create_certification_action : Role(administrator) Role(person_manager) {
+sub create_certification_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name    = $req->uri_params->( 0 );
@@ -214,7 +214,7 @@ sub create_certification_action : Role(administrator) Role(person_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_certification_action : Role(administrator) Role(person_manager) {
+sub delete_certification_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name     = $req->uri_params->( 0 );
@@ -234,7 +234,7 @@ sub find_cert_by {
    return $rs->find_cert_by( @_ );
 }
 
-sub update_certification_action : Role(administrator) Role(person_manager) {
+sub update_certification_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name = $req->uri_params->( 0 );

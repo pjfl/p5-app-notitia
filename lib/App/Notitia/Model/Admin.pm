@@ -212,7 +212,7 @@ sub activate : Role(anon) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_person_action : Role(administrator) Role(person_manager) {
+sub create_person_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $person = $self->schema->resultset( 'Person' )->new_result( {} );
@@ -238,7 +238,7 @@ sub create_person_action : Role(administrator) Role(person_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_person_action : Role(administrator) Role(person_manager) {
+sub delete_person_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name     = $req->uri_params->( 0 );
@@ -261,7 +261,7 @@ sub index : Role(any) {
       title  => loc( $req, 'admin_index_title' ) } );
 }
 
-sub person : Role(administrator) Role(person_manager) {
+sub person : Role(person_manager) {
    my ($self, $req) = @_; my $people;
 
    my $name       =  $req->uri_params->( 0, { optional => TRUE } );
@@ -323,7 +323,7 @@ sub people : Role(any) {
    return $self->get_stash( $req, $page );
 }
 
-sub update_person_action : Role(administrator) Role(person_manager) {
+sub update_person_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name   = $req->uri_params->( 0 );

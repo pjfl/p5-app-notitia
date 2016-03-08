@@ -136,7 +136,7 @@ my $_update_endorsement_from_request = sub {
 };
 
 # Public functions
-sub endorsement : Role(administrator) Role(person_manager) {
+sub endorsement : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name       =  $req->uri_params->( 0 );
@@ -164,7 +164,7 @@ sub endorsement : Role(administrator) Role(person_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub endorsements : Role(administrator) Role(person_manager) {
+sub endorsements : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name    =  $req->uri_params->( 0 );
@@ -188,7 +188,7 @@ sub endorsements : Role(administrator) Role(person_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub create_endorsement_action : Role(administrator) Role(person_manager) {
+sub create_endorsement_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name    = $req->uri_params->( 0 );
@@ -205,7 +205,7 @@ sub create_endorsement_action : Role(administrator) Role(person_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_endorsement_action : Role(administrator) Role(person_manager) {
+sub delete_endorsement_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name     = $req->uri_params->( 0 );
@@ -225,7 +225,7 @@ sub find_endorsement_by {
    return $rs->find_endorsement_by( @_ );
 }
 
-sub update_endorsement_action : Role(administrator) Role(person_manager) {
+sub update_endorsement_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name = $req->uri_params->( 0 );

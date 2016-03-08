@@ -129,6 +129,28 @@ my $_add_js_dialog = sub {
    return;
 };
 
+my $_vehicle_link = sub {
+   my ($self, $req, $page, $args, $value, $action) = @_; my $k = $args->[ 2 ];
+
+   my $path   = "asset/${action}";
+   my $params = { action => $action };
+
+   $action eq 'unassign' and $params->{vehicle} = $value;
+
+   my $href   = uri_for_action $req, $path, $args, $params;
+   my $tip    = loc $req, "${action}_management_tip";
+   my $js     = $page->{literal_js} //= [];
+
+   $value = $_table_link->( $req, "${action}_${k}", $value, $tip );
+
+   push @{ $js }, $self->dialog_anchor( "${action}_${k}", $href, {
+      name    => "${action}-vehicle",
+      title   => loc( $req, (ucfirst $action).' Vehicle' ),
+      useIcon => \1 } );
+
+   return $value;
+};
+
 my $_assign_link = sub {
    my ($self, $req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
 
@@ -139,16 +161,10 @@ my $_assign_link = sub {
    $value  or $value = '&nbsp;' x 11;
 
    if ($state eq 'vehicle_requested') {
-      my $action = { action => 'assign' };
-      my $href   = uri_for_action( $req, 'asset/assign', $args, $action );
-      my $tip    = loc( $req, 'assign_management_tip' );
-      my $js     = $page->{literal_js} //= [];
-
-      $value = $_table_link->( $req, "assign_${k}", $value, $tip );
-      push @{ $js }, $self->dialog_anchor( "assign_${k}", $href, {
-         name    => 'assign-vehicle',
-         title   => loc( $req, 'Assign Vehicle' ),
-         useIcon => \1 } );
+      $value = $self->$_vehicle_link( $req, $page, $args, $value, 'assign' );
+   }
+   elsif ($state eq 'vehicle_assigned') {
+      $value = $self->$_vehicle_link( $req, $page, $args, $value, 'unassign' );
    }
 
    my $class = "centre narrow ${state}";
@@ -275,8 +291,7 @@ my $_get_page = sub {
 };
 
 # Public methods
-sub claim_slot_action : Role(administrator) Role(bike_rider) Role(controller)
-                        Role(driver) {
+sub claim_slot_action : Role(bike_rider) Role(controller) Role(driver) {
    my ($self, $req) = @_;
 
    my $params    = $req->uri_params;
@@ -291,8 +306,8 @@ sub claim_slot_action : Role(administrator) Role(bike_rider) Role(controller)
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
    # Without tz will create rota records prev. day @ 23:00 during summer time
-   $person->claim_slot( $rota_name, str2date_time( $rota_date, 'GMT' ),
-                        $shift_type, $slot_type, $subslot, $bike );
+   $person->claim_slot( $rota_name, $rota_date, $shift_type,
+                        $slot_type, $subslot,   $bike );
 
    my $args     = [ $rota_name, $rota_date ];
    my $location = uri_for_action( $req, 'sched/day_rota', $args );
@@ -374,8 +389,8 @@ sub yield_slot_action : Role(administrator) Role(bike_rider) Role(controller)
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
 
-   $person->yield_slot( $rota_name, str2date_time( $rota_date ),
-                        $shift_type, $slot_type, $subslot );
+   $person->yield_slot( $rota_name, $rota_date, $shift_type,
+                        $slot_type, $subslot );
 
    my $args     = [ $rota_name, $rota_date ];
    my $location = uri_for_action( $req, 'sched/day_rota', $args );

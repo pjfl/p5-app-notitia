@@ -14,6 +14,7 @@ use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
                                    serial_data_type slot_limit_index
                                    varchar_data_type );
 use Class::Usul::Functions     qw( throw );
+use Class::Usul::Time          qw( str2date_time );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use HTTP::Status               qw( HTTP_EXPECTATION_FAILED HTTP_UNAUTHORIZED );
 use Try::Tiny;
@@ -218,6 +219,7 @@ sub authenticate {
 sub claim_slot {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $bike) = @_;
 
+   $date = str2date_time( $date, 'GMT' );
    $self->$_assert_claim_allowed( $shift_type, $slot_type, $subslot, $bike );
 
    my $shift = $self->find_shift( $rota_name, $date, $shift_type );
@@ -370,6 +372,8 @@ sub validation_attributes {
 
 sub yield_slot {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot) = @_;
+
+   $date = str2date_time( $date, 'GMT' );
 
    my $shift = $self->find_shift( $rota_name, $date, $shift_type );
    my $slot  = $self->find_slot( $shift, $slot_type, $subslot );

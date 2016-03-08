@@ -37,6 +37,9 @@
             type="submit" value="[% value %]">[% content %]</button></span>
    </form>
 [% END -%]
+[% MACRO HiddenField( field ) BLOCK -%]
+   <input name="[% field.name %]" type="hidden" value="[% field.value %]">
+[% END -%]
 [% MACRO Link( href, class, content, id ) BLOCK -%]
    <a class="[% class %]" href="[% href %]"[% IF id -%]
          id="[% id %]"[% END %]>[% content %]</a>
