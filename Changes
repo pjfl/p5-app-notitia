@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Updated documentation
           - Fixed href in certifications and endorsements
           - Added getting started documentation
           - Section navigation starting to work

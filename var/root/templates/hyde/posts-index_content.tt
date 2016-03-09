@@ -3,8 +3,8 @@
    <article>
       <h4>[% page.title %]</h4>
 [% depth        = page.wanted_depth -%]
-[% file_title   = loc( 'File Path' ) -%]
-[% folder_title = loc( 'Folder Path' ) -%]
+[% file_title   = loc( 'Hint' ) -%]
+[% folder_title = loc( 'Folder' ) -%]
       <ul class="posts post-list">
 [% FOREACH node IN nav -%]
 [%    IF node.depth >= page.wanted_depth -%]

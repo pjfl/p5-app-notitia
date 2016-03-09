@@ -1,8 +1,4 @@
 ---
-layout: standard
-template:
-  - contents
-  - docs
 title: Getting Started
 ---
 
@@ -20,23 +16,13 @@ are announced via a blogging engine and RSS feed
 * Posts / News / Blog support
 * RSS feeds
 
-#### Acknowledgements
-
-I saw [Daux.io](https://github.com/justinwalsh/daux.io) on Github and 
-it said "Fork Me" so I did to create
-[Doh!](https://github.com/pjfl/p5-app-doh). Code from that project
-was used to add a lightweight content management system to
-this application
-
-JavaScript libraries hosted by [CloudFlare](https://www.cloudflare.com/).
-
 #### Technology
 
 This application is written in modern [Perl](http://www.perl.org) and
 uses [Moo](https://metacpan.org/module/Moo),
 [Plack](https://metacpan.org/module/Plack), and
 [Web::Simple](https://metacpan.org/module/Web::Simple). Prefer
-class based inheritance when JavaScript programming hence 
+class based inheritance when JavaScript programming hence
 [Mootools](http://mootools.net/) not jQuery.
 
 #### Installation
@@ -45,7 +31,7 @@ The [App-Notitia repository](http://github.com/pjfl/p5-app-notitia)
 contains meta data that lists the CPAN modules used by the
 application. Modern Perl CPAN distribution installers (like
 [App::cpanminus](https://metacpan.org/module/App::cpanminus))
-use this information to install the required dependencies when this 
+use this information to install the required dependencies when this
 application is installed.
 
 **Requirements:**
@@ -108,7 +94,13 @@ If that fails run it again with the --force option
    cpanm --force git:...
 ```
 
-Once installation is complete create the datebase with
+Once installation is complete run the post install
+
+```shell
+   bin/notitia-cli post-install
+```
+
+When the post install has finished create the database with
 
 ```shell
    bin/notitia-schema create-schema
@@ -146,11 +138,22 @@ standard output in response to the command:
 ```shell
    notitia-daemon get_init_file
 ```
+#### Acknowledgements
+
+I saw [Daux.io](https://github.com/justinwalsh/daux.io) on Github and
+it said "Fork Me" so I did to create
+[Doh!](https://github.com/pjfl/p5-app-doh). Code from that project
+was used to add a lightweight content management system to
+this application
+
+JavaScript libraries hosted by [CloudFlare](https://www.cloudflare.com/).
+
 #### Support
 
 If you need help using Notitia, or have found a bug, please create an
-issue on the <a href="https://github.com/pjfl/p5-app-notitia/issues" target="_blank"> Github repo</a>.
+issue on the <a href="https://github.com/pjfl/p5-app-notitia/issues"
+target="_blank">Github repo</a>.
 
-Please note that a Perl module failing to install is not an issue for 
-*this* application. Each Perl module has an issues tracker which can 
+Please note that a Perl module failing to install is not an issue for
+*this* application. Each Perl module has an issues tracker which can
 be found via that modules [Meta::CPAN](https://metacpan.org) page

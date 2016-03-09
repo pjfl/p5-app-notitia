@@ -40,8 +40,8 @@ has 'less_class'      => is => 'lazy', isa => LoadableClass,
 
 # Private functions
 my $_init_file_list = sub {
-   return io[ NUL, 'etc', 'init.d', $_[ 0 ] ],
-          io[ NUL, 'etc', 'rc0.d', 'K01'.$_[ 0 ] ];
+   return io( [ NUL, 'etc', 'init.d', $_[ 0 ] ] ),
+          io( [ NUL, 'etc', 'rc0.d', 'K01'.$_[ 0 ] ] );
 };
 
 # Private methods
@@ -106,6 +106,12 @@ sub post_install : method {
    my $cmd      = [ $EXECUTABLE_NAME, '-I', "${inc}",
                     "-Mlocal::lib=${localdir}" ];
 
+   for my $dir (qw( logs run session tmp )) {
+      my $path = $conf->vardir->catdir( $dir );
+
+      $path->exists or $path->mkpath( oct '0770' );
+   }
+
    $localdir->exists
       and $profile->assert_filepath
       and $self->run_cmd( $cmd, { err => 'stderr', out => $profile } );
@@ -125,13 +131,16 @@ sub post_install : method {
       $self->run_cmd( [ 'chown', '-R', "${owner}:${group}", $appldir ] );
    }
 
-   my ($init, $kill) = $_init_file_list->( $appname );
+   if ($EFFECTIVE_USER_ID == 0) {
+      my ($init, $kill) = $_init_file_list->( $appname );
 
-   $cmd = [ $conf->binsdir->catfile( 'notifier-daemon' ), 'get-init-file' ];
+      $cmd = [ $conf->binsdir->catfile( 'notifier-daemon' ), 'get-init-file' ];
 
-   $init->exists or $self->run_cmd( $cmd, { out => $init } );
-   $init->is_executable or $init->chmod( 0750 );
-   $kill->exists or $self->run_cmd( [ 'update-rc.d', $appname, 'defaults' ] );
+      $init->exists or $self->run_cmd( $cmd, { out => $init } );
+      $init->is_executable or $init->chmod( oct '0750' );
+      $kill->exists or $self->run_cmd( [ 'update-rc.d', $appname, 'defaults' ]);
+   }
+
    return OK;
 }
 
