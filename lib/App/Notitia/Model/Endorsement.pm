@@ -149,8 +149,10 @@ sub endorsement : Role(person_manager) {
       template    => [ 'contents', 'endorsement' ],
       title       => loc( $req, 'endorsement_management_heading' ), };
    my $fields     =  $page->{fields};
+   my $args       =  [ $name ];
 
    if ($code) {
+      $args = [ $name, $code ];
       $fields->{code  }->{disabled} = TRUE;
       $fields->{delete} = delete_button( $req, $code, 'endorsement' );
    }
@@ -158,8 +160,8 @@ sub endorsement : Role(person_manager) {
       $fields->{endorsed} = bind( 'endorsed', time2str '%Y-%m-%d' );
    }
 
-   $fields->{save    } = save_button( $req, $code, 'endorsement' );
-   $fields->{username} = bind( 'username', $name );
+   $fields->{save} = save_button( $req, $code, 'endorsement' );
+   $fields->{href} = uri_for_action $req, 'blots/endorsement', $args;
 
    return $self->get_stash( $req, $page );
 }

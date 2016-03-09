@@ -154,9 +154,10 @@ sub certification : Role(person_manager) {
       template   => [ 'contents', 'certification' ],
       title      => loc( $req, 'certification_management_heading' ), };
    my $fields    =  $page->{fields};
+   my $args      =  [ $name ];
 
    if ($type) {
-      my $opts = { disabled => TRUE };
+      my $opts = { disabled => TRUE }; $args = [ $name, $type ];
 
       $fields->{cert_type } = bind( 'cert_type', loc( $req, $type ), $opts );
       $fields->{delete    } = delete_button( $req, $type, 'certification' );
@@ -166,8 +167,8 @@ sub certification : Role(person_manager) {
       $fields->{cert_types} = bind( 'cert_types', $self->$_list_all_certs() );
    }
 
-   $fields->{save    } = save_button( $req, $type, 'certification' );
-   $fields->{username} = bind( 'username', $name );
+   $fields->{save} = save_button( $req, $type, 'certification' );
+   $fields->{href} = uri_for_action $req, 'certs/certification', $args;
 
    return $self->get_stash( $req, $page );
 }

@@ -197,8 +197,7 @@ sub assign : Role(asset_manager) {
    my ($self, $req) = @_;
 
    my $params = $req->uri_params;
-   my $name   = $params->( 2 );
-   my $args   = [ $params->( 0 ), $params->( 1 ), $name ];
+   my $args   = [ $params->( 0 ), $params->( 1 ), $params->( 2 ) ];
    my $action = $req->query_params->( 'action' );
    my $stash  = $self->dialog_stash( $req, "${action}-vehicle" );
    my $page   = $stash->{page};
@@ -206,7 +205,7 @@ sub assign : Role(asset_manager) {
 
    if ($action eq 'assign') {
       my $rs     = $self->schema->resultset( 'Vehicle' );
-      my $values = [ [ NUL, NUL ], @{ $rs->list_all_vehicles } ];
+      my $values = [ [ NUL, NUL ], @{ $rs->list_vehicles_by_type( 'bike' ) } ];
 
       $fields->{vehicle } = bind 'vehicle', $values, { label => NUL };
       $page->{literal_js} = set_element_focus 'assign-vehicle', 'vehicle';

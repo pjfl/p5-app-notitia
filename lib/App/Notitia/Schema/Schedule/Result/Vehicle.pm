@@ -187,6 +187,10 @@ sub label {
                          : $_[ 0 ]->vrn;
 }
 
+sub slotref {
+   return $_[ 0 ]->name ? $_[ 0 ]->name : $_[ 0 ]->vrn;
+}
+
 sub unassign_slot {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $name) = @_;
 

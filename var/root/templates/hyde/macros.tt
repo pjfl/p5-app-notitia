@@ -58,8 +58,8 @@
            name="[% field.name %]" type="password"></label>
 [% END -%]
 [% MACRO Select( field ) BLOCK -%]
-   <label class="label">
-      <span class="field-label">[% loc( field.label ) %]</span>
+[%    IF field.label -%]<label class="label">
+      <span class="field-label">[% loc( field.label ) %]</span>[% END %]
       <select class="standard-field [% field.class %]" name="[% field.name %]"
 [%    IF field.multiple %]multiple="multiple" size="[% field.size %]" [% END -%]
 [%    IF field.onchange -%]
@@ -68,7 +68,7 @@
          <option [% IF option.selected %]selected="selected" [% END -%]
              value="[% option.value %]">[% loc( option.label ) %]</option>
 [%    END -%]
-   </select></label>
+   </select>[% IF field.label %]</label>[% END %]
 [% END -%]
 [% MACRO Table( table ) BLOCK -%]
    <table>

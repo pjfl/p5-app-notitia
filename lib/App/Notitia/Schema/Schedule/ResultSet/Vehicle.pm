@@ -65,6 +65,18 @@ sub list_all_vehicles {
    return [ map { $_vehicle_tuple->( $_, $fields ) } $vehicles->all ];
 }
 
+sub list_vehicles_by_type {
+   my ($self, $type, $opts) = @_;
+
+   $opts = { columns  => [ 'id', 'name', 'vrn' ], order_by => 'vrn',
+             prefetch => [ 'type', 'owner' ], %{ $opts // {} } };
+
+   my $fields   = delete $opts->{fields} // {};
+   my $vehicles = $self->search( { 'type.name' => $type }, $opts );
+
+   return [ map { $_vehicle_tuple->( $_, $fields ) } $vehicles->all ];
+}
+
 1;
 
 __END__

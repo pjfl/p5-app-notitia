@@ -10,6 +10,7 @@ use App::Notitia::Util      qw( bind loc register_action_paths
 use Class::Usul::Functions  qw( throw );
 use Class::Usul::Time       qw( str2date_time time2str );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
+use Scalar::Util            qw( blessed );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -52,24 +53,17 @@ my $_confirm_slot_button = sub {
    return { class => 'right', label => 'confirm', value => "${action}_slot" };
 };
 
-my $_events = sub {
-   my ($req, $page, $rota_dt, $todays_events) = @_;
+my $_event_link = sub {
+   my ($req, $event) = @_; $event or return NUL;
 
-   my $rota   = $page->{rota};
-   my $events = $rota->{events};
-   my $date   = $rota_dt->day_abbr.SPC.$rota_dt->day;
+   my $name = my $value = $event->name;
+   my $href = uri_for_action $req, 'event/summary', [ $event ];
+   my $tip  = loc $req, 'Click to view the [_1] event', [ $event ];
 
-   push @{ $events }, [ { value   => $date, class => 'rota-date' },
-                        { value   => ucfirst( $todays_events->next // NUL ),
-                          colspan => $_table_cols } ];
-
-   while (defined (my $event = $todays_events->next)) {
-      push @{ $events }, [ { value   => undef },
-                           { value   => ucfirst( $event ),
-                             colspan => $_table_cols } ];
-   }
-
-   return;
+   return { class => 'table-link', hint  => loc( $req, 'Hint' ),
+            href  => $href,        name  => $name,
+            tip   => $tip,         type  => 'link',
+            value => $value, };
 };
 
 my $_header_label = sub {
@@ -141,14 +135,14 @@ my $_vehicle_link = sub {
    my $tip    = loc $req, "${action}_management_tip";
    my $js     = $page->{literal_js} //= [];
 
-   $value = $_table_link->( $req, "${action}_${k}", $value, $tip );
-
    push @{ $js }, $self->dialog_anchor( "${action}_${k}", $href, {
       name    => "${action}-vehicle",
       title   => loc( $req, (ucfirst $action).' Vehicle' ),
       useIcon => \1 } );
 
-   return $value;
+   $value = (blessed $value) ? $value->slotref : $value;
+
+   return $_table_link->( $req, "${action}_${k}", $value, $tip );
 };
 
 my $_assign_link = sub {
@@ -203,6 +197,26 @@ my $_rider_row = sub {
             $self->$_assign_link( $req, $page, $args, $rows ),
             $self->$_slot_link( $req, $page, $rows, $k, 'rider' ),
             { value => $rows->{ $k }->{ops_veh}, class => 'narrow' }, ];
+};
+
+my $_events = sub {
+   my ($self, $req, $page, $rota_dt, $todays_events) = @_;
+
+   my $rota   = $page->{rota};
+   my $events = $rota->{events};
+   my $date   = $rota_dt->day_abbr.SPC.$rota_dt->day;
+   my $col1   = { value => $date, class => 'rota-date' };
+   my $first  = TRUE;
+
+   while (defined (my $event = $todays_events->next) or $first) {
+      my $col2 = { value   => $_event_link->( $req, $event ),
+                   colspan => $_table_cols };
+
+      push @{ $events }, [ $col1, $col2 ];
+      $col1 = { value => undef }; $first = FALSE;
+   }
+
+   return;
 };
 
 my $_controllers = sub {
@@ -290,7 +304,7 @@ my $_get_page = sub {
       template => [ 'contents', 'rota' ],
       title    => $title };
 
-   $_events->( $req, $page, $rota_dt, $todays_events );
+   $self->$_events( $req, $page, $rota_dt, $todays_events );
    $self->$_controllers( $req, $page, $name, $date, $rows, $limits );
    $self->$_riders_n_drivers( $req, $page, $name, $date, $rows, $limits );
 
@@ -328,25 +342,25 @@ sub claim_slot_action : Role(bike_rider) Role(controller) Role(driver) {
 sub day_rota : Role(any) {
    my ($self, $req) = @_; my $vehicle_cache = {};
 
-   my $params    = $req->uri_params;
-   my $today     = time2str '%Y-%m-%d';
-   my $name      = $params->( 0, { optional => TRUE } ) // 'main';
-   my $date      = $params->( 1, { optional => TRUE } ) // $today;
-   my $type_id   = $self->$_find_rota_type_id_for( $name );
-   my $slot_rs   = $self->schema->resultset( 'Slot' );
-   my $slots     = $slot_rs->search
+   my $params   = $req->uri_params;
+   my $today    = time2str '%Y-%m-%d';
+   my $name     = $params->( 0, { optional => TRUE } ) // 'main';
+   my $date     = $params->( 1, { optional => TRUE } ) // $today;
+   my $type_id  = $self->$_find_rota_type_id_for( $name );
+   my $slot_rs  = $self->schema->resultset( 'Slot' );
+   my $slots    = $slot_rs->search
       ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
         { columns  => [ qw( bike_requested operator.name
                             type vehicle.name subslot ) ],
           join     => [ { 'shift' => 'rota' }, 'operator', 'vehicle', ],
           prefetch => [ { 'shift' => 'rota' }, 'operator', 'vehicle',
                         'personal_vehicles' ] } );
-   my $event_rs  = $self->schema->resultset( 'Event' );
-   my $events    = $event_rs->search
+   my $event_rs = $self->schema->resultset( 'Event' );
+   my $events   = $event_rs->search
       ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
         { columns  => [ 'name' ], join => [ 'rota' ] } );
-   my $limits    = $self->config->slot_limits;
-   my $rows      = {};
+   my $limits   = $self->config->slot_limits;
+   my $rows     = {};
 
    for my $slot ($slots->all) {
       $rows->{ $slot->shift->type.'_'.$slot->type.'_'.$slot->subslot }

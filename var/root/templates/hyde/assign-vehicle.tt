@@ -3,6 +3,6 @@
 <form action="[% page.fields.href %]" class="skinny"
      enctype="application/x-www-form-urlencoded"
       method="post" name="assign-vehicle">
-[% IF page.fields.vehicle; Select( page.fields.vehicle ); END -%]
+[% IF page.fields.vehicle; Select( page.fields.vehicle ); END -%]<br/>
 [% Button( page.fields.confirm ) -%]
 </form>

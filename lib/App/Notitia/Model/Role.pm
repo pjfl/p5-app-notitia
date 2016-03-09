@@ -102,7 +102,7 @@ sub role : Role(administrator) Role(person_manager) {
    my $person    =  $person_rs->find_person_by( $name );
    my $href      =  uri_for_action( $req, $self->moniker.'/role', [ $name ] );
    my $page      =  {
-      fields     => { username => { href => $href } },
+      fields     => { href => $href },
       template   => [ 'contents', 'role' ],
       title      => loc( $req, 'role_management_heading' ), };
    my $fields    =  $page->{fields};
@@ -110,10 +110,11 @@ sub role : Role(administrator) Role(person_manager) {
    my $person_roles = $person->list_roles;
    my $available    = $_subtract->( $self->$_list_all_roles, $person_roles );
 
+   $fields->{username} = bind 'username', $name, { disabled => TRUE };
    $fields->{roles}
-      = bind( 'roles', $available, { multiple => TRUE, size => 10 } );
+      = bind 'roles', $available, { multiple => TRUE, size => 10 };
    $fields->{person_roles}
-      = bind( 'person_roles', $person_roles, { multiple => TRUE, size => 10 } );
+      = bind 'person_roles', $person_roles, { multiple => TRUE, size => 10 };
    $fields->{add   } = $_add_role_button->( $req, $name );
    $fields->{remove} = $_remove_role_button->( $req, $name );
 

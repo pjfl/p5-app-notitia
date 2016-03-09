@@ -240,6 +240,9 @@ msgstr "Event"
 msgid "event_management_link"
 msgstr "Edit"
 
+msgid "event_management_tip"
+msgstr "Edit the event details"
+
 msgid "event_manager"
 msgstr "Event Manager"
 
@@ -497,6 +500,9 @@ msgstr "Subscription"
 
 msgid "summary_management_link"
 msgstr "View"
+
+msgid "summary_management_tip"
+msgstr "View the event summary and participte"
 
 msgid "trailer"
 msgstr "Trailer"
