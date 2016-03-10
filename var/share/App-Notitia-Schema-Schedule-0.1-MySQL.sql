@@ -32,9 +32,9 @@ DROP TABLE IF EXISTS `type`;
 CREATE TABLE `type` (
   `id` integer unsigned NOT NULL auto_increment,
   `name` varchar(32) NOT NULL DEFAULT '',
-  `type` enum('certification', 'role', 'rota', 'vehicle') NOT NULL,
+  `type_class` enum('certification', 'role', 'rota', 'vehicle') NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE `type_name_type` (`name`, `type`)
+  UNIQUE `type_name_type_class` (`name`, `type_class`)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `endorsement`;
@@ -43,10 +43,10 @@ CREATE TABLE `endorsement` (
   `recipient_id` integer unsigned NOT NULL,
   `points` smallint NOT NULL,
   `endorsed` datetime NULL DEFAULT '0000-00-00',
-  `code` varchar(16) NOT NULL DEFAULT '',
+  `type_code` varchar(16) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',
   INDEX `endorsement_idx_recipient_id` (`recipient_id`),
-  PRIMARY KEY (`recipient_id`, `code`),
+  PRIMARY KEY (`recipient_id`, `type_code`),
   CONSTRAINT `endorsement_fk_recipient_id` FOREIGN KEY (`recipient_id`) REFERENCES `person` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
@@ -132,7 +132,7 @@ CREATE TABLE `event` (
   INDEX `event_idx_owner_id` (`owner_id`),
   INDEX `event_idx_rota_id` (`rota_id`),
   PRIMARY KEY (`id`),
-  UNIQUE `event_name` (`name`),
+  UNIQUE `event_name_rota_id` (`name`, `rota_id`),
   CONSTRAINT `event_fk_owner_id` FOREIGN KEY (`owner_id`) REFERENCES `person` (`id`),
   CONSTRAINT `event_fk_rota_id` FOREIGN KEY (`rota_id`) REFERENCES `rota` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;

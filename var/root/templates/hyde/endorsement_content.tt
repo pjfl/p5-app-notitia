@@ -5,7 +5,7 @@
       <form action="[% page.fields.href %]" class="skinny"
            enctype="application/x-www-form-urlencoded"
             method="post" name="endorsement-admin">
-[% TextField( page.fields.code ) %]
+[% TextField( page.fields.type_code ) %]
 [% DateField( page.fields.endorsed ) -%]
 [% TextField( page.fields.points ) %]
 [% TextArea( page.fields.notes ) -%]

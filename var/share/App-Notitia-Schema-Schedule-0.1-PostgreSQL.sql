@@ -27,9 +27,9 @@ DROP TABLE "type" CASCADE;
 CREATE TABLE "type" (
   "id" serial NOT NULL,
   "name" character varying(32) DEFAULT '' NOT NULL,
-  "type" character varying NOT NULL,
+  "type_class" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "type_name_type" UNIQUE ("name", "type")
+  CONSTRAINT "type_name_type_class" UNIQUE ("name", "type_class")
 );
 
 DROP TABLE "endorsement" CASCADE;
@@ -37,9 +37,9 @@ CREATE TABLE "endorsement" (
   "recipient_id" integer NOT NULL,
   "points" smallint NOT NULL,
   "endorsed" timestamp DEFAULT '0000-00-00',
-  "code" character varying(16) DEFAULT '' NOT NULL,
+  "type_code" character varying(16) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,
-  PRIMARY KEY ("recipient_id", "code")
+  PRIMARY KEY ("recipient_id", "type_code")
 );
 CREATE INDEX "endorsement_idx_recipient_id" on "endorsement" ("recipient_id");
 
@@ -109,7 +109,7 @@ CREATE TABLE "event" (
   "description" character varying(128) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "event_name" UNIQUE ("name")
+  CONSTRAINT "event_name_rota_id" UNIQUE ("name", "rota_id")
 );
 CREATE INDEX "event_idx_owner_id" on "event" ("owner_id");
 CREATE INDEX "event_idx_rota_id" on "event" ("rota_id");

@@ -54,10 +54,10 @@ my $_confirm_slot_button = sub {
 };
 
 my $_event_link = sub {
-   my ($req, $event) = @_; $event or return NUL;
+   my ($req, $event, $rota_dt) = @_; $event or return NUL;
 
    my $name = my $value = $event->name;
-   my $href = uri_for_action $req, 'event/summary', [ $event ];
+   my $href = uri_for_action $req, 'event/summary', [ $event, $rota_dt->ymd ];
    my $tip  = loc $req, 'Click to view the [_1] event', [ $event ];
 
    return { class => 'table-link', hint  => loc( $req, 'Hint' ),
@@ -209,7 +209,7 @@ my $_events = sub {
    my $first  = TRUE;
 
    while (defined (my $event = $todays_events->next) or $first) {
-      my $col2 = { value   => $_event_link->( $req, $event ),
+      my $col2 = { value   => $_event_link->( $req, $event, $rota_dt ),
                    colspan => $_table_cols };
 
       push @{ $events }, [ $col1, $col2 ];

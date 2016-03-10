@@ -26,8 +26,7 @@ $class->add_columns
 
 $class->set_primary_key( 'id' );
 
-# TODO: Bollocks, bollocks, bollocks - should have been name *and* rota_id
-$class->add_unique_constraint( [ 'name' ] );
+$class->add_unique_constraint( [ 'name', 'rota_id' ] );
 
 $class->belongs_to( rota  => "${result}::Rota", 'rota_id' );
 $class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
@@ -75,12 +74,12 @@ sub validation_attributes {
       fields         => {
          description => {
             filters  => 'filterUCFirst',
-            validate => 'isMandatory isValidLength isPrintable' },
+            validate => 'isMandatory isValidLength isValidText' },
          end_time    => { validate => 'isValidLength isMatchingRegex' },
          name        => {
             filters  => 'filterTitleCase',
             validate => 'isMandatory isValidLength isSimpleText' },
-         notes       => { validate => 'isValidLength isPrintable' },
+         notes       => { validate => 'isValidLength isValidText' },
          end_time    => { validate => 'isValidLength isMatchingRegex' },
       },
       level => 8,

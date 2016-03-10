@@ -61,8 +61,8 @@ my $_add_endorsement_js = sub {
    my $self = shift;
    my $opts = { domain => 'schedule', form => 'Endorsement' };
 
-   return [ $self->check_field_server( 'code',     $opts ),
-            $self->check_field_server( 'endorsed', $opts ), ];
+   return [ $self->check_field_server( 'type_code', $opts ),
+            $self->check_field_server( 'endorsed',  $opts ), ];
 };
 
 my $_endorsement_links = sub {
@@ -93,11 +93,11 @@ my $_endorsement_tuple = sub {
 my $_bind_endorsement_fields = sub {
    my ($self, $blot) = @_;
 
-   my $map     =  {
-      code     => { class => 'server' },
-      endorsed => { class => 'server' },
-      notes    => { class => 'autosize' },
-      points   => {},
+   my $map      =  {
+      type_code => { class => 'server' },
+      endorsed  => { class => 'server' },
+      notes     => { class => 'autosize' },
+      points    => {},
    };
 
    return $self->bind_fields( $blot, $map, 'Endorsement' );
@@ -108,7 +108,7 @@ my $_list_endorsements_for = sub {
 
    my $blots = $self->schema->resultset( 'Endorsement' )->search
       ( { 'recipient.name' => $name },
-        { join => [ 'recipient' ], order_by => 'code' } );
+        { join => [ 'recipient' ], order_by => 'type_code' } );
 
    return [ map { $_endorsement_tuple->( $req, $_ ) } $blots->all ];
 };
@@ -123,8 +123,13 @@ my $_update_endorsement_from_request = sub {
 
    my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
 
-   for my $attr (qw( code endorsed notes points )) {
-      my $v = $params->( $attr, $opts ); defined $v or next;
+   for my $attr (qw( type_code endorsed notes points )) {
+      if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
+      else { delete $opts->{raw} }
+
+      my $v = $params->( $attr, $opts );
+
+      defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
       length $v and is_member $attr, [ qw( endorsed ) ]
          and $v = str2date_time( $v, 'GMT' );
@@ -144,7 +149,7 @@ sub endorsement : Role(person_manager) {
    my $blot       =  $self->$_maybe_find_endorsement( $name, $code );
    my $page       =  {
       fields      => $self->$_bind_endorsement_fields( $blot ),
-      first_field => $code ? 'endorsed' : 'code',
+      first_field => $code ? 'endorsed' : 'type_code',
       literal_js  => $self->$_add_endorsement_js(),
       template    => [ 'contents', 'endorsement' ],
       title       => loc( $req, 'endorsement_management_heading' ), };
@@ -153,8 +158,8 @@ sub endorsement : Role(person_manager) {
 
    if ($code) {
       $args = [ $name, $code ];
-      $fields->{code  }->{disabled} = TRUE;
-      $fields->{delete} = delete_button( $req, $code, 'endorsement' );
+      $fields->{type_code}->{disabled} = TRUE;
+      $fields->{delete   } = delete_button( $req, $code, 'endorsement' );
    }
    else {
       $fields->{endorsed} = bind( 'endorsed', time2str '%Y-%m-%d' );
@@ -182,7 +187,7 @@ sub endorsements : Role(person_manager) {
    for my $blot (@{ $self->$_list_endorsements_for( $req, $name ) }) {
       push @{ $rows },
          [ { value => $blot->[ 0 ] },
-           $self->$_endorsement_links( $req, $name, $blot->[ 1 ]->code ) ];
+           $self->$_endorsement_links( $req, $name, $blot->[ 1 ]->type_code ) ];
    }
 
    $page->{fields}->{add} = $_add_endorsement_button->( $req, $action, $name );
@@ -202,7 +207,7 @@ sub create_endorsement_action : Role(person_manager) {
    my $action   = $self->moniker.'/endorsements';
    my $location = uri_for_action( $req, $action, [ $name ] );
    my $message  = [ 'Endorsement [_1] for [_2] added by [_3]',
-                    $blot->code, $name, $req->username ];
+                    $blot->type_code, $name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }

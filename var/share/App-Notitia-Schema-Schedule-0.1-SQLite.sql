@@ -33,10 +33,10 @@ DROP TABLE "type";
 CREATE TABLE "type" (
   "id" INTEGER PRIMARY KEY NOT NULL,
   "name" varchar(32) NOT NULL DEFAULT '',
-  "type" enum NOT NULL
+  "type_class" enum NOT NULL
 );
 
-CREATE UNIQUE INDEX "type_name_type" ON "type" ("name", "type");
+CREATE UNIQUE INDEX "type_name_type_class" ON "type" ("name", "type_class");
 
 DROP TABLE "endorsement";
 
@@ -44,9 +44,9 @@ CREATE TABLE "endorsement" (
   "recipient_id" integer NOT NULL,
   "points" smallint NOT NULL,
   "endorsed" datetime DEFAULT '0000-00-00',
-  "code" varchar(16) NOT NULL DEFAULT '',
+  "type_code" varchar(16) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
-  PRIMARY KEY ("recipient_id", "code"),
+  PRIMARY KEY ("recipient_id", "type_code"),
   FOREIGN KEY ("recipient_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -146,7 +146,7 @@ CREATE INDEX "event_idx_owner_id" ON "event" ("owner_id");
 
 CREATE INDEX "event_idx_rota_id" ON "event" ("rota_id");
 
-CREATE UNIQUE INDEX "event_name" ON "event" ("name");
+CREATE UNIQUE INDEX "event_name_rota_id" ON "event" ("name", "rota_id");
 
 DROP TABLE "participent";
 

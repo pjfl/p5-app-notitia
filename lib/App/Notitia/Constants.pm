@@ -13,7 +13,7 @@ Data::Validation::Constants->Exception_Class( 'App::Notitia::Exception' );
 Web::ComposableRequest::Constants->Exception_Class( 'App::Notitia::Exception' );
 
 our @EXPORT = qw( DOTS HASH_CHAR SHIFT_TYPE_ENUM SLOT_TYPE_ENUM
-                  TILDE TYPE_TYPE_ENUM VARCHAR_MAX_SIZE );
+                  TILDE TYPE_CLASS_ENUM VARCHAR_MAX_SIZE );
 
 sub import {
    my $class       = shift;
@@ -37,7 +37,7 @@ sub TILDE     () { chr 126    }
 sub VARCHAR_MAX_SIZE () { 255 }
 sub SHIFT_TYPE_ENUM  () { [ qw( day night ) ] }
 sub SLOT_TYPE_ENUM   () { [ qw( controller rider driver ) ] }
-sub TYPE_TYPE_ENUM   () { [ qw( certification role rota vehicle ) ] }
+sub TYPE_CLASS_ENUM  () { [ qw( certification role rota vehicle ) ] }
 
 1;
 

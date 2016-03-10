@@ -150,7 +150,12 @@ my $_update_vehicle_from_request = sub {
    my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
 
    for my $attr (qw( aquired disposed name notes vrn )) {
+      if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
+      else { delete $opts->{raw} }
+
       my $v = $params->( $attr, $opts ); defined $v or next;
+
+      $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
       length $v and is_member $attr, [ qw( aquired disposed ) ]
          and $v = str2date_time $v, 'GMT';

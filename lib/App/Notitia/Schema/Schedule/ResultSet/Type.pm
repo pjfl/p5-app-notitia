@@ -12,11 +12,12 @@ my $_types = {};
 
 # Private methods
 my $_find_by = sub {
-   my ($self, $name, $type_name, $label) = @_;
+   my ($self, $name, $type_class, $label) = @_;
 
+   $label //= ucfirst $type_class;
    # TODO: Why does this have to be a hashref and not a list?
    #       Maybe the enum or is because 'type' is a reserved word in SQL
-   my $type = $self->find( { name => $name, type => $type_name } );
+   my $type = $self->find( { name => $name, type_class => $type_class } );
 
    $type or throw "${label} type [_1] not found", [ $name ],
                   level => 3, rv => HTTP_EXPECTATION_FAILED;
@@ -30,7 +31,7 @@ sub find_certification_by {
 
    exists $_types->{ $k } and return $_types->{ $k };
 
-   my $type = $self->$_find_by( $name, 'certification', 'Certification' );
+   my $type = $self->$_find_by( $name, 'certification' );
 
    return $_types->{ $k } = $type;
 }
@@ -40,7 +41,7 @@ sub find_role_by {
 
    exists $_types->{ $k } and return $_types->{ $k };
 
-   my $type = $self->$_find_by( $name, 'role', 'Role' );
+   my $type = $self->$_find_by( $name, 'role' );
 
    return $_types->{ $k } = $type;
 }
@@ -50,7 +51,7 @@ sub find_rota_by {
 
    exists $_types->{ $k } and return $_types->{ $k };
 
-   my $type = $self->$_find_by( $name, 'rota', 'Rota' );
+   my $type = $self->$_find_by( $name, 'rota' );
 
    return $_types->{ $k } = $type;
 }
@@ -60,7 +61,7 @@ sub find_vehicle_by {
 
    exists $_types->{ $k } and return $_types->{ $k };
 
-   my $type = $self->$_find_by( $name, 'vehicle', 'Vehicle' );
+   my $type = $self->$_find_by( $name, 'vehicle' );
 
    return $_types->{ $k } = $type;
 }
@@ -68,22 +69,22 @@ sub find_vehicle_by {
 sub list_certification_types {
    my ($self, $opts) = @_; $opts //= {};
 
-   return $self->search( { type    => 'certification' },
-                         { columns => [ 'id', 'name' ], %{ $opts } } );
+   return $self->search( { type_class => 'certification' },
+                         { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
 sub list_role_types {
    my ($self, $opts) = @_; $opts //= {};
 
-   return $self->search( { type    => 'role' },
-                         { columns => [ 'id', 'name' ], %{ $opts } } );
+   return $self->search( { type_class => 'role' },
+                         { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
 sub list_vehicle_types {
    my ($self, $opts) = @_; $opts //= {};
 
-   return $self->search( { type    => 'vehicle' },
-                         { columns => [ 'id', 'name' ], %{ $opts } } );
+   return $self->search( { type_class => 'vehicle' },
+                         { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
 1;

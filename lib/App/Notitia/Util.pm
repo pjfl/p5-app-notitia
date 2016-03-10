@@ -168,10 +168,12 @@ sub build_navigation ($$$$$$) {
    while (defined (my $node = $iter->())) {
       $node->{id} eq 'index' and next;
 
-      my $link = clone( $node ); delete $link->{tree};
+      my $link   = clone( $node ); delete $link->{tree};
+      my $prefix = $link->{prefix};
 
       $link->{class}  = $node->{type} eq 'folder' ? 'folder-link' : 'file-link';
       $link->{tip  }  = $get_tip_text->( $conf->docs_root, $node );
+      $link->{title}  = $link->{title}.($prefix ? " ${prefix}" : NUL);
       $link->{uri  }  = uri_for_action( $req, $path, [ $link->{url} ] );
       $link->{depth} -= 2;
 

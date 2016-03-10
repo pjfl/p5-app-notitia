@@ -1,5 +1,5 @@
 {
-   "fields": "name type",
+   "fields": "name type_class",
    "rows": [
       "assessment, certification",
       "bluelight, certification",

@@ -83,20 +83,24 @@ my $_bind_event_fields = sub {
 };
 
 my $_event_links = sub {
-   my ($self, $req, $event) = @_; my $name = $event->[ 1 ]->name;
+   my ($self, $req, $event) = @_;
 
-   my $links = $_event_links_cache->{ $name };
+   my $name = $event->[ 1 ]->name; my $date = $event->[ 1 ]->rota->date->ymd;
+
+   my $links = $_event_links_cache->{ my $k = "${name}/${date}" };
 
    $links and return @{ $links }; $links = [];
 
+   my $args = [ $name, $date ];
+
    for my $action ( qw( event summary ) ) {
-      my $href = uri_for_action $req, $self->moniker."/${action}", [ $name ];
+      my $href = uri_for_action $req, $self->moniker."/${action}", $args;
 
       push @{ $links }, {
          value => management_button( $req, $name, $action, $href ) };
    }
 
-   $_event_links_cache->{ $name } = $links;
+   $_event_links_cache->{ $k } = $links;
 
    return @{ $links };
 };
@@ -106,17 +110,20 @@ my $_find_rota = sub {
 };
 
 my $_format_as_markdown = sub {
-   my ($self, $req, $event) = @_; my $name = $event->name;
+   my ($self, $req, $event) = @_;
 
+   my $name    = $event->name;
+   my $date    = $event->rota->date;
    my $created = time2str '%Y-%m-%d %H:%M:%S %z', time, 'UTC';
    my $yaml    = "---\nauthor: ".$event->owner."\n"
                . "created: ${created}\ntitle: ${name}\n---\n";
    my $desc    = $event->description."\n\n";
-   my $opts    = { params => [ $event->rota->date->dmy( '/' ),
+   my $opts    = { params => [ $date->dmy( '/' ),
                                $event->start_time, $event->end_time ],
                    no_quote_bind_values => TRUE };
    my $when    = loc( $req, 'event_blog_when', $opts )."\n\n";
-   my $href    = uri_for_action $req, $self->moniker.'/summary', [ $name ];
+   my $actionp = $self->moniker.'/summary';
+   my $href    = uri_for_action $req, $actionp, [ $name, $date->ymd ];
       $opts    = { params => [ $href ], no_quote_bind_values => TRUE };
    my $link    = loc( $req, 'event_blog_link', $opts )."\n\n";
 
@@ -124,11 +131,11 @@ my $_format_as_markdown = sub {
 };
 
 my $_maybe_find_event = sub {
-   my ($self, $name) = @_; $name or return Class::Null->new;
+   my ($self, $name, $date) = @_; $name or return Class::Null->new;
 
-   my $opts = { prefetch => [ 'owner' ] };
+   my $schema = $self->schema; my $opts = { prefetch => [ 'owner' ] };
 
-   return $self->schema->resultset( 'Event' )->find_event_by( $name, $opts );
+   return $schema->resultset( 'Event' )->find_event_by( $name, $date, $opts );
 };
 
 my $_select_owner_list = sub {
@@ -146,7 +153,12 @@ my $_update_event_from_request = sub {
    my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
 
    for my $attr (qw( description end_time name notes start_time )) {
+      if (is_member $attr, [ 'description', 'notes' ]) { $opts->{raw} = TRUE }
+      else { delete $opts->{raw} }
+
       my $v = $params->( $attr, $opts ); defined $v or next;
+
+      $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
       is_member $attr, [ 'end_time', 'start_time' ]
           and $v =~ s{ \A (\d\d) (\d\d) \z }{$1:$2}mx;
@@ -164,7 +176,8 @@ my $_write_blog_post = sub {
 
    my $posts_model = $self->components->{posts};
    my $dir         = $posts_model->localised_posts_dir( $req->locale );
-   my $file        = $event->rota->date->ymd.'_'.(lc $event->name);
+   my $date        = $event->rota->date->ymd;
+   my $file        = $date.'_'.(lc $event->name).'-'.$date;
 
    $file =~ s{ [ ] }{-}gmx;
 
@@ -191,7 +204,7 @@ sub create_event_action : Role(event_manager) {
    $self->$_write_blog_post( $req, $event );
 
    my $action   =  $self->moniker.'/event';
-   my $location =  uri_for_action $req, $action, [ $event->name ];
+   my $location =  uri_for_action $req, $action, [ $event->name, $date ];
    my $message  =
       [ 'Event [_1] created by [_2]', $event->name, $req->username ];
 
@@ -202,7 +215,9 @@ sub delete_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
    my $name  = $req->uri_params->( 0 );
-   my $event = $self->schema->resultset( 'Event' )->find_event_by( $name );
+   my $date  = $req->uri_params->( 1 );
+   my $rs    = $self->schema->resultset( 'Event' );
+   my $event = $rs->find_event_by( $name, $date );
 
    $event->delete;
 
@@ -217,7 +232,8 @@ sub event : Role(event_manager) {
 
    # TODO: Fix the event name so that it's good for the href - no space or %
    my $name       =  $req->uri_params->( 0, { optional => TRUE } );
-   my $event      =  $self->$_maybe_find_event( $name );
+   my $date       =  $req->uri_params->( 1, { optional => TRUE } );
+   my $event      =  $self->$_maybe_find_event( $name, $date );
    my $page       =  {
       fields      => $self->$_bind_event_fields( $event ),
       first_field => 'name',
@@ -230,7 +246,7 @@ sub event : Role(event_manager) {
    if ($name) {
       $fields->{date  } = bind 'event_date', $event->rota->date;
       $fields->{delete} = delete_button $req, $name, 'event';
-      $fields->{href  } = uri_for_action $req, $action, [ $name ];
+      $fields->{href  } = uri_for_action $req, $action, [ $name, $date ];
       $fields->{owner } = $self->$_select_owner_list( $event );
    }
    else { $fields->{date} = bind 'event_date', time2str '%Y-%m-%d' }
@@ -266,13 +282,15 @@ sub participate_event_action : Role(any) {
    my ($self, $req) = @_;
 
    my $name      = $req->uri_params->( 0 );
+   my $date      = $req->uri_params->( 1 );
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_person_by( $req->username );
 
-   $person->add_participent_for( $name );
+   $person->add_participent_for( $name, $date );
 
+   my $actionp   = $self->moniker.'/summary';
+   my $location  = uri_for_action $req, $actionp, [ $name, $date ];
    my $message   = [ 'Event [_1] attendee [_2]', $name, $req->username ];
-   my $location  = uri_for_action $req, $self->moniker.'/summary', [ $name ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -283,7 +301,8 @@ sub summary : Role(any) {
    my $schema  =  $self->schema;
    my $user    =  $req->username;
    my $name    =  $req->uri_params->( 0 );
-   my $event   =  $schema->resultset( 'Event' )->find_event_by( $name );
+   my $date    =  $req->uri_params->( 1 );
+   my $event   =  $schema->resultset( 'Event' )->find_event_by( $name, $date );
    my $person  =  $schema->resultset( 'Person' )->find_person_by( $user );
    my $opts    =  { disabled => TRUE };
    my $page    =  {
@@ -294,8 +313,8 @@ sub summary : Role(any) {
    my $action  =  $self->moniker.'/event';
 
    $fields->{date} = bind 'event_date', $event->rota->date, $opts;
-   $fields->{href} = uri_for_action $req, $action, [ $name ];
-   $opts = $person->is_participent_of( $name ) ? { cancel => TRUE } : {};
+   $fields->{href} = uri_for_action $req, $action, [ $name, $date ];
+   $opts = $person->is_participent_of( $name, $date ) ? { cancel => TRUE } : {};
    $fields->{participate} = $_participate_button->( $req, $name, $opts );
    delete $fields->{notes};
 
@@ -307,13 +326,15 @@ sub unparticipate_event_action : Role(any) {
 
    my $user      = $req->username;
    my $name      = $req->uri_params->( 0 );
+   my $date      = $req->uri_params->( 1 );
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_person_by( $user );
 
-   $person->delete_participent_for( $name );
+   $person->delete_participent_for( $name, $date );
 
+   my $actionp   = $self->moniker.'/summary';
+   my $location  = uri_for_action $req, $actionp, [ $name, $date ];
    my $message   = [ 'Event [_1] attendence cancelled for [_2]', $name, $user ];
-   my $location  = uri_for_action $req, $self->moniker.'/summary', [ $name ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -322,12 +343,14 @@ sub update_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
    my $name  = $req->uri_params->( 0 );
-   my $event = $self->schema->resultset( 'Event' )->find_event_by( $name );
-   my $date  = $req->body_params->( 'event_date' );
+   my $date  = $req->uri_params->( 1 );
+   my $rs    = $self->schema->resultset( 'Event' );
+   my $event = $rs->find_event_by( $name, $date );
 
    $self->$_update_event_from_request( $req, $event );
    $event->rota_id( $self->$_find_rota( 'main', $date )->id ); # TODO: Naughty
    $event->update;
+   $self->$_write_blog_post( $req, $event );
 
    my $message = [ 'Event [_1] updated by [_2]', $name, $req->username ];
 

@@ -59,7 +59,7 @@ sub validation_attributes {
       },
       fields       => {
          completed => { validate => 'isMandatory isValidDate' },
-         notes     => { validate => 'isValidLength isPrintable' },
+         notes     => { validate => 'isValidLength isValidText' },
       },
       level => 8,
    };

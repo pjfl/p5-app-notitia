@@ -17,16 +17,16 @@ $class->add_columns
    ( recipient_id => foreign_key_data_type,
      points       => numerical_id_data_type,
      endorsed     => date_data_type,
-     code         => varchar_data_type( 16 ),
+     type_code    => varchar_data_type( 16 ),
      notes        => varchar_data_type, );
 
-$class->set_primary_key( 'recipient_id', 'code' );
+$class->set_primary_key( 'recipient_id', 'type_code' );
 
 $class->belongs_to( recipient => "${result}::Person", 'recipient_id' );
 
 # Private methods
 sub _as_string {
-   return $_[ 0 ]->code;
+   return $_[ 0 ]->type_code;
 }
 
 sub insert {
@@ -40,7 +40,7 @@ sub insert {
 sub label {
    my ($self, $req) = @_;
 
-   my $code = $req ? loc( $req, $self->code ) : $self->code;
+   my $code = $req ? loc( $req, $self->type_code ) : $self->type_code;
 
    return $code.' ('.$self->endorsed->dmy.')';
 }
@@ -56,15 +56,15 @@ sub update {
 sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       constraints    => {
-         code        => { max_length => 16, min_length => 5 },
+         type_code   => { max_length => 16, min_length => 5 },
          notes       => { max_length => VARCHAR_MAX_SIZE(), min_length => 0, },
       },
       fields         => {
-         code        => {
+         type_code   => {
             filters  => 'filterTitleCase',
             validate => 'isMandatory isValidLength isValidIdentifier' },
          endorsed    => { validate => 'isMandatory isValidDate' },
-         notes       => { validate => 'isValidLength isPrintable' },
+         notes       => { validate => 'isValidLength isValidText' },
       },
       level => 8,
    };

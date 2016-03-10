@@ -86,8 +86,8 @@
    <tr>
 [%    FOR cell IN row -%]
       <td class="[% cell.class %]" colspan=[% cell.colspan %]>
-[%    IF reference( cell.value ) == 'HASH'; Dispatch( cell.value ) %]
-[%    ELSE; cell.value; END %]</td>
+[%       IF reference( cell.value ) == 'HASH'; Dispatch( cell.value ) %]
+[%       ELSE; cell.value; END %]</td>
 [%    END -%]
    </tr>
 [% END -%]

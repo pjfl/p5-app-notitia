@@ -140,12 +140,12 @@ sub add_member_to {
 }
 
 sub add_participent_for {
-   my ($self, $event_name) = @_;
+   my ($self, $event_name, $event_date) = @_;
 
    my $event_rs = $self->result_source->schema->resultset( 'Event' );
-   my $event    = $event_rs->find_event_by( $event_name );
+   my $event    = $event_rs->find_event_by( $event_name, $event_date );
 
-   $self->is_participent_of( $event_name, $event )
+   $self->is_participent_of( $event_name, $event_date, $event )
       and throw 'Person [_1] already participating in [_2]', [ $self, $event ];
 
    return $self->create_related( 'participents', { event_id => $event->id } );
@@ -186,10 +186,10 @@ sub assert_member_of {
 }
 
 sub assert_participent_for {
-   my ($self, $event_name) = @_;
+   my ($self, $event_name, $event_date) = @_;
 
    my $event_rs    = $self->result_source->schema->resultset( 'Event' );
-   my $event       = $event_rs->find_event_by( $event_name );
+   my $event       = $event_rs->find_event_by( $event_name, $event_date );
    my $participent = $self->participents->find( $event->id, $self->id )
       or throw 'Person [_1] is not participating in [_2]',
                [ $self, $event ], level => 2, rv => HTTP_EXPECTATION_FAILED;
@@ -240,7 +240,7 @@ sub delete_member_from {
 }
 
 sub delete_participent_for {
-   return $_[ 0 ]->assert_participent_for( $_[ 1 ] )->delete;
+   return $_[ 0 ]->assert_participent_for( $_[ 1 ], $_[ 2 ] )->delete;
 }
 
 sub insert {
@@ -280,10 +280,10 @@ sub is_member_of {
 }
 
 sub is_participent_of {
-   my ($self, $event_name, $event) = @_;
+   my ($self, $event_name, $event_date, $event) = @_;
 
    $event //= $self->result_source->schema->resultset( 'Event' )
-                   ->find_event_by( $event_name );
+                   ->find_event_by( $event_name, $event_date );
 
    return $event && $self->participents->find( $event->id, $self->id )
         ? TRUE : FALSE;
@@ -340,24 +340,24 @@ sub validation_attributes {
          postcode      => { max_length =>  16, min_length => 0, },
       },
       fields           => {
-         address       => { validate => 'isValidLength isPrintable' },
+         address       => { validate => 'isValidLength isValidText' },
          dob           => { validate => 'isValidDate' },
          email_address => {
             validate   => 'isMandatory isValidLength isValidEmail' },
          first_name    => {
             filters    => 'filterUCFirst',
-            validate   => 'isMandatory isValidLength isPrintable' },
+            validate   => 'isMandatory isValidLength isValidText' },
          home_phone    => { filters  => 'filterNonNumeric',
                             validate => 'isValidInteger' },
          joined        => { validate => 'isValidDate' },
          last_name     => {
             filters    => 'filterUCFirst',
-            validate   => 'isMandatory isValidLength isPrintable' },
+            validate   => 'isMandatory isValidLength isValidText' },
          mobile_phone  => { filters  => 'filterNonNumeric',
                             validate => 'isValidInteger' },
          name          => {
             validate   => 'isMandatory isValidLength isValidIdentifier' },
-         notes         => { validate => 'isValidLength isPrintable' },
+         notes         => { validate => 'isValidLength isValidText' },
          password      => {
             validate   => 'isMandatory isValidLength isValidPassword' },
          postcode      => { validate => 'isValidLength isValidPostcode' },

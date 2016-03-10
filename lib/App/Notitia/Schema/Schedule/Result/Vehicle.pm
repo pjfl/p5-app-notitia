@@ -223,7 +223,7 @@ sub validation_attributes {
          aquired       => { validate => 'isValidDate' },
          disposed      => { validate => 'isValidDate' },
          name          => { validate => 'isValidLength isValidIdentifier' },
-         notes         => { validate => 'isValidLength isPrintable' },
+         notes         => { validate => 'isValidLength isValidText' },
          vrn           => {
             validate   => 'isMandatory isValidLength isValidIdentifier' },
       },

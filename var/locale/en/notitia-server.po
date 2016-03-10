@@ -129,9 +129,6 @@ msgstr "Change Password"
 msgid "claim_slot_tip"
 msgstr "Claim this [_1] slot"
 
-msgid "code"
-msgstr "Code"
-
 msgid "completed"
 msgstr "Date Completed"
 
@@ -506,6 +503,9 @@ msgstr "View the event summary and participte"
 
 msgid "trailer"
 msgstr "Trailer"
+
+msgid "type_code"
+msgstr "Type Code"
 
 msgid "unassign_management_tip"
 msgstr "Unassign a vehicle from this slot"

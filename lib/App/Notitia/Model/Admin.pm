@@ -160,12 +160,16 @@ my $_update_person_from_request = sub {
    for my $attr (qw( active address dob email_address first_name home_phone
                      joined last_name mobile_phone notes
                      password_expired postcode resigned subscription )) {
+      if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
+      else { delete $opts->{raw} }
+
       my $v = $params->( $attr, $opts );
 
       not defined $v and is_member $attr, [ qw( active password_expired ) ]
           and $v = FALSE;
 
-      defined $v or next;
+      defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
+
       # No tz and 1/1/1970 is the last day in 69
       length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
          and $v = str2date_time $v, 'GMT';

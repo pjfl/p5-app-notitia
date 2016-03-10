@@ -5,7 +5,7 @@ use overload '""' => sub { $_[ 0 ]->_as_string },
              '+'  => sub { $_[ 0 ]->_as_number }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( TYPE_TYPE_ENUM );
+use App::Notitia::Constants qw( TYPE_CLASS_ENUM );
 use App::Notitia::Util      qw( enumerated_data_type serial_data_type
                                 varchar_data_type );
 
@@ -15,13 +15,13 @@ $class->table( 'type' );
 
 # TODO: Rename type attribute since it's an SQL reserved word
 $class->add_columns
-   ( id   => serial_data_type,
-     name => varchar_data_type( 32 ),
-     type => enumerated_data_type( TYPE_TYPE_ENUM ), );
+   ( id         => serial_data_type,
+     name       => varchar_data_type( 32 ),
+     type_class => enumerated_data_type( TYPE_CLASS_ENUM ), );
 
 $class->set_primary_key( 'id' );
 
-$class->add_unique_constraint( [ 'name', 'type' ] );
+$class->add_unique_constraint( [ 'name', 'type_class' ] );
 
 # Private methods
 sub _as_number {

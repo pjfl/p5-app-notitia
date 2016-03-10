@@ -45,10 +45,14 @@ sub new_result {
 }
 
 sub find_event_by {
-   my ($self, $name, $opts) = @_; $opts //= {};
+   my ($self, $name, $date, $opts) = @_; $opts //= {};
 
-   my $event = $self->search( { 'me.name' => $name }, $opts )->single
-      or throw 'Event [_1] unknown', [ $name ], rv => HTTP_EXPECTATION_FAILED;
+   $opts->{prefetch} //= []; push @{ $opts->{prefetch} }, 'rota';
+
+   my $event = $self->search
+      ( { 'me.name' => $name, 'rota.date' => $date }, $opts )->single
+      or throw 'Event [_1] on [_2] unknown', [ $name, $date ],
+         level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return $event;
 }
