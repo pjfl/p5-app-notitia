@@ -26,7 +26,8 @@ register_action_paths
    'admin/activate' => 'person/activate',
    'admin/index'    => 'admin/index',
    'admin/people'   => 'people',
-   'admin/person'   => 'person';
+   'admin/person'   => 'person',
+   'admin/summary'  => 'person-summary';
 
 # Construction
 around 'get_stash' => sub {
@@ -67,24 +68,26 @@ my $_add_person_js = sub {
 };
 
 my $_bind_person_fields = sub {
-   my ($self, $person) = @_;
+   my ($self, $person, $opts) = @_; $opts //= {};
 
-   my $map = {
-      active           => { checked => $person->active, nobreak => TRUE, },
-      address          => {},
-      dob              => {},
-      email_address    => { class => 'server' },
-      first_name       => { class => 'server' },
-      home_phone       => {},
-      joined           => {},
-      last_name        => { class => 'server' },
-      mobile_phone     => {},
-      notes            => { class => 'autosize' },
+   my $disabled = $opts->{disabled} // FALSE;
+   my $map      = {
+      active           => { checked => $person->active, disabled => $disabled,
+                            nobreak => TRUE, },
+      address          => { disabled => $disabled },
+      dob              => { disabled => $disabled },
+      email_address    => { class => 'server', disabled => $disabled },
+      first_name       => { class => 'server', disabled => $disabled },
+      home_phone       => { disabled => $disabled },
+      joined           => { disabled => $disabled },
+      last_name        => { class => 'server', disabled => $disabled },
+      mobile_phone     => { disabled => $disabled },
+      notes            => { class => 'autosize', disabled => $disabled },
       password_expired => { checked => $person->password_expired,
-                            container_class => 'right' },
-      postcode         => {},
-      resigned         => {},
-      subscription     => {},
+                            container_class => 'right', disabled => $disabled },
+      postcode         => { disabled => $disabled },
+      resigned         => { disabled => $disabled },
+      subscription     => { disabled => $disabled },
    };
 
    return $self->bind_fields( $person, $map, 'Person' );
@@ -323,6 +326,30 @@ sub people : Role(any) {
       push @{ $rows }, [ { value => $person->[ 0 ]  },
                          $self->$_people_links( $req, $person ) ];
    }
+
+   return $self->get_stash( $req, $page );
+}
+
+sub summary : Role(administrator) Role(person_viewer) {
+   my ($self, $req) = @_; my $people;
+
+   my $name       =  $req->uri_params->( 0 );
+   my $person_rs  =  $self->schema->resultset( 'Person' );
+   my $person     =  $_maybe_find_person->( $person_rs, $name );
+   my $opts       =  { disabled => TRUE };
+   my $page       =  {
+      fields      => $self->$_bind_person_fields( $person, $opts ),
+      first_field => 'first_name',
+      template    => [ 'contents', 'person' ],
+      title       => loc( $req, 'person_summary_heading' ), };
+   my $fields     =  $page->{fields};
+
+   $opts    = field_options $self->schema, 'Person', 'name', $opts;
+   $fields->{username   } = bind 'username', $person->name, $opts;
+   $opts    = { fields => { selected => $person->next_of_kin } };
+   $people  = $person_rs->list_all_people( $opts );
+   $fields->{next_of_kin} = $_next_of_kin_list->( $people );
+   $fields->{roles      } = bind 'roles', $person->list_roles;
 
    return $self->get_stash( $req, $page );
 }

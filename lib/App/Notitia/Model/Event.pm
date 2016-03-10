@@ -21,10 +21,11 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'event';
 
 register_action_paths
-   'event/event'       => 'event',
-   'event/events'      => 'events',
-   'event/participate' => 'participate',
-   'event/summary'     => 'event-summary';
+   'event/event'        => 'event',
+   'event/events'       => 'events',
+   'event/participate'  => 'participate',
+   'event/participents' => 'participents',
+   'event/summary'      => 'event-summary';
 
 # Construction
 around 'get_stash' => sub {
@@ -42,7 +43,7 @@ my $_event_links_cache = {};
 
 # Private functions
 my $_events_headers = sub {
-   return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 2 ];
+   return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 3 ];
 };
 
 my $_participate_button = sub {
@@ -56,6 +57,11 @@ my $_participate_button = sub {
                   . loc( $req, "${k}_tip", [ $name ] );
 
    return $button;
+};
+
+my $_participent_headers = sub {
+   return [ map { { value => loc( $_[ 0 ], "participents_heading_${_}" ) } }
+            0 .. 1 ];
 };
 
 # Private methods
@@ -93,8 +99,9 @@ my $_event_links = sub {
 
    my $args = [ $name, $date ];
 
-   for my $action ( qw( event summary ) ) {
-      my $href = uri_for_action $req, $self->moniker."/${action}", $args;
+   for my $path ( qw( event/event event/participents event/summary ) ) {
+      my ($moniker, $action) = split m{ / }mx, $path, 2;
+      my $href = uri_for_action $req, $path, $args;
 
       push @{ $links }, {
          value => management_button( $req, $name, $action, $href ) };
@@ -136,6 +143,26 @@ my $_maybe_find_event = sub {
    my $schema = $self->schema; my $opts = { prefetch => [ 'owner' ] };
 
    return $schema->resultset( 'Event' )->find_event_by( $name, $date, $opts );
+};
+
+my $_participent_links = sub {
+   my ($self, $req, $person) = @_; my $name = $person->[ 1 ]->name;
+
+   my $links = $_event_links_cache->{$name };
+
+   $links and return @{ $links }; $links = [];
+
+   for my $path ( qw( admin/summary ) ) {
+      my ($moniker, $action) = split m{ / }mx, $path, 2;
+      my $href = uri_for_action $req, $path, [ $name ];
+
+      push @{ $links }, {
+         value => management_button( $req, $name, $action, $href ) };
+   }
+
+   $_event_links_cache->{ $name } = $links;
+
+   return @{ $links };
 };
 
 my $_select_owner_list = sub {
@@ -294,6 +321,31 @@ sub participate_event_action : Role(any) {
    my $message   = [ 'Event [_1] attendee [_2]', $name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub participents : Role(event_manager) Role(person_manager) {
+   my ($self, $req) = @_;
+
+   my $name      =  $req->uri_params->( 0 );
+   my $date      =  $req->uri_params->( 1 );
+   my $page      =  {
+      fields     => {
+         headers => $_participent_headers->( $req ),
+         rows    => [], },
+      template   => [ 'contents', 'table' ],
+      title      => loc( $req, 'participents_management_heading' ), };
+   my $person_rs =  $self->schema->resultset( 'Person' );
+   my $event_rs  =  $self->schema->resultset( 'Event' );
+   my $event     =  $event_rs->find_event_by( $name, $date );
+   my $rows      =  $page->{fields}->{rows};
+
+   for my $person (@{ $person_rs->list_participents( $event ) }) {
+      push @{ $rows },
+         [ { value => $person->[ 0 ] },
+           $self->$_participent_links( $req, $person ) ];
+   }
+
+   return $self->get_stash( $req, $page );
 }
 
 sub summary : Role(any) {

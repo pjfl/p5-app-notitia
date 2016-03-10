@@ -256,6 +256,9 @@ msgid "events_heading_1"
 msgstr "Edit"
 
 msgid "events_heading_2"
+msgstr "Participents"
+
+msgid "events_heading_3"
 msgstr "View"
 
 msgid "events_list_link"
@@ -390,6 +393,18 @@ msgstr "Participate"
 msgid "participate_tip"
 msgstr "Participate in the [_1] event"
 
+msgid "participents_management_heading"
+msgstr "Participents"
+
+msgid "participents_management_link"
+msgstr "Participents"
+
+msgid "participents_heading_0"
+msgstr "People"
+
+msgid "participents_heading_1"
+msgstr "View"
+
 msgid "password"
 msgstr "Password"
 
@@ -440,6 +455,9 @@ msgstr "Person Manager"
 
 msgid "person_roles"
 msgstr "Person Roles"
+
+msgid "person_summary_heading"
+msgstr "Person Summary"
 
 msgid "points"
 msgstr "Points"

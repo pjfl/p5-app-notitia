@@ -27,8 +27,8 @@
 [%    CheckBox( page.fields.password_expired ) -%]
 [% END -%]
 <br/>
-[% Button( page.fields.save ) -%]
-[% IF page.fields.username.value -%]
+[% IF page.fields.save; Button( page.fields.save ); END -%]
+[% IF page.fields.username.value && page.fields.delete -%]
 [%    Button( page.fields.delete ) -%]
 [% END -%]
       </form>

@@ -58,6 +58,18 @@ sub list_all_people {
    return [ map { $_person_tuple->( $_, $fields ) } $people->all ];
 }
 
+sub list_participents {
+   my ($self, $event, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   my $fields = delete $opts->{fields} // {};
+   my $people = $self->search
+      ( { 'participents.event_id' => $event->id },
+        { columns  => [ 'first_name', 'id', 'last_name', 'name' ],
+          join     => [ 'participents' ], %{ $opts } } );
+
+   return [ map { $_person_tuple->( $_, $fields ) } $people->all ];
+}
+
 sub list_people {
    my ($self, $role, $opts) = @_; $opts = { %{ $opts // {} } };
 
