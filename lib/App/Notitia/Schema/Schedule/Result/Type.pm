@@ -13,7 +13,6 @@ my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
 $class->table( 'type' );
 
-# TODO: Rename type attribute since it's an SQL reserved word
 $class->add_columns
    ( id         => serial_data_type,
      name       => varchar_data_type( 32 ),

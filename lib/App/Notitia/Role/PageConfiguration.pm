@@ -34,7 +34,7 @@ around 'initialise_stash' => sub {
       $links->{ $k } = $req->uri_for( $conf->$k().'/' );
    }
 
-   $links->{cdnjs   } = $conf->cdnjs; # TODO: Not a URI object ref
+   $links->{cdnjs   } = $conf->cdnjs;
    $links->{base_uri} = $req->base;
    $links->{req_uri } = $req->uri;
 

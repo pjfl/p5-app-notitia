@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Fixed type class selection
+          - Merged in schema changes
           - Added date to event primary key
           - Updated documentation
           - Fixed href in certifications and endorsements

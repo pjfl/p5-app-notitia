@@ -12,7 +12,6 @@ my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
 $class->table( 'endorsement' );
 
-# TODO: Rename code attribute since it's an SQL reserved word
 $class->add_columns
    ( recipient_id => foreign_key_data_type,
      points       => numerical_id_data_type,
