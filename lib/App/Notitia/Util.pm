@@ -107,8 +107,8 @@ my $l1_nav_link = sub {
    my ($req, $k, $action, @args) = @_;
 
    return { depth => 1,
+            label => loc( $req, "${k}_link" ),
             tip   => loc( $req, "${k}_tip"  ),
-            title => loc( $req, "${k}_link" ),
             type  => 'link',
             uri   => uri_for_action( $req, $action, @args ), };
 };
@@ -160,10 +160,10 @@ sub bool_data_type (;$) {
             is_nullable   => FALSE, };
 }
 
-sub build_navigation ($$$$$$) {
-   my ($req, $path, $conf, $tree, $ids, $wanted) = @_;
+sub build_navigation ($$) {
+   my ($req, $opts) = @_; my @nav = ();
 
-   my $iter = iterator( $tree ); my @nav = ();
+   my $ids = $req->uri_params->() // []; my $iter = iterator( $opts->{node} );
 
    while (defined (my $node = $iter->())) {
       $node->{id} eq 'index' and next;
@@ -172,13 +172,14 @@ sub build_navigation ($$$$$$) {
       my $prefix = $link->{prefix};
 
       $link->{class}  = $node->{type} eq 'folder' ? 'folder-link' : 'file-link';
-      $link->{tip  }  = $get_tip_text->( $conf->docs_root, $node );
-      $link->{title}  = $link->{title}.($prefix ? " ${prefix}" : NUL);
-      $link->{uri  }  = uri_for_action( $req, $path, [ $link->{url} ] );
+      $link->{tip  }  = $get_tip_text->( $opts->{config}->docs_root, $node );
+      $link->{label}  = $opts->{label}->( $link );
+      $link->{uri  }  = uri_for_action( $req, $opts->{path}, [ $link->{url} ] );
       $link->{depth} -= 2;
 
       if (defined $ids->[ 0 ] and $ids->[ 0 ] eq $node->{id}) {
-         $link->{class} .= $node->{url} eq $wanted ? ' active' : ' open';
+         $link->{class} .= $node->{url} eq $opts->{wanted}
+                         ? ' active' : ' open';
          shift @{ $ids };
       }
 

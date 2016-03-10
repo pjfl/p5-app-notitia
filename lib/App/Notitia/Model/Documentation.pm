@@ -114,6 +114,10 @@ sub make_draft {
    my ($self, @pathname) = @_; return $self->config->drafts, @pathname;
 }
 
+sub nav_label {
+   return sub { $_[ 0 ]->{title} };
+}
+
 sub page : Role(anon) {
    return $_[ 0 ]->get_stash( $_[ 1 ] );
 }

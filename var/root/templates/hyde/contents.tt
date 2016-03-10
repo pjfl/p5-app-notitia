@@ -16,7 +16,7 @@
             <h4>[% node.title %]</h4>
             <ul class="nav nav-list">
 [%    ELSE -%]
-[%       LinkWithTips( node.uri, 'fade', node.title, file_title, node.tip ) -%]
+[%       LinkWithTips( node.uri, 'fade', node.label, file_title, node.tip ) -%]
          </li>
 [%    END -%]
 [% END -%]

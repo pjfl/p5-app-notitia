@@ -99,6 +99,10 @@ sub make_draft {
    return $posts, $self->config->drafts, @pathname;
 }
 
+sub nav_label {
+   return sub { $_[ 0 ]->{title}.' '.$_[ 0 ]->{prefix} };
+}
+
 sub page : Role(anon) {
    return $_[ 0 ]->get_stash( $_[ 1 ] );
 }

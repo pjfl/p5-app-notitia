@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Navigation label now configurable by class
           - Fixed type class selection
           - Merged in schema changes
           - Added date to event primary key

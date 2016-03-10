@@ -111,16 +111,16 @@ sub navigation {
    my $node   = $self->localised_tree( $locale )
       or  throw 'Default locale [_1] has no document tree', [ $locale ],
                 rv => HTTP_NOT_FOUND;
-   my $ids    = $req->uri_params->() // [];
    my $wanted = $stash->{page}->{wanted} // NUL;
    my $tuple  = $_nav_cache->{ $wanted };
 
    if (not $tuple or mtime $node > $tuple->{mtime}) {
-      my $path = $self->moniker.'/page';
+      my $opts = { config => $conf, label => $self->nav_label,
+                   node   => $node, path  => $self->moniker.'/page',
+                   wanted => $wanted };
 
-      $tuple   =  $_nav_cache->{ $wanted } = {
-         list  => build_navigation( $req, $path, $conf, $node, $ids, $wanted ),
-         mtime => mtime( $node ), };
+      $tuple  =  $_nav_cache->{ $wanted } = {
+         list => build_navigation( $req, $opts ), mtime => mtime( $node ), };
    }
 
    return $tuple->{list};
