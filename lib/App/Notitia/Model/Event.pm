@@ -7,7 +7,7 @@ use App::Notitia::Util      qw( admin_navigation_links bind create_button
                                 management_button register_action_paths
                                 save_button uri_for_action );
 use Class::Null;
-use Class::Usul::Functions  qw( is_member throw );
+use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
 use Moo;
 
@@ -172,14 +172,14 @@ my $_update_event_from_request = sub {
 };
 
 my $_write_blog_post = sub {
-   my ($self, $req, $event) = @_;
+   my ($self, $req, $event, $date) = @_;
 
    my $posts_model = $self->components->{posts};
    my $dir         = $posts_model->localised_posts_dir( $req->locale );
-   my $date        = $event->rota->date->ymd;
-   my $file        = $date.'_'.(lc $event->name).'-'.$date;
+   my $file        = $date.'_'.(lc $event->name);
+   my $token       = lc substr create_token( $file ), 0, 6;
 
-   $file =~ s{ [ ] }{-}gmx;
+   $file =~ s{ [ ] }{-}gmx; $file .= "-${token}";
 
    my $path        = $dir->catfile( 'events', $file.'.md' );
    my $markdown    = $self->$_format_as_markdown( $req, $event );
@@ -201,10 +201,10 @@ sub create_event_action : Role(event_manager) {
           owner => $req->username, } );
 
    $self->$_update_event_from_request( $req, $event ); $event->insert;
-   $self->$_write_blog_post( $req, $event );
+   $self->$_write_blog_post( $req, $event, $date );
 
-   my $action   =  $self->moniker.'/event';
-   my $location =  uri_for_action $req, $action, [ $event->name, $date ];
+   my $actionp  = $self->moniker.'/event';
+   my $location = uri_for_action $req, $actionp, [ $event->name, $date ];
    my $message  =
       [ 'Event [_1] created by [_2]', $event->name, $req->username ];
 
@@ -241,12 +241,13 @@ sub event : Role(event_manager) {
       template    => [ 'contents', 'event' ],
       title       => loc( $req, 'event_management_heading' ), };
    my $fields     =  $page->{fields};
-   my $action     =  $self->moniker.'/event';
+   my $actionp    =  $self->moniker.'/event';
 
    if ($name) {
-      $fields->{date  } = bind 'event_date', $event->rota->date;
+      $fields->{date  } = bind 'event_date', $event->rota->date,
+                          { disabled => TRUE };
       $fields->{delete} = delete_button $req, $name, 'event';
-      $fields->{href  } = uri_for_action $req, $action, [ $name, $date ];
+      $fields->{href  } = uri_for_action $req, $actionp, [ $name, $date ];
       $fields->{owner } = $self->$_select_owner_list( $event );
    }
    else { $fields->{date} = bind 'event_date', time2str '%Y-%m-%d' }
@@ -259,10 +260,10 @@ sub event : Role(event_manager) {
 sub events : Role(any) {
    my ($self, $req) = @_;
 
-   my $action    =  $self->moniker.'/event';
+   my $actionp   =  $self->moniker.'/event';
    my $page      =  {
       fields     => {
-         add     => create_button( $req, $action, 'event' ),
+         add     => create_button( $req, $actionp, 'event' ),
          headers => $_events_headers->( $req ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
@@ -310,10 +311,10 @@ sub summary : Role(any) {
       template => [ 'contents', 'event' ],
       title    => loc( $req, 'event_summary_heading' ), };
    my $fields  =  $page->{fields};
-   my $action  =  $self->moniker.'/event';
+   my $actionp =  $self->moniker.'/event';
 
    $fields->{date} = bind 'event_date', $event->rota->date, $opts;
-   $fields->{href} = uri_for_action $req, $action, [ $name, $date ];
+   $fields->{href} = uri_for_action $req, $actionp, [ $name, $date ];
    $opts = $person->is_participent_of( $name, $date ) ? { cancel => TRUE } : {};
    $fields->{participate} = $_participate_button->( $req, $name, $opts );
    delete $fields->{notes};
@@ -350,11 +351,13 @@ sub update_event_action : Role(event_manager) {
    $self->$_update_event_from_request( $req, $event );
    $event->rota_id( $self->$_find_rota( 'main', $date )->id ); # TODO: Naughty
    $event->update;
-   $self->$_write_blog_post( $req, $event );
+   $self->$_write_blog_post( $req, $event, $date );
 
-   my $message = [ 'Event [_1] updated by [_2]', $name, $req->username ];
+   my $actionp  = $self->moniker.'/event';
+   my $location = uri_for_action $req, $actionp, [ $name, $date ];
+   my $message  = [ 'Event [_1] updated by [_2]', $name, $req->username ];
 
-   return { redirect => { location => $req->uri, message => $message } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 1;

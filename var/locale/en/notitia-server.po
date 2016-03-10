@@ -375,6 +375,9 @@ msgstr "Notes"
 msgid "old_password"
 msgstr "Old Password"
 
+msgid "owner"
+msgstr "Owner"
+
 msgid "owner_id"
 msgstr "Owner"
 

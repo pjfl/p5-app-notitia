@@ -3,7 +3,7 @@ package App::Notitia::Model::Posts;
 use App::Notitia::Attributes;  # Will do cleaning
 use App::Notitia::Util     qw( build_tree iterator localise_tree mtime
                                register_action_paths uri_for_action );
-use Class::Usul::Constants qw( TRUE );
+use Class::Usul::Constants qw( SPC TRUE );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -100,7 +100,7 @@ sub make_draft {
 }
 
 sub nav_label {
-   return sub { $_[ 0 ]->{title}.' '.$_[ 0 ]->{prefix} };
+   return sub { $_[ 0 ]->{prefix}.SPC.$_[ 0 ]->{title} };
 }
 
 sub page : Role(anon) {

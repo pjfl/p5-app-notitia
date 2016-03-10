@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Event posts have checksum for uniqueness
           - Navigation label now configurable by class
           - Fixed type class selection
           - Merged in schema changes
