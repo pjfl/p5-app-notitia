@@ -114,7 +114,7 @@ my $_maybe_find_cert = sub {
 my $_update_cert_from_request = sub {
    my ($self, $req, $cert) = @_; my $params = $req->body_params;
 
-   my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
+   my $opts = { optional => TRUE };
 
    for my $attr (qw( completed notes )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }

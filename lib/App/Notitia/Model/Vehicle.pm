@@ -147,7 +147,7 @@ my $_toggle_assignment = sub {
 my $_update_vehicle_from_request = sub {
    my ($self, $req, $vehicle) = @_; my $params = $req->body_params; my $v;
 
-   my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
+   my $opts = { optional => TRUE };
 
    for my $attr (qw( aquired disposed name notes vrn )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }

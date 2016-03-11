@@ -177,7 +177,7 @@ my $_select_owner_list = sub {
 my $_update_event_from_request = sub {
    my ($self, $req, $event) = @_; my $params = $req->body_params;
 
-   my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
+   my $opts = { optional => TRUE };
 
    for my $attr (qw( description end_time name notes start_time )) {
       if (is_member $attr, [ 'description', 'notes' ]) { $opts->{raw} = TRUE }
@@ -186,9 +186,6 @@ my $_update_event_from_request = sub {
       my $v = $params->( $attr, $opts ); defined $v or next;
 
       $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
-
-      is_member $attr, [ 'end_time', 'start_time' ]
-          and $v =~ s{ \A (\d\d) (\d\d) \z }{$1:$2}mx;
 
       $event->$attr( $v );
    }

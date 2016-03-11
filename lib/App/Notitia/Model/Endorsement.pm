@@ -121,7 +121,7 @@ my $_maybe_find_endorsement = sub {
 my $_update_endorsement_from_request = sub {
    my ($self, $req, $blot) = @_; my $params = $req->body_params;
 
-   my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
+   my $opts = { optional => TRUE };
 
    for my $attr (qw( type_code endorsed notes points )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }

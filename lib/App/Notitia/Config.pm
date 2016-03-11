@@ -182,7 +182,7 @@ has 'schema_classes'  => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
       'schedule'      => 'App::Notitia::Schema::Schedule', } };
 
 has 'scrubber'        => is => 'ro',   isa => Str,
-   default            => '[^ +\-\./0-9@A-Z\\_a-z~]';
+   default            => '[^ !\"#%&\'\(\)\*\+\,\-\./0-9:;=\?@A-Z\[\]_a-z\|\~]';
 
 has 'secret'          => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => $_build_secret;

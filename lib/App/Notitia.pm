@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 69 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 70 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -15,6 +15,7 @@ sub env_var {
 # TODO: Datepicker.js shim for Explorer *and* Failfox
 # TODO: Determine how to request a vehicle for an event
 # TODO: Vehicle assigning should be moved to Slot to make URI more restful
+# TODO: Add field help tips
 
 1;
 
@@ -38,7 +39,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.1.$Rev: 69 $ of L<App::Notitia>
+This documents version v0.1.$Rev: 70 $ of L<App::Notitia>
 
 =head1 Description
 

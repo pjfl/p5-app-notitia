@@ -44,6 +44,16 @@ around 'get_stash' => sub {
 my $_people_links_cache = {};
 
 # Private functions
+my $_assert_not_self = sub {
+   my ($person, $nok) = @_; $nok or undef $nok;
+
+   $nok and $person->id and $nok == $person->id
+        and throw 'Cannot set self as next of kin',
+                  level => 2, rv => HTTP_EXPECTATION_FAILED;
+
+   return $nok
+};
+
 my $_maybe_find_person = sub {
    return $_[ 1 ] ? $_[ 0 ]->find_person_by( $_[ 1 ] ) : Class::Null->new;
 };
@@ -134,6 +144,12 @@ my $_list_all_roles = sub {
    return [ [ NUL, NUL ], $type_rs->list_role_types->all ];
 };
 
+my $_new_username = sub {
+   my ($self, $person) = @_; my $rs = $self->schema->resultset( 'Person' );
+
+   return $rs->new_person_id( $person->first_name, $person->last_name );
+};
+
 my $_people_links = sub {
    my ($self, $req, $person) = @_; my $name = $person->[ 1 ]->name;
 
@@ -158,11 +174,11 @@ my $_people_links = sub {
 my $_update_person_from_request = sub {
    my ($self, $req, $person) = @_; my $params = $req->body_params;
 
-   my $opts = { optional => TRUE, scrubber => '[^ +\,\-\./0-9@A-Z\\_a-z~]' };
+   my $opts = { optional => TRUE };
 
    for my $attr (qw( active address dob email_address first_name home_phone
-                     joined last_name mobile_phone notes
-                     password_expired postcode resigned subscription )) {
+                     joined last_name mobile_phone notes password_expired
+                     postcode resigned subscription )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 
@@ -180,18 +196,11 @@ my $_update_person_from_request = sub {
       $person->$attr( $v );
    }
 
-   my $name; unless ($name = $params->( 'username', { optional => TRUE } )) {
-      my $rs = $self->schema->resultset( 'Person' );
+   $person->name( $params->( 'username', $opts )
+                  || $self->$_new_username( $person ) );
 
-      $name = $rs->new_person_id( $person->first_name, $person->last_name );
-   }
-
-   $person->name( $name ); my $nok = $params->( 'next_of_kin', $opts );
-
-   $nok and $person->id and $nok == $person->id
-        and throw 'Cannot set self as next of kin',
-                  rv => HTTP_EXPECTATION_FAILED;
-   $nok or  undef $nok; $person->next_of_kin( $nok );
+   $person->next_of_kin
+      ( $_assert_not_self->( $person, $params->( 'next_of_kin', $opts ) ) );
 
    return;
 };
@@ -308,17 +317,18 @@ sub person : Role(person_manager) {
 sub people : Role(any) {
    my ($self, $req) = @_;
 
+   my $role      =  $req->query_params->( 'role', { optional => TRUE } );
    my $page      =  {
       fields     => {
          add     => create_button( $req, $self->moniker.'/person', 'person' ),
          headers => $_people_headers->( $req ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
-      title      => loc( $req, 'people_management_heading' ), };
+      title      => loc( $req, $role ? "${role}_list_link"
+                                     : 'people_management_heading' ), };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $rows      =  $page->{fields}->{rows};
    my $opts      =  { order_by => 'name' };
-   my $role      =  $req->query_params->( 'role', { optional => TRUE } );
    my $people    =  $role ? $person_rs->list_people( $role, $opts )
                           : $person_rs->list_all_people( $opts );
 

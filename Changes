@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Made scrubber more permissive
           - Can view participents
           - Event posts have checksum for uniqueness
           - Navigation label now configurable by class
