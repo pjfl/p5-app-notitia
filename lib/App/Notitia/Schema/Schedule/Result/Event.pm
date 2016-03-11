@@ -7,6 +7,7 @@ use parent   'App::Notitia::Schema::Base';
 use App::Notitia::Constants qw( VARCHAR_MAX_SIZE );
 use App::Notitia::Util      qw( date_data_type foreign_key_data_type
                                 serial_data_type varchar_data_type );
+use Class::Usul::Functions  qw( create_token );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -20,13 +21,14 @@ $class->add_columns
      owner_id    => foreign_key_data_type,
      start_time  => varchar_data_type(   5 ),
      end_time    => varchar_data_type(   5 ),
-     name        => varchar_data_type(  64 ),
+     name        => varchar_data_type(  57 ),
+     uri         => varchar_data_type(  64 ),
      description => varchar_data_type( 128 ),
      notes       => varchar_data_type, );
 
 $class->set_primary_key( 'id' );
 
-$class->add_unique_constraint( [ 'name', 'rota_id' ] );
+$class->add_unique_constraint( [ 'uri' ] );
 
 $class->belongs_to( rota  => "${result}::Rota", 'rota_id' );
 $class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
@@ -36,14 +38,28 @@ $class->has_many( transports   => "${result}::Transport",   'event_id' );
 
 # Private methods
 sub _as_string {
-   return $_[ 0 ]->name;
+   return $_[ 0 ]->uri;
 }
+
+my $_set_uri = sub {
+   my $self    = shift;
+   my $columns = { $self->get_inflated_columns };
+   my $rota_id = $columns->{rota_id};
+   my $name    = lc $columns->{name}; $name =~ s{ [ ] }{-}gmx;
+   my $token   = lc substr create_token( $name.$rota_id ), 0, 6;
+
+   $columns->{uri} = "${name}-${token}";
+   $self->set_inflated_columns( $columns );
+   return;
+};
 
 # Public methods
 sub insert {
    my $self = shift;
 
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   $self->$_set_uri;
 
    return $self->next::method;
 }
@@ -57,6 +73,8 @@ sub update {
 
    $columns and $self->set_inflated_columns( $columns ); $self->validate;
 
+   $self->$_set_uri;
+
    return $self->next::method;
 }
 
@@ -66,7 +84,7 @@ sub validation_attributes {
          description => { max_length => 128, min_length => 10, },
          end_time    => { max_length =>   5, min_length =>  0,
                           pattern    => '\A \d\d : \d\d (?: : \d\d )? \z', },
-         name        => { max_length =>  64, min_length =>  3, },
+         name        => { max_length =>  57, min_length =>  3, },
          notes       => { max_length =>  VARCHAR_MAX_SIZE(), min_length => 0, },
          start_time  => { max_length =>   5, min_length =>  0,
                           pattern    => '\A \d\d : \d\d (?: : \d\d )? \z', },

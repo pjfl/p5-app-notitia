@@ -45,16 +45,24 @@ sub new_result {
 }
 
 sub find_event_by {
-   my ($self, $name, $date, $opts) = @_; $opts //= {};
+   my ($self, $uri, $opts) = @_; $opts //= {};
 
    $opts->{prefetch} //= []; push @{ $opts->{prefetch} }, 'rota';
 
-   my $event = $self->search
-      ( { 'me.name' => $name, 'rota.date' => $date }, $opts )->single
-      or throw 'Event [_1] on [_2] unknown', [ $name, $date ],
+   my $event = $self->search( { uri => $uri }, $opts )->single
+      or throw 'Event [_1] unknown', [ $uri ],
          level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return $event;
+}
+
+sub find_event_for {
+   my ($self, $type_id, $date) = @_;
+
+   return $self->search
+      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
+        { columns  => [ 'name', 'rota.date', 'rota.type_id', 'uri' ],
+          join     => [ 'rota' ] } );
 }
 
 sub list_all_events {
@@ -62,7 +70,8 @@ sub list_all_events {
 
    my $fields = delete $opts->{fields} // {};
    my $events = $self->search
-      ( {}, { columns => [ 'name' ], prefetch => [ 'rota' ], %{ $opts } } );
+      ( {}, { columns  => [ 'name', 'uri' ],
+              prefetch => [ 'rota' ], %{ $opts } } );
 
    return [ map { $_event_tuple->( $_, $fields ) } $events->all ];
 }

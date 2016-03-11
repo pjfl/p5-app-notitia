@@ -91,23 +91,19 @@ my $_bind_event_fields = sub {
 my $_event_links = sub {
    my ($self, $req, $event) = @_;
 
-   my $name = $event->[ 1 ]->name; my $date = $event->[ 1 ]->rota->date->ymd;
-
-   my $links = $_event_links_cache->{ my $k = "${name}/${date}" };
+   my $uri = $event->[ 1 ]->uri; my $links = $_event_links_cache->{ $uri };
 
    $links and return @{ $links }; $links = [];
 
-   my $args = [ $name, $date ];
-
    for my $path ( qw( event/event event/participents event/summary ) ) {
       my ($moniker, $action) = split m{ / }mx, $path, 2;
-      my $href = uri_for_action $req, $path, $args;
+      my $href = uri_for_action $req, $path, [ $uri ];
 
       push @{ $links }, {
-         value => management_button( $req, $name, $action, $href ) };
+         value => management_button( $req, $uri, $action, $href ) };
    }
 
-   $_event_links_cache->{ $k } = $links;
+   $_event_links_cache->{ $uri } = $links;
 
    return @{ $links };
 };
@@ -130,7 +126,7 @@ my $_format_as_markdown = sub {
                    no_quote_bind_values => TRUE };
    my $when    = loc( $req, 'event_blog_when', $opts )."\n\n";
    my $actionp = $self->moniker.'/summary';
-   my $href    = uri_for_action $req, $actionp, [ $name, $date->ymd ];
+   my $href    = uri_for_action $req, $actionp, [ $event->uri ];
       $opts    = { params => [ $href ], no_quote_bind_values => TRUE };
    my $link    = loc( $req, 'event_blog_link', $opts )."\n\n";
 
@@ -138,11 +134,11 @@ my $_format_as_markdown = sub {
 };
 
 my $_maybe_find_event = sub {
-   my ($self, $name, $date) = @_; $name or return Class::Null->new;
+   my ($self, $uri) = @_; $uri or return Class::Null->new;
 
    my $schema = $self->schema; my $opts = { prefetch => [ 'owner' ] };
 
-   return $schema->resultset( 'Event' )->find_event_by( $name, $date, $opts );
+   return $schema->resultset( 'Event' )->find_event_by( $uri, $opts );
 };
 
 my $_participent_links = sub {
@@ -200,11 +196,7 @@ my $_write_blog_post = sub {
 
    my $posts_model = $self->components->{posts};
    my $dir         = $posts_model->localised_posts_dir( $req->locale );
-   my $file        = $date.'_'.(lc $event->name);
-   my $token       = lc substr create_token( $file ), 0, 6;
-
-   $file =~ s{ [ ] }{-}gmx; $file .= "-${token}";
-
+   my $file        = $date.'_'.$event->uri;
    my $path        = $dir->catfile( 'events', $file.'.md' );
    my $markdown    = $self->$_format_as_markdown( $req, $event );
 
@@ -228,7 +220,7 @@ sub create_event_action : Role(event_manager) {
    $self->$_write_blog_post( $req, $event, $date );
 
    my $actionp  = $self->moniker.'/event';
-   my $location = uri_for_action $req, $actionp, [ $event->name, $date ];
+   my $location = uri_for_action $req, $actionp, [ $event->uri ];
    my $message  =
       [ 'Event [_1] created by [_2]', $event->name, $req->username ];
 
@@ -238,15 +230,13 @@ sub create_event_action : Role(event_manager) {
 sub delete_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $name  = $req->uri_params->( 0 );
-   my $date  = $req->uri_params->( 1 );
-   my $rs    = $self->schema->resultset( 'Event' );
-   my $event = $rs->find_event_by( $name, $date );
+   my $uri   = $req->uri_params->( 0 );
+   my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
 
    $event->delete;
 
    my $location = uri_for_action $req, $self->moniker.'/events';
-   my $message  = [ 'Event [_1] deleted by [_2]', $name, $req->username ];
+   my $message  = [ 'Event [_1] deleted by [_2]', $uri, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -254,10 +244,8 @@ sub delete_event_action : Role(event_manager) {
 sub event : Role(event_manager) {
    my ($self, $req) = @_;
 
-   # TODO: Fix the event name so that it's good for the href - no space or %
-   my $name       =  $req->uri_params->( 0, { optional => TRUE } );
-   my $date       =  $req->uri_params->( 1, { optional => TRUE } );
-   my $event      =  $self->$_maybe_find_event( $name, $date );
+   my $uri        =  $req->uri_params->( 0, { optional => TRUE } );
+   my $event      =  $self->$_maybe_find_event( $uri );
    my $page       =  {
       fields      => $self->$_bind_event_fields( $event ),
       first_field => 'name',
@@ -267,16 +255,16 @@ sub event : Role(event_manager) {
    my $fields     =  $page->{fields};
    my $actionp    =  $self->moniker.'/event';
 
-   if ($name) {
+   if ($uri) {
       $fields->{date  } = bind 'event_date', $event->rota->date,
                           { disabled => TRUE };
-      $fields->{delete} = delete_button $req, $name, 'event';
-      $fields->{href  } = uri_for_action $req, $actionp, [ $name, $date ];
+      $fields->{delete} = delete_button $req, $uri, 'event';
+      $fields->{href  } = uri_for_action $req, $actionp, [ $uri ];
       $fields->{owner } = $self->$_select_owner_list( $event );
    }
    else { $fields->{date} = bind 'event_date', time2str '%Y-%m-%d' }
 
-   $fields->{save} = save_button $req, $name, 'event';
+   $fields->{save} = save_button $req, $uri, 'event';
 
    return $self->get_stash( $req, $page );
 }
@@ -306,16 +294,15 @@ sub events : Role(any) {
 sub participate_event_action : Role(any) {
    my ($self, $req) = @_;
 
-   my $name      = $req->uri_params->( 0 );
-   my $date      = $req->uri_params->( 1 );
+   my $uri       = $req->uri_params->( 0 );
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_person_by( $req->username );
 
-   $person->add_participent_for( $name, $date );
+   $person->add_participent_for( $uri );
 
    my $actionp   = $self->moniker.'/summary';
-   my $location  = uri_for_action $req, $actionp, [ $name, $date ];
-   my $message   = [ 'Event [_1] attendee [_2]', $name, $req->username ];
+   my $location  = uri_for_action $req, $actionp, [ $uri ];
+   my $message   = [ 'Event [_1] attendee [_2]', $uri, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -323,8 +310,8 @@ sub participate_event_action : Role(any) {
 sub participents : Role(event_manager) Role(person_manager) {
    my ($self, $req) = @_;
 
-   my $name      =  $req->uri_params->( 0 );
-   my $date      =  $req->uri_params->( 1 );
+   my $uri       =  $req->uri_params->( 0 );
+   my $event     =  $self->schema->resultset( 'Event' )->find_event_by( $uri );
    my $page      =  {
       fields     => {
          headers => $_participent_headers->( $req ),
@@ -332,8 +319,6 @@ sub participents : Role(event_manager) Role(person_manager) {
       template   => [ 'contents', 'table' ],
       title      => loc( $req, 'participents_management_heading' ), };
    my $person_rs =  $self->schema->resultset( 'Person' );
-   my $event_rs  =  $self->schema->resultset( 'Event' );
-   my $event     =  $event_rs->find_event_by( $name, $date );
    my $rows      =  $page->{fields}->{rows};
 
    for my $person (@{ $person_rs->list_participents( $event ) }) {
@@ -350,9 +335,8 @@ sub summary : Role(any) {
 
    my $schema  =  $self->schema;
    my $user    =  $req->username;
-   my $name    =  $req->uri_params->( 0 );
-   my $date    =  $req->uri_params->( 1 );
-   my $event   =  $schema->resultset( 'Event' )->find_event_by( $name, $date );
+   my $uri     =  $req->uri_params->( 0 );
+   my $event   =  $schema->resultset( 'Event' )->find_event_by( $uri );
    my $person  =  $schema->resultset( 'Person' )->find_person_by( $user );
    my $opts    =  { disabled => TRUE };
    my $page    =  {
@@ -363,9 +347,9 @@ sub summary : Role(any) {
    my $actionp =  $self->moniker.'/event';
 
    $fields->{date} = bind 'event_date', $event->rota->date, $opts;
-   $fields->{href} = uri_for_action $req, $actionp, [ $name, $date ];
-   $opts = $person->is_participent_of( $name, $date ) ? { cancel => TRUE } : {};
-   $fields->{participate} = $_participate_button->( $req, $name, $opts );
+   $fields->{href} = uri_for_action $req, $actionp, [ $uri ];
+   $opts = $person->is_participent_of( $uri ) ? { cancel => TRUE } : {};
+   $fields->{participate} = $_participate_button->( $req, $uri, $opts );
    delete $fields->{notes};
 
    return $self->get_stash( $req, $page );
@@ -375,16 +359,15 @@ sub unparticipate_event_action : Role(any) {
    my ($self, $req) = @_;
 
    my $user      = $req->username;
-   my $name      = $req->uri_params->( 0 );
-   my $date      = $req->uri_params->( 1 );
+   my $uri       = $req->uri_params->( 0 );
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_person_by( $user );
 
-   $person->delete_participent_for( $name, $date );
+   $person->delete_participent_for( $uri );
 
    my $actionp   = $self->moniker.'/summary';
-   my $location  = uri_for_action $req, $actionp, [ $name, $date ];
-   my $message   = [ 'Event [_1] attendence cancelled for [_2]', $name, $user ];
+   my $location  = uri_for_action $req, $actionp, [ $uri ];
+   my $message   = [ 'Event [_1] attendence cancelled for [_2]', $uri, $user ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -392,19 +375,15 @@ sub unparticipate_event_action : Role(any) {
 sub update_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $name  = $req->uri_params->( 0 );
-   my $date  = $req->uri_params->( 1 );
-   my $rs    = $self->schema->resultset( 'Event' );
-   my $event = $rs->find_event_by( $name, $date );
+   my $uri   = $req->uri_params->( 0 );
+   my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
 
-   $self->$_update_event_from_request( $req, $event );
-   $event->rota_id( $self->$_find_rota( 'main', $date )->id ); # TODO: Naughty
-   $event->update;
-   $self->$_write_blog_post( $req, $event, $date );
+   $self->$_update_event_from_request( $req, $event ); $event->update;
+   $self->$_write_blog_post( $req, $event, $event->rota->date->ymd );
 
    my $actionp  = $self->moniker.'/event';
-   my $location = uri_for_action $req, $actionp, [ $name, $date ];
-   my $message  = [ 'Event [_1] updated by [_2]', $name, $req->username ];
+   my $location = uri_for_action $req, $actionp, [ $uri ];
+   my $message  = [ 'Event [_1] updated by [_2]', $uri, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }

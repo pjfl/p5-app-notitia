@@ -105,11 +105,12 @@ CREATE TABLE "event" (
   "owner_id" integer NOT NULL,
   "start_time" character varying(5) DEFAULT '' NOT NULL,
   "end_time" character varying(5) DEFAULT '' NOT NULL,
-  "name" character varying(64) DEFAULT '' NOT NULL,
+  "name" character varying(57) DEFAULT '' NOT NULL,
+  "uri" character varying(64) DEFAULT '' NOT NULL,
   "description" character varying(128) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "event_name_rota_id" UNIQUE ("name", "rota_id")
+  CONSTRAINT "event_uri" UNIQUE ("uri")
 );
 CREATE INDEX "event_idx_owner_id" on "event" ("owner_id");
 CREATE INDEX "event_idx_rota_id" on "event" ("rota_id");

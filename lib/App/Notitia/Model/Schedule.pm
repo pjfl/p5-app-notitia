@@ -54,11 +54,11 @@ my $_confirm_slot_button = sub {
 };
 
 my $_event_link = sub {
-   my ($req, $event, $rota_dt) = @_; $event or return NUL;
+   my ($req, $event) = @_; $event or return NUL;
 
    my $name = my $value = $event->name;
-   my $href = uri_for_action $req, 'event/summary', [ $event, $rota_dt->ymd ];
-   my $tip  = loc $req, 'Click to view the [_1] event', [ $event ];
+   my $href = uri_for_action $req, 'event/summary', [ $event->uri ];
+   my $tip  = loc $req, 'Click to view the [_1] event', [ $event->label ];
 
    return { class => 'table-link', hint  => loc( $req, 'Hint' ),
             href  => $href,        name  => $name,
@@ -209,7 +209,7 @@ my $_events = sub {
    my $first  = TRUE;
 
    while (defined (my $event = $todays_events->next) or $first) {
-      my $col2 = { value   => $_event_link->( $req, $event, $rota_dt ),
+      my $col2 = { value   => $_event_link->( $req, $event ),
                    colspan => $_table_cols };
 
       push @{ $events }, [ $col1, $col2 ];
@@ -284,8 +284,9 @@ my $_riders_n_drivers = sub {
 };
 
 my $_get_page = sub {
-   my ($self, $req, $name, $date, $todays_events, $rows, $limits) = @_;
+   my ($self, $req, $name, $date, $todays_events, $rows) = @_;
 
+   my $limits  =  $self->config->slot_limits;
    my $rota_dt =  str2date_time $date, 'GMT';
    my $title   =  ucfirst( loc( $req, $name ) ).SPC
                .  loc( $req, 'rota for' ).SPC
@@ -356,10 +357,7 @@ sub day_rota : Role(any) {
           prefetch => [ { 'shift' => 'rota' }, 'operator', 'vehicle',
                         'personal_vehicles' ] } );
    my $event_rs = $self->schema->resultset( 'Event' );
-   my $events   = $event_rs->search
-      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
-        { columns  => [ 'name' ], join => [ 'rota' ] } );
-   my $limits   = $self->config->slot_limits;
+   my $events   = $event_rs->find_event_for( $type_id, $date );
    my $rows     = {};
 
    for my $slot ($slots->all) {
@@ -370,7 +368,7 @@ sub day_rota : Role(any) {
              ops_veh  => $_operators_vehicle->( $slot, $vehicle_cache ) };
    }
 
-   my $page = $self->$_get_page( $req, $name, $date, $events, $rows, $limits );
+   my $page = $self->$_get_page( $req, $name, $date, $events, $rows );
 
    return $self->get_stash( $req, $page );
 }

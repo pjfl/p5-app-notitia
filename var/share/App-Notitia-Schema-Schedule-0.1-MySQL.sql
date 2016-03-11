@@ -126,13 +126,14 @@ CREATE TABLE `event` (
   `owner_id` integer unsigned NOT NULL,
   `start_time` varchar(5) NOT NULL DEFAULT '',
   `end_time` varchar(5) NOT NULL DEFAULT '',
-  `name` varchar(64) NOT NULL DEFAULT '',
+  `name` varchar(57) NOT NULL DEFAULT '',
+  `uri` varchar(64) NOT NULL DEFAULT '',
   `description` varchar(128) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',
   INDEX `event_idx_owner_id` (`owner_id`),
   INDEX `event_idx_rota_id` (`rota_id`),
   PRIMARY KEY (`id`),
-  UNIQUE `event_name_rota_id` (`name`, `rota_id`),
+  UNIQUE `event_uri` (`uri`),
   CONSTRAINT `event_fk_owner_id` FOREIGN KEY (`owner_id`) REFERENCES `person` (`id`),
   CONSTRAINT `event_fk_rota_id` FOREIGN KEY (`rota_id`) REFERENCES `rota` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;

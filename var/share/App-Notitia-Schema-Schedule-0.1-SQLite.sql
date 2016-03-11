@@ -135,7 +135,8 @@ CREATE TABLE "event" (
   "owner_id" integer NOT NULL,
   "start_time" varchar(5) NOT NULL DEFAULT '',
   "end_time" varchar(5) NOT NULL DEFAULT '',
-  "name" varchar(64) NOT NULL DEFAULT '',
+  "name" varchar(57) NOT NULL DEFAULT '',
+  "uri" varchar(64) NOT NULL DEFAULT '',
   "description" varchar(128) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
   FOREIGN KEY ("owner_id") REFERENCES "person"("id"),
@@ -146,7 +147,7 @@ CREATE INDEX "event_idx_owner_id" ON "event" ("owner_id");
 
 CREATE INDEX "event_idx_rota_id" ON "event" ("rota_id");
 
-CREATE UNIQUE INDEX "event_name_rota_id" ON "event" ("name", "rota_id");
+CREATE UNIQUE INDEX "event_uri" ON "event" ("uri");
 
 DROP TABLE "participent";
 

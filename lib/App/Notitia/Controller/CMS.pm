@@ -16,7 +16,7 @@ sub dispatch_request {
    sub (GET  + /posts/dialog      + ?*) { [ 'posts', 'dialog',       @_ ] },
    sub (GET  + /posts/rss         + ?*) { [ 'posts', 'rss_feed',     @_ ] },
    sub (GET  + /posts/** | /posts + ?*) { [ 'posts', 'page',         @_ ] },
-   sub (POST + /posts             + ?*) { [ 'posts', 'from_request', @_ ] };
+   sub (POST + /posts/** | /posts + ?*) { [ 'posts', 'from_request', @_ ] };
 }
 
 1;
