@@ -86,7 +86,7 @@ my $_assert_claim_allowed = sub {
 my $_assert_membership_allowed = sub {
    my ($self, $type) = @_;
 
-
+   # TODO: Add membership allowed rules
    return;
 };
 

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Moved some more queries to resultsets
           - Made scrubber more permissive
           - Can view participents
           - Event posts have checksum for uniqueness

@@ -95,10 +95,6 @@ my $_cert_links = sub {
    return @{ $links };
 };
 
-my $_cert_tuple = sub {
-   my ($req, $cert) = @_; return [ $cert->label( $req ), $cert ];
-};
-
 my $_list_all_certs = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
@@ -131,19 +127,6 @@ my $_update_cert_from_request = sub {
    }
 
    return;
-};
-
-# Private methods
-my $_list_certification_for = sub {
-   my ($self, $req, $name) = @_;
-
-   my $certs = $self->schema->resultset( 'Certification' )->search
-      ( { 'recipient.name' => $name },
-        { join     => [ 'recipient', 'type' ],
-          order_by => 'type_class',
-          prefetch => [ 'type' ] } );
-
-   return [ map { $_cert_tuple->( $req, $_ ) } $certs->all ];
 };
 
 # Public functions
@@ -188,16 +171,17 @@ sub certifications : Role(person_manager) {
                     username => { name => $name }, },
       template => [ 'contents', 'table' ],
       title    => loc( $req, 'certificates_management_heading' ), };
-   my $action  =  $self->moniker.'/certification';
+   my $cert_rs =  $self->schema->resultset( 'Certification' );
+   my $actionp =  $self->moniker.'/certification';
    my $rows    =  $page->{fields}->{rows};
 
-   for my $cert (@{ $self->$_list_certification_for( $req, $name ) }) {
+   $page->{fields}->{add} = $_add_cert_button->( $req, $actionp, $name );
+
+   for my $cert (@{ $cert_rs->list_certification_for( $req, $name ) }) {
       push @{ $rows },
          [ { value => $cert->[ 0 ] },
            $self->$_cert_links( $req, $name, $cert->[ 1 ]->type ) ];
    }
-
-   $page->{fields}->{add} = $_add_cert_button->( $req, $action, $name );
 
    return $self->get_stash( $req, $page );
 }

@@ -85,10 +85,6 @@ my $_endorsement_links = sub {
    return @{ $links };
 };
 
-my $_endorsement_tuple = sub {
-   my ($req, $blot) = @_; return [ $blot->label( $req ), $blot ];
-};
-
 # Private methods
 my $_bind_endorsement_fields = sub {
    my ($self, $blot) = @_;
@@ -101,16 +97,6 @@ my $_bind_endorsement_fields = sub {
    };
 
    return $self->bind_fields( $blot, $map, 'Endorsement' );
-};
-
-my $_list_endorsements_for = sub {
-   my ($self, $req, $name) = @_;
-
-   my $blots = $self->schema->resultset( 'Endorsement' )->search
-      ( { 'recipient.name' => $name },
-        { join => [ 'recipient' ], order_by => 'type_code' } );
-
-   return [ map { $_endorsement_tuple->( $req, $_ ) } $blots->all ];
 };
 
 my $_maybe_find_endorsement = sub {
@@ -181,16 +167,17 @@ sub endorsements : Role(person_manager) {
                     username => { name => $name }, },
       template => [ 'contents', 'table' ],
       title    => loc( $req, 'endorsements_management_heading' ), };
-   my $action  =  $self->moniker.'/endorsement';
+   my $blot_rs =  $self->schema->resultset( 'Endorsement' );
+   my $actionp =  $self->moniker.'/endorsement';
    my $rows    =  $page->{fields}->{rows};
 
-   for my $blot (@{ $self->$_list_endorsements_for( $req, $name ) }) {
+   $page->{fields}->{add} = $_add_endorsement_button->( $req, $actionp, $name );
+
+   for my $blot (@{ $blot_rs->list_endorsements_for( $req, $name ) }) {
       push @{ $rows },
          [ { value => $blot->[ 0 ] },
            $self->$_endorsement_links( $req, $name, $blot->[ 1 ]->type_code ) ];
    }
-
-   $page->{fields}->{add} = $_add_endorsement_button->( $req, $action, $name );
 
    return $self->get_stash( $req, $page );
 }

@@ -7,8 +7,6 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions  qw( throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
-# Private class attributes
-
 # Private methods
 my $_find_recipient_id = sub {
    my ($self, $name) = @_;
@@ -34,13 +32,23 @@ sub find_endorsement_by {
    my ($self, $name, $code) = @_;
 
    my $endorsement = $self->search
-      ( { 'recipient.name' => $name, code => $code },
+      ( { 'recipient.name' => $name, type_code => $code },
         { join => [ 'recipient' ] } )->single
         or throw 'Endorsement [_1] for [_2] not found', [ $code, $name ],
                  level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return $endorsement;
 };
+
+sub list_endorsements_for {
+   my ($self, $req, $name) = @_;
+
+   my $blots = $self->search
+      ( { 'recipient.name' => $name },
+        { join => [ 'recipient' ], order_by => 'type_code' } );
+
+   return [ map { [ $_->label( $req ), $_ ] } $blots->all ];
+}
 
 1;
 

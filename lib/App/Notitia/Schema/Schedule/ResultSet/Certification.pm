@@ -46,6 +46,17 @@ sub find_cert_by {
    return $cert;
 };
 
+sub list_certification_for {
+   my ($self, $req, $name) = @_;
+
+   my $certs = $self->search
+      ( { 'recipient.name' => $name },
+        { join     => [ 'recipient', 'type' ], order_by => 'type_class',
+          prefetch => [ 'type' ] } );
+
+   return [ map { [ $_->label( $req ), $_ ] } $certs->all ];
+};
+
 1;
 
 __END__
