@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 72 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -40,7 +40,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.1.$Rev: 72 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 1 $ of L<App::Notitia>
 
 =head1 Description
 
