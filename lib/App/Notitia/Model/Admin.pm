@@ -239,9 +239,12 @@ sub create_person_action : Role(person_manager) {
 
    $person->password( my $password = substr create_token, 0, 12 );
    $person->password_expired( TRUE );
-   $person->insert;
-   # TODO: This can throw which will fuck shit up. Needs a transaction
-   $role and $person->add_member_to( $role );
+
+   my $coderef = sub {
+      $person->insert; $role and $person->add_member_to( $role );
+   };
+
+   $self->schema->txn_do( $coderef );
 
    $self->config->no_user_email
       or $self->$_create_person_email( $req, $person, $password );

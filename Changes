@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added transaction wrapper to create person
           - Fixed display text in event uri
           - Moved some more queries to resultsets
           - Made scrubber more permissive
