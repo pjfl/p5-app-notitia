@@ -103,7 +103,9 @@ Once installation is complete run the post install
 When the post install has finished create the database with
 
 ```shell
-   bin/notitia-schema -o bootstrap=1 create-schema
+   bin/notitia-schema -o bootstrap=1 edit-credentials
+   bin/notitia-schema create-database
+   bin/notitia-schema deploy-and-populate
 ```
 
 This will allow you to edit the credentials that the application will
@@ -136,7 +138,7 @@ semantics. Additionally the daemon program will write an init script to
 standard output in response to the command:
 
 ```shell
-   notitia-daemon get_init_file
+   bin/notitia-daemon get-init-file
 ```
 #### Acknowledgements
 
