@@ -45,6 +45,36 @@ my $_init_file_list = sub {
 };
 
 # Private methods
+my $_root_post_install = sub {
+   my ($self, $appldir) = @_;
+
+   my $conf = $self->config; my $verdir = $appldir->basename;
+
+   if ($verdir =~ m{ \A v \d+ \. \d+ p (\d+) \z }msx) {
+      my $owner = my $group = $conf->owner;
+
+      getgr( $group ) or $self->run_cmd( [ 'groupadd', '--system', $group ] );
+
+      unless (getpwnam( $owner )) {
+         $self->run_cmd( [ 'useradd', '--home', $conf->user_home, '--gid',
+                           $group, '--no-user-group', '--system', $owner  ] );
+         $self->run_cmd( [ 'chown', "${owner}:${group}", $conf->user_home ] );
+      }
+
+      $self->run_cmd( [ 'chown', "${owner}:${group}", $appldir ] );
+      $self->run_cmd( [ 'chown', '-R', "${owner}:${group}", $appldir ] );
+   }
+
+   my $appname = class2appdir $conf->appclass;
+   my ($init, $kill) = $_init_file_list->( $appname );
+   my $cmd = [ $conf->binsdir->catfile( 'notifier-daemon' ), 'get-init-file' ];
+
+   $init->exists or $self->run_cmd( $cmd, { out => $init } );
+   $init->is_executable or $init->chmod( oct '0750' );
+   $kill->exists or $self->run_cmd( [ 'update-rc.d', $appname, 'defaults' ] );
+   return;
+};
+
 my $_write_theme = sub {
    my ($self, $cssd, $file) = @_;
 
@@ -98,48 +128,35 @@ sub post_install : method {
    my $self     = shift;
    my $conf     = $self->config;
    my $appldir  = $conf->appldir;
-   my $verdir   = $appldir->basename;
    my $localdir = $appldir->catdir( 'local' );
-   my $appname  = class2appdir $conf->appclass;
-   my $inc      = $localdir->catdir( 'lib', 'perl5'   );
-   my $profile  = $localdir->catdir( 'var', 'etc', 'profile' );
-   my $cmd      = [ $EXECUTABLE_NAME, '-I', "${inc}",
-                    "-Mlocal::lib=${localdir}" ];
 
    for my $dir (qw( etc logs run session tmp )) {
-      my $path = $conf->vardir->catdir( $dir );
+      my $path = $localdir->exists ? $localdir->catdir( 'var', $dir )
+                                   : $conf->vardir->catdir( $dir );
 
       $path->exists or $path->mkpath( oct '0770' );
    }
 
-   $localdir->exists
-      and $profile->assert_filepath
-      and $self->run_cmd( $cmd, { err => 'stderr', out => $profile } );
+   if ($localdir->exists) {
+      my $inc = $localdir->catdir( 'lib', 'perl5'   );
+      my $cmd = [ $EXECUTABLE_NAME, '-I', "${inc}", "-Mlocal::lib=${localdir}"];
+      my $profile = $localdir->catdir( qw( var etc profile ) );
 
-   if ($verdir =~ m{ \A v \d+ \. \d+ p (\d+) \z }msx) {
-      my $owner = my $group = $conf->owner;
-
-      getgr( $group ) or $self->run_cmd( [ 'groupadd', '--system', $group ] );
-
-      unless (getpwnam( $owner )) {
-         $self->run_cmd( [ 'useradd', '--home', $conf->user_home, '--gid',
-                           $group, '--no-user-group', '--system', $owner  ] );
-         $self->run_cmd( [ 'chown', "${owner}:${group}", $conf->user_home ] );
-      }
-
-      $self->run_cmd( [ 'chown', "${owner}:${group}", $appldir ] );
-      $self->run_cmd( [ 'chown', '-R', "${owner}:${group}", $appldir ] );
+      $self->run_cmd( $cmd, { err => 'stderr', out => $profile } );
    }
 
-   if ($EFFECTIVE_USER_ID == 0) {
-      my ($init, $kill) = $_init_file_list->( $appname );
+   my $schema = $conf->binsdir->catfile( 'notitia-schema' );
 
-      $cmd = [ $conf->binsdir->catfile( 'notifier-daemon' ), 'get-init-file' ];
+   if ($schema->exists) {
+      my $opts = { in => 'stdin', out => 'stdout' };
 
-      $init->exists or $self->run_cmd( $cmd, { out => $init } );
-      $init->is_executable or $init->chmod( oct '0750' );
-      $kill->exists or $self->run_cmd( [ 'update-rc.d', $appname, 'defaults' ]);
+      $self->run_cmd
+         ( [ $schema, '-o', 'bootstrap=1', 'edit-credentials' ], $opts );
+      $self->run_cmd( [ $schema, 'create-database' ], $opts );
+      $self->run_cmd( [ $schema, 'deploy-and-populate' ], $opts );
    }
+
+   $EFFECTIVE_USER_ID == 0 and $self->$_root_post_install( $appldir );
 
    return OK;
 }
