@@ -153,17 +153,13 @@ my $_new_username = sub {
 my $_people_links = sub {
    my ($self, $req, $person) = @_; my $name = $person->[ 1 ]->name;
 
-   my $links = $_people_links_cache->{ $name };
+   my $links = $_people_links_cache->{ $name }; $links and return @{ $links };
 
-   $links and return @{ $links }; $links = [];
+   $links = [];
 
-   for my $path ( qw( admin/person role/role
-                      certs/certifications blots/endorsements ) ) {
-      my ($moniker, $action) = split m{ / }mx, $path, 2;
-      my $href = uri_for_action $req, $path, [ $name ];
-
-      push @{ $links }, {
-         value => management_button( $req, $name, $action, $href ) };
+   for my $actionp ( qw( admin/person role/role
+                         certs/certifications blots/endorsements ) ) {
+      push @{ $links }, { value => management_button( $req, $actionp, $name ) };
    }
 
    $_people_links_cache->{ $name } = $links;

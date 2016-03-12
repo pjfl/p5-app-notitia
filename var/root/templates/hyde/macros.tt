@@ -25,6 +25,10 @@
    </label>
 [% END -%]
 [% MACRO Dispatch( f ) BLOCK -%]
+[%    IF f.type == 'form_button' -%]
+[%       FormWithButton( f.href, f.class, f.value,
+                         f.form_name, f.tip, f.name, f.action ) -%]
+[%    END -%]
 [%    IF f.type == 'link' -%]
 [%       LinkWithTips( f.href, f.class, f.value, f.hint, f.tip, f.name ) -%]
 [%    END -%]

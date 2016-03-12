@@ -66,6 +66,9 @@ msgstr "Aquired"
 msgid "bike"
 msgstr "Bike"
 
+msgid "bike_list_link"
+msgstr "Bikes"
+
 msgid "bike_rider"
 msgstr "Bike Rider"
 
@@ -405,6 +408,9 @@ msgstr "People"
 msgid "participents_heading_1"
 msgstr "View"
 
+msgid "participents_heading_2"
+msgstr "Unparticipate"
+
 msgid "password"
 msgstr "Password"
 
@@ -533,6 +539,12 @@ msgstr "Unassign a vehicle from this slot"
 
 msgid "unparticipate"
 msgstr "Cancel"
+
+msgid "unparticipate_event_link"
+msgstr "Unparticipate"
+
+msgid "unparticipate_event_tip"
+msgstr "Cancel participation in the [_1] event"
 
 msgid "unparticipate_tip"
 msgstr "Cancel participation in the [_1] event"

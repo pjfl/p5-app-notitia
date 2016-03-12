@@ -78,8 +78,10 @@ my $_assert_event_assignment_allowed = sub {
 my $_assert_public_or_private = sub {
    my $self = shift;
 
-   $self->name and $self->owner_id and throw
-      'Cannot set name and owner', level => 2, rv => HTTP_EXPECTATION_FAILED;
+   $self->name and $self->owner_id and throw 'Cannot set name and owner',
+                                     level => 2, rv => HTTP_EXPECTATION_FAILED;
+   $self->name or  $self->owner_id or  throw 'Must set either name or owner',
+                                     level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return;
 };

@@ -112,9 +112,9 @@ sub role : Role(administrator) Role(person_manager) {
 
    $fields->{username} = bind 'username', $name, { disabled => TRUE };
    $fields->{roles}
-      = bind 'roles', $available, { multiple => TRUE, size => 10 };
+      = bind 'roles', $available, { multiple => TRUE, size => 5 };
    $fields->{person_roles}
-      = bind 'person_roles', $person_roles, { multiple => TRUE, size => 10 };
+      = bind 'person_roles', $person_roles, { multiple => TRUE, size => 5 };
    $fields->{add   } = $_add_role_button->( $req, $name );
    $fields->{remove} = $_remove_role_button->( $req, $name );
 

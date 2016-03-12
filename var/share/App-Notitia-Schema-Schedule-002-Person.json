@@ -1,0 +1,6 @@
+{
+   "fields": "active email_address first_name last_name name password",
+   "rows": [
+      "1, admin@example.com, Admin, User, admin, 12345678"
+   ]
+}

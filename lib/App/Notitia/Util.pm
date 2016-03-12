@@ -130,7 +130,10 @@ sub admin_navigation_links ($) {
             $l1_nav_link->( $req, 'fund_raiser_list',
                             'admin/people', [], role => 'fund_raiser' ),
             $nav_folder->( $req, 'vehicles' ),
-            $l1_nav_link->( $req, 'vehicles_list', 'asset/vehicles', [] ), ];
+            $l1_nav_link->( $req, 'vehicles_list', 'asset/vehicles', [] ),
+            $l1_nav_link->( $req, 'bike_list',
+                            'asset/vehicles', [], type => 'bike' ),
+            ];
 }
 
 sub bind ($;$$) {
@@ -401,16 +404,29 @@ sub make_name_from ($) {
    my $v = shift; $v =~ s{ [_\-] }{ }gmx; return $v;
 }
 
-sub management_button ($$$$) {
-   my ($req, $name, $action, $href) = @_;
+sub management_button ($$$;$) {
+   my ($req, $actionp, $name, $opts) = @_; $opts //= {};
 
-   return { class => 'table-link fade',
-            hint  => loc( $req, 'Hint' ),
-            href  => $href,
-            name  => "${name}-${action}",
-            tip   => loc( $req, "${action}_management_tip" ),
-            type  => 'link',
-            value => loc( $req, "${action}_management_link" ), };
+   my $args   = $opts->{args} // [ $name ];
+   my ($moniker, $action) = split m{ / }mx, $actionp, 2;
+   my $href   = uri_for_action( $req, $actionp, $args );
+   my $type   = $opts->{type} // 'link';
+   my $button = { class => 'table-link fade',
+                  hint  => loc( $req, 'Hint' ),
+                  href  => $href,
+                  name  => "${name}-${action}",
+                  tip   => loc( $req, "${action}_management_tip" ),
+                  type  => $type,
+                  value => loc( $req, "${action}_management_link" ), };
+
+   if ($type eq 'form_button') {
+      $button->{action   } = "${name}_${action}";
+      $button->{form_name} = "${name}-${action}";
+      $button->{tip      } = loc( $req, "${name}_${action}_tip", $args->[ 0 ] );
+      $button->{value    } = loc( $req, "${name}_${action}_link" );
+   }
+
+   return $button;
 }
 
 sub mtime ($) {

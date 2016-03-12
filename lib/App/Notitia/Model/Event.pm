@@ -39,7 +39,7 @@ around 'get_stash' => sub {
 };
 
 # Private class attributes
-my $_event_links_cache = {};
+my $_links_cache = {};
 
 # Private functions
 my $_events_headers = sub {
@@ -61,7 +61,7 @@ my $_participate_button = sub {
 
 my $_participent_headers = sub {
    return [ map { { value => loc( $_[ 0 ], "participents_heading_${_}" ) } }
-            0 .. 1 ];
+            0 .. 2 ];
 };
 
 # Private methods
@@ -89,21 +89,17 @@ my $_bind_event_fields = sub {
 };
 
 my $_event_links = sub {
-   my ($self, $req, $event) = @_;
+   my ($self, $req, $event) = @_; my $uri = $event->[ 1 ]->uri;
 
-   my $uri = $event->[ 1 ]->uri; my $links = $_event_links_cache->{ $uri };
+   my $links = $_links_cache->{ $uri }; $links and return @{ $links };
 
-   $links and return @{ $links }; $links = [];
+   my @actions = qw( event participents summary ); $links = [];
 
-   for my $path ( qw( event/event event/participents event/summary ) ) {
-      my ($moniker, $action) = split m{ / }mx, $path, 2;
-      my $href = uri_for_action $req, $path, [ $uri ];
-
-      push @{ $links }, {
-         value => management_button( $req, $uri, $action, $href ) };
+   for my $actionp (map { $self->moniker."/${_}" } @actions) {
+      push @{ $links }, { value => management_button( $req, $actionp, $uri ) };
    }
 
-   $_event_links_cache->{ $uri } = $links;
+   $_links_cache->{ $uri } = $links;
 
    return @{ $links };
 };
@@ -142,21 +138,21 @@ my $_maybe_find_event = sub {
 };
 
 my $_participent_links = sub {
-   my ($self, $req, $person) = @_; my $name = $person->[ 1 ]->name;
+   my ($self, $req, $person, $event) = @_; my $name = $person->[ 1 ]->name;
 
-   my $links = $_event_links_cache->{$name };
+   my $links = $_links_cache->{$name }; $links and return @{ $links };
 
-   $links and return @{ $links }; $links = [];
+   $links = [];
 
-   for my $path ( qw( admin/summary ) ) {
-      my ($moniker, $action) = split m{ / }mx, $path, 2;
-      my $href = uri_for_action $req, $path, [ $name ];
+   push @{ $links },
+         { value => management_button( $req, 'admin/summary', $name ) };
+   push @{ $links },
+         { value => management_button
+              ( $req, 'event/event', 'unparticipate', { args => [ $event->uri ],
+                                                        type => 'form_button' }
+                ) };
 
-      push @{ $links }, {
-         value => management_button( $req, $name, $action, $href ) };
-   }
-
-   $_event_links_cache->{ $name } = $links;
+   $_links_cache->{ $name } = $links;
 
    return @{ $links };
 };
@@ -324,7 +320,7 @@ sub participents : Role(event_manager) Role(person_manager) {
    for my $person (@{ $person_rs->list_participents( $event ) }) {
       push @{ $rows },
          [ { value => $person->[ 0 ] },
-           $self->$_participent_links( $req, $person ) ];
+           $self->$_participent_links( $req, $person, $event ) ];
    }
 
    return $self->get_stash( $req, $page );

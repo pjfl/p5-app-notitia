@@ -35,7 +35,7 @@ around 'get_stash' => sub {
 };
 
 # Private class attributes
-my $_endorsement_links_cache = {};
+my $_blots_links_cache = {};
 
 # Private functions
 my $_add_endorsement_button = sub {
@@ -68,19 +68,16 @@ my $_add_endorsement_js = sub {
 my $_endorsement_links = sub {
    my ($self, $req, $name, $code) = @_;
 
-   my $links = $_endorsement_links_cache->{ $code };
+   my $links = $_blots_links_cache->{ $code }; $links and return @{ $links };
 
-   $links and return @{ $links }; $links = [];
+   my $opts = { args => [ $name, $code ] }; $links = [];
 
-   for my $action ( qw( endorsement ) ) {
-      my $path = $self->moniker."/${action}";
-      my $href = uri_for_action( $req, $path, [ $name, $code ] );
-
+   for my $actionp (map { $self->moniker."/${_}" } 'endorsement' ) {
       push @{ $links }, {
-         value => management_button( $req, $name, $action, $href ) };
+         value => management_button( $req, $actionp, $name, $opts ) };
    }
 
-   $_endorsement_links_cache->{ $code } = $links;
+   $_blots_links_cache->{ $code } = $links;
 
    return @{ $links };
 };

@@ -170,17 +170,14 @@ my $_update_vehicle_from_request = sub {
 };
 
 my $_vehicle_links = sub {
-   my ($self, $req, $vehicle) = @_; ;
+   my ($self, $req, $vehicle) = @_; my $vrn = $vehicle->[ 1 ]->vrn;
 
-   my $links = $_vehicle_links_cache->{ my $vrn = $vehicle->[ 1 ]->vrn };
+   my $links = $_vehicle_links_cache->{ $vrn }; $links and return @{ $links };
 
-   $links and return @{ $links }; $links = [];
+   $links = [];
 
-   for my $action ( qw( vehicle ) ) {
-      my $href = uri_for_action $req, $self->moniker."/${action}", [ $vrn ];
-
-      push @{ $links }, {
-         value => management_button( $req, $vrn, $action, $href ) };
+   for my $actionp (map { $self->moniker."/${_}" } 'vehicle') {
+      push @{ $links }, { value => management_button( $req, $actionp, $vrn ) };
    }
 
    $_vehicle_links_cache->{ $vrn } = $links;
@@ -305,6 +302,7 @@ sub vehicle : Role(asset_manager) {
 sub vehicles : Role(asset_manager) {
    my ($self, $req) = @_;
 
+   my $type      =  $req->query_params->( 'type', { optional => TRUE } );
    my $action    =  $self->moniker.'/vehicle';
    my $page      =  {
       fields     => {
@@ -312,11 +310,14 @@ sub vehicles : Role(asset_manager) {
          headers => $_vehicles_headers->( $req ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
-      title      => loc( $req, 'vehicles_management_heading' ), };
+      title      => loc( $req, $type ? "${type}_list_link"
+                                     : 'vehicles_management_heading' ), };
    my $rs        =  $self->schema->resultset( 'Vehicle' );
+   my $vehicles  =  $type ? $rs->list_vehicles_by_type( $type )
+                          : $rs->list_all_vehicles;
    my $rows      =  $page->{fields}->{rows};
 
-   for my $vehicle (@{ $rs->list_all_vehicles }) {
+   for my $vehicle (@{ $vehicles }) {
       push @{ $rows }, [ { value => $vehicle->[ 0 ] },
                          $self->$_vehicle_links( $req, $vehicle ) ];
    }

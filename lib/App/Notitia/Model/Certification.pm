@@ -78,16 +78,13 @@ my $_bind_cert_fields = sub {
 my $_cert_links = sub {
    my ($self, $req, $name, $type) = @_;
 
-   my $links = $_cert_links_cache->{ $type };
+   my $links = $_cert_links_cache->{ $type }; $links and return @{ $links };
 
-   $links and return @{ $links }; $links = [];
+   my $opts = { args => [ $name, $type ] }; $links = [];
 
-   for my $action ( qw( certification ) ) {
-      my $path = $self->moniker."/${action}";
-      my $href = uri_for_action( $req, $path, [ $name, $type ] );
-
+   for my $actionp (map { $self->moniker."/${_}" } 'certification' ) {
       push @{ $links }, {
-         value => management_button( $req, $name, $action, $href ) };
+         value => management_button( $req, $actionp, $name, $opts ) };
    }
 
    $_cert_links_cache->{ $type } = $links;
