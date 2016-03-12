@@ -103,13 +103,15 @@ my $_assert_slot_assignment_allowed = sub {
       my $type_id = $self->$_find_rota_type_id_for( $rota_name );
       my $slots   = $schema->resultset( 'Slot' )->search
          ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
-           { columns  => [ qw( shift.type_name me.type_name subslot
-                               vehicle.name vehicle.vrn ) ],
-             prefetch => [ { 'shift' => 'rota' }, 'vehicle', ] } );
+           { 'columns' => [ 'me.type_name', 'subslot' ],
+             'join'    => [ { 'shift' => 'rota' }, 'vehicle', ],
+             '+select' => [ 'shift.type_name', 'vehicle.name', 'vehicle.vrn' ],
+             '+as'     => [ 'shift_type', 'vehicle_name', 'vehicle_vrn' ] } );
 
       for my $slot (grep { $_->type_name->is_rider } $slots->all) {
-         $slot->shift->type_name eq $shift_type
-            and $slot->vehicle and $slot->vehicle->vrn eq $self->vrn
+         $slot->get_column( 'shift_type' ) eq $shift_type
+            and $slot->get_column( 'vehicle_name' )
+            and $slot->get_column( 'vehicle_vrn'  ) eq $self->vrn
             and throw 'Vehicle [_1] already assigned to slot [_2]',
                       [ $self, $slot->subslot ], level => 2,
                       rv => HTTP_EXPECTATION_FAILED;

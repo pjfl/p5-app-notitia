@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fewer columns on query for assert slot assignment allowed
           - More column renaming
           - Removed more reserved words from column names
 
