@@ -57,11 +57,14 @@ If you don't already have it, bootstrap
    curl -L http://cpanmin.us | perl - --sudo App::cpanminus
 ```
 
-Then install [local::lib](https://metacpan.org/module/local::lib) with:
+What follows are the instructions for a production deployment. If you are
+installing for development purposes skip ahead to Development Installs
+
+Next install [local::lib](https://metacpan.org/module/local::lib) with:
 
 ```shell
-   cpanm --notest --local-lib=~/App-Notitia local::lib && \
-      eval $(perl -I ~/App-Notitia/lib/perl5/ -Mlocal::lib=~/App-Notitia)
+   cpanm --notest --local-lib=~/local local::lib && \
+      eval $(perl -I ~/local/lib/perl5/ -Mlocal::lib=~/local)
 ```
 
 The second statement sets environment variables to include the local
@@ -88,11 +91,31 @@ wait for ack-2.12 to run it's tests.  At the risk of installing broken
 modules (they are only going into a local library) you can skip the
 tests by running `cpanm` with the `--notest` option.
 
-If that fails run it again with the --force option
+If that fails run it again with the `--force` option
 
 ```shell
    cpanm --force git:...
 ```
+
+##### Development Installs
+
+Assuming you have the Perl environment setup correctly, clone
+**App-Notitia** from the repository with
+
+```shell
+   git clone https://github.com/pjfl/p5-app-notitia.git Notitia
+   cd Notitia/
+   cpanm --notest --installdeps .
+```
+
+To install the development toolchain execute
+
+```shell
+   cpanm Dist::Zilla
+   dzil authordeps | cpanm --notest
+```
+
+##### Post Installation
 
 Once installation is complete run the post install
 
@@ -111,7 +134,6 @@ By default the development server will run at:
 the foreground with:
 
 ```shell
-   cd App-Notitia
    plackup bin/notitia-server
 ```
 
