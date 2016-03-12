@@ -357,7 +357,7 @@ sub day_rota : Role(any) {
    for my $slot ($slots->all) {
       my $shift = $slot->shift;
 
-      $rows->{ $shift->type_class.'_'.$slot->type_class.'_'.$slot->subslot }
+      $rows->{ $shift->type_name.'_'.$slot->type_name.'_'.$slot->subslot }
          = { vehicle  => $slot->vehicle,
              operator => $slot->operator,
              bike_req => $slot->bike_requested,

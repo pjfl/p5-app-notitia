@@ -228,7 +228,7 @@ sub claim_slot {
    return $self->result_source->schema->resultset( 'Slot' )->create
       ( { bike_requested => $bike,      operator_id => $self->id,
           shift_id       => $shift->id, subslot     => $subslot,
-          type_class     => $slot_type, } );
+          type_name      => $slot_type, } );
 }
 
 sub deactivate {

@@ -15,24 +15,24 @@ my $slot_join = { 'foreign.shift_id' => 'self.id' };
 $class->table( 'shift' );
 
 $class->add_columns
-   ( id         => serial_data_type,
-     rota_id    => foreign_key_data_type,
-     type_class => enumerated_data_type( SHIFT_TYPE_ENUM, 'day' ), );
+   ( id        => serial_data_type,
+     rota_id   => foreign_key_data_type,
+     type_name => enumerated_data_type( SHIFT_TYPE_ENUM, 'day' ), );
 
 $class->set_primary_key( 'id' );
 
 $class->belongs_to( rota => "${result}::Rota", 'rota_id' );
 
 $class->has_many  ( 'controllers'  => "${result}::Slot", $slot_join,
-                    { where => { 'foreign.type_class' => 'controller' } } );
+                    { where => { 'foreign.type_name' => 'controller' } } );
 $class->has_many  ( 'riders'       => "${result}::Slot", $slot_join,
-                    { where => { 'foreign.type_class' => 'rider' } } );
+                    { where => { 'foreign.type_name' => 'rider' } } );
 $class->might_have( 'spare_driver' => "${result}::Slot", $slot_join,
-                    { where => { 'foreign.type_class' => 'driver' } } );
+                    { where => { 'foreign.type_name' => 'driver' } } );
 
 # Private methods
 sub _as_string {
-   return $_[ 0 ]->type_class;
+   return $_[ 0 ]->type_name;
 }
 
 1;

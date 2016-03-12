@@ -15,7 +15,7 @@ sub find_shift {
    my $rota   = $schema->resultset( 'Rota' )->find_rota( $rota_name, $date );
 
    return $schema->resultset( 'Shift' )->find_or_create
-      ( { rota_id => $rota->id, type_class => $shift_type } );
+      ( { rota_id => $rota->id, type_name => $shift_type } );
 }
 
 sub find_slot {

@@ -11,7 +11,7 @@ use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 sub find_slot_by {
    my ($self, $shift, $slot_type, $subslot) = @_;
 
-   return $self->find( { shift_id => $shift->id, type_class => $slot_type,
+   return $self->find( { shift_id => $shift->id, type_name => $slot_type,
                          subslot  => $subslot } );
 }
 
@@ -21,8 +21,7 @@ sub list_slots_for {
    return $self->search
       ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
         { columns  => [ qw( bike_requested operator.name
-                            type_class vehicle.name subslot ) ],
-          join     => [ { 'shift' => 'rota' }, 'operator', 'vehicle', ],
+                            type_name vehicle.name subslot ) ],
           prefetch => [ { 'shift' => 'rota' }, 'operator', 'vehicle',
                         'personal_vehicles' ] } );
 }
