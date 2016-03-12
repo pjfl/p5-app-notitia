@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added bootstap to installation instructions
           - Added unparticpating event by administrator
           - Fewer columns for day_rota slot query
           - Fewer columns on query for assert slot assignment allowed

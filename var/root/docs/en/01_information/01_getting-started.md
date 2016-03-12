@@ -103,7 +103,7 @@ Once installation is complete run the post install
 When the post install has finished create the database with
 
 ```shell
-   bin/notitia-schema create-schema
+   bin/notitia-schema -o bootstrap=1 create-schema
 ```
 
 This will allow you to edit the credentials that the application will
