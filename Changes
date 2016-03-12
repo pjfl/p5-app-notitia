@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Post install deletes previous database
           - Post install creates database
           - Updated installation instructions
           - Added creating etc directory to post install

@@ -152,6 +152,9 @@ sub post_install : method {
 
       $self->run_cmd
          ( [ $schema, '-o', 'bootstrap=1', 'edit-credentials' ], $opts );
+      $opts->{expected_rv} = 1;
+      $self->run_cmd( [ $schema, 'drop-database' ], $opts );
+      delete $opts->{expected_rv};
       $self->run_cmd( [ $schema, 'create-database' ], $opts );
       $self->run_cmd( [ $schema, 'deploy-and-populate' ], $opts );
    }
