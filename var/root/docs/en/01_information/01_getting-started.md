@@ -100,14 +100,6 @@ Once installation is complete run the post install
    bin/notitia-cli post-install
 ```
 
-When the post install has finished create the database with
-
-```shell
-   bin/notitia-schema -o bootstrap=1 edit-credentials
-   bin/notitia-schema create-database
-   bin/notitia-schema deploy-and-populate
-```
-
 This will allow you to edit the credentials that the application will
 use to connect to the database, it then creates that user and the
 database schema. Next it populates the database with initial data
