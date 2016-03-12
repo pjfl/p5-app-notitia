@@ -32,6 +32,7 @@ my $prereqs  = {
     'Daemon::Control' => '0.001006',
     'Data::Validation' => 'v0.25.0',
     'Email::MIME' => '1.934',
+    'Email::Sender' => '1.300018',
     'Exporter::Tiny' => '0.042',
     'File::DataClass' => 'v0.68.0',
     'HTML::GenerateUtil' => '1.20',

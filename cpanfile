@@ -10,6 +10,7 @@ requires "DBIx::Class::TimeStamp" => "0.14";
 requires "Daemon::Control" => "0.001006";
 requires "Data::Validation" => "v0.25.0";
 requires "Email::MIME" => "1.934";
+requires "Email::Sender" => "1.300018";
 requires "Exporter::Tiny" => "0.042";
 requires "File::DataClass" => "v0.68.0";
 requires "HTML::GenerateUtil" => "1.20";
