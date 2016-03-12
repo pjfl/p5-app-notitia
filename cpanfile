@@ -1,3 +1,4 @@
+requires "App::Ack" => "2.12";
 requires "Class::Null" => "2.110730";
 requires "Class::Usul" => "v0.73.0";
 requires "Cpanel::JSON::XS" => "3.0115";
@@ -7,7 +8,7 @@ requires "DBIx::Class::Helpers" => "2.023005";
 requires "DBIx::Class::InflateColumn::Object::Enum" => "0.04";
 requires "DBIx::Class::TimeStamp" => "0.14";
 requires "Daemon::Control" => "0.001006";
-requires "Data::Validation" => "v0.24.0";
+requires "Data::Validation" => "v0.25.0";
 requires "Email::MIME" => "1.934";
 requires "Exporter::Tiny" => "0.042";
 requires "File::DataClass" => "v0.68.0";

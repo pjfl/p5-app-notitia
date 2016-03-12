@@ -20,6 +20,7 @@ my $prereqs  = {
     'CSS::LESS' => 'v0.0.3'
   },
   'requires' => {
+    'App::Ack' => '2.12',
     'Class::Null' => '2.110730',
     'Class::Usul' => 'v0.73.0',
     'Cpanel::JSON::XS' => '3.0115',
@@ -29,7 +30,7 @@ my $prereqs  = {
     'DBIx::Class::InflateColumn::Object::Enum' => '0.04',
     'DBIx::Class::TimeStamp' => '0.14',
     'Daemon::Control' => '0.001006',
-    'Data::Validation' => 'v0.24.0',
+    'Data::Validation' => 'v0.25.0',
     'Email::MIME' => '1.934',
     'Exporter::Tiny' => '0.042',
     'File::DataClass' => 'v0.68.0',

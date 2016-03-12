@@ -54,6 +54,7 @@ lib/App/Notitia/Schema/Schedule/ResultSet/Endorsement.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Event.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Person.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Rota.pm
+lib/App/Notitia/Schema/Schedule/ResultSet/Slot.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Type.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Vehicle.pm
 lib/App/Notitia/Server.pm
@@ -143,6 +144,9 @@ var/root/templates/hyde/yield-slot.tt
 var/share/App-Notitia-Schema-Schedule-0.1-MySQL.sql
 var/share/App-Notitia-Schema-Schedule-0.1-PostgreSQL.sql
 var/share/App-Notitia-Schema-Schedule-0.1-SQLite.sql
+var/share/App-Notitia-Schema-Schedule-0.2-MySQL.sql
+var/share/App-Notitia-Schema-Schedule-0.2-PostgreSQL.sql
+var/share/App-Notitia-Schema-Schedule-0.2-SQLite.sql
 var/share/App-Notitia-Schema-Schedule-001-Type.json
 var/share/App-Notitia-Schema-Schedule-002-Person.json
 var/share/App-Notitia-Schema-Schedule-003-Role.json
