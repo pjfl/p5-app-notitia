@@ -126,14 +126,13 @@ my $_add_js_dialog = sub {
 my $_vehicle_link = sub {
    my ($self, $req, $page, $args, $value, $action) = @_; my $k = $args->[ 2 ];
 
-   my $path   = "asset/${action}";
-   my $params = { action => $action };
+   my $path = "asset/${action}"; my $params = { action => $action };
 
    $action eq 'unassign' and $params->{vehicle} = $value;
 
-   my $href   = uri_for_action $req, $path, $args, $params;
-   my $tip    = loc $req, "${action}_management_tip";
-   my $js     = $page->{literal_js} //= [];
+   my $href = uri_for_action $req, $path, $args, $params;
+   my $tip  = loc $req, "${action}_management_tip";
+   my $js   = $page->{literal_js} //= [];
 
    push @{ $js }, $self->dialog_anchor( "${action}_${k}", $href, {
       name    => "${action}-vehicle",

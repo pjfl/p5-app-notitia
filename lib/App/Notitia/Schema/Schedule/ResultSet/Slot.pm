@@ -18,12 +18,16 @@ sub find_slot_by {
 sub list_slots_for {
    my ($self, $type_id, $date) = @_;
 
+   my $attr = [ 'operator.first_name', 'operator.id', 'operator.last_name',
+                'operator.name', 'vehicle.name', 'vehicle.vrn' ];
+
    return $self->search
       ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
-        { columns  => [ qw( bike_requested operator.name
-                            type_name vehicle.name subslot ) ],
-          prefetch => [ { 'shift' => 'rota' }, 'operator', 'vehicle',
-                        'personal_vehicles' ] } );
+        { 'columns'  => [ qw( bike_requested type_name subslot ) ],
+          'join'     => [ 'operator', 'vehicle' ],
+          'prefetch' => [ { 'shift' => 'rota' }, 'personal_vehicles' ],
+          '+select'  => $attr,
+          '+as'      => $attr, } );
 }
 
 1;

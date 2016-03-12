@@ -33,6 +33,7 @@ $class->belongs_to( vehicle  => "${result}::Vehicle", 'vehicle_id', $left_join);
 $class->belongs_to( vehicle_assigner => "${result}::Person",
                     'vehicle_assigner_id', $left_join );
 
+# TODO: Rename to operator_vehicles
 $class->has_many  ( personal_vehicles => "${result}::Vehicle",
                     { 'foreign.owner_id' => 'self.operator_id' } );
 
