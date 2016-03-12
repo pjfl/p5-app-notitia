@@ -136,7 +136,7 @@ semantics. Additionally the daemon program will write an init script to
 standard output in response to the command:
 
 ```shell
-   notitia-daemon get_init_file
+   bin/notitia-daemon get-init-file
 ```
 #### Acknowledgements
 

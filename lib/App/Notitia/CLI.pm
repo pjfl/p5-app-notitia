@@ -106,7 +106,7 @@ sub post_install : method {
    my $cmd      = [ $EXECUTABLE_NAME, '-I', "${inc}",
                     "-Mlocal::lib=${localdir}" ];
 
-   for my $dir (qw( logs run session tmp )) {
+   for my $dir (qw( etc logs run session tmp )) {
       my $path = $conf->vardir->catdir( $dir );
 
       $path->exists or $path->mkpath( oct '0770' );

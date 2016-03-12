@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added creating etc directory to post install
           - Added bootstap to installation instructions
           - Added unparticpating event by administrator
           - Fewer columns for day_rota slot query
