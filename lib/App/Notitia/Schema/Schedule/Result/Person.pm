@@ -228,7 +228,7 @@ sub claim_slot {
    return $self->result_source->schema->resultset( 'Slot' )->create
       ( { bike_requested => $bike,      operator_id => $self->id,
           shift_id       => $shift->id, subslot     => $subslot,
-          type           => $slot_type, } );
+          type_class     => $slot_type, } );
 }
 
 sub deactivate {
@@ -294,10 +294,9 @@ sub label {
 }
 
 sub list_roles {
-   my $self = shift;
+   my $self = shift; my $opts = { prefetch => 'type' };
 
-   return [ map { $_->type->name }
-            $self->roles->search( {}, { prefetch => 'type' } )->all ];
+   return [ map { $_->type->name } $self->roles->search( {}, $opts )->all ];
 }
 
 sub set_password {

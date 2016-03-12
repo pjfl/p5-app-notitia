@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -17,6 +17,7 @@ sub env_var {
 # TODO: Vehicle assigning should be moved to Slot to make URI more restful
 # TODO: Add field help tips
 # TODO: Create role for StashHelpers
+# TODO: Endorsement type_codes need similar treatment to event uris
 
 1;
 
@@ -40,7 +41,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 1 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 2 $ of L<App::Notitia>
 
 =head1 Description
 

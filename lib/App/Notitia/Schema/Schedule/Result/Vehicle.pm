@@ -103,13 +103,13 @@ my $_assert_slot_assignment_allowed = sub {
       my $type_id = $self->$_find_rota_type_id_for( $rota_name );
       my $slots   = $schema->resultset( 'Slot' )->search
          ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
-           { columns  => [ qw( shift.type me.type subslot
+           { columns  => [ qw( shift.type_class me.type_class subslot
                                vehicle.name vehicle.vrn ) ],
              join     => [ { 'shift' => 'rota' }, 'vehicle', ],
              prefetch => [ { 'shift' => 'rota' }, 'vehicle', ] } );
 
-      for my $slot (grep { $_->type eq 'rider' } $slots->all) {
-         $slot->shift->type eq $shift_type
+      for my $slot (grep { $_->type_class eq 'rider' } $slots->all) {
+         $slot->shift->type_class eq $shift_type
             and $slot->vehicle and $slot->vehicle->vrn eq $self->vrn
             and throw 'Vehicle [_1] already assigned to slot [_2]',
                       [ $self, $slot->subslot ], level => 2,
@@ -139,13 +139,10 @@ my $_find_slot = sub {
 
 # Public methods
 sub assign_to_event {
-   my ($self, $event_name, $assigner_name) = @_;
+   my ($self, $event_uri, $assigner_name) = @_;
 
    my $schema   = $self->result_source->schema;
-   my $event_rs = $schema->resultset( 'Event' );
-   my $event    = $event_rs->search
-      ( { name => $event_name }, { prefetch => 'rota' } )->single
-      or throw 'Event [_1] is unknown', [ $event_name ];
+   my $event    = $schema->resultset( 'Event' )->find_event_by( $event_uri );
    my $assigner = $self->$_find_assigner( $assigner_name );
 
    $self->$_assert_event_assignment_allowed( $event, $assigner );

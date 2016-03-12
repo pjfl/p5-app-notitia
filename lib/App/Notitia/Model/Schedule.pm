@@ -349,19 +349,15 @@ sub day_rota : Role(any) {
    my $date     = $params->( 1, { optional => TRUE } ) // $today;
    my $type_id  = $self->$_find_rota_type_id_for( $name );
    my $slot_rs  = $self->schema->resultset( 'Slot' );
-   my $slots    = $slot_rs->search
-      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
-        { columns  => [ qw( bike_requested operator.name
-                            type vehicle.name subslot ) ],
-          join     => [ { 'shift' => 'rota' }, 'operator', 'vehicle', ],
-          prefetch => [ { 'shift' => 'rota' }, 'operator', 'vehicle',
-                        'personal_vehicles' ] } );
+   my $slots    = $slot_rs->list_slots_for( $type_id, $date );
    my $event_rs = $self->schema->resultset( 'Event' );
    my $events   = $event_rs->find_event_for( $type_id, $date );
    my $rows     = {};
 
    for my $slot ($slots->all) {
-      $rows->{ $slot->shift->type.'_'.$slot->type.'_'.$slot->subslot }
+      my $shift = $slot->shift;
+
+      $rows->{ $shift->type_class.'_'.$slot->type_class.'_'.$slot->subslot }
          = { vehicle  => $slot->vehicle,
              operator => $slot->operator,
              bike_req => $slot->bike_requested,

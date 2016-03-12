@@ -19,13 +19,13 @@ $class->table( 'slot' );
 $class->add_columns
    ( shift_id            => foreign_key_data_type,
      operator_id         => foreign_key_data_type,
-     type                => enumerated_data_type( SLOT_TYPE_ENUM, 0 ),
+     type_class          => enumerated_data_type( SLOT_TYPE_ENUM, 0 ),
      subslot             => numerical_id_data_type,
      bike_requested      => bool_data_type,
      vehicle_assigner_id => nullable_foreign_key_data_type,
      vehicle_id          => nullable_foreign_key_data_type, );
 
-$class->set_primary_key( 'shift_id', 'type', 'subslot' );
+$class->set_primary_key( 'shift_id', 'type_class', 'subslot' );
 
 $class->belongs_to( shift    => "${result}::Shift",   'shift_id' );
 $class->belongs_to( operator => "${result}::Person",  'operator_id' );
@@ -41,7 +41,7 @@ sub _as_string {
    my $self = shift; my $shift = $self->shift; my $rota = $shift->rota;
 
    return $rota->type.'_'.$rota->date->dmy.'_'.$shift.'_'
-        . $self->type.'_'.$self->subslot;
+        . $self->type_class.'_'.$self->subslot;
 }
 
 1;
