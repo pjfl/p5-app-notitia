@@ -32,8 +32,9 @@ around 'get_stash' => sub {
    my ($orig, $self, $req, @args) = @_;
 
    my $stash = $orig->( $self, $req, @args );
+   my $name  = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
 
-   $stash->{nav} = rota_navigation_links $req, 'main'; # TODO: Naughty
+   $stash->{nav} = rota_navigation_links $req, $name;
 
    return $stash;
 };

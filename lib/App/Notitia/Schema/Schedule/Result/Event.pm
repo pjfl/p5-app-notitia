@@ -98,7 +98,7 @@ sub validation_attributes {
             filters  => 'filterTitleCase',
             validate => 'isMandatory isValidLength isSimpleText' },
          notes       => { validate => 'isValidLength isValidText' },
-         end_time    => { validate => 'isValidLength isMatchingRegex' },
+         start_time  => { validate => 'isValidLength isMatchingRegex' },
       },
       level => 8,
    };

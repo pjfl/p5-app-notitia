@@ -1,5 +1,5 @@
 <!-- Rota Table -->
-<table>
+<table class="standard-table">
 [% FOR event IN page.rota.events -%]
 [%    TableRow( event ) -%]
 [% END -%]

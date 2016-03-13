@@ -18,8 +18,9 @@
       <span class="field-label">[% loc( field.label ) %]</span>
       <input
 [%    IF field.disabled %]disabled="disabled"[% END -%]
-         class="standard-field [% field.class %]" id="[% field.name %]"
-          name="[% field.name %]" type="date" value="[% field.value %]">
+         class="standard-field pick-date [% field.class %]"
+            id="[% field.name %]" name="[% field.name %]"
+         value="[% field.value %]">
       <div class="field-group">
          <span class="hidden" id="[% field.name %]_ajax"></span></div>
    </label>
@@ -75,7 +76,7 @@
    </select>[% IF field.label %]</label>[% END %]
 [% END -%]
 [% MACRO Table( table ) BLOCK -%]
-   <table>
+   <table class="standard-table">
       <tr>
 [% FOR cell IN table.headers -%]
         <th class="[% cell.class %]">[% cell.value %]</th>
@@ -123,7 +124,8 @@
       <span class="field-label">[% loc( field.label ) %]</span>
       <input
 [%    IF field.disabled %]disabled="disabled"[% END -%]
-         class="standard-field [% field.class %]" id="[% field.name %]"
-          name="[% field.name %]" type="time" value="[% field.value %]">
+         class="standard-field pick-time [% field.class %]"
+            id="[% field.name %]" name="[% field.name %]"
+         value="[% field.value %]">
    </label>
 [% END -%]

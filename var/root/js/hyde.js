@@ -28,7 +28,7 @@ var Behaviour = new Class( {
    initialize: function( options ) {
       this.setOptions( options ); this.collection = [];
 
-      this.resize(); this.attach();
+      Locale.use( 'en-GB' ); this.resize(); this.attach();
    },
 
    attach: function() { // Add the event handling
@@ -78,6 +78,7 @@ var Behaviour = new Class( {
          selector       : '.navbar',
          tolerance      : 10 } );
       this.noticeBoard  = new NoticeBoard( { context: this } );
+      this.pickers      = new Pickers( { context: this } );
       this.replacements = new Replacements( { context: this } );
       this.server       = new ServerUtils( {
          context        : this,
