@@ -26,7 +26,6 @@ my $prereqs  = {
     'Cpanel::JSON::XS' => '3.0115',
     'Crypt::Eksblowfish' => '0.009',
     'DBIx::Class' => '0.08204',
-    'DBIx::Class::Helpers' => '2.023005',
     'DBIx::Class::InflateColumn::Object::Enum' => '0.04',
     'DBIx::Class::TimeStamp' => '0.14',
     'Daemon::Control' => '0.001006',

@@ -1,6 +1,6 @@
 <!-- Document Content -->
 <div class="unit four-fifths">
-   <article>
+   <article class="document">
 [% IF page.editing -%]
 [%    INCLUDE 'hyde/editor.tt' -%]
 [% ELSE -%]

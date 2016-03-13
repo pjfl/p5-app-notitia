@@ -192,6 +192,9 @@ footer {
    padding: 3.25px 0.75em; vertical-align: middle;
 }
 .pathname[disabled], .standard-field[disabled] { background-color: @subtle; }
+.standard-field[type=date], .standard-field[type=time] {
+   padding-bottom: 0; padding-top: 0;
+}
 .required { border-right: 3px solid @divider; }
 .skinny { display: inline-block; max-width: 566px; overflow: hidden; }
 .upload-file { margin: 0.25em 0; overflow: hidden; position: relative; }
@@ -528,6 +531,9 @@ strong { font-weight: 700; }
 .align-center { text-align: center; }
 .align-left { text-align: left; }
 .align-right { text-align: right; }
+.document {
+   pre, code { font-size: 0.875em; }
+}
 .expanding_area {
    .border-radius;
    display: inline-block; margin: 0; overflow: hidden;
@@ -552,7 +558,6 @@ strong { font-weight: 700; }
 article {
    h2, h3, h4, h5, h6 { margin: 0 0 0.5em 0; }
    h4 { color: @brighter; }
-   pre, code { font-size: 0.875em; }
    ul { list-style-position: inside; }
    ul li {
       p { margin: 0; }

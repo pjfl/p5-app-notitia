@@ -97,7 +97,7 @@ If that fails run it again with the `--force` option
    cpanm --force git:...
 ```
 
-##### Development Installs
+#### Development Installs
 
 Assuming you have the Perl environment setup correctly, clone
 **App-Notitia** from the repository with
@@ -115,7 +115,7 @@ To install the development toolchain execute
    dzil authordeps | cpanm --notest
 ```
 
-##### Post Installation
+#### Post Installation
 
 Once installation is complete run the post install
 

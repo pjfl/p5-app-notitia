@@ -4,7 +4,6 @@ requires "Class::Usul" => "v0.73.0";
 requires "Cpanel::JSON::XS" => "3.0115";
 requires "Crypt::Eksblowfish" => "0.009";
 requires "DBIx::Class" => "0.08204";
-requires "DBIx::Class::Helpers" => "2.023005";
 requires "DBIx::Class::InflateColumn::Object::Enum" => "0.04";
 requires "DBIx::Class::TimeStamp" => "0.14";
 requires "Daemon::Control" => "0.001006";

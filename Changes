@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixed display heights of textarea, dates and times
           - Moved assignment_slots query to Slot resultset
           - Disabled unecessary JS
           - Post install deletes previous database
