@@ -96,15 +96,21 @@ my $_bind_endorsement_fields = sub {
    return $self->bind_fields( $blot, $map, 'Endorsement' );
 };
 
+my $_find_endorsement_by = sub {
+   my ($self, @args) = @_; my $schema = $self->schema;
+
+   return $schema->resultset( 'Endorsement' )->find_endorsement_by( @args );
+};
+
 my $_maybe_find_endorsement = sub {
-   return $_[ 2 ] ? $_[ 0 ]->find_endorsement_by( $_[ 1 ], $_[ 2 ] )
+   return $_[ 2 ] ? $_[ 0 ]->$_find_endorsement_by( $_[ 1 ], $_[ 2 ] )
                   : Class::Null->new;
 };
 
 my $_update_endorsement_from_request = sub {
-   my ($self, $req, $blot) = @_; my $params = $req->body_params;
+   my ($self, $req, $blot) = @_;
 
-   my $opts = { optional => TRUE };
+   my $params = $req->body_params; my $opts = { optional => TRUE };
 
    for my $attr (qw( type_code endorsed notes points )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
@@ -137,18 +143,17 @@ sub endorsement : Role(person_manager) {
       template    => [ 'contents', 'endorsement' ],
       title       => loc( $req, 'endorsement_management_heading' ), };
    my $fields     =  $page->{fields};
-   my $args       =  [ $name ];
+   my $args       =  $code ? [ $name, $code ] : [ $name ];
 
    if ($code) {
-      $args = [ $name, $code ];
       $fields->{type_code}->{disabled} = TRUE;
-      $fields->{delete   } = delete_button( $req, $code, 'endorsement' );
+      $fields->{delete   } = delete_button $req, $code, 'endorsement';
    }
    else {
-      $fields->{endorsed} = bind( 'endorsed', time2str '%Y-%m-%d' );
+      $fields->{endorsed } = bind 'endorsed', time2str '%Y-%m-%d';
    }
 
-   $fields->{save} = save_button( $req, $code, 'endorsement' );
+   $fields->{save} = save_button $req, $code, 'endorsement';
    $fields->{href} = uri_for_action $req, 'blots/endorsement', $args;
 
    return $self->get_stash( $req, $page );
@@ -189,7 +194,7 @@ sub create_endorsement_action : Role(person_manager) {
    $self->$_update_endorsement_from_request( $req, $blot ); $blot->insert;
 
    my $action   = $self->moniker.'/endorsements';
-   my $location = uri_for_action( $req, $action, [ $name ] );
+   my $location = uri_for_action $req, $action, [ $name ];
    my $message  = [ 'Endorsement [_1] for [_2] added by [_3]',
                     $blot->type_code, $name, $req->username ];
 
@@ -201,19 +206,13 @@ sub delete_endorsement_action : Role(person_manager) {
 
    my $name     = $req->uri_params->( 0 );
    my $code     = $req->uri_params->( 1 );
-   my $blot     = $self->find_endorsement_by( $name, $code ); $blot->delete;
+   my $blot     = $self->$_find_endorsement_by( $name, $code ); $blot->delete;
    my $action   = $self->moniker.'/endorsements';
-   my $location = uri_for_action( $req, $action, [ $name ] );
+   my $location = uri_for_action $req, $action, [ $name ];
    my $message  = [ 'Endorsement [_1] for [_2] deleted by [_3]',
                     $code, $name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
-}
-
-sub find_endorsement_by {
-   my $self = shift; my $rs = $self->schema->resultset( 'Endorsement' );
-
-   return $rs->find_endorsement_by( @_ );
 }
 
 sub update_endorsement_action : Role(person_manager) {
@@ -221,7 +220,7 @@ sub update_endorsement_action : Role(person_manager) {
 
    my $name = $req->uri_params->( 0 );
    my $code = $req->uri_params->( 1 );
-   my $blot = $self->find_endorsement_by( $name, $code );
+   my $blot = $self->$_find_endorsement_by( $name, $code );
 
    $self->$_update_endorsement_from_request( $req, $blot ); $blot->update;
 

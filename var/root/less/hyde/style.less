@@ -127,14 +127,13 @@ footer {
 }
 /* Icons */
 .checkbox {
-   background: url(../img/icons.png) -90px -300px no-repeat;
-   background-clip: content-box; background-origin: content-box;
-   .box-sizing(content-box); cursor: pointer;
-   display: inline-block; height: 20px; margin: 0; padding: 0;
-   width: 18px;
+   background: url(../img/icons.png) -90px -304px no-repeat;
+   border: 2px solid transparent; .box-sizing(content-box); cursor: pointer;
+   display: inline-block; height: 25px; margin: 0; padding: 3.25px 0;
+   width: 25px;
 }
 .checked  {
-   background: url(../img/icons.png) -120px -293px no-repeat transparent;
+   background: url(../img/icons.png) -120px -304px no-repeat transparent;
 }
 .close-icon {
    background: url(../img/icons.png) no-repeat -180px -330px; cursor: pointer;
@@ -576,6 +575,8 @@ blockquote {
    border-left: 2px solid #777; font-size: 18px; font-style: italic;
    font-weight: 500; padding-left: 20px;
 }
+button.table-link { color: @contrast; }
+button.table-link:hover { text-decoration: underline; }
 h5, h6 {
    font-size: 1em;
    font-style: italic;
