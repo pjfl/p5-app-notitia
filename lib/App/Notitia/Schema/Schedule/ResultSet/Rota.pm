@@ -11,9 +11,8 @@ sub find_rota {
 
    my $schema     =  $self->result_source->schema;
    my $rota_type  =  $schema->resultset( 'Type' )->find_rota_by( $name );
-   my $dtp        =  $schema->storage->datetime_parser;
    my $rota       =  $self->search
-      ( { date    => $dtp->format_datetime( str2date_time $date, 'GMT' ),
+      ( { date    => $schema->format_datetime( str2date_time $date, 'GMT' ),
           type_id => $rota_type->id } )->single;
 
    $rota or $rota =  $self->create

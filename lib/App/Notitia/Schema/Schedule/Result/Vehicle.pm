@@ -50,8 +50,7 @@ my $_assert_event_assignment_allowed = sub {
    $assigner->assert_member_of( 'asset_manager' );
 
    my $schema     = $self->result_source->schema;
-   my $dtp        = $schema->storage->datetime_parser;
-   my $event_date = $dtp->format_datetime( $event->rota->date );
+   my $event_date = $schema->format_datetime( $event->rota->date );
    my $event_rs   = $schema->resultset( 'Event' );
    my $rota_rs    = $schema->resultset( 'Rota'  );
 
@@ -101,14 +100,9 @@ my $_assert_slot_assignment_allowed = sub {
       and throw 'Vehicle [_1] is not a bike and one was requested', [ $self ];
 
    if ($slot_type eq 'rider') {
-      my $schema  = $self->result_source->schema;
-      my $type_id = $self->$_find_rota_type_id_for( $rota_name );
-      my $slots   = $schema->resultset( 'Slot' )->search
-         ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
-           { 'columns' => [ 'me.type_name', 'subslot' ],
-             'join'    => [ { 'shift' => 'rota' }, 'vehicle', ],
-             '+select' => [ 'shift.type_name', 'vehicle.name', 'vehicle.vrn' ],
-             '+as'     => [ 'shift_type', 'vehicle_name', 'vehicle_vrn' ] } );
+      my $type_id  = $self->$_find_rota_type_id_for( $rota_name );
+      my $slots_rs = $self->result_source->schema->resultset( 'Slot' );
+      my $slots    = $slots_rs->assignment_slots( $type_id, $date );
 
       for my $slot (grep { $_->type_name->is_rider } $slots->all) {
          $slot->get_column( 'shift_type' ) eq $shift_type

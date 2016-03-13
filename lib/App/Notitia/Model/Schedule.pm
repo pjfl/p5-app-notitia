@@ -80,7 +80,7 @@ my $_operators_vehicle = sub {
    exists $cache->{ $slot->operator->id }
       and return $cache->{ $slot->operator->id };
 
-   my $pv      = $slot->personal_vehicles->first;
+   my $pv      = ($slot->personal_vehicles->all)[ 0 ];
    my $pv_type = $pv ? $pv->type : NUL;
    my $label   = $pv_type eq '4x4' ? $pv_type
                : $pv_type eq 'car' ? ucfirst( $pv_type ) : undef;

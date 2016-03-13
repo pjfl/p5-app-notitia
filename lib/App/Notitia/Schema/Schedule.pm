@@ -25,6 +25,18 @@ sub ddl_filename {
     return catfile( $dir, "${filename}-${version}-${type}.sql" );
 }
 
+sub datetime_parser {
+   return shift->storage->datetime_parser;
+}
+
+sub parse_datetime {
+   return shift->datetime_parser->parse_datetime( @_ );
+}
+
+sub format_datetime {
+   return shift->datetime_parser->format_datetime( @_ );
+}
+
 1;
 
 __END__

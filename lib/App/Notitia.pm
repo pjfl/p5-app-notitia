@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 16 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 17 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -10,13 +10,11 @@ sub env_var {
    return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
 }
 
-# TODO: Either use DBIC::Helpers or drop as a dependency
 # TODO: Oh god, Microsoft and their fucking excuse for a browser
 # TODO: Datepicker.js shim for Explorer *and* Failfox
 # TODO: Determine how to request a vehicle for an event
 # TODO: Vehicle assigning should be moved to Slot to make URI more restful
 # TODO: Add field help tips
-# TODO: Create role for StashHelpers
 # TODO: Endorsement type_codes need similar treatment to event uris
 
 1;
@@ -41,7 +39,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 16 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 17 $ of L<App::Notitia>
 
 =head1 Description
 

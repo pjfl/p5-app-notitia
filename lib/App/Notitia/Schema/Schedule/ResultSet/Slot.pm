@@ -30,6 +30,21 @@ sub list_slots_for {
           '+as'      => $attr, } );
 }
 
+sub assignment_slots {
+   my ($self, $type_id, $date) = @_;
+
+   return $self->search
+      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
+        { 'columns' => [ $self->me( 'type_name' ), 'subslot' ],
+          'join'    => [ { 'shift' => 'rota' }, 'vehicle', ],
+          '+select' => [ 'shift.type_name', 'vehicle.name', 'vehicle.vrn' ],
+          '+as'     => [ 'shift_type', 'vehicle_name', 'vehicle_vrn' ] } );
+}
+
+sub me {
+   return join '.', $_[ 0 ]->current_source_alias, $_[ 1 ] // NUL;
+}
+
 1;
 
 __END__
