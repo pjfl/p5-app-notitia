@@ -22,7 +22,7 @@ var Behaviour = new Class( {
       popup          : false,
       statusUpdPeriod: 4320,
       target         : null,
-      useCodeMirror  : true
+      useCodeMirror  : false
    },
 
    initialize: function( options ) {
@@ -32,39 +32,7 @@ var Behaviour = new Class( {
    },
 
    attach: function() { // Add the event handling
-      var cblocks, el, opt = this.options, prefs;
-
-      if ((prefs = document.forms[ 'preferences' ])
-          && (cblocks = $( prefs.code_blocks ))) {
-         this.setCodeBlockClass( cblocks.value );
-
-         if (prefs.mode && prefs.mode.value == 'static') {
-            cblocks.addEvent( 'change', function( ev ) {
-               ev.stop(); this.setCodeBlockClass( cblocks.value );
-            }.bind( this ) );
-         }
-         else {
-            cblocks.addEvent( 'change', function( ev ) {
-               ev.stop(); prefs.submit();
-            } );
-         }
-      }
-
-      $$( '.aj-nav' ).each( function( el ) {
-         el.addEvent( 'click', function( ev ) {
-            ev.stop(); var parent = this.getParent();
-
-            parent.getParent().getSiblings().getElements( 'ul' )
-                  .each( function( list ) { list.dissolve() } );
-            parent.getNext().reveal();
-         } );
-      } );
-
-      if (el = $( 'menu-spinner-button' )) {
-         el.addEvent( 'click', function( ev ) {
-            ev.stop(); $( 'sub-nav-collapse' ).toggle();
-         } );
-      }
+      var opt = this.options;
 
       window.addEvent( 'load', function() {
          this.load( opt.firstField ) }.bind( this ) );
@@ -115,7 +83,6 @@ var Behaviour = new Class( {
          context        : this,
          url            : opt.baseURL } );
       this.togglers     = new Togglers( { context: this } );
-      this.linkFade     = new LinkFader( { context: this } );
       this.tips         = new Tips( {
          context        : this,
          onHide         : function() { this.fx.start( 0 ) },
@@ -134,7 +101,7 @@ var Behaviour = new Class( {
 
       if (opt.message) this.noticeBoard.create( opt.message );
 
-      if (opt.statusUpdPeriod && !opt.popup)
+      if (opt.statusUpdPeriod && opt.popup)
          this.statusUpdater.periodical( opt.statusUpdPeriod, this );
 
       if (first_field && (el = $( first_field ))) el.focus();

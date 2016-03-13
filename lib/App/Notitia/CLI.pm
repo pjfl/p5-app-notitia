@@ -138,7 +138,7 @@ sub post_install : method {
    }
 
    if ($localdir->exists) {
-      my $inc = $localdir->catdir( 'lib', 'perl5'   );
+      my $inc = $localdir->catdir( 'lib', 'perl5' );
       my $cmd = [ $EXECUTABLE_NAME, '-I', "${inc}", "-Mlocal::lib=${localdir}"];
       my $profile = $localdir->catdir( qw( var etc profile ) );
 
@@ -148,7 +148,7 @@ sub post_install : method {
    my $schema = $conf->binsdir->catfile( 'notitia-schema' );
 
    if ($schema->exists) {
-      my $opts = { in => 'stdin', out => 'stdout' };
+      my $opts = { err => 'stderr', in => 'stdin', out => 'stdout' };
 
       $self->run_cmd
          ( [ $schema, '-o', 'bootstrap=1', 'edit-credentials' ], $opts );

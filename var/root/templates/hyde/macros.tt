@@ -67,7 +67,7 @@
       <select class="standard-field [% field.class %]" name="[% field.name %]"
 [%    IF field.multiple %]multiple="multiple" size="[% field.size %]" [% END -%]
 [%    IF field.onchange -%]
-         onchange="if (this.value) window.location.href=this.value"[% END %]>
+         onchange="if (this.value) window.location.href=this.value"[% END -%]>
 [%    FOR option IN field.value -%]
          <option [% IF option.selected %]selected="selected" [% END -%]
              value="[% option.value %]">[% loc( option.label ) %]</option>
