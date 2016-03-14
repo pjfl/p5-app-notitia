@@ -65,7 +65,7 @@ sub insert {
 }
 
 sub label {
-   return $_[ 0 ]->name.' ('.$_[ 0 ]->rota->date->dmy.')';
+   return $_[ 0 ]->name.' ('.$_[ 0 ]->rota->date->dmy( '/' ).')';
 }
 
 sub update {

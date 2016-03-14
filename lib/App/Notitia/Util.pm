@@ -9,6 +9,7 @@ use Class::Usul::Functions     qw( class2appdir create_token find_apphome
                                    is_hashref is_member throw );
 use Class::Usul::Time          qw( str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
+use DateTime                   qw( );
 use Scalar::Util               qw( blessed weaken );
 use YAML::Tiny;
 
@@ -115,24 +116,28 @@ my $l1_nav_link = sub {
 
 # Public functions
 sub admin_navigation_links ($) {
-   my $req = shift;
+   my $req = shift; my $now = DateTime->now;
 
    return [ $nav_folder->( $req, 'events' ),
-            $l1_nav_link->( $req, 'events_list', 'event/events',   [] ),
+            $l1_nav_link->( $req, 'events_list', 'event/events', [] ),
+            $l1_nav_link->( $req, 'current_events', 'event/events', [],
+                            after => $now->clone->subtract( days => 1 )->ymd ),
+            $l1_nav_link->( $req, 'previous_events', 'event/events', [],
+                            before => $now->ymd ),
             $nav_folder->( $req, 'people' ),
-            $l1_nav_link->( $req, 'people_list', 'admin/people',   [] ),
-            $l1_nav_link->( $req, 'bike_rider_list',
-                            'admin/people', [], role => 'bike_rider' ),
-            $l1_nav_link->( $req, 'controller_list',
-                            'admin/people', [], role => 'controller' ),
-            $l1_nav_link->( $req, 'driver_list',
-                            'admin/people', [], role => 'driver' ),
-            $l1_nav_link->( $req, 'fund_raiser_list',
-                            'admin/people', [], role => 'fund_raiser' ),
+            $l1_nav_link->( $req, 'people_list', 'admin/people', [] ),
+            $l1_nav_link->( $req, 'bike_rider_list', 'admin/people', [],
+                            role => 'bike_rider' ),
+            $l1_nav_link->( $req, 'controller_list', 'admin/people', [],
+                            role => 'controller' ),
+            $l1_nav_link->( $req, 'driver_list', 'admin/people', [],
+                            role => 'driver' ),
+            $l1_nav_link->( $req, 'fund_raiser_list', 'admin/people', [],
+                            role => 'fund_raiser' ),
             $nav_folder->( $req, 'vehicles' ),
             $l1_nav_link->( $req, 'vehicles_list', 'asset/vehicles', [] ),
-            $l1_nav_link->( $req, 'bike_list',
-                            'asset/vehicles', [], type => 'bike' ),
+            $l1_nav_link->( $req, 'bike_list', 'asset/vehicles', [],
+                            type => 'bike' ),
             ];
 }
 
@@ -143,7 +148,7 @@ sub bind ($;$$) {
    my $params = { label => $name, name => $name }; my $class;
 
    if (defined $v and $class = blessed $v and $class eq 'DateTime') {
-      $params->{value} = $v->ymd;
+      $params->{value} = $v->dmy( '/' );
    }
    elsif (is_arrayref $v) {
       $params->{value} = [ map { $bind_option->( $_, $opts ) } @{ $v } ];
@@ -415,14 +420,14 @@ sub management_button ($$$;$) {
                   hint  => loc( $req, 'Hint' ),
                   href  => $href,
                   name  => "${name}-${action}",
-                  tip   => loc( $req, "${action}_management_tip" ),
+                  tip   => loc( $req, "${action}_management_tip", @{ $args } ),
                   type  => $type,
                   value => loc( $req, "${action}_management_link" ), };
 
    if ($type eq 'form_button') {
       $button->{action   } = "${name}_${action}";
       $button->{form_name} = "${name}-${action}";
-      $button->{tip      } = loc( $req, "${name}_${action}_tip", $args->[ 0 ] );
+      $button->{tip      } = loc( $req, "${name}_${action}_tip", @{ $args } );
       $button->{value    } = loc( $req, "${name}_${action}_link" );
    }
 

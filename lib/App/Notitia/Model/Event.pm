@@ -8,7 +8,7 @@ use App::Notitia::Util      qw( admin_navigation_links bind create_button
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
-use Class::Usul::Time       qw( time2str );
+use Class::Usul::Time       qw( str2date_time time2str );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -206,14 +206,14 @@ my $_write_blog_post = sub {
 sub create_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $date     =  $req->body_params->( 'event_date' );
+   my $date     =  str2date_time $req->body_params->( 'event_date' ), 'GMT';
    my $event    =  $self->schema->resultset( 'Event' )->new_result
       ( { rota  => 'main', # TODO: Naughty
-          date  => $date,
+          date  => $date->ymd,
           owner => $req->username, } );
 
    $self->$_update_event_from_request( $req, $event ); $event->insert;
-   $self->$_write_blog_post( $req, $event, $date );
+   $self->$_write_blog_post( $req, $event, $date->ymd );
 
    my $actionp  = $self->moniker.'/event';
    my $location = uri_for_action $req, $actionp, [ $event->uri ];
@@ -258,7 +258,7 @@ sub event : Role(event_manager) {
       $fields->{href  } = uri_for_action $req, $actionp, [ $uri ];
       $fields->{owner } = $self->$_select_owner_list( $event );
    }
-   else { $fields->{date} = bind 'event_date', time2str '%Y-%m-%d' }
+   else { $fields->{date} = bind 'event_date', time2str '%d/%m/%Y' }
 
    $fields->{save} = save_button $req, $uri, 'event';
 
@@ -278,10 +278,13 @@ sub events : Role(any) {
       title      => loc( $req, 'events_management_heading' ), };
    my $event_rs  =  $self->schema->resultset( 'Event' );
    my $rows      =  $page->{fields}->{rows};
+   my $params    =  $req->query_params;
+   my $opts      =  { after  => $params->( 'after',  { optional => TRUE } ),
+                      before => $params->( 'before', { optional => TRUE } ), };
 
-   for my $event (@{ $event_rs->list_all_events( { order_by => 'date' } ) }) {
+   for my $event (@{ $event_rs->list_all_events( $opts ) }) {
       push @{ $rows },
-         [ { value => $event->[ 0 ] }, $self->$_event_links( $req, $event ) ];
+         [  { value => $event->[ 0 ] }, $self->$_event_links( $req, $event ) ];
    }
 
    return $self->get_stash( $req, $page );

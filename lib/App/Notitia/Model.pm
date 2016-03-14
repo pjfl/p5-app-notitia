@@ -135,12 +135,14 @@ sub exception_handler {
       return { redirect => { location => $location, message => [ $summary ] } };
    }
 
+   my $opts  = { params => [ $req->username ], no_quote_bind_values => TRUE };
+   my $title = $req->loc( 'Exception Handler', $opts );
    my $page  = { error    => $e,
                  leader   => $leader,
                  message  => $message,
                  summary  => $summary,
                  template => [ 'contents', 'exception' ],
-                 title    => $req->loc( 'Exception Handler' ) };
+                 title    => $title, };
 
    $e->class eq ValidationErrors->() and $page->{validation_error} = $e->args;
 

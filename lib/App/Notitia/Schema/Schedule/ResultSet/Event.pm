@@ -5,10 +5,11 @@ use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions  qw( throw );
+use Class::Usul::Time       qw( str2date_time );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Private functions
-my $_event_tuple = sub {
+my $_field_tuple = sub {
    my ($event, $opts) = @_; $opts = { %{ $opts // {} } };
 
    $opts->{selected} //= NUL;
@@ -66,14 +67,31 @@ sub find_event_for {
 }
 
 sub list_all_events {
-   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
+   my ($self, $opts) = @_; my $where = {};
+
+   $opts = { %{ $opts // {} } }; $opts->{order_by} //= { -desc => 'date' };
+
+   my $parser = $self->result_source->schema->datetime_parser;
+
+   my $after  = delete $opts->{after}; my $before = delete $opts->{before};
+
+   if ($after) {
+      my $date = $parser->format_datetime( str2date_time( $after, 'GMT' ) );
+
+      $where = { 'rota.date' => { '>' => $date } };
+   }
+   elsif ($before) {
+      my $date = $parser->format_datetime( str2date_time( $before, 'GMT' ) );
+
+      $where = { 'rota.date' => { '<' => $date } };
+   }
 
    my $fields = delete $opts->{fields} // {};
    my $events = $self->search
-      ( {}, { columns  => [ 'name', 'uri' ],
-              prefetch => [ 'rota' ], %{ $opts } } );
+      ( $where, { columns  => [ 'name', 'uri' ],
+                  prefetch => [ 'rota' ], %{ $opts } } );
 
-   return [ map { $_event_tuple->( $_, $fields ) } $events->all ];
+   return [ map { $_field_tuple->( $_, $fields ) } $events->all ];
 }
 
 1;

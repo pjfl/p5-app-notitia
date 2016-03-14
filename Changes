@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Can list current and previous events
           - Fixed kerning on checkbox replacement images
           - Replaced HTML5 date / time inputs with JS :-(
           - Fixed display heights of textarea, dates and times

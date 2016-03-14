@@ -118,7 +118,7 @@ msgid "certifications_management_link"
 msgstr "Certs"
 
 msgid "certifications_management_tip"
-msgstr "Administer 'certification' records"
+msgstr "Administer certification records for [_1]"
 
 msgid "certs_heading_0"
 msgstr "Certification"
@@ -155,6 +155,12 @@ msgstr "Create"
 
 msgid "create_tip"
 msgstr "Create a new [_1] record"
+
+msgid "current_events_link"
+msgstr "Current Events"
+
+msgid "current_events_tip"
+msgstr "List current and future events"
 
 msgid "day_controller_0"
 msgstr "Ctrl. AM"
@@ -217,7 +223,7 @@ msgid "endorsements_management_link"
 msgstr "Tickets"
 
 msgid "endorsements_management_tip"
-msgstr "Administer 'endorsement' records"
+msgstr "Administer endorsement records for [_1]"
 
 msgid "event_blog_link"
 msgstr "Follow this [link]([_1]) to participate in the event"
@@ -241,7 +247,7 @@ msgid "event_management_link"
 msgstr "Edit"
 
 msgid "event_management_tip"
-msgstr "Edit the event details"
+msgstr "Edit the [_1] event details"
 
 msgid "event_manager"
 msgstr "Event Manager"
@@ -274,7 +280,7 @@ msgid "events_management_heading"
 msgstr "Events"
 
 msgid "Exception Handler"
-msgstr "I'm sorry Dave, I can't do that"
+msgstr "I'm sorry [_1], I can't do that"
 
 msgid "first_name"
 msgstr "First Name"
@@ -402,6 +408,9 @@ msgstr "Participents"
 msgid "participents_management_link"
 msgstr "Participents"
 
+msgid "participents_management_tip"
+msgstr "View the participents in the [_1] event"
+
 msgid "participents_heading_0"
 msgstr "People"
 
@@ -454,7 +463,7 @@ msgid "person_management_link"
 msgstr "Edit"
 
 msgid "person_management_tip"
-msgstr "Administer 'person' records"
+msgstr "Administer person record for [_1]"
 
 msgid "person_manager"
 msgstr "Person Manager"
@@ -470,6 +479,12 @@ msgstr "Points"
 
 msgid "postcode"
 msgstr "Postcode"
+
+msgid "previous_events_link"
+msgstr "Previous Events"
+
+msgid "previous_events_tip"
+msgstr "List previous events"
 
 msgid "remove_role"
 msgstr "Remove Role"
@@ -490,7 +505,7 @@ msgid "role_management_link"
 msgstr "Roles"
 
 msgid "role_management_tip"
-msgstr "Add and remove roles for this person"
+msgstr "Add and remove roles for [_1]"
 
 msgid "roles"
 msgstr "Roles"
@@ -526,7 +541,7 @@ msgid "summary_management_link"
 msgstr "View"
 
 msgid "summary_management_tip"
-msgstr "View the event summary and participte"
+msgstr "View the summary for the [_1] event and participte"
 
 msgid "trailer"
 msgstr "Trailer"
