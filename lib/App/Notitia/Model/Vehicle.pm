@@ -46,11 +46,12 @@ my $_vehicle_links_cache = {};
 my $_confirm_vehicle_button = sub {
    my ($req, $action) = @_;
 
-   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
-           . loc( $req, "confirm_${action}_tip", [ 'vehicle' ] );
+   my $tip   = loc( $req, 'Hint' ).SPC.TILDE.SPC
+             . loc( $req, "confirm_${action}_tip", [ 'vehicle' ] );
+   my $value = "${action}_vehicle";
 
    # Have left tip off as too noisey
-   return { class => 'right', label => 'confirm', value => "${action}_vehicle"};
+   return { class => 'right-last', label => 'confirm', value => $value };
 };
 
 my $_vehicles_headers = sub {
@@ -209,7 +210,8 @@ sub assign : Role(asset_manager) {
       my $rs     = $self->schema->resultset( 'Vehicle' );
       my $values = [ [ NUL, NUL ], @{ $rs->list_vehicles_by_type( 'bike' ) } ];
 
-      $fields->{vehicle } = bind 'vehicle', $values, { label => NUL };
+      $fields->{vehicle }
+         = bind 'vehicle', $values, { class => 'right-last', label => NUL };
       $page->{literal_js} = set_element_focus 'assign-vehicle', 'vehicle';
    }
    else {

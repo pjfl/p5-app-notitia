@@ -1,12 +1,12 @@
 <!-- Upload File -->
-<form action="[% uri_for_action( 'docs/upload' ) %]" class="skinny"
+<form action="[% uri_for_action( 'docs/upload' ) %]" class="standard-form"
      enctype="multipart/form-data" method="post" name="upload-file">
    <input class="pathname" disabled="disabled"
-             id="upload-path" placeholder="Choose File">
+             id="upload-path" placeholder="Choose File"><br/>
    <div class="upload-file button">
       <span>[% loc( 'Browse' ) %]</span><br>
       <input class="upload" id="upload-btn" name="file" type="file">
    </div>
-   <button class="button" name="_method" type="submit"
+   <button class="button right-last" name="_method" type="submit"
            value="upload_file">[% loc( 'Upload' ) %]</button>
 </form>

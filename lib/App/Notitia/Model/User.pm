@@ -81,7 +81,8 @@ sub change_password : Role(anon) {
          password => bind( 'password', NUL, { autocomplete => 'off',
                                               class => 'reveal',
                                               label => 'new_password' } ),
-         update   => bind( 'update', 'change_password', { class => 'right' } ),
+         update   => bind( 'update', 'change_password',
+                           { class => 'right-last' } ),
          username => bind( 'username', $name ), },
       literal_js  =>
          [ "   behaviour.config.inputs[ 'again' ]",
@@ -137,7 +138,7 @@ sub index : Role(anon) {
 
    $fields->{password} = bind 'password', NUL;
    $fields->{username} = bind 'username', $req->username;
-   $fields->{login   } = bind 'login',    'login', { class => 'right' };
+   $fields->{login   } = bind 'login',    'login', { class => 'right-last' };
 
    return $self->get_stash( $req, $page );
 }
@@ -190,7 +191,7 @@ sub profile : Role(any) {
    $fields->{mobile_phone } = bind 'mobile_phone',  $person->mobile_phone;
    $fields->{postcode     } = bind 'postcode',      $person->postcode;
    $fields->{update       } = bind 'update', 'update_profile',
-                                    { class => 'right' };
+                                    { class => 'right-last' };
    $fields->{username     } = bind 'username',      $person->name,
                                     { disabled => TRUE };
    $page->{literal_js     } = set_element_focus 'profile-user', 'address';

@@ -1,6 +1,6 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Unassign Vehicle -->
-<form action="[% page.fields.href %]" class="skinny"
+<form action="[% page.fields.href %]"
      enctype="application/x-www-form-urlencoded"
       method="post" name="assign-vehicle">
 [% HiddenField( page.fields.vehicle ) -%]

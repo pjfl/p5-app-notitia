@@ -1,6 +1,6 @@
 <!-- Macros -->
 [% MACRO Button( field ) BLOCK -%]
-[%    IF field.tip %]<span class="tips [% field.container_class %]"
+[%    IF field.tip %]<span class="button-help [% field.container_class %] tips"
                            title="[% field.tip %]">[% END -%]
       <button class="button [% field.class %]" name="_method" type="submit"
               value="[% field.value %]">[% loc( field.label ) %]</button>
@@ -11,7 +11,7 @@
       <span class="field-label">[% loc( field.label ) %]</span>
       <input [% IF field.checked %]checked="checked"[% END %]
          name="[% field.name %]" type="checkbox" value="[% field.value %]">
-   </label>[% IF !field.nobreak %]<br/>[% END %]
+   </label>
 [% END -%]
 [% MACRO DateField( field ) BLOCK -%]
    <label class="label">
@@ -21,6 +21,10 @@
          class="standard-field pick-date [% field.class %]"
             id="[% field.name %]" name="[% field.name %]"
          value="[% field.value %]">
+[%    IF field.tip -%]
+      <span class="field-help [% field.container_class %] tips"
+            title="[% field.tip %]">&dagger;</span>
+[%    END -%]
       <div class="field-group">
          <span class="hidden" id="[% field.name %]_ajax"></span></div>
    </label>
@@ -37,7 +41,7 @@
 [% MACRO FormWithButton( href, class, content, form, tip, id, value ) BLOCK -%]
    <form action="[% href %]" enctype="application/x-www-form-urlencoded"
          method="post" name="[% form %]">
-      <span class="tips" title="[% page.hint _ ' ~ ' _ tip %]">
+      <span class="button-help tips" title="[% page.hint _ ' ~ ' _ tip %]">
          <button class="[% class %]" id="[% id %]" name="_method"
             type="submit" value="[% value %]">[% content %]</button></span>
    </form>
@@ -50,17 +54,22 @@
          id="[% id %]"[% END %]>[% content %]</a>
 [% END -%]
 [% MACRO LinkWithTips( href, class, content, title, tip, id ) BLOCK -%]
-   <span class="tips" title="[% title _ ' ~ ' _ tip %]">
+   <span class="link-help tips" title="[% title _ ' ~ ' _ tip %]">
 [%    Link( href, class, content, id ) -%]
    </span>
 [% END -%]
 [% MACRO PasswordField( field ) BLOCK -%]
    <label class="label">
       <span class="field-label">[% loc( field.label ) %]</span>
-   <input
+      <input
 [%    IF field.autocomplete %]autocomplete="[% field.autocomplete %]"[% END -%]
           class="standard-field [% field.class %]" id="[% field.name %]"
-           name="[% field.name %]" type="password"></label>
+           name="[% field.name %]" type="password">
+[%    IF field.tip -%]
+      <span class="field-help tips [% field.container_class %]"
+            title="[% field.tip %]">&dagger;</span>
+[%    END -%]
+   </label>
 [% END -%]
 [% MACRO Select( field ) BLOCK -%]
 [%    IF field.label -%]<label class="label">
@@ -73,7 +82,12 @@
          <option [% IF option.selected %]selected="selected" [% END -%]
              value="[% option.value %]">[% loc( option.label ) %]</option>
 [%    END -%]
-   </select>[% IF field.label %]</label>[% END %]
+      </select>
+[%    IF field.tip -%]
+      <span class="field-help tips [% field.container_class %]"
+            title="[% field.tip %]">&dagger;</span>
+[%    END -%]
+   </label>
 [% END -%]
 [% MACRO Table( table ) BLOCK -%]
    <table class="standard-table">
@@ -104,6 +118,10 @@
             class="standard-field [% field.class %]" id="[% field.name %]"
              name="[% field.name %]">[% field.value %]</textarea>
       </div>
+[%    IF field.tip -%]
+      <span class="field-help tips [% field.container_class %]"
+            title="[% field.tip %]">&dagger;</span>
+[%    END -%]
       <div class="field-group">
          <span class="hidden" id="[% field.name %]_ajax"></span></div>
    </label>
@@ -115,6 +133,10 @@
 [%    IF field.disabled %]disabled="disabled"[% END -%]
          class="standard-field [% field.class %]" id="[% field.name %]"
           name="[% field.name %]" type="textfield" value="[% field.value %]">
+[%    IF field.tip -%]
+      <span class="field-help tips [% field.container_class %]"
+            title="[% field.tip %]">&dagger;</span>
+[%    END -%]
       <div class="field-group">
          <span class="hidden" id="[% field.name %]_ajax"></span></div>
    </label>
@@ -127,5 +149,9 @@
          class="standard-field pick-time [% field.class %]"
             id="[% field.name %]" name="[% field.name %]"
          value="[% field.value %]">
+[%    IF field.tip -%]
+      <span class="field-help tips [% field.container_class %]"
+            title="[% field.tip %]">&dagger;</span>
+[%    END -%]
    </label>
 [% END -%]

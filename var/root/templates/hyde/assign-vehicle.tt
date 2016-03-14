@@ -1,8 +1,8 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Assign Vehicle -->
-<form action="[% page.fields.href %]" class="skinny"
+<form action="[% page.fields.href %]" class="standard-form"
      enctype="application/x-www-form-urlencoded"
       method="post" name="assign-vehicle">
-[% IF page.fields.vehicle; Select( page.fields.vehicle ); END -%]<br/>
+[% IF page.fields.vehicle; Select( page.fields.vehicle ); END -%]
 [% Button( page.fields.confirm ) -%]
 </form>

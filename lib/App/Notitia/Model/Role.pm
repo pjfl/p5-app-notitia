@@ -36,8 +36,8 @@ my $_add_role_button = sub {
    my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
            . loc( $req, 'add_role_tip', [ 'role', $name ] );
 
-   return { container_class => 'right', label => 'add_role',
-            tip             => $tip,    value => 'add_role' };
+   return { container_class => 'right-last', label => 'add_role',
+            tip => $tip, value => 'add_role' };
 };
 
 my $_remove_role_button = sub {
@@ -46,8 +46,8 @@ my $_remove_role_button = sub {
    my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
            . loc( $req, 'remove_role_tip', [ 'role', $name ] );
 
-   return { container_class => 'right', label => 'remove_role',
-            tip             => $tip,    value => 'remove_role' };
+   return { container_class => 'right-last', label => 'remove_role',
+            tip => $tip, value => 'remove_role' };
 };
 
 my $_subtract = sub {

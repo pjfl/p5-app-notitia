@@ -50,7 +50,7 @@ my $_participate_button = sub {
    my ($req, $name, $opts) = @_; $opts //= {};
 
    my $k      = $opts->{cancel} ? 'unparticipate' : 'participate';
-   my $button = { container_class => 'right', label => $k,
+   my $button = { container_class => 'right-last', label => $k,
                   value           => "${k}_event" };
 
    $button->{tip} = loc( $req, 'Hint' ).SPC.TILDE.SPC

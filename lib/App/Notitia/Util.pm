@@ -503,7 +503,7 @@ sub rota_navigation_links ($$) {
 sub save_button ($$;$) {
    my ($req, $name, $type) = @_; my $k = $name ? 'update' : 'create';
 
-   my $button = { container_class => 'right', label => $k,
+   my $button = { container_class => 'right-last', label => $k,
                   value           => "${k}_${type}" };
 
    $type and $button->{tip} = loc( $req, 'Hint' ).SPC.TILDE.SPC

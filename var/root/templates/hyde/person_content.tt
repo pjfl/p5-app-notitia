@@ -4,7 +4,7 @@
       <h4>[% page.title %]</h4>
 [% IF page.fields.user_href; href = page.fields.user_href -%]
 [% ELSE; href = uri_for_action( 'admin/person' ); END -%]
-      <form action="[% href %]" class="skinny"
+      <form action="[% href %]" class="standard-form with-field-help"
            enctype="application/x-www-form-urlencoded"
             method="post" name="person-admin">
 [% TextField( page.fields.first_name ) -%]
@@ -26,7 +26,6 @@
 [%    CheckBox( page.fields.active ) -%]
 [%    CheckBox( page.fields.password_expired ) -%]
 [% END -%]
-<br/>
 [% IF page.fields.save; Button( page.fields.save ); END -%]
 [% IF page.fields.username.value && page.fields.delete -%]
 [%    Button( page.fields.delete ) -%]

@@ -1,7 +1,7 @@
 package App::Notitia::Model::Admin;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind create_button
                                 delete_button field_options loc
                                 management_button register_action_paths
@@ -54,18 +54,22 @@ my $_assert_not_self = sub {
    return $nok
 };
 
+my $_make_tip = sub {
+   my ($req, $k) = @_; return loc( $req, 'Hint' ).SPC.TILDE.SPC.loc( $req, $k );
+};
+
 my $_maybe_find_person = sub {
    return $_[ 1 ] ? $_[ 0 ]->find_person_by( $_[ 1 ] ) : Class::Null->new;
+};
+
+my $_next_of_kin_list = sub {
+   return bind 'next_of_kin', [ [ NUL, NUL ], @{ $_[ 0 ] } ], { numify => TRUE};
 };
 
 my $_people_headers = sub {
    my $req = shift;
 
    return [ map { { value => loc( $req, "people_heading_${_}" ) } } 0 .. 4 ];
-};
-
-my $_next_of_kin_list = sub {
-   return bind 'next_of_kin', [ [ NUL, NUL ], @{ $_[ 0 ] } ], { numify => TRUE};
 };
 
 # Private methods
@@ -94,7 +98,8 @@ my $_bind_person_fields = sub {
       mobile_phone     => { disabled => $disabled },
       notes            => { class => 'autosize', disabled => $disabled },
       password_expired => { checked => $person->password_expired,
-                            container_class => 'right', disabled => $disabled },
+                            container_class => 'right-last',
+                            disabled => $disabled },
       postcode         => { disabled => $disabled },
       resigned         => { disabled => $disabled },
       subscription     => { disabled => $disabled },
@@ -290,7 +295,8 @@ sub person : Role(person_manager) {
       title       => loc( $req, 'person_management_heading' ), };
    my $fields     =  $page->{fields};
    my $action     =  $self->moniker.'/person';
-   my $opts       =  field_options $self->schema, 'Person', 'name', {};
+   my $opts       =  field_options $self->schema, 'Person', 'name',
+                        { tip => $_make_tip->( $req, 'username_field_tip' ) };
 
    $fields->{username} = bind 'username', $person->name, $opts;
 

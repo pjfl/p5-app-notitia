@@ -1,5 +1,5 @@
 <!-- Search File -->
-<form action="[% uri_for_action( 'docs/search' ) %]" class="skinny"
+<form action="[% uri_for_action( 'docs/search' ) %]" class="standard-form"
      enctype="application/x-www-form-urlencoded"
       method="get" name="search-file">
    <input  class="standard-field" name="query"

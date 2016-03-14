@@ -155,9 +155,12 @@ footer {
 /* Dialogs */
 .button {
    border: 1px solid @divider; .border-radius; display: inline-block;
-   margin: 0.25em 0; padding: 0.25em 1em 0.25em 1em; text-align: center;
-   text-decoration: none; text-shadow: @lighter 1px 1px 1px;
-   vertical-align: middle;
+   margin: 0.25em 0.5em; padding: 0.25em 1em 0.25em 1em;
+   text-align: center; text-decoration: none;
+   text-shadow: @lighter 1px 1px 1px; vertical-align: middle;
+}
+.button-help, .field-help, .link-help {
+   display: inline-block; position: relative;
 }
 .dialog {
    background-color: @dialog-background; border: 2px solid @divider;
@@ -173,6 +176,10 @@ footer {
 }
 .field-container { display: inline-block; max-width: 400px; min-width: 400px; }
 .field-group { display: block; }
+.field-help {
+   color: @brighter; cursor: pointer; display: inline-block;
+   font-size: 0.75em; height: 25px; text-align: center; width: 20px;
+}
 .field-label {
    border: 2px solid transparent; .box-sizing; display: inline-block;
    margin: 0; min-width: 160px; padding: 3.25px 0; vertical-align: top;
@@ -195,7 +202,9 @@ footer {
    padding-bottom: 0; padding-top: 0;
 }
 .required { border-right: 3px solid @divider; }
-.skinny { display: inline-block; max-width: 566px; overflow: hidden; }
+.standard-form { display: inline-block; max-width: 566px; overflow: hidden; }
+.with-field-help { max-width: 591px; }
+.with-field-help .right-last { margin-right: 25px; }
 .upload-file { margin: 0.25em 0; overflow: hidden; position: relative; }
 .upload-file .upload {
    cursor: pointer; .opacity( 0 ); position: absolute; top: 0; right: 0;
@@ -230,7 +239,6 @@ footer {
 }
 .notice-board .notice img { float: left; margin-right: 10px; }
 /* Tool tips */
-.tips           { display: inline-block; position: relative; }
 .tips-container {
    background: @dialog-background; border: 2px solid transparent;
    border-color: @divider; .border-radius; .box-shadow;
@@ -556,7 +564,9 @@ strong { font-weight: 700; }
    padding: 3.25px 0.75em !important; text-align: left;
 }
 .left { float: left; }
-.right { float: right; margin-left: 0.5em; }
+.right { float: right; }
+.right-last { clear: right; float: right; }
+.right-last .button, .button.right-last { margin-right: 0px; }
 /* Article HTML */
 article {
    h2, h3, h4, h5, h6 { margin: 0 0 0.5em 0; }

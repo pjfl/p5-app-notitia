@@ -157,7 +157,7 @@ msgid "create_tip"
 msgstr "Create a new [_1] record"
 
 msgid "current_events_link"
-msgstr "Current Events"
+msgstr "Current"
 
 msgid "current_events_tip"
 msgstr "List current and future events"
@@ -481,7 +481,7 @@ msgid "postcode"
 msgstr "Postcode"
 
 msgid "previous_events_link"
-msgstr "Previous Events"
+msgstr "Previous"
 
 msgid "previous_events_tip"
 msgstr "List previous events"
@@ -572,6 +572,11 @@ msgstr "Update the [_1] record for [_2]"
 
 msgid "username"
 msgstr "Username"
+
+msgid "username_field_tip"
+msgstr "If left blank a new unique username will be generated. Only enter "
+       "a value if the person has registered before and already has a "
+       "unique username"
 
 msgid "vehicle_create_link"
 msgstr "Add Vehicle"

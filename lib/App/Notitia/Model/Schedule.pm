@@ -47,11 +47,12 @@ my $_table_cols = 3;
 my $_confirm_slot_button = sub {
    my ($req, $slot_type, $action) = @_;
 
-   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
-           . loc( $req, "confirm_${action}_tip", [ $slot_type ] );
+   my $tip   = loc( $req, 'Hint' ).SPC.TILDE.SPC
+             . loc( $req, "confirm_${action}_tip", [ $slot_type ] );
+   my $value = "${action}_slot";
 
    # Have left tip off as too noisey
-   return { class => 'right', label => 'confirm', value => "${action}_slot" };
+   return { class => 'right-last', label => 'confirm', value => $value };
 };
 
 my $_event_link = sub {
@@ -386,7 +387,8 @@ sub slot : Role(administrator) Role(bike_rider) Role(controller) Role(driver) {
    $fields->{slot_href} = uri_for_action( $req, $self->moniker.'/slot', $args );
 
    $action eq 'claim' and $slot_type eq 'rider'
-      and $fields->{request_bike} = bind( 'request_bike', TRUE );
+      and $fields->{request_bike}
+         = bind( 'request_bike', TRUE, { container_class => 'right-last' } );
 
    return $stash;
 }
