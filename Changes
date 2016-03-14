@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added some missing translations
           - Added field help
           - Can list current and previous events
           - Fixed kerning on checkbox replacement images

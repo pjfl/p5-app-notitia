@@ -67,24 +67,24 @@ sub find_event_for {
 }
 
 sub list_all_events {
-   my ($self, $opts) = @_; my $where = {};
-
-   $opts = { %{ $opts // {} } }; $opts->{order_by} //= { -desc => 'date' };
+   my ($self, $opts) = @_; my $where = {}; $opts = { %{ $opts // {} } };
 
    my $parser = $self->result_source->schema->datetime_parser;
-
    my $after  = delete $opts->{after}; my $before = delete $opts->{before};
 
    if ($after) {
       my $date = $parser->format_datetime( str2date_time( $after, 'GMT' ) );
 
       $where = { 'rota.date' => { '>' => $date } };
+      $opts->{order_by} //= 'date';
    }
    elsif ($before) {
       my $date = $parser->format_datetime( str2date_time( $before, 'GMT' ) );
 
       $where = { 'rota.date' => { '<' => $date } };
    }
+
+   $opts->{order_by} //= { -desc => 'date' };
 
    my $fields = delete $opts->{fields} // {};
    my $events = $self->search

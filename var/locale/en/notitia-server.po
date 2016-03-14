@@ -69,11 +69,17 @@ msgstr "Bike"
 msgid "bike_list_link"
 msgstr "Bikes"
 
+msgid "bike_list_tip"
+msgstr "List only bikes"
+
 msgid "bike_rider"
 msgstr "Bike Rider"
 
 msgid "bike_rider_list_link"
 msgstr "Bike Riders"
+
+msgid "bike_rider_list_tip"
+msgstr "List bike riders"
 
 msgid "blots_heading_0"
 msgstr "Endorsement"
@@ -150,6 +156,9 @@ msgstr "Controller"
 msgid "controller_list_link"
 msgstr "Controllers"
 
+msgid "controller_list_tip"
+msgstr "List controllers"
+
 msgid "create"
 msgstr "Create"
 
@@ -200,6 +209,9 @@ msgstr "Driver"
 
 msgid "driver_list_link"
 msgstr "Drivers"
+
+msgid "driver_list_tip"
+msgstr "List drivers"
 
 msgid "email_address"
 msgstr "Email Address"
@@ -290,6 +302,9 @@ msgstr "Fund Raiser"
 
 msgid "fund_raiser_list_link"
 msgstr "Fund Raisers"
+
+msgid "fund_raiser_list_tip"
+msgstr "List fund raisers"
 
 msgid "gmp"
 msgstr "GMP"
@@ -494,6 +509,12 @@ msgstr "Remove [_2] from the selected role(s)"
 
 msgid "request_bike"
 msgstr "Do you want a bike?"
+
+msgid "request_reset"
+msgstr "Reset Password"
+
+msgid "Reset Password"
+msgstr "Password Reset Request"
 
 msgid "resigned"
 msgstr "Resigned"
