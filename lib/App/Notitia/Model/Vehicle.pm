@@ -207,18 +207,18 @@ sub assign : Role(asset_manager) {
    my $fields = $page->{fields};
 
    if ($action eq 'assign') {
-      my $params = { type => 'bike' };
+      my $where  = { service => TRUE, type => 'bike' };
       my $rs     = $self->schema->resultset( 'Vehicle' );
-      my $values = [ [ NUL, NUL ], @{ $rs->list_vehicles( $params ) } ];
+      my $values = [ [ NUL, NUL ], @{ $rs->list_vehicles( $where ) } ];
 
-      $fields->{vehicle }
+      $fields->{vehicle}
          = bind 'vehicle', $values, { class => 'right-last', label => NUL };
       $page->{literal_js} = set_element_focus 'assign-vehicle', 'vehicle';
    }
    else {
       my $vrn = $req->query_params->( 'vehicle' );
 
-      $fields->{vehicle } = { name => 'vehicle', value => $vrn };
+      $fields->{vehicle} = { name => 'vehicle', value => $vrn };
    }
 
    $fields->{href   } = uri_for_action $req, $self->moniker.'/vehicle', $args;
@@ -318,9 +318,9 @@ sub vehicles : Role(asset_manager) {
       template   => [ 'contents', 'table' ],
       title      => loc( $req, $type ? "${type}_list_link"
                                      : 'vehicles_management_heading' ), };
-   my $args      =  { private => $private, service => $service, type => $type };
+   my $where     =  { private => $private, service => $service, type => $type };
    my $rs        =  $self->schema->resultset( 'Vehicle' );
-   my $vehicles  =  $rs->list_vehicles( $args );
+   my $vehicles  =  $rs->list_vehicles( $where );
    my $rows      =  $page->{fields}->{rows};
 
    for my $vehicle (@{ $vehicles }) {

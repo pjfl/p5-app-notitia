@@ -7,7 +7,7 @@ use App::Notitia::Constants    qw( FALSE NUL SPC TILDE TRUE VARCHAR_MAX_SIZE );
 use Class::Usul::Functions     qw( class2appdir create_token find_apphome
                                    first_char get_cfgfiles is_arrayref
                                    is_hashref is_member throw );
-use Class::Usul::Time          qw( str2time time2str );
+use Class::Usul::Time          qw( str2date_time str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
 use DateTime                   qw( );
 use Scalar::Util               qw( blessed weaken );
@@ -105,11 +105,14 @@ my $nav_folder = sub {
 };
 
 my $l1_nav_link = sub {
-   my ($req, $k, $action, @args) = @_;
+   my ($req, $opts, $action, @args) = @_; my $name = $opts->{name};
+
+   my $label_opts = { params => $opts->{label_args} // [],
+                      no_quote_bind_values => TRUE, };
 
    return { depth => 1,
-            label => loc( $req, "${k}_link" ),
-            tip   => loc( $req, "${k}_tip"  ),
+            label => loc( $req, "${name}_link", $label_opts ),
+            tip   => loc( $req, "${name}_tip"  ),
             type  => 'link',
             uri   => uri_for_action( $req, $action, @args ), };
 };
@@ -119,29 +122,33 @@ sub admin_navigation_links ($) {
    my $req = shift; my $now = DateTime->now;
 
    return [ $nav_folder->( $req, 'events' ),
-            $l1_nav_link->( $req, 'events_list', 'event/events', [] ),
-            $l1_nav_link->( $req, 'current_events', 'event/events', [],
+            $l1_nav_link->( $req, { name => 'events_list' } ,
+                            'event/events', [] ),
+            $l1_nav_link->( $req, { name => 'current_events' },
+                            'event/events', [],
                             after => $now->clone->subtract( days => 1 )->ymd ),
-            $l1_nav_link->( $req, 'previous_events', 'event/events', [],
-                            before => $now->ymd ),
+            $l1_nav_link->( $req, { name => 'previous_events' },
+                            'event/events', [], before => $now->ymd ),
             $nav_folder->( $req, 'people' ),
-            $l1_nav_link->( $req, 'people_list', 'admin/people', [] ),
-            $l1_nav_link->( $req, 'bike_rider_list', 'admin/people', [],
-                            role => 'bike_rider' ),
-            $l1_nav_link->( $req, 'controller_list', 'admin/people', [],
-                            role => 'controller' ),
-            $l1_nav_link->( $req, 'driver_list', 'admin/people', [],
-                            role => 'driver' ),
-            $l1_nav_link->( $req, 'fund_raiser_list', 'admin/people', [],
-                            role => 'fund_raiser' ),
+            $l1_nav_link->( $req, { name => 'people_list' },
+                            'admin/people', [] ),
+            $l1_nav_link->( $req, { name => 'bike_rider_list' },
+                            'admin/people', [], role => 'bike_rider' ),
+            $l1_nav_link->( $req, { name => 'controller_list' },
+                            'admin/people', [], role => 'controller' ),
+            $l1_nav_link->( $req, { name => 'driver_list' },
+                            'admin/people', [], role => 'driver' ),
+            $l1_nav_link->( $req, { name => 'fund_raiser_list' },
+                            'admin/people', [], role => 'fund_raiser' ),
             $nav_folder->( $req, 'vehicles' ),
-            $l1_nav_link->( $req, 'vehicles_list', 'asset/vehicles', [] ),
-            $l1_nav_link->( $req, 'bike_list', 'asset/vehicles', [],
-                            type => 'bike' ),
-            $l1_nav_link->( $req, 'service_bikes', 'asset/vehicles', [],
-                            type => 'bike', service => TRUE ),
-            $l1_nav_link->( $req, 'private_bikes', 'asset/vehicles', [],
-                            type => 'bike', private => TRUE ),
+            $l1_nav_link->( $req, { name => 'vehicles_list' },
+                            'asset/vehicles', [] ),
+            $l1_nav_link->( $req, { name => 'bike_list' },
+                            'asset/vehicles', [], type => 'bike' ),
+            $l1_nav_link->( $req, { name => 'service_bikes' },
+                            'asset/vehicles', [], type => 'bike', service => 1),
+            $l1_nav_link->( $req, { name => 'private_bikes' },
+                            'asset/vehicles', [], type => 'bike', private => 1),
             ];
 }
 
@@ -482,26 +489,23 @@ sub register_action_paths (;@) {
 }
 
 sub rota_navigation_links ($$) {
-   my ($req, $name) = @_; my $args = []; my $year = time2str '%Y';
+   my ($req, $name) = @_; my $now = str2date_time time2str '%Y-%m-01';
 
-   for my $month (0 .. 11) {
-      $args->[ $month ] = [ $name, sprintf '%s-%0.2d-01', $year, 1 + $month ];
+   my $nav = [ $nav_folder->( $req, 'months' ) ];
+
+   for my $mno (0 .. 11) {
+      my $offset = $mno - 5;
+      my $month  = $offset > 0 ? $now->clone->add( months => $offset )
+                 : $offset < 0 ? $now->clone->subtract( months => -$offset )
+                 :               $now->clone;
+      my $opts   = { label_args => [ $month->year ],
+                     name       => lc 'month_'.$month->month_abbr };
+      my $args   = [ $name, $month->ymd ];
+
+      push @{ $nav }, $l1_nav_link->( $req, $opts, 'sched/day_rota', $args );
    }
 
-   return
-      [ $nav_folder->( $req, 'months' ),
-        $l1_nav_link->( $req, 'month_jan', 'sched/day_rota', $args->[  0 ] ),
-        $l1_nav_link->( $req, 'month_feb', 'sched/day_rota', $args->[  1 ] ),
-        $l1_nav_link->( $req, 'month_mar', 'sched/day_rota', $args->[  2 ] ),
-        $l1_nav_link->( $req, 'month_apr', 'sched/day_rota', $args->[  3 ] ),
-        $l1_nav_link->( $req, 'month_may', 'sched/day_rota', $args->[  4 ] ),
-        $l1_nav_link->( $req, 'month_jun', 'sched/day_rota', $args->[  5 ] ),
-        $l1_nav_link->( $req, 'month_jul', 'sched/day_rota', $args->[  6 ] ),
-        $l1_nav_link->( $req, 'month_aug', 'sched/day_rota', $args->[  7 ] ),
-        $l1_nav_link->( $req, 'month_sep', 'sched/day_rota', $args->[  8 ] ),
-        $l1_nav_link->( $req, 'month_oct', 'sched/day_rota', $args->[  9 ] ),
-        $l1_nav_link->( $req, 'month_nov', 'sched/day_rota', $args->[ 10 ] ),
-        $l1_nav_link->( $req, 'month_dec', 'sched/day_rota', $args->[ 11 ] ) ];
+   return $nav;
 }
 
 sub save_button ($$;$) {

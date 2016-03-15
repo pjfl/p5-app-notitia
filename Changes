@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Rota month selection now a rolling year
           - Can distinguish / list service / private bikes
           - Logging in redirects to login page on failure
           - Can only assign service vehicles to slots

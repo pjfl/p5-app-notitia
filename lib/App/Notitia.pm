@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 26 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 27 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 26 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 27 $ of L<App::Notitia>
 
 =head1 Description
 
@@ -53,7 +53,6 @@ Help for command line options can be found be running
 The production server options are detailed by running
 
    bin/notitia-daemon list-methods
-
 
 =head1 Subroutines/Methods
 
@@ -96,6 +95,8 @@ TODO: Need calendar view for whole month
 TODO: Need to be able to get to nok more easily
 
 TODO: Need to be able to adjust criteria for assignments
+
+TODO: Type maintainence page
 
 =head1 Dependencies
 
