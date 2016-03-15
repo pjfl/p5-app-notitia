@@ -11,7 +11,8 @@ use HTTP::Status            qw( HTTP_BAD_REQUEST HTTP_NOT_FOUND HTTP_OK );
 use JSON::MaybeXS;
 use Scalar::Util            qw( blessed );
 use Try::Tiny;
-use Unexpected::Functions   qw( AuthenticationRequired ValidationErrors );
+use Unexpected::Functions   qw( Authentication AuthenticationRequired
+                                ValidationErrors );
 use Moo;
 
 with q(Web::Components::Role);
@@ -26,6 +27,27 @@ has '_transcoder' => is => 'lazy', isa => Object,
 
 # Private class attributes
 my $_result_class_cache = {};
+
+# Private functions
+my $_auth_redirect = sub {
+   my ($req, $e, $summary) = @_;
+
+   if ($e->class eq AuthenticationRequired->()) {
+      my $location = uri_for_action $req, 'user/index';
+
+      $req->session->wanted( $req->path );
+
+      return { redirect => { location => $location, message => [ $summary ] } };
+   }
+
+   if ($e->instance_of( Authentication->() )) {
+      my $location = uri_for_action $req, 'user/index';
+
+      return { redirect => { location => $location, message => [ $summary ] } };
+   }
+
+   return;
+};
 
 # Private methods
 my $_check_field = sub {
@@ -127,22 +149,16 @@ sub exception_handler {
    }
    else { $leader = NUL; $summary = $message = "${e}" }
 
-   if ($e->class eq AuthenticationRequired->()) {
-      my $location = uri_for_action $req, 'user/index';
+   my $redirect = $_auth_redirect->( $req, $e, $summary );
+      $redirect and return $redirect;
 
-      $req->session->wanted( $req->path );
-
-      return { redirect => { location => $location, message => [ $summary ] } };
-   }
-
-   my $opts  = { params => [ $req->username ], no_quote_bind_values => TRUE };
-   my $title = $req->loc( 'Exception Handler', $opts );
-   my $page  = { error    => $e,
-                 leader   => $leader,
-                 message  => $message,
-                 summary  => $summary,
-                 template => [ 'contents', 'exception' ],
-                 title    => $title, };
+   my $opts = { params   => [ $req->username ], no_quote_bind_values => TRUE };
+   my $page = { error    => $e,
+                leader   => $leader,
+                message  => $message,
+                summary  => $summary,
+                template => [ 'contents', 'exception' ],
+                title    => $req->loc( 'Exception Handler', $opts ), };
 
    $e->class eq ValidationErrors->() and $page->{validation_error} = $e->args;
 

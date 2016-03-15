@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Logging in redirects to login page on failure
           - Can only assign service vehicles to slots
           - Rota table column names reverted to originals
           - A claimed slot with no bike requested appears orange
