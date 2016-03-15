@@ -99,6 +99,9 @@ my $_assert_slot_assignment_allowed = sub {
    $slot_type eq 'rider' and $bike and $self->type ne 'bike'
       and throw 'Vehicle [_1] is not a bike and one was requested', [ $self ];
 
+   $slot_type eq 'rider' and $bike and not $self->name
+      and throw 'Vehicle [_1] is not a service vehicle', [ $self ];
+
    if ($slot_type eq 'rider') {
       my $type_id  = $self->$_find_rota_type_id_for( $rota_name );
       my $slots_rs = $self->result_source->schema->resultset( 'Slot' );

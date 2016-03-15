@@ -16,7 +16,8 @@
       "Built Using Perl": "http://www.perl.org",
       "Download": "https://github.com/pjfl/p5-app-notitia/archive/master.zip",
       "Github Repo": "https://github.com/pjfl/p5-app-notitia.git",
-      "Issues/Wishlist": "http://github.com/pjfl/p5-notitia-doh/issues"
+      "Issues/Wishlist": "http://github.com/pjfl/p5-notitia-doh/issues",
+      "Markdown Syntax": "http://daringfireball.net/projects/markdown/syntax"
    },
    "repo_url": "https://github.com/pjfl/p5-app-notitia"
 }

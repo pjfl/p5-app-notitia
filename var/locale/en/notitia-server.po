@@ -232,7 +232,7 @@ msgid "endorsements_management_heading"
 msgstr "Endorsements"
 
 msgid "endorsements_management_link"
-msgstr "Tickets"
+msgstr "Offences"
 
 msgid "endorsements_management_tip"
 msgstr "Administer endorsement records for [_1]"
@@ -463,7 +463,7 @@ msgid "people_heading_3"
 msgstr "Certs"
 
 msgid "people_heading_4"
-msgstr "Tickets"
+msgstr "Offences"
 
 msgid "person_create_link"
 msgstr "Add Person"
@@ -535,13 +535,13 @@ msgid "rota_heading_0"
 msgstr "Shift"
 
 msgid "rota_heading_1"
-msgstr "Bike"
+msgstr "Vehicle"
 
 msgid "rota_heading_2"
 msgstr "Name"
 
 msgid "rota_heading_3"
-msgstr "Veh."
+msgstr "C4"
 
 msgid "route"
 msgstr "Route"

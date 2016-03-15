@@ -17,6 +17,14 @@ use Moo;
 
 extends q(Class::Usul::Config::Programs);
 
+# Private functions
+my $_to_array_of_hash = sub {
+   my ($href, $key_key, $val_key) = @_;
+
+   return [ map { my $v = $href->{ $_ }; +{ $key_key => $_, $val_key => $v } }
+            sort keys %{ $href } ],
+};
+
 # Attribute constructors
 my $_build_cdnjs = sub {
    my $self  = shift;
@@ -35,6 +43,10 @@ my $_build_components = sub {
    }
 
    return $conf;
+};
+
+my $_build_links = sub {
+   return $_to_array_of_hash->( $_[ 0 ]->_links, 'name', 'url' );
 };
 
 my $_build_secret = sub {
@@ -137,6 +149,9 @@ has 'less'            => is => 'ro',   isa => NonEmptySimpleStr,
 has 'less_files'      => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    builder            => sub { [ qw( yellow ) ] };
 
+has 'links'           => is => 'lazy', isa => ArrayRef[HashRef],
+   builder            => $_build_links, init_arg => undef;
+
 has 'load_factor'     => is => 'ro',   isa => NonZeroPositiveInt,
    default            => 14;
 
@@ -226,6 +241,9 @@ has 'workers'         => is => 'ro',   isa => NonZeroPositiveInt, default => 5;
 # Private attributes
 has '_components'     => is => 'ro',   isa => HashRef,
    builder            => sub { {} }, init_arg => 'components';
+
+has '_links'          => is => 'ro',   isa => HashRef,
+   builder            => sub { {} }, init_arg => 'links';
 
 # Attribute constructors
 sub _build_ctlfile {
@@ -428,6 +446,12 @@ locates the static Less files
 =item C<less_files>
 
 The list of predefined colour schemes and feature specific less files
+
+=item C<links>
+
+A lazily evaluated array reference of hashes created automatically from the
+hash reference in the configuration file. Each hash has a single
+key / value pair, the link name and it's URI
 
 =item C<load_factor>
 

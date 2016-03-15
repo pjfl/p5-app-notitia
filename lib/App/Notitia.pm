@@ -2,18 +2,13 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 23 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 24 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
 sub env_var {
    return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
 }
-
-# TODO: Oh god, Microsoft and their fucking excuse for a browser
-# TODO: Determine how to request a vehicle for an event
-# TODO: Vehicle assigning should be moved to Slot to make URI more restful
-# TODO: Endorsement type_codes need similar treatment to event uris
 
 1;
 
@@ -37,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 23 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 24 $ of L<App::Notitia>
 
 =head1 Description
 
@@ -85,6 +80,26 @@ F<var/logs/access_8085.log>
 
 Exporting C<DBIC_TRACE> and setting it to true will cause L<DBIx::Class>
 to emit the SQL it generates to C<stderr>
+
+=head1 Project To Do List
+
+TODO: Oh god, Microsoft and their fucking excuse for a browser
+
+TODO: Determine how to request a vehicle for an event
+
+TODO: Vehicle assigning should be moved to Slot to make URI more restful
+
+TODO: Endorsement type_codes need similar treatment to event uris
+
+TODO: Logging in gets exception page rather than try again. Need a login menu
+
+TODO: Need calendar view for whole month
+
+TODO: Need to be able to get to nok more easily
+
+TODO: Need to be able to adjust criteria for assignments
+
+TODO: Distinguish / list service bikes
 
 =head1 Dependencies
 

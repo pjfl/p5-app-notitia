@@ -1,5 +1,13 @@
 Revision history for App::Notitia
 
+          - Can only assign service vehicles to slots
+          - Rota table column names reverted to originals
+          - A claimed slot with no bike requested appears orange
+          - Next_of_kin role removed since unused
+          - Tickets renamed to Offences
+          - View on Gitub link moved to footer
+          - Branding removed from repository
+          - Font size reduced by 2px - 4px throughout
           - Added some missing translations
           - Added field help
           - Can list current and previous events
