@@ -8,7 +8,7 @@ use Class::Usul::Functions  qw( throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Private functions
-my $_vehicle_tuple = sub {
+my $_field_tuple = sub {
    my ($vehicle, $opts) = @_; $opts = { %{ $opts // {} } };
 
    $opts->{selected} //= NUL;
@@ -53,28 +53,21 @@ sub find_vehicle_by {
    return $vehicle;
 }
 
-sub list_all_vehicles {
-   my ($self, $opts) = @_;
-
-   $opts = { columns  => [ 'id', 'name', 'vrn' ], order_by => 'vrn',
-             prefetch => [ 'owner' ], %{ $opts // {} } };
-
-   my $fields   = delete $opts->{fields} // {};
-   my $vehicles = $self->search( {}, $opts );
-
-   return [ map { $_vehicle_tuple->( $_, $fields ) } $vehicles->all ];
-}
-
-sub list_vehicles_by_type {
-   my ($self, $type, $opts) = @_;
+sub list_vehicles {
+   my ($self, $params, $opts) = @_;
 
    $opts = { columns  => [ 'id', 'name', 'vrn' ], order_by => 'vrn',
              prefetch => [ 'type', 'owner' ], %{ $opts // {} } };
 
-   my $fields   = delete $opts->{fields} // {};
-   my $vehicles = $self->search( { 'type.name' => $type }, $opts );
+   my $fields = delete $opts->{fields} // {};
+   my $where  = $params->{type} ? { 'type.name' => $params->{type} } : {};
 
-   return [ map { $_vehicle_tuple->( $_, $fields ) } $vehicles->all ];
+   $params->{private} and $where->{owner_id} = { '!=' => undef };
+   $params->{service} and $where->{owner_id} = { '='  => undef };
+
+   my $vehicles = $self->search( $where, $opts );
+
+   return [ map { $_field_tuple->( $_, $fields ) } $vehicles->all ];
 }
 
 1;

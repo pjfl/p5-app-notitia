@@ -207,8 +207,9 @@ sub assign : Role(asset_manager) {
    my $fields = $page->{fields};
 
    if ($action eq 'assign') {
+      my $params = { type => 'bike' };
       my $rs     = $self->schema->resultset( 'Vehicle' );
-      my $values = [ [ NUL, NUL ], @{ $rs->list_vehicles_by_type( 'bike' ) } ];
+      my $values = [ [ NUL, NUL ], @{ $rs->list_vehicles( $params ) } ];
 
       $fields->{vehicle }
          = bind 'vehicle', $values, { class => 'right-last', label => NUL };
@@ -304,7 +305,10 @@ sub vehicle : Role(asset_manager) {
 sub vehicles : Role(asset_manager) {
    my ($self, $req) = @_;
 
-   my $type      =  $req->query_params->( 'type', { optional => TRUE } );
+   my $params    =  $req->query_params;
+   my $type      =  $params->( 'type',    { optional => TRUE } );
+   my $private   =  $params->( 'private', { optional => TRUE } ) || FALSE;
+   my $service   =  $params->( 'service', { optional => TRUE } ) || FALSE;
    my $action    =  $self->moniker.'/vehicle';
    my $page      =  {
       fields     => {
@@ -314,9 +318,9 @@ sub vehicles : Role(asset_manager) {
       template   => [ 'contents', 'table' ],
       title      => loc( $req, $type ? "${type}_list_link"
                                      : 'vehicles_management_heading' ), };
+   my $args      =  { private => $private, service => $service, type => $type };
    my $rs        =  $self->schema->resultset( 'Vehicle' );
-   my $vehicles  =  $type ? $rs->list_vehicles_by_type( $type )
-                          : $rs->list_all_vehicles;
+   my $vehicles  =  $rs->list_vehicles( $args );
    my $rows      =  $page->{fields}->{rows};
 
    for my $vehicle (@{ $vehicles }) {

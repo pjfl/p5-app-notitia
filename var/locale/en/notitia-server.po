@@ -67,7 +67,7 @@ msgid "bike"
 msgstr "Bike"
 
 msgid "bike_list_link"
-msgstr "Bikes"
+msgstr "All Bikes"
 
 msgid "bike_list_tip"
 msgstr "List only bikes"
@@ -501,6 +501,12 @@ msgstr "Previous"
 msgid "previous_events_tip"
 msgstr "List previous events"
 
+msgid "private_bikes_link"
+msgstr "Private Bikes"
+
+msgid "private_bikes_tip"
+msgstr "List privately owned bikes"
+
 msgid "remove_role"
 msgstr "Remove Role"
 
@@ -548,6 +554,12 @@ msgstr "Route"
 
 msgid "select_person"
 msgstr "Select Person"
+
+msgid "service_bikes_link"
+msgstr "Service Bikes"
+
+msgid "service_bikes_tip"
+msgstr "List the service bikes"
 
 msgid "Site Description"
 msgstr "People and resource scheduling"
@@ -610,6 +622,9 @@ msgstr "Vehicle"
 
 msgid "vehicle_management_link"
 msgstr "Edit"
+
+msgid "vehicle_management_tip"
+msgstr "Edit vehicle records"
 
 msgid "vehicle_name"
 msgstr "Nickname"

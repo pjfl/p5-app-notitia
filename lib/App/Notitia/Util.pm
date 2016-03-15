@@ -138,6 +138,10 @@ sub admin_navigation_links ($) {
             $l1_nav_link->( $req, 'vehicles_list', 'asset/vehicles', [] ),
             $l1_nav_link->( $req, 'bike_list', 'asset/vehicles', [],
                             type => 'bike' ),
+            $l1_nav_link->( $req, 'service_bikes', 'asset/vehicles', [],
+                            type => 'bike', service => TRUE ),
+            $l1_nav_link->( $req, 'private_bikes', 'asset/vehicles', [],
+                            type => 'bike', private => TRUE ),
             ];
 }
 
