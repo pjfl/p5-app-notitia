@@ -1,7 +1,8 @@
 package App::Notitia::Model::Admin;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE
+                                TYPE_CLASS_ENUM );
 use App::Notitia::Util      qw( admin_navigation_links bind create_button
                                 delete_button field_options loc
                                 management_button register_action_paths
@@ -27,7 +28,9 @@ register_action_paths
    'admin/index'    => 'admin/index',
    'admin/people'   => 'people',
    'admin/person'   => 'person',
-   'admin/summary'  => 'person-summary';
+   'admin/summary'  => 'person-summary',
+   'admin/type'     => 'type',
+   'admin/types'    => 'types';
 
 # Construction
 around 'get_stash' => sub {
@@ -36,6 +39,7 @@ around 'get_stash' => sub {
    my $stash = $orig->( $self, $req, @args );
 
    $stash->{nav} = admin_navigation_links $req;
+   $stash->{page}->{location} //= 'admin';
 
    return $stash;
 };
@@ -44,6 +48,28 @@ around 'get_stash' => sub {
 my $_people_links_cache = {};
 
 # Private functions
+my $_button = sub {
+   my ($req, $action, $name, $args) = @_;
+
+   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
+           . loc( $req, "${action}_${name}_tip", $args );
+
+   return { container_class => 'right-last', label => "${action}_${name}",
+            tip => $tip, value => "${action}_${name}" };
+};
+
+my $_type_button = sub {
+   return $_button->( $_[ 0 ], $_[ 1 ], 'type', $_[ 2 ] );
+};
+
+my $_add_type_button = sub {
+   return $_type_button->( $_[ 0 ], 'add', $_[ 1 ] );
+};
+
+my $_remove_type_button = sub {
+   return $_type_button->( $_[ 0 ], 'remove', $_[ 1 ] );
+};
+
 my $_assert_not_self = sub {
    my ($person, $nok) = @_; $nok or undef $nok;
 
@@ -60,6 +86,11 @@ my $_make_tip = sub {
 
 my $_maybe_find_person = sub {
    return $_[ 1 ] ? $_[ 0 ]->find_person_by( $_[ 1 ] ) : Class::Null->new;
+};
+
+my $_maybe_find_type = sub {
+   return $_[ 2 ] ? $_[ 0 ]->find_type_by( $_[ 2 ], $_[ 1 ] )
+                  : Class::Null->new;
 };
 
 my $_next_of_kin_list = sub {
@@ -106,6 +137,17 @@ my $_bind_person_fields = sub {
    };
 
    return $self->bind_fields( $person, $map, 'Person' );
+};
+
+my $_bind_type_fields = sub {
+   my ($self, $type, $opts) = @_; $opts //= {};
+
+   my $disabled  =  $opts->{disabled} // FALSE;
+   my $map       =  {
+      name       => { disabled => $disabled, label => 'type_name' },
+      type_class => { disabled => TRUE }, };
+
+   return $self->bind_fields( $type, $map, 'Type' );
 };
 
 my $_create_person_email = sub {
@@ -365,6 +407,60 @@ sub summary : Role(administrator) Role(person_viewer) {
    $people  = $person_rs->list_all_people( $opts );
    $fields->{next_of_kin} = $_next_of_kin_list->( $people );
    $fields->{roles      } = bind 'roles', $person->list_roles;
+
+   return $self->get_stash( $req, $page );
+}
+
+sub add_type_action : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $message = '';
+
+   return { redirect => { location => $req->uri, message => $message } };
+}
+
+sub remove_type_action : Role(adminisatrator) {
+   my ($self, $req) = @_;
+
+   my $message = '';
+
+   return { redirect => { location => $req->uri, message => $message } };
+}
+
+sub type : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $type_class =  $req->uri_params->( 0 );
+
+   is_member $type_class, TYPE_CLASS_ENUM
+      or throw 'Type class [_1] unknown', [ $type_class ];
+
+   my $name       =  $req->uri_params->( 1, { optional => TRUE } );
+   my $type_rs    =  $self->schema->resultset( 'Type' );
+   my $type       =  $_maybe_find_type->( $type_rs, $type_class, $name );
+   my $opts       =  { disabled => $name ? TRUE : FALSE };
+   my $page       =  {
+      fields      => $self->$_bind_type_fields( $type, $opts ),
+      first_field => 'name',
+      template    => [ 'contents', 'type' ],
+      title       => loc( $req, 'type_management_heading' ), };
+   my $fields     =  $page->{fields};
+
+   if ($name) {
+      $fields->{remove} = $_remove_type_button->( $req, [ $type_class, $name ]);
+   }
+   else {
+      $fields->{type_class} = bind 'type_class', $type_class, { disabled => 1 };
+      $fields->{add} = $_add_type_button->( $req, [ $type_class, $name ] );
+   }
+
+   return $self->get_stash( $req, $page );
+}
+
+sub types : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $page = {};
 
    return $self->get_stash( $req, $page );
 }

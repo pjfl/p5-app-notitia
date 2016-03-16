@@ -24,7 +24,6 @@ has '+moniker' => default => 'sched';
 
 register_action_paths
    'sched/slot'     => 'slot',
-   'sched/index'    => 'index',
    'sched/day_rota' => 'rota';
 
 # Construction
@@ -35,6 +34,7 @@ around 'get_stash' => sub {
    my $name  = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
 
    $stash->{nav} = rota_navigation_links $req, $name;
+   $stash->{page}->{location}   = 'schedule';
 
    return $stash;
 };
@@ -294,7 +294,7 @@ my $_get_page = sub {
    my $rota_dt =  str2date_time $date, 'GMT';
    my $title   =  ucfirst( loc( $req, $name ) ).SPC
                .  loc( $req, 'rota for' ).SPC
-               .  $rota_dt->month_name.SPC.$rota_dt->day;
+               .  $rota_dt->month_name.SPC.$rota_dt->day.SPC.$rota_dt->year;
    my $actionp =  $self->moniker.'/day_rota';
    my $next    =  uri_for_action $req, $actionp,
                   [ $name, $rota_dt->clone->add( days => 1 )->ymd ];

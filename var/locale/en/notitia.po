@@ -537,6 +537,9 @@ msgstr "Add and remove roles for [_1]"
 msgid "roles"
 msgstr "Roles"
 
+msgid "roles_list_link"
+msgstr "Roles"
+
 msgid "rota_heading_0"
 msgstr "Shift"
 
@@ -581,6 +584,12 @@ msgstr "Trailer"
 
 msgid "type_code"
 msgstr "Type Code"
+
+msgid "types_list_link"
+msgstr "All Types"
+
+msgid "types_management_heading"
+msgstr "Types"
 
 msgid "unassign_management_tip"
 msgstr "Unassign a vehicle from this slot"

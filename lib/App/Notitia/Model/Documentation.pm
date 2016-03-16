@@ -29,6 +29,7 @@ around 'load_page' => sub {
 
    my $page = $orig->( $self, $req, @args );
 
+   $page->{location}   = 'documentation';
    $page->{template} //= [ 'contents', 'docs' ];
 
    return $page;

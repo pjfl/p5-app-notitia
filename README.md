@@ -129,6 +129,14 @@ database schema. Next it populates the database with initial data
 including creating an administration user. You will need the database
 administration password to complete this step
 
+For the user name generation to work you will need to edit the configuration
+file F<lib/App/Notitia/app-notitia.json> and add the line
+
+   "person_prefix": "xxx",
+
+substituting a two or three character prefix for C<xxx> that reflects the
+name of the organisation that is operating the application
+
 By default the development server will run at:
 [http://localhost:5000](http://localhost:5000) and can be started in
 the foreground with:
@@ -163,6 +171,9 @@ was used to add a lightweight content management system to
 this application
 
 JavaScript libraries hosted by [CloudFlare](https://www.cloudflare.com/).
+
+The presentation, layout and styling was taken from the
+[Jekyll](https://jekyllrb.com/) project.
 
 #### Support
 

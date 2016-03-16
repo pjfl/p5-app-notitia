@@ -1,0 +1,14 @@
+<!-- Type Content -->
+<div class="unit four-fifths">
+   <article>
+      <h4>[% page.title %]</h4>
+      <form action="[% href = page.fields.href %]" class="standard-form"
+           enctype="application/x-www-form-urlencoded"
+            method="post" name="type-admin">
+[% TextField( page.fields.type_class ) -%]
+[% TextField( page.fields.name ) -%]
+[% IF page.fields.name.value; Button( page.fields.remove ) -%]
+[% ELSE; Button( page.fields.add ); END -%]
+      </form>
+   </article>
+</div>

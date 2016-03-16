@@ -104,7 +104,7 @@ my $nav_folder = sub {
             type  => 'folder', };
 };
 
-my $l1_nav_link = sub {
+my $l1_navlink = sub {
    my ($req, $opts, $action, @args) = @_; my $name = $opts->{name};
 
    my $label_opts = { params => $opts->{label_args} // [],
@@ -121,35 +121,37 @@ my $l1_nav_link = sub {
 sub admin_navigation_links ($) {
    my $req = shift; my $now = DateTime->now;
 
-   return [ $nav_folder->( $req, 'events' ),
-            $l1_nav_link->( $req, { name => 'events_list' } ,
-                            'event/events', [] ),
-            $l1_nav_link->( $req, { name => 'current_events' },
-                            'event/events', [],
-                            after => $now->clone->subtract( days => 1 )->ymd ),
-            $l1_nav_link->( $req, { name => 'previous_events' },
-                            'event/events', [], before => $now->ymd ),
-            $nav_folder->( $req, 'people' ),
-            $l1_nav_link->( $req, { name => 'people_list' },
-                            'admin/people', [] ),
-            $l1_nav_link->( $req, { name => 'bike_rider_list' },
-                            'admin/people', [], role => 'bike_rider' ),
-            $l1_nav_link->( $req, { name => 'controller_list' },
-                            'admin/people', [], role => 'controller' ),
-            $l1_nav_link->( $req, { name => 'driver_list' },
-                            'admin/people', [], role => 'driver' ),
-            $l1_nav_link->( $req, { name => 'fund_raiser_list' },
-                            'admin/people', [], role => 'fund_raiser' ),
-            $nav_folder->( $req, 'vehicles' ),
-            $l1_nav_link->( $req, { name => 'vehicles_list' },
-                            'asset/vehicles', [] ),
-            $l1_nav_link->( $req, { name => 'bike_list' },
-                            'asset/vehicles', [], type => 'bike' ),
-            $l1_nav_link->( $req, { name => 'service_bikes' },
-                            'asset/vehicles', [], type => 'bike', service => 1),
-            $l1_nav_link->( $req, { name => 'private_bikes' },
-                            'asset/vehicles', [], type => 'bike', private => 1),
-            ];
+   return
+      [ $nav_folder->( $req, 'events' ),
+        $l1_navlink->( $req, { name => 'events_list' }, 'event/events', [] ),
+        $l1_navlink->( $req, { name => 'current_events' }, 'event/events', [],
+                       after  => $now->clone->subtract( days => 1 )->ymd ),
+        $l1_navlink->( $req, { name => 'previous_events' }, 'event/events', [],
+                       before => $now->ymd ),
+        $nav_folder->( $req, 'people' ),
+        $l1_navlink->( $req, { name => 'people_list' }, 'admin/people', [] ),
+        $l1_navlink->( $req, { name => 'bike_rider_list' }, 'admin/people', [],
+                       role => 'bike_rider' ),
+        $l1_navlink->( $req, { name => 'controller_list' }, 'admin/people', [],
+                       role => 'controller' ),
+        $l1_navlink->( $req, { name => 'driver_list' }, 'admin/people', [],
+                       role => 'driver' ),
+        $l1_navlink->( $req, { name => 'fund_raiser_list' }, 'admin/people', [],
+                       role => 'fund_raiser' ),
+        $nav_folder->( $req, 'types' ),
+        $l1_navlink->( $req, { name => 'types_list' }, 'admin/types', [] ),
+        $l1_navlink->( $req, { name => 'roles_list' }, 'admin/type',
+                       [ 'role' ] ),
+        $nav_folder->( $req, 'vehicles' ),
+        $l1_navlink->( $req, { name => 'vehicles_list' },
+                       'asset/vehicles', [] ),
+        $l1_navlink->( $req, { name => 'bike_list' },
+                       'asset/vehicles', [], type => 'bike' ),
+        $l1_navlink->( $req, { name => 'service_bikes' },
+                       'asset/vehicles', [], type => 'bike', service => TRUE ),
+        $l1_navlink->( $req, { name => 'private_bikes' },
+                       'asset/vehicles', [], type => 'bike', private => TRUE ),
+        ];
 }
 
 sub bind ($;$$) {
@@ -502,7 +504,7 @@ sub rota_navigation_links ($$) {
                      name       => lc 'month_'.$month->month_abbr };
       my $args   = [ $name, $month->ymd ];
 
-      push @{ $nav }, $l1_nav_link->( $req, $opts, 'sched/day_rota', $args );
+      push @{ $nav }, $l1_navlink->( $req, $opts, 'sched/day_rota', $args );
    }
 
    return $nav;

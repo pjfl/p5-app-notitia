@@ -31,7 +31,8 @@ nav {
 }
 .hidden { display: none; }
 .main-nav {
-   margin-top: 36px;
+   margin-top: 28px;
+   ul { margin-bottom: 10px; }
    li {
       margin-right: 10px;
       a, button {
@@ -45,12 +46,10 @@ nav {
          }
       }
       form { display: inline; }
-      &.current {
-         a, button {
-            background-color: @contrast; color: @darker;
-            .box-shadow;
-            text-shadow: 0 1px 0 rgba(255,255,255,.3);
-         }
+      a.current, button.current {
+         background-color: @contrast; color: @darker;
+         .box-shadow;
+         text-shadow: 0 1px 0 rgba(255,255,255,.3);
       }
    }
 }
@@ -184,6 +183,7 @@ footer {
    border: 2px solid transparent; .box-sizing; display: inline-block;
    margin: 0; min-width: 160px; padding: 3.25px 0; vertical-align: top;
 }
+.footer-nav { list-style-type: none; }
 .form-separator {
    min-height: 2em; overflow: hidden; padding: 1em 0; width: 100%;
 }

@@ -43,6 +43,7 @@ around 'load_page' => sub {
    $page->{wanted_depth}   = () = @ids;
    $page->{wanted      }   = join '/', $self->config->posts, @ids;
    $page->{template    } //= [ 'contents', $plate ];
+   $page->{location    }   = 'posts';
 
    return $page;
 };

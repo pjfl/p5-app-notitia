@@ -1,35 +1,36 @@
 <!-- Secondary Navigation -->
 <ul>
-[% class = 'windows fade' -%]
 [% IF page.authenticated -%]
 [%    text = loc( 'Admin' ) -%]
 [%    tip  = loc( 'Admininstration interface' ) -%]
 [%    href = uri_for_action( 'admin/index' ) -%]
+[%    class = ''; IF page.location == 'admin'; class = 'current'; END -%]
    <li>
-[%    LinkWithTips( href, 'fade', text, page.hint, tip ) -%]
+[%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
 [%    text = loc( 'Profile' ) -%]
 [%    tip  = loc( 'Configure user profile' ) -%]
    <li>
-[%    LinkWithTips( '#', class, text, page.hint, tip, 'profile-user' ) -%]
+[%    LinkWithTips( '#', 'windows', text, page.hint, tip, 'profile-user' ) -%]
    </li>
    <li>
 [%    href = uri_for_action( 'user/logout_action' ) -%]
-[%    FormWithButton( href, class, loc( 'Logout' ), 'authentication',
+[%    FormWithButton( href, 'windows', loc( 'Logout' ), 'authentication',
                       loc( 'Logout from the application' ),
                      'logout-user', 'logout' ) -%]
    </li>
 [% ELSE -%]
-[%    href = uri_for_action( 'user/change_password' ) -%]
 [%    text = loc( 'Change Password' ) -%]
 [%    tip  = loc( 'Change the password used to acess the application' ) -%]
+[%    href = uri_for_action( 'user/change_password' ) -%]
+[%    class = ''; IF page.location == 'change_password'; class = 'current'; END -%]
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
 [%    text = loc( 'Forgot Password?' ) -%]
 [%    tip  = loc( 'Follow the link to reset your password' ) -%]
    <li>
-[%    LinkWithTips( '#', class, text, page.hint, tip, 'request-reset' ) -%]
+[%    LinkWithTips( '#', 'windows', text, page.hint, tip, 'request-reset' ) -%]
    </li>
 [% END -%]
 </ul>

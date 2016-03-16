@@ -38,6 +38,10 @@ sub find_rota_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'rota' );
 }
 
+sub find_type_by {
+   return $_[ 0 ]->$_find_by( $_[ 1 ], $_[ 2 ] );
+}
+
 sub find_vehicle_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'vehicle' );
 }

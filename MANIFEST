@@ -83,7 +83,7 @@ t/41role.t
 t/42vehicle.t
 t/50endorsement.t
 t/boilerplate.pm
-var/locale/en/notitia-server.po
+var/locale/en/notitia.po
 var/root/css/hyde-yellow.css
 var/root/docs/en/01_information/01_getting-started.md
 var/root/img/article-footer.png
@@ -92,7 +92,9 @@ var/root/img/dp-days.png
 var/root/img/dp-frame.png
 var/root/img/dp-months.png
 var/root/img/dp-years.png
+var/root/img/favicon-32.ico
 var/root/img/icons.png
+var/root/img/logo-transparent.png
 var/root/js/hyde.js
 var/root/js/mooclasses.js
 var/root/less/hyde/font-awesome.less
@@ -138,6 +140,7 @@ var/root/templates/hyde/secondary-nav-items.tt
 var/root/templates/hyde/section_nav.tt
 var/root/templates/hyde/standard.tt
 var/root/templates/hyde/table_content.tt
+var/root/templates/hyde/type_content.tt
 var/root/templates/hyde/unassign-vehicle.tt
 var/root/templates/hyde/upload-file.tt
 var/root/templates/hyde/user_email.tt

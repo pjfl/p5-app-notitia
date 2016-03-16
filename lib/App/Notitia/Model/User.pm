@@ -91,6 +91,7 @@ sub change_password : Role(anon) {
            "   behaviour.config.inputs[ 'password' ]",
            "      = { event     : [ 'focus', 'blur' ],",
            "          method    : [ 'show_password', 'hide_password' ] };", ],
+      location    => 'change_password',
       template    => [ 'contents', 'change-password' ],
       title       => loc( $req, 'change_password_title' ) };
 
@@ -132,6 +133,7 @@ sub index : Role(anon) {
    my $page       =  {
       fields      => {},
       first_field => 'username',
+      location    => 'home',
       template    => [ 'contents', 'index' ],
       title       => loc( $req, $title, $opts ), };
    my $fields     =  $page->{fields};

@@ -1,5 +1,8 @@
 Revision history for App::Notitia
 
+          - Added current location to primary and secondary nav links
+          - Returning action path in controller tuples
+            Needs Web::Components v0.6
           - Rota month selection now a rolling year
           - Can distinguish / list service / private bikes
           - Logging in redirects to login page on failure

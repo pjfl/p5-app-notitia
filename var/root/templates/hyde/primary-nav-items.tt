@@ -1,21 +1,30 @@
 <!-- Primary Navigation -->
 <ul>
-[%    class = 'windows fade' -%]
+[%    text  = loc( 'Home' ) -%]
+[%    tip   = loc( 'Application home page' ) -%]
+[%    href  = uri_for_action( 'user/index' ) -%]
+[%    class = ''; IF page.location == 'home'; class = 'current'; END -%]
+   <li>
+[%    LinkWithTips( href, class, text, page.hint, tip ) -%]
+   </li>
 [%    text  = loc( 'Documentation' ) -%]
 [%    tip   = loc( 'Documentation pages for the application' ) -%]
 [%    href  = uri_for_action( 'docs/index' ) -%]
+[%    class = ''; IF page.location == 'documentation'; class = 'current'; END -%]
    <li>
-[%    LinkWithTips( href, 'fade', text, page.hint, tip ) -%]
+[%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
 [%    text  = loc( 'Posts' ) -%]
 [%    tip   = loc( 'Blog posts about upcoming events' ) -%]
 [%    href  = uri_for_action( 'posts/page' ) -%]
+[%    class = ''; IF page.location == 'posts'; class = 'current'; END -%]
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
 [%    text  = loc( 'Rota' ) -%]
 [%    tip   = loc( 'Scheduled rotas' ) -%]
 [%    href  = uri_for_action( 'sched/day_rota' ) -%]
+[%    class = ''; IF page.location == 'schedule'; class = 'current'; END -%]
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
