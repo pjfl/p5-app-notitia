@@ -1,6 +1,6 @@
 package App::Notitia::Model::Endorsement;
 
-use App::Notitia::Attributes;  # Will do namespace cleaning
+use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( admin_navigation_links bind delete_button
                                 loc management_button register_action_paths

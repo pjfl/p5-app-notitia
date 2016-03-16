@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Improved some translations
           - Added current location to primary and secondary nav links
           - Returning action path in controller tuples
             Needs Web::Components v0.6

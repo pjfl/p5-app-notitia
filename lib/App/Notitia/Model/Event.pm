@@ -34,6 +34,7 @@ around 'get_stash' => sub {
    my $stash = $orig->( $self, $req, @args );
 
    $stash->{nav} = admin_navigation_links $req;
+   $stash->{page}->{location} //= 'admin';
 
    return $stash;
 };

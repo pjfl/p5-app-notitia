@@ -2,21 +2,21 @@
 <ul>
 [% IF page.authenticated -%]
 [%    text = loc( 'Admin' ) -%]
-[%    tip  = loc( 'Admininstration interface' ) -%]
+[%    tip  = loc( 'admin_index_title' ) -%]
 [%    href = uri_for_action( 'admin/index' ) -%]
 [%    class = ''; IF page.location == 'admin'; class = 'current'; END -%]
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
 [%    text = loc( 'Profile' ) -%]
-[%    tip  = loc( 'Configure user profile' ) -%]
+[%    tip  = loc( 'Update personal details' ) -%]
    <li>
 [%    LinkWithTips( '#', 'windows', text, page.hint, tip, 'profile-user' ) -%]
    </li>
    <li>
 [%    href = uri_for_action( 'user/logout_action' ) -%]
 [%    FormWithButton( href, 'windows', loc( 'Logout' ), 'authentication',
-                      loc( 'Logout from the application' ),
+                      loc( 'Logout from [_1]', config.title ),
                      'logout-user', 'logout' ) -%]
    </li>
 [% ELSE -%]

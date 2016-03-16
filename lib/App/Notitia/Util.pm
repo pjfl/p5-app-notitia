@@ -263,8 +263,7 @@ sub clone (;$) {
 sub create_button ($$$) {
    my ($req, $action, $k) = @_;
 
-   return { class => 'fade',
-            hint  => loc( $req, 'Hint' ),
+   return { hint  => loc( $req, 'Hint' ),
             href  => uri_for_action( $req, $action ),
             name  => "create_${k}",
             tip   => loc( $req, "${k}_create_tip", [ $k ] ),
@@ -429,7 +428,7 @@ sub management_button ($$$;$) {
    my ($moniker, $action) = split m{ / }mx, $actionp, 2;
    my $href   = uri_for_action( $req, $actionp, $args );
    my $type   = $opts->{type} // 'link';
-   my $button = { class => 'table-link fade',
+   my $button = { class => 'table-link',
                   hint  => loc( $req, 'Hint' ),
                   href  => $href,
                   name  => "${name}-${action}",
@@ -574,7 +573,7 @@ sub stash_functions ($$$) {
    my ($app, $req, $dest) = @_; weaken $req;
 
    $dest->{is_member     } = \&is_member;
-   $dest->{loc           } = sub { loc( $req, $_[ 0 ] ) };
+   $dest->{loc           } = sub { loc( $req, shift, @_ ) };
    $dest->{reference     } = sub { ref $_[ 0 ] };
    $dest->{show_node     } = \&show_node;
    $dest->{str2time      } = \&str2time;

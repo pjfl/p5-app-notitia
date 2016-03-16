@@ -20,8 +20,9 @@ are announced via a blogging engine and RSS feed
 
 This application is written in modern [Perl](http://www.perl.org) and
 uses [Moo](https://metacpan.org/module/Moo),
-[Plack](https://metacpan.org/module/Plack), and
-[Web::Simple](https://metacpan.org/module/Web::Simple). Prefer
+[Plack](https://metacpan.org/module/Plack),
+[Web::Simple](https://metacpan.org/module/Web::Simple), and
+[DBIC](https://metacpan.org/module/DBIx::Class). Prefer
 class based inheritance when JavaScript programming hence
 [Mootools](http://mootools.net/) not jQuery.
 
@@ -130,11 +131,13 @@ including creating an administration user. You will need the database
 administration password to complete this step
 
 For the user name generation to work you will need to edit the configuration
-file F<lib/App/Notitia/app-notitia.json> and add the line
+file *lib/App/Notitia/app-notitia.json* and add the line
 
+```json
    "person_prefix": "xxx",
+```
 
-substituting a two or three character prefix for C<xxx> that reflects the
+substituting a two or three character prefix for *xxx* that reflects the
 name of the organisation that is operating the application
 
 By default the development server will run at:

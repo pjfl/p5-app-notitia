@@ -1,7 +1,7 @@
 <!-- Primary Navigation -->
 <ul>
 [%    text  = loc( 'Home' ) -%]
-[%    tip   = loc( 'Application home page' ) -%]
+[%    tip   = loc( 'main_index_title', config.title ) -%]
 [%    href  = uri_for_action( 'user/index' ) -%]
 [%    class = ''; IF page.location == 'home'; class = 'current'; END -%]
    <li>

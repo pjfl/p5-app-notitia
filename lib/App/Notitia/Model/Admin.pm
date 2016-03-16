@@ -48,11 +48,16 @@ around 'get_stash' => sub {
 my $_people_links_cache = {};
 
 # Private functions
+my $_make_tip = sub {
+   my ($req, $k, $args) = @_; $args //= [];
+
+   return loc( $req, 'Hint' ).SPC.TILDE.SPC.loc( $req, $k, $args );
+};
+
 my $_button = sub {
    my ($req, $action, $name, $args) = @_;
 
-   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
-           . loc( $req, "${action}_${name}_tip", $args );
+   my $tip = $_make_tip->( $req, "${action}_${name}_tip", $args );
 
    return { container_class => 'right-last', label => "${action}_${name}",
             tip => $tip, value => "${action}_${name}" };
@@ -78,10 +83,6 @@ my $_assert_not_self = sub {
                   level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return $nok
-};
-
-my $_make_tip = sub {
-   my ($req, $k) = @_; return loc( $req, 'Hint' ).SPC.TILDE.SPC.loc( $req, $k );
 };
 
 my $_maybe_find_person = sub {
