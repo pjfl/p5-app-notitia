@@ -1,5 +1,9 @@
 Revision history for App::Notitia
 
+          - Fixed bootstrapping of var/etc/app-notitia.json
+          - Fixed notitia URI without the trailing slash
+          - Added field help explaining name or owner for new vehicle
+          - Change roles label to Primary Role on person form
           - Improved some translations
           - Added current location to primary and secondary nav links
           - Returning action path in controller tuples

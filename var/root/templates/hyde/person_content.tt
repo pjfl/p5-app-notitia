@@ -9,7 +9,7 @@
             method="post" name="person-admin">
 [% TextField( page.fields.first_name ) -%]
 [% TextField( page.fields.last_name ) -%]
-[% Select( page.fields.roles ) -%]
+[% Select( page.fields.primary_role ) -%]
 [% TextField( page.fields.email_address ) -%]
 [% TextField( page.fields.address ) -%]
 [% TextField( page.fields.postcode ) -%]

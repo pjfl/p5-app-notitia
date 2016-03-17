@@ -46,6 +46,15 @@ sub find_vehicle_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'vehicle' );
 }
 
+sub list_all_types {
+   my ($self, $opts) = @_; $opts //= {};
+
+   $opts->{order_by} //= [ 'type_class', 'name' ];
+
+   return $self->search
+      ( {}, { columns => [ 'name', 'type_class' ], %{ $opts } } );
+}
+
 sub list_certification_types {
    my ($self, $opts) = @_; $opts //= {};
 
@@ -65,6 +74,16 @@ sub list_rota_types {
 
    return $self->search( { type_class => 'rota' },
                          { columns    => [ 'id', 'name' ], %{ $opts } } );
+}
+
+sub list_types {
+   my ($self, $type_class, $opts) = @_; $opts //= {};
+
+   $opts->{order_by} //= [ 'type_class', 'name' ];
+
+   return $self->search
+      ( { type_class => $type_class },
+        { columns    => [ 'name', 'type_class' ], %{ $opts } } );
 }
 
 sub list_vehicle_types {

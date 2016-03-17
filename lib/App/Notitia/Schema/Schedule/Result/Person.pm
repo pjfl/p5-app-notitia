@@ -359,7 +359,9 @@ sub validation_attributes {
          notes         => { validate => 'isValidLength isValidText' },
          password      => {
             validate   => 'isMandatory isValidLength isValidPassword' },
-         postcode      => { validate => 'isValidLength isValidPostcode' },
+         postcode      => {
+            filters    => 'filterUpperCase',
+            validate   => 'isValidLength isValidPostcode' },
          resigned      => { validate => 'isValidDate' },
          subscription  => { validate => 'isValidDate' },
       },

@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 29 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 30 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 29 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 30 $ of L<App::Notitia>
 
 =head1 Description
 
@@ -82,7 +82,7 @@ to emit the SQL it generates to C<stderr>
 
 =head1 Project To Do List
 
-TODO: Oh god, Microsoft and their fucking excuse for a browser
+TODO: Setup a virtualbox environment to do Explorer testing
 
 TODO: Determine how to request a vehicle for an event
 
@@ -92,11 +92,39 @@ TODO: Endorsement type_codes need similar treatment to event uris
 
 TODO: Need calendar view for whole month
 
-TODO: Need to be able to get to nok more easily
+TODO: Need to be able to get to nok more easily. Takes too long to look
+      up person's nok details
 
-TODO: Need to be able to adjust criteria for assignments
+TODO: Need to be able to adjust criteria for assignments. Assert claim
+      allowd needs to use a configurable list of certs to check against
 
 TODO: Type maintainence page
+
+TODO: Make bike_requested appear with some text
+
+TODO: Loose traffic lights from rota
+
+TODO: Make some of the docs pages private
+
+TODO: Remove Exception leader text from exception handler screen
+
+TODO: Rename asset_manager to rota_manager and allow to unassign slots
+
+TODO: Put date picker on the rota top left cell
+
+TODO: Add a participents dialog to rota event row
+
+TODO: Blank event row on rota take you to event create
+
+TODO: Event summary should show the event create link
+
+TODO: Remove unecessary links to certs and offences for non bike riders
+
+TODO: Add current people list. People who have not resigned
+
+TODO: Post install should prompt for person_prefix and salt
+
+TODO: Separate login page from index page
 
 =head1 Dependencies
 

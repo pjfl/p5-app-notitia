@@ -14,8 +14,8 @@
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
-[%    text  = loc( 'Posts' ) -%]
-[%    tip   = loc( 'Blog posts about upcoming events' ) -%]
+[%    text  = loc( 'Events' ) -%]
+[%    tip   = loc( 'Posts about upcoming events' ) -%]
 [%    href  = uri_for_action( 'posts/page' ) -%]
 [%    class = ''; IF page.location == 'posts'; class = 'current'; END -%]
    <li>

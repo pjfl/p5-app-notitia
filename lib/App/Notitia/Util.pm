@@ -140,8 +140,6 @@ sub admin_navigation_links ($) {
                        role => 'fund_raiser' ),
         $nav_folder->( $req, 'types' ),
         $l1_navlink->( $req, { name => 'types_list' }, 'admin/types', [] ),
-        $l1_navlink->( $req, { name => 'roles_list' }, 'admin/type',
-                       [ 'role' ] ),
         $nav_folder->( $req, 'vehicles' ),
         $l1_navlink->( $req, { name => 'vehicles_list' },
                        'asset/vehicles', [] ),
@@ -260,11 +258,11 @@ sub clone (;$) {
    return $v;
 }
 
-sub create_button ($$$) {
-   my ($req, $action, $k) = @_;
+sub create_button ($$$;$) {
+   my ($req, $actionp, $k, $opts) = @_; $opts //= {};
 
    return { hint  => loc( $req, 'Hint' ),
-            href  => uri_for_action( $req, $action ),
+            href  => uri_for_action( $req, $actionp, $opts->{args} // [] ),
             name  => "create_${k}",
             tip   => loc( $req, "${k}_create_tip", [ $k ] ),
             type  => 'link',

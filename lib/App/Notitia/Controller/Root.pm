@@ -19,7 +19,8 @@ sub dispatch_request {
    sub (POST + /user/reset      + ?*) { [ 'user/from_request',    @_ ] },
    sub (GET  + /user/reset      + ?*) { [ 'user/request_reset',   @_ ] },
    sub (GET  + /index | /       + ?*) { [ 'user/index',           @_ ] },
-   sub (GET  + /**              + ?*) { [ 'user/not_found',       @_ ] };
+   sub (GET  + /**              + ?*) { [ 'user/not_found',       @_ ] },
+   sub (GET                     + ?*) { [ 'user/index',           @_ ] },;
 }
 
 1;

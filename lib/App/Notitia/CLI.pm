@@ -135,6 +135,7 @@ sub post_install : method {
                                    : $conf->vardir->catdir( $dir );
 
       $path->exists or $path->mkpath( oct '0770' );
+      $dir eq 'etc' and $path->catfile( 'app-notitia.json' )->touch;
    }
 
    if ($localdir->exists) {

@@ -307,7 +307,7 @@ sub participate_event_action : Role(any) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub participents : Role(event_manager) Role(person_manager) {
+sub participents : Role(any) {
    my ($self, $req) = @_;
 
    my $uri       =  $req->uri_params->( 0 );

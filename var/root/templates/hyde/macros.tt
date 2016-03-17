@@ -37,6 +37,14 @@
 [%    IF f.type == 'link' -%]
 [%       LinkWithTips( f.href, f.class, f.value, f.hint, f.tip, f.name ) -%]
 [%    END -%]
+[%    IF f.type == 'list' -%]
+[%       FOR field IN f.list; -%]
+[%          IF !loop.first && f.separator; -%]
+               &nbsp;[% f.separator %]&nbsp;
+[%          END -%]
+[%          Dispatch( field ) -%]
+[%       END -%]
+[%    END -%]
 [% END -%]
 [% MACRO FormWithButton( href, class, content, form, tip, id, value ) BLOCK -%]
    <form action="[% href %]" enctype="application/x-www-form-urlencoded"

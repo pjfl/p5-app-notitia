@@ -33,6 +33,8 @@ my $prereqs  = {
     'Email::MIME' => '1.934',
     'Email::Sender' => '1.300018',
     'Exporter::Tiny' => '0.042',
+    'FCGI' => '0.77',
+    'FCGI::ProcManager' => '0.25',
     'File::DataClass' => 'v0.68.0',
     'HTML::GenerateUtil' => '1.20',
     'HTTP::Message' => '6.06',
@@ -45,7 +47,6 @@ my $prereqs  = {
     'Plack::Middleware::FixMissingBodyInRedirect' => '0.12',
     'Plack::Middleware::LogErrors' => '0.001',
     'Plack::Middleware::Session' => '0.21',
-    'Starman' => '0.3000',
     'Text::MultiMarkdown' => '1.000035',
     'Try::Tiny' => '0.22',
     'Type::Tiny' => '1.000005',
@@ -117,7 +118,7 @@ use File::Spec::Functions qw( catdir catfile );
 sub ACTION_install {
    my $self = shift; umask oct '0007'; $self->SUPER::ACTION_install();
 
-   for my $dir (qw( logs run session tmp )) {
+   for my $dir (qw( etc logs run session tmp )) {
       my $path = catdir( $self->install_path( 'var' ), $dir );
 
       $self->destdir and $path = catdir( $self->destdir, $path );

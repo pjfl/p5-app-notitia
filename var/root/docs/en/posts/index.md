@@ -1,5 +1,5 @@
 ---
 author: admin
-title: Posts Index
+title: Events
 ---
 Page intentionally created blank

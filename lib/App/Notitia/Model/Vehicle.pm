@@ -44,6 +44,12 @@ around 'get_stash' => sub {
 my $_vehicle_links_cache = {};
 
 # Private functions
+my $_make_tip = sub {
+   my ($req, $k, $args) = @_; $args //= [];
+
+   return loc( $req, 'Hint' ).SPC.TILDE.SPC.loc( $req, $k, $args );
+};
+
 my $_confirm_vehicle_button = sub {
    my ($req, $action) = @_;
 
@@ -78,13 +84,14 @@ my $_add_vehicle_js = sub {
 };
 
 my $_bind_vehicle_fields = sub {
-   my ($self, $vehicle, $opts) = @_; $opts //= {};
+   my ($self, $req, $vehicle, $opts) = @_; $opts //= {};
 
    my $disabled =  $opts->{disabled} // FALSE;
    my $map      =  {
       aquired   => { disabled => $disabled },
       disposed  => { disabled => $disabled },
-      name      => { disabled => $disabled,  label    => 'vehicle_name' },
+      name      => { disabled => $disabled,  label    => 'vehicle_name',
+                     tip      => $_make_tip->( $req, 'vehicle_name_field_tip')},
       notes     => { class    => 'autosize', disabled => $disabled },
       vrn       => { class    => 'server',   disabled => $disabled },
    };
@@ -285,7 +292,7 @@ sub vehicle : Role(asset_manager) {
    my $vrn       =  $req->uri_params->( 0, { optional => TRUE } );
    my $vehicle   =  $self->$_maybe_find_vehicle( $vrn );
    my $page      =  {
-      fields     => $self->$_bind_vehicle_fields( $vehicle ),
+      fields     => $self->$_bind_vehicle_fields( $req, $vehicle ),
       literal_js => $self->$_add_vehicle_js(),
       template   => [ 'contents', 'vehicle' ],
       title      => loc( $req, 'vehicle_management_heading' ), };

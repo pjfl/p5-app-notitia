@@ -1,5 +1,5 @@
 {
-   "cdn": "http://cdnjs.cloudflare.com/ajax/libs/",
+   "cdn": "https://cdnjs.cloudflare.com/ajax/libs/",
    "components": {
       "Model::Posts": {
          "feed_subtitle": "Recent news and events",
@@ -19,5 +19,8 @@
       "Issues/Wishlist": "http://github.com/pjfl/p5-app-notitia/issues",
       "Markdown Syntax": "http://daringfireball.net/projects/markdown/syntax"
    },
-   "repo_url": "https://github.com/pjfl/p5-app-notitia"
+   "owner": "notitia",
+   "repo_url": "https://github.com/pjfl/p5-app-notitia",
+   "server": "FCGI",
+   "user": "notitia"
 }

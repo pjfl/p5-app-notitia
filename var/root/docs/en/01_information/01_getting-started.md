@@ -74,6 +74,13 @@ shell startup if you want to make it permanent. Without the correct
 environment settings Perl will not be able to find the installed
 dependencies and the following will fail, badly.
 
+Upgrade the installed version of
+[Module::Build](https://metacpan.org/module/Module::Build) with
+
+```shell
+   cpanm --notest Module::Build
+```
+
 Install **App-Notitia** with:
 
 ```shell

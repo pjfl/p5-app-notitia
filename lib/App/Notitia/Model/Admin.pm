@@ -46,6 +46,7 @@ around 'get_stash' => sub {
 
 # Private class attributes
 my $_people_links_cache = {};
+my $_types_links_cache = {};
 
 # Private functions
 my $_make_tip = sub {
@@ -104,7 +105,34 @@ my $_people_headers = sub {
    return [ map { { value => loc( $req, "people_heading_${_}" ) } } 0 .. 4 ];
 };
 
+my $_types_headers = sub {
+   my $req = shift;
+
+   return [ map { { value => loc( $req, "types_heading_${_}" ) } } 0 .. 2 ];
+};
+
 # Private methods
+my $_add_type_create_buttons = sub {
+   my ($self, $req, $type_class) = @_;
+
+   my $actionp = $self->moniker.'/type'; my $buttons = [];
+
+   if ($type_class) {
+      my $k = "${type_class}_type"; my $opts = { args => [ $type_class ] };
+
+      push @{ $buttons }, create_button( $req, $actionp, $k, $opts );
+   }
+   else {
+      for my $type_class (@{ TYPE_CLASS_ENUM() }) {
+         my $k = "${type_class}_type"; my $opts = { args => [ $type_class ] };
+
+         push @{ $buttons }, create_button( $req, $actionp, $k, $opts );
+      }
+   }
+
+   return { list => $buttons, separator => '|', type => 'list', };
+};
+
 my $_add_person_js = sub {
    my $self = shift; my $opts = { domain => 'schedule', form => 'Person' };
 
@@ -145,8 +173,7 @@ my $_bind_type_fields = sub {
 
    my $disabled  =  $opts->{disabled} // FALSE;
    my $map       =  {
-      name       => { disabled => $disabled, label => 'type_name' },
-      type_class => { disabled => TRUE }, };
+      name       => { disabled => $disabled, label => 'type_name' }, };
 
    return $self->bind_fields( $type, $map, 'Type' );
 };
@@ -211,6 +238,23 @@ my $_people_links = sub {
    }
 
    $_people_links_cache->{ $name } = $links;
+
+   return @{ $links };
+};
+
+my $_types_links = sub {
+   my ($self, $req, $type) = @_; my $name = $type->name;
+
+   my $links = $_types_links_cache->{ $name }; $links and return @{ $links };
+
+   $links = []; my $opts = { args => [ $type->type_class, $type->name ] };
+
+   for my $actionp ( qw( admin/type ) ) {
+      push @{ $links },
+            { value => management_button( $req, $actionp, $name, $opts ) };
+   }
+
+   $_types_links_cache->{ $name } = $links;
 
    return @{ $links };
 };
@@ -347,13 +391,13 @@ sub person : Role(person_manager) {
       my $opts = { fields => { selected => $person->next_of_kin } };
 
       $people  = $person_rs->list_all_people( $opts );
-      $fields->{user_href} = uri_for_action $req, $action, [ $name ];
-      $fields->{delete   } = delete_button $req, $name, 'person';
-      $fields->{roles    } = bind 'roles', $person->list_roles;
+      $fields->{user_href   } = uri_for_action $req, $action, [ $name ];
+      $fields->{delete      } = delete_button $req, $name, 'person';
+      $fields->{primary_role} = bind 'primary_role', $person->list_roles;
    }
    else {
       $people  = $person_rs->list_all_people();
-      $fields->{roles    } = bind 'roles', $self->$_list_all_roles();
+      $fields->{primary_role} = bind 'primary_role', $self->$_list_all_roles();
    }
 
    $fields->{next_of_kin} = $_next_of_kin_list->( $people );
@@ -403,11 +447,11 @@ sub summary : Role(administrator) Role(person_viewer) {
    my $fields     =  $page->{fields};
 
    $opts    = field_options $self->schema, 'Person', 'name', $opts;
-   $fields->{username   } = bind 'username', $person->name, $opts;
+   $fields->{username    } = bind 'username', $person->name, $opts;
    $opts    = { fields => { selected => $person->next_of_kin } };
    $people  = $person_rs->list_all_people( $opts );
-   $fields->{next_of_kin} = $_next_of_kin_list->( $people );
-   $fields->{roles      } = bind 'roles', $person->list_roles;
+   $fields->{next_of_kin } = $_next_of_kin_list->( $people );
+   $fields->{primary_role} = bind 'primary_roles', $person->list_roles;
 
    return $self->get_stash( $req, $page );
 }
@@ -420,7 +464,7 @@ sub add_type_action : Role(administrator) {
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub remove_type_action : Role(adminisatrator) {
+sub remove_type_action : Role(administrator) {
    my ($self, $req) = @_;
 
    my $message = '';
@@ -444,16 +488,14 @@ sub type : Role(administrator) {
       fields      => $self->$_bind_type_fields( $type, $opts ),
       first_field => 'name',
       template    => [ 'contents', 'type' ],
-      title       => loc( $req, 'type_management_heading' ), };
+      title       => loc( $req, 'type_management_heading',
+                          { params => [ ucfirst $type_class ],
+                            no_quote_bind_values => TRUE, } ), };
+   my $args       =  [ $type_class, $name ];
    my $fields     =  $page->{fields};
 
-   if ($name) {
-      $fields->{remove} = $_remove_type_button->( $req, [ $type_class, $name ]);
-   }
-   else {
-      $fields->{type_class} = bind 'type_class', $type_class, { disabled => 1 };
-      $fields->{add} = $_add_type_button->( $req, [ $type_class, $name ] );
-   }
+   if ($name) { $fields->{remove} = $_remove_type_button->( $req, $args ) }
+   else { $fields->{add} = $_add_type_button->( $req, $args ) }
 
    return $self->get_stash( $req, $page );
 }
@@ -461,7 +503,25 @@ sub type : Role(administrator) {
 sub types : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $page = {};
+   my $type_class =  $req->query_params->( 'type_class', { optional => TRUE } );
+   my $page       =  {
+      fields      => {
+         add      => $self->$_add_type_create_buttons( $req, $type_class ),
+         headers  => $_types_headers->( $req ),
+         rows     => [], },
+      template    => [ 'contents', 'table' ],
+      title       => loc( $req, $type_class ? "${type_class}_list_link"
+                                            : 'types_management_heading' ), };
+   my $type_rs    =  $self->schema->resultset( 'Type' );
+   my $types      =  $type_class ? $type_rs->list_types( $type_class )
+                                 : $type_rs->list_all_types;
+   my $rows       =  $page->{fields}->{rows};
+
+   for my $type ($types->all) {
+      push @{ $rows }, [ { value => ucfirst $type->type_class },
+                         { value => loc( $req, $type->name ) },
+                         $self->$_types_links( $req, $type ) ];
+   }
 
    return $self->get_stash( $req, $page );
 }
