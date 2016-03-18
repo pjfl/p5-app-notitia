@@ -218,6 +218,9 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
 has 'skin'            => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'hyde';
 
+has 'slot_certs'      => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub { [ 'catagory_b' ] };
+
 has 'slot_limits'     => is => 'ro',   isa => ArrayRef[PositiveInt],
    builder            => sub { [ 2, 1, 3, 3, 1, 1 ] };
 
@@ -588,6 +591,12 @@ default colour scheme
 
 A non empty simple string that defaults to C<hyde>. The name of the default
 skin used to theme the appearance of the application
+
+=item C<slot_certs>
+
+An array reference of non empty simple strings. The list of certifications
+a biker rider is required to have before being able to claim a slot in a
+rota
 
 =item C<slot_limits>
 

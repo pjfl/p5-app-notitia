@@ -69,13 +69,19 @@ sub _as_string {
 my $_assert_claim_allowed = sub {
    my ($self, $shift_type, $slot_type, $subslot, $bike_wanted) = @_;
 
+   my $conf = $self->result_source->schema->config;
+
    $slot_type eq 'rider' and $self->assert_member_of( 'bike_rider' );
-   $slot_type eq 'rider' and $self->assert_certified_for( 'catagory_b' );
    $slot_type ne 'rider' and $bike_wanted
       and throw 'Cannot request a bike for slot type [_1]', [ $slot_type ];
 
-   my $i    = slot_limit_index $shift_type, $slot_type;
-   my $conf = $self->result_source->schema->config;
+   if ($slot_type eq 'rider') {
+      for my $cert (@{ $conf->slot_certs }) {
+         $self->assert_certified_for( $cert );
+      }
+   }
+
+   my $i = slot_limit_index $shift_type, $slot_type;
 
    $subslot > $conf->slot_limits->[ $i ] - 1
       and throw 'Cannot claim subslot [_1] greater than slot limit [_2]',

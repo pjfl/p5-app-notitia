@@ -61,6 +61,7 @@ Thumbs.db
 \bipc_srlock
 \blib/App/Notitia/app-notitia_local.json
 \bvar/etc/app-notitia.json
+\bvar/etc/profile
 \bvar/logs
 \bvar/root/docs/.mtime
 \bvar/root/docs/en/posts
