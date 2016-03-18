@@ -21,8 +21,7 @@ with q(Web::Components::Role);
 has 'application' => is => 'ro',   isa => Plinth,
    required       => TRUE,    weak_ref => TRUE;
 
-# Private attributes
-has '_transcoder' => is => 'lazy', isa => Object,
+has 'transcoder'  => is => 'lazy', isa => Object,
    builder        => sub { JSON::MaybeXS->new( utf8 => FALSE ) };
 
 # Private class attributes
@@ -90,7 +89,7 @@ sub bind_fields {
 sub check_field_server {
    my ($self, $k, $opts) = @_;
 
-   my $args = $self->_transcoder->encode
+   my $args = $self->transcoder->encode
       ( [ $k, $opts->{form}, $opts->{domain} ] );
 
    return "   behaviour.config.server[ '${k}' ] = {",
@@ -121,7 +120,7 @@ sub check_form_field {
 sub dialog_anchor {
    my ($self, $k, $href, $opts) = @_;
 
-   my $args = $self->_transcoder->encode( [ "${href}", $opts ] );
+   my $args = $self->transcoder->encode( [ "${href}", $opts ] );
 
    return "   behaviour.config.anchors[ '${k}' ] = {",
           "      method    : 'modalDialog',",

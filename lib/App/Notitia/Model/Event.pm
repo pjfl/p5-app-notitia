@@ -78,11 +78,14 @@ my $_bind_event_fields = sub {
 
    my $disabled = $opts->{disabled} // FALSE;
    my $map      = {
-      description => { class    => 'autosize server', disabled => $disabled },
+      description => { class    => 'standard-field autosize server',
+                       disabled => $disabled },
       end_time    => { disabled => $disabled },
-      name        => { class    => 'server', disabled => $disabled,
+      name        => { class    => 'standard-field server',
+                       disabled => $disabled,
                        label    => 'event_name' },
-      notes       => { class    => 'autosize', disabled => $disabled },
+      notes       => { class    => 'standard-field autosize',
+                       disabled => $disabled },
       start_time  => { disabled => $disabled},
    };
 

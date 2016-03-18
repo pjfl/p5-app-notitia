@@ -76,13 +76,14 @@ sub change_password : Role(anon) {
    my $name = $req->uri_params->( 0, { optional => TRUE } ) // $req->username;
    my $page = {
       fields      => {
-         again    => bind( 'again',    NUL, { class => 'reveal' } ),
+         again    => bind( 'again',    NUL, {
+            class => 'standard-field reveal' } ),
          oldpass  => bind( 'oldpass',  NUL, { label => 'old_password' } ),
          password => bind( 'password', NUL, { autocomplete => 'off',
-                                              class => 'reveal',
-                                              label => 'new_password' } ),
-         update   => bind( 'update', 'change_password',
-                           { class => 'right-last' } ),
+            class => 'standard-field reveal',
+            label => 'new_password' } ),
+         update   => bind( 'update', 'change_password', {
+            class => 'right-last' } ),
          username => bind( 'username', $name ), },
       literal_js  =>
          [ "   behaviour.config.inputs[ 'again' ]",

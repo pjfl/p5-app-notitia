@@ -28,6 +28,7 @@ sub dispatch_request {
    sub (GET  + /person/* | /person + ?*) { [ 'admin/person',         @_ ] },
    sub (POST + /role/*             + ?*) { [ 'role/from_request',    @_ ] },
    sub (GET  + /role/*             + ?*) { [ 'role/role',            @_ ] },
+   sub (POST + /rota               + ?*) { [ 'sched/from_request',   @_ ] },
    sub (GET  + /rota/**  | /rota   + ?*) { [ 'sched/day_rota',       @_ ] },
    sub (POST + /slot/**            + ?*) { [ 'sched/from_request',   @_ ] },
    sub (GET  + /slot/**            + ?*) { [ 'sched/slot',           @_ ] },

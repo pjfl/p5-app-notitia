@@ -90,10 +90,13 @@ my $_bind_vehicle_fields = sub {
    my $map      =  {
       aquired   => { disabled => $disabled },
       disposed  => { disabled => $disabled },
-      name      => { disabled => $disabled,  label    => 'vehicle_name',
+      name      => { disabled => $disabled,
+                     label    => 'vehicle_name',
                      tip      => $_make_tip->( $req, 'vehicle_name_field_tip')},
-      notes     => { class    => 'autosize', disabled => $disabled },
-      vrn       => { class    => 'server',   disabled => $disabled },
+      notes     => { class    => 'standard-field autosize',
+                     disabled => $disabled },
+      vrn       => { class    => 'standard-field server',
+                     disabled => $disabled },
    };
 
    return $self->bind_fields( $vehicle, $map, 'Vehicle' );

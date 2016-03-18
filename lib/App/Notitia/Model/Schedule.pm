@@ -76,6 +76,13 @@ my $_headers = sub {
    return [ map {  $_header_label->( $_[ 0 ], $_ ) } 0 .. $_table_cols ];
 };
 
+my $_onchange_submit = sub {
+   return "   behaviour.config.anchors[ 'rota_date' ] = {",
+          "      method    : 'submitForm',",
+          "      event     : 'change',",
+          "      args      : [ 'rota_redirect', 'day-rota' ] };";
+};
+
 my $_operators_vehicle = sub {
    my ($slot, $cache) = @_; $slot->operator->id or return NUL;
 
@@ -204,22 +211,37 @@ my $_rider_row = sub {
 };
 
 my $_events = sub {
-   my ($self, $req, $page, $rota_dt, $todays_events) = @_;
+   my ($self, $req, $page, $name, $rota_dt, $todays_events) = @_;
 
-   my $rota   = $page->{rota};
-   my $events = $rota->{events};
    my $date   = $rota_dt->day_abbr.SPC.$rota_dt->day;
-   my $col1   = { value => $date, class => 'rota-date' };
+   my $href   = uri_for_action $req, $self->moniker.'/day_rota';
+   my $picker = { class       => 'rota-date-form',
+                  content     => {
+                     list     => [ {
+                        name  => 'rota_name',
+                        type  => 'hidden',
+                        value => $name, }, {
+                        class => 'rota-date-field submit',
+                        name  => 'rota_date',
+                        label => NUL,
+                        type  => 'date',
+                        value => $date, } ],
+                     type     => 'list', },
+                  form_name   => 'day-rota',
+                  href        => $href,
+                  type        => 'form', };
+   my $col1   = { value => $picker, class => 'rota-date' };
    my $first  = TRUE;
 
    while (defined (my $event = $todays_events->next) or $first) {
       my $col2 = { value   => $_event_link->( $req, $event ),
                    colspan => $_table_cols };
 
-      push @{ $events }, [ $col1, $col2 ];
+      push @{ $page->{rota}->{events} }, [ $col1, $col2 ];
       $col1 = { value => undef }; $first = FALSE;
    }
 
+   push @{ $page->{literal_js} }, $_onchange_submit->();
    return;
 };
 
@@ -292,8 +314,7 @@ my $_get_page = sub {
 
    my $limits  =  $self->config->slot_limits;
    my $rota_dt =  str2date_time $date, 'GMT';
-   my $title   =  ucfirst( loc( $req, $name ) ).SPC
-               .  loc( $req, 'rota for' ).SPC
+   my $title   =  ucfirst( loc( $req, $name ) ).SPC.loc( $req, 'rota for' ).SPC
                .  $rota_dt->month_name.SPC.$rota_dt->day.SPC.$rota_dt->year;
    my $actionp =  $self->moniker.'/day_rota';
    my $next    =  uri_for_action $req, $actionp,
@@ -309,7 +330,7 @@ my $_get_page = sub {
       template => [ 'contents', 'rota' ],
       title    => $title };
 
-   $self->$_events( $req, $page, $rota_dt, $todays_events );
+   $self->$_events( $req, $page, $name, $rota_dt, $todays_events );
    $self->$_controllers( $req, $page, $name, $date, $rows, $limits );
    $self->$_riders_n_drivers( $req, $page, $name, $date, $rows, $limits );
 
@@ -371,6 +392,18 @@ sub day_rota : Role(any) {
    my $page = $self->$_get_page( $req, $name, $date, $events, $rows );
 
    return $self->get_stash( $req, $page );
+}
+
+sub rota_redirect_action : Role(any) {
+   my ($self, $req) = @_;
+
+   my $params    = $req->body_params;
+   my $rota_name = $params->( 'rota_name' );
+   my $rota_date = str2date_time $params->( 'rota_date' ), 'GMT';
+   my $args      = [ $rota_name, $rota_date->ymd ];
+   my $location  = uri_for_action $req, $self->moniker.'/day_rota', $args;
+
+   return { redirect => { location => $location } };
 }
 
 sub slot : Role(administrator) Role(bike_rider) Role(controller) Role(driver) {

@@ -2147,8 +2147,13 @@ var SubmitUtils = new Class( {
       return el ? el.value : null;
    },
 
-   submitForm: function( button_value ) {
-      if (!button_value) { this.form.submit(); return true; }
+   submitForm: function( button_value, form_name ) {
+      var form;
+
+      if (form_name) { form = document.forms[ form_name ] }
+      else { form = this.form }
+
+      if (!button_value) { form.submit(); return true; }
 
       var button; $$( '*[name=_method]' ).some( function( el ) {
          if (el.value == button_value) { button = el; return true }
@@ -2159,10 +2164,10 @@ var SubmitUtils = new Class( {
       else {
          new Element( 'input', {
             name: '_method', type: 'hidden', value: button_value
-         } ).inject( $( this.form ) );
+         } ).inject( $( form ) );
       }
 
-      this.form.submit();
+      form.submit();
       return true;
    },
 

@@ -146,18 +146,21 @@ my $_bind_person_fields = sub {
 
    my $disabled = $opts->{disabled} // FALSE;
    my $map      = {
-      active           => { checked => $person->active, disabled => $disabled,
-                            nobreak => TRUE, },
+      active           => { checked  => $person->active, disabled => $disabled,
+                            nobreak  => TRUE, },
       address          => { disabled => $disabled },
       dob              => { disabled => $disabled },
-      email_address    => { class => 'server', disabled => $disabled },
-      first_name       => { class => 'server', disabled => $disabled },
+      email_address    => { class    => 'standard-field server',
+                            disabled => $disabled },
+      first_name       => { class    => 'standard-field server',
+                            disabled => $disabled },
       home_phone       => { disabled => $disabled },
       joined           => { disabled => $disabled },
-      last_name        => { class => 'server', disabled => $disabled },
+      last_name        => { class    => 'standard-field server',
+                            disabled => $disabled },
       mobile_phone     => { disabled => $disabled },
-      notes            => { class => 'autosize', disabled => $disabled },
-      password_expired => { checked => $person->password_expired,
+      notes            => { class    => 'autosize', disabled => $disabled },
+      password_expired => { checked  => $person->password_expired,
                             container_class => 'right-last',
                             disabled => $disabled },
       postcode         => { disabled => $disabled },
@@ -383,7 +386,8 @@ sub person : Role(person_manager) {
    my $fields     =  $page->{fields};
    my $action     =  $self->moniker.'/person';
    my $opts       =  field_options $self->schema, 'Person', 'name',
-                        { tip => $_make_tip->( $req, 'username_field_tip' ) };
+                        { class => 'standard-field',
+                          tip   => $_make_tip->( $req, 'username_field_tip' ) };
 
    $fields->{username} = bind 'username', $person->name, $opts;
 
@@ -444,7 +448,7 @@ sub summary : Role(administrator) Role(person_viewer) {
    my $name       =  $req->uri_params->( 0 );
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $_maybe_find_person->( $person_rs, $name );
-   my $opts       =  { disabled => TRUE };
+   my $opts       =  { class => 'standard-field', disabled => TRUE };
    my $page       =  {
       fields      => $self->$_bind_person_fields( $person, $opts ),
       first_field => 'first_name',
