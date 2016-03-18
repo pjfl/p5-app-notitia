@@ -5,8 +5,8 @@ use namespace::autoclean;
 use App::Notitia; our $VERSION = $App::Doh::VERSION;
 
 use Archive::Tar::Constant qw( COMPRESS_GZIP );
-use Class::Usul::Constants qw( FALSE NUL OK TRUE );
-use Class::Usul::Functions qw( class2appdir ensure_class_loaded io );
+use Class::Usul::Constants qw( AS_PARA FALSE NUL OK TRUE );
+use Class::Usul::Functions qw( bson64id class2appdir ensure_class_loaded io );
 use Class::Usul::Types     qw( LoadableClass NonEmptySimpleStr Object );
 use English                qw( -no_match_vars );
 use User::grent;
@@ -45,6 +45,42 @@ my $_init_file_list = sub {
 };
 
 # Private methods
+my $_create_profile = sub {
+   my ($self, $localdir) = @_; my ($cmd, $profile);
+
+   if ($localdir->exists) {
+      my $inc = $localdir->catdir( 'lib', 'perl5' );
+
+      $cmd = [ $EXECUTABLE_NAME, '-I', "${inc}", "-Mlocal::lib=${localdir}" ];
+      $profile = $localdir->catfile( qw( var etc profile ) );
+   }
+   else {
+      $localdir = io[ '~', 'local' ];
+
+      my $inc = $localdir->catdir( 'lib', 'perl5' );
+
+      $cmd = [ $EXECUTABLE_NAME, '-I', "${inc}", "-Mlocal::lib=${localdir}" ];
+      $profile = $self->config->vardir->catfile( 'etc', 'profile' );
+   }
+
+   $self->run_cmd( $cmd, { err => 'stderr', out => $profile } );
+   return;
+};
+
+my $_create_schema = sub {
+   my ($self, $cmd) = @_;
+
+   my $opts = { err => 'stderr', in => 'stdin', out => 'stdout' };
+
+   $self->run_cmd( [ $cmd, '-o', 'bootstrap=1', 'edit-credentials' ], $opts );
+   $opts->{expected_rv} = 1;
+   $self->run_cmd( [ $cmd, 'drop-database' ], $opts );
+   delete $opts->{expected_rv};
+   $self->run_cmd( [ $cmd, 'create-database' ], $opts );
+   $self->run_cmd( [ $cmd, 'deploy-and-populate' ], $opts );
+   return;
+};
+
 my $_root_post_install = sub {
    my ($self, $appldir) = @_;
 
@@ -138,27 +174,24 @@ sub post_install : method {
       $dir eq 'etc' and $path->catfile( 'app-notitia.json' )->touch;
    }
 
-   if ($localdir->exists) {
-      my $inc = $localdir->catdir( 'lib', 'perl5' );
-      my $cmd = [ $EXECUTABLE_NAME, '-I', "${inc}", "-Mlocal::lib=${localdir}"];
-      my $profile = $localdir->catdir( qw( var etc profile ) );
+   my $text = 'The organisation prefix is a two or three character string '
+            . 'used by the username generator. If should reflect the name '
+            . 'of the group operating the application';
 
-      $self->run_cmd( $cmd, { err => 'stderr', out => $profile } );
-   }
+   $self->output( $text, AS_PARA );
 
-   my $schema = $conf->binsdir->catfile( 'notitia-schema' );
+   my $prompt      = '+Enter the organisation prefix';
+   my $person_pref = $self->get_line( $prompt, NUL, TRUE, 0 );
+   my $data        = { person_pref => $person_pref, salt => bson64id() };
+   my $local_conf  = $conf->home->catfile( 'app-notitia_local.json' );
 
-   if ($schema->exists) {
-      my $opts = { err => 'stderr', in => 'stdin', out => 'stdout' };
+   $self->file->data_dump( data => $data, path => $local_conf );
 
-      $self->run_cmd
-         ( [ $schema, '-o', 'bootstrap=1', 'edit-credentials' ], $opts );
-      $opts->{expected_rv} = 1;
-      $self->run_cmd( [ $schema, 'drop-database' ], $opts );
-      delete $opts->{expected_rv};
-      $self->run_cmd( [ $schema, 'create-database' ], $opts );
-      $self->run_cmd( [ $schema, 'deploy-and-populate' ], $opts );
-   }
+   $self->$_create_profile( $localdir );
+
+   my $cmd = $conf->binsdir->catfile( 'notitia-schema' );
+
+   $cmd->exists and $self->$_create_schema( $cmd );
 
    $EFFECTIVE_USER_ID == 0 and $self->$_root_post_install( $appldir );
 

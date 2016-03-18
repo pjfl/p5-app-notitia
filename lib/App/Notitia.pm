@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 30 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 31 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 30 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 31 $ of L<App::Notitia>
 
 =head1 Description
 
@@ -121,8 +121,6 @@ TODO: Event summary should show the event create link
 TODO: Remove unecessary links to certs and offences for non bike riders
 
 TODO: Add current people list. People who have not resigned
-
-TODO: Post install should prompt for person_prefix and salt
 
 TODO: Separate login page from index page
 

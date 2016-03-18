@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Post install prompts for organisation prefix
           - Fixed bootstrapping of var/etc/app-notitia.json
           - Fixed notitia URI without the trailing slash
           - Added field help explaining name or owner for new vehicle
