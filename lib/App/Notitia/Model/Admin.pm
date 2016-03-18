@@ -409,20 +409,26 @@ sub person : Role(person_manager) {
 sub people : Role(any) {
    my ($self, $req) = @_;
 
-   my $role      =  $req->query_params->( 'role', { optional => TRUE } );
+   my $role      =  $req->query_params->( 'role',   { optional => TRUE } );
+   my $status    =  $req->query_params->( 'status', { optional => TRUE } );
+   my $title_key =  $role   ? "${role}_list_link"
+                 :  $status ? "${status}_people_list_link"
+                            : 'people_management_heading';
    my $page      =  {
       fields     => {
          add     => create_button( $req, $self->moniker.'/person', 'person' ),
          headers => $_people_headers->( $req ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
-      title      => loc( $req, $role ? "${role}_list_link"
-                                     : 'people_management_heading' ), };
+      title      => loc( $req, $title_key ), };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $rows      =  $page->{fields}->{rows};
    my $opts      =  { order_by => 'name' };
-   my $people    =  $role ? $person_rs->list_people( $role, $opts )
-                          : $person_rs->list_all_people( $opts );
+
+   $status and $status eq 'current' and $opts->{current} = TRUE;
+
+   my $people = $role ? $person_rs->list_people( $role, $opts )
+                      : $person_rs->list_all_people( $opts );
 
    for my $person (@{ $people }) {
       push @{ $rows }, [ { value => $person->[ 0 ]  },

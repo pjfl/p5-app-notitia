@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 33 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 34 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 33 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 34 $ of L<App::Notitia>
 
 =head1 Description
 
@@ -115,8 +115,6 @@ TODO: Add a participents dialog to rota event row
 TODO: Blank event row on rota take you to event create
 
 TODO: Remove unecessary links to certs and offences for non bike riders
-
-TODO: Add current people list. People who have not resigned
 
 TODO: Separate login page from index page
 

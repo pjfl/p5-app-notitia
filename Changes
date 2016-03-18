@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added current people list. People who have not resigned
           - Event summary also shows the event create link
           - Removed Exception leader text from exception handler screen
             for all users except admin

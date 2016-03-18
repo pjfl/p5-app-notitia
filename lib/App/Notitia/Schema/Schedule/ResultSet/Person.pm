@@ -50,10 +50,12 @@ sub is_person {
 sub list_all_people {
    my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
 
+   my $where  = delete $opts->{current}
+              ? { resigned => { '=' => undef } } : {};
    my $fields = delete $opts->{fields} // {};
    my $people = $self->search
-      ( {}, { columns => [ 'first_name', 'id', 'last_name', 'name' ],
-           %{ $opts } } );
+      ( $where, { columns => [ 'first_name', 'id', 'last_name', 'name' ],
+                  %{ $opts } } );
 
    return [ map { $_person_tuple->( $_, $fields ) } $people->all ];
 }
