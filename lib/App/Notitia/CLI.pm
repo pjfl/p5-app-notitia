@@ -6,7 +6,8 @@ use App::Notitia; our $VERSION = $App::Doh::VERSION;
 
 use Archive::Tar::Constant qw( COMPRESS_GZIP );
 use Class::Usul::Constants qw( AS_PARA FALSE NUL OK TRUE );
-use Class::Usul::Functions qw( bson64id class2appdir ensure_class_loaded io );
+use Class::Usul::Functions qw( bson64id class2appdir create_token
+                               ensure_class_loaded io );
 use Class::Usul::Types     qw( LoadableClass NonEmptySimpleStr Object );
 use English                qw( -no_match_vars );
 use User::grent;
@@ -42,6 +43,10 @@ has 'less_class'      => is => 'lazy', isa => LoadableClass,
 my $_init_file_list = sub {
    return io( [ NUL, 'etc', 'init.d', $_[ 0 ] ] ),
           io( [ NUL, 'etc', 'rc0.d', 'K01'.$_[ 0 ] ] );
+};
+
+my $_random_chars = sub {
+   my $token = lc create_token; $token =~ s{ [^a-z]+ }{}gmx; return $token;
 };
 
 # Private methods
@@ -111,6 +116,27 @@ my $_root_post_install = sub {
    return;
 };
 
+my $_write_local_config = sub {
+   my ($self, $local_conf) = @_;
+
+   my $text = 'The organisation prefix is a two or three character string '
+            . 'used by the username generator. If should reflect the name '
+            . 'of the group operating the application';
+
+   $self->output( $text, AS_PARA );
+
+   my $prompt      = '+Enter the organisation prefix';
+   my $person_pref = $self->get_line( $prompt, NUL, TRUE, 0 );
+
+   length $person_pref or $person_pref = $_random_chars->();
+   $person_pref = substr $person_pref, 0, 3;
+
+   my $data = { person_pref => $person_pref, salt => bson64id() };
+
+   $self->file->data_dump( data => $data, path => $local_conf );
+   return;
+};
+
 my $_write_theme = sub {
    my ($self, $cssd, $file) = @_;
 
@@ -174,18 +200,9 @@ sub post_install : method {
       $dir eq 'etc' and $path->catfile( 'app-notitia.json' )->touch;
    }
 
-   my $text = 'The organisation prefix is a two or three character string '
-            . 'used by the username generator. If should reflect the name '
-            . 'of the group operating the application';
+   my $local_conf = $conf->home->catfile( 'app-notitia_local.json' );
 
-   $self->output( $text, AS_PARA );
-
-   my $prompt      = '+Enter the organisation prefix';
-   my $person_pref = $self->get_line( $prompt, NUL, TRUE, 0 );
-   my $data        = { person_pref => $person_pref, salt => bson64id() };
-   my $local_conf  = $conf->home->catfile( 'app-notitia_local.json' );
-
-   $self->file->data_dump( data => $data, path => $local_conf );
+   $local_conf->exists or $self->$_write_local_config( $local_conf );
 
    $self->$_create_profile( $localdir );
 

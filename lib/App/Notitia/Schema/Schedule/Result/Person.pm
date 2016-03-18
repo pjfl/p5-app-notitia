@@ -35,18 +35,19 @@ $class->add_columns
      subscription     => date_data_type,
      name             => varchar_data_type(  64 ),
      password         => varchar_data_type( 128 ),
-     first_name       => varchar_data_type(  64 ),
-     last_name        => varchar_data_type(  64 ),
+     first_name       => varchar_data_type(  30 ),
+     last_name        => varchar_data_type(  30 ),
      address          => varchar_data_type(  64 ),
      postcode         => varchar_data_type(  16 ),
      email_address    => varchar_data_type(  64 ),
-     mobile_phone     => varchar_data_type(  64 ),
-     home_phone       => varchar_data_type(  64 ),
+     mobile_phone     => varchar_data_type(  32 ),
+     home_phone       => varchar_data_type(  32 ),
      notes            => varchar_data_type, );
 
 $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'name' ] );
+$class->add_unique_constraint( [ 'email_address' ] );
 
 $class->belongs_to( next_of_kin => "${class}" );
 
@@ -290,7 +291,7 @@ sub is_participent_of {
 }
 
 sub label {
-   return $_[ 0 ]->first_name.SPC.$_[ 0 ]->last_name.' ('.$_[ 0 ].')';
+   return $_[ 0 ]->first_name.SPC.$_[ 0 ]->last_name;
 }
 
 sub list_roles {
@@ -330,8 +331,8 @@ sub validation_attributes {
       constraints      => {
          address       => { max_length =>  64, min_length => 0, },
          email_address => { max_length =>  64, min_length => 0, },
-         first_name    => { max_length =>  64, min_length => 1, },
-         last_name     => { max_length =>  64, min_length => 1, },
+         first_name    => { max_length =>  30, min_length => 1, },
+         last_name     => { max_length =>  30, min_length => 1, },
          name          => { max_length =>  64, min_length => 3, },
          notes         => { max_length =>  VARCHAR_MAX_SIZE(),
                             min_length =>   0, },

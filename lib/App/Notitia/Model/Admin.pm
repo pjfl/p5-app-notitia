@@ -100,9 +100,11 @@ my $_next_of_kin_list = sub {
 };
 
 my $_people_headers = sub {
-   my $req = shift;
+   my ($req, $role) = @_; $role //= NUL;
 
-   return [ map { { value => loc( $req, "people_heading_${_}" ) } } 0 .. 4 ];
+   my $max = ($role eq 'bike_rider' || $role eq 'driver') ? 4 : 2;
+
+   return [ map { { value => loc( $req, "people_heading_${_}" ) } } 0 .. $max ];
 };
 
 my $_types_headers = sub {
@@ -229,18 +231,22 @@ my $_new_username = sub {
 };
 
 my $_people_links = sub {
-   my ($self, $req, $person) = @_; my $name = $person->[ 1 ]->name;
+   my ($self, $req, $person, $role) = @_; my $name = $person->[ 1 ]->name;
 
-   my $links = $_people_links_cache->{ $name }; $links and return @{ $links };
+   my $k = $role ? "${role}_${name}" : $name;
 
-   $links = [];
+   my $links = $_people_links_cache->{ $k }; $links and return @{ $links };
 
-   for my $actionp ( qw( admin/person role/role
-                         certs/certifications blots/endorsements ) ) {
+   $links = []; my @paths = ( 'admin/person', 'role/role' );
+
+   $role and ($role eq 'bike_rider' or $role eq 'driver')
+         and push @paths, 'certs/certifications', 'blots/endorsements';
+
+   for my $actionp ( @paths ) {
       push @{ $links }, { value => management_button( $req, $actionp, $name ) };
    }
 
-   $_people_links_cache->{ $name } = $links;
+   $_people_links_cache->{ $k } = $links;
 
    return @{ $links };
 };
@@ -421,7 +427,7 @@ sub people : Role(any) {
    my $page      =  {
       fields     => {
          add     => create_button( $req, $self->moniker.'/person', 'person' ),
-         headers => $_people_headers->( $req ),
+         headers => $_people_headers->( $req, $role ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => loc( $req, $title_key ), };
@@ -436,7 +442,7 @@ sub people : Role(any) {
 
    for my $person (@{ $people }) {
       push @{ $rows }, [ { value => $person->[ 0 ]  },
-                         $self->$_people_links( $req, $person ) ];
+                         $self->$_people_links( $req, $person, $role ) ];
    }
 
    return $self->get_stash( $req, $page );

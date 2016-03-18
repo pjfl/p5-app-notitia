@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Removed unecessary links to certs and offences for non bike riders
           - Put date picker on the rota top left cell
           - Added current people list. People who have not resigned
           - Event summary also shows the event create link
