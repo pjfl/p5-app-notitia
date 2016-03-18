@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Removed Exception leader text from exception handler screen
+            for all users except admin
           - Post install prompts for organisation prefix
           - Fixed bootstrapping of var/etc/app-notitia.json
           - Fixed notitia URI without the trailing slash

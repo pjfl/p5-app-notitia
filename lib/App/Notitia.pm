@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 31 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 32 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 31 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 32 $ of L<App::Notitia>
 
 =head1 Description
 
@@ -105,8 +105,6 @@ TODO: Make bike_requested appear with some text
 TODO: Loose traffic lights from rota
 
 TODO: Make some of the docs pages private
-
-TODO: Remove Exception leader text from exception handler screen
 
 TODO: Rename asset_manager to rota_manager and allow to unassign slots
 

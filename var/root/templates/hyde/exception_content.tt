@@ -12,16 +12,16 @@
       <h5>[% loc( 'The following exception was thrown' ) %]</h5>
       <p>[% page.summary %]</p>
 [% END -%]
-[% line1 = loc( 'Exception thrown' ) _ ' ' -%]
-[% IF page.leader -%]
-[%    line1 = line1 _  loc( 'from' ) _ ' ' _ page.leader -%]
-[%    line2 = time2str( ' on %Y-%m-%d at %H:%M hours', page.error.time ) -%]
-      <h5>[% line1 %]<br/>[% line2 %]</h5>
-[% ELSE -%]
-[%    line1 = line1 _ time2str( ' on %Y-%m-%d at %H:%M hours', page.error.time ) -%]
-      <h5>[% line1 %]</h5>
-[% END -%]
+[% IF page.username == 'admin' -%]
+[%    line1 = loc( 'Exception thrown' ) _ ' ' -%]
+[%    when  = time2str( 'on %Y-%m-%d at %H:%M hours', page.error.time ) -%]
+[%    IF page.leader; line1 = line1 _  loc( 'from' ) _ ' ' _ page.leader -%]
+      <h5>[% line1 %]<br/>[% when %]</h5>
+[%    ELSE -%]
+      <h5>[% line1 _ ' ' _ when %]</h5>
+[%    END -%]
       <h5>[% loc( 'HTTP status code' ) _  '&nbsp;' _ page.error.rv %]</h5>
       <h5>[% loc( 'Have a nice day' ) %]...</h5>
+[% END -%]
    </article>
 </div>
