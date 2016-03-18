@@ -20,15 +20,14 @@
 [% DateField( page.fields.joined ) -%]
 [% DateField( page.fields.resigned ) -%]
 [% DateField( page.fields.subscription ) -%]
-[% TextArea( page.fields.notes ) -%]
+[% IF page.fields.notes; TextArea( page.fields.notes ); END -%]
 [% TextField( page.fields.username ) -%]
-[% IF page.fields.username.value -%]
+[% IF page.fields.save && page.fields.username.value -%]
 [%    CheckBox( page.fields.active ) -%]
 [%    CheckBox( page.fields.password_expired ) -%]
 [% END -%]
 [% IF page.fields.save; Button( page.fields.save ); END -%]
-[% IF page.fields.username.value && page.fields.delete -%]
-[%    Button( page.fields.delete ) -%]
+[% IF page.fields.delete; Button( page.fields.delete ) -%]
 [% END -%]
       </form>
    </article>

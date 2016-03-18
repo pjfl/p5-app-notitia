@@ -261,7 +261,8 @@ sub clone (;$) {
 sub create_button ($$$;$) {
    my ($req, $actionp, $k, $opts) = @_; $opts //= {};
 
-   return { hint  => loc( $req, 'Hint' ),
+   return { container_class => $opts->{container_class} // NUL,
+            hint  => loc( $req, 'Hint' ),
             href  => uri_for_action( $req, $actionp, $opts->{args} // [] ),
             name  => "create_${k}",
             tip   => loc( $req, "${k}_create_tip", [ $k ] ),

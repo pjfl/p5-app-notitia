@@ -7,6 +7,7 @@
       <form action="[% href %]" class="standard-form"
            enctype="application/x-www-form-urlencoded"
             method="post" name="event-admin">
+[% IF page.fields.add; Dispatch( page.fields.add ); END -%]
 [% TextField( page.fields.name ) -%]
 [% TextArea( page.fields.description ) -%]
 [% DateField( page.fields.date ) -%]
@@ -18,9 +19,7 @@
 [% END -%]
 [% IF page.fields.participate; Button( page.fields.participate ); END %]
 [% IF page.fields.save; Button( page.fields.save ); END -%]
-[% IF page.fields.name.value && page.fields.delete -%]
-[%    Button( page.fields.delete ) -%]
-[% END -%]
+[% IF page.fields.delete; Button( page.fields.delete ); END -%]
       </form>
    </article>
 </div>

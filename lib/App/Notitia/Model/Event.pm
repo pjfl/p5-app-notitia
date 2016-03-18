@@ -346,6 +346,8 @@ sub summary : Role(any) {
    my $fields  =  $page->{fields};
    my $actionp =  $self->moniker.'/event';
 
+   $fields->{add } = create_button $req, $actionp, 'event',
+                        { container_class => 'right' };
    $fields->{date} = bind 'event_date', $event->rota->date, $opts;
    $fields->{href} = uri_for_action $req, $actionp, [ $uri ];
    $opts = $person->is_participent_of( $uri ) ? { cancel => TRUE } : {};

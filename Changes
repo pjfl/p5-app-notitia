@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Event summary also shows the event create link
           - Removed Exception leader text from exception handler screen
             for all users except admin
           - Post install prompts for organisation prefix

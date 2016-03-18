@@ -35,7 +35,8 @@
                          f.form_name, f.tip, f.name, f.action ) -%]
 [%    END -%]
 [%    IF f.type == 'link' -%]
-[%       LinkWithTips( f.href, f.class, f.value, f.hint, f.tip, f.name ) -%]
+[%       LinkWithTips( f.href, f.class, f.value, f.hint,
+                       f.tip, f.name, f.container_class ) -%]
 [%    END -%]
 [%    IF f.type == 'list' -%]
 [%       FOR field IN f.list; -%]
@@ -61,9 +62,9 @@
    <a class="[% class %]" href="[% href %]"[% IF id -%]
          id="[% id %]"[% END %]>[% content %]</a>
 [% END -%]
-[% MACRO LinkWithTips( href, class, content, title, tip, id ) BLOCK -%]
-   <span class="link-help tips" title="[% title _ ' ~ ' _ tip %]">
-[%    Link( href, class, content, id ) -%]
+[% MACRO LinkWithTips( href, class, text, title, tip, id, con_class ) BLOCK -%]
+   <span class="link-help [% con_class %] tips"
+         title="[% title _ ' ~ ' _ tip %]">[% Link( href, class, text, id ) %]
    </span>
 [% END -%]
 [% MACRO PasswordField( field ) BLOCK -%]

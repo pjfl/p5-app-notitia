@@ -451,7 +451,8 @@ sub summary : Role(administrator) Role(person_viewer) {
    $opts    = { fields => { selected => $person->next_of_kin } };
    $people  = $person_rs->list_all_people( $opts );
    $fields->{next_of_kin } = $_next_of_kin_list->( $people );
-   $fields->{primary_role} = bind 'primary_roles', $person->list_roles;
+   $fields->{primary_role} = bind 'primary_role', $person->list_roles;
+   delete $fields->{notes};
 
    return $self->get_stash( $req, $page );
 }
