@@ -12,6 +12,7 @@ sub dispatch_request {
    sub (GET  + /certifications/*   + ?*) { [ 'certs/certifications', @_ ] },
    sub (POST + /certification/**   + ?*) { [ 'certs/from_request',   @_ ] },
    sub (GET  + /certification/**   + ?*) { [ 'certs/certification',  @_ ] },
+   sub (GET  + /contacts           + ?*) { [ 'admin/contacts',       @_ ] },
    sub (GET  + /endorsements/*     + ?*) { [ 'blots/endorsements',   @_ ] },
    sub (POST + /endorsement/**     + ?*) { [ 'blots/from_request',   @_ ] },
    sub (GET  + /endorsement/**     + ?*) { [ 'blots/endorsement',    @_ ] },

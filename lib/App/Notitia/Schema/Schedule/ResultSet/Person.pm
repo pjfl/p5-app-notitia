@@ -50,11 +50,15 @@ sub is_person {
 sub list_all_people {
    my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
 
-   my $where  = delete $opts->{current}
-              ? { resigned => { '=' => undef } } : {};
-   my $fields = delete $opts->{fields} // {};
-   my $people = $self->search
-      ( $where, { columns => [ 'first_name', 'id', 'last_name', 'name' ],
+   my $where   = delete $opts->{current}
+               ? { $self->me( 'resigned' ) => { '=' => undef } } : {};
+   my $fields  = delete $opts->{fields} // {};
+   my $columns = [ 'first_name', 'id', 'last_name', 'name' ];
+
+   $opts->{columns} and push @{ $columns }, @{ delete $opts->{columns} };
+
+   my $people  = $self->search
+      ( $where, { columns => $columns, order_by => $self->me( 'name' ),
                   %{ $opts } } );
 
    return [ map { $_person_tuple->( $_, $fields ) } $people->all ];
@@ -75,12 +79,16 @@ sub list_participents {
 sub list_people {
    my ($self, $role, $opts) = @_; $opts = { %{ $opts // {} } };
 
-   $opts->{prefetch} = [ 'roles' ];
+   $opts->{prefetch} //= []; push @{ $opts->{prefetch} }, 'roles';
 
    my $people = $self->list_all_people( $opts );
    my $type   = $self->$_find_role_type( $role );
 
    return [ grep { $_->[ 1 ]->is_member_of( $role, $type ) } @{ $people } ];
+}
+
+sub me {
+   return join '.', $_[ 0 ]->current_source_alias, $_[ 1 ] // NUL;
 }
 
 sub new_person_id {

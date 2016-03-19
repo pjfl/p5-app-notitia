@@ -25,6 +25,7 @@ has '+moniker' => default => 'admin';
 
 register_action_paths
    'admin/activate' => 'person/activate',
+   'admin/contacts' => 'contacts',
    'admin/index'    => 'admin/index',
    'admin/people'   => 'people',
    'admin/person'   => 'person',
@@ -100,11 +101,17 @@ my $_next_of_kin_list = sub {
 };
 
 my $_people_headers = sub {
-   my ($req, $role) = @_; $role //= NUL;
+   my ($req, $params) = @_; my ($header, $max);
 
-   my $max = ($role eq 'bike_rider' || $role eq 'driver') ? 4 : 2;
+   my $role = $params->{role} // NUL; my $type = $params->{type} // NUL;
 
-   return [ map { { value => loc( $req, "people_heading_${_}" ) } } 0 .. $max ];
+   if ($type eq 'contacts') { $header = 'contacts_heading'; $max = 5 }
+   else {
+      $header = 'people_heading';
+      $max    = ($role eq 'bike_rider' || $role eq 'driver') ? 4 : 2;
+   }
+
+   return [ map { { value => loc( $req, "${header}_${_}" ) } } 0 .. $max ];
 };
 
 my $_types_headers = sub {
@@ -183,6 +190,21 @@ my $_bind_type_fields = sub {
    return $self->bind_fields( $type, $map, 'Type' );
 };
 
+my $_contact_links = sub {
+   my ($self, $req, $person) = @_; my $links = [];
+
+   push @{ $links }, { value => $person->home_phone };
+   push @{ $links }, { value => $person->mobile_phone };
+   push @{ $links }, { value => $person->next_of_kin
+                              ? $person->next_of_kin->label : NUL };
+   push @{ $links }, { value => $person->next_of_kin
+                              ? $person->next_of_kin->home_phone : NUL };
+   push @{ $links }, { value => $person->next_of_kin
+                              ? $person->next_of_kin->mobile_phone : NUL };
+
+   return @{ $links };
+};
+
 my $_create_person_email = sub {
    my ($self, $req, $person, $password) = @_;
 
@@ -231,9 +253,12 @@ my $_new_username = sub {
 };
 
 my $_people_links = sub {
-   my ($self, $req, $person, $role) = @_; my $name = $person->[ 1 ]->name;
+   my ($self, $req, $person, $params) = @_; my $role = $params->{role};
 
-   my $k = $role ? "${role}_${name}" : $name;
+   $params->{type} and $params->{type} eq 'contacts'
+                   and return $self->$_contact_links( $req, $person->[ 1 ] );
+
+   my $name = $person->[ 1 ]->name; my $k = $role ? "${role}_${name}" : $name;
 
    my $links = $_people_links_cache->{ $k }; $links and return @{ $links };
 
@@ -323,6 +348,10 @@ sub activate : Role(anon) {
    }
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub contacts : Role(person_manager) Role(person_viewer) {
+   my ($self, $req) = @_; return $self->people( $req, 'contacts' );
 }
 
 sub create_person_action : Role(person_manager) {
@@ -417,32 +446,40 @@ sub person : Role(person_manager) {
 }
 
 sub people : Role(any) {
-   my ($self, $req) = @_;
+   my ($self, $req, $type) = @_; $type //= NUL;
 
-   my $role      =  $req->query_params->( 'role',   { optional => TRUE } );
-   my $status    =  $req->query_params->( 'status', { optional => TRUE } );
+   my $params    =  $req->query_params->( { optional => TRUE } );
+   my $role      =  $params->{role  } // NUL;
+   my $status    =  $params->{status} // NUL;
+
+   delete $params->{type}; $type and $params->{type} = $type;
+
    my $title_key =  $role   ? "${role}_list_link"
+                 :  $type   ? "${type}_list_heading"
                  :  $status ? "${status}_people_list_link"
-                            : 'people_management_heading';
+                 :            'people_management_heading';
    my $page      =  {
       fields     => {
          add     => create_button( $req, $self->moniker.'/person', 'person' ),
-         headers => $_people_headers->( $req, $role ),
+         headers => $_people_headers->( $req, $params ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => loc( $req, $title_key ), };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $rows      =  $page->{fields}->{rows};
-   my $opts      =  { order_by => 'name' };
+   my $opts      =  {};
 
-   $status and $status eq 'current' and $opts->{current} = TRUE;
+   $status eq 'current'  and $opts->{current } = TRUE;
+   $type   eq 'contacts' and $opts->{prefetch} = [ 'next_of_kin' ]
+      and $opts->{columns} = [ 'home_phone', 'mobile_phone' ]
+      and $page->{fields}->{class} = 'smaller-table';
 
    my $people = $role ? $person_rs->list_people( $role, $opts )
                       : $person_rs->list_all_people( $opts );
 
    for my $person (@{ $people }) {
       push @{ $rows }, [ { value => $person->[ 0 ]  },
-                         $self->$_people_links( $req, $person, $role ) ];
+                         $self->$_people_links( $req, $person, $params ) ];
    }
 
    return $self->get_stash( $req, $page );

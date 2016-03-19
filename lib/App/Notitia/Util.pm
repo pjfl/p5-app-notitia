@@ -104,13 +104,14 @@ my $nav_folder = sub {
             type  => 'folder', };
 };
 
-my $l1_navlink = sub {
+my $nav_linkto = sub {
    my ($req, $opts, $action, @args) = @_; my $name = $opts->{name};
 
+   my $depth      = $opts->{depth} // 1;
    my $label_opts = { params => $opts->{label_args} // [],
                       no_quote_bind_values => TRUE, };
 
-   return { depth => 1,
+   return { depth => $depth,
             label => loc( $req, "${name}_link", $label_opts ),
             tip   => loc( $req, "${name}_tip"  ),
             type  => 'link',
@@ -123,33 +124,34 @@ sub admin_navigation_links ($) {
 
    return
       [ $nav_folder->( $req, 'events' ),
-        $l1_navlink->( $req, { name => 'events_list' }, 'event/events', [] ),
-        $l1_navlink->( $req, { name => 'current_events' }, 'event/events', [],
+        $nav_linkto->( $req, { name => 'current_events' }, 'event/events', [],
                        after  => $now->clone->subtract( days => 1 )->ymd ),
-        $l1_navlink->( $req, { name => 'previous_events' }, 'event/events', [],
+        $nav_linkto->( $req, { name => 'previous_events' }, 'event/events', [],
                        before => $now->ymd ),
         $nav_folder->( $req, 'people' ),
-        $l1_navlink->( $req, { name => 'people_list' }, 'admin/people', [] ),
-        $l1_navlink->( $req, { name => 'current_people_list' }, 'admin/people',
+        $nav_linkto->( $req, { name => 'people_list' }, 'admin/people', [] ),
+        $nav_linkto->( $req, { name => 'contacts_list' }, 'admin/contacts', [],
+                       status => 'current' ),
+        $nav_linkto->( $req, { name => 'current_people_list' }, 'admin/people',
                        [], status => 'current' ),
-        $l1_navlink->( $req, { name => 'bike_rider_list' }, 'admin/people', [],
+        $nav_linkto->( $req, { name => 'bike_rider_list' }, 'admin/people', [],
                        role => 'bike_rider', status => 'current' ),
-        $l1_navlink->( $req, { name => 'controller_list' }, 'admin/people', [],
+        $nav_linkto->( $req, { name => 'controller_list' }, 'admin/people', [],
                        role => 'controller', status => 'current' ),
-        $l1_navlink->( $req, { name => 'driver_list' }, 'admin/people', [],
+        $nav_linkto->( $req, { name => 'driver_list' }, 'admin/people', [],
                        role => 'driver', status => 'current' ),
-        $l1_navlink->( $req, { name => 'fund_raiser_list' }, 'admin/people', [],
-                       role => 'fund_raiser' ),
+        $nav_linkto->( $req, { name => 'fund_raiser_list' }, 'admin/people', [],
+                       role => 'fund_raiser', status => 'current' ),
         $nav_folder->( $req, 'types' ),
-        $l1_navlink->( $req, { name => 'types_list' }, 'admin/types', [] ),
+        $nav_linkto->( $req, { name => 'types_list' }, 'admin/types', [] ),
         $nav_folder->( $req, 'vehicles' ),
-        $l1_navlink->( $req, { name => 'vehicles_list' },
+        $nav_linkto->( $req, { name => 'vehicles_list' },
                        'asset/vehicles', [] ),
-        $l1_navlink->( $req, { name => 'bike_list' },
+        $nav_linkto->( $req, { name => 'bike_list' },
                        'asset/vehicles', [], type => 'bike' ),
-        $l1_navlink->( $req, { name => 'service_bikes' },
+        $nav_linkto->( $req, { name => 'service_bikes' },
                        'asset/vehicles', [], type => 'bike', service => TRUE ),
-        $l1_navlink->( $req, { name => 'private_bikes' },
+        $nav_linkto->( $req, { name => 'private_bikes' },
                        'asset/vehicles', [], type => 'bike', private => TRUE ),
         ];
 }
@@ -504,7 +506,7 @@ sub rota_navigation_links ($$) {
                      name       => lc 'month_'.$month->month_abbr };
       my $args   = [ $name, $month->ymd ];
 
-      push @{ $nav }, $l1_navlink->( $req, $opts, 'sched/day_rota', $args );
+      push @{ $nav }, $nav_linkto->( $req, $opts, 'sched/day_rota', $args );
    }
 
    return $nav;

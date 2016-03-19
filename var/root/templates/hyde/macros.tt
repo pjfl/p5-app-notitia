@@ -117,7 +117,9 @@
 [%    IF f.label -%]</label>[% END -%]
 [% END -%]
 [% MACRO Table( table ) BLOCK -%]
-   <table class="standard-table">
+[%    IF table.class; class = table.class; -%]
+[%    ELSE; class = 'standard-table'; END -%]
+   <table class="[% class %]">
       <tr>
 [% FOR cell IN table.headers -%]
         <th class="[% cell.class %]">[% cell.value %]</th>

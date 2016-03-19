@@ -159,6 +159,30 @@ msgstr "Confirm you want to claim this [_1] slot"
 msgid "confirm_yield_tip"
 msgstr "Confirm you want to yield this [_1] slot"
 
+msgid "contacts_heading_0"
+msgstr "Person"
+
+msgid "contacts_heading_1"
+msgstr "Home Phone"
+
+msgid "contacts_heading_2"
+msgstr "Mobile Phone"
+
+msgid "contacts_heading_3"
+msgstr "Next of Kin"
+
+msgid "contacts_heading_4"
+msgstr "Home Phone"
+
+msgid "contacts_heading_5"
+msgstr "Mobile Phone"
+
+msgid "contacts_list_heading"
+msgstr "Contacts List"
+
+msgid "contacts_list_link"
+msgstr "Contacts List"
+
 msgid "controller"
 msgstr "Controller"
 

@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 37 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 38 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 37 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 38 $ of L<App::Notitia>
 
 =head1 Description
 
@@ -91,9 +91,6 @@ TODO: Vehicle assigning should be moved to Slot to make URI more restful
 TODO: Endorsement type_codes need similar treatment to event uris
 
 TODO: Need calendar view for whole month
-
-TODO: Need to be able to get to nok more easily. Takes too long to look
-      up person's nok details
 
 TODO: Type maintainence page
 
