@@ -136,7 +136,8 @@
 [% MACRO TableRow( row ) BLOCK -%]
    <tr>
 [%    FOR cell IN row -%]
-      <td class="[% cell.class %]" colspan=[% cell.colspan %]>
+      <td class="[% cell.class %]"
+             id="[% cell.name %]" colspan=[% cell.colspan %]>
 [%       IF reference( cell.value ) == 'HASH'; Dispatch( cell.value ) %]
 [%       ELSE; cell.value; END %]</td>
 [%    END -%]

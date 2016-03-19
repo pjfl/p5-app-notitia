@@ -23,7 +23,7 @@
    </li>
 [%    text  = loc( 'Rota' ) -%]
 [%    tip   = loc( 'Scheduled rotas' ) -%]
-[%    href  = uri_for_action( 'sched/day_rota' ) -%]
+[%    href  = uri_for_action( 'sched/month_rota' ) -%]
 [%    class = ''; IF page.location == 'schedule'; class = 'current'; END -%]
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]

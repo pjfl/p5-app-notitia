@@ -33,11 +33,9 @@ around 'get_stash' => sub {
 
    my $stash  = $orig->( $self, $req, @args );
    my $name   = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
-   my $page   = $stash->{page};
-   my $period = $page->{template}->[ 2 ] eq 'month-table' ? 'month': 'day';
 
-   $stash->{nav} = rota_navigation_links $req, $period, $name;
-   $page->{location} = 'schedule';
+   $stash->{nav } = rota_navigation_links $req, 'month', $name;
+   $stash->{page}->{location} = 'schedule';
 
    return $stash;
 };
@@ -84,6 +82,15 @@ my $_onchange_submit = sub {
           "      method    : 'submitForm',",
           "      event     : 'change',",
           "      args      : [ 'rota_redirect', 'day-rota' ] };";
+};
+
+my $_onclick_relocate = sub {
+   my ($k, $href) = @_;
+
+   return "   behaviour.config.anchors[ '${k}' ] = {",
+          "      method    : 'location',",
+          "      event     : 'click',",
+          "      args      : [ '${href}' ] };";
 };
 
 my $_operators_vehicle = sub {
@@ -188,7 +195,7 @@ my $_find_rota_type_id_for = sub {
 };
 
 my $_rota_summary = sub {
-   my ($self, $req, $name, $date) = @_;
+   my ($self, $req, $page, $name, $date) = @_;
 
    my $type_id   = $self->$_find_rota_type_id_for( $name );
    my $slot_rs   = $self->schema->resultset( 'Slot' );
@@ -205,7 +212,7 @@ my $_rota_summary = sub {
       my $shift = $slot->shift;
 
       $rows->{ $shift->type_name.'_'.$slot->type_name.'_'.$slot->subslot }
-         = { vehicle  => $slot->vehicle, bike_req => $slot->bike_requested, };
+         = { vehicle => $slot->vehicle, bike_req => $slot->bike_requested };
    }
 
    push @{ $cell->{rows} }, [ { colspan => 3, value => $date->day },
@@ -216,7 +223,7 @@ my $_rota_summary = sub {
         $_rota_summary_link->( 4, $rows->{ 'night_controller_0' } ), ];
    push @{ $cell->{rows} },
       [ $_rota_summary_link->( 3, $rows->{ 'day_rider_0'  } ),
-        $_rota_summary_link->( 3, $rows->{ 'day_rider 1'  } ),
+        $_rota_summary_link->( 3, $rows->{ 'day_rider_1'  } ),
         $_rota_summary_link->( 3, $rows->{ 'day_rider_2'  } ),
         $_rota_summary_link->( 3, $rows->{ 'day_driver_0' } ), ];
    push @{ $cell->{rows} },
@@ -225,7 +232,13 @@ my $_rota_summary = sub {
         $_rota_summary_link->( 3, $rows->{ 'night_rider_2'  } ),
         $_rota_summary_link->( 3, $rows->{ 'night_driver_0' } ), ];
 
-   return { class => 'month-rota', value => $cell };
+   my $actionp = $self->moniker.'/day_rota';
+   my $href    = uri_for_action $req, $actionp, [ $name, $date->ymd ];
+   my $id      = "${name}_".$date->ymd;
+
+   push @{ $page->{literal_js} }, $_onclick_relocate->( $id, $href );
+
+   return { class => 'month-rota windows', name => $id, value => $cell };
 };
 
 my $_slot_link = sub {
@@ -454,20 +467,20 @@ sub day_rota : Role(any) {
 sub month_rota : Role(any) {
    my ($self, $req) = @_;
 
-   my $params  =  $req->uri_params;
-   my $name    =  $params->( 0, { optional => TRUE } ) // 'main';
-   my $date    =  $params->( 1, { optional => TRUE } ) // time2str '%Y-%m-01';
-   my $month   =  str2date_time $date, 'GMT';
-   my $first   =  $month->set_time_zone( 'floating' )->truncate( to => 'day' );
-   my $title   =  ucfirst( loc( $req, $name ) ).SPC.loc( $req, 'rota for' ).SPC
-               .  $month->month_name.SPC.$month->year;
-   my $page    =  {
-      fields   => {},
-      rota     => { rows => [] },
-      template => [ 'contents', 'rota', 'month-table' ],
-      title    => $title, };
-
-   $first->set( day => 1 );
+   my $params    =  $req->uri_params;
+   my $rota_name =  $params->( 0, { optional => TRUE } ) // 'main';
+   my $rota_date =  $params->( 1, { optional => TRUE } ) // time2str '%Y-%m-01';
+   my $month     =  str2date_time $rota_date, 'GMT';
+   my $title     =  ucfirst( loc( $req, $rota_name ) ).SPC
+                 .  loc( $req, 'rota for' ).SPC.$month->month_name.SPC
+                 .  $month->year;
+   my $page      =  {
+      fields     => {},
+      rota       => { rows => [] },
+      template   => [ 'contents', 'rota', 'month-table' ],
+      title      => $title, };
+   my $first     =  $month->set_time_zone( 'floating' )
+                          ->truncate( to => 'day' )->set( day => 1 );
 
    for my $rno (0 .. 4) {
       my $row = [];
@@ -476,7 +489,7 @@ sub month_rota : Role(any) {
          my $date = $first->clone->add( days => 7 * $rno + $cno );
 
          $rno == 4 and $date->day == 1 and last;
-         push @{ $row }, $self->$_rota_summary( $req, $name, $date );
+         push @{ $row }, $self->$_rota_summary( $req, $page, $rota_name, $date);
       }
 
       $row->[ 0 ] and push @{ $page->{rota}->{rows} }, $row;
@@ -488,11 +501,12 @@ sub month_rota : Role(any) {
 sub rota_redirect_action : Role(any) {
    my ($self, $req) = @_;
 
+   my $period    = 'day';
    my $params    = $req->body_params;
    my $rota_name = $params->( 'rota_name' );
    my $rota_date = str2date_time $params->( 'rota_date' ), 'GMT';
    my $args      = [ $rota_name, $rota_date->ymd ];
-   my $location  = uri_for_action $req, $self->moniker.'/day_rota', $args;
+   my $location  = uri_for_action $req, $self->moniker."/${period}_rota", $args;
 
    return { redirect => { location => $location } };
 }
