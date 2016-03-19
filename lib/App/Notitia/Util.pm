@@ -492,10 +492,11 @@ sub register_action_paths (;@) {
    return;
 }
 
-sub rota_navigation_links ($$) {
-   my ($req, $name) = @_; my $now = str2date_time time2str '%Y-%m-01';
+sub rota_navigation_links ($$$) {
+   my ($req, $period, $name) = @_; my $now = str2date_time time2str '%Y-%m-01';
 
-   my $nav = [ $nav_folder->( $req, 'months' ) ];
+   my $actionp = "sched/${period}_rota";
+   my $nav     = [ $nav_folder->( $req, 'months' ) ];
 
    for my $mno (0 .. 11) {
       my $offset = $mno - 5;
@@ -506,7 +507,7 @@ sub rota_navigation_links ($$) {
                      name       => lc 'month_'.$month->month_abbr };
       my $args   = [ $name, $month->ymd ];
 
-      push @{ $nav }, $nav_linkto->( $req, $opts, 'sched/day_rota', $args );
+      push @{ $nav }, $nav_linkto->( $req, $opts, $actionp, $args );
    }
 
    return $nav;

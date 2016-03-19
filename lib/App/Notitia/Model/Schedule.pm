@@ -23,18 +23,21 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'sched';
 
 register_action_paths
-   'sched/slot'     => 'slot',
-   'sched/day_rota' => 'rota';
+   'sched/day_rota'   => 'day-rota',
+   'sched/month_rota' => 'month-rota',
+   'sched/slot'       => 'slot';
 
 # Construction
 around 'get_stash' => sub {
    my ($orig, $self, $req, @args) = @_;
 
-   my $stash = $orig->( $self, $req, @args );
-   my $name  = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
+   my $stash  = $orig->( $self, $req, @args );
+   my $name   = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
+   my $page   = $stash->{page};
+   my $period = $page->{template}->[ 2 ] eq 'month-table' ? 'month': 'day';
 
-   $stash->{nav} = rota_navigation_links $req, $name;
-   $stash->{page}->{location}   = 'schedule';
+   $stash->{nav} = rota_navigation_links $req, $period, $name;
+   $page->{location} = 'schedule';
 
    return $stash;
 };
@@ -97,6 +100,19 @@ my $_operators_vehicle = sub {
    return $cache->{ $slot->operator->id } = $label;
 };
 
+my $_rota_summary_link = sub {
+   my ($span, $row) = @_;
+
+   $row or return { colspan => $span, value => '&nbsp;' x 2 };
+
+   my $value = 'C'; my $class = 'vehicle-not-needed';
+
+   if    ($row->{vehicle }) { $value = 'V'; $class = 'vehicle-assigned'  }
+   elsif ($row->{bike_req}) { $value = 'R'; $class = 'vehicle-requested' }
+
+   return { class => $class, colspan => $span, value => $value };
+};
+
 my $_slot_claimed = sub {
    return exists $_[ 0 ]->{ $_[ 1 ] }
        && exists $_[ 0 ]->{ $_[ 1 ] }->{operator} ? TRUE : FALSE;
@@ -130,6 +146,97 @@ my $_add_js_dialog = sub {
       name => $name, title => loc( $req, $title ), useIcon => \1 } );
 
    return;
+};
+
+my $_events = sub {
+   my ($self, $req, $page, $name, $rota_dt, $todays_events) = @_;
+
+   my $date   = $rota_dt->day_abbr.SPC.$rota_dt->day;
+   my $href   = uri_for_action $req, $self->moniker.'/day_rota';
+   my $picker = { class       => 'rota-date-form',
+                  content     => {
+                     list     => [ {
+                        name  => 'rota_name',
+                        type  => 'hidden',
+                        value => $name, }, {
+                        class => 'rota-date-field submit',
+                        name  => 'rota_date',
+                        label => NUL,
+                        type  => 'date',
+                        value => $date, } ],
+                     type     => 'list', },
+                  form_name   => 'day-rota',
+                  href        => $href,
+                  type        => 'form', };
+   my $col1   = { value => $picker, class => 'rota-date' };
+   my $first  = TRUE;
+
+   while (defined (my $event = $todays_events->next) or $first) {
+      my $col2 = { value   => $_event_link->( $req, $event ),
+                   colspan => $_table_cols };
+
+      push @{ $page->{rota}->{events} }, [ $col1, $col2 ];
+      $col1 = { value => undef }; $first = FALSE;
+   }
+
+   push @{ $page->{literal_js} }, $_onchange_submit->();
+   return;
+};
+
+my $_find_rota_type_id_for = sub {
+   return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] )->id;
+};
+
+my $_rota_summary = sub {
+   my ($self, $req, $name, $date) = @_;
+
+   my $type_id   = $self->$_find_rota_type_id_for( $name );
+   my $slot_rs   = $self->schema->resultset( 'Slot' );
+   # TODO: Do not need the personal_vehicle join
+   my $slots     = $slot_rs->list_slots_for( $type_id, $date->ymd );
+   my $event_rs  = $self->schema->resultset( 'Event' );
+   my $events    = $event_rs->find_event_for( $type_id, $date->ymd );
+   # TODO: Should be done with count_rs
+   my $has_event = ($events->all)[ 0 ] ? loc( $req, 'Events' ) : NUL;
+   my $cell      = { class => 'month-rota', rows => [], type => 'table' };
+   my $rows      = {};
+
+   for my $slot ($slots->all) {
+      my $shift = $slot->shift;
+
+      $rows->{ $shift->type_name.'_'.$slot->type_name.'_'.$slot->subslot }
+         = { vehicle  => $slot->vehicle, bike_req => $slot->bike_requested, };
+   }
+
+   push @{ $cell->{rows} }, [ { colspan => 3, value => $date->day },
+                              { colspan => 9, value => $has_event } ];
+   push @{ $cell->{rows} },
+      [ $_rota_summary_link->( 4, $rows->{ 'day_controller_0'   } ),
+        $_rota_summary_link->( 4, $rows->{ 'day_controller_1'   } ),
+        $_rota_summary_link->( 4, $rows->{ 'night_controller_0' } ), ];
+   push @{ $cell->{rows} },
+      [ $_rota_summary_link->( 3, $rows->{ 'day_rider_0'  } ),
+        $_rota_summary_link->( 3, $rows->{ 'day_rider 1'  } ),
+        $_rota_summary_link->( 3, $rows->{ 'day_rider_2'  } ),
+        $_rota_summary_link->( 3, $rows->{ 'day_driver_0' } ), ];
+   push @{ $cell->{rows} },
+      [ $_rota_summary_link->( 3, $rows->{ 'night_rider_0'  } ),
+        $_rota_summary_link->( 3, $rows->{ 'night_rider_1'  } ),
+        $_rota_summary_link->( 3, $rows->{ 'night_rider_2'  } ),
+        $_rota_summary_link->( 3, $rows->{ 'night_driver_0' } ), ];
+
+   return { class => 'month-rota', value => $cell };
+};
+
+my $_slot_link = sub {
+   my ($self, $req, $page, $rows, $k, $slot_type) = @_;
+
+   my $claimed = $_slot_claimed->( $rows, $k );
+   my $value   = $_slot_label->( $req, $rows, $k );
+   my $tip     = loc( $req, ($claimed ? 'yield_slot_tip' : 'claim_slot_tip'),
+                      $slot_type );
+
+   return { value => $_table_link->( $req, $k, $value, $tip ) };
 };
 
 my $_vehicle_link = sub {
@@ -177,74 +284,6 @@ my $_assign_link = sub { # Traffic lights
    return { value => $value, class => $class };
 };
 
-my $_find_rota_type_id_for = sub {
-   return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] )->id;
-};
-
-my $_slot_link = sub {
-   my ($self, $req, $page, $rows, $k, $slot_type) = @_;
-
-   my $claimed = $_slot_claimed->( $rows, $k );
-   my $value   = $_slot_label->( $req, $rows, $k );
-   my $tip     = loc( $req, ($claimed ? 'yield_slot_tip' : 'claim_slot_tip'),
-                      $slot_type );
-
-   return { value => $_table_link->( $req, $k, $value, $tip ) };
-};
-
-my $_driver_row = sub {
-   my ($self, $req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
-
-   return [ { value => loc( $req, $k ), class => 'rota-header' },
-            { value => undef },
-            $self->$_slot_link( $req, $page, $rows, $k, 'driver' ),
-            { value => $rows->{ $k }->{ops_veh}, class => 'narrow' }, ];
-};
-
-my $_rider_row = sub {
-   my ($self, $req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
-
-   return [ { value => loc( $req, $k ), class => 'rota-header' },
-            $self->$_assign_link( $req, $page, $args, $rows ),
-            $self->$_slot_link( $req, $page, $rows, $k, 'rider' ),
-            { value => $rows->{ $k }->{ops_veh}, class => 'narrow' }, ];
-};
-
-my $_events = sub {
-   my ($self, $req, $page, $name, $rota_dt, $todays_events) = @_;
-
-   my $date   = $rota_dt->day_abbr.SPC.$rota_dt->day;
-   my $href   = uri_for_action $req, $self->moniker.'/day_rota';
-   my $picker = { class       => 'rota-date-form',
-                  content     => {
-                     list     => [ {
-                        name  => 'rota_name',
-                        type  => 'hidden',
-                        value => $name, }, {
-                        class => 'rota-date-field submit',
-                        name  => 'rota_date',
-                        label => NUL,
-                        type  => 'date',
-                        value => $date, } ],
-                     type     => 'list', },
-                  form_name   => 'day-rota',
-                  href        => $href,
-                  type        => 'form', };
-   my $col1   = { value => $picker, class => 'rota-date' };
-   my $first  = TRUE;
-
-   while (defined (my $event = $todays_events->next) or $first) {
-      my $col2 = { value   => $_event_link->( $req, $event ),
-                   colspan => $_table_cols };
-
-      push @{ $page->{rota}->{events} }, [ $col1, $col2 ];
-      $col1 = { value => undef }; $first = FALSE;
-   }
-
-   push @{ $page->{literal_js} }, $_onchange_submit->();
-   return;
-};
-
 my $_controllers = sub {
    my ($self, $req, $page, $rota_name, $rota_date, $rows, $limits) = @_;
 
@@ -270,6 +309,24 @@ my $_controllers = sub {
    }
 
    return;
+};
+
+my $_driver_row = sub {
+   my ($self, $req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
+
+   return [ { value => loc( $req, $k ), class => 'rota-header' },
+            { value => undef },
+            $self->$_slot_link( $req, $page, $rows, $k, 'driver' ),
+            { value => $rows->{ $k }->{ops_veh}, class => 'narrow' }, ];
+};
+
+my $_rider_row = sub {
+   my ($self, $req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
+
+   return [ { value => loc( $req, $k ), class => 'rota-header' },
+            $self->$_assign_link( $req, $page, $args, $rows ),
+            $self->$_slot_link( $req, $page, $rows, $k, 'rider' ),
+            { value => $rows->{ $k }->{ops_veh}, class => 'narrow' }, ];
 };
 
 my $_riders_n_drivers = sub {
@@ -327,7 +384,7 @@ my $_get_page = sub {
                     events      => [],
                     headers     => $_headers->( $req ),
                     shifts      => [], },
-      template => [ 'contents', 'rota' ],
+      template => [ 'contents', 'rota', 'rota-table' ],
       title    => $title };
 
    $self->$_events( $req, $page, $name, $rota_dt, $todays_events );
@@ -390,6 +447,40 @@ sub day_rota : Role(any) {
    }
 
    my $page = $self->$_get_page( $req, $name, $date, $events, $rows );
+
+   return $self->get_stash( $req, $page );
+}
+
+sub month_rota : Role(any) {
+   my ($self, $req) = @_;
+
+   my $params  =  $req->uri_params;
+   my $name    =  $params->( 0, { optional => TRUE } ) // 'main';
+   my $date    =  $params->( 1, { optional => TRUE } ) // time2str '%Y-%m-01';
+   my $month   =  str2date_time $date, 'GMT';
+   my $first   =  $month->set_time_zone( 'floating' )->truncate( to => 'day' );
+   my $title   =  ucfirst( loc( $req, $name ) ).SPC.loc( $req, 'rota for' ).SPC
+               .  $month->month_name.SPC.$month->year;
+   my $page    =  {
+      fields   => {},
+      rota     => { rows => [] },
+      template => [ 'contents', 'rota', 'month-table' ],
+      title    => $title, };
+
+   $first->set( day => 1 );
+
+   for my $rno (0 .. 4) {
+      my $row = [];
+
+      for my $cno (0 .. 6) {
+         my $date = $first->clone->add( days => 7 * $rno + $cno );
+
+         $rno == 4 and $date->day == 1 and last;
+         push @{ $row }, $self->$_rota_summary( $req, $name, $date );
+      }
+
+      $row->[ 0 ] and push @{ $page->{rota}->{rows} }, $row;
+   }
 
    return $self->get_stash( $req, $page );
 }

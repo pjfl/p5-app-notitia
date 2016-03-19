@@ -2,7 +2,7 @@
 <div class="unit four-fifths">
    <article>
       <h4>[% page.title %]</h4>
-[% INCLUDE 'hyde/rota_table.tt' -%]
+[% path = 'hyde/' _ page.template.2 _ '.tt'; INCLUDE $path -%]
 [% INCLUDE 'hyde/section_nav.tt' -%]
    </article>
 </div>

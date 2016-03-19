@@ -50,6 +50,7 @@
 [%          Dispatch( field ) -%]
 [%       END -%]
 [%    END -%]
+[%    IF f.type == 'table'; Table( f ); END -%]
 [% END -%]
 [% MACRO Form( f ) BLOCK -%]
 [%    IF f.class; class = f.class; -%]
@@ -120,14 +121,16 @@
 [%    IF table.class; class = table.class; -%]
 [%    ELSE; class = 'standard-table'; END -%]
    <table class="[% class %]">
+[%    IF table.headers.0 -%]
       <tr>
-[% FOR cell IN table.headers -%]
+[%       FOR cell IN table.headers -%]
         <th class="[% cell.class %]">[% cell.value %]</th>
-[% END -%]
+[%       END -%]
       </tr>
-[% FOR row IN table.rows -%]
-[%    TableRow( row ) -%]
-[% END -%]
+[%    END -%]
+[%    FOR row IN table.rows -%]
+[%       TableRow( row ) -%]
+[%    END -%]
    </table>
 [% END -%]
 [% MACRO TableRow( row ) BLOCK -%]

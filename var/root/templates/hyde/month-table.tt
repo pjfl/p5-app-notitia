@@ -1,0 +1,2 @@
+<!-- Month Table -->
+[% Table( page.rota ) -%]

@@ -212,11 +212,16 @@ footer {
 }
 .vehicle-assigned {
    background-color: #569220 !important; color: @darker !important;
+   text-align: center;
 }
 .vehicle-requested {
-   background-color: #ff9 !important; color: @darker !important;
+   background-color: #f08109 !important; color: @darker !important;
+   text-align: center;
 }
-.vehicle-not-needed { background-color: #f08109 !important; }
+.vehicle-not-needed {
+   background-color: #569220 !important; color: @darker !important;
+   text-align: center;
+}
 /* Notice board */
 .notice-board { position: fixed; width: 20%; z-index: 9999; }
 .notice-board.nb-top { top: 0; }
@@ -512,6 +517,8 @@ article h2:first-child, { margin-top: 0; }
    outline: none; padding: 10px 10px 0 10px; width: 80px;
 }
 .rota-date-form { display: inline-block; }
+table.month-rota { font-size: 0.5em; width: 100%; }
+td.month-rota { padding: 0 !important; }
 td.rota-date { padding: 0 !important; width: 1%; }
 td.rota-header {
    color: @subtle; font-size: 14px; white-space: nowrap; width: 1%;
