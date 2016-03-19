@@ -56,19 +56,6 @@ my $_confirm_slot_button = sub {
    return { class => 'right-last', label => 'confirm', value => $value };
 };
 
-my $_event_link = sub {
-   my ($req, $event) = @_; $event or return NUL;
-
-   my $name = my $value = $event->name;
-   my $href = uri_for_action $req, 'event/summary', [ $event->uri ];
-   my $tip  = loc $req, 'Click to view the [_1] event', [ $event->label ];
-
-   return { class => 'table-link', hint  => loc( $req, 'Hint' ),
-            href  => $href,        name  => $name,
-            tip   => $tip,         type  => 'link',
-            value => $value, };
-};
-
 my $_header_label = sub {
    return { value => loc( $_[ 0 ], 'rota_heading_'.$_[ 1 ] ) }
 };
@@ -139,6 +126,32 @@ my $_table_link = sub {
             value => $value, };
 };
 
+my $_event_link = sub {
+   my ($req, $page, $event) = @_;
+
+   unless ($event) {
+      my $name = 'create-event';
+      my $href = uri_for_action $req, 'event/event';
+
+      push @{ $page->{literal_js} }, $_onclick_relocate->( $name, $href );
+
+      return { class => 'blank-event windows', colspan => $_table_cols,
+               name  => $name, };
+   }
+
+   my $name = my $value = $event->name;
+   my $href = uri_for_action $req, 'event/summary', [ $event->uri ];
+   my $tip  = loc $req, 'Click to view the [_1] event', [ $event->label ];
+
+   return {
+      colspan  => $_table_cols,
+      value    => {
+         class => 'table-link', hint => loc( $req, 'Hint' ),
+         href  => $href,        name => $name,
+         tip   => $tip,         type => 'link',
+         value => $value, }, };
+};
+
 # Private methods
 my $_add_js_dialog = sub {
    my ($self, $req, $page, $args, $action, $name, $title) = @_;
@@ -179,8 +192,7 @@ my $_events = sub {
    my $first  = TRUE;
 
    while (defined (my $event = $todays_events->next) or $first) {
-      my $col2 = { value   => $_event_link->( $req, $event ),
-                   colspan => $_table_cols };
+      my $col2 = $_event_link->( $req, $page, $event );
 
       push @{ $page->{rota}->{events} }, [ $col1, $col2 ];
       $col1 = { value => undef }; $first = FALSE;
