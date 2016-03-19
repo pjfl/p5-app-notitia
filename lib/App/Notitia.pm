@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 41 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 42 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 41 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 42 $ of L<App::Notitia>
 
 =head1 Description
 
@@ -89,10 +89,6 @@ TODO: Determine how to request a vehicle for an event
 TODO: Vehicle assigning should be moved to Slot to make URI more restful
 
 TODO: Endorsement type_codes need similar treatment to event uris
-
-TODO: Need calendar view for whole month
-
-TODO: Make bike_requested appear with some text
 
 TODO: Loose traffic lights from rota
 

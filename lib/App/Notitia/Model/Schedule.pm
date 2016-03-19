@@ -276,21 +276,20 @@ my $_vehicle_link = sub {
 my $_assign_link = sub { # Traffic lights
    my ($self, $req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
 
-   my $state = NUL; my $value = $rows->{ $k }->{vehicle};
+   my $bike  = $rows->{ $k }->{bike_req};
+   my $value = $rows->{ $k }->{vehicle};
+   my $state = $_slot_claimed->( $rows, $k ) ? 'vehicle-not-needed' : NUL;
 
-   $rows->{ $k }->{bike_req} and $state = 'vehicle-requested';
+   $bike  and $state = 'vehicle-requested';
    $value and $state = 'vehicle-assigned';
-   $value  or $value = '&nbsp;' x 11;
 
-   if ($state eq 'vehicle-requested') {
-      $value = $self->$_vehicle_link( $req, $page, $args, $value, 'assign' );
-   }
-   elsif ($state eq 'vehicle-assigned') {
+   if ($state eq 'vehicle-assigned') {
       $value = $self->$_vehicle_link( $req, $page, $args, $value, 'unassign' );
    }
-
-   not $state and $_slot_claimed->( $rows, $k )
-      and $state = 'vehicle-not-needed';
+   elsif ($state eq 'vehicle-requested') {
+      $value = $self->$_vehicle_link
+         ( $req, $page, $args, 'requested', 'assign' );
+   }
 
    my $class = "centre narrow ${state}";
 

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Made bike_requested appear with some text
           - Rota primary nav link points to month view
           - Added month view
           - Added type maintainence pages
