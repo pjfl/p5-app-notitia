@@ -350,6 +350,21 @@ sub activate : Role(anon) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub add_type_action : Role(administrator) {
+   my ($self, $req) = @_; my $type_class = $req->uri_params->( 0 );
+
+   is_member $type_class, TYPE_CLASS_ENUM
+      or throw 'Type class [_1] unknown', [ $type_class ];
+
+   my $name     =  $req->body_params->( 'name' );
+   my $person   =  $self->schema->resultset( 'Type' )->create( {
+      name      => $name, type_class => $type_class } );
+   my $message  =  [ 'Type [_1] class [_2] created', $name, $type_class ];
+   my $location =  uri_for_action $req, $self->moniker.'/types';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub contacts : Role(person_manager) Role(person_viewer) {
    my ($self, $req) = @_; return $self->people( $req, 'contacts' );
 }
@@ -485,6 +500,21 @@ sub people : Role(any) {
    return $self->get_stash( $req, $page );
 }
 
+sub remove_type_action : Role(administrator) {
+   my ($self, $req) = @_; my $type_class = $req->uri_params->( 0 );
+
+   is_member $type_class, TYPE_CLASS_ENUM
+      or throw 'Type class [_1] unknown', [ $type_class ];
+
+   my $name     = $req->uri_params->( 1 );
+   my $type_rs  = $self->schema->resultset( 'Type' );
+   my $type     = $type_rs->find_type_by( $name, $type_class ); $type->delete;
+   my $message  = [ 'Type [_1] class [_2] deleted', $name, $type_class ];
+   my $location =  uri_for_action $req, $self->moniker.'/types';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub summary : Role(administrator) Role(person_viewer) {
    my ($self, $req) = @_; my $people;
 
@@ -510,22 +540,6 @@ sub summary : Role(administrator) Role(person_viewer) {
    return $self->get_stash( $req, $page );
 }
 
-sub add_type_action : Role(administrator) {
-   my ($self, $req) = @_;
-
-   my $message = '';
-
-   return { redirect => { location => $req->uri, message => $message } };
-}
-
-sub remove_type_action : Role(administrator) {
-   my ($self, $req) = @_;
-
-   my $message = '';
-
-   return { redirect => { location => $req->uri, message => $message } };
-}
-
 sub type : Role(administrator) {
    my ($self, $req) = @_;
 
@@ -545,8 +559,11 @@ sub type : Role(administrator) {
       title       => loc( $req, 'type_management_heading',
                           { params => [ ucfirst $type_class ],
                             no_quote_bind_values => TRUE, } ), };
-   my $args       =  [ $type_class, $name ];
    my $fields     =  $page->{fields};
+   my $actionp    =  $self->moniker.'/type';
+   my $args       =  [ $type_class ]; $name and push @{ $args }, $name;
+
+   $fields->{href} = uri_for_action $req, $actionp, $args;
 
    if ($name) { $fields->{remove} = $_remove_type_button->( $req, $args ) }
    else { $fields->{add} = $_add_type_button->( $req, $args ) }

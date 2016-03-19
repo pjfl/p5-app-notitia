@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added type maintainence pages
           - Added contact list view of people
           - Slot claim uses a configurable list of certs to check against
           - Removed unecessary links to certs and offences for non bike riders
