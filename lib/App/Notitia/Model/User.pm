@@ -159,11 +159,12 @@ sub login_action : Role(anon) {
    $session->authenticated( TRUE ); $session->username( $name );
    $message = [ 'Person [_1] logged in', $name ];
 
-   my $wanted = uri_for_action $req, $session->wanted || 'sched/month_rota';
+   my $wanted    = $session->wanted;
+   my $location  = $wanted ? uri_for_action( $req, $wanted ) : $req->base;
 
    $req->session->wanted( NUL );
 
-   return { redirect => { location => $wanted, message => $message } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub logout_action : Role(any) {
@@ -175,9 +176,7 @@ sub logout_action : Role(any) {
    }
    else { $message = [ 'Person not logged in' ] }
 
-   my $location = uri_for_action $req, 'docs/page';
-
-   return { redirect => { location => $location, message => $message } };
+   return { redirect => { location => $req->base, message => $message } };
 }
 
 sub profile : Role(any) {

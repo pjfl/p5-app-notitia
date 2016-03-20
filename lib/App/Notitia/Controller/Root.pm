@@ -19,10 +19,10 @@ sub dispatch_request {
    sub (GET  + /user/reset/*    + ?*) { [ 'user/reset_password',  @_ ] },
    sub (POST + /user/reset      + ?*) { [ 'user/from_request',    @_ ] },
    sub (GET  + /user/reset      + ?*) { [ 'user/request_reset',   @_ ] },
-   sub (GET  + /index | /       + ?*) { [ 'docs/page',            @_ ] },
+   sub (GET  + /index | /       + ?*) { [ 'docs/index',           @_ ] },
    sub (GET  + /**              + ?*) { [ 'docs/not_found',       @_ ] },
-   sub (POST                    + ?*) { [ 'docs/page',            @_ ] },
-   sub (GET                     + ?*) { [ 'docs/page',            @_ ] };
+   sub (POST                    + ?*) { [ 'docs/index',           @_ ] },
+   sub (GET                     + ?*) { [ 'docs/index',           @_ ] };
 }
 
 1;

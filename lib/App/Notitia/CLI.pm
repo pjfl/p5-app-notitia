@@ -46,7 +46,7 @@ my $_init_file_list = sub {
 };
 
 my $_random_chars = sub {
-   my $token = lc create_token; $token =~ s{ [^a-z]+ }{}gmx; return $token;
+   my $token = create_token; $token =~ s{ [^a-z]+ }{}gmx; return $token;
 };
 
 # Private methods
@@ -120,7 +120,7 @@ my $_write_local_config = sub {
    my ($self, $local_conf) = @_;
 
    my $text = 'The organisation prefix is a two or three character string '
-            . 'used by the username generator. If should reflect the name '
+            . 'used by the shortcode generator. If should reflect the name '
             . 'of the group operating the application';
 
    $self->output( $text, AS_PARA );
@@ -128,8 +128,8 @@ my $_write_local_config = sub {
    my $prompt      = '+Enter the organisation prefix';
    my $person_pref = $self->get_line( $prompt, NUL, TRUE, 0 );
 
-   length $person_pref or $person_pref = $_random_chars->();
-   $person_pref = substr $person_pref, 0, 3;
+   length $person_pref > 1 or $person_pref = $_random_chars->();
+   $person_pref = lc substr $person_pref, 0, 3;
 
    my $data = { person_pref => $person_pref, salt => bson64id() };
 

@@ -105,24 +105,6 @@ my $_prepare_path = sub {
            map { trim $_            } split m{ / }mx, $path);
 };
 
-my $_prepare_search_results = sub {
-   my ($req, $langd, $results) = @_;
-
-   my @tuples = map { [ split m{ : }mx, $_, 3 ] } split m{ \n }mx, $results;
-
-   for my $tuple (@tuples) {
-      my @pathname = $_prepare_path->( io( $tuple->[ 0 ] )->abs2rel( $langd ) );
-      my @filepath = map { make_id_from( $_ )->[ 0 ] } @pathname;
-      my $actionp  = join '/', @filepath;
-      my $name     = make_name_from $actionp; $name =~ s{/}{ / }gmx;
-
-      $tuple->[ 0 ] = $name;
-      $tuple->[ 1 ] = uri_for_action( $req, 'docs/page', [ $actionp ] );
-   }
-
-   return @tuples;
-};
-
 my $_prune = sub {
    my $path = shift; my $dir = $path->parent;
 
@@ -159,18 +141,37 @@ my $_new_node = sub {
    return { path => $path, url => $url, };
 };
 
+my $_prepare_search_results = sub {
+   my ($self, $req, $langd, $results) = @_;
+
+   my $actionp = $self->moniker.'/page';
+   my @tuples  = map { [ split m{ : }mx, $_, 3 ] } split m{ \n }mx, $results;
+
+   for my $tuple (@tuples) {
+      my @pathname = $_prepare_path->( io( $tuple->[ 0 ] )->abs2rel( $langd ) );
+      my @filepath = map { make_id_from( $_ )->[ 0 ] } @pathname;
+      my $path     = join '/', @filepath;
+      my $name     = make_name_from $path; $name =~ s{/}{ / }gmx;
+
+      $tuple->[ 0 ] = $name;
+      $tuple->[ 1 ] = uri_for_action $req, $actionp, [ $path ];
+   }
+
+   return @tuples;
+};
+
 my $_search_results = sub {
    my ($self, $req) = @_;
 
    my $count   = 1;
    my $query   = $req->query_params->( 'query' );
-   my $localed = $self->config->docs_root->catdir( $req->locale );
+   my $langd   = $self->config->docs_root->catdir( $req->locale );
    my $resp    = $self->run_cmd
-                 ( [ 'ack', $query, "${localed}" ], { expected_rv => 1, } );
+                 ( [ 'ack', $query, "${langd}" ], { expected_rv => 1, } );
    my $results = $resp->rv == 1
-               ? $localed->catfile( loc( $req, 'Nothing found' ) ).'::'
+               ? $langd->catfile( loc( $req, 'Nothing found' ) ).'::'
                : $resp->stdout;
-   my @tuples  = $_prepare_search_results->( $req, $localed, $results );
+   my @tuples  = $self->$_prepare_search_results( $req, $langd, $results );
    my $content = join "\n\n", map { $_result_line->( $count++, $_ ) } @tuples;
    my $leader  = loc( $req, 'You searched for "[_1]"', $query )."\n\n";
    my $name    = loc( $req, 'Search Results' );

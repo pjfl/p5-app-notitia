@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixed redirect to docs/index after login
           - Moved installation instructions to own markdown page
           - Separated login page from index page. Deleted index page
           - Blank event row on day rota takes you to event create

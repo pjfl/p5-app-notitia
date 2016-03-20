@@ -40,6 +40,9 @@
    <a class="link" href="[% link %]" target ="_blank" title="Activate Account">
    link</a> to activate your account</p>
 
+<p>Then change the password provided in this email for one of your own
+   choosing. You will not be able to use the account until you do</p>
+
                   </td>
                </tr>
             </table>

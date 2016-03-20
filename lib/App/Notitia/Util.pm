@@ -105,7 +105,7 @@ my $nav_folder = sub {
 };
 
 my $nav_linkto = sub {
-   my ($req, $opts, $action, @args) = @_; my $name = $opts->{name};
+   my ($req, $opts, $actionp, @args) = @_; my $name = $opts->{name};
 
    my $depth      = $opts->{depth} // 1;
    my $label_opts = { params => $opts->{label_args} // [],
@@ -115,7 +115,7 @@ my $nav_linkto = sub {
             label => loc( $req, "${name}_link", $label_opts ),
             tip   => loc( $req, "${name}_tip"  ),
             type  => 'link',
-            uri   => uri_for_action( $req, $action, @args ), };
+            uri   => uri_for_action( $req, $actionp, @args ), };
 };
 
 # Public functions
