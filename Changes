@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Separated login page from index page. Deleted index page
           - Blank event row on day rota takes you to event create
           - Made bike_requested appear with some text
           - Rota primary nav link points to month view

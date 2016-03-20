@@ -26,7 +26,7 @@ has 'profile_keys' => is => 'ro', isa => ArrayRef, builder => sub {
 
 register_action_paths
    'user/change_password' => 'user/password',
-   'user/index'           => 'index',
+   'user/login'           => 'user/login',
    'user/login_action'    => 'user/login',
    'user/logout_action'   => 'user/logout',
    'user/profile'         => 'user/profile',
@@ -125,7 +125,7 @@ sub check_field : Role(any) {
    return $self->check_form_field( $req, $result_class );
 }
 
-sub index : Role(anon) {
+sub login : Role(anon) {
    my ($self, $req) = @_;
 
    my $title      =  $req->authenticated ? 'main_index_title' : 'login_title';
@@ -135,7 +135,7 @@ sub index : Role(anon) {
       fields      => {},
       first_field => 'username',
       location    => 'home',
-      template    => [ 'contents', 'index' ],
+      template    => [ 'contents', 'login' ],
       title       => loc( $req, $title, $opts ), };
    my $fields     =  $page->{fields};
 
@@ -159,8 +159,7 @@ sub login_action : Role(anon) {
    $session->authenticated( TRUE ); $session->username( $name );
    $message = [ 'Person [_1] logged in', $name ];
 
-   my $actionp = $self->moniker.'/index';
-   my $wanted  = uri_for_action $req, $req->session->wanted || $actionp;
+   my $wanted = uri_for_action $req, $session->wanted || 'sched/month_rota';
 
    $req->session->wanted( NUL );
 
@@ -168,13 +167,15 @@ sub login_action : Role(anon) {
 }
 
 sub logout_action : Role(any) {
-   my ($self, $req) = @_; my $location = $req->base; my $message;
+   my ($self, $req) = @_; my $message;
 
    if ($req->authenticated) {
       $message  = [ 'Person [_1] logged out', $req->username ];
       $req->session->authenticated( FALSE );
    }
    else { $message = [ 'Person not logged in' ] }
+
+   my $location = uri_for_action $req, 'docs/page';
 
    return { redirect => { location => $location, message => $message } };
 }

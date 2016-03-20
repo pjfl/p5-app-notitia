@@ -1,8 +1,8 @@
-[% PROCESS 'hyde/macros.tt' -%]
 [% WRAPPER 'hyde/wrapper.tt' -%]
+[%    PROCESS 'hyde/macros.tt' -%]
 [%    INCLUDE 'hyde/header.tt' -%]
 <!-- Layout [% page.layout %] Template [% page.template.1 %] -->
-<section class="docs">
+<section class="standard-section">
    <div class="grid">
 [%    path = 'hyde/' _ page.template.0 _ '_mobile.tt';  INCLUDE $path -%]
 [%    path = 'hyde/' _ page.template.1 _ '_content.tt'; INCLUDE $path -%]

@@ -19,8 +19,10 @@ with    q(App::Notitia::Role::Editor);
 has '+moniker' => default => 'docs';
 
 register_action_paths
-   'docs/dialog' => 'docs/dialog', 'docs/index'  => 'docs',
-   'docs/page'   => 'docs',        'docs/search' => 'docs/search',
+   'docs/dialog' => 'docs/dialog',
+   'docs/index'  => 'docs',
+   'docs/page'   => 'docs',
+   'docs/search' => 'docs/search',
    'docs/upload' => 'assets';
 
 # Construction
@@ -100,7 +102,12 @@ sub dialog : Role(any) {
 }
 
 sub index : Role(anon) {
-   return { redirect => { location => $_[ 0 ]->docs_url( $_[ 1 ] ) } };
+   my ($self, $req) = @_;
+
+   my $location = $_[ 0 ]->docs_url( $_[ 1 ] );
+   my $message  = [ $req->session->collect_status_message( $req ) ];
+
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub locales {

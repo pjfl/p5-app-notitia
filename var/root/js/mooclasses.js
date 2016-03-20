@@ -2553,8 +2553,7 @@ var WindowUtils = new Class( {
    },
 
    location: function( href ) {
-      if (document.images) top.location.replace( href );
-      else top.location.href = href;
+      window.location = href;
    },
 
    logger: function( message ) {

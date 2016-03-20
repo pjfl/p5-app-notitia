@@ -2,7 +2,7 @@
 [% WRAPPER 'hyde/wrapper.tt' -%]
 [%    INCLUDE 'hyde/header.tt' -%]
 <!-- Layout [% page.layout %] Template [% page.template.1 %] -->
-<section class="docs">
+<section class="standard-section">
    <div class="grid">
 [%    path = 'hyde/' _ page.template.0 _ '_mobile.tt';  INCLUDE $path -%]
       <div class="unit four-fifths">

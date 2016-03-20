@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 43 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 44 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 43 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 44 $ of L<App::Notitia>
 
 =head1 Description
 
@@ -75,7 +75,7 @@ information to the file F<var/logs/daemon.log> and the application will
 also start logging at the debug level
 
 The production server logs access requests to the file
-F<var/logs/access_8085.log>
+F<var/logs/access-8085.log>
 
 Exporting C<DBIC_TRACE> and setting it to true will cause L<DBIx::Class>
 to emit the SQL it generates to C<stderr>
@@ -97,8 +97,6 @@ TODO: Make some of the docs pages private
 TODO: Rename asset_manager to rota_manager and allow to unassign slots
 
 TODO: Add a participents dialog to rota event row
-
-TODO: Separate login page from index page
 
 =head1 Dependencies
 

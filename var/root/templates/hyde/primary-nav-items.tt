@@ -1,12 +1,5 @@
 <!-- Primary Navigation -->
 <ul>
-[%    text  = loc( 'Home' ) -%]
-[%    tip   = loc( 'main_index_title', config.title ) -%]
-[%    href  = uri_for_action( 'user/index' ) -%]
-[%    class = ''; IF page.location == 'home'; class = 'current'; END -%]
-   <li>
-[%    LinkWithTips( href, class, text, page.hint, tip ) -%]
-   </li>
 [%    text  = loc( 'Documentation' ) -%]
 [%    tip   = loc( 'Documentation pages for the application' ) -%]
 [%    href  = uri_for_action( 'docs/index' ) -%]

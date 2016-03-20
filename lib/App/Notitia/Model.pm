@@ -32,7 +32,7 @@ my $_auth_redirect = sub {
    my ($req, $e, $summary) = @_;
 
    if ($e->class eq AuthenticationRequired->()) {
-      my $location = uri_for_action $req, 'user/index';
+      my $location = uri_for_action $req, 'user/login';
 
       $req->session->wanted( $req->path );
 
@@ -40,7 +40,7 @@ my $_auth_redirect = sub {
    }
 
    if ($e->instance_of( Authentication->() )) {
-      my $location = uri_for_action $req, 'user/index';
+      my $location = uri_for_action $req, 'user/login';
 
       return { redirect => { location => $location, message => [ $summary ] } };
    }
