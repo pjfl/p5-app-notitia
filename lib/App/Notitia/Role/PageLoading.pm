@@ -5,12 +5,12 @@ use namespace::autoclean;
 use App::Notitia::Util     qw( build_navigation clone mtime );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::File;
-use Class::Usul::Functions qw( throw );
+use Class::Usul::Functions qw( is_arrayref is_member throw );
 use Class::Usul::Types     qw( HashRef );
-use HTTP::Status           qw( HTTP_NOT_FOUND );
+use HTTP::Status           qw( HTTP_FORBIDDEN HTTP_NOT_FOUND );
 use Moo::Role;
 
-requires qw( config initialise_stash load_page localised_tree );
+requires qw( components config initialise_stash load_page localised_tree );
 
 has 'type_map' => is => 'ro', isa => HashRef, builder => sub { {} };
 
@@ -39,6 +39,24 @@ around 'get_stash' => sub {
    return $stash;
 };
 
+my $_user_authorised = sub {
+   my ($self, $req, $node) = @_; my $nroles = $node->{role};
+
+   $nroles = is_arrayref( $nroles ) ? $nroles : $nroles ? [ $nroles ] : [];
+
+   is_member 'anon', $nroles and return TRUE;
+   $req->authenticated or return FALSE;
+
+   my $person = $self->components->{admin}->find_person_by( $req->username );
+   my $proles = $person->list_roles;
+
+   is_member 'administrator', $proles and return TRUE;
+
+   for my $role (@{ $nroles }) { is_member $role, $proles and return TRUE }
+
+   return FALSE;
+};
+
 around 'load_page' => sub {
    my ($orig, $self, $req, @args) = @_; my %seen = ();
 
@@ -48,6 +66,11 @@ around 'load_page' => sub {
       $seen{ $locale } and next; $seen{ $locale } = TRUE;
 
       my $node = $self->find_node( $locale, $req->uri_params->() ) or next;
+
+      $self->$_user_authorised( $req, $node )
+         or throw 'Person [_1] permission denied', [ $req->username ],
+                  rv => HTTP_FORBIDDEN;
+
       my $page = $self->initialise_page( $req, $node, $locale );
 
       return $orig->( $self, $req, $page );

@@ -119,7 +119,7 @@ my $_format_as_markdown = sub {
    my $date    = $event->rota->date;
    my $created = time2str '%Y-%m-%d %H:%M:%S %z', time, 'UTC';
    my $yaml    = "---\nauthor: ".$event->owner."\n"
-               . "created: ${created}\ntitle: ${name}\n---\n";
+               . "created: ${created}\nrole: anon\ntitle: ${name}\n---\n";
    my $desc    = $event->description."\n\n";
    my $opts    = { params => [ $date->dmy( '/' ),
                                $event->start_time, $event->end_time ],

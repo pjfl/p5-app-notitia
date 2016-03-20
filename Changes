@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Extended the authorisation to include docs and posts
           - Added a participents view to rota event row
           - Fixed redirect to docs/index after login
           - Moved installation instructions to own markdown page

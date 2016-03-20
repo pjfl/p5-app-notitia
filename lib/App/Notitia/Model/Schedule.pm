@@ -536,8 +536,9 @@ sub rota_redirect_action : Role(any) {
    my $rota_date = str2date_time $params->( 'rota_date' ), 'GMT';
    my $args      = [ $rota_name, $rota_date->ymd ];
    my $location  = uri_for_action $req, $self->moniker."/${period}_rota", $args;
+   my $message   = [ $req->session->collect_status_message( $req ) ];
 
-   return { redirect => { location => $location } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub slot : Role(administrator) Role(bike_rider) Role(controller) Role(driver) {
