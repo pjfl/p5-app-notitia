@@ -86,6 +86,7 @@ t/boilerplate.pm
 var/locale/en/notitia.po
 var/root/css/hyde-yellow.css
 var/root/docs/en/01_information/01_getting-started.md
+var/root/docs/en/01_information/10_installation.md
 var/root/img/article-footer.png
 var/root/img/dp-buttons.png
 var/root/img/dp-days.png
@@ -122,9 +123,9 @@ var/root/templates/hyde/exception_content.tt
 var/root/templates/hyde/footer.tt
 var/root/templates/hyde/header.tt
 var/root/templates/hyde/index.tt
-var/root/templates/hyde/index_content.tt
-var/root/templates/hyde/login-user.tt
+var/root/templates/hyde/login_content.tt
 var/root/templates/hyde/macros.tt
+var/root/templates/hyde/month-table.tt
 var/root/templates/hyde/password_email.tt
 var/root/templates/hyde/person_content.tt
 var/root/templates/hyde/posts-index_content.tt
@@ -133,8 +134,8 @@ var/root/templates/hyde/profile-user.tt
 var/root/templates/hyde/rename-file.tt
 var/root/templates/hyde/request-reset.tt
 var/root/templates/hyde/role_content.tt
+var/root/templates/hyde/rota-table.tt
 var/root/templates/hyde/rota_content.tt
-var/root/templates/hyde/rota_table.tt
 var/root/templates/hyde/search-file.tt
 var/root/templates/hyde/secondary-nav-items.tt
 var/root/templates/hyde/section_nav.tt
