@@ -42,7 +42,7 @@ around 'get_stash' => sub {
 
 # Private class attributes
 my $_rota_types_id = {};
-my $_table_cols = 3;
+my $_max_rota_cols = 3;
 
 # Private functions
 my $_confirm_slot_button = sub {
@@ -61,7 +61,7 @@ my $_header_label = sub {
 };
 
 my $_headers = sub {
-   return [ map {  $_header_label->( $_[ 0 ], $_ ) } 0 .. $_table_cols ];
+   return [ map {  $_header_label->( $_[ 0 ], $_ ) } 0 .. $_max_rota_cols ];
 };
 
 my $_onchange_submit = sub {
@@ -118,38 +118,54 @@ my $_slot_label = sub {
 };
 
 my $_table_link = sub {
-   my ($req, $k, $value, $tip) = @_;
-
-   return { class => 'table-link windows', hint  => loc( $req, 'Hint' ),
-            href  => HASH_CHAR,            name  => $k,
-            tip   => $tip,                 type  => 'link',
-            value => $value, };
+   return { class => 'table-link windows', hint  => loc( $_[ 0 ], 'Hint' ),
+            href  => HASH_CHAR,            name  => $_[ 1 ],
+            tip   => $_[ 3 ],              type  => 'link',
+            value => $_[ 2 ], };
 };
 
 my $_event_link = sub {
    my ($req, $page, $event) = @_;
 
    unless ($event) {
-      my $name = 'create-event';
-      my $href = uri_for_action $req, 'event/event';
+      my $name  = 'create-event';
+      my $class = 'blank-event windows';
+      my $href  = uri_for_action $req, 'event/event';
 
       push @{ $page->{literal_js} }, $_onclick_relocate->( $name, $href );
 
-      return { class => 'blank-event windows', colspan => $_table_cols,
-               name  => $name, };
+      return { class => $class, colspan => $_max_rota_cols, name => $name, };
    }
 
    my $name = my $value = $event->name;
-   my $href = uri_for_action $req, 'event/summary', [ $event->uri ];
+   my $href = uri_for_action $req, 'event/event_summary', [ $event->uri ];
    my $tip  = loc $req, 'Click to view the [_1] event', [ $event->label ];
 
    return {
-      colspan  => $_table_cols,
+      colspan  => $_max_rota_cols - 1,
       value    => {
          class => 'table-link', hint => loc( $req, 'Hint' ),
          href  => $href,        name => $name,
          tip   => $tip,         type => 'link',
          value => $value, }, };
+};
+
+my $_participents_link = sub {
+   my ($req, $page, $event) = @_; $event or return;
+
+   my $name  = 'view-participents';
+   my $class = 'list-icon';
+   my $href  = uri_for_action $req, 'event/participents', [ $event->uri ];
+   my $tip   = loc $req, 'Click to view the [_1] event participents',
+                   [ $event->label ];
+
+#   push @{ $page->{literal_js} }, $_onclick_relocate->( $name, $href );
+
+   return { colspan => 1,
+            value   => { class => $class, hint => loc( $req, 'Hint' ),
+                         href  => $href,  name => $name,
+                         tip   => $tip,   type => 'link',
+                         value => '&nbsp;', } };
 };
 
 # Private methods
@@ -193,8 +209,10 @@ my $_events = sub {
 
    while (defined (my $event = $todays_events->next) or $first) {
       my $col2 = $_event_link->( $req, $page, $event );
+      my $col3 = $_participents_link->( $req, $page, $event );
+      my $cols = [ $col1, $col2 ]; $col3 and push @{ $cols }, $col3;
 
-      push @{ $page->{rota}->{events} }, [ $col1, $col2 ];
+      push @{ $page->{rota}->{events} }, $cols;
       $col1 = { value => undef }; $first = FALSE;
    }
 
@@ -324,7 +342,7 @@ my $_controllers = sub {
 
          push @{ $controls },
             [ { class => 'rota-header', value   => loc( $req, $k ), },
-              { class => 'centre',      colspan => $_table_cols,
+              { class => 'centre',      colspan => $_max_rota_cols,
                 value => $link->{value} } ];
 
          $self->$_add_js_dialog( $req, $page, $args, $action,

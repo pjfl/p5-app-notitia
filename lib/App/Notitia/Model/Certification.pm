@@ -68,8 +68,8 @@ my $_bind_cert_fields = sub {
    my ($self, $cert) = @_;
 
    my $map      =  {
-      completed => { class => 'server' },
-      notes     => { class => 'autosize' },
+      completed => { class => 'standard-field server' },
+      notes     => { class => 'standard-field autosize' },
    };
 
    return $self->bind_fields( $cert, $map, 'Certification' );
@@ -137,7 +137,8 @@ sub certification : Role(person_manager) {
       fields     => $self->$_bind_cert_fields( $cert ),
       literal_js => $self->$_add_certification_js(),
       template   => [ 'contents', 'certification' ],
-      title      => loc( $req, 'certification_management_heading' ), };
+      title      => loc( $req, $type ? 'certification_edit_heading'
+                                     : 'certification_create_heading' ), };
    my $fields    =  $page->{fields};
    my $args      =  [ $name ];
 

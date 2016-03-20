@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 46 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 47 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 46 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 47 $ of L<App::Notitia>
 
 =head1 Description
 
@@ -74,11 +74,12 @@ Starting the daemon with the C<-D> option will cause it to log debug
 information to the file F<var/logs/daemon.log> and the application will
 also start logging at the debug level
 
-The production server logs access requests to the file
-F<var/logs/access-8085.log>
+By default the production server logs access requests to the file
+F<var/logs/access.log>
 
 Exporting C<DBIC_TRACE> and setting it to true will cause L<DBIx::Class>
-to emit the SQL it generates to C<stderr>
+to emit the SQL it generates to C<stderr>. On the production server
+C<stderr> is redirected to F<var/tmp/daemon.err>
 
 =head1 Project To Do List
 
@@ -95,8 +96,6 @@ TODO: Loose traffic lights from rota
 TODO: Make some of the docs pages private
 
 TODO: Rename asset_manager to rota_manager and allow to unassign slots
-
-TODO: Add a participents dialog to rota event row
 
 =head1 Dependencies
 

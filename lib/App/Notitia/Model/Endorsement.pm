@@ -87,9 +87,9 @@ my $_bind_endorsement_fields = sub {
    my ($self, $blot) = @_;
 
    my $map      =  {
-      type_code => { class => 'server' },
-      endorsed  => { class => 'server' },
-      notes     => { class => 'autosize' },
+      type_code => { class => 'standard-field server' },
+      endorsed  => { class => 'standard-field server' },
+      notes     => { class => 'standard-field autosize' },
       points    => {},
    };
 
@@ -141,7 +141,8 @@ sub endorsement : Role(person_manager) {
       first_field => $code ? 'endorsed' : 'type_code',
       literal_js  => $self->$_add_endorsement_js(),
       template    => [ 'contents', 'endorsement' ],
-      title       => loc( $req, 'endorsement_management_heading' ), };
+      title       => loc( $req, $code ? 'endorsement_edit_heading'
+                                      : 'endorsement_create_heading' ), };
    my $fields     =  $page->{fields};
    my $args       =  $code ? [ $name, $code ] : [ $name ];
 

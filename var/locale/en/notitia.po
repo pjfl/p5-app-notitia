@@ -117,8 +117,11 @@ msgstr "Cert. Type"
 msgid "cert_types"
 msgstr "Cert. Types"
 
-msgid "certification_management_heading"
-msgstr "Certification"
+msgid "certification_create_heading"
+msgstr "Add Certification"
+
+msgid "certification_edit_heading"
+msgstr "Edit Certification"
 
 msgid "certification_management_link"
 msgstr "Edit"
@@ -258,8 +261,11 @@ msgstr "End Time"
 msgid "endorsed"
 msgstr "Endorsed"
 
-msgid "endorsement_management_heading"
-msgstr "Endorsement"
+msgid "endorsement_create_heading"
+msgstr "Add Endorsement"
+
+msgid "endorsement_edit_heading"
+msgstr "Edit Endorsement"
 
 msgid "endorsement_management_link"
 msgstr "Edit"
@@ -288,8 +294,11 @@ msgstr "Create new 'event' records"
 msgid "event_date"
 msgstr "Event Date"
 
-msgid "event_management_heading"
-msgstr "Event"
+msgid "event_create_heading"
+msgstr "Add Event"
+
+msgid "event_edit_heading"
+msgstr "Edit Event"
 
 msgid "event_management_link"
 msgstr "Edit"
@@ -304,7 +313,13 @@ msgid "event_name"
 msgstr "Event Name"
 
 msgid "event_summary_heading"
-msgstr "Event"
+msgstr "Event Participation"
+
+msgid "event_summary_management_link"
+msgstr "View"
+
+msgid "event_summary_management_tip"
+msgstr "View the summary for the [_1] event and participte"
 
 msgid "events_heading_0"
 msgstr "Event"
@@ -454,7 +469,7 @@ msgid "participate_tip"
 msgstr "Participate in the [_1] event"
 
 msgid "participents_management_heading"
-msgstr "Participents"
+msgstr "[_1] Participents"
 
 msgid "participents_management_link"
 msgstr "Participents"
@@ -501,14 +516,17 @@ msgstr "Certs"
 msgid "people_heading_4"
 msgstr "Offences"
 
+msgid "person_create_heading"
+msgstr "Add Person"
+
 msgid "person_create_link"
 msgstr "Add Person"
 
 msgid "person_create_tip"
 msgstr "Create new 'person' records"
 
-msgid "person_management_heading"
-msgstr "Person"
+msgid "person_edit_heading"
+msgstr "Edit Person"
 
 msgid "person_management_link"
 msgstr "Edit"
@@ -524,6 +542,12 @@ msgstr "Person Roles"
 
 msgid "person_summary_heading"
 msgstr "Person Summary"
+
+msgid "person_summary_management_link"
+msgstr "View"
+
+msgid "person_summary_management_tip"
+msgstr "View the summary record for [_1]"
 
 msgid "points"
 msgstr "Points"
@@ -571,7 +595,7 @@ msgid "resigned"
 msgstr "Resigned"
 
 msgid "role_management_heading"
-msgstr "Roles"
+msgstr "Manage Roles"
 
 msgid "role_management_link"
 msgstr "Roles"
@@ -581,6 +605,9 @@ msgstr "Add and remove roles for [_1]"
 
 msgid "role_type_create_link"
 msgstr "Add Role Type"
+
+msgid "roles"
+msgstr "Roles"
 
 msgid "roles_list_link"
 msgstr "Roles"
@@ -620,12 +647,6 @@ msgstr "Start Time"
 
 msgid "subscription"
 msgstr "Subscription"
-
-msgid "summary_management_link"
-msgstr "View"
-
-msgid "summary_management_tip"
-msgstr "View the summary for the [_1] event and participte"
 
 msgid "trailer"
 msgstr "Trailer"
@@ -692,8 +713,11 @@ msgstr "Add Vehicle"
 msgid "vehicle_create_tip"
 msgstr "Create new 'vehicle' records"
 
-msgid "vehicle_management_heading"
-msgstr "Vehicle"
+msgid "vehicle_create_heading"
+msgstr "Add Vehicle"
+
+msgid "vehicle_edit_heading"
+msgstr "Edit Vehicle"
 
 msgid "vehicle_management_link"
 msgstr "Edit"
@@ -707,6 +731,12 @@ msgstr "Nickname"
 msgid "vehicle_name_field_tip"
 msgstr "Only service vehicles are given a name. Private vehicles have an "
        "owner. A vehicle cannot have both a name and an owner"
+
+msgid "vehicle_private_heading"
+msgstr "Private Vehicles"
+
+msgid "vehicle_service_heading"
+msgstr "Service Vehicles"
 
 msgid "vehicle_type"
 msgstr "Type"

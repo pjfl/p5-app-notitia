@@ -21,11 +21,11 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'event';
 
 register_action_paths
-   'event/event'        => 'event',
-   'event/events'       => 'events',
-   'event/participate'  => 'participate',
-   'event/participents' => 'participents',
-   'event/summary'      => 'event-summary';
+   'event/event'         => 'event',
+   'event/events'        => 'events',
+   'event/participate'   => 'participate',
+   'event/participents'  => 'participents',
+   'event/event_summary' => 'event-summary';
 
 # Construction
 around 'get_stash' => sub {
@@ -97,7 +97,7 @@ my $_event_links = sub {
 
    my $links = $_links_cache->{ $uri }; $links and return @{ $links };
 
-   my @actions = qw( event participents summary ); $links = [];
+   my @actions = qw( event participents event_summary ); $links = [];
 
    for my $actionp (map { $self->moniker."/${_}" } @actions) {
       push @{ $links }, { value => management_button( $req, $actionp, $uri ) };
@@ -125,7 +125,7 @@ my $_format_as_markdown = sub {
                                $event->start_time, $event->end_time ],
                    no_quote_bind_values => TRUE };
    my $when    = loc( $req, 'event_blog_when', $opts )."\n\n";
-   my $actionp = $self->moniker.'/summary';
+   my $actionp = $self->moniker.'/event_summary';
    my $href    = uri_for_action $req, $actionp, [ $event->uri ];
       $opts    = { params => [ $href ], no_quote_bind_values => TRUE };
    my $link    = loc( $req, 'event_blog_link', $opts )."\n\n";
@@ -149,7 +149,7 @@ my $_participent_links = sub {
    $links = [];
 
    push @{ $links },
-         { value => management_button( $req, 'admin/summary', $name ) };
+         { value => management_button( $req, 'admin/person_summary', $name ) };
    push @{ $links },
          { value => management_button
               ( $req, 'event/event', 'unparticipate', { args => [ $event->uri ],
@@ -251,7 +251,8 @@ sub event : Role(event_manager) {
       first_field => 'name',
       literal_js  => $self->$_add_event_js(),
       template    => [ 'contents', 'event' ],
-      title       => loc( $req, 'event_management_heading' ), };
+      title       => loc( $req, $uri ? 'event_edit_heading'
+                                     : 'event_create_heading' ), };
    my $fields     =  $page->{fields};
    my $actionp    =  $self->moniker.'/event';
 
@@ -265,6 +266,33 @@ sub event : Role(event_manager) {
    else { $fields->{date} = bind 'event_date', time2str '%d/%m/%Y' }
 
    $fields->{save} = save_button $req, $uri, 'event';
+
+   return $self->get_stash( $req, $page );
+}
+
+sub event_summary : Role(any) {
+   my ($self, $req) = @_;
+
+   my $schema  =  $self->schema;
+   my $user    =  $req->username;
+   my $uri     =  $req->uri_params->( 0 );
+   my $event   =  $schema->resultset( 'Event' )->find_event_by( $uri );
+   my $person  =  $schema->resultset( 'Person' )->find_person_by( $user );
+   my $opts    =  { disabled => TRUE };
+   my $page    =  {
+      fields   => $self->$_bind_event_fields( $event, $opts ),
+      template => [ 'contents', 'event' ],
+      title    => loc( $req, 'event_summary_heading' ), };
+   my $fields  =  $page->{fields};
+   my $actionp =  $self->moniker.'/event';
+
+   $fields->{add } = create_button $req, $actionp, 'event',
+                        { container_class => 'right' };
+   $fields->{date} = bind 'event_date', $event->rota->date, $opts;
+   $fields->{href} = uri_for_action $req, $actionp, [ $uri ];
+   $opts = $person->is_participent_of( $uri ) ? { cancel => TRUE } : {};
+   $fields->{participate} = $_participate_button->( $req, $uri, $opts );
+   delete $fields->{notes};
 
    return $self->get_stash( $req, $page );
 }
@@ -303,7 +331,7 @@ sub participate_event_action : Role(any) {
 
    $person->add_participent_for( $uri );
 
-   my $actionp   = $self->moniker.'/summary';
+   my $actionp   = $self->moniker.'/event_summary';
    my $location  = uri_for_action $req, $actionp, [ $uri ];
    my $message   = [ 'Event [_1] attendee [_2]', $uri, $req->username ];
 
@@ -320,7 +348,9 @@ sub participents : Role(any) {
          headers => $_participent_headers->( $req ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
-      title      => loc( $req, 'participents_management_heading' ), };
+      title      => loc( $req, 'participents_management_heading',
+                         { params => [ $event->name ],
+                           no_quote_bind_values => TRUE } ) };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $rows      =  $page->{fields}->{rows};
 
@@ -329,33 +359,6 @@ sub participents : Role(any) {
          [ { value => $person->[ 0 ] },
            $self->$_participent_links( $req, $person, $event ) ];
    }
-
-   return $self->get_stash( $req, $page );
-}
-
-sub summary : Role(any) {
-   my ($self, $req) = @_;
-
-   my $schema  =  $self->schema;
-   my $user    =  $req->username;
-   my $uri     =  $req->uri_params->( 0 );
-   my $event   =  $schema->resultset( 'Event' )->find_event_by( $uri );
-   my $person  =  $schema->resultset( 'Person' )->find_person_by( $user );
-   my $opts    =  { disabled => TRUE };
-   my $page    =  {
-      fields   => $self->$_bind_event_fields( $event, $opts ),
-      template => [ 'contents', 'event' ],
-      title    => loc( $req, 'event_summary_heading' ), };
-   my $fields  =  $page->{fields};
-   my $actionp =  $self->moniker.'/event';
-
-   $fields->{add } = create_button $req, $actionp, 'event',
-                        { container_class => 'right' };
-   $fields->{date} = bind 'event_date', $event->rota->date, $opts;
-   $fields->{href} = uri_for_action $req, $actionp, [ $uri ];
-   $opts = $person->is_participent_of( $uri ) ? { cancel => TRUE } : {};
-   $fields->{participate} = $_participate_button->( $req, $uri, $opts );
-   delete $fields->{notes};
 
    return $self->get_stash( $req, $page );
 }
@@ -370,7 +373,7 @@ sub unparticipate_event_action : Role(any) {
 
    $person->delete_participent_for( $uri );
 
-   my $actionp   = $self->moniker.'/summary';
+   my $actionp   = $self->moniker.'/event_summary';
    my $location  = uri_for_action $req, $actionp, [ $uri ];
    my $message   = [ 'Event [_1] attendence cancelled for [_2]', $uri, $user ];
 

@@ -24,14 +24,14 @@ with    q(Web::Components::Role::Email);
 has '+moniker' => default => 'admin';
 
 register_action_paths
-   'admin/activate' => 'person/activate',
-   'admin/contacts' => 'contacts',
-   'admin/index'    => 'admin/index',
-   'admin/people'   => 'people',
-   'admin/person'   => 'person',
-   'admin/summary'  => 'person-summary',
-   'admin/type'     => 'type',
-   'admin/types'    => 'types';
+   'admin/activate'       => 'person/activate',
+   'admin/contacts'       => 'contacts',
+   'admin/index'          => 'admin/index',
+   'admin/people'         => 'people',
+   'admin/person'         => 'person',
+   'admin/person_summary' => 'person-summary',
+   'admin/type'           => 'type',
+   'admin/types'          => 'types';
 
 # Construction
 around 'get_stash' => sub {
@@ -432,7 +432,8 @@ sub person : Role(person_manager) {
       first_field => 'first_name',
       literal_js  => $self->$_add_person_js(),
       template    => [ 'contents', 'person' ],
-      title       => loc( $req, 'person_management_heading' ), };
+      title       => loc( $req, $name ? 'person_edit_heading'
+                                      : 'person_create_heading' ), };
    my $fields     =  $page->{fields};
    my $action     =  $self->moniker.'/person';
    my $opts       =  field_options $self->schema, 'Person', 'name',
@@ -456,6 +457,31 @@ sub person : Role(person_manager) {
 
    $fields->{next_of_kin} = $_next_of_kin_list->( $people );
    $fields->{save} = save_button $req, $name, 'person';
+
+   return $self->get_stash( $req, $page );
+}
+
+sub person_summary : Role(administrator) Role(person_viewer) {
+   my ($self, $req) = @_; my $people;
+
+   my $name       =  $req->uri_params->( 0 );
+   my $person_rs  =  $self->schema->resultset( 'Person' );
+   my $person     =  $_maybe_find_person->( $person_rs, $name );
+   my $opts       =  { class => 'standard-field', disabled => TRUE };
+   my $page       =  {
+      fields      => $self->$_bind_person_fields( $person, $opts ),
+      first_field => 'first_name',
+      template    => [ 'contents', 'person' ],
+      title       => loc( $req, 'person_summary_heading' ), };
+   my $fields     =  $page->{fields};
+
+   $opts    = field_options $self->schema, 'Person', 'name', $opts;
+   $fields->{username    } = bind 'username', $person->name, $opts;
+   $opts    = { fields => { selected => $person->next_of_kin } };
+   $people  = $person_rs->list_all_people( $opts );
+   $fields->{next_of_kin } = $_next_of_kin_list->( $people );
+   $fields->{primary_role} = bind 'primary_role', $person->list_roles;
+   delete $fields->{notes};
 
    return $self->get_stash( $req, $page );
 }
@@ -513,31 +539,6 @@ sub remove_type_action : Role(administrator) {
    my $location =  uri_for_action $req, $self->moniker.'/types';
 
    return { redirect => { location => $location, message => $message } };
-}
-
-sub summary : Role(administrator) Role(person_viewer) {
-   my ($self, $req) = @_; my $people;
-
-   my $name       =  $req->uri_params->( 0 );
-   my $person_rs  =  $self->schema->resultset( 'Person' );
-   my $person     =  $_maybe_find_person->( $person_rs, $name );
-   my $opts       =  { class => 'standard-field', disabled => TRUE };
-   my $page       =  {
-      fields      => $self->$_bind_person_fields( $person, $opts ),
-      first_field => 'first_name',
-      template    => [ 'contents', 'person' ],
-      title       => loc( $req, 'person_summary_heading' ), };
-   my $fields     =  $page->{fields};
-
-   $opts    = field_options $self->schema, 'Person', 'name', $opts;
-   $fields->{username    } = bind 'username', $person->name, $opts;
-   $opts    = { fields => { selected => $person->next_of_kin } };
-   $people  = $person_rs->list_all_people( $opts );
-   $fields->{next_of_kin } = $_next_of_kin_list->( $people );
-   $fields->{primary_role} = bind 'primary_role', $person->list_roles;
-   delete $fields->{notes};
-
-   return $self->get_stash( $req, $page );
 }
 
 sub type : Role(administrator) {

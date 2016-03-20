@@ -298,7 +298,8 @@ sub vehicle : Role(asset_manager) {
       fields     => $self->$_bind_vehicle_fields( $req, $vehicle ),
       literal_js => $self->$_add_vehicle_js(),
       template   => [ 'contents', 'vehicle' ],
-      title      => loc( $req, 'vehicle_management_heading' ), };
+      title      => loc( $req, $vrn ? 'vehicle_edit_heading'
+                                    : 'vehicle_create_heading' ), };
    my $fields    =  $page->{fields};
 
    if ($vrn) {
@@ -312,6 +313,18 @@ sub vehicle : Role(asset_manager) {
 
    return $self->get_stash( $req, $page );
 }
+
+my $_vehicle_title = sub {
+   my ($req, $type, $private, $service) = @_;
+
+   my $k = 'vehicles_management_heading';
+
+   if    ($type and $private) { $k = 'vehicle_private_heading' }
+   elsif ($type and $service) { $k = 'vehicle_service_heading' }
+   elsif ($type)              { $k = "${type}_list_link" }
+
+   return loc $req, $k;
+};
 
 sub vehicles : Role(asset_manager) {
    my ($self, $req) = @_;
@@ -327,8 +340,7 @@ sub vehicles : Role(asset_manager) {
          headers => $_vehicles_headers->( $req ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
-      title      => loc( $req, $type ? "${type}_list_link"
-                                     : 'vehicles_management_heading' ), };
+      title      => $_vehicle_title->( $req, $type, $private, $service ), };
    my $where     =  { private => $private, service => $service, type => $type };
    my $rs        =  $self->schema->resultset( 'Vehicle' );
    my $vehicles  =  $rs->list_vehicles( $where );
