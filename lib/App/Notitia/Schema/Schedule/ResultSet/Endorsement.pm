@@ -29,12 +29,12 @@ sub new_result {
 }
 
 sub find_endorsement_by {
-   my ($self, $name, $code) = @_;
+   my ($self, $name, $uri) = @_;
 
    my $endorsement = $self->search
-      ( { 'recipient.name' => $name, type_code => $code },
+      ( { 'recipient.name' => $name, uri => $uri },
         { join => [ 'recipient' ] } )->single
-        or throw 'Endorsement [_1] for [_2] not found', [ $code, $name ],
+        or throw 'Endorsement [_1] for [_2] not found', [ $uri, $name ],
                  level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return $endorsement;

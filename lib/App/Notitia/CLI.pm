@@ -126,12 +126,12 @@ my $_write_local_config = sub {
    $self->output( $text, AS_PARA );
 
    my $prompt      = '+Enter the organisation prefix';
-   my $person_pref = $self->get_line( $prompt, NUL, TRUE, 0 );
+   my $prefix = $self->get_line( $prompt, NUL, TRUE, 0 );
 
-   length $person_pref > 1 or $person_pref = $_random_chars->();
-   $person_pref = lc substr $person_pref, 0, 3;
+   length $prefix > 1 or $prefix = $_random_chars->();
+   $prefix = lc substr $prefix, 0, 3;
 
-   my $data = { person_pref => $person_pref, salt => bson64id() };
+   my $data = { person_prefix => $prefix, salt => bson64id() };
 
    $self->file->data_dump( data => $data, path => $local_conf );
    return;

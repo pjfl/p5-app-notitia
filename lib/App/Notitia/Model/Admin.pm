@@ -376,7 +376,7 @@ sub create_person_action : Role(person_manager) {
 
    $self->$_update_person_from_request( $req, $person );
 
-   my $role = $req->body_params->( 'roles', { optional => TRUE } );
+   my $role = $req->body_params->( 'primary_role', { optional => TRUE } );
 
    $person->password( my $password = substr create_token, 0, 12 );
    $person->password_expired( TRUE );

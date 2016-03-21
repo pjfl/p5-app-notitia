@@ -66,18 +66,18 @@ my $_add_endorsement_js = sub {
 };
 
 my $_endorsement_links = sub {
-   my ($self, $req, $name, $code) = @_;
+   my ($self, $req, $name, $uri) = @_;
 
-   my $links = $_blots_links_cache->{ $code }; $links and return @{ $links };
+   my $links = $_blots_links_cache->{ $uri }; $links and return @{ $links };
 
-   my $opts = { args => [ $name, $code ] }; $links = [];
+   my $opts = { args => [ $name, $uri ] }; $links = [];
 
    for my $actionp (map { $self->moniker."/${_}" } 'endorsement' ) {
       push @{ $links }, {
          value => management_button( $req, $actionp, $name, $opts ) };
    }
 
-   $_blots_links_cache->{ $code } = $links;
+   $_blots_links_cache->{ $uri } = $links;
 
    return @{ $links };
 };
@@ -134,27 +134,27 @@ sub endorsement : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name       =  $req->uri_params->( 0 );
-   my $code       =  $req->uri_params->( 1, { optional => TRUE } );
-   my $blot       =  $self->$_maybe_find_endorsement( $name, $code );
+   my $uri        =  $req->uri_params->( 1, { optional => TRUE } );
+   my $blot       =  $self->$_maybe_find_endorsement( $name, $uri );
    my $page       =  {
       fields      => $self->$_bind_endorsement_fields( $blot ),
-      first_field => $code ? 'endorsed' : 'type_code',
+      first_field => $uri ? 'endorsed' : 'type_code',
       literal_js  => $self->$_add_endorsement_js(),
       template    => [ 'contents', 'endorsement' ],
-      title       => loc( $req, $code ? 'endorsement_edit_heading'
-                                      : 'endorsement_create_heading' ), };
+      title       => loc( $req, $uri ? 'endorsement_edit_heading'
+                                     : 'endorsement_create_heading' ), };
+   my $args       =  $uri ? [ $name, $uri ] : [ $name ];
    my $fields     =  $page->{fields};
-   my $args       =  $code ? [ $name, $code ] : [ $name ];
 
-   if ($code) {
+   if ($uri) {
       $fields->{type_code}->{disabled} = TRUE;
-      $fields->{delete   } = delete_button $req, $code, 'endorsement';
+      $fields->{delete   } = delete_button $req, $uri, 'endorsement';
    }
    else {
       $fields->{endorsed } = bind 'endorsed', time2str '%Y-%m-%d';
    }
 
-   $fields->{save} = save_button $req, $code, 'endorsement';
+   $fields->{save} = save_button $req, $uri, 'endorsement';
    $fields->{href} = uri_for_action $req, 'blots/endorsement', $args;
 
    return $self->get_stash( $req, $page );
@@ -179,7 +179,7 @@ sub endorsements : Role(person_manager) {
    for my $blot (@{ $blot_rs->list_endorsements_for( $req, $name ) }) {
       push @{ $rows },
          [ { value => $blot->[ 0 ] },
-           $self->$_endorsement_links( $req, $name, $blot->[ 1 ]->type_code ) ];
+           $self->$_endorsement_links( $req, $name, $blot->[ 1 ]->uri ) ];
    }
 
    return $self->get_stash( $req, $page );
@@ -206,12 +206,12 @@ sub delete_endorsement_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name     = $req->uri_params->( 0 );
-   my $code     = $req->uri_params->( 1 );
-   my $blot     = $self->$_find_endorsement_by( $name, $code ); $blot->delete;
+   my $uri      = $req->uri_params->( 1 );
+   my $blot     = $self->$_find_endorsement_by( $name, $uri ); $blot->delete;
    my $action   = $self->moniker.'/endorsements';
    my $location = uri_for_action $req, $action, [ $name ];
    my $message  = [ 'Endorsement [_1] for [_2] deleted by [_3]',
-                    $code, $name, $req->username ];
+                    $uri, $name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -220,13 +220,13 @@ sub update_endorsement_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name = $req->uri_params->( 0 );
-   my $code = $req->uri_params->( 1 );
-   my $blot = $self->$_find_endorsement_by( $name, $code );
+   my $uri  = $req->uri_params->( 1 );
+   my $blot = $self->$_find_endorsement_by( $name, $uri );
 
    $self->$_update_endorsement_from_request( $req, $blot ); $blot->update;
 
    my $message = [ 'Endorsement [_1] for [_2] updated by [_3]',
-                   $code, $name, $req->username ];
+                   $uri, $name, $req->username ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
