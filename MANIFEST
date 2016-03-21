@@ -49,6 +49,7 @@ lib/App/Notitia/Schema/Schedule/Result/Slot.pm
 lib/App/Notitia/Schema/Schedule/Result/Transport.pm
 lib/App/Notitia/Schema/Schedule/Result/Type.pm
 lib/App/Notitia/Schema/Schedule/Result/Vehicle.pm
+lib/App/Notitia/Schema/Schedule/Result/VehicleRequest.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Certification.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Endorsement.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Event.pm
@@ -86,7 +87,6 @@ t/boilerplate.pm
 var/locale/en/notitia.po
 var/root/css/hyde-yellow.css
 var/root/docs/en/01_information/01_getting-started.md
-var/root/docs/en/01_information/10_installation.md
 var/root/img/article-footer.png
 var/root/img/dp-buttons.png
 var/root/img/dp-days.png

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Documentation update
           - Endorsements work with new uri field
           - Added VehicleRequest result class
           - Renamed to personal_vehicles to operator_vehicles
