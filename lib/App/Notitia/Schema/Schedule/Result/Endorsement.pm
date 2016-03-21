@@ -7,6 +7,7 @@ use parent   'App::Notitia::Schema::Base';
 use App::Notitia::Constants qw( VARCHAR_MAX_SIZE );
 use App::Notitia::Util      qw( date_data_type foreign_key_data_type loc
                                 numerical_id_data_type varchar_data_type );
+use Class::Usul::Functions  qw( create_token );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -16,10 +17,13 @@ $class->add_columns
    ( recipient_id => foreign_key_data_type,
      points       => numerical_id_data_type,
      endorsed     => date_data_type,
-     type_code    => varchar_data_type( 16 ),
+     type_code    => varchar_data_type( 25 ),
+     uri          => varchar_data_type( 32 ),
      notes        => varchar_data_type, );
 
 $class->set_primary_key( 'recipient_id', 'type_code' );
+
+$class->add_unique_constraint( [ 'uri' ] );
 
 $class->belongs_to( recipient => "${result}::Person", 'recipient_id' );
 
@@ -28,10 +32,25 @@ sub _as_string {
    return $_[ 0 ]->type_code;
 }
 
+my $_set_uri = sub {
+   my $self     = shift;
+   my $columns  = { $self->get_inflated_columns };
+   my $recip_id = $columns->{recipient_id};
+   my $tcode    = lc $columns->{type_code}; $tcode =~ s{ [ ] }{-}gmx;
+   my $token    = lc substr create_token( $tcode.$recip_id ), 0, 6;
+
+   $columns->{uri} = "${tcode}-${token}";
+   $self->set_inflated_columns( $columns );
+   return;
+};
+
+# Public methods
 sub insert {
    my $self = shift;
 
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   $self->$_set_uri;
 
    return $self->next::method;
 }
@@ -49,19 +68,21 @@ sub update {
 
    $columns and $self->set_inflated_columns( $columns ); $self->validate;
 
+   $self->$_set_uri;
+
    return $self->next::method;
 }
 
 sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       constraints    => {
-         type_code   => { max_length => 16, min_length => 5 },
+         type_code   => { max_length => 25, min_length => 5 },
          notes       => { max_length => VARCHAR_MAX_SIZE(), min_length => 0, },
       },
       fields         => {
          type_code   => {
             filters  => 'filterTitleCase',
-            validate => 'isMandatory isValidLength isValidIdentifier' },
+            validate => 'isMandatory isValidLength isSimpleText' },
          endorsed    => { validate => 'isMandatory isValidDate' },
          notes       => { validate => 'isValidLength isValidText' },
       },

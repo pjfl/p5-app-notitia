@@ -86,7 +86,7 @@ my $_operators_vehicle = sub {
    exists $cache->{ $slot->operator->id }
       and return $cache->{ $slot->operator->id };
 
-   my $pv      = ($slot->personal_vehicles->all)[ 0 ];
+   my $pv      = ($slot->operator_vehicles->all)[ 0 ];
    my $pv_type = $pv ? $pv->type : NUL;
    my $label   = $pv_type eq '4x4' ? $pv_type
                : $pv_type eq 'car' ? ucfirst( $pv_type ) : undef;
@@ -541,7 +541,7 @@ sub rota_redirect_action : Role(any) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub slot : Role(administrator) Role(bike_rider) Role(controller) Role(driver) {
+sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
    my ($self, $req) = @_;
 
    my $params = $req->uri_params;
@@ -564,7 +564,7 @@ sub slot : Role(administrator) Role(bike_rider) Role(controller) Role(driver) {
    return $stash;
 }
 
-sub yield_slot_action : Role(administrator) Role(bike_rider) Role(controller)
+sub yield_slot_action : Role(rota_manager) Role(bike_rider) Role(controller)
                         Role(driver) {
    my ($self, $req) = @_;
 

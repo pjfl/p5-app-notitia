@@ -25,7 +25,7 @@ sub list_slots_for {
       ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
         { 'columns'  => [ qw( bike_requested type_name subslot ) ],
           'join'     => [ 'operator', 'vehicle' ],
-          'prefetch' => [ { 'shift' => 'rota' }, 'personal_vehicles' ],
+          'prefetch' => [ { 'shift' => 'rota' }, 'operator_vehicles' ],
           '+select'  => $attr,
           '+as'      => $attr, } );
 }

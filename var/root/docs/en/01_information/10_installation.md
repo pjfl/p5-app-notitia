@@ -1,5 +1,5 @@
 ---
-role: administrator
+role: any
 title: Installation & Support
 ---
 

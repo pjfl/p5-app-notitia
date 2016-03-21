@@ -67,6 +67,18 @@ my $_vehicles_headers = sub {
    return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } } 0 .. 1 ];
 };
 
+my $_vehicle_title = sub {
+   my ($req, $type, $private, $service) = @_;
+
+   my $k = 'vehicles_management_heading';
+
+   if    ($type and $private) { $k = 'vehicle_private_heading' }
+   elsif ($type and $service) { $k = 'vehicle_service_heading' }
+   elsif ($type)              { $k = "${type}_list_link" }
+
+   return loc $req, $k;
+};
+
 my $_vehicle_type_tuple = sub {
    my ($type, $opts) = @_; $opts = { %{ $opts // {} } };
 
@@ -207,7 +219,7 @@ my $_vehicle_type_list = sub {
 };
 
 # Public methods
-sub assign : Role(asset_manager) {
+sub assign : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $params = $req->uri_params;
@@ -239,11 +251,11 @@ sub assign : Role(asset_manager) {
    return $stash;
 }
 
-sub assign_vehicle_action : Role(asset_manager) {
+sub assign_vehicle_action : Role(rota_manager) {
    return $_[ 0 ]->$_toggle_assignment( $_[ 1 ], 'assign' );
 }
 
-sub create_vehicle_action : Role(asset_manager) {
+sub create_vehicle_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $vehicle  = $self->schema->resultset( 'Vehicle' )->new_result( {} );
@@ -257,7 +269,7 @@ sub create_vehicle_action : Role(asset_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_vehicle_action : Role(asset_manager) {
+sub delete_vehicle_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $vrn     = $req->uri_params->( 0 );
@@ -271,11 +283,11 @@ sub delete_vehicle_action : Role(asset_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub unassign_vehicle_action : Role(asset_manager) {
+sub unassign_vehicle_action : Role(rota_manager) {
    return $_[ 0 ]->$_toggle_assignment( $_[ 1 ], 'unassign' );
 }
 
-sub update_vehicle_action : Role(asset_manager) {
+sub update_vehicle_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $vrn     = $req->uri_params->( 0 );
@@ -288,7 +300,7 @@ sub update_vehicle_action : Role(asset_manager) {
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub vehicle : Role(asset_manager) {
+sub vehicle : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $action    =  $self->moniker.'/vehicle';
@@ -314,19 +326,7 @@ sub vehicle : Role(asset_manager) {
    return $self->get_stash( $req, $page );
 }
 
-my $_vehicle_title = sub {
-   my ($req, $type, $private, $service) = @_;
-
-   my $k = 'vehicles_management_heading';
-
-   if    ($type and $private) { $k = 'vehicle_private_heading' }
-   elsif ($type and $service) { $k = 'vehicle_service_heading' }
-   elsif ($type)              { $k = "${type}_list_link" }
-
-   return loc $req, $k;
-};
-
-sub vehicles : Role(asset_manager) {
+sub vehicles : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $params    =  $req->query_params;

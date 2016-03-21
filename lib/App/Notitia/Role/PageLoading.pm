@@ -39,13 +39,14 @@ around 'get_stash' => sub {
    return $stash;
 };
 
-my $_user_authorised = sub {
+my $_is_user_authorised = sub {
    my ($self, $req, $node) = @_; my $nroles = $node->{role};
 
    $nroles = is_arrayref( $nroles ) ? $nroles : $nroles ? [ $nroles ] : [];
 
    is_member 'anon', $nroles and return TRUE;
    $req->authenticated or return FALSE;
+   is_member 'any',  $nroles and return TRUE;
 
    my $person = $self->components->{admin}->find_person_by( $req->username );
    my $proles = $person->list_roles;
@@ -67,7 +68,7 @@ around 'load_page' => sub {
 
       my $node = $self->find_node( $locale, $req->uri_params->() ) or next;
 
-      $self->$_user_authorised( $req, $node )
+      $self->$_is_user_authorised( $req, $node )
          or throw 'Person [_1] permission denied', [ $req->username ],
                   rv => HTTP_FORBIDDEN;
 

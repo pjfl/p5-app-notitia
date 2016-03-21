@@ -47,7 +47,7 @@ sub _as_string {
 my $_assert_event_assignment_allowed = sub {
    my ($self, $event, $assigner) = @_;
 
-   $assigner->assert_member_of( 'asset_manager' );
+   $assigner->assert_member_of( 'rota_manager' );
 
    my $schema     = $self->result_source->schema;
    my $event_date = $schema->format_datetime( $event->rota->date );
@@ -94,7 +94,7 @@ my $_find_rota_type_id_for = sub {
 my $_assert_slot_assignment_allowed = sub {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $person, $bike) = @_;
 
-   $person->assert_member_of( 'asset_manager' );
+   $person->assert_member_of( 'rota_manager' );
 
    $slot_type eq 'rider' and $bike and $self->type ne 'bike'
       and throw 'Vehicle [_1] is not a bike and one was requested', [ $self ];

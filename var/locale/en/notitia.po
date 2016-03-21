@@ -60,9 +60,6 @@ msgstr "Again"
 msgid "assessment"
 msgstr "Assessment"
 
-msgid "asset_manager"
-msgstr "Asset Manager"
-
 msgid "assign_management_tip"
 msgstr "Assign a vehicle to this slot"
 
@@ -623,6 +620,9 @@ msgstr "Name"
 
 msgid "rota_heading_3"
 msgstr "C4"
+
+msgid "rota_manager"
+msgstr "Rota Manager"
 
 msgid "rota_type_create_link"
 msgstr "Add Rota Type"

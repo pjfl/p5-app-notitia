@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 48 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 49 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.2.$Rev: 48 $ of L<App::Notitia>
+This documents version v0.2.$Rev: 49 $ of L<App::Notitia>
 
 =head1 Description
 
@@ -92,8 +92,6 @@ TODO: Vehicle assigning should be moved to Slot to make URI more restful
 TODO: Endorsement type_codes need similar treatment to event uris
 
 TODO: Loose traffic lights from rota
-
-TODO: Rename asset_manager to rota_manager and allow to unassign slots
 
 =head1 Dependencies
 

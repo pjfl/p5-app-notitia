@@ -1,5 +1,8 @@
 Revision history for App::Notitia
 
+          - Added VehicleRequest result class
+          - Renamed to personal_vehicles to operator_vehicles
+          - Renamed asset_manager to rota_manager and allow to unassign slots
           - Extended the authorisation to include docs and posts
           - Added a participents view to rota event row
           - Fixed redirect to docs/index after login

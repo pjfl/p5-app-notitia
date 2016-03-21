@@ -1,6 +1,15 @@
 {
    "fields": "name type_class",
    "rows": [
+      "administrator, role",
+      "address_viewer, role",
+      "bike_rider, role",
+      "controller, role",
+      "driver, role",
+      "event_manager, role",
+      "fund_raiser, role",
+      "person_manager, role",
+      "rota_manager, role",
       "assessment, certification",
       "bluelight, certification",
       "c_advanced, certification",
@@ -11,19 +20,10 @@
       "gmp, certification",
       "m_advanced, certification",
       "route, certification",
-      "administrator, role",
-      "address_viewer, role",
-      "asset_manager, role",
-      "bike_rider, role",
-      "controller, role",
-      "driver, role",
-      "event_manager, role",
-      "fund_raiser, role",
-      "person_manager, role",
-      "main, rota",
       "4x4, vehicle",
       "bike, vehicle",
       "car, vehicle",
-      "trailer, vehicle"
+      "trailer, vehicle",
+      "main, rota"
    ]
 }
