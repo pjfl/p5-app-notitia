@@ -2,7 +2,8 @@ package App::Notitia::Model::Vehicle;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( admin_navigation_links bind bind_fields button
+use App::Notitia::Util      qw( admin_navigation_links assign_link
+                                bind bind_fields button
                                 check_field_server create_link
                                 delete_button loc make_tip
                                 management_link register_action_paths
@@ -12,6 +13,7 @@ use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( str2date_time );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
+use Try::Tiny;
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -193,17 +195,40 @@ my $_req_quantity = sub {
    return $vreq ? $vreq->quantity : 0;
 };
 
+my $_toggle_event_assignment = sub {
+   my ($self, $req, $action) = @_;
+
+   my $schema   = $self->schema;
+   my $uri      = $req->uri_params->( 0 );
+   my $vrn      = $req->body_params->( 'vehicle' );
+   my $vehicle  = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+
+   $vehicle->assign_to_event( $uri, $req->username );
+
+   my $actionp  = $self->moniker.'/request_vehicle';
+   my $message  = [ "Vehicle [_1] ${action}ed to [_2] by [_3]",
+                    $vrn, $uri, $req->username ];
+   my $location = uri_for_action( $req, $actionp, [ $uri ] );
+
+   return { redirect => { location => $location, message => $message } };
+};
+
 my $_toggle_assignment = sub {
    my ($self, $req, $action) = @_;
 
-   my $method    = "${action}_slot";
-   my $params    = $req->uri_params;
-   my $rota_name = $params->( 0 );
+   my $params = $req->uri_params; my $rota_name = $params->( 0 ); my $r;
+
+   try   { $self->schema->resultset( 'Type' )->find_rota_by( $rota_name ) }
+   catch { $r = $self->$_toggle_event_assignment( $req, $action ) };
+
+   $r and return $r;
+
    my $rota_date = $params->( 1 );
    my $slot_name = $params->( 2 );
    my $vrn       = $req->body_params->( 'vehicle' );
    my $schema    = $self->schema;
    my $vehicle   = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+   my $method    = "${action}_slot";
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
 
@@ -282,10 +307,16 @@ my $_vehicle_type_list = sub {
 
 # Public methods
 sub assign : Role(rota_manager) {
-   my ($self, $req) = @_;
+   my ($self, $req) = @_; my $params = $req->uri_params;
 
-   my $params = $req->uri_params;
-   my $args   = [ $params->( 0 ), $params->( 1 ), $params->( 2 ) ];
+   my $args = [ $params->( 0 ) ]; my $opts = { optional => TRUE };
+
+   my $rota_date = $params->( 1, $opts ); $rota_date
+      and push @{ $args }, $rota_date;
+
+   my $slot_name = $params->( 2, $opts ); $slot_name
+      and push @{ $args }, $slot_name;
+
    my $action = $req->query_params->( 'action' );
    my $stash  = $self->dialog_stash( $req, "${action}-vehicle" );
    my $page   = $stash->{page};
@@ -349,19 +380,27 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    my ($self, $req) = @_;
 
    my $uri       =  $req->uri_params->( 0 );
-   my $event     =  $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $event_rs  =  $self->schema->resultset( 'Event' );
+   my $event     =  $event_rs->find_event_by
+                       ( $uri, { prefetch => [ 'owner' ] } );
    my $page      =  {
       fields     => $self->$_bind_request_fields( $req, $event ),
+      moniker    => $self->moniker,
       template   => [ 'contents', 'vehicle-request' ],
       title      => loc( $req, 'vehicle_request_heading' ), };
    my $type_rs   =  $self->schema->resultset( 'Type' );
    my $opts      =  { disabled => TRUE };
    my $fields    =  $page->{fields};
+   my $trans_rs  =  $self->schema->resultset( 'Transport' );
+   my $tports    =  $trans_rs->search
+      ( { event_id => $event->id }, { prefetch => 'vehicle' } );
 
    $fields->{action  } = uri_for_action $req, 'asset/vehicle', [ $uri ];
    $fields->{date    } = bind 'event_date', $event->rota->date, $opts;
    $fields->{request } = $_vehicle_request_button->( $req, $event );
-   $fields->{vehicles} = { headers => $_vehicle_request_headers->( $req ) };
+   $fields->{vehicles} = { class   => 'smaller-table',
+                           headers => $_vehicle_request_headers->( $req ) };
+
 
    for my $vehicle_type ($type_rs->list_types( 'vehicle' )->all) {
       my $quant = $self->$_req_quantity( $event, $vehicle_type );
@@ -369,8 +408,15 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
                       $_quantity_list->( $vehicle_type, $quant ) ];
 
       if ($quant) {
-         for my $vehicle (0 .. $quant - 1) {
-            push @{ $row }, { value => 'req' };
+         for my $slotno (0 .. $quant - 1) {
+            my $transport = $tports->next;
+            my $vehicle   = $transport ? $transport->vehicle : undef;
+            my $opts      = { name        => 'event',
+                              operator    => $event->owner,
+                              vehicle     => $vehicle,
+                              vehicle_req => TRUE, };
+
+            push @{ $row }, assign_link( $req, $page, [ $uri ], $opts );
          }
       }
 
