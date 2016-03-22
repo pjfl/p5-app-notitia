@@ -1,16 +1,16 @@
 package App::Notitia::Model::Schedule;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE HASH_CHAR NUL
-                                SHIFT_TYPE_ENUM SPC TILDE TRUE );
-use App::Notitia::Util      qw( bind loc register_action_paths
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SHIFT_TYPE_ENUM
+                                SPC TRUE );
+use App::Notitia::Util      qw( assign_link bind button dialog_anchor loc
+                                register_action_paths
                                 rota_navigation_links set_element_focus
-                                slot_identifier slot_limit_index
-                                uri_for_action );
+                                slot_claimed slot_identifier slot_limit_index
+                                table_link uri_for_action );
 use Class::Usul::Functions  qw( throw );
 use Class::Usul::Time       qw( str2date_time time2str );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
-use Scalar::Util            qw( blessed );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -45,19 +45,28 @@ my $_rota_types_id = {};
 my $_max_rota_cols = 3;
 
 # Private functions
+my $_add_js_dialog = sub {
+   my ($req, $page, $args, $action, $name, $title) = @_;
+
+   $name = "${action}-${name}"; $title = (ucfirst $action).SPC.$title;
+
+   my $path = $page->{moniker}.'/slot';
+   my $href = uri_for_action $req, $path, $args, { action => $action };
+   my $js   = $page->{literal_js} //= [];
+
+   push @{ $js }, dialog_anchor( $args->[ 2 ], $href, {
+      name => $name, title => loc( $req, $title ), useIcon => \1 } );
+
+   return;
+};
+
 my $_confirm_slot_button = sub {
-   my ($req, $slot_type, $action) = @_;
-
-   my $tip   = loc( $req, 'Hint' ).SPC.TILDE.SPC
-             . loc( $req, "confirm_${action}_tip", [ $slot_type ] );
-   my $value = "${action}_slot";
-
-   # Have left tip off as too noisey
-   return { class => 'right-last', label => 'confirm', value => $value };
+   return button $_[ 0 ],
+      { class =>  'right-last', label => 'confirm', value => $_[ 1 ].'_slot' };
 };
 
 my $_header_label = sub {
-   return { value => loc( $_[ 0 ], 'rota_heading_'.$_[ 1 ] ) }
+   return { value => loc( $_[ 0 ], 'rota_heading_'.$_[ 1 ] ) };
 };
 
 my $_headers = sub {
@@ -101,27 +110,15 @@ my $_rota_summary_link = sub {
 
    my $value = 'C'; my $class = 'vehicle-not-needed';
 
-   if    ($row->{vehicle }) { $value = 'V'; $class = 'vehicle-assigned'  }
-   elsif ($row->{bike_req}) { $value = 'R'; $class = 'vehicle-requested' }
+   if    ($row->{vehicle    }) { $value = 'V'; $class = 'vehicle-assigned'  }
+   elsif ($row->{vehicle_req}) { $value = 'R'; $class = 'vehicle-requested' }
 
    return { class => $class, colspan => $span, value => $value };
 };
 
-my $_slot_claimed = sub {
-   return exists $_[ 0 ]->{ $_[ 1 ] }
-       && exists $_[ 0 ]->{ $_[ 1 ] }->{operator} ? TRUE : FALSE;
-};
-
 my $_slot_label = sub {
-   return $_slot_claimed->( $_[ 1 ], $_[ 2 ] )
-        ? $_[ 1 ]->{ $_[ 2 ] }->{operator}->label : loc( $_[ 0 ], 'Vacant' );
-};
-
-my $_table_link = sub {
-   return { class => 'table-link windows', hint  => loc( $_[ 0 ], 'Hint' ),
-            href  => HASH_CHAR,            name  => $_[ 1 ],
-            tip   => $_[ 3 ],              type  => 'link',
-            value => $_[ 2 ], };
+   return slot_claimed( $_[ 1 ] ) ? $_[ 1 ]->{operator}->label
+                                  : loc( $_[ 0 ], 'Vacant' );
 };
 
 my $_event_link = sub {
@@ -153,13 +150,10 @@ my $_event_link = sub {
 my $_participents_link = sub {
    my ($req, $page, $event) = @_; $event or return;
 
-   my $name  = 'view-participents';
    my $class = 'list-icon';
+   my $name  = 'view-participents';
    my $href  = uri_for_action $req, 'event/participents', [ $event->uri ];
-   my $tip   = loc $req, 'Click to view the [_1] event participents',
-                   [ $event->label ];
-
-#   push @{ $page->{literal_js} }, $_onclick_relocate->( $name, $href );
+   my $tip   = loc $req, 'participents_view_link', [ $event->label ];
 
    return { colspan => 1,
             value   => { class => $class, hint => loc( $req, 'Hint' ),
@@ -168,27 +162,58 @@ my $_participents_link = sub {
                          value => '&nbsp;', } };
 };
 
-# Private methods
-my $_add_js_dialog = sub {
-   my ($self, $req, $page, $args, $action, $name, $title) = @_;
+my $_slot_link = sub {
+   my ($req, $page, $rows, $k, $slot_type) = @_;
 
-   $name = "${action}-${name}"; $title = (ucfirst $action).SPC.$title;
+   my $claimed = slot_claimed $rows->{ $k };
+   my $value   = $_slot_label->( $req, $rows->{ $k } );
+   my $tip     = loc( $req, ($claimed ? 'yield_slot_tip' : 'claim_slot_tip'),
+                      $slot_type );
 
-   my $path = $self->moniker.'/slot';
-   my $href = uri_for_action( $req, $path, $args, { action => $action } );
-   my $js   = $page->{literal_js} //= [];
+   return { value => table_link( $req, $k, $value, $tip ) };
+};
 
-   push @{ $js }, $self->dialog_anchor( $args->[ 2 ], $href, {
-      name => $name, title => loc( $req, $title ), useIcon => \1 } );
+my $_controllers = sub {
+   my ($req, $page, $rota_name, $rota_date, $rows, $limits) = @_;
+
+   my $rota = $page->{rota}; my $controls = $rota->{controllers};
+
+   for my $shift_type (@{ SHIFT_TYPE_ENUM() }) {
+      my $max_slots = $limits->[ slot_limit_index $shift_type, 'controller' ];
+
+      for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
+         my $k      = "${shift_type}_controller_${subslot}";
+         my $action = slot_claimed( $rows->{ $k } ) ? 'yield' : 'claim';
+         my $args   = [ $rota_name, $rota_date, $k ];
+         my $link   = $_slot_link->( $req, $page, $rows, $k, 'controller');
+
+         push @{ $controls },
+            [ { class => 'rota-header', value   => loc( $req, $k ), },
+              { class => 'centre',      colspan => $_max_rota_cols,
+                value => $link->{value} } ];
+
+         $_add_js_dialog->( $req, $page, $args, $action,
+                            'controller-slot', 'Controller Slot' );
+      }
+   }
 
    return;
 };
 
+my $_driver_row = sub {
+   my ($req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
+
+   return [ { value => loc( $req, $k ), class => 'rota-header' },
+            { value => undef },
+            $_slot_link->( $req, $page, $rows, $k, 'driver' ),
+            { value => $rows->{ $k }->{ops_veh}, class => 'narrow' }, ];
+};
+
 my $_events = sub {
-   my ($self, $req, $page, $name, $rota_dt, $todays_events) = @_;
+   my ($req, $page, $name, $rota_dt, $todays_events) = @_;
 
    my $date   = $rota_dt->day_abbr.SPC.$rota_dt->day;
-   my $href   = uri_for_action $req, $self->moniker.'/day_rota';
+   my $href   = uri_for_action $req, $page->{moniker}.'/day_rota';
    my $picker = { class       => 'rota-date-form',
                   content     => {
                      list     => [ {
@@ -220,6 +245,53 @@ my $_events = sub {
    return;
 };
 
+my $_rider_row = sub {
+   my ($req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
+
+   return [ { value => loc( $req, $k ), class => 'rota-header' },
+            assign_link( $req, $page, $args, $rows->{ $k } ),
+            $_slot_link->( $req, $page, $rows, $k, 'rider' ),
+            { value => $rows->{ $k }->{ops_veh}, class => 'narrow' }, ];
+};
+
+my $_riders_n_drivers = sub {
+   my ($req, $page, $rota_name, $rota_date, $rows, $limits) = @_;
+
+   my $shift_no = 0;
+
+   for my $shift_type (@{ SHIFT_TYPE_ENUM() }) {
+      my $shift     = $page->{rota}->{shifts}->[ $shift_no++ ] = {};
+      my $riders    = $shift->{riders } = [];
+      my $drivers   = $shift->{drivers} = [];
+      my $max_slots = $limits->[ slot_limit_index $shift_type, 'rider' ];
+
+      for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
+         my $k      = "${shift_type}_rider_${subslot}";
+         my $action = slot_claimed( $rows->{ $k } ) ? 'yield' : 'claim';
+         my $args   = [ $rota_name, $rota_date, $k ];
+
+         push @{ $riders }, $_rider_row->( $req, $page, $args, $rows );
+         $_add_js_dialog->( $req, $page, $args, $action,
+                            'rider-slot', 'Rider Slot' );
+      }
+
+      $max_slots = $limits->[ slot_limit_index $shift_type, 'driver' ];
+
+      for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
+         my $k      = "${shift_type}_driver_${subslot}";
+         my $action = slot_claimed( $rows->{ $k } ) ? 'yield' : 'claim';
+         my $args   = [ $rota_name, $rota_date, $k ];
+
+         push @{ $drivers }, $_driver_row->( $req, $page, $args, $rows );
+         $_add_js_dialog->( $req, $page, $args, $action,
+                            'driver-slot', 'Driver Slot' );
+      }
+   }
+
+   return;
+};
+
+# Private methods
 my $_find_rota_type_id_for = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] )->id;
 };
@@ -240,9 +312,12 @@ my $_rota_summary = sub {
 
    for my $slot ($slots->all) {
       my $shift = $slot->shift;
+      my $key   = $shift->type_name.'_'.$slot->type_name.'_'.$slot->subslot;
 
-      $rows->{ $shift->type_name.'_'.$slot->type_name.'_'.$slot->subslot }
-         = { vehicle => $slot->vehicle, bike_req => $slot->bike_requested };
+      $rows->{ $key }
+         = { name        => $key,
+             vehicle     => $slot->vehicle,
+             vehicle_req => $slot->bike_requested };
    }
 
    push @{ $cell->{rows} }, [ { colspan => 3, value => $date->day },
@@ -271,143 +346,6 @@ my $_rota_summary = sub {
    return { class => 'month-rota windows', name => $id, value => $cell };
 };
 
-my $_slot_link = sub {
-   my ($self, $req, $page, $rows, $k, $slot_type) = @_;
-
-   my $claimed = $_slot_claimed->( $rows, $k );
-   my $value   = $_slot_label->( $req, $rows, $k );
-   my $tip     = loc( $req, ($claimed ? 'yield_slot_tip' : 'claim_slot_tip'),
-                      $slot_type );
-
-   return { value => $_table_link->( $req, $k, $value, $tip ) };
-};
-
-my $_vehicle_link = sub {
-   my ($self, $req, $page, $args, $value, $action) = @_; my $k = $args->[ 2 ];
-
-   my $path = "asset/${action}"; my $params = { action => $action };
-
-   $action eq 'unassign' and $params->{vehicle} = $value;
-
-   my $href = uri_for_action $req, $path, $args, $params;
-   my $tip  = loc $req, "${action}_management_tip";
-   my $js   = $page->{literal_js} //= [];
-
-   push @{ $js }, $self->dialog_anchor( "${action}_${k}", $href, {
-      name    => "${action}-vehicle",
-      title   => loc( $req, (ucfirst $action).' Vehicle' ),
-      useIcon => \1 } );
-
-   $value = (blessed $value) ? $value->slotref : $value;
-
-   return $_table_link->( $req, "${action}_${k}", $value, $tip );
-};
-
-my $_assign_link = sub { # Traffic lights
-   my ($self, $req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
-
-   my $bike  = $rows->{ $k }->{bike_req};
-   my $value = $rows->{ $k }->{vehicle};
-   my $state = $_slot_claimed->( $rows, $k ) ? 'vehicle-not-needed' : NUL;
-
-   $bike  and $state = 'vehicle-requested';
-   $value and $state = 'vehicle-assigned';
-
-   if ($state eq 'vehicle-assigned') {
-      $value = $self->$_vehicle_link( $req, $page, $args, $value, 'unassign' );
-   }
-   elsif ($state eq 'vehicle-requested') {
-      $value = $self->$_vehicle_link
-         ( $req, $page, $args, 'requested', 'assign' );
-   }
-
-   my $class = "centre narrow ${state}";
-
-   return { value => $value, class => $class };
-};
-
-my $_controllers = sub {
-   my ($self, $req, $page, $rota_name, $rota_date, $rows, $limits) = @_;
-
-   my $rota = $page->{rota}; my $controls = $rota->{controllers};
-
-   for my $shift_type (@{ SHIFT_TYPE_ENUM() }) {
-      my $max_slots = $limits->[ slot_limit_index $shift_type, 'controller' ];
-
-      for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
-         my $k      = "${shift_type}_controller_${subslot}";
-         my $action = $_slot_claimed->( $rows, $k ) ? 'yield' : 'claim';
-         my $args   = [ $rota_name, $rota_date, $k ];
-         my $link   = $self->$_slot_link( $req, $page, $rows, $k, 'controller');
-
-         push @{ $controls },
-            [ { class => 'rota-header', value   => loc( $req, $k ), },
-              { class => 'centre',      colspan => $_max_rota_cols,
-                value => $link->{value} } ];
-
-         $self->$_add_js_dialog( $req, $page, $args, $action,
-                                 'controller-slot', 'Controller Slot' );
-      }
-   }
-
-   return;
-};
-
-my $_driver_row = sub {
-   my ($self, $req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
-
-   return [ { value => loc( $req, $k ), class => 'rota-header' },
-            { value => undef },
-            $self->$_slot_link( $req, $page, $rows, $k, 'driver' ),
-            { value => $rows->{ $k }->{ops_veh}, class => 'narrow' }, ];
-};
-
-my $_rider_row = sub {
-   my ($self, $req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
-
-   return [ { value => loc( $req, $k ), class => 'rota-header' },
-            $self->$_assign_link( $req, $page, $args, $rows ),
-            $self->$_slot_link( $req, $page, $rows, $k, 'rider' ),
-            { value => $rows->{ $k }->{ops_veh}, class => 'narrow' }, ];
-};
-
-my $_riders_n_drivers = sub {
-   my ($self, $req, $page, $rota_name, $rota_date, $rows, $limits) = @_;
-
-   my $shift_no = 0;
-
-   for my $shift_type (@{ SHIFT_TYPE_ENUM() }) {
-      my $shift     = $page->{rota}->{shifts}->[ $shift_no++ ] = {};
-      my $riders    = $shift->{riders } = [];
-      my $drivers   = $shift->{drivers} = [];
-      my $max_slots = $limits->[ slot_limit_index $shift_type, 'rider' ];
-
-      for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
-         my $k      = "${shift_type}_rider_${subslot}";
-         my $action = $_slot_claimed->( $rows, $k ) ? 'yield' : 'claim';
-         my $args   = [ $rota_name, $rota_date, $k ];
-
-         push @{ $riders }, $self->$_rider_row( $req, $page, $args, $rows );
-         $self->$_add_js_dialog( $req, $page, $args, $action,
-                                 'rider-slot', 'Rider Slot' );
-      }
-
-      $max_slots = $limits->[ slot_limit_index $shift_type, 'driver' ];
-
-      for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
-         my $k      = "${shift_type}_driver_${subslot}";
-         my $action = $_slot_claimed->( $rows, $k ) ? 'yield' : 'claim';
-         my $args   = [ $rota_name, $rota_date, $k ];
-
-         push @{ $drivers }, $self->$_driver_row( $req, $page, $args, $rows );
-         $self->$_add_js_dialog( $req, $page, $args, $action,
-                                 'driver-slot', 'Driver Slot' );
-      }
-   }
-
-   return;
-};
-
 my $_get_page = sub {
    my ($self, $req, $name, $date, $todays_events, $rows) = @_;
 
@@ -422,6 +360,7 @@ my $_get_page = sub {
                   [ $name, $rota_dt->clone->subtract( days => 1 )->ymd ];
    my $page    =  {
       fields   => { nav => { next => $next, prev => $prev }, },
+      moniker  => $self->moniker,
       rota     => { controllers => [],
                     events      => [],
                     headers     => $_headers->( $req ),
@@ -429,9 +368,9 @@ my $_get_page = sub {
       template => [ 'contents', 'rota', 'rota-table' ],
       title    => $title };
 
-   $self->$_events( $req, $page, $name, $rota_dt, $todays_events );
-   $self->$_controllers( $req, $page, $name, $date, $rows, $limits );
-   $self->$_riders_n_drivers( $req, $page, $name, $date, $rows, $limits );
+   $_events->( $req, $page, $name, $rota_dt, $todays_events );
+   $_controllers->( $req, $page, $name, $date, $rows, $limits );
+   $_riders_n_drivers->( $req, $page, $name, $date, $rows, $limits );
 
    return $page;
 };
@@ -456,9 +395,9 @@ sub claim_slot_action : Role(bike_rider) Role(controller) Role(driver) {
                         $slot_type, $subslot,   $bike );
 
    my $args     = [ $rota_name, $rota_date ];
-   my $location = uri_for_action( $req, 'sched/day_rota', $args );
-   my $label    = slot_identifier( $rota_name, $rota_date,
-                                   $shift_type, $slot_type, $subslot );
+   my $location = uri_for_action $req, 'sched/day_rota', $args;
+   my $label    = slot_identifier
+                     $rota_name, $rota_date, $shift_type, $slot_type, $subslot;
    my $message  = [ 'User [_1] claimed slot [_2]', $req->username, $label ];
 
    return { redirect => { location => $location, message => $message } };
@@ -480,12 +419,14 @@ sub day_rota : Role(any) {
 
    for my $slot ($slots->all) {
       my $shift = $slot->shift;
+      my $key   = $shift->type_name.'_'.$slot->type_name.'_'.$slot->subslot;
 
-      $rows->{ $shift->type_name.'_'.$slot->type_name.'_'.$slot->subslot }
-         = { vehicle  => $slot->vehicle,
-             operator => $slot->operator,
-             bike_req => $slot->bike_requested,
-             ops_veh  => $_operators_vehicle->( $slot, $vehicle_cache ) };
+      $rows->{ $key }
+         = { name        => $key,
+             operator    => $slot->operator,
+             ops_veh     => $_operators_vehicle->( $slot, $vehicle_cache ),
+             vehicle     => $slot->vehicle,
+             vehicle_req => $slot->bike_requested };
    }
 
    my $page = $self->$_get_page( $req, $name, $date, $events, $rows );
@@ -554,7 +495,7 @@ sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
-   $fields->{confirm  } = $_confirm_slot_button->( $req, $slot_type, $action );
+   $fields->{confirm  } = $_confirm_slot_button->( $req, $action );
    $fields->{slot_href} = uri_for_action( $req, $self->moniker.'/slot', $args );
 
    $action eq 'claim' and $slot_type eq 'rider'

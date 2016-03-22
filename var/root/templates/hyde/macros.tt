@@ -50,6 +50,7 @@
 [%          Dispatch( field ) -%]
 [%       END -%]
 [%    END -%]
+[%    IF f.type == 'select'; Select( f ); END -%]
 [%    IF f.type == 'table'; Table( f ); END -%]
 [% END -%]
 [% MACRO Form( f ) BLOCK -%]

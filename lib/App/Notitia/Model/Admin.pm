@@ -1,11 +1,12 @@
 package App::Notitia::Model::Admin;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE
                                 TYPE_CLASS_ENUM );
-use App::Notitia::Util      qw( admin_navigation_links bind create_button
-                                delete_button field_options loc
-                                management_button register_action_paths
+use App::Notitia::Util      qw( admin_navigation_links bind bind_fields button
+                                check_field_server create_link
+                                delete_button field_options loc make_tip
+                                management_link register_action_paths
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
@@ -50,108 +51,42 @@ my $_people_links_cache = {};
 my $_types_links_cache = {};
 
 # Private functions
-my $_make_tip = sub {
-   my ($req, $k, $args) = @_; $args //= [];
+my $_add_person_js = sub {
+   my $opts = { domain => 'schedule', form => 'Person' };
 
-   return loc( $req, 'Hint' ).SPC.TILDE.SPC.loc( $req, $k, $args );
-};
-
-my $_button = sub {
-   my ($req, $action, $name, $args) = @_;
-
-   my $tip = $_make_tip->( $req, "${action}_${name}_tip", $args );
-
-   return { container_class => 'right-last', label => "${action}_${name}",
-            tip => $tip, value => "${action}_${name}" };
-};
-
-my $_type_button = sub {
-   return $_button->( $_[ 0 ], $_[ 1 ], 'type', $_[ 2 ] );
+   return [ check_field_server( 'first_name',    $opts ),
+            check_field_server( 'last_name',     $opts ),
+            check_field_server( 'email_address', $opts ),
+            check_field_server( 'postcode',      $opts ), ];
 };
 
 my $_add_type_button = sub {
-   return $_type_button->( $_[ 0 ], 'add', $_[ 1 ] );
+   return button $_[ 0 ], { class => 'right-last' }, 'add', 'type', $_[ 1 ];
 };
 
-my $_remove_type_button = sub {
-   return $_type_button->( $_[ 0 ], 'remove', $_[ 1 ] );
-};
+my $_add_type_create_links = sub {
+   my ($req, $moniker, $type_class) = @_;
 
-my $_assert_not_self = sub {
-   my ($person, $nok) = @_; $nok or undef $nok;
-
-   $nok and $person->id and $nok == $person->id
-        and throw 'Cannot set self as next of kin',
-                  level => 2, rv => HTTP_EXPECTATION_FAILED;
-
-   return $nok
-};
-
-my $_maybe_find_person = sub {
-   return $_[ 1 ] ? $_[ 0 ]->find_person_by( $_[ 1 ] ) : Class::Null->new;
-};
-
-my $_maybe_find_type = sub {
-   return $_[ 2 ] ? $_[ 0 ]->find_type_by( $_[ 2 ], $_[ 1 ] )
-                  : Class::Null->new;
-};
-
-my $_next_of_kin_list = sub {
-   return bind 'next_of_kin', [ [ NUL, NUL ], @{ $_[ 0 ] } ], { numify => TRUE};
-};
-
-my $_people_headers = sub {
-   my ($req, $params) = @_; my ($header, $max);
-
-   my $role = $params->{role} // NUL; my $type = $params->{type} // NUL;
-
-   if ($type eq 'contacts') { $header = 'contacts_heading'; $max = 5 }
-   else {
-      $header = 'people_heading';
-      $max    = ($role eq 'bike_rider' || $role eq 'driver') ? 4 : 2;
-   }
-
-   return [ map { { value => loc( $req, "${header}_${_}" ) } } 0 .. $max ];
-};
-
-my $_types_headers = sub {
-   my $req = shift;
-
-   return [ map { { value => loc( $req, "types_heading_${_}" ) } } 0 .. 2 ];
-};
-
-# Private methods
-my $_add_type_create_buttons = sub {
-   my ($self, $req, $type_class) = @_;
-
-   my $actionp = $self->moniker.'/type'; my $buttons = [];
+   my $actionp = "${moniker}/type"; my $links = [];
 
    if ($type_class) {
       my $k = "${type_class}_type"; my $opts = { args => [ $type_class ] };
 
-      push @{ $buttons }, create_button( $req, $actionp, $k, $opts );
+      push @{ $links }, create_link( $req, $actionp, $k, $opts );
    }
    else {
       for my $type_class (@{ TYPE_CLASS_ENUM() }) {
          my $k = "${type_class}_type"; my $opts = { args => [ $type_class ] };
 
-         push @{ $buttons }, create_button( $req, $actionp, $k, $opts );
+         push @{ $links }, create_link( $req, $actionp, $k, $opts );
       }
    }
 
-   return { list => $buttons, separator => '|', type => 'list', };
-};
-
-my $_add_person_js = sub {
-   my $self = shift; my $opts = { domain => 'schedule', form => 'Person' };
-
-   return [ $self->check_field_server( 'first_name',    $opts ),
-            $self->check_field_server( 'last_name',     $opts ),
-            $self->check_field_server( 'email_address', $opts ), ];
+   return { list => $links, separator => '|', type => 'list', };
 };
 
 my $_bind_person_fields = sub {
-   my ($self, $person, $opts) = @_; $opts //= {};
+   my ($schema, $person, $opts) = @_; $opts //= {};
 
    my $disabled = $opts->{disabled} // FALSE;
    my $map      = {
@@ -172,26 +107,27 @@ my $_bind_person_fields = sub {
       password_expired => { checked  => $person->password_expired,
                             container_class => 'right-last',
                             disabled => $disabled },
-      postcode         => { disabled => $disabled },
+      postcode         => { class    => 'standard-field server',
+                            disabled => $disabled },
       resigned         => { disabled => $disabled },
       subscription     => { disabled => $disabled },
    };
 
-   return $self->bind_fields( $person, $map, 'Person' );
+   return bind_fields $schema, $person, $map, 'Person';
 };
 
 my $_bind_type_fields = sub {
-   my ($self, $type, $opts) = @_; $opts //= {};
+   my ($schema, $type, $opts) = @_; $opts //= {};
 
    my $disabled  =  $opts->{disabled} // FALSE;
    my $map       =  {
       name       => { disabled => $disabled, label => 'type_name' }, };
 
-   return $self->bind_fields( $type, $map, 'Type' );
+   return bind_fields $schema, $type, $map, 'Type';
 };
 
 my $_contact_links = sub {
-   my ($self, $req, $person) = @_; my $links = [];
+   my ($req, $person) = @_; my $links = [];
 
    push @{ $links }, { value => $person->home_phone };
    push @{ $links }, { value => $person->mobile_phone };
@@ -205,6 +141,135 @@ my $_contact_links = sub {
    return @{ $links };
 };
 
+my $_remove_type_button = sub {
+   return button $_[ 0 ], { class => 'right-last' }, 'remove', 'type', $_[ 1 ];
+};
+
+my $_assert_not_self = sub {
+   my ($person, $nok) = @_; $nok or undef $nok;
+
+   $nok and $person->id and $nok == $person->id
+        and throw 'Cannot set self as next of kin',
+                  level => 2, rv => HTTP_EXPECTATION_FAILED;
+
+   return $nok;
+};
+
+my $_maybe_find_person = sub {
+   return $_[ 1 ] ? $_[ 0 ]->find_person_by( $_[ 1 ] ) : Class::Null->new;
+};
+
+my $_maybe_find_type = sub {
+   return $_[ 2 ] ? $_[ 0 ]->find_type_by( $_[ 2 ], $_[ 1 ] )
+                  : Class::Null->new;
+};
+
+my $_new_username = sub {
+   my ($schema, $person) = @_; my $rs = $schema->resultset( 'Person' );
+
+   return $rs->new_person_id( $person->first_name, $person->last_name );
+};
+
+my $_next_of_kin_list = sub {
+   return bind 'next_of_kin', [ [ NUL, NUL ], @{ $_[ 0 ] } ], { numify => TRUE};
+};
+
+my $_people_headers = sub {
+   my ($req, $params) = @_; my ($header, $max);
+
+   my $role = $params->{role} // NUL; my $type = $params->{type} // NUL;
+
+   if ($type eq 'contacts') { $header = 'contacts_heading'; $max = 5 }
+   else {
+      $header = 'people_heading';
+      $max    = ($role eq 'bike_rider' || $role eq 'driver') ? 4 : 2;
+   }
+
+   return [ map { { value => loc( $req, "${header}_${_}" ) } } 0 .. $max ];
+};
+
+my $_people_links = sub {
+   my ($req, $person, $params) = @_; my $role = $params->{role};
+
+   $params->{type} and $params->{type} eq 'contacts'
+                   and return $_contact_links->( $req, $person->[ 1 ] );
+
+   my $name = $person->[ 1 ]->name; my $k = $role ? "${role}_${name}" : $name;
+
+   my $links = $_people_links_cache->{ $k }; $links and return @{ $links };
+
+   $links = []; my @paths = ( 'admin/person', 'role/role' );
+
+   $role and ($role eq 'bike_rider' or $role eq 'driver')
+         and push @paths, 'certs/certifications', 'blots/endorsements';
+
+   for my $actionp ( @paths ) {
+      push @{ $links }, { value => management_link( $req, $actionp, $name ) };
+   }
+
+   $_people_links_cache->{ $k } = $links;
+
+   return @{ $links };
+};
+
+my $_types_headers = sub {
+   my $req = shift;
+
+   return [ map { { value => loc( $req, "types_heading_${_}" ) } } 0 .. 2 ];
+};
+
+my $_types_links = sub {
+   my ($req, $type) = @_; my $name = $type->name;
+
+   my $links = $_types_links_cache->{ $name }; $links and return @{ $links };
+
+   $links = []; my $opts = { args => [ $type->type_class, $type->name ] };
+
+   for my $actionp ( qw( admin/type ) ) {
+      push @{ $links },
+            { value => management_link( $req, $actionp, $name, $opts ) };
+   }
+
+   $_types_links_cache->{ $name } = $links;
+
+   return @{ $links };
+};
+
+my $_update_person_from_request = sub {
+   my ($req, $schema, $person) = @_; my $params = $req->body_params;
+
+   my $opts = { optional => TRUE };
+
+   for my $attr (qw( active address dob email_address first_name home_phone
+                     joined last_name mobile_phone notes password_expired
+                     postcode resigned subscription )) {
+      if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
+      else { delete $opts->{raw} }
+
+      my $v = $params->( $attr, $opts );
+
+      not defined $v and is_member $attr, [ qw( active password_expired ) ]
+          and $v = FALSE;
+
+      defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
+
+      # No tz and 1/1/1970 is the last day in 69
+      length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
+         and $v = str2date_time $v, 'GMT';
+
+      $person->$attr( $v );
+   }
+
+   $person->name( $params->( 'username', $opts )
+                  || $_new_username->( $schema, $person ) );
+
+   $person->next_of_kin
+      ( $_assert_not_self->( $person, $params->( 'next_of_kin', $opts ) ) );
+
+   return;
+};
+
+# Private methods
 my $_create_person_email = sub {
    my ($self, $req, $person, $password) = @_;
 
@@ -244,87 +309,6 @@ my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
    return [ [ NUL, NUL ], $type_rs->list_role_types->all ];
-};
-
-my $_new_username = sub {
-   my ($self, $person) = @_; my $rs = $self->schema->resultset( 'Person' );
-
-   return $rs->new_person_id( $person->first_name, $person->last_name );
-};
-
-my $_people_links = sub {
-   my ($self, $req, $person, $params) = @_; my $role = $params->{role};
-
-   $params->{type} and $params->{type} eq 'contacts'
-                   and return $self->$_contact_links( $req, $person->[ 1 ] );
-
-   my $name = $person->[ 1 ]->name; my $k = $role ? "${role}_${name}" : $name;
-
-   my $links = $_people_links_cache->{ $k }; $links and return @{ $links };
-
-   $links = []; my @paths = ( 'admin/person', 'role/role' );
-
-   $role and ($role eq 'bike_rider' or $role eq 'driver')
-         and push @paths, 'certs/certifications', 'blots/endorsements';
-
-   for my $actionp ( @paths ) {
-      push @{ $links }, { value => management_button( $req, $actionp, $name ) };
-   }
-
-   $_people_links_cache->{ $k } = $links;
-
-   return @{ $links };
-};
-
-my $_types_links = sub {
-   my ($self, $req, $type) = @_; my $name = $type->name;
-
-   my $links = $_types_links_cache->{ $name }; $links and return @{ $links };
-
-   $links = []; my $opts = { args => [ $type->type_class, $type->name ] };
-
-   for my $actionp ( qw( admin/type ) ) {
-      push @{ $links },
-            { value => management_button( $req, $actionp, $name, $opts ) };
-   }
-
-   $_types_links_cache->{ $name } = $links;
-
-   return @{ $links };
-};
-
-my $_update_person_from_request = sub {
-   my ($self, $req, $person) = @_; my $params = $req->body_params;
-
-   my $opts = { optional => TRUE };
-
-   for my $attr (qw( active address dob email_address first_name home_phone
-                     joined last_name mobile_phone notes password_expired
-                     postcode resigned subscription )) {
-      if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
-      else { delete $opts->{raw} }
-
-      my $v = $params->( $attr, $opts );
-
-      not defined $v and is_member $attr, [ qw( active password_expired ) ]
-          and $v = FALSE;
-
-      defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
-
-      # No tz and 1/1/1970 is the last day in 69
-      length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
-         and $v = str2date_time $v, 'GMT';
-
-      $person->$attr( $v );
-   }
-
-   $person->name( $params->( 'username', $opts )
-                  || $self->$_new_username( $person ) );
-
-   $person->next_of_kin
-      ( $_assert_not_self->( $person, $params->( 'next_of_kin', $opts ) ) );
-
-   return;
 };
 
 # Public methods
@@ -374,7 +358,7 @@ sub create_person_action : Role(person_manager) {
 
    my $person = $self->schema->resultset( 'Person' )->new_result( {} );
 
-   $self->$_update_person_from_request( $req, $person );
+   $_update_person_from_request->( $req, $self->schema, $person );
 
    my $role = $req->body_params->( 'primary_role', { optional => TRUE } );
 
@@ -428,9 +412,9 @@ sub person : Role(person_manager) {
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $_maybe_find_person->( $person_rs, $name );
    my $page       =  {
-      fields      => $self->$_bind_person_fields( $person ),
+      fields      => $_bind_person_fields->( $self->schema, $person ),
       first_field => 'first_name',
-      literal_js  => $self->$_add_person_js(),
+      literal_js  => $_add_person_js->(),
       template    => [ 'contents', 'person' ],
       title       => loc( $req, $name ? 'person_edit_heading'
                                       : 'person_create_heading' ), };
@@ -438,7 +422,7 @@ sub person : Role(person_manager) {
    my $action     =  $self->moniker.'/person';
    my $opts       =  field_options $self->schema, 'Person', 'name',
                         { class => 'standard-field',
-                          tip   => $_make_tip->( $req, 'username_field_tip' ) };
+                          tip   => make_tip( $req, 'username_field_tip' ) };
 
    $fields->{username} = bind 'username', $person->name, $opts;
 
@@ -469,7 +453,7 @@ sub person_summary : Role(administrator) Role(person_viewer) {
    my $person     =  $_maybe_find_person->( $person_rs, $name );
    my $opts       =  { class => 'standard-field', disabled => TRUE };
    my $page       =  {
-      fields      => $self->$_bind_person_fields( $person, $opts ),
+      fields      => $_bind_person_fields->( $self->schema, $person, $opts ),
       first_field => 'first_name',
       template    => [ 'contents', 'person' ],
       title       => loc( $req, 'person_summary_heading' ), };
@@ -501,7 +485,7 @@ sub people : Role(any) {
                  :            'people_management_heading';
    my $page      =  {
       fields     => {
-         add     => create_button( $req, $self->moniker.'/person', 'person' ),
+         add     => create_link( $req, $self->moniker.'/person', 'person' ),
          headers => $_people_headers->( $req, $params ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
@@ -520,7 +504,7 @@ sub people : Role(any) {
 
    for my $person (@{ $people }) {
       push @{ $rows }, [ { value => $person->[ 0 ]  },
-                         $self->$_people_links( $req, $person, $params ) ];
+                         $_people_links->( $req, $person, $params ) ];
    }
 
    return $self->get_stash( $req, $page );
@@ -542,9 +526,7 @@ sub remove_type_action : Role(administrator) {
 }
 
 sub type : Role(administrator) {
-   my ($self, $req) = @_;
-
-   my $type_class =  $req->uri_params->( 0 );
+   my ($self, $req) = @_; my $type_class = $req->uri_params->( 0 );
 
    is_member $type_class, TYPE_CLASS_ENUM
       or throw 'Type class [_1] unknown', [ $type_class ];
@@ -554,7 +536,7 @@ sub type : Role(administrator) {
    my $type       =  $_maybe_find_type->( $type_rs, $type_class, $name );
    my $opts       =  { disabled => $name ? TRUE : FALSE };
    my $page       =  {
-      fields      => $self->$_bind_type_fields( $type, $opts ),
+      fields      => $_bind_type_fields->( $self->schema, $type, $opts ),
       first_field => 'name',
       template    => [ 'contents', 'type' ],
       title       => loc( $req, 'type_management_heading',
@@ -575,10 +557,11 @@ sub type : Role(administrator) {
 sub types : Role(administrator) {
    my ($self, $req) = @_;
 
+   my $moniker    =  $self->moniker;
    my $type_class =  $req->query_params->( 'type_class', { optional => TRUE } );
    my $page       =  {
       fields      => {
-         add      => $self->$_add_type_create_buttons( $req, $type_class ),
+         add      => $_add_type_create_links->( $req, $moniker, $type_class ),
          headers  => $_types_headers->( $req ),
          rows     => [], },
       template    => [ 'contents', 'table' ],
@@ -592,7 +575,7 @@ sub types : Role(administrator) {
    for my $type ($types->all) {
       push @{ $rows }, [ { value => ucfirst $type->type_class },
                          { value => loc( $req, $type->name ) },
-                         $self->$_types_links( $req, $type ) ];
+                         $_types_links->( $req, $type ) ];
    }
 
    return $self->get_stash( $req, $page );
@@ -604,7 +587,8 @@ sub update_person_action : Role(person_manager) {
    my $name   = $req->uri_params->( 0 );
    my $person = $self->find_person_by( $name );
 
-   $self->$_update_person_from_request( $req, $person ); $person->update;
+   $_update_person_from_request->( $req, $self->schema, $person );
+   $person->update;
 
    my $message = [ 'Person [_1] updated by [_2]', $name, $req->username ];
 

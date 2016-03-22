@@ -83,7 +83,7 @@ sub list_types {
 
    return $self->search
       ( { type_class => $type_class },
-        { columns    => [ 'name', 'type_class' ], %{ $opts } } );
+        { columns    => [ 'id', 'name', 'type_class' ], %{ $opts } } );
 }
 
 sub list_vehicle_types {

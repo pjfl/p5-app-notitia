@@ -2,8 +2,9 @@ package App::Notitia::Model::Certification;
 
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( admin_navigation_links bind delete_button
-                                loc management_button register_action_paths
+use App::Notitia::Util      qw( admin_navigation_links bind bind_fields
+                                check_field_server delete_button
+                                loc management_link register_action_paths
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
@@ -61,7 +62,7 @@ my $_add_certification_js = sub {
    my $self = shift;
    my $opts = { domain => 'schedule', form => 'Certification' };
 
-   return [ $self->check_field_server( 'completed', $opts ), ];
+   return [ check_field_server( 'completed', $opts ), ];
 };
 
 my $_bind_cert_fields = sub {
@@ -72,7 +73,7 @@ my $_bind_cert_fields = sub {
       notes     => { class => 'standard-field autosize' },
    };
 
-   return $self->bind_fields( $cert, $map, 'Certification' );
+   return bind_fields $self->schema, $cert, $map, 'Certification';
 };
 
 my $_cert_links = sub {
@@ -84,7 +85,7 @@ my $_cert_links = sub {
 
    for my $actionp (map { $self->moniker."/${_}" } 'certification' ) {
       push @{ $links }, {
-         value => management_button( $req, $actionp, $name, $opts ) };
+         value => management_link( $req, $actionp, $name, $opts ) };
    }
 
    $_cert_links_cache->{ $type } = $links;

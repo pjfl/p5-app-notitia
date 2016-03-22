@@ -1,0 +1,14 @@
+<!-- Vehicle Request -->
+<div class="unit four-fifths">
+   <article>
+      <h4>[% page.title %]</h4>
+      <form action="[% page.fields.action %]"
+             class="standard-form" enctype="application/x-www-form-urlencoded"
+            method="post" name="vehicle-request">
+[% TextField( page.fields.name ) -%]
+[% DateField( page.fields.date ) -%]
+[% Table( page.fields.vehicles ) -%]
+[% Button( page.fields.request ) -%]
+      </form>
+   </article>
+</div>

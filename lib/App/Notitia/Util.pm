@@ -3,34 +3,45 @@ package App::Notitia::Util;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use App::Notitia::Constants    qw( FALSE NUL SPC TILDE TRUE VARCHAR_MAX_SIZE );
-use Class::Usul::Functions     qw( class2appdir create_token find_apphome
+use App::Notitia::Constants    qw( FALSE HASH_CHAR NUL SPC TILDE TRUE
+                                   VARCHAR_MAX_SIZE );
+use Class::Usul::Functions     qw( class2appdir create_token
+                                   ensure_class_loaded find_apphome
                                    first_char get_cfgfiles is_arrayref
                                    is_hashref is_member throw );
 use Class::Usul::Time          qw( str2date_time str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
+use Data::Validation;
 use DateTime                   qw( );
+use HTTP::Status               qw( HTTP_OK );
+use JSON::MaybeXS;
 use Scalar::Util               qw( blessed weaken );
+use Try::Tiny;
 use YAML::Tiny;
 
-our @EXPORT_OK = qw( admin_navigation_links bind bool_data_type
-                     build_navigation build_tree clone create_button
-                     date_data_type delete_button enumerated_data_type enhance
-                     field_options foreign_key_data_type get_hashed_pw get_salt
-                     is_draft is_encrypted iterator loc localise_tree
-                     make_id_from make_name_from management_button mtime
-                     new_salt nullable_foreign_key_data_type
-                     nullable_varchar_data_type numerical_id_data_type
+our @EXPORT_OK = qw( admin_navigation_links assign_link bind bind_fields
+                     bool_data_type build_navigation build_tree button
+                     check_field_server check_form_field clone create_link
+                     date_data_type delete_button dialog_anchor
+                     enumerated_data_type enhance field_options
+                     foreign_key_data_type get_hashed_pw get_salt is_draft
+                     is_encrypted iterator loc localise_tree make_id_from
+                     make_name_from make_tip management_link mtime new_salt
+                     nullable_foreign_key_data_type nullable_varchar_data_type
+                     numerical_id_data_type register_action_paths
                      rota_navigation_links save_button serial_data_type
                      set_element_focus set_on_create_datetime_data_type
-                     slot_identifier slot_limit_index register_action_paths
-                     show_node stash_functions uri_for_action varchar_data_type
-                     );
+                     slot_claimed slot_identifier slot_limit_index show_node
+                     stash_functions table_link uri_for_action
+                     varchar_data_type );
 
 # Private class attributes
-my $_action_path_uri_map = {}; # Key is an action path, value a partial URI
-my $_field_option_cache = {};
-my $_translations  = {};
+my $action_path_uri_map = {}; # Key is an action path, value a partial URI
+my $field_option_cache  = {};
+my $json_coder          = JSON::MaybeXS->new( utf8 => FALSE );
+my $result_class_cache  = {};
+my $translations        = {};
+my $yaml_coder          = YAML::Tiny->new;
 
 # Private functions
 my $bind_option = sub {
@@ -41,10 +52,32 @@ my $bind_option = sub {
 
    return is_arrayref $v
         ? { label =>  $v->[ 0 ].NUL,
-            value => ($v->[ 1 ] ? ($numify ? 0 + $v->[ 1 ] : $prefix.$v->[ 1 ])
-                                : undef),
+            value => (defined $v->[ 1 ] ? ($numify ? 0 + ($v->[ 1 ] || 0)
+                                                   : $prefix.$v->[ 1 ])
+                                        : undef),
             %{ $v->[ 2 ] // {} } }
         : { label => "${v}", value => ($numify ? 0 + $v : $prefix.$v) };
+};
+
+my $_check_field = sub {
+   my ($req, $class_base) = @_;
+
+   my $params = $req->query_params;
+   my $domain = $params->( 'domain' );
+   my $class  = $params->( 'form'   );
+   my $id     = $params->( 'id'     );
+   my $val    = $params->( 'val', { raw => TRUE } );
+
+   if    (first_char $class eq '+') { $class = substr $class, 1 }
+   elsif (defined $class_base)      { $class = "${class_base}::${class}" }
+
+   $result_class_cache->{ $class }
+      or (ensure_class_loaded( $class )
+          and $result_class_cache->{ $class } = TRUE);
+
+   my $attr = $class->validation_attributes; $attr->{level} = 4;
+
+   return Data::Validation->new( $attr )->check_field( $id, $val );
 };
 
 my $extension2format = sub {
@@ -71,14 +104,12 @@ my $sorted_keys = sub {
             grep { first_char $_ ne '_' } keys %{ $node } ];
 };
 
-my $transcoder = YAML::Tiny->new;
-
 my $load_file_data = sub {
    my $node = shift; my $markdown = $node->{path}->all;
 
    my $yaml; $markdown =~ s{ \A --- $ ( .* ) ^ --- $ }{}msx and $yaml = $1;
 
-   $yaml or return TRUE; my $data = $transcoder->read_string( $yaml )->[ 0 ];
+   $yaml or return TRUE; my $data = $yaml_coder->read_string( $yaml )->[ 0 ];
 
    exists $data->{created} and $data->{created} = str2time $data->{created};
 
@@ -116,6 +147,27 @@ my $nav_linkto = sub {
             tip   => loc( $req, "${name}_tip"  ),
             type  => 'link',
             uri   => uri_for_action( $req, $actionp, @args ), };
+};
+
+my $_vehicle_link = sub {
+   my ($req, $page, $args, $value, $action, $name) = @_;
+
+   my $path = "asset/${action}"; my $params = { action => $action };
+
+   $action eq 'unassign' and $params->{vehicle} = $value;
+
+   my $href = uri_for_action( $req, $path, $args, $params );
+   my $tip  = loc( $req, "${action}_management_tip" );
+   my $js   = $page->{literal_js} //= [];
+
+   push @{ $js }, dialog_anchor( "${action}_${name}", $href, {
+      name    => "${action}-vehicle",
+      title   => loc( $req, (ucfirst $action).' Vehicle' ),
+      useIcon => \1 } );
+
+   $value = (blessed $value) ? $value->slotref : $value;
+
+   return table_link( $req, "${action}_${name}", $value, $tip );
 };
 
 # Public functions
@@ -156,6 +208,30 @@ sub admin_navigation_links ($) {
         ];
 }
 
+sub assign_link ($$$$) { # Traffic lights
+   my ($req, $page, $args, $opts) = @_;
+
+   my $name = $opts->{name}; my $value = $opts->{vehicle};
+
+   my $state = slot_claimed( $opts ) ? 'vehicle-not-needed' : NUL;
+
+   $opts->{vehicle_req} and $state = 'vehicle-requested';
+   $value and $state = 'vehicle-assigned';
+
+   if ($state eq 'vehicle-assigned') {
+      $value
+         = $_vehicle_link->( $req, $page, $args, $value, 'unassign', $name );
+   }
+   elsif ($state eq 'vehicle-requested') {
+      $value
+         = $_vehicle_link->( $req, $page, $args, 'requested', 'assign', $name );
+   }
+
+   my $class = "centre narrow ${state}";
+
+   return { value => $value, class => $class };
+}
+
 sub bind ($;$$) {
    my ($name, $v, $opts) = @_; $opts = { %{ $opts // {} } };
 
@@ -175,6 +251,19 @@ sub bind ($;$$) {
    $params->{ $_ } = $opts->{ $_ } for (keys %{ $opts });
 
    return $params;
+}
+
+sub bind_fields ($$$$) {
+   my ($schema, $src, $map, $result) = @_; my $fields = {};
+
+   for my $k (keys %{ $map }) {
+      my $value = exists $map->{ $k }->{checked} ? TRUE : $src->$k();
+      my $opts  = field_options( $schema, $result, $k, $map->{ $k } );
+
+      $fields->{ $k } = &bind( $k, $value, $opts );
+   }
+
+   return $fields;
 }
 
 sub bool_data_type (;$) {
@@ -254,6 +343,50 @@ sub build_tree {
    return $tree;
 }
 
+sub button ($$;$$$) {
+   my ($req, $opts, $action, $name, $args) = @_; my $class = $opts->{class};
+
+   my $conk   = $action && $name ? 'container_class' : 'class';
+   my $label  = $opts->{label} // "${action}_${name}";
+   my $value  = $opts->{value} // "${action}_${name}";
+   my $button = { $conk => $class, label => $label, value => $value };
+
+   $action and $name
+      and $button->{tip} = make_tip( $req, "${action}_${name}_tip", $args );
+
+   return $button;
+}
+
+sub check_field_server ($$) {
+   my ($k, $opts) = @_;
+
+   my $args = $json_coder->encode( [ $k, $opts->{form}, $opts->{domain} ] );
+
+   return "   behaviour.config.server[ '${k}' ] = {",
+          "      method    : 'checkField',",
+          "      event     : 'blur',",
+          "      args      : ${args} };";
+}
+
+sub check_form_field ($;$$) {
+   my ($req, $log, $result_class_base) = @_; my $mesg;
+
+   my $id = $req->query_params->( 'id' ); my $meta = { id => "${id}_ajax" };
+
+   try   { $_check_field->( $req, $result_class_base ) }
+   catch {
+      my $e = $_; my $args = { params => $e->args };
+
+      $log and $log->debug( "${e}" );
+      $mesg = $req->loc( $e->error, $args );
+      $meta->{class_name} = 'field-error';
+   };
+
+   return { code => HTTP_OK,
+            page => { content => { html => $mesg }, meta => $meta },
+            view => 'json' };
+}
+
 sub clone (;$) {
    my $v = shift;
 
@@ -262,7 +395,7 @@ sub clone (;$) {
    return $v;
 }
 
-sub create_button ($$$;$) {
+sub create_link ($$$;$) {
    my ($req, $actionp, $k, $opts) = @_; $opts //= {};
 
    return { container_class => $opts->{container_class} // NUL,
@@ -287,11 +420,20 @@ sub delete_button ($$;$) {
    my $button = { container_class => 'right', label => 'delete',
                   value           => "delete_${type}" };
 
-   $type and $button->{tip} = loc( $req, 'Hint' ).SPC.TILDE.SPC
-                            . loc( $req, 'delete_tip', [ $type, $name ] );
+   $type and $button->{tip} = make_tip( $req, 'delete_tip', [ $type, $name ] );
 
    return $button;
-};
+}
+
+sub dialog_anchor ($$$) {
+   my ($k, $href, $opts) = @_;
+
+   my $args = $json_coder->encode( [ "${href}", $opts ] );
+
+   return "   behaviour.config.anchors[ '${k}' ] = {",
+          "      method    : 'modalDialog',",
+          "      args      : ${args} };";
+}
 
 sub enumerated_data_type ($;$) {
    return { data_type     => 'enum',
@@ -316,11 +458,11 @@ sub enhance ($) {
 sub field_options ($$$;$) {
    my ($schema, $result, $name, $opts) = @_; my $mandy; $opts //= {};
 
-   unless (defined ($mandy = $_field_option_cache->{ $result }->{ $name })) {
+   unless (defined ($mandy = $field_option_cache->{ $result }->{ $name })) {
       my $class       = blessed $schema->resultset( $result )->new_result( {} );
       my $constraints = $class->validation_attributes->{fields}->{ $name };
 
-      $mandy = $_field_option_cache->{ $result }->{ $name }
+      $mandy = $field_option_cache->{ $result }->{ $name }
              = exists $constraints->{validate}
                    && $constraints->{validate} =~ m{ isMandatory }mx
              ? ' required' : NUL;
@@ -341,6 +483,10 @@ sub foreign_key_data_type (;$$) {
    defined $_[ 1 ] and $type_info->{accessor} = $_[ 1 ];
 
    return $type_info;
+}
+
+sub gcf {
+   my ($x, $y) = @_; ($x, $y) = ($y, $x % $y) while ($y); return $x;
 }
 
 sub get_hashed_pw ($) {
@@ -389,14 +535,18 @@ sub iterator ($) {
    };
 }
 
+sub lcm {
+   return $_[ 0 ] * $_[ 1 ] / gcf( $_[ 0 ], $_[ 1 ] );
+}
+
 sub loc ($$;@) {
    my ($req, $k, @args) = @_;
 
-   $_translations->{ my $locale = $req->locale } //= {};
+   $translations->{ my $locale = $req->locale } //= {};
 
-   return exists $_translations->{ $locale }->{ $k }
-               ? $_translations->{ $locale }->{ $k }
-               : $_translations->{ $locale }->{ $k } = $req->loc( $k, @args );
+   return exists $translations->{ $locale }->{ $k }
+               ? $translations->{ $locale }->{ $k }
+               : $translations->{ $locale }->{ $k } = $req->loc( $k, @args );
 }
 
 sub localise_tree ($$) {
@@ -424,7 +574,13 @@ sub make_name_from ($) {
    my $v = shift; $v =~ s{ [_\-] }{ }gmx; return $v;
 }
 
-sub management_button ($$$;$) {
+sub make_tip ($$;$) {
+   my ($req, $k, $args) = @_; $args //= [];
+
+   return loc( $req, 'Hint' ).SPC.TILDE.SPC.loc( $req, $k, $args );
+}
+
+sub management_link ($$$;$) {
    my ($req, $actionp, $name, $opts) = @_; $opts //= {};
 
    my $args   = $opts->{args} // [ $name ];
@@ -485,9 +641,7 @@ sub numerical_id_data_type (;$) {
 sub register_action_paths (;@) {
    my $args = (is_hashref $_[ 0 ]) ? $_[ 0 ] : { @_ };
 
-   for my $k (keys %{ $args }) {
-      $_action_path_uri_map->{ $k } = $args->{ $k };
-   }
+   for my $k (keys %{ $args }) { $action_path_uri_map->{ $k } = $args->{ $k } }
 
    return;
 }
@@ -519,8 +673,7 @@ sub save_button ($$;$) {
    my $button = { container_class => 'right-last', label => $k,
                   value           => "${k}_${type}" };
 
-   $type and $button->{tip} = loc( $req, 'Hint' ).SPC.TILDE.SPC
-                            . loc( $req, "${k}_tip", [ $type, $name ] );
+   $type and $button->{tip} = make_tip( $req, "${k}_tip", [ $type, $name ] );
 
    return $button;
 }
@@ -553,6 +706,10 @@ sub show_node ($;$$) {
 
    return $node->{depth} >= $wanted_depth
        && $node->{url  } =~ m{ \A $wanted }mx ? TRUE : FALSE;
+}
+
+sub slot_claimed ($) {
+   return defined $_[ 0 ] && exists $_[ 0 ]->{operator} ? TRUE : FALSE;
 }
 
 sub slot_identifier ($$$$$) {
@@ -588,12 +745,19 @@ sub stash_functions ($$$) {
    return;
 }
 
+sub table_link ($$$$) {
+   return { class => 'table-link windows', hint  => loc( $_[ 0 ], 'Hint' ),
+            href  => HASH_CHAR,            name  => $_[ 1 ],
+            tip   => $_[ 3 ],              type  => 'link',
+            value => $_[ 2 ], };
+}
+
 sub uri_for_action ($$;@) {
    my ($req, $action, @args) = @_;
 
    blessed $req or throw 'Not a request object [_1]', [ $req ];
 
-   my $uri = $_action_path_uri_map->{ $action } // $action;
+   my $uri = $action_path_uri_map->{ $action } // $action;
 
    return $req->uri_for( $uri, @args );
 }

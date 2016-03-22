@@ -2,7 +2,7 @@ package App::Notitia::Model::User;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Util      qw( bind loc register_action_paths
+use App::Notitia::Util      qw( bind check_form_field loc register_action_paths
                                 set_element_focus uri_for_action );
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef );
@@ -120,9 +120,9 @@ sub change_password_action : Role(anon) {
 }
 
 sub check_field : Role(any) {
-   my ($self, $req) = @_; my $result_class = (blessed $self->schema).'::Result';
+   my ($self, $req) = @_;
 
-   return $self->check_form_field( $req, $result_class );
+   return check_form_field $req, $self->log, (blessed $self->schema).'::Result';
 }
 
 sub login : Role(anon) {

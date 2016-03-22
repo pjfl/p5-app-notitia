@@ -1,8 +1,8 @@
 package App::Notitia::Model::Role;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
-use App::Notitia::Util      qw( admin_navigation_links bind loc
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Util      qw( admin_navigation_links bind button loc
                                 register_action_paths uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Moo;
@@ -31,23 +31,13 @@ around 'get_stash' => sub {
 
 # Private functions
 my $_add_role_button = sub {
-   my ($req, $name) = @_;
-
-   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
-           . loc( $req, 'add_role_tip', [ 'role', $name ] );
-
-   return { container_class => 'right-last', label => 'add_role',
-            tip => $tip, value => 'add_role' };
+   return button $_[ 0 ], { class => 'right-last' }, 'add', 'role',
+                 [ 'role', $_[ 1 ] ];
 };
 
 my $_remove_role_button = sub {
-   my ($req, $name) = @_;
-
-   my $tip = loc( $req, 'Hint' ).SPC.TILDE.SPC
-           . loc( $req, 'remove_role_tip', [ 'role', $name ] );
-
-   return { container_class => 'right-last', label => 'remove_role',
-            tip => $tip, value => 'remove_role' };
+   return button $_[ 0 ], { class => 'right-last' }, 'remove', 'role',
+                 [ 'role', $_[ 1 ] ];
 };
 
 my $_subtract = sub {

@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Can request vehicles
+          - Centred standard forms within containing element
           - Documentation update
           - Endorsements work with new uri field
           - Added VehicleRequest result class

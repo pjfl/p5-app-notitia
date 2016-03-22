@@ -1,16 +1,12 @@
 package App::Notitia::Model;
 
-use App::Notitia::Attributes;  # Will do namespace cleaning
+use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( bind field_options uri_for_action );
-use Class::Usul::Functions  qw( ensure_class_loaded exception
-                                first_char throw );
-use Class::Usul::Types      qw( Object Plinth );
-use Data::Validation;
+use App::Notitia::Util      qw( uri_for_action );
+use Class::Usul::Functions  qw( exception throw );
+use Class::Usul::Types      qw( Plinth );
 use HTTP::Status            qw( HTTP_BAD_REQUEST HTTP_NOT_FOUND HTTP_OK );
-use JSON::MaybeXS;
 use Scalar::Util            qw( blessed );
-use Try::Tiny;
 use Unexpected::Functions   qw( Authentication AuthenticationRequired
                                 ValidationErrors );
 use Moo;
@@ -18,14 +14,8 @@ use Moo;
 with q(Web::Components::Role);
 
 # Public attributes
-has 'application' => is => 'ro',   isa => Plinth,
-   required       => TRUE,    weak_ref => TRUE;
-
-has 'transcoder'  => is => 'lazy', isa => Object,
-   builder        => sub { JSON::MaybeXS->new( utf8 => FALSE ) };
-
-# Private class attributes
-my $_result_class_cache = {};
+has 'application' => is => 'ro', isa => Plinth,
+   required       => TRUE,  weak_ref => TRUE;
 
 # Private functions
 my $_auth_redirect = sub {
@@ -48,85 +38,7 @@ my $_auth_redirect = sub {
    return;
 };
 
-# Private methods
-my $_check_field = sub {
-   my ($self, $req, $class_base) = @_;
-
-   my $params = $req->query_params;
-   my $domain = $params->( 'domain' );
-   my $class  = $params->( 'form'   );
-   my $id     = $params->( 'id'     );
-   my $val    = $params->( 'val', { raw => TRUE } );
-
-   if    (first_char $class eq '+') { $class = substr $class, 1 }
-   elsif (defined $class_base)      { $class = "${class_base}::${class}" }
-
-   $_result_class_cache->{ $class }
-      or (ensure_class_loaded( $class )
-          and $_result_class_cache->{ $class } = TRUE);
-
-   my $attr = $class->validation_attributes; $attr->{level} = 4;
-
-   return Data::Validation->new( $attr )->check_field( $id, $val );
-};
-
 # Public methods
-sub bind_fields {
-   my ($self, $src, $map, $result) = @_;
-
-   my $schema = $self->schema; my $fields = {};
-
-   for my $k (keys %{ $map }) {
-      my $value = exists $map->{ $k }->{checked} ? TRUE : $src->$k();
-      my $opts  = field_options( $schema, $result, $k, $map->{ $k } );
-
-      $fields->{ $k } = bind( $k, $value, $opts );
-   }
-
-   return $fields;
-}
-
-sub check_field_server {
-   my ($self, $k, $opts) = @_;
-
-   my $args = $self->transcoder->encode
-      ( [ $k, $opts->{form}, $opts->{domain} ] );
-
-   return "   behaviour.config.server[ '${k}' ] = {",
-          "      method    : 'checkField',",
-          "      event     : 'blur',",
-          "      args      : ${args} };";
-}
-
-sub check_form_field {
-   my ($self, $req, $result_class_base) = @_; my $mesg;
-
-   my $id = $req->query_params->( 'id' ); my $meta = { id => "${id}_ajax" };
-
-   try   { $self->$_check_field( $req, $result_class_base ) }
-   catch {
-      my $e = $_; my $args = { params => $e->args };
-
-      $self->log->debug( "${e}" );
-      $mesg = $req->loc( $e->error, $args );
-      $meta->{class_name} = 'field-error';
-   };
-
-   return { code => HTTP_OK,
-            page => { content => { html => $mesg }, meta => $meta },
-            view => 'json' };
-}
-
-sub dialog_anchor {
-   my ($self, $k, $href, $opts) = @_;
-
-   my $args = $self->transcoder->encode( [ "${href}", $opts ] );
-
-   return "   behaviour.config.anchors[ '${k}' ] = {",
-          "      method    : 'modalDialog',",
-          "      args      : ${args} };";
-}
-
 sub dialog_stash {
    my ($self, $req, $layout) = @_; my $stash = $self->initialise_stash( $req );
 

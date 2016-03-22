@@ -2,8 +2,9 @@ package App::Notitia::Model::Endorsement;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( admin_navigation_links bind delete_button
-                                loc management_button register_action_paths
+use App::Notitia::Util      qw( admin_navigation_links bind bind_fields
+                                check_field_server delete_button
+                                loc management_link register_action_paths
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
@@ -61,8 +62,8 @@ my $_add_endorsement_js = sub {
    my $self = shift;
    my $opts = { domain => 'schedule', form => 'Endorsement' };
 
-   return [ $self->check_field_server( 'type_code', $opts ),
-            $self->check_field_server( 'endorsed',  $opts ), ];
+   return [ check_field_server( 'type_code', $opts ),
+            check_field_server( 'endorsed',  $opts ), ];
 };
 
 my $_endorsement_links = sub {
@@ -74,7 +75,7 @@ my $_endorsement_links = sub {
 
    for my $actionp (map { $self->moniker."/${_}" } 'endorsement' ) {
       push @{ $links }, {
-         value => management_button( $req, $actionp, $name, $opts ) };
+         value => management_link( $req, $actionp, $name, $opts ) };
    }
 
    $_blots_links_cache->{ $uri } = $links;
@@ -93,7 +94,7 @@ my $_bind_endorsement_fields = sub {
       points    => {},
    };
 
-   return $self->bind_fields( $blot, $map, 'Endorsement' );
+   return bind_fields $self->schema, $blot, $map, 'Endorsement';
 };
 
 my $_find_endorsement_by = sub {

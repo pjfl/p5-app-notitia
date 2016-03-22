@@ -2,8 +2,8 @@ package App::Notitia::Role::Editor;
 
 use namespace::autoclean;
 
-use App::Notitia::Util     qw( loc make_id_from make_name_from mtime
-                               set_element_focus stash_functions
+use App::Notitia::Util     qw( dialog_anchor loc make_id_from make_name_from
+                               mtime set_element_focus stash_functions
                                uri_for_action );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions qw( io throw trim untaint_path );
@@ -32,10 +32,10 @@ my $_add_dialog_js = sub {
 
    my $action = $self->moniker.'/dialog';
    my $href   = uri_for_action( $req, $action, [], { name => $name } );
+   my $anchor = dialog_anchor "${name}-file", $href,
+                               { name => "${name}-file", %{ $opts } };
 
-   push @{ $page->{literal_js} }, $self->dialog_anchor
-      ( "${name}-file", $href, { name => "${name}-file", %{ $opts } } );
-
+   push @{ $page->{literal_js} }, $anchor;
    return;
 };
 

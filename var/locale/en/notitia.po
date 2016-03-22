@@ -328,6 +328,9 @@ msgid "events_heading_2"
 msgstr "Participents"
 
 msgid "events_heading_3"
+msgstr "Vehicles"
+
+msgid "events_heading_4"
 msgstr "View"
 
 msgid "events_list_link"
@@ -459,11 +462,20 @@ msgstr "Owner"
 msgid "Parameter [_1] is not a valid email address"
 msgstr "Not a valid email address"
 
-msgid "participate"
+msgid "participate_event"
 msgstr "Participate"
 
-msgid "participate_tip"
+msgid "participate_event_tip"
 msgstr "Participate in the [_1] event"
+
+msgid "participents_heading_0"
+msgstr "People"
+
+msgid "participents_heading_1"
+msgstr "View"
+
+msgid "participents_heading_2"
+msgstr "Unparticipate"
 
 msgid "participents_management_heading"
 msgstr "[_1] Participents"
@@ -474,14 +486,8 @@ msgstr "Participents"
 msgid "participents_management_tip"
 msgstr "View the participents in the [_1] event"
 
-msgid "participents_heading_0"
-msgstr "People"
-
-msgid "participents_heading_1"
-msgstr "View"
-
-msgid "participents_heading_2"
-msgstr "Unparticipate"
+msgid "participents_view_link"
+msgstr "Click to view the [_1] event participents"
 
 msgid "password"
 msgstr "Password"
@@ -567,6 +573,12 @@ msgstr "Private Bikes"
 msgid "private_bikes_tip"
 msgstr "List privately owned bikes"
 
+msgid "request_vehicle_management_link"
+msgstr "Vehicles"
+
+msgid "request_vehicle_management_tip"
+msgstr "Request vehicles for the [_1] event"
+
 msgid "remove_role"
 msgstr "Remove Role"
 
@@ -584,6 +596,12 @@ msgstr "Do you want a bike?"
 
 msgid "request_reset"
 msgstr "Reset Password"
+
+msgid "request_vehicle"
+msgstr "Request Vehicles"
+
+msgid "request_vehicle_tip"
+msgstr "Request vehicles for the [_1] event"
 
 msgid "Reset Password"
 msgstr "Password Reset Request"
@@ -645,6 +663,9 @@ msgstr "People and resource scheduling"
 msgid "start_time"
 msgstr "Start Time"
 
+msgid "submarine"
+msgstr "Submarine"
+
 msgid "subscription"
 msgstr "Subscription"
 
@@ -681,7 +702,7 @@ msgstr "Types"
 msgid "unassign_management_tip"
 msgstr "Unassign a vehicle from this slot"
 
-msgid "unparticipate"
+msgid "unparticipate_event"
 msgstr "Cancel"
 
 msgid "unparticipate_event_link"
@@ -734,6 +755,27 @@ msgstr "Only service vehicles are given a name. Private vehicles have an "
 
 msgid "vehicle_private_heading"
 msgstr "Private Vehicles"
+
+msgid "vehicle_request_heading"
+msgstr "Vehicle Requests"
+
+msgid "vehicle_request_heading_0"
+msgstr "Type"
+
+msgid "vehicle_request_heading_1"
+msgstr "Quantity"
+
+msgid "vehicle_request_heading_2"
+msgstr "Vehicle 1"
+
+msgid "vehicle_request_heading_3"
+msgstr "Vehicle 2"
+
+msgid "vehicle_request_heading_4"
+msgstr "Vehicle 3"
+
+msgid "vehicle_request_heading_5"
+msgstr "Vehicle 4"
 
 msgid "vehicle_service_heading"
 msgstr "Service Vehicles"

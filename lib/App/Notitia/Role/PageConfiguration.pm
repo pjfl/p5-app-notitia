@@ -3,7 +3,7 @@ package App::Notitia::Role::PageConfiguration;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( TRUE );
-use App::Notitia::Util      qw( loc uri_for_action );
+use App::Notitia::Util      qw( dialog_anchor loc uri_for_action );
 use Try::Tiny;
 use Moo::Role;
 
@@ -63,14 +63,14 @@ around 'load_page' => sub {
       $href  = uri_for_action $req, 'user/profile';
       $title = loc $req, 'Person Profile';
 
-      push @{ $js }, $self->dialog_anchor( 'profile-user', $href, {
+      push @{ $js }, dialog_anchor( 'profile-user', $href, {
          name => 'profile-user', title => $title, useIcon => \1 } );
    }
    else {
       $href  = uri_for_action $req, 'user/reset';
       $title = loc $req, 'Reset Password';
 
-      push @{ $js }, $self->dialog_anchor( 'request-reset', $href, {
+      push @{ $js }, dialog_anchor( 'request-reset', $href, {
          name => 'request-reset', title => $title, useIcon => \1 } );
    }
 

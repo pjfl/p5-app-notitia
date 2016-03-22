@@ -1,10 +1,11 @@
 package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TILDE TRUE );
-use App::Notitia::Util      qw( admin_navigation_links bind create_button
-                                delete_button field_options loc
-                                management_button register_action_paths
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Util      qw( admin_navigation_links bind bind_fields button
+                                check_field_server create_link
+                                delete_button loc
+                                management_link register_action_paths
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
@@ -44,20 +45,34 @@ my $_links_cache = {};
 
 # Private functions
 my $_events_headers = sub {
-   return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 3 ];
+   return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 4 ];
+};
+
+my $_event_links = sub {
+   my ($self, $req, $event) = @_; my $uri = $event->[ 1 ]->uri;
+
+   my $links = $_links_cache->{ $uri }; $links and return @{ $links };
+
+   my @actions = qw( event/event event/participents
+                     asset/request_vehicle event/event_summary );
+
+   $links = [];
+
+   for my $actionp (@actions) {
+      push @{ $links }, { value => management_link( $req, $actionp, $uri ) };
+   }
+
+   $_links_cache->{ $uri } = $links;
+
+   return @{ $links };
 };
 
 my $_participate_button = sub {
    my ($req, $name, $opts) = @_; $opts //= {};
 
-   my $k      = $opts->{cancel} ? 'unparticipate' : 'participate';
-   my $button = { container_class => 'right-last', label => $k,
-                  value           => "${k}_event" };
+   my $action = $opts->{cancel} ? 'unparticipate' : 'participate';
 
-   $button->{tip} = loc( $req, 'Hint' ).SPC.TILDE.SPC
-                  . loc( $req, "${k}_tip", [ $name ] );
-
-   return $button;
+   return button $req, { class => 'right-last' }, $action, 'event', [ $name ];
 };
 
 my $_participent_headers = sub {
@@ -69,8 +84,8 @@ my $_participent_headers = sub {
 my $_add_event_js = sub {
    my $self = shift; my $opts = { domain => 'schedule', form => 'Event' };
 
-   return [ $self->check_field_server( 'description', $opts ),
-            $self->check_field_server( 'name', $opts ) ];
+   return [ check_field_server( 'description', $opts ),
+            check_field_server( 'name', $opts ) ];
 };
 
 my $_bind_event_fields = sub {
@@ -89,23 +104,7 @@ my $_bind_event_fields = sub {
       start_time  => { disabled => $disabled},
    };
 
-   return $self->bind_fields( $event, $map, 'Event' );
-};
-
-my $_event_links = sub {
-   my ($self, $req, $event) = @_; my $uri = $event->[ 1 ]->uri;
-
-   my $links = $_links_cache->{ $uri }; $links and return @{ $links };
-
-   my @actions = qw( event participents event_summary ); $links = [];
-
-   for my $actionp (map { $self->moniker."/${_}" } @actions) {
-      push @{ $links }, { value => management_button( $req, $actionp, $uri ) };
-   }
-
-   $_links_cache->{ $uri } = $links;
-
-   return @{ $links };
+   return bind_fields $self->schema, $event, $map, 'Event';
 };
 
 my $_find_rota = sub {
@@ -141,6 +140,15 @@ my $_maybe_find_event = sub {
    return $schema->resultset( 'Event' )->find_event_by( $uri, $opts );
 };
 
+my $_owner_list = sub {
+   my ($self, $event) = @_; my $schema = $self->schema;
+
+   my $opts   = { fields => { selected => $event->owner } };
+   my $people = $schema->resultset( 'Person' )->list_all_people( $opts );
+
+   return bind( 'owner', [ [ NUL, NUL ], @{ $people } ], { numify => TRUE } );
+};
+
 my $_participent_links = sub {
    my ($self, $req, $person, $event) = @_; my $name = $person->[ 1 ]->name;
 
@@ -149,25 +157,14 @@ my $_participent_links = sub {
    $links = [];
 
    push @{ $links },
-         { value => management_button( $req, 'admin/person_summary', $name ) };
+         { value => management_link( $req, 'admin/person_summary', $name ) };
    push @{ $links },
-         { value => management_button
-              ( $req, 'event/event', 'unparticipate', { args => [ $event->uri ],
-                                                        type => 'form_button' }
-                ) };
+         { value => management_link( $req, 'event/event', 'unparticipate',
+                       { args => [ $event->uri ], type => 'form_button' } ) };
 
    $_links_cache->{ $name } = $links;
 
    return @{ $links };
-};
-
-my $_select_owner_list = sub {
-   my ($self, $event) = @_; my $schema = $self->schema;
-
-   my $opts   = { fields => { selected => $event->owner } };
-   my $people = $schema->resultset( 'Person' )->list_all_people( $opts );
-
-   return bind( 'owner', [ [ NUL, NUL ], @{ $people } ], { numify => TRUE } );
 };
 
 my $_update_event_from_request = sub {
@@ -261,7 +258,7 @@ sub event : Role(event_manager) {
                           { disabled => TRUE };
       $fields->{delete} = delete_button $req, $uri, 'event';
       $fields->{href  } = uri_for_action $req, $actionp, [ $uri ];
-      $fields->{owner } = $self->$_select_owner_list( $event );
+      $fields->{owner } = $self->$_owner_list( $event );
    }
    else { $fields->{date} = bind 'event_date', time2str '%d/%m/%Y' }
 
@@ -286,7 +283,7 @@ sub event_summary : Role(any) {
    my $fields  =  $page->{fields};
    my $actionp =  $self->moniker.'/event';
 
-   $fields->{add } = create_button $req, $actionp, 'event',
+   $fields->{add } = create_link $req, $actionp, 'event',
                         { container_class => 'right' };
    $fields->{date} = bind 'event_date', $event->rota->date, $opts;
    $fields->{href} = uri_for_action $req, $actionp, [ $uri ];
@@ -303,7 +300,7 @@ sub events : Role(any) {
    my $actionp   =  $self->moniker.'/event';
    my $page      =  {
       fields     => {
-         add     => create_button( $req, $actionp, 'event' ),
+         add     => create_link( $req, $actionp, 'event' ),
          headers => $_events_headers->( $req ),
          rows    => [], },
       template   => [ 'contents', 'table' ],

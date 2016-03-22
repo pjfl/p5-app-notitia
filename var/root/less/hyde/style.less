@@ -197,18 +197,20 @@ footer {
    text-align: left; text-decoration: none;
    vertical-align: top; white-space: nowrap;
 }
-.pathname, .standard-field {
-   background-color: #fff;
-   border: 2px inset; .border-radius; .box-sizing; color: @darker;
-   margin: 0; min-width: 400px;
+.pathname, .single-digit, .standard-field {
+   background-color: #fff; border: 2px inset; .border-radius;
+   .box-sizing; color: @darker; margin: 0;
    padding: 3.25px 0.75em; vertical-align: middle;
 }
+.pathname, .standard-field { min-width: 400px; }
 .pathname[disabled], .standard-field[disabled] { background-color: @subtle; }
 .standard-field[type=date], .standard-field[type=time] {
    padding-bottom: 0; padding-top: 0;
 }
 .required { border-right: 3px solid @divider; }
-.standard-form { display: inline-block; max-width: 566px; overflow: hidden; }
+.standard-form {
+   display: block; max-width: 566px; margin: auto; overflow: hidden;
+}
 .with-field-help { max-width: 591px; }
 .with-field-help .right-last { margin-right: 25px; }
 .upload-file { margin: 0.25em 0; overflow: hidden; position: relative; }
