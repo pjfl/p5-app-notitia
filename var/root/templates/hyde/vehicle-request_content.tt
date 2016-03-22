@@ -3,7 +3,8 @@
    <article>
       <h4>[% page.title %]</h4>
       <form action="[% page.fields.action %]"
-             class="standard-form" enctype="application/x-www-form-urlencoded"
+             class="standard-form no-header-wrap"
+           enctype="application/x-www-form-urlencoded"
             method="post" name="vehicle-request">
 [% TextField( page.fields.name ) -%]
 [% DateField( page.fields.date ) -%]

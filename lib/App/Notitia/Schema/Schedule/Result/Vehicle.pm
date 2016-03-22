@@ -188,6 +188,17 @@ sub slotref {
    return $_[ 0 ]->name ? $_[ 0 ]->name : $_[ 0 ]->vrn;
 }
 
+sub unassign_from_event {
+   my ($self, $event_uri, $assigner_name) = @_;
+
+   my $schema    = $self->result_source->schema;
+   my $event     = $schema->resultset( 'Event' )->find_event_by( $event_uri );
+   my $tport_rs  = $schema->resultset( 'Transport' );
+   my $transport = $tport_rs->find( $event->id, $self->id );
+
+   return $transport->delete;
+}
+
 sub unassign_slot {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $name) = @_;
 
@@ -211,18 +222,18 @@ sub update {
 
 sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
-      constraints      => {
-         name          => { max_length => 64, min_length => 3, },
-         notes         => { max_length => VARCHAR_MAX_SIZE(), min_length => 0 },
-         vrn           => { max_length => 16, min_length => 3, },
+      constraints    => {
+         name        => { max_length => 64, min_length => 3, },
+         notes       => { max_length => VARCHAR_MAX_SIZE(), min_length => 0 },
+         vrn         => { max_length => 16, min_length => 3, },
       },
-      fields           => {
-         aquired       => { validate => 'isValidDate' },
-         disposed      => { validate => 'isValidDate' },
-         name          => { validate => 'isValidLength isValidIdentifier' },
-         notes         => { validate => 'isValidLength isValidText' },
-         vrn           => {
-            validate   => 'isMandatory isValidLength isValidIdentifier' },
+      fields         => {
+         aquired     => { validate => 'isValidDate' },
+         disposed    => { validate => 'isValidDate' },
+         name        => { validate => 'isValidLength isValidIdentifier' },
+         notes       => { validate => 'isValidLength isValidText' },
+         vrn         => {
+            validate => 'isMandatory isValidLength isValidIdentifier' },
       },
       level => 8,
    };

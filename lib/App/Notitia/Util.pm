@@ -150,15 +150,19 @@ my $nav_linkto = sub {
 };
 
 my $_vehicle_link = sub {
-   my ($req, $page, $args, $value, $action, $name) = @_;
+   my ($req, $page, $args, $opts) = @_;
 
-   my $path = "asset/${action}"; my $params = { action => $action };
+   my $action = $opts->{action}; my $value = $opts->{value};
+
+   my $path   = "asset/${action}"; my $params = { action => $action };
 
    $action eq 'unassign' and $params->{vehicle} = $value;
+   $opts->{type} and $params->{type} = $opts->{type};
 
    my $href = uri_for_action( $req, $path, $args, $params );
    my $tip  = loc( $req, "${action}_management_tip" );
    my $js   = $page->{literal_js} //= [];
+   my $name = $opts->{name};
 
    push @{ $js }, dialog_anchor( "${action}_${name}", $href, {
       name    => "${action}-vehicle",
@@ -209,7 +213,7 @@ sub admin_navigation_links ($) {
 }
 
 sub assign_link ($$$$) { # Traffic lights
-   my ($req, $page, $args, $opts) = @_;
+   my ($req, $page, $args, $opts) = @_; my $type = $opts->{type};
 
    my $name = $opts->{name}; my $value = $opts->{vehicle};
 
@@ -219,12 +223,15 @@ sub assign_link ($$$$) { # Traffic lights
    $value and $state = 'vehicle-assigned';
 
    if ($state eq 'vehicle-assigned') {
-      $value
-         = $_vehicle_link->( $req, $page, $args, $value, 'unassign', $name );
+      my $opts = { action => 'unassign', name => $name, value => $value };
+
+      $value = $_vehicle_link->( $req, $page, $args, $opts );
    }
    elsif ($state eq 'vehicle-requested') {
-      $value
-         = $_vehicle_link->( $req, $page, $args, 'requested', 'assign', $name );
+      my $opts = { action => 'assign', name => $name, value => 'requested' };
+
+      $type and $opts->{type} = $type;
+      $value = $_vehicle_link->( $req, $page, $args, $opts );
    }
 
    my $class = "centre narrow ${state}";

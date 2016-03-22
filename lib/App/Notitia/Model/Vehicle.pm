@@ -56,12 +56,14 @@ my $_confirm_vehicle_button = sub {
 my $_quantity_list = sub {
    my ($type, $selected) = @_;
 
-   my $opts   = { class => 'single-digit', label => NUL, type => 'select' };
-   my $values = [ [ 0, 0 ], [ 1, 1 ], [ 2, 2 ], [ 3, 3 ], [ 4, 4 ] ];
+   my $opts   = { class => 'single-digit',
+                  label => NUL, type => 'select' };
+   my $values = [ [ 0, 0 ], [ 1, 1 ], [ 2, 2 ], [ 3, 3 ], [ 4, 4 ], ];
 
    $values->[ $selected ]->[ 2 ] = { selected => TRUE };
 
-   return { value => bind( "${type}_quantity", $values, $opts ) };
+   return { class => 'narrow',
+            value => bind( "${type}_quantity", $values, $opts ) };
 };
 
 my $_vehicles_headers = sub {
@@ -195,6 +197,34 @@ my $_req_quantity = sub {
    return $vreq ? $vreq->quantity : 0;
 };
 
+my $_request_row = sub {
+   my ($self, $req, $page, $uri, $event, $vehicle_type) = @_;
+
+   my $trans_rs = $self->schema->resultset( 'Transport' );
+   my $tports   = $trans_rs->search
+      ( { event_id => $event->id, 'vehicle.type_id' => $vehicle_type->id },
+        { prefetch => 'vehicle' } );
+   my $quant    = $self->$_req_quantity( $event, $vehicle_type );
+   my $row      = [ { value => loc( $req, $vehicle_type ) },
+                    $_quantity_list->( $vehicle_type, $quant ) ];
+
+   if ($quant) {
+      for my $slotno (0 .. $quant - 1) {
+         my $transport = $tports->next;
+         my $vehicle   = $transport ? $transport->vehicle : undef;
+         my $opts      = { name        => "${vehicle_type}_event_${slotno}",
+                           operator    => $event->owner,
+                           type        => $vehicle_type,
+                           vehicle     => $vehicle,
+                           vehicle_req => TRUE, };
+
+         push @{ $row }, assign_link( $req, $page, [ $uri ], $opts );
+      }
+   }
+
+   return $row;
+};
+
 my $_toggle_event_assignment = sub {
    my ($self, $req, $action) = @_;
 
@@ -202,8 +232,10 @@ my $_toggle_event_assignment = sub {
    my $uri      = $req->uri_params->( 0 );
    my $vrn      = $req->body_params->( 'vehicle' );
    my $vehicle  = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+   my $method   = $action eq 'assign'
+                ? 'assign_to_event' : 'unassign_from_event';
 
-   $vehicle->assign_to_event( $uri, $req->username );
+   $vehicle->$method( $uri, $req->username );
 
    my $actionp  = $self->moniker.'/request_vehicle';
    my $message  = [ "Vehicle [_1] ${action}ed to [_2] by [_3]",
@@ -311,19 +343,20 @@ sub assign : Role(rota_manager) {
 
    my $args = [ $params->( 0 ) ]; my $opts = { optional => TRUE };
 
-   my $rota_date = $params->( 1, $opts ); $rota_date
-      and push @{ $args }, $rota_date;
+   my $rota_date = $params->( 1, $opts );
+      $rota_date and push @{ $args }, $rota_date;
 
-   my $slot_name = $params->( 2, $opts ); $slot_name
-      and push @{ $args }, $slot_name;
+   my $slot_name = $params->( 2, $opts );
+      $slot_name and push @{ $args }, $slot_name;
 
    my $action = $req->query_params->( 'action' );
+   my $type   = $req->query_params->( 'type', { optional => TRUE } ) // 'bike';
    my $stash  = $self->dialog_stash( $req, "${action}-vehicle" );
    my $page   = $stash->{page};
    my $fields = $page->{fields};
 
    if ($action eq 'assign') {
-      my $where  = { service => TRUE, type => 'bike' };
+      my $where  = { service => TRUE, type => $type };
       my $rs     = $self->schema->resultset( 'Vehicle' );
       my $values = [ [ NUL, NUL ], @{ $rs->list_vehicles( $where ) } ];
 
@@ -391,9 +424,6 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    my $type_rs   =  $self->schema->resultset( 'Type' );
    my $opts      =  { disabled => TRUE };
    my $fields    =  $page->{fields};
-   my $trans_rs  =  $self->schema->resultset( 'Transport' );
-   my $tports    =  $trans_rs->search
-      ( { event_id => $event->id }, { prefetch => 'vehicle' } );
 
    $fields->{action  } = uri_for_action $req, 'asset/vehicle', [ $uri ];
    $fields->{date    } = bind 'event_date', $event->rota->date, $opts;
@@ -401,24 +431,8 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    $fields->{vehicles} = { class   => 'smaller-table',
                            headers => $_vehicle_request_headers->( $req ) };
 
-
    for my $vehicle_type ($type_rs->list_types( 'vehicle' )->all) {
-      my $quant = $self->$_req_quantity( $event, $vehicle_type );
-      my $row   = [ { value => loc( $req, $vehicle_type ) },
-                      $_quantity_list->( $vehicle_type, $quant ) ];
-
-      if ($quant) {
-         for my $slotno (0 .. $quant - 1) {
-            my $transport = $tports->next;
-            my $vehicle   = $transport ? $transport->vehicle : undef;
-            my $opts      = { name        => 'event',
-                              operator    => $event->owner,
-                              vehicle     => $vehicle,
-                              vehicle_req => TRUE, };
-
-            push @{ $row }, assign_link( $req, $page, [ $uri ], $opts );
-         }
-      }
+      my $row = $self->$_request_row( $req, $page, $uri, $event, $vehicle_type);
 
       push @{ $fields->{vehicles}->{rows} }, $row;
    }

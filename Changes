@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Can unassign vehicles from events
           - Can assign vehicles to events
           - Can request vehicles
           - Centred standard forms within containing element
