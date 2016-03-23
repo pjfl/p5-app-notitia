@@ -124,7 +124,7 @@ my $_quantity_list = sub {
 
    $values->[ $selected ]->[ 2 ] = { selected => TRUE };
 
-   return { class => 'narrow',
+   return { class => 'single-digit-select narrow',
             value => bind( "${type}_quantity", $values, $opts ) };
 };
 

@@ -45,6 +45,14 @@ sub new_result {
    return $self->next::method( $columns );
 }
 
+sub count_events_for {
+   my ($self, $type_id, $date) = @_;
+
+   return $self->count
+      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
+        { join           => [ 'rota' ] } );
+}
+
 sub find_event_by {
    my ($self, $uri, $opts) = @_; $opts //= {};
 
@@ -57,12 +65,12 @@ sub find_event_by {
    return $event;
 }
 
-sub find_event_for {
+sub find_events_for {
    my ($self, $type_id, $date) = @_;
 
    return $self->search
       ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
-        { columns  => [ 'name', 'rota.date', 'rota.type_id', 'uri' ],
+        { columns  => [ 'id', 'name', 'rota.date', 'rota.type_id', 'uri' ],
           join     => [ 'rota' ] } );
 }
 

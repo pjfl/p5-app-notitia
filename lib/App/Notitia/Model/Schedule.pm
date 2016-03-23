@@ -176,15 +176,27 @@ my $_slot_link = sub {
    return { colspan => 2, value => table_link( $req, $k, $value, $tip ) };
 };
 
-my $_vehicle_request_link = sub {
-   my ($req, $page, $event) = @_;
+my $_vreq_state = sub {
+   my ($tports, $vreqs) = @_;
 
-   my $name = 'view-vehicle-requests';
-   my $href = uri_for_action $req, 'asset/request_vehicle', [ $event->uri ];
-   my $tip  = loc $req, 'vehicle_request_link', [ $event->label ];
-   # TODO: Need counts of vehicles requested and vehicles assigned
-   my $opts = {};
-   my $link = $_rota_summary_link->( 1, $opts );
+   my $nvreqs = $vreqs->get_column( 'quantity' )->sum;
+
+   return { vehicle     => ($tports == $nvreqs ? TRUE : FALSE),
+            vehicle_req => TRUE };
+};
+
+my $_vehicle_request_link = sub {
+   my ($schema, $req, $page, $event) = @_;
+
+   my $name     = 'view-vehicle-requests';
+   my $href     = uri_for_action $req, 'asset/request_vehicle', [ $event->uri ];
+   my $tip      = loc $req, 'vehicle_request_link', [ $event->label ];
+   my $tport_rs = $schema->resultset( 'Transport' );
+   my $tports   = $tport_rs->count( { event_id => $event->id } );
+   my $vreq_rs  = $schema->resultset( 'VehicleRequest' );
+   my $vreqs    = $vreq_rs->search( { event_id => $event->id } );
+   my $opts     = $vreqs->count ? $_vreq_state->( $tports, $vreqs ) : FALSE;
+   my $link     = $_rota_summary_link->( 1, $opts );
 
    $link->{class} .= ' small-slot';
    $link->{value}  = { hint  => loc( $req, 'Hint' ),
@@ -234,7 +246,7 @@ my $_driver_row = sub {
 };
 
 my $_events = sub {
-   my ($req, $page, $name, $rota_dt, $todays_events) = @_;
+   my ($schema, $req, $page, $name, $rota_dt, $todays_events) = @_;
 
    my $date   = $rota_dt->day_abbr.SPC.$rota_dt->day;
    my $href   = uri_for_action $req, $page->{moniker}.'/day_rota';
@@ -258,7 +270,7 @@ my $_events = sub {
 
    while (defined (my $event = $todays_events->next) or $first) {
       my $col2 = $_event_link->( $req, $page, $event );
-      my $col3 = $_vehicle_request_link->( $req, $page, $event );
+      my $col3 = $_vehicle_request_link->( $schema, $req, $page, $event );
       my $col4 = $_participents_link->( $req, $page, $event );
       my $cols = [ $col1, $col2 ];
 
@@ -330,9 +342,8 @@ my $_rota_summary = sub {
    # TODO: Do not need the personal_vehicle join
    my $slots     = $slot_rs->list_slots_for( $type_id, $date->ymd );
    my $event_rs  = $self->schema->resultset( 'Event' );
-   my $events    = $event_rs->find_event_for( $type_id, $date->ymd );
-   # TODO: Should be done with count_rs
-   my $has_event = ($events->all)[ 0 ] ? loc( $req, 'Events' ) : NUL;
+   my $events    = $event_rs->count_events_for( $type_id, $date->ymd );
+   my $has_event = $events > 0 ? loc( $req, 'Events' ) : NUL;
    my $cell      = { class => 'month-rota', rows => [], type => 'table' };
    my $rows      = {};
 
@@ -375,6 +386,7 @@ my $_rota_summary = sub {
 my $_get_page = sub {
    my ($self, $req, $name, $date, $todays_events, $rows) = @_;
 
+   my $schema  =  $self->schema;
    my $limits  =  $self->config->slot_limits;
    my $rota_dt =  str2date_time $date, 'GMT';
    my $title   =  ucfirst( loc( $req, $name ) ).SPC.loc( $req, 'rota for' ).SPC
@@ -394,7 +406,7 @@ my $_get_page = sub {
       template => [ 'contents', 'rota', 'rota-table' ],
       title    => $title };
 
-   $_events->( $req, $page, $name, $rota_dt, $todays_events );
+   $_events->( $schema, $req, $page, $name, $rota_dt, $todays_events );
    $_controllers->( $req, $page, $name, $date, $rows, $limits );
    $_riders_n_drivers->( $req, $page, $name, $date, $rows, $limits );
 
@@ -440,7 +452,7 @@ sub day_rota : Role(any) {
    my $slot_rs  = $self->schema->resultset( 'Slot' );
    my $slots    = $slot_rs->list_slots_for( $type_id, $date );
    my $event_rs = $self->schema->resultset( 'Event' );
-   my $events   = $event_rs->find_event_for( $type_id, $date );
+   my $events   = $event_rs->find_events_for( $type_id, $date );
    my $rows     = {};
 
    for my $slot ($slots->all) {

@@ -30,12 +30,12 @@ has '_ipc' => is => 'lazy', isa => ProcCommer, handles => [ 'run_cmd' ],
 my $_add_dialog_js = sub {
    my ($self, $req, $page, $name, $opts) = @_;
 
-   my $action = $self->moniker.'/dialog';
-   my $href   = uri_for_action( $req, $action, [], { name => $name } );
-   my $anchor = dialog_anchor "${name}-file", $href,
+   my $action  = $self->moniker.'/dialog';
+   my $href    = uri_for_action( $req, $action, [], { name => $name } );
+   my @jslines = dialog_anchor "${name}-file", $href,
                                { name => "${name}-file", %{ $opts } };
 
-   push @{ $page->{literal_js} }, $anchor;
+   push @{ $page->{literal_js} }, @jslines;
    return;
 };
 
