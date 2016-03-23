@@ -42,7 +42,7 @@ around 'get_stash' => sub {
 
 # Private class attributes
 my $_rota_types_id = {};
-my $_max_rota_cols = 3;
+my $_max_rota_cols = 4;
 
 # Private functions
 my $_add_js_dialog = sub {
@@ -66,11 +66,13 @@ my $_confirm_slot_button = sub {
 };
 
 my $_header_label = sub {
-   return { value => loc( $_[ 0 ], 'rota_heading_'.$_[ 1 ] ) };
+   my $map = { 0 => 1, 1 => 1, 2 => 2, 3 => 1 }; my $span = $map->{ $_[ 1 ] };
+
+   return { colspan => $span, value => loc( $_[ 0 ], 'rota_heading_'.$_[ 1 ] )};
 };
 
 my $_headers = sub {
-   return [ map {  $_header_label->( $_[ 0 ], $_ ) } 0 .. $_max_rota_cols ];
+   return [ map {  $_header_label->( $_[ 0 ], $_ ) } 0 .. $_max_rota_cols - 1 ];
 };
 
 my $_onchange_submit = sub {
@@ -104,14 +106,14 @@ my $_operators_vehicle = sub {
 };
 
 my $_rota_summary_link = sub {
-   my ($span, $row) = @_;
+   my ($span, $opts) = @_;
 
-   $row or return { colspan => $span, value => '&nbsp;' x 2 };
+   $opts or return { colspan => $span, value => '&nbsp;' x 2 };
 
    my $value = 'C'; my $class = 'vehicle-not-needed';
 
-   if    ($row->{vehicle    }) { $value = 'V'; $class = 'vehicle-assigned'  }
-   elsif ($row->{vehicle_req}) { $value = 'R'; $class = 'vehicle-requested' }
+   if    ($opts->{vehicle    }) { $value = 'V'; $class = 'vehicle-assigned'  }
+   elsif ($opts->{vehicle_req}) { $value = 'R'; $class = 'vehicle-requested' }
 
    return { class => $class, colspan => $span, value => $value };
 };
@@ -139,7 +141,7 @@ my $_event_link = sub {
    my $tip  = loc $req, 'Click to view the [_1] event', [ $event->label ];
 
    return {
-      colspan  => $_max_rota_cols - 1,
+      colspan  => $_max_rota_cols - 2,
       value    => {
          class => 'table-link', hint => loc( $req, 'Hint' ),
          href  => $href,        name => $name,
@@ -155,7 +157,8 @@ my $_participents_link = sub {
    my $href  = uri_for_action $req, 'event/participents', [ $event->uri ];
    my $tip   = loc $req, 'participents_view_link', [ $event->label ];
 
-   return { colspan => 1,
+   return { class   => 'narrow',
+            colspan => 1,
             value   => { class => $class, hint => loc( $req, 'Hint' ),
                          href  => $href,  name => $name,
                          tip   => $tip,   type => 'link',
@@ -170,7 +173,28 @@ my $_slot_link = sub {
    my $tip     = loc( $req, ($claimed ? 'yield_slot_tip' : 'claim_slot_tip'),
                       $slot_type );
 
-   return { value => table_link( $req, $k, $value, $tip ) };
+   return { colspan => 2, value => table_link( $req, $k, $value, $tip ) };
+};
+
+my $_vehicle_request_link = sub {
+   my ($req, $page, $event) = @_;
+
+   my $name = 'view-vehicle-requests';
+   my $href = uri_for_action $req, 'asset/request_vehicle', [ $event->uri ];
+   my $tip  = loc $req, 'vehicle_request_link', [ $event->label ];
+   # TODO: Need counts of vehicles requested and vehicles assigned
+   my $opts = {};
+   my $link = $_rota_summary_link->( 1, $opts );
+
+   $link->{class} .= ' small-slot';
+   $link->{value}  = { hint  => loc( $req, 'Hint' ),
+                       href  => $href,
+                       name  => $name,
+                       tip   => $tip,
+                       type  => 'link',
+                       value => $link->{value}, };
+
+   return $link;
 };
 
 my $_controllers = sub {
@@ -229,14 +253,16 @@ my $_events = sub {
                   form_name   => 'day-rota',
                   href        => $href,
                   type        => 'form', };
-   my $col1   = { value => $picker, class => 'rota-date' };
+   my $col1   = { value => $picker, class => 'rota-date narrow' };
    my $first  = TRUE;
 
    while (defined (my $event = $todays_events->next) or $first) {
       my $col2 = $_event_link->( $req, $page, $event );
-      my $col3 = $_participents_link->( $req, $page, $event );
-      my $cols = [ $col1, $col2 ]; $col3 and push @{ $cols }, $col3;
+      my $col3 = $_vehicle_request_link->( $req, $page, $event );
+      my $col4 = $_participents_link->( $req, $page, $event );
+      my $cols = [ $col1, $col2 ];
 
+      $col3 and push @{ $cols }, $col3; $col4 and push @{ $cols }, $col4;
       push @{ $page->{rota}->{events} }, $cols;
       $col1 = { value => undef }; $first = FALSE;
    }

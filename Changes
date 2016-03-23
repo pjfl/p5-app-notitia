@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Day rota links to event vehicle requests
           - Can unassign vehicles from events
           - Can assign vehicles to events
           - Can request vehicles
