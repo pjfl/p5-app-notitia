@@ -34,7 +34,7 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{nav} = $self->navigation( $req, $stash );
+   $stash->{nav}->{list} = $self->navigation( $req, $stash );
 
    return $stash;
 };

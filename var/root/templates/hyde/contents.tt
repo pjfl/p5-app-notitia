@@ -2,11 +2,10 @@
 <div class="unit one-fifth hide-on-mobiles">
    <aside>
 [% depth        = 0 -%]
-[% class        = 'aj-nav folder fade' -%]
 [% file_title   = loc( 'Hint' ) -%]
 [% folder_title = loc( 'Menu Group' ) -%]
       <ul class="nav nav-list">
-[% FOR node IN nav -%]
+[% FOR node IN nav.list -%]
 [%    WHILE node.depth < depth; depth = depth - 1 -%]
             </ul>
          </li>

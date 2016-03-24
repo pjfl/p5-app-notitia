@@ -27,7 +27,6 @@ has '+moniker' => default => 'admin';
 register_action_paths
    'admin/activate'       => 'person/activate',
    'admin/contacts'       => 'contacts',
-   'admin/index'          => 'admin/index',
    'admin/people'         => 'people',
    'admin/person'         => 'person',
    'admin/person_summary' => 'person-summary',
@@ -40,7 +39,7 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{nav} = admin_navigation_links $req;
+   $stash->{nav }->{list    }   = admin_navigation_links $req;
    $stash->{page}->{location} //= 'admin';
 
    return $stash;
@@ -395,14 +394,6 @@ sub delete_person_action : Role(person_manager) {
 
 sub find_person_by {
    return shift->schema->resultset( 'Person' )->find_person_by( @_ );
-}
-
-sub index : Role(any) {
-   my ($self, $req) = @_;
-
-   return $self->get_stash( $req, {
-      template => [ 'contents', 'admin-index' ],
-      title    => loc( $req, 'admin_index_title' ) } );
 }
 
 sub person : Role(person_manager) {

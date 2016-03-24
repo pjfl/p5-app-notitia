@@ -10,7 +10,7 @@
 </div>
 <div class="clear"></div>
 [% ELSE -%]
-[%    FOREACH node IN nav -%]
+[%    FOREACH node IN nav.list -%]
 [%       IF node.url == page.url -%]
 <div class="section-nav">
    <div class="left align-right">

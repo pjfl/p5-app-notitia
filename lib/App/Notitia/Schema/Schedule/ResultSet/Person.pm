@@ -58,7 +58,9 @@ sub list_all_people {
    $opts->{columns} and push @{ $columns }, @{ delete $opts->{columns} };
 
    my $people  = $self->search
-      ( $where, { columns => $columns, order_by => $self->me( 'name' ),
+      ( $where, { columns  => $columns,
+                  order_by => [ $self->me( 'last_name'  ),
+                                $self->me( 'first_name' ) ],
                   %{ $opts } } );
 
    return [ map { $_person_tuple->( $_, $fields ) } $people->all ];
@@ -81,6 +83,7 @@ sub list_people {
 
    $opts->{prefetch} //= []; push @{ $opts->{prefetch} }, 'roles';
 
+   # TODO: Inefficient query not processing restriction on data server
    my $people = $self->list_all_people( $opts );
    my $type   = $self->$_find_role_type( $role );
 

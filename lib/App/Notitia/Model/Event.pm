@@ -34,7 +34,7 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{nav} = admin_navigation_links $req;
+   $stash->{nav }->{list    }   = admin_navigation_links $req;
    $stash->{page}->{location} //= 'admin';
 
    return $stash;
@@ -298,18 +298,21 @@ sub events : Role(any) {
    my ($self, $req) = @_;
 
    my $actionp   =  $self->moniker.'/event';
+   my $params    =  $req->query_params;
+   my $opts      =  { after  => $params->( 'after',  { optional => TRUE } ),
+                      before => $params->( 'before', { optional => TRUE } ), };
+   my $title     =  $opts->{after } ? 'current_events_heading'
+                 :  $opts->{before} ? 'previous_events_heading'
+                 :                    'events_management_heading';
    my $page      =  {
       fields     => {
          add     => create_link( $req, $actionp, 'event' ),
          headers => $_events_headers->( $req ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
-      title      => loc( $req, 'events_management_heading' ), };
+      title      => loc( $req, $title ), };
    my $event_rs  =  $self->schema->resultset( 'Event' );
    my $rows      =  $page->{fields}->{rows};
-   my $params    =  $req->query_params;
-   my $opts      =  { after  => $params->( 'after',  { optional => TRUE } ),
-                      before => $params->( 'before', { optional => TRUE } ), };
 
    for my $event (@{ $event_rs->list_all_events( $opts ) }) {
       push @{ $rows },

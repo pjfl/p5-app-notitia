@@ -3,7 +3,7 @@
 [% depth = 0 -%]
    <select onchange="if (this.value) window.location.href=this.value">
       <option value="">[% loc( 'Navigate the application') %]…</option>
-[% FOR node IN nav -%]
+[% FOR node IN nav.list -%]
 [%    WHILE node.depth < depth; depth = depth - 1 -%]
       </optgroup>
 [%    END -%]

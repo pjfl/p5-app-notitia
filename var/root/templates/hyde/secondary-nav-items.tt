@@ -3,7 +3,7 @@
 [% IF page.authenticated -%]
 [%    text = loc( 'Admin' ) -%]
 [%    tip  = loc( 'admin_index_title' ) -%]
-[%    href = uri_for_action( 'admin/index' ) -%]
+[%    href = nav.admin.href -%]
 [%    class = ''; IF page.location == 'admin'; class = 'current'; END -%]
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]

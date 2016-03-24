@@ -4,6 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( TRUE );
 use App::Notitia::Util      qw( dialog_anchor loc uri_for_action );
+use DateTime;
 use Try::Tiny;
 use Moo::Role;
 
@@ -37,6 +38,11 @@ around 'initialise_stash' => sub {
    $links->{cdnjs   } = $conf->cdnjs;
    $links->{base_uri} = $req->base;
    $links->{req_uri } = $req->uri;
+
+   my $now = DateTime->now;
+
+   $stash->{nav}->{admin}->{href} = uri_for_action $req, 'event/events', [],
+                           { after => $now->clone->subtract( days => 1 )->ymd };
 
    return $stash;
 };

@@ -201,6 +201,9 @@ msgstr "Create a new [_1] record"
 msgid "current_people_list_link"
 msgstr "Current People"
 
+msgid "current_events_heading"
+msgstr "Current Events"
+
 msgid "current_events_link"
 msgstr "Current"
 
@@ -557,6 +560,9 @@ msgstr "Points"
 
 msgid "postcode"
 msgstr "Postcode"
+
+msgid "previous_events_heading"
+msgstr "Previous Events"
 
 msgid "previous_events_link"
 msgstr "Previous"

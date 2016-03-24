@@ -6,7 +6,7 @@
 [% file_title   = loc( 'Hint' ) -%]
 [% folder_title = loc( 'Folder' ) -%]
       <ul class="posts post-list">
-[% FOREACH node IN nav -%]
+[% FOR node IN nav.list -%]
 [%    IF node.depth >= page.wanted_depth -%]
 [%       WHILE node.depth < depth; depth = depth - 1 -%]
             </ul>

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Eliminated admin index
           - Fixed prev and next links on month rota
           - Reposition event vehicle requests on day rota
           - Month rota adapts to differing slot limits
