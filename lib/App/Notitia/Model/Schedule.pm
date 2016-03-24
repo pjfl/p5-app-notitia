@@ -3,12 +3,12 @@ package App::Notitia::Model::Schedule;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SHIFT_TYPE_ENUM
                                 SPC TRUE );
-use App::Notitia::Util      qw( assign_link bind button dialog_anchor loc
-                                register_action_paths
+use App::Notitia::Util      qw( assign_link bind button dialog_anchor
+                                lcm_for loc register_action_paths
                                 rota_navigation_links set_element_focus
                                 slot_claimed slot_identifier slot_limit_index
                                 table_link uri_for_action );
-use Class::Usul::Functions  qw( throw );
+use Class::Usul::Functions  qw( sum throw );
 use Class::Usul::Time       qw( str2date_time time2str );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Moo;
@@ -163,6 +163,23 @@ my $_participents_link = sub {
                          href  => $href,  name => $name,
                          tip   => $tip,   type => 'link',
                          value => '&nbsp;', } };
+};
+
+my $_rota_cells = sub {
+   my ($shift_types, $slot_types, $limits, $span, $rows) = @_; my $cells = [];
+
+   for my $shift_type (@{ $shift_types }) {
+      for my $slot_type (@{ $slot_types }) {
+         my $i = slot_limit_index $shift_type, $slot_type;
+
+         for my $slotno (0 .. $limits->[ $i ] - 1) {
+            push @{ $cells }, $_rota_summary_link->
+               ( $span, $rows->{ "${shift_type}_${slot_type}_${slotno}" } );
+         }
+      }
+   }
+
+   return $cells;
 };
 
 my $_slot_link = sub {
@@ -357,22 +374,27 @@ my $_rota_summary = sub {
              vehicle_req => $slot->bike_requested };
    }
 
-   push @{ $cell->{rows} }, [ { colspan => 3, value => $date->day },
-                              { colspan => 9, value => $has_event } ];
+   my $rota = $page->{rota}; my $lcm = $rota->{lcm};
+
    push @{ $cell->{rows} },
-      [ $_rota_summary_link->( 4, $rows->{ 'day_controller_0'   } ),
-        $_rota_summary_link->( 4, $rows->{ 'day_controller_1'   } ),
-        $_rota_summary_link->( 4, $rows->{ 'night_controller_0' } ), ];
-   push @{ $cell->{rows} },
-      [ $_rota_summary_link->( 3, $rows->{ 'day_rider_0'  } ),
-        $_rota_summary_link->( 3, $rows->{ 'day_rider_1'  } ),
-        $_rota_summary_link->( 3, $rows->{ 'day_rider_2'  } ),
-        $_rota_summary_link->( 3, $rows->{ 'day_driver_0' } ), ];
-   push @{ $cell->{rows} },
-      [ $_rota_summary_link->( 3, $rows->{ 'night_rider_0'  } ),
-        $_rota_summary_link->( 3, $rows->{ 'night_rider_1'  } ),
-        $_rota_summary_link->( 3, $rows->{ 'night_rider_2'  } ),
-        $_rota_summary_link->( 3, $rows->{ 'night_driver_0' } ), ];
+      [ { colspan =>     $lcm / 4, value => $date->day },
+        { colspan => 3 * $lcm / 4, value => $has_event } ];
+
+   my $limits = $self->config->slot_limits;
+   my $span   = $lcm / $rota->{max_slots}->[ 0 ];
+
+   push @{ $cell->{rows} }, $_rota_cells->
+      ( [ 'day', 'night' ], [ 'controller' ], $limits, $span, $rows );
+
+   $span = $lcm / $rota->{max_slots}->[ 1 ];
+
+   push @{ $cell->{rows} }, $_rota_cells->
+      ( [ 'day' ], [ 'rider', 'driver' ], $limits, $span, $rows );
+
+   $span = $lcm / $rota->{max_slots}->[ 2 ];
+
+   push @{ $cell->{rows} }, $_rota_cells->
+      ( [ 'night' ], [ 'rider', 'driver' ], $limits, $span, $rows );
 
    my $actionp = $self->moniker.'/day_rota';
    my $href    = uri_for_action $req, $actionp, [ $name, $date->ymd ];
@@ -482,9 +504,17 @@ sub month_rota : Role(any) {
    my $title     =  ucfirst( loc( $req, $rota_name ) ).SPC
                  .  loc( $req, 'rota for' ).SPC.$month->month_name.SPC
                  .  $month->year;
+   my $limits    =  $self->config->slot_limits;
+   my $max_slots =  [ sum(map { $limits->[ slot_limit_index $_, 'controller' ] }
+                             @{ SHIFT_TYPE_ENUM() }),
+                      sum(map { $limits->[ slot_limit_index 'day', $_ ] }
+                                'rider', 'driver'),
+                      sum(map { $limits->[ slot_limit_index 'night', $_ ] }
+                                'rider', 'driver'), ];
+   my $lcm       =  lcm_for 4, @{ $max_slots };
    my $page      =  {
       fields     => {},
-      rota       => { rows => [] },
+      rota       => { lcm => $lcm, max_slots => $max_slots, rows => [] },
       template   => [ 'contents', 'rota', 'month-table' ],
       title      => $title, };
    my $first     =  $month->set_time_zone( 'floating' )

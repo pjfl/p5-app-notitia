@@ -12,7 +12,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.2.$Rev: 51 $ of [App::Notitia](https://metacpan.org/pod/App::Notitia)
+This documents version v0.2.$Rev: 57 $ of **App::Notitia**
 
 # Description
 
@@ -196,10 +196,6 @@ to emit the SQL it generates to `stderr`. On the production server
 # Project To Do List
 
 TODO: Setup a virtualbox environment to do Explorer testing
-
-TODO: Determine how to request a vehicle for an event
-
-TODO: Vehicle assigning should be moved to Slot to make URI more restful
 
 TODO: Loose traffic lights from rota
 

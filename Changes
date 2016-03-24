@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Month rota adapts to differing slot limits
           - Day rota displays vehicle request status
           - Day rota links to event vehicle requests
           - Can unassign vehicles from events

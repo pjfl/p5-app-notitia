@@ -7,7 +7,7 @@ use App::Notitia::Constants    qw( FALSE HASH_CHAR NUL SPC TILDE TRUE
                                    VARCHAR_MAX_SIZE );
 use Class::Usul::Functions     qw( class2appdir create_token
                                    ensure_class_loaded find_apphome
-                                   first_char get_cfgfiles is_arrayref
+                                   first_char fold get_cfgfiles is_arrayref
                                    is_hashref is_member throw );
 use Class::Usul::Time          qw( str2date_time str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
@@ -25,15 +25,15 @@ our @EXPORT_OK = qw( admin_navigation_links assign_link bind bind_fields
                      date_data_type delete_button dialog_anchor
                      enumerated_data_type enhance field_options
                      foreign_key_data_type get_hashed_pw get_salt is_draft
-                     is_encrypted iterator loc localise_tree make_id_from
-                     make_name_from make_tip management_link mtime new_salt
-                     nullable_foreign_key_data_type nullable_varchar_data_type
-                     numerical_id_data_type register_action_paths
-                     rota_navigation_links save_button serial_data_type
-                     set_element_focus set_on_create_datetime_data_type
-                     slot_claimed slot_identifier slot_limit_index show_node
-                     stash_functions table_link uri_for_action
-                     varchar_data_type );
+                     is_encrypted iterator lcm_for loc localise_tree
+                     make_id_from make_name_from make_tip management_link mtime
+                     new_salt nullable_foreign_key_data_type
+                     nullable_varchar_data_type numerical_id_data_type
+                     register_action_paths rota_navigation_links save_button
+                     serial_data_type set_element_focus
+                     set_on_create_datetime_data_type slot_claimed
+                     slot_identifier slot_limit_index show_node stash_functions
+                     table_link uri_for_action varchar_data_type );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -492,7 +492,7 @@ sub foreign_key_data_type (;$$) {
    return $type_info;
 }
 
-sub gcf {
+sub gcf ($$) {
    my ($x, $y) = @_; ($x, $y) = ($y, $x % $y) while ($y); return $x;
 }
 
@@ -542,8 +542,12 @@ sub iterator ($) {
    };
 }
 
-sub lcm {
+sub lcm ($$) {
    return $_[ 0 ] * $_[ 1 ] / gcf( $_[ 0 ], $_[ 1 ] );
+}
+
+sub lcm_for (@) {
+   return ((fold { lcm $_[ 0 ], $_[ 1 ] })->( shift ))->( @_ );
 }
 
 sub loc ($$;@) {
