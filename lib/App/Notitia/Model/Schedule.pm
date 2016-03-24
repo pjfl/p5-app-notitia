@@ -75,6 +75,17 @@ my $_headers = sub {
    return [ map {  $_header_label->( $_[ 0 ], $_ ) } 0 .. $_max_rota_cols - 1 ];
 };
 
+my $_month_rota_max_slots = sub {
+   my $limits = shift;
+
+   return [ sum( map { $limits->[ slot_limit_index $_, 'controller' ] }
+                    @{ SHIFT_TYPE_ENUM() } ),
+            sum( map { $limits->[ slot_limit_index 'day', $_ ] }
+                       'rider', 'driver' ),
+            sum( map { $limits->[ slot_limit_index 'night', $_ ] }
+                       'rider', 'driver' ), ];
+};
+
 my $_onchange_submit = sub {
    return "   behaviour.config.anchors[ 'rota_date' ] = {",
           "      method    : 'submitForm',",
@@ -165,7 +176,18 @@ my $_participents_link = sub {
                          value => '&nbsp;', } };
 };
 
-my $_rota_cells = sub {
+my $_slot_link = sub {
+   my ($req, $page, $rows, $k, $slot_type) = @_;
+
+   my $claimed = slot_claimed $rows->{ $k };
+   my $value   = $_slot_label->( $req, $rows->{ $k } );
+   my $tip     = loc( $req, ($claimed ? 'yield_slot_tip' : 'claim_slot_tip'),
+                      $slot_type );
+
+   return { colspan => 2, value => table_link( $req, $k, $value, $tip ) };
+};
+
+my $_summary_cells = sub {
    my ($shift_types, $slot_types, $limits, $span, $rows) = @_; my $cells = [];
 
    for my $shift_type (@{ $shift_types }) {
@@ -182,17 +204,6 @@ my $_rota_cells = sub {
    return $cells;
 };
 
-my $_slot_link = sub {
-   my ($req, $page, $rows, $k, $slot_type) = @_;
-
-   my $claimed = slot_claimed $rows->{ $k };
-   my $value   = $_slot_label->( $req, $rows->{ $k } );
-   my $tip     = loc( $req, ($claimed ? 'yield_slot_tip' : 'claim_slot_tip'),
-                      $slot_type );
-
-   return { colspan => 2, value => table_link( $req, $k, $value, $tip ) };
-};
-
 my $_vreq_state = sub {
    my ($tports, $vreqs) = @_;
 
@@ -203,7 +214,7 @@ my $_vreq_state = sub {
 };
 
 my $_vehicle_request_link = sub {
-   my ($schema, $req, $page, $event) = @_;
+   my ($schema, $req, $page, $event) = @_; $event or return;
 
    my $name     = 'view-vehicle-requests';
    my $href     = uri_for_action $req, 'asset/request_vehicle', [ $event->uri ];
@@ -286,12 +297,12 @@ my $_events = sub {
    my $first  = TRUE;
 
    while (defined (my $event = $todays_events->next) or $first) {
-      my $col2 = $_event_link->( $req, $page, $event );
-      my $col3 = $_vehicle_request_link->( $schema, $req, $page, $event );
+      my $col2 = $_vehicle_request_link->( $schema, $req, $page, $event );
+      my $col3 = $_event_link->( $req, $page, $event );
       my $col4 = $_participents_link->( $req, $page, $event );
-      my $cols = [ $col1, $col2 ];
+      my $cols = [ $col1, $col2, $col3 ];
 
-      $col3 and push @{ $cols }, $col3; $col4 and push @{ $cols }, $col4;
+      $col4 and push @{ $cols }, $col4;
       push @{ $page->{rota}->{events} }, $cols;
       $col1 = { value => undef }; $first = FALSE;
    }
@@ -351,6 +362,35 @@ my $_find_rota_type_id_for = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] )->id;
 };
 
+my $_summary_table = sub {
+   my ($self, $page, $date, $has_event, $rows) = @_;
+
+   my $rota   = $page->{rota};
+   my $lcm    = $rota->{lcm};
+   my $limits = $self->config->slot_limits;
+   my $span   = $lcm / $rota->{max_slots}->[ 0 ];
+   my $table  = { class => 'month-rota', rows => [], type => 'table' };
+
+   push @{ $table->{rows} },
+      [ { colspan =>     $lcm / 4, value => $date->day },
+        { colspan => 3 * $lcm / 4, value => $has_event } ];
+
+   push @{ $table->{rows} }, $_summary_cells->
+      ( [ 'day', 'night' ], [ 'controller' ], $limits, $span, $rows );
+
+   $span = $lcm / $rota->{max_slots}->[ 1 ];
+
+   push @{ $table->{rows} }, $_summary_cells->
+      ( [ 'day' ], [ 'rider', 'driver' ], $limits, $span, $rows );
+
+   $span = $lcm / $rota->{max_slots}->[ 2 ];
+
+   push @{ $table->{rows} }, $_summary_cells->
+      ( [ 'night' ], [ 'rider', 'driver' ], $limits, $span, $rows );
+
+   return $table;
+};
+
 my $_rota_summary = sub {
    my ($self, $req, $page, $name, $date) = @_;
 
@@ -361,48 +401,25 @@ my $_rota_summary = sub {
    my $event_rs  = $self->schema->resultset( 'Event' );
    my $events    = $event_rs->count_events_for( $type_id, $date->ymd );
    my $has_event = $events > 0 ? loc( $req, 'Events' ) : NUL;
-   my $cell      = { class => 'month-rota', rows => [], type => 'table' };
    my $rows      = {};
 
    for my $slot ($slots->all) {
       my $shift = $slot->shift;
       my $key   = $shift->type_name.'_'.$slot->type_name.'_'.$slot->subslot;
 
-      $rows->{ $key }
-         = { name        => $key,
-             vehicle     => $slot->vehicle,
-             vehicle_req => $slot->bike_requested };
+      $rows->{ $key } = { name        => $key,
+                          vehicle     => $slot->vehicle,
+                          vehicle_req => $slot->bike_requested };
    }
 
-   my $rota = $page->{rota}; my $lcm = $rota->{lcm};
-
-   push @{ $cell->{rows} },
-      [ { colspan =>     $lcm / 4, value => $date->day },
-        { colspan => 3 * $lcm / 4, value => $has_event } ];
-
-   my $limits = $self->config->slot_limits;
-   my $span   = $lcm / $rota->{max_slots}->[ 0 ];
-
-   push @{ $cell->{rows} }, $_rota_cells->
-      ( [ 'day', 'night' ], [ 'controller' ], $limits, $span, $rows );
-
-   $span = $lcm / $rota->{max_slots}->[ 1 ];
-
-   push @{ $cell->{rows} }, $_rota_cells->
-      ( [ 'day' ], [ 'rider', 'driver' ], $limits, $span, $rows );
-
-   $span = $lcm / $rota->{max_slots}->[ 2 ];
-
-   push @{ $cell->{rows} }, $_rota_cells->
-      ( [ 'night' ], [ 'rider', 'driver' ], $limits, $span, $rows );
-
+   my $table   = $self->$_summary_table( $page, $date, $has_event, $rows );
    my $actionp = $self->moniker.'/day_rota';
    my $href    = uri_for_action $req, $actionp, [ $name, $date->ymd ];
    my $id      = "${name}_".$date->ymd;
 
    push @{ $page->{literal_js} }, $_onclick_relocate->( $id, $href );
 
-   return { class => 'month-rota windows', name => $id, value => $cell };
+   return { class => 'month-rota windows', name => $id, value => $table };
 };
 
 my $_get_page = sub {
@@ -504,13 +521,7 @@ sub month_rota : Role(any) {
    my $title     =  ucfirst( loc( $req, $rota_name ) ).SPC
                  .  loc( $req, 'rota for' ).SPC.$month->month_name.SPC
                  .  $month->year;
-   my $limits    =  $self->config->slot_limits;
-   my $max_slots =  [ sum(map { $limits->[ slot_limit_index $_, 'controller' ] }
-                             @{ SHIFT_TYPE_ENUM() }),
-                      sum(map { $limits->[ slot_limit_index 'day', $_ ] }
-                                'rider', 'driver'),
-                      sum(map { $limits->[ slot_limit_index 'night', $_ ] }
-                                'rider', 'driver'), ];
+   my $max_slots =  $_month_rota_max_slots->( $self->config->slot_limits );
    my $lcm       =  lcm_for 4, @{ $max_slots };
    my $page      =  {
       fields     => {},
