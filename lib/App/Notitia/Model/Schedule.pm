@@ -523,13 +523,18 @@ sub month_rota : Role(any) {
                  .  $month->year;
    my $max_slots =  $_month_rota_max_slots->( $self->config->slot_limits );
    my $lcm       =  lcm_for 4, @{ $max_slots };
+   my $first     =  $month->set_time_zone( 'floating' )
+                          ->truncate( to => 'day' )->set( day => 1 );
+   my $actionp   =  $self->moniker.'/month_rota';
+   my $prev      =  uri_for_action $req, $actionp,
+                    [ $rota_name, $first->clone->subtract( months => 1 )->ymd ];
+   my $next      =  uri_for_action $req, $actionp,
+                    [ $rota_name, $first->clone->add( months => 1 )->ymd ];
    my $page      =  {
-      fields     => {},
+      fields     => { nav => { next => $next, prev => $prev }, },
       rota       => { lcm => $lcm, max_slots => $max_slots, rows => [] },
       template   => [ 'contents', 'rota', 'month-table' ],
       title      => $title, };
-   my $first     =  $month->set_time_zone( 'floating' )
-                          ->truncate( to => 'day' )->set( day => 1 );
 
    for my $rno (0 .. 4) {
       my $row = [];
