@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added placeholders for Util docs
           - Eliminated admin index
           - Fixed prev and next links on month rota
           - Reposition event vehicle requests on day rota

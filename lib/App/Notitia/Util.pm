@@ -25,15 +25,16 @@ our @EXPORT_OK = qw( admin_navigation_links assign_link bind bind_fields
                      date_data_type delete_button dialog_anchor
                      enumerated_data_type enhance field_options
                      foreign_key_data_type get_hashed_pw get_salt is_draft
-                     is_encrypted iterator lcm_for loc localise_tree
-                     make_id_from make_name_from make_tip management_link mtime
-                     new_salt nullable_foreign_key_data_type
-                     nullable_varchar_data_type numerical_id_data_type
-                     register_action_paths rota_navigation_links save_button
-                     serial_data_type set_element_focus
-                     set_on_create_datetime_data_type slot_claimed
-                     slot_identifier slot_limit_index show_node stash_functions
-                     table_link uri_for_action varchar_data_type );
+                     is_encrypted iterator js_anchor_config lcm_for loc
+                     localise_tree make_id_from make_name_from make_tip
+                     management_link mtime new_salt
+                     nullable_foreign_key_data_type nullable_varchar_data_type
+                     numerical_id_data_type register_action_paths
+                     rota_navigation_links save_button serial_data_type
+                     set_element_focus set_on_create_datetime_data_type
+                     slot_claimed slot_identifier slot_limit_index show_node
+                     stash_functions table_link uri_for_action
+                     varchar_data_type );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -435,11 +436,7 @@ sub delete_button ($$;$) {
 sub dialog_anchor ($$$) {
    my ($k, $href, $opts) = @_;
 
-   my $args = $json_coder->encode( [ "${href}", $opts ] );
-
-   return "   behaviour.config.anchors[ '${k}' ] = {",
-          "      method    : 'modalDialog',",
-          "      args      : ${args} };";
+   return js_anchor_config( $k, 'modalDialog', 'click', [ "${href}", $opts ] );
 }
 
 sub enumerated_data_type ($;$) {
@@ -540,6 +537,15 @@ sub iterator ($) {
 
       return;
    };
+}
+
+sub js_anchor_config ($$$$) {
+   my ($k, $method, $event, $args) = @_; $args = $json_coder->encode( $args );
+
+   return "   behaviour.config.anchors[ '${k}' ] = {",
+          "      event     : '${event}',",
+          "      method    : '${method}',",
+          "      args      : ${args} };";
 }
 
 sub lcm ($$) {
@@ -790,32 +796,174 @@ __END__
 
 =head1 Name
 
-App::Notitia::Util - People and resource scheduling
+App::Notitia::Util - Functions used in this application
 
 =head1 Synopsis
 
-   use App::Notitia::Util;
-   # Brief but working code examples
+   use App::Notitia::Util qw( uri_for_action );
+
+   my $uri = uri_for_action $req, $action_path, $args, $params;
 
 =head1 Description
 
+Functions used in this application
+
 =head1 Configuration and Environment
 
-Defines the following attributes;
-
-=over 3
-
-=back
+Defines no attributes
 
 =head1 Subroutines/Methods
 
+=item C<admin_navigation_links>
+
+=item C<assign_link>
+
+=item C<bind>
+
+=item C<bind_fields>
+
+=item C<bool_data_type>
+
+=item C<build_navigation>
+
+=item C<build_tree>
+
+=item C<button>
+
+=item C<check_field_server>
+
+=item C<check_form_field>
+
+=item C<clone>
+
+=item C<create_link>
+
+=item C<date_data_type>
+
+=item C<delete_button>
+
+=item C<dialog_anchor>
+
+=item C<enhance>
+
+=item C<enumerated_data_type>
+
+=item C<field_options>
+
+=item C<foreign_key_data_type>
+
+=item C<gcf>
+
+Greatest common factor
+
+=item C<get_hashed_pw>
+
+=item C<get_salt>
+
+=item C<is_draft>
+
+=item C<is_encrypted>
+
+=item C<iterator>
+
+=item C<js_anchor_config>
+
+=item C<lcm>
+
+Least common muliple
+
+=item C<lcm_for>
+
+LCM for a list of integers
+
+=item C<loc>
+
+=item C<localise_tree>
+
+=item C<make_id_from>
+
+=item C<make_name_from>
+
+=item C<make_tip>
+
+=item C<management_link>
+
+=item C<mtime>
+
+=item C<new_salt>
+
+=item C<nullable_foreign_key_data_type>
+
+=item C<nullable_varchar_data_type>
+
+=item C<numerical_id_data_type>
+
+=item C<register_action_paths>
+
+   register_action_paths $action_path => $partial_uri;
+
+Used by L</uri_for_action> to lookup the partial URI for the action path
+prior to calling L<uri_for|Web::ComposableRequest::Base/uri_for>
+
+=item C<rota_navigation_links>
+
+=item C<save_button>
+
+=item C<serial_data_type>
+
+=item C<set_element_focus>
+
+=item C<set_on_create_datetime_data_type>
+
+=item C<show_node>
+
+=item C<slot_claimed>
+
+=item C<slot_identifier>
+
+=item C<slot_limit_index>
+
+=item C<stash_functions>
+
+=item C<table_link>
+
+=item C<uri_for_action>
+
+   $uri = uri_for_action $request, $action_path, $uri_args, $query_params;
+
+Looks up the action path in the map created by call to L</register_action_path>
+then calls L<uri_for|Web::ComposableRequest::Base/uri_for> which is a method
+provided by the request object. Returns a L<URI> object reference
+
+=item C<varchar_data_type>
+
 =head1 Diagnostics
+
+None
 
 =head1 Dependencies
 
 =over 3
 
+=item L<strictures>
+
 =item L<Class::Usul>
+
+=item L<Crypt::Eksblowfish::Bcrypt>
+
+=item L<Data::Validation>
+
+=item L<DateTime>
+
+=item L<Exporter::Tiny>
+
+=item L<HTTP::Status>
+
+=item L<JSON::MaybeXS>
+
+=item L<Try::Tiny>
+
+=item L<YAML::Tiny>
 
 =back
 

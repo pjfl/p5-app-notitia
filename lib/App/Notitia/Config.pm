@@ -206,7 +206,7 @@ has 'serve_as_static' => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'css | favicon.ico | fonts | img | js | less';
 
 has 'server'          => is => 'ro',   isa => NonEmptySimpleStr,
-   default            => 'Starman';
+   default            => 'FCGI';
 
 has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
    builder            => sub { {
@@ -519,8 +519,8 @@ should be a unique value for each installation of this application
 =item C<port>
 
 A lazily evaluated non zero positive integer that defaults to 8085. This
-is the port number that the application server will listen on by default
-when started by the control daemon
+is the port number that the application server will listen on if started
+in production mode with a L<Plack> engine that listens on a port
 
 =item C<posts>
 
@@ -558,8 +558,8 @@ by L<Plack::Middleware::Static>
 
 =item C<server>
 
-A non empty simple string that defaults to C<Starman>. The L<Plack> engine
-name to load when the documentation server is started in production mode
+A non empty simple string that defaults to C<FCGI>. The L<Plack> engine
+name to load when the application server is started in production mode
 
 =item C<session_attr>
 

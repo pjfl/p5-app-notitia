@@ -4,10 +4,10 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SHIFT_TYPE_ENUM
                                 SPC TRUE );
 use App::Notitia::Util      qw( assign_link bind button dialog_anchor
-                                lcm_for loc register_action_paths
-                                rota_navigation_links set_element_focus
-                                slot_claimed slot_identifier slot_limit_index
-                                table_link uri_for_action );
+                                js_anchor_config lcm_for loc
+                                register_action_paths rota_navigation_links
+                                set_element_focus slot_claimed slot_identifier
+                                slot_limit_index table_link uri_for_action );
 use Class::Usul::Functions  qw( sum throw );
 use Class::Usul::Time       qw( str2date_time time2str );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
@@ -87,19 +87,14 @@ my $_month_rota_max_slots = sub {
 };
 
 my $_onchange_submit = sub {
-   return "   behaviour.config.anchors[ 'rota_date' ] = {",
-          "      method    : 'submitForm',",
-          "      event     : 'change',",
-          "      args      : [ 'rota_redirect', 'day-rota' ] };";
+   return js_anchor_config 'rota_date', 'submitForm', 'change',
+                         [ 'rota_redirect', 'day-rota' ];
 };
 
 my $_onclick_relocate = sub {
    my ($k, $href) = @_;
 
-   return "   behaviour.config.anchors[ '${k}' ] = {",
-          "      method    : 'location',",
-          "      event     : 'click',",
-          "      args      : [ '${href}' ] };";
+   return js_anchor_config $k, 'location', 'click', [ "${href}" ];
 };
 
 my $_operators_vehicle = sub {

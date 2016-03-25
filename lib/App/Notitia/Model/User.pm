@@ -128,7 +128,6 @@ sub check_field : Role(any) {
 sub login : Role(anon) {
    my ($self, $req) = @_;
 
-   my $title      =  $req->authenticated ? 'main_index_title' : 'login_title';
    my $opts       =  { params => [ $self->config->title ],
                        no_quote_bind_values => TRUE, };
    my $page       =  {
@@ -136,7 +135,7 @@ sub login : Role(anon) {
       first_field => 'username',
       location    => 'home',
       template    => [ 'contents', 'login' ],
-      title       => loc( $req, $title, $opts ), };
+      title       => loc( $req, 'login_title', $opts ), };
    my $fields     =  $page->{fields};
 
    $fields->{password} = bind 'password', NUL;

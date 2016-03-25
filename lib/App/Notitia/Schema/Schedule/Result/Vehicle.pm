@@ -65,8 +65,8 @@ my $_assert_event_assignment_allowed = sub {
                and throw 'Vehicle [_1] already assigned to this event',
                          [ $self ], level => 2;
             # TODO: Test for overlapping times
-            throw 'Vehicle [_1] already assigned to event [_2]',
-                  [ $self, $event ], level => 2;
+            throw 'Vehicle [_1] already assigned to another event',
+                  [ $self ], level => 2;
          }
       }
    }
