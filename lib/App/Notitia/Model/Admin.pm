@@ -155,18 +155,12 @@ my $_assert_not_self = sub {
 };
 
 my $_maybe_find_person = sub {
-   return $_[ 1 ] ? $_[ 0 ]->find_person_by( $_[ 1 ] ) : Class::Null->new;
+   return $_[ 1 ] ? $_[ 0 ]->find_by_shortcode( $_[ 1 ] ) : Class::Null->new;
 };
 
 my $_maybe_find_type = sub {
    return $_[ 2 ] ? $_[ 0 ]->find_type_by( $_[ 2 ], $_[ 1 ] )
                   : Class::Null->new;
-};
-
-my $_new_username = sub {
-   my ($schema, $person) = @_; my $rs = $schema->resultset( 'Person' );
-
-   return $rs->new_person_id( $person->first_name, $person->last_name );
 };
 
 my $_next_of_kin_list = sub {
@@ -259,9 +253,7 @@ my $_update_person_from_request = sub {
       $person->$attr( $v );
    }
 
-   $person->name( $params->( 'username', $opts )
-                  || $_new_username->( $schema, $person ) );
-
+   $person->name( $params->( 'username', $opts ) );
    $person->next_of_kin
       ( $_assert_not_self->( $person, $params->( 'next_of_kin', $opts ) ) );
 
@@ -294,7 +286,7 @@ my $_create_person_email = sub {
       template        => 'user_email',
       to              => $person->email_address, };
 
-   $conf->sessdir->catfile( $key )->println( $person->name );
+   $conf->sessdir->catfile( $key )->println( $person->shortcode );
 
    my $r = $self->send_email( $post );
    my ($id) = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
@@ -318,12 +310,11 @@ sub activate : Role(anon) {
    my $path = $self->config->sessdir->catfile( $file );
 
    if ($path->exists and $path->is_file) {
-      my $name = $path->chomp->getline; $path->unlink;
-
-      $self->find_person_by( $name )->activate;
+      my $name   = $path->chomp->getline; $path->unlink;
+      my $person = $self->find_by_shortcode( $name ); $person->activate;
 
       $location = uri_for_action $req, 'user/change_password', [ $name ];
-      $message  = [ 'Person [_1] account activated', $name ];
+      $message  = [ 'Person [_1] account activated', $person->label ];
    }
    else {
       $location = $req->base_uri;
@@ -374,9 +365,9 @@ sub create_person_action : Role(person_manager) {
       or $self->$_create_person_email( $req, $person, $password );
 
    my $actionp  = $self->moniker.'/person';
-   my $location = uri_for_action $req, $actionp, [ $person->name ];
+   my $location = uri_for_action $req, $actionp, [ $person->shortcode ];
    my $message  =
-      [ 'Person [_1] created by [_2]', $person->name, $req->username ];
+      [ '[_1] created by [_2]', $person->label, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -385,15 +376,16 @@ sub delete_person_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name     = $req->uri_params->( 0 );
-   my $person   = $self->find_person_by( $name ); $person->delete;
+   my $person   = $self->find_by_shortcode( $name );
+   my $label    = $person->label; $person->delete;
    my $location = uri_for_action $req, $self->moniker.'/people';
-   my $message  = [ 'Person [_1] deleted by [_2]', $name, $req->username ];
+   my $message  = [ 'Person [_1] deleted by [_2]', $label, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
 
-sub find_person_by {
-   return shift->schema->resultset( 'Person' )->find_person_by( @_ );
+sub find_by_shortcode {
+   return shift->schema->resultset( 'Person' )->find_by_shortcode( @_ );
 }
 
 sub person : Role(person_manager) {
@@ -576,12 +568,13 @@ sub update_person_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name   = $req->uri_params->( 0 );
-   my $person = $self->find_person_by( $name );
+   my $person = $self->find_by_shortcode( $name );
+   my $label  = $person->label;
 
    $_update_person_from_request->( $req, $self->schema, $person );
    $person->update;
 
-   my $message = [ 'Person [_1] updated by [_2]', $name, $req->username ];
+   my $message = [ 'Person [_1] updated by [_2]', $label, $req->username ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }

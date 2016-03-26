@@ -56,14 +56,14 @@ sub add_role_action : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name   = $req->uri_params->( 0 );
-   my $person = $self->schema->resultset( 'Person' )->find_person_by( $name );
+   my $person = $self->schema->resultset( 'Person' )->find_by_shortcode( $name);
    my $roles  = $req->body_params->( 'roles', { multiple => TRUE } );
 
    $person->add_member_to( $_ ) for (@{ $roles });
 
    my $location = uri_for_action( $req, $self->moniker.'/role', [ $name ] );
    my $message  =
-      [ 'Person [_1] role(s) added by [_2]', $name, $req->username ];
+      [ '[_1] role(s) added by [_2]', $person->label, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -72,14 +72,14 @@ sub remove_role_action : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name   = $req->uri_params->( 0 );
-   my $person = $self->schema->resultset( 'Person' )->find_person_by( $name );
+   my $person = $self->schema->resultset( 'Person' )->find_by_shortcode( $name);
    my $roles  = $req->body_params->( 'person_roles', { multiple => TRUE } );
 
    $person->delete_member_from( $_ ) for (@{ $roles });
 
    my $location = uri_for_action( $req, $self->moniker.'/role', [ $name ] );
    my $message  =
-      [ 'Person [_1] role(s) removed by [_2]', $name, $req->username ];
+      [ '[_1] role(s) removed by [_2]', $person->label, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -89,7 +89,7 @@ sub role : Role(administrator) Role(person_manager) {
 
    my $name      =  $req->uri_params->( 0 );
    my $person_rs =  $self->schema->resultset( 'Person' );
-   my $person    =  $person_rs->find_person_by( $name );
+   my $person    =  $person_rs->find_by_shortcode( $name );
    my $href      =  uri_for_action( $req, $self->moniker.'/role', [ $name ] );
    my $page      =  {
       fields     => { href => $href },
@@ -100,7 +100,7 @@ sub role : Role(administrator) Role(person_manager) {
    my $person_roles = $person->list_roles;
    my $available    = $_subtract->( $self->$_list_all_roles, $person_roles );
 
-   $fields->{username} = bind 'username', $name, { disabled => TRUE };
+   $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
    $fields->{roles}
       = bind 'roles', $available, { multiple => TRUE, size => 5 };
    $fields->{person_roles}

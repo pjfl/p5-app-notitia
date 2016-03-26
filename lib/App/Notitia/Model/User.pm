@@ -59,7 +59,7 @@ my $_create_reset_email = sub {
       template        => 'password_email',
       to              => $person->email_address, };
 
-   $conf->sessdir->catfile( $key )->println( $person->name."/${password}" );
+   $conf->sessdir->catfile( $key )->println( $person->shortcode."/${password}");
 
    my $r = $self->send_email( $post );
    my ($id) = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
@@ -107,14 +107,15 @@ sub change_password_action : Role(anon) {
    my $oldpass  = $params->( 'oldpass',  { raw => TRUE } );
    my $password = $params->( 'password', { raw => TRUE } );
    my $again    = $params->( 'again',    { raw => TRUE } );
-   my $person   = $self->schema->resultset( 'Person' )->find_person_by( $name );
+   my $person   = $self->schema->resultset( 'Person' )->find_person( $name );
 
    $password eq $again
       or throw 'Passwords do not match', rv => HTTP_EXPECTATION_FAILED;
    $person->set_password( $oldpass, $password );
-   $req->session->username( $name ); $req->session->authenticated( TRUE );
+   $req->session->authenticated( TRUE );
+   $req->session->username( $person->shortcode );
 
-   my $message = [ 'Person [_1] password changed', $name ];
+   my $message = [ '[_1] password changed', $person->label ];
 
    return { redirect => { location => $req->base, message => $message } };
 }
@@ -139,29 +140,29 @@ sub login : Role(anon) {
    my $fields     =  $page->{fields};
 
    $fields->{password} = bind 'password', NUL;
-   $fields->{username} = bind 'username', $req->username;
+   $fields->{username} = bind 'username', NUL;
    $fields->{login   } = bind 'login',    'login', { class => 'right-last' };
 
    return $self->get_stash( $req, $page );
 }
 
 sub login_action : Role(anon) {
-   my ($self, $req) = @_; my $message;
+   my ($self, $req) = @_;
 
    my $session   = $req->session;
    my $params    = $req->body_params;
    my $name      = $params->( 'username' );
    my $password  = $params->( 'password', { raw => TRUE } );
    my $person_rs = $self->schema->resultset( 'Person' );
+   my $person    = $person_rs->find_person( $name );
 
-   $person_rs->find_person_by( $name )->authenticate( $password );
-   $session->authenticated( TRUE ); $session->username( $name );
-   $message = [ 'Person [_1] logged in', $name ];
+   $person->authenticate( $password );
+   $session->authenticated( TRUE );
+   $session->username( $person->shortcode );
 
-   my $wanted    = $session->wanted;
+   my $message   = [ '[_1] logged in', $person->label ];
+   my $wanted    = $session->wanted; $req->session->wanted( NUL );
    my $location  = $wanted ? uri_for_action( $req, $wanted ) : $req->base;
-
-   $req->session->wanted( NUL );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -181,9 +182,9 @@ sub logout_action : Role(any) {
 sub profile : Role(any) {
    my ($self, $req) = @_;
 
-   my $stash     = $self->dialog_stash( $req, 'profile-user' );
    my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_person_by( $req->username );
+   my $person    = $person_rs->find_by_shortcode( $req->username );
+   my $stash     = $self->dialog_stash( $req, 'profile-user' );
    my $page      = $stash->{page};
    my $fields    = $page->{fields};
 
@@ -194,7 +195,7 @@ sub profile : Role(any) {
    $fields->{postcode     } = bind 'postcode',      $person->postcode;
    $fields->{update       } = bind 'update', 'update_profile',
                                     { class => 'right-last' };
-   $fields->{username     } = bind 'username',      $person->name,
+   $fields->{username     } = bind 'username',      $person->label,
                                     { disabled => TRUE };
    $page->{literal_js     } = set_element_focus 'profile-user', 'address';
 
@@ -220,13 +221,13 @@ sub request_reset_action : Role(anon) {
    my ($self, $req) = @_;
 
    my $name     = $req->body_params->( 'username' );
-   my $person   = $self->schema->resultset( 'Person' )->find_person_by( $name );
+   my $person   = $self->schema->resultset( 'Person' )->find_person( $name );
    my $password = substr create_token, 0, 12;
 
    $self->config->no_user_email
       or $self->$_create_reset_email( $req, $person, $password );
 
-   my $message  = [ 'Person [_1] password reset requested', $name ];
+   my $message  = [ '[_1] password reset requested', $person->label ];
 
    return { redirect => { location => $req->base, message => $message } };
 }
@@ -241,12 +242,12 @@ sub reset_password : Role(anon) {
       my $schema = $self->schema;
       my $token  = $path->chomp->getline; $path->unlink;
       my ($name, $password) = split m{ / }mx, $token, 2;
-      my $person = $schema->resultset( 'Person' )->find_person_by( $name );
+      my $person = $schema->resultset( 'Person' )->find_by_shortcode( $name );
 
       $person->password( $password ); $person->password_expired( TRUE );
       $person->update;
       $location = uri_for_action $req, 'user/change_password', [ $name ];
-      $message  = [ 'Person [_1] password reset', $name ];
+      $message  = [ '[_1] password reset', $person->label ];
    }
    else {
       $location = $req->base_uri;
@@ -261,12 +262,12 @@ sub update_profile_action : Role(any) {
 
    my $name   = $req->username;
    my $params = $req->body_params;
-   my $person = $self->schema->resultset( 'Person' )->find_person_by( $name );
+   my $person = $self->schema->resultset( 'Person' )->find_by_shortcode( $name);
    my $opts   = { raw => TRUE, optional => TRUE };
 
    $person->$_( $params->( $_, $opts ) ) for (@{ $self->profile_keys });
 
-   $person->update; my $message = [ 'Person [_1] profile updated', $name ];
+   $person->update; my $message = [ '[_1] profile updated', $person->label ];
 
    return { redirect => { location => $req->base, message => $message } };
 }

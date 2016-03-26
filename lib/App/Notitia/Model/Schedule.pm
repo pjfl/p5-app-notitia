@@ -458,7 +458,7 @@ sub claim_slot_action : Role(bike_rider) Role(controller) Role(driver) {
    my $opts      = { optional => TRUE };
    my $bike      = $req->body_params->( 'request_bike', $opts ) // FALSE;
    my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_person_by( $req->username );
+   my $person    = $person_rs->find_by_shortcode( $req->username );
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
@@ -470,7 +470,7 @@ sub claim_slot_action : Role(bike_rider) Role(controller) Role(driver) {
    my $location = uri_for_action $req, 'sched/day_rota', $args;
    my $label    = slot_identifier
                      $rota_name, $rota_date, $shift_type, $slot_type, $subslot;
-   my $message  = [ 'User [_1] claimed slot [_2]', $req->username, $label ];
+   my $message  = [ 'User [_1] claimed slot [_2]', $person->label, $label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -593,7 +593,7 @@ sub yield_slot_action : Role(rota_manager) Role(bike_rider) Role(controller)
    my $rota_date = $params->( 1 );
    my $slot_name = $params->( 2 );
    my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_person_by( $req->username );
+   my $person    = $person_rs->find_by_shortcode( $req->username );
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
 
@@ -604,7 +604,7 @@ sub yield_slot_action : Role(rota_manager) Role(bike_rider) Role(controller)
    my $location = uri_for_action( $req, 'sched/day_rota', $args );
    my $label    = slot_identifier( $rota_name, $rota_date,
                                    $shift_type, $slot_type, $subslot );
-   my $message  = [ 'User [_1] yielded slot [_2]', $req->username, $label ];
+   my $message  = [ 'User [_1] yielded slot [_2]', $person->label, $label ];
 
    return { redirect => { location => $location, message => $message } };
 }

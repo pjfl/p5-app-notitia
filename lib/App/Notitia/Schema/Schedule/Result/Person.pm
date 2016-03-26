@@ -33,6 +33,7 @@ $class->add_columns
      joined           => date_data_type,
      resigned         => date_data_type,
      subscription     => date_data_type,
+     shortcode        => varchar_data_type(   6 ),
      name             => varchar_data_type(  64 ),
      password         => varchar_data_type( 128 ),
      first_name       => varchar_data_type(  30 ),
@@ -48,6 +49,7 @@ $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'name' ] );
 $class->add_unique_constraint( [ 'email_address' ] );
+$class->add_unique_constraint( [ 'shortcode' ] );
 
 $class->belongs_to( next_of_kin => "${class}" );
 
@@ -63,7 +65,7 @@ sub _as_number {
 }
 
 sub _as_string {
-   return $_[ 0 ]->name;
+   return $_[ 0 ]->shortcode;
 }
 
 my $_assert_claim_allowed = sub {
@@ -107,9 +109,9 @@ my $_assert_yield_allowed = sub {
 };
 
 my $_encrypt_password = sub {
-   my ($self, $name, $password, $stored) = @_;
+   my ($self, $shortcode, $password, $stored) = @_;
 
-   # Name attribute used by alternative encryption schemes
+   # Shortcode attribute used by alternative encryption schemes
    my $lf   = $self->result_source->schema->config->load_factor;
    my $salt = defined $stored ? get_salt( $stored ) : new_salt( '2a', $lf );
 
@@ -126,6 +128,50 @@ my $_find_role_type = sub {
    my ($self, $name) = @_; my $schema = $self->result_source->schema;
 
    return $schema->resultset( 'Type' )->find_role_by( $name );
+};
+
+my $_new_shortcode = sub {
+   my ($self, $first_name, $last_name) = @_; my $cache = {}; my $lid;
+
+   my $schema = $self->result_source->schema; my $conf = $schema->config;
+
+   my $name = lc "${last_name}${first_name}"; $name =~ s{ [ \-\'] }{}gmx;
+
+   if ((length $name) < $conf->min_name_length) {
+      throw 'Person name [_1] too short [_2] character min.',
+            [ $first_name.SPC.$last_name, $conf->min_name_length ];
+   }
+
+   my $min_id_len = $conf->min_id_length;
+   my $prefix     = $conf->person_prefix; $prefix or return;
+   my $lastp      = length $name < $min_id_len ? length $name : $min_id_len;
+   my @chars      = (); $chars[ $_ ] = $_ for (0 .. $lastp - 1);
+   my $person_rs  = $schema->resultset( 'Person' );
+
+   while ($chars[ $lastp - 1 ] < length $name) {
+      my $i = 0; $lid = NUL;
+
+      while ($i < $lastp) { $lid .= substr $name, $chars[ $i++ ], 1 }
+
+      $person_rs->is_person( $prefix.$lid, $cache ) or last;
+
+      $i = $lastp - 1; $chars[ $i ] += 1;
+
+      while ($i >= 0 and $chars[ $i ] >= length $name) {
+         my $ripple = $i - 1; $chars[ $ripple ] += 1;
+
+         while ($ripple < $lastp) {
+            my $carry = $ripple + 1; $chars[ $carry ] = $chars[ $ripple++ ] + 1;
+         }
+
+         $i--;
+      }
+   }
+
+   $chars[ $lastp - 1 ] >= length $name
+       and throw 'Person name [_1] no ids left', [ $first_name.SPC.$last_name ];
+   $lid or throw 'Person name [_1] no id', [ $name ];
+   return $prefix.$lid;
 };
 
 # Public methods
@@ -213,8 +259,9 @@ sub authenticate {
    $self->password_expired and not $for_update
       and throw PasswordExpired,   [ $self ], rv => HTTP_UNAUTHORIZED;
 
-   my $stored   = $self->password || NUL;
-   my $supplied = $self->$_encrypt_password( $self->name, $passwd, $stored );
+   my $shortcode = $self->shortcode;
+   my $stored    = $self->password || NUL;
+   my $supplied  = $self->$_encrypt_password( $shortcode, $passwd, $stored );
 
    $supplied eq $stored
       or  throw IncorrectPassword, [ $self ], rv => HTTP_UNAUTHORIZED;
@@ -251,13 +298,17 @@ sub delete_participent_for {
 }
 
 sub insert {
-   my $self     = shift;
-   my $columns  = { $self->get_inflated_columns };
-   my $password = $columns->{password};
-   my $name     = $columns->{name};
+   my $self      = shift;
+   my $columns   = { $self->get_inflated_columns };
+   my $first     = $columns->{first_name};
+   my $last      = $columns->{last_name};
+   my $password  = $columns->{password};
 
+   $columns->{name} or $columns->{name} = lc "${first}.${last}";
+   $columns->{shortcode} or $columns->{shortcode}
+      = $self->$_new_shortcode( $first, $last );
    $password and not is_encrypted( $password ) and $columns->{password}
-      = $self->$_encrypt_password( $name, $password );
+      = $self->$_encrypt_password( $columns->{shortcode}, $password );
    $self->set_inflated_columns( $columns );
 
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
@@ -297,7 +348,7 @@ sub is_participent_of {
 }
 
 sub label {
-   return $_[ 0 ]->first_name.SPC.$_[ 0 ]->last_name;
+   return ucfirst( $_[ 0 ]->first_name ).SPC.$_[ 0 ]->last_name;
 }
 
 sub list_roles {
@@ -322,10 +373,10 @@ sub update {
    $columns and $self->set_inflated_columns( $columns );
    $columns = { $self->get_inflated_columns };
 
-   my $name = $columns->{name}; my $password = $columns->{password};
+   my $password = $columns->{password};
 
    $password and not is_encrypted( $password ) and $columns->{password}
-      = $self->$_encrypt_password( $name, $password );
+      = $self->$_encrypt_password( $columns->{shortcode}, $password );
 
    $self->set_inflated_columns( $columns ); $self->validate;
 
@@ -344,6 +395,7 @@ sub validation_attributes {
                             min_length =>   0, },
          password      => { max_length => 128, min_length => 8, },
          postcode      => { max_length =>  16, min_length => 0, },
+         shortcode     => { max_length =>   6, min_length => 5, },
       },
       fields           => {
          address       => { validate => 'isValidLength isValidText' },
@@ -370,6 +422,8 @@ sub validation_attributes {
             filters    => 'filterUpperCase',
             validate   => 'isValidLength isValidPostcode' },
          resigned      => { validate => 'isValidDate' },
+         shortcode     => {
+            validate   => 'isMandatory isValidLength isValidIdentifier' },
          subscription  => { validate => 'isValidDate' },
       },
       level => 8,
