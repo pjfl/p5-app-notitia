@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Month view now rolls starting on Monday
           - Added placeholders for Util docs
           - Eliminated admin index
           - Fixed prev and next links on month rota

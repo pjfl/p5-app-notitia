@@ -228,6 +228,18 @@ msgstr "Day Central"
 msgid "day_rider_2"
 msgstr "Day South"
 
+msgid "day_rota_heading_0"
+msgstr "Shift"
+
+msgid "day_rota_heading_1"
+msgstr "Vehicle"
+
+msgid "day_rota_heading_2"
+msgstr "Name"
+
+msgid "day_rota_heading_3"
+msgstr "C4"
+
 msgid "delete"
 msgstr "Delete"
 
@@ -425,6 +437,27 @@ msgstr "November [_1]"
 
 msgid "month_dec_link"
 msgstr "December [_1]"
+
+msgid "month_rota_heading_0"
+msgstr "Mon"
+
+msgid "month_rota_heading_1"
+msgstr "Tue"
+
+msgid "month_rota_heading_2"
+msgstr "Wed"
+
+msgid "month_rota_heading_3"
+msgstr "Thu"
+
+msgid "month_rota_heading_4"
+msgstr "Fri"
+
+msgid "month_rota_heading_5"
+msgstr "Sat"
+
+msgid "month_rota_heading_6"
+msgstr "Sun"
 
 msgid "months_management_heading"
 msgstr "Select Month"
@@ -632,18 +665,6 @@ msgstr "Roles"
 
 msgid "roles_list_link"
 msgstr "Roles"
-
-msgid "rota_heading_0"
-msgstr "Shift"
-
-msgid "rota_heading_1"
-msgstr "Vehicle"
-
-msgid "rota_heading_2"
-msgstr "Name"
-
-msgid "rota_heading_3"
-msgstr "C4"
 
 msgid "rota_manager"
 msgstr "Rota Manager"

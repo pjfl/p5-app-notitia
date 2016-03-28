@@ -65,14 +65,40 @@ my $_confirm_slot_button = sub {
       { class =>  'right-last', label => 'confirm', value => $_[ 1 ].'_slot' };
 };
 
-my $_header_label = sub {
-   my $map = { 0 => 1, 1 => 1, 2 => 2, 3 => 1 }; my $span = $map->{ $_[ 1 ] };
+my $_day_label = sub {
+   my $map = { 0 => 1, 1 => 1, 2 => 2, 3 => 1 };
+   my $v   = loc( $_[ 0 ], 'day_rota_heading_'.$_[ 1 ] );
 
-   return { colspan => $span, value => loc( $_[ 0 ], 'rota_heading_'.$_[ 1 ] )};
+   return { colspan => $map->{ $_[ 1 ] }, value => $v };
 };
 
-my $_headers = sub {
-   return [ map {  $_header_label->( $_[ 0 ], $_ ) } 0 .. $_max_rota_cols - 1 ];
+my $_day_rota_headers = sub {
+   return [ map {  $_day_label->( $_[ 0 ], $_ ) } 0 .. $_max_rota_cols - 1 ];
+};
+
+my $_first_month_rota_date = sub {
+   my $month = shift;
+   my $date  = $month->set_time_zone( 'floating' )
+                     ->truncate( to => 'day' )->set( day => 1 );
+
+   while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
+
+   return $date;
+};
+
+my $_is_this_month = sub {
+   my ($rno, $date) = @_; $rno > 0 and return TRUE;
+
+   return $date->day < 15 ? TRUE : FALSE;
+};
+
+my $_month_label = sub {
+   return { class => 'day-of-week',
+            value => loc( $_[ 0 ], 'month_rota_heading_'.$_[ 1 ] ) };
+};
+
+my $_month_rota_headers = sub {
+   return [ map {  $_month_label->( $_[ 0 ], $_ ) } 0 .. 6 ];
 };
 
 my $_month_rota_max_slots = sub {
@@ -84,6 +110,16 @@ my $_month_rota_max_slots = sub {
                        'rider', 'driver' ),
             sum( map { $limits->[ slot_limit_index 'night', $_ ] }
                        'rider', 'driver' ), ];
+};
+
+my $_month_rota_title = sub {
+   my ($req, $rota_name, $month) = @_;
+
+   my $title = ucfirst( loc( $req, $rota_name ) ).SPC
+             . loc( $req, 'rota for' ).SPC.$month->month_name.SPC
+             . $month->year;
+
+   return $title;
 };
 
 my $_onchange_submit = sub {
@@ -435,7 +471,7 @@ my $_get_page = sub {
       moniker  => $self->moniker,
       rota     => { controllers => [],
                     events      => [],
-                    headers     => $_headers->( $req ),
+                    headers     => $_day_rota_headers->( $req ),
                     shifts      => [], },
       template => [ 'contents', 'rota', 'rota-table' ],
       title    => $title };
@@ -513,13 +549,10 @@ sub month_rota : Role(any) {
    my $rota_name =  $params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date =  $params->( 1, { optional => TRUE } ) // time2str '%Y-%m-01';
    my $month     =  str2date_time $rota_date, 'GMT';
-   my $title     =  ucfirst( loc( $req, $rota_name ) ).SPC
-                 .  loc( $req, 'rota for' ).SPC.$month->month_name.SPC
-                 .  $month->year;
+   my $title     =  $_month_rota_title->( $req, $rota_name, $month );
    my $max_slots =  $_month_rota_max_slots->( $self->config->slot_limits );
    my $lcm       =  lcm_for 4, @{ $max_slots };
-   my $first     =  $month->set_time_zone( 'floating' )
-                          ->truncate( to => 'day' )->set( day => 1 );
+   my $first     =  $_first_month_rota_date->( $month );
    my $actionp   =  $self->moniker.'/month_rota';
    my $prev      =  uri_for_action $req, $actionp,
                     [ $rota_name, $first->clone->subtract( months => 1 )->ymd ];
@@ -527,21 +560,26 @@ sub month_rota : Role(any) {
                     [ $rota_name, $first->clone->add( months => 1 )->ymd ];
    my $page      =  {
       fields     => { nav => { next => $next, prev => $prev }, },
-      rota       => { lcm => $lcm, max_slots => $max_slots, rows => [] },
+      rota       => { headers => $_month_rota_headers->( $req ),
+                      lcm => $lcm, max_slots => $max_slots, rows => [] },
       template   => [ 'contents', 'rota', 'month-table' ],
       title      => $title, };
 
-   for my $rno (0 .. 4) {
-      my $row = [];
+   for my $rno (0 .. 5) {
+      my $row = []; my $dayno;
 
       for my $cno (0 .. 6) {
-         my $date = $first->clone->add( days => 7 * $rno + $cno );
+         my $date  = $first->clone->add( days => 7 * $rno + $cno );
+         my $cell  = { class => 'month-rota', value => NUL };
 
-         $rno == 4 and $date->day == 1 and last;
-         push @{ $row }, $self->$_rota_summary( $req, $page, $rota_name, $date);
+         $dayno = $date->day; $rno > 3 and $dayno == 1 and last;
+         $_is_this_month->( $rno, $date )
+            and $cell = $self->$_rota_summary( $req, $page, $rota_name, $date );
+         push @{ $row }, $cell;
       }
 
       $row->[ 0 ] and push @{ $page->{rota}->{rows} }, $row;
+      $rno > 3 and $dayno == 1 and last;
    }
 
    return $self->get_stash( $req, $page );
