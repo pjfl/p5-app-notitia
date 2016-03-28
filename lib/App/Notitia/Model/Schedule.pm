@@ -78,7 +78,7 @@ my $_day_rota_headers = sub {
 
 my $_first_month_rota_date = sub {
    my $month = shift;
-   my $date  = $month->clone->set_time_zone( 'floating' )
+   my $date  = $month->set_time_zone( 'floating' )
                      ->truncate( to => 'day' )->set( day => 1 );
 
    while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
@@ -579,7 +579,7 @@ sub month_rota : Role(any) {
                       lcm => $lcm, max_slots => $max_slots, rows => [] },
       template   => [ 'contents', 'rota', 'month-table' ],
       title      => $title, };
-   my $first     =  $_first_month_rota_date->( $month );
+   my $first     =  $_first_month_rota_date->( $month->clone );
 
    for my $rno (0 .. 5) {
       my $row = []; my $dayno;

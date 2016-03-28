@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Change password also appears when logged in
           - Fixed month view section navtigation
           - Month view now rolls starting on Monday
           - Added placeholders for Util docs

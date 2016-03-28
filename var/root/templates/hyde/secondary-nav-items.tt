@@ -13,6 +13,13 @@
    <li>
 [%    LinkWithTips( '#', 'windows', text, page.hint, tip, 'profile-user' ) -%]
    </li>
+[%    text = loc( 'Change Password' ) -%]
+[%    tip  = loc( 'Change the password used to acess the application' ) -%]
+[%    href = uri_for_action( 'user/change_password' ) -%]
+[%    class = ''; IF page.location == 'change_password'; class = 'current'; END -%]
+   <li>
+[%    LinkWithTips( href, class, text, page.hint, tip ) -%]
+   </li>
    <li>
 [%    href = uri_for_action( 'user/logout_action' ) -%]
 [%    FormWithButton( href, 'windows', loc( 'Logout' ), 'authentication',
