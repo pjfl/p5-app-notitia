@@ -78,7 +78,7 @@ my $_day_rota_headers = sub {
 
 my $_first_month_rota_date = sub {
    my $month = shift;
-   my $date  = $month->set_time_zone( 'floating' )
+   my $date  = $month->clone->set_time_zone( 'floating' )
                      ->truncate( to => 'day' )->set( day => 1 );
 
    while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
@@ -122,6 +122,15 @@ my $_month_rota_title = sub {
    return $title;
 };
 
+my $_next_month = sub {
+   my ($req, $actionp, $rota_name, $month) = @_;
+
+   my $date = $month->set_time_zone( 'floating' )->truncate( to => 'day' )
+                    ->set( day => 1 )->add( months => 1 );
+
+   return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
+};
+
 my $_onchange_submit = sub {
    return js_anchor_config 'rota_date', 'submitForm', 'change',
                          [ 'rota_redirect', 'day-rota' ];
@@ -145,6 +154,15 @@ my $_operators_vehicle = sub {
                : $pv_type eq 'car' ? ucfirst( $pv_type ) : undef;
 
    return $cache->{ $slot->operator->id } = $label;
+};
+
+my $_prev_month = sub {
+   my ($req, $actionp, $rota_name, $month) = @_;
+
+   my $date = $month->set_time_zone( 'floating' )->truncate( to => 'day' )
+                    ->set( day => 1 )->subtract( months => 1 );
+
+   return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
 };
 
 my $_rota_summary_link = sub {
@@ -552,18 +570,16 @@ sub month_rota : Role(any) {
    my $title     =  $_month_rota_title->( $req, $rota_name, $month );
    my $max_slots =  $_month_rota_max_slots->( $self->config->slot_limits );
    my $lcm       =  lcm_for 4, @{ $max_slots };
-   my $first     =  $_first_month_rota_date->( $month );
    my $actionp   =  $self->moniker.'/month_rota';
-   my $prev      =  uri_for_action $req, $actionp,
-                    [ $rota_name, $first->clone->subtract( months => 1 )->ymd ];
-   my $next      =  uri_for_action $req, $actionp,
-                    [ $rota_name, $first->clone->add( months => 1 )->ymd ];
+   my $prev      =  $_prev_month->( $req, $actionp, $rota_name, $month->clone );
+   my $next      =  $_next_month->( $req, $actionp, $rota_name, $month->clone );
    my $page      =  {
       fields     => { nav => { next => $next, prev => $prev }, },
       rota       => { headers => $_month_rota_headers->( $req ),
                       lcm => $lcm, max_slots => $max_slots, rows => [] },
       template   => [ 'contents', 'rota', 'month-table' ],
       title      => $title, };
+   my $first     =  $_first_month_rota_date->( $month );
 
    for my $rno (0 .. 5) {
       my $row = []; my $dayno;
