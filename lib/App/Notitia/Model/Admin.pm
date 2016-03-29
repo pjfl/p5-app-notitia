@@ -317,7 +317,7 @@ sub activate : Role(anon) {
       $message  = [ 'Person [_1] account activated', $person->label ];
    }
    else {
-      $location = $req->base_uri;
+      $location = $req->base;
       $message  = [ 'Key [_1] unknown activation attempt', $file ];
    }
 

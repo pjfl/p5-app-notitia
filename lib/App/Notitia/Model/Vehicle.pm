@@ -485,17 +485,18 @@ sub update_vehicle_action : Role(rota_manager) {
 sub vehicle : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $schema    =  $self->schema;
-   my $action    =  $self->moniker.'/vehicle';
-   my $vrn       =  $req->uri_params->( 0, { optional => TRUE } );
-   my $vehicle   =  $_maybe_find_vehicle->( $schema, $vrn );
-   my $page      =  {
-      fields     => $_bind_vehicle_fields->( $schema, $req, $vehicle ),
-      literal_js => $_add_vehicle_js->(),
-      template   => [ 'contents', 'vehicle' ],
-      title      => loc( $req, $vrn ? 'vehicle_edit_heading'
+   my $schema     =  $self->schema;
+   my $action     =  $self->moniker.'/vehicle';
+   my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
+   my $vehicle    =  $_maybe_find_vehicle->( $schema, $vrn );
+   my $page       =  {
+      fields      => $_bind_vehicle_fields->( $schema, $req, $vehicle ),
+      first_field => 'vrn',
+      literal_js  => $_add_vehicle_js->(),
+      template    => [ 'contents', 'vehicle' ],
+      title       => loc( $req, $vrn ? 'vehicle_edit_heading'
                                     : 'vehicle_create_heading' ), };
-   my $fields    =  $page->{fields};
+   my $fields     =  $page->{fields};
 
    if ($vrn) {
       $fields->{delete} = delete_button $req, $vrn, 'vehicle';

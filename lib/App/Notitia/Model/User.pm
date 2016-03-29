@@ -26,6 +26,7 @@ has 'profile_keys' => is => 'ro', isa => ArrayRef, builder => sub {
 
 register_action_paths
    'user/change_password' => 'user/password',
+   'user/check_field'     => 'check_field',
    'user/login'           => 'user/login',
    'user/login_action'    => 'user/login',
    'user/logout_action'   => 'user/logout',
@@ -73,8 +74,9 @@ my $_create_reset_email = sub {
 sub change_password : Role(anon) {
    my ($self, $req) = @_;
 
-   my $name = $req->uri_params->( 0, { optional => TRUE } ) // $req->username;
-   my $page = {
+   my $name   = $req->uri_params->( 0, { optional => TRUE } ) // $req->username;
+   my $person = $self->schema->resultset( 'Person' )->find_person( $name );
+   my $page   = {
       fields      => {
          again    => bind( 'again',    NUL, {
             class => 'standard-field reveal' } ),
@@ -84,7 +86,7 @@ sub change_password : Role(anon) {
             label => 'new_password' } ),
          update   => bind( 'update', 'change_password', {
             class => 'right-last' } ),
-         username => bind( 'username', $name ), },
+         username => bind( 'username', $person->name ), },
       literal_js  =>
          [ "   behaviour.config.inputs[ 'again' ]",
            "      = { event     : [ 'focus', 'blur' ],",
@@ -162,7 +164,10 @@ sub login_action : Role(anon) {
 
    my $message   = [ '[_1] logged in', $person->label ];
    my $wanted    = $session->wanted; $req->session->wanted( NUL );
-   my $location  = $wanted ? uri_for_action( $req, $wanted ) : $req->base;
+
+   $wanted =~ m{ check_field }mx and $wanted = NUL;
+
+   my $location  = $wanted ? $req->uri_for( $wanted ) : $req->base;
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -241,16 +246,16 @@ sub reset_password : Role(anon) {
    if ($path->exists and $path->is_file) {
       my $schema = $self->schema;
       my $token  = $path->chomp->getline; $path->unlink;
-      my ($name, $password) = split m{ / }mx, $token, 2;
-      my $person = $schema->resultset( 'Person' )->find_by_shortcode( $name );
+      my ($scode, $password) = split m{ / }mx, $token, 2;
+      my $person = $schema->resultset( 'Person' )->find_by_shortcode( $scode );
 
       $person->password( $password ); $person->password_expired( TRUE );
       $person->update;
-      $location = uri_for_action $req, 'user/change_password', [ $name ];
+      $location = uri_for_action $req, 'user/change_password', [ $scode ];
       $message  = [ '[_1] password reset', $person->label ];
    }
    else {
-      $location = $req->base_uri;
+      $location = $req->base;
       $message  = [ 'Key [_1] unknown password reset attempt', $file ];
    }
 
@@ -260,10 +265,11 @@ sub reset_password : Role(anon) {
 sub update_profile_action : Role(any) {
    my ($self, $req) = @_;
 
-   my $name   = $req->username;
-   my $params = $req->body_params;
-   my $person = $self->schema->resultset( 'Person' )->find_by_shortcode( $name);
+   my $scode  = $req->username;
+   my $schema = $self->schema;
+   my $person = $schema->resultset( 'Person' )->find_by_shortcode( $scode );
    my $opts   = { raw => TRUE, optional => TRUE };
+   my $params = $req->body_params;
 
    $person->$_( $params->( $_, $opts ) ) for (@{ $self->profile_keys });
 
