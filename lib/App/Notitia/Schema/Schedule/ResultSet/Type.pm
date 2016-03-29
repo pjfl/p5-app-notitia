@@ -18,9 +18,10 @@ my $_find_by = sub {
 
    my $label = delete $opts->{label} // ucfirst $type_class;
    my $type  = $self->search
-      ( { 'name' => $name, 'type_class' => $type_class }, $opts )->single
-      or throw "${label} type [_1] not found", [ $name ],
-               level => 3, rv => HTTP_EXPECTATION_FAILED;
+      ( { 'name' => $name, 'type_class' => $type_class }, $opts )->single;
+
+   defined $type or throw "${label} type [_1] not found", [ $name ],
+                          level => 3, rv => HTTP_EXPECTATION_FAILED;
 
    return $_types->{ $k } = $type;
 };

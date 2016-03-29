@@ -8,43 +8,44 @@ use Class::Usul::Functions  qw( throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Private methods
-my $_find_recipient_id = sub {
-   my ($self, $name) = @_;
+my $_find_recipient = sub {
+   my ($self, $scode) = @_; my $schema = $self->result_source->schema;
 
-   my $recipient = $self->result_source->schema->resultset( 'Person' )->search
-      ( { name => $name }, { columns => [ 'id' ] } )->single;
+   my $opts = { columns => [ 'id' ] };
 
-   return $recipient->id;
+   return $schema->resultset( 'Person' )->find_by_shortcode( $scode, $opts );
 };
 
 # Public methods
 sub new_result {
    my ($self, $columns) = @_;
 
-   my $name = delete $columns->{recipient};
+   my $scode = delete $columns->{recipient};
 
-   $name and $columns->{recipient_id} = $self->$_find_recipient_id( $name );
+   $scode and $columns->{recipient_id} = $self->$_find_recipient( $scode )->id;
 
    return $self->next::method( $columns );
 }
 
 sub find_endorsement_by {
-   my ($self, $name, $uri) = @_;
+   my ($self, $scode, $uri) = @_;
 
    my $endorsement = $self->search
-      ( { 'recipient.name' => $name, uri => $uri },
-        { join => [ 'recipient' ] } )->single
-        or throw 'Endorsement [_1] for [_2] not found', [ $uri, $name ],
+      ( { 'recipient.shortcode' => $scode, uri => $uri },
+        { join => [ 'recipient' ] } )->single;
+
+   defined $endorsement
+        or throw 'Endorsement [_1] for [_2] not found', [ $uri, $scode ],
                  level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return $endorsement;
 };
 
 sub list_endorsements_for {
-   my ($self, $req, $name) = @_;
+   my ($self, $req, $scode) = @_;
 
    my $blots = $self->search
-      ( { 'recipient.name' => $name },
+      ( { 'recipient.shortcode' => $scode },
         { join => [ 'recipient' ], order_by => 'type_code' } );
 
    return [ map { [ $_->label( $req ), $_ ] } $blots->all ];

@@ -187,8 +187,8 @@ my $_people_links = sub {
    $params->{type} and $params->{type} eq 'contacts'
                    and return $_contact_links->( $req, $person->[ 1 ] );
 
-   my $name = $person->[ 1 ]->name; my $k = $role ? "${role}_${name}" : $name;
-
+   my $scode = $person->[ 1 ]->shortcode;
+   my $k     = $role ? "${role}_${scode}" : $scode;
    my $links = $_people_links_cache->{ $k }; $links and return @{ $links };
 
    $links = []; my @paths = ( 'admin/person', 'role/role' );
@@ -197,7 +197,7 @@ my $_people_links = sub {
          and push @paths, 'certs/certifications', 'blots/endorsements';
 
    for my $actionp ( @paths ) {
-      push @{ $links }, { value => management_link( $req, $actionp, $name ) };
+      push @{ $links }, { value => management_link( $req, $actionp, $scode ) };
    }
 
    $_people_links_cache->{ $k } = $links;

@@ -28,23 +28,24 @@ my $_find_role_type = sub {
 sub find_person {
    my ($self, $key) = @_; my $person;
 
-   $person = $self->search( { name => $key } )->single
-      and return $person;
-   $person = $self->search( { shortcode => $key } )->single
-      and return $person;
-   $person = $self->search( { email_address => $key } )->single
-      and return $person;
+   defined( $person = $self->search( { name => $key } )->single )
+       and  return $person;
+   defined( $person = $self->search( { shortcode => $key } )->single )
+       and  return $person;
+   defined( $person = $self->search( { email_address => $key } )->single )
+       and  return $person;
 
    throw 'Person [_1] unknown', [ $key ], level => 2,
          rv => HTTP_EXPECTATION_FAILED;
 }
 
 sub find_by_shortcode {
-   my ($self, $shortcode) = @_;
+   my ($self, $shortcode, $opts) = @_; $opts //= {};
 
-   my $person = $self->search( { shortcode => $shortcode } )->single
-      or throw 'Person [_1] unknown', [ $shortcode ], level => 2,
-               rv => HTTP_EXPECTATION_FAILED;
+   my $person = $self->search( { shortcode => $shortcode }, $opts )->single;
+
+   defined $person or throw 'Person [_1] unknown', [ $shortcode ], level => 2,
+                            rv => HTTP_EXPECTATION_FAILED;
 
    return $person;
 }

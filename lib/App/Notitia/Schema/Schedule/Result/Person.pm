@@ -414,7 +414,7 @@ sub validation_attributes {
          mobile_phone  => { filters  => 'filterNonNumeric',
                             validate => 'isValidInteger' },
          name          => {
-            validate   => 'isMandatory isValidLength isValidIdentifier' },
+            validate   => 'isMandatory isValidLength isSimpleText' },
          notes         => { validate => 'isValidLength isValidText' },
          password      => {
             validate   => 'isMandatory isValidLength isValidPassword' },
