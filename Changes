@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Unused configuration attribute languages dropped
+
 0.3.1     2016-03-28 23:19:57
           - Change password also appears when logged in
           - Fixed month view section navtigation

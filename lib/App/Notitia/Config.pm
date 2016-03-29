@@ -12,7 +12,6 @@ use File::DataClass::Types       qw( ArrayRef Bool CodeRef Directory File
                                      NonNumericSimpleStr
                                      NonZeroPositiveInt Object Path
                                      PositiveInt SimpleStr Str Undef );
-use Web::ComposableRequest::Util qw( extract_lang );
 use Moo;
 
 extends q(Class::Usul::Config::Programs);
@@ -135,10 +134,6 @@ has 'js'              => is => 'ro',   isa => NonEmptySimpleStr,
 has 'jslibs'          => is => 'ro',   isa => ArrayRef, builder => sub { [] };
 
 has 'keywords'        => is => 'ro',   isa => SimpleStr, default => NUL;
-
-has 'languages'       => is => 'lazy', isa => ArrayRef[NonEmptySimpleStr],
-   builder            => sub { [ map { extract_lang $_ } @{ $_[0]->locales } ]},
-   init_arg           => undef;
 
 has 'layout'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'standard';
@@ -429,11 +424,6 @@ network. Defaults to an empty list
 
 A simple string that defaults to null. The HTML meta attributes keyword
 list value
-
-=item C<languages>
-
-A array reference of string derived from the list of configuration locales
-The value is constructed on demand and has no initial argument
 
 =item C<layout>
 
