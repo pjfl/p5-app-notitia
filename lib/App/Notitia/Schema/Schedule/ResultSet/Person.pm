@@ -25,26 +25,41 @@ my $_find_role_type = sub {
 };
 
 # Public methods
-sub find_person_by {
-   my ($self, $name) = @_;
+sub find_person {
+   my ($self, $key) = @_; my $person;
 
-   my $person = $self->search( { name => $name } )->single
-      or throw 'Person [_1] unknown', [ $name ], level => 2,
-               rv => HTTP_EXPECTATION_FAILED;
+   defined( $person = $self->search( { name => $key } )->single )
+       and  return $person;
+   defined( $person = $self->search( { shortcode => $key } )->single )
+       and  return $person;
+   defined( $person = $self->search( { email_address => $key } )->single )
+       and  return $person;
+
+   throw 'Person [_1] unknown', [ $key ], level => 2,
+         rv => HTTP_EXPECTATION_FAILED;
+}
+
+sub find_by_shortcode {
+   my ($self, $shortcode, $opts) = @_; $opts //= {};
+
+   my $person = $self->search( { shortcode => $shortcode }, $opts )->single;
+
+   defined $person or throw 'Person [_1] unknown', [ $shortcode ], level => 2,
+                            rv => HTTP_EXPECTATION_FAILED;
 
    return $person;
 }
 
 sub is_person {
-   my ($self, $name, $cache) = @_;
+   my ($self, $shortcode, $cache) = @_;
 
    unless ($cache->{people}) {
       for my $person (map { $_->[ 1 ] } @{ $self->list_all_people }) {
-         $cache->{people}->{ $person->name } = TRUE;
+         $cache->{people}->{ $person->shortcode } = TRUE;
       }
    }
 
-   return exists $cache->{people}->{ $name } ? TRUE : FALSE;
+   return exists $cache->{people}->{ $shortcode } ? TRUE : FALSE;
 }
 
 sub list_all_people {
@@ -53,15 +68,13 @@ sub list_all_people {
    my $where   = delete $opts->{current}
                ? { $self->me( 'resigned' ) => { '=' => undef } } : {};
    my $fields  = delete $opts->{fields} // {};
-   my $columns = [ 'first_name', 'id', 'last_name', 'name' ];
+   my $columns = [ 'first_name', 'id', 'last_name', 'name', 'shortcode' ];
 
    $opts->{columns} and push @{ $columns }, @{ delete $opts->{columns} };
 
    my $people  = $self->search
-      ( $where, { columns  => $columns,
-                  order_by => [ $self->me( 'last_name'  ),
-                                $self->me( 'first_name' ) ],
-                  %{ $opts } } );
+      ( $where, { columns  => $columns, order_by => [ $self->me( 'name' ) ],
+               %{ $opts } } );
 
    return [ map { $_person_tuple->( $_, $fields ) } $people->all ];
 }
@@ -72,7 +85,7 @@ sub list_participents {
    my $fields = delete $opts->{fields} // {};
    my $people = $self->search
       ( { 'participents.event_id' => $event->id },
-        { columns  => [ 'first_name', 'id', 'last_name', 'name' ],
+        { columns  => [ 'first_name', 'id', 'last_name', 'name', 'shortcode' ],
           join     => [ 'participents' ], %{ $opts } } );
 
    return [ map { $_person_tuple->( $_, $fields ) } $people->all ];
@@ -92,48 +105,6 @@ sub list_people {
 
 sub me {
    return join '.', $_[ 0 ]->current_source_alias, $_[ 1 ] // NUL;
-}
-
-sub new_person_id {
-   my ($self, $first_name, $last_name) = @_; my $cache = {}; my $lid;
-
-   my $conf = $self->result_source->schema->config;
-   my $name = lc "${last_name}${first_name}"; $name =~ s{ [ \-\'] }{}gmx;
-
-   if ((length $name) < $conf->min_name_length) {
-      throw 'Person name [_1] too short [_2] character min.',
-            [ $first_name.SPC.$last_name, $conf->min_name_length ];
-   }
-
-   my $min_id_len = $conf->min_id_length;
-   my $prefix     = $conf->person_prefix; $prefix or return;
-   my $lastp      = length $name < $min_id_len ? length $name : $min_id_len;
-   my @chars      = (); $chars[ $_ ] = $_ for (0 .. $lastp - 1);
-
-   while ($chars[ $lastp - 1 ] < length $name) {
-      my $i = 0; $lid = NUL;
-
-      while ($i < $lastp) { $lid .= substr $name, $chars[ $i++ ], 1 }
-
-      $self->is_person( $prefix.$lid, $cache ) or last;
-
-      $i = $lastp - 1; $chars[ $i ] += 1;
-
-      while ($i >= 0 and $chars[ $i ] >= length $name) {
-         my $ripple = $i - 1; $chars[ $ripple ] += 1;
-
-         while ($ripple < $lastp) {
-            my $carry = $ripple + 1; $chars[ $carry ] = $chars[ $ripple++ ] + 1;
-         }
-
-         $i--;
-      }
-   }
-
-   $chars[ $lastp - 1 ] >= length $name
-       and throw 'Person name [_1] no ids left', [ $first_name.SPC.$last_name ];
-   $lid or throw 'Person name [_1] no id', [ $name ];
-   return $prefix.$lid;
 }
 
 1;

@@ -121,9 +121,9 @@ my $_assert_slot_assignment_allowed = sub {
 };
 
 my $_find_assigner = sub {
-   my ($self, $name) = @_; my $schema = $self->result_source->schema;
+   my ($self, $scode) = @_; my $schema = $self->result_source->schema;
 
-   return $schema->resultset( 'Person' )->find_person_by( $name );
+   return $schema->resultset( 'Person' )->find_by_shortcode( $scode );
 };
 
 my $_find_slot = sub {

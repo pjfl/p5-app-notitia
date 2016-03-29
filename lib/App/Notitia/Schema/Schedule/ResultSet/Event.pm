@@ -20,8 +20,11 @@ my $_field_tuple = sub {
 
 # Private methods
 my $_find_owner = sub {
-   return $_[ 0 ]->result_source->schema->resultset( 'Person' )->search
-      ( { name => $_[ 1 ] }, { columns => [ 'id' ] } )->single;
+   my ($self, $scode) = @_; my $schema = $self->result_source->schema;
+
+   my $opts = { columns => [ 'id' ] };
+
+   return $schema->resultset( 'Person' )->find_by_shortcode( $scode, $opts );
 };
 
 my $_find_rota = sub {
@@ -58,9 +61,10 @@ sub find_event_by {
 
    $opts->{prefetch} //= []; push @{ $opts->{prefetch} }, 'rota';
 
-   my $event = $self->search( { uri => $uri }, $opts )->single
-      or throw 'Event [_1] unknown', [ $uri ],
-         level => 2, rv => HTTP_EXPECTATION_FAILED;
+   my $event = $self->search( { uri => $uri }, $opts )->single;
+
+   defined $event or throw 'Event [_1] unknown', [ $uri ],
+                           level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return $event;
 }

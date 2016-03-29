@@ -1,6 +1,6 @@
 {
-   "fields": "active email_address first_name last_name name password",
+   "fields": "active email_address first_name last_name password shortcode",
    "rows": [
-      "1, admin@example.com, Admin, User, admin, 12345678"
+      "1, admin@example.com, Admin, User, 12345678, admin"
    ]
 }

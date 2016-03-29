@@ -37,7 +37,7 @@ around 'execute' => sub {
 
    is_member 'any', $method_roles and return $orig->( $self, $method, $req );
 
-   my $person = $self->components->{admin}->find_person_by( $req->username );
+   my $person = $self->components->{admin}->find_by_shortcode( $req->username );
 
    for my $role_name (@{ $person->list_roles }) {
       is_member $role_name, $method_roles

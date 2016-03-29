@@ -9,8 +9,11 @@ use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Private methods
 my $_find_recipient = sub {
-   return $_[ 0 ]->result_source->schema->resultset( 'Person' )->search
-      ( { name => $_[ 1 ] }, { columns => [ 'id' ] } )->single;
+   my ($self, $scode) = @_; my $schema = $self->result_source->schema;
+
+   my $opts = { columns => [ 'id' ] };
+
+   return $schema->resultset( 'Person' )->find_by_shortcode( $scode, $opts );
 };
 
 my $_find_cert_type_id = sub {
@@ -23,9 +26,9 @@ my $_find_cert_type_id = sub {
 sub new_result {
    my ($self, $columns) = @_;
 
-   my $name = delete $columns->{recipient};
+   my $scode = delete $columns->{recipient};
 
-   $name and $columns->{recipient_id} = $self->$_find_recipient( $name )->id;
+   $scode and $columns->{recipient_id} = $self->$_find_recipient( $scode )->id;
 
    my $type = delete $columns->{type};
 
@@ -35,22 +38,24 @@ sub new_result {
 }
 
 sub find_cert_by {
-   my ($self, $name, $type) = @_;
+   my ($self, $scode, $type) = @_;
 
    my $cert = $self->search
-      ( { 'recipient.name' => $name, 'type.name' => $type },
-        { join => [ 'recipient', 'type' ] } )->single
-        or throw 'Certification [_1] for [_2] not found', [ $type, $name ],
-                 level => 2, rv => HTTP_EXPECTATION_FAILED;
+      ( { 'recipient.shortcode' => $scode, 'type.name' => $type },
+        { join => [ 'recipient', 'type' ] } )->single;
+
+   defined $cert
+      or throw 'Certification [_1] for [_2] not found', [ $type, $scode ],
+               level => 2, rv => HTTP_EXPECTATION_FAILED;
 
    return $cert;
 };
 
 sub list_certification_for {
-   my ($self, $req, $name) = @_;
+   my ($self, $req, $scode) = @_;
 
    my $certs = $self->search
-      ( { 'recipient.name' => $name },
+      ( { 'recipient.shortcode' => $scode },
         { join     => [ 'recipient', 'type' ], order_by => 'type_class',
           prefetch => [ 'type' ] } );
 

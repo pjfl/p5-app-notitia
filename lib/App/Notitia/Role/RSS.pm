@@ -64,11 +64,12 @@ my $_format_page = sub {
               and $content = $formatter->serialize( $req, $page );
 
    my $author = $page->{author} // 'admin';
-   my $user   = $self->components->{admin}->find_person_by( $author );
-   my $email  = $user ? $user->email_address : "${author}\@example.com";
+   my $person = $self->components->{admin}->find_by_shortcode( $author );
+   my $email  = $person ? $person->email_address : "${author}\@example.com";
+   my $label  = $person ? $person->label : $author;
 
    return {
-      author     => "${email} (${author})",
+      author     => "${email} (${label})",
       categories => $page->{categories} // [],
       content    => $content,
       created    => time2str( '%Y-%m-%dT%XZ', $page->{created} ),

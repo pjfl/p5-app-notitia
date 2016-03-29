@@ -48,7 +48,7 @@ my $_is_user_authorised = sub {
    $req->authenticated or return FALSE;
    is_member 'any',  $nroles and return TRUE;
 
-   my $person = $self->components->{admin}->find_person_by( $req->username );
+   my $person = $self->components->{admin}->find_by_shortcode( $req->username );
    my $proles = $person->list_roles;
 
    is_member 'administrator', $proles and return TRUE;

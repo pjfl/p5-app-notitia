@@ -274,7 +274,7 @@ sub event_summary : Role(any) {
    my $user    =  $req->username;
    my $uri     =  $req->uri_params->( 0 );
    my $event   =  $schema->resultset( 'Event' )->find_event_by( $uri );
-   my $person  =  $schema->resultset( 'Person' )->find_person_by( $user );
+   my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $user );
    my $opts    =  { disabled => TRUE };
    my $page    =  {
       fields   => $self->$_bind_event_fields( $event, $opts ),
@@ -327,13 +327,13 @@ sub participate_event_action : Role(any) {
 
    my $uri       = $req->uri_params->( 0 );
    my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_person_by( $req->username );
+   my $person    = $person_rs->find_by_shortcode( $req->username );
 
    $person->add_participent_for( $uri );
 
    my $actionp   = $self->moniker.'/event_summary';
    my $location  = uri_for_action $req, $actionp, [ $uri ];
-   my $message   = [ 'Event [_1] attendee [_2]', $uri, $req->username ];
+   my $message   = [ 'Event [_1] attendee [_2]', $uri, $person->label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -369,13 +369,14 @@ sub unparticipate_event_action : Role(any) {
    my $user      = $req->username;
    my $uri       = $req->uri_params->( 0 );
    my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_person_by( $user );
+   my $person    = $person_rs->find_by_shortcode( $user );
 
    $person->delete_participent_for( $uri );
 
    my $actionp   = $self->moniker.'/event_summary';
    my $location  = uri_for_action $req, $actionp, [ $uri ];
-   my $message   = [ 'Event [_1] attendence cancelled for [_2]', $uri, $user ];
+   my $message   = [ 'Event [_1] attendence cancelled for [_2]',
+                     $uri, $person->label ];
 
    return { redirect => { location => $location, message => $message } };
 }
