@@ -104,6 +104,7 @@ sub change_password : Role(anon) {
 sub change_password_action : Role(anon) {
    my ($self, $req) = @_;
 
+   my $session  = $req->session;
    my $params   = $req->body_params;
    my $name     = $params->( 'username' );
    my $oldpass  = $params->( 'oldpass',  { raw => TRUE } );
@@ -114,8 +115,9 @@ sub change_password_action : Role(anon) {
    $password eq $again
       or throw 'Passwords do not match', rv => HTTP_EXPECTATION_FAILED;
    $person->set_password( $oldpass, $password );
-   $req->session->authenticated( TRUE );
-   $req->session->username( $person->shortcode );
+   $session->authenticated( TRUE );
+   $session->username( $person->shortcode );
+   $session->first_name( $person->first_name );
 
    my $message = [ '[_1] password changed', $person->label ];
 
@@ -161,6 +163,7 @@ sub login_action : Role(anon) {
    $person->authenticate( $password );
    $session->authenticated( TRUE );
    $session->username( $person->shortcode );
+   $session->first_name( $person->first_name );
 
    my $message   = [ '[_1] logged in', $person->label ];
    my $wanted    = $session->wanted; $req->session->wanted( NUL );

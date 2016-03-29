@@ -205,6 +205,7 @@ has 'server'          => is => 'ro',   isa => NonEmptySimpleStr,
 
 has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
    builder            => sub { {
+      first_name      => [ SimpleStr | Undef                ],
       query           => [ SimpleStr | Undef                ],
       skin            => [ NonEmptySimpleStr, $_[ 0 ]->skin ],
       theme           => [ NonEmptySimpleStr, 'yellow'      ],

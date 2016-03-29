@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Exception handler uses users first name
+          - Can login using username, email_address or shortcode
           - Unused configuration attribute languages dropped
 
 0.3.1     2016-03-28 23:19:57
