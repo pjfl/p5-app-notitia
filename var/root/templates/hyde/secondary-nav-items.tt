@@ -8,20 +8,20 @@
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
-[%    text = loc( 'Profile' ) -%]
-[%    tip  = loc( 'Update personal details' ) -%]
-   <li>
-[%    LinkWithTips( '#', 'windows', text, page.hint, tip, 'profile-user' ) -%]
-   </li>
 [%    text = loc( 'Change Password' ) -%]
-[%    tip  = loc( 'Change the password used to acess the application' ) -%]
+[%    tip  = loc( 'Change the password used to access the application' ) -%]
 [%    href = uri_for_action( 'user/change_password' ) -%]
 [%    class = ''; IF page.location == 'change_password'; class = 'current'; END -%]
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
+[%    text = loc( 'Profile' ) -%]
+[%    tip  = loc( 'Update personal details' ) -%]
    <li>
+[%    LinkWithTips( '#', 'windows', text, page.hint, tip, 'profile-user' ) -%]
+   </li>
 [%    href = uri_for_action( 'user/logout_action' ) -%]
+   <li>
 [%    FormWithButton( href, 'windows', loc( 'Logout' ), 'authentication',
                       loc( 'Logout from [_1]', config.title ),
                      'logout-user', 'logout' ) -%]

@@ -122,15 +122,22 @@
 [%    IF table.class; class = table.class; -%]
 [%    ELSE; class = 'standard-table'; END -%]
    <table class="[% class %]">
+[%    IF table.caption %]<caption>[% table.caption %]</caption>[% END -%]
 [%    IF table.headers.0 -%]
-      <tr>
+      <thead>
+         <tr>
 [%       FOR cell IN table.headers -%]
-        <th class="[% cell.class %]">[% cell.value %]</th>
+           <th class="[% cell.class %]">[% cell.value %]</th>
 [%       END -%]
-      </tr>
+         </tr>
+      </thead>
 [%    END -%]
-[%    FOR row IN table.rows -%]
+[%    IF table.rows.0 -%]
+      <tbody>
+[%       FOR row IN table.rows -%]
 [%       TableRow( row ) -%]
+[%       END -%]
+      </tbody>
 [%    END -%]
    </table>
 [% END -%]
