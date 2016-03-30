@@ -65,7 +65,8 @@ sub exception_handler {
 
    my $name = $req->session->first_name // $req->username;
    my $opts = { params   => [ $name ], no_quote_bind_values => TRUE };
-   my $page = { error    => $e,
+   my $page = { debug    => $self->application->debug,
+                error    => $e,
                 leader   => $leader,
                 message  => $message,
                 summary  => $summary,

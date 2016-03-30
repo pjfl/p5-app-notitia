@@ -12,7 +12,7 @@
       <h5>[% loc( 'The following exception was thrown' ) %]</h5>
       <p>[% page.summary %]</p>
 [% END -%]
-[% IF page.username == 'admin' -%]
+[% IF page.debug -%]
 [%    line1 = loc( 'Exception thrown' ) _ ' ' -%]
 [%    when  = time2str( 'on %Y-%m-%d at %H:%M hours', page.error.time ) -%]
 [%    IF page.leader; line1 = line1 _  loc( 'from' ) _ ' ' _ page.leader -%]

@@ -751,9 +751,8 @@ msgid "username"
 msgstr "Username"
 
 msgid "username_field_tip"
-msgstr "If left blank a new unique username will be generated. Only enter "
-       "a value if the person has registered before and already has a "
-       "unique username"
+msgstr "If left blank a username will be generated from the "
+       "person's first and last name"
 
 msgid "vehicle_create_link"
 msgstr "Add Vehicle"

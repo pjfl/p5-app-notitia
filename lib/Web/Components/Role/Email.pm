@@ -2,7 +2,7 @@ package Web::Components::Role::Email;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 8 $ =~ /\d+/gmx );
 
 use Email::MIME;
 use Encode                     qw( encode );
@@ -117,7 +117,10 @@ my $_transport_email = sub {
 
    my $mailer    = $class->new( $attr );
    my $send_args = { from => $args->{from}, to => $args->{to} };
-   my $result    = $mailer->send( $args->{email}, $send_args );
+   my $result;
+
+   try   { $result = $mailer->send( $args->{email}, $send_args ) }
+   catch { throw $_ };
 
    $result->can( 'failure' ) and throw $result->message;
 

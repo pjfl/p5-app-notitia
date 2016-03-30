@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Only shows full error messages when debug is on
           - No docs links if not authenticated and not anon. Fixes #1
           - Added transport_attr to config. Fixes #6
           - Fixed address_viewer authorisation #5
