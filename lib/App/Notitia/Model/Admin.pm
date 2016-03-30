@@ -428,7 +428,7 @@ sub person : Role(person_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub person_summary : Role(administrator) Role(person_viewer) {
+sub person_summary : Role(administrator) Role(address_viewer) {
    my ($self, $req) = @_; my $people;
 
    my $name       =  $req->uri_params->( 0 );
@@ -460,6 +460,7 @@ sub people : Role(any) {
    my $role      =  $params->{role  } // NUL;
    my $status    =  $params->{status} // NUL;
 
+   # TODO: Wtf?
    delete $params->{type}; $type and $params->{type} = $type;
 
    my $title_key =  $role   ? "${role}_list_link"

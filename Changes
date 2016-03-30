@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixed address_viewer authorisation #5
           - Exception handler uses users first name
           - Can login using username, email_address or shortcode
           - Unused configuration attribute languages dropped
