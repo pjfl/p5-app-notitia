@@ -170,10 +170,10 @@ my $_rota_summary_link = sub {
 
    $opts or return { colspan => $span, value => '&nbsp;' x 2 };
 
-   my $value = 'C'; my $class = 'vehicle-not-needed';
+   my $value = NUL; my $class = 'vehicle-not-needed';
 
    if    ($opts->{vehicle    }) { $value = 'V'; $class = 'vehicle-assigned'  }
-   elsif ($opts->{vehicle_req}) { $value = 'R'; $class = 'vehicle-requested' }
+   elsif ($opts->{vehicle_req}) { $value = 'V'; $class = 'vehicle-requested' }
 
    return { class => $class, colspan => $span, value => $value };
 };

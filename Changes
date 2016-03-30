@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Month view indicators less confusing. Fixes #3
           - Only shows full error messages when debug is on
           - No docs links if not authenticated and not anon. Fixes #1
           - Added transport_attr to config. Fixes #6
