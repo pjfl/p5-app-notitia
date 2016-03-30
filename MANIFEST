@@ -87,6 +87,7 @@ t/boilerplate.pm
 var/locale/en/notitia.po
 var/root/css/hyde-yellow.css
 var/root/docs/en/01_information/01_getting-started.md
+var/root/docs/en/01_information/02_a_new_beginning.md
 var/root/img/article-footer.png
 var/root/img/dp-buttons.png
 var/root/img/dp-days.png
@@ -155,6 +156,9 @@ var/share/App-Notitia-Schema-Schedule-0.1-SQLite.sql
 var/share/App-Notitia-Schema-Schedule-0.2-MySQL.sql
 var/share/App-Notitia-Schema-Schedule-0.2-PostgreSQL.sql
 var/share/App-Notitia-Schema-Schedule-0.2-SQLite.sql
+var/share/App-Notitia-Schema-Schedule-0.3-MySQL.sql
+var/share/App-Notitia-Schema-Schedule-0.3-PostgreSQL.sql
+var/share/App-Notitia-Schema-Schedule-0.3-SQLite.sql
 var/share/App-Notitia-Schema-Schedule-001-Type.json
 var/share/App-Notitia-Schema-Schedule-002-Person.json
 var/share/App-Notitia-Schema-Schedule-003-Role.json

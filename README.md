@@ -12,7 +12,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 1 $ of **App::Notitia**
+This documents version v0.3.$Rev: 10 $ of **App::Notitia**
 
 # Description
 
@@ -198,6 +198,10 @@ to emit the SQL it generates to `stderr`. On the production server
 TODO: Setup a virtualbox environment to do Explorer testing
 
 TODO: Loose traffic lights from rota
+
+TODO: Cache roles on the session for WebAuthorisation and menu link suppression
+
+TODO: Invalidate document cache when docs updated
 
 # Dependencies
 
