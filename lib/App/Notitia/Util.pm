@@ -280,13 +280,25 @@ sub bool_data_type (;$) {
             is_nullable   => FALSE, };
 }
 
+my $_can_see_link = sub {
+   my ($req, $node) = @_;
+
+   ($node->{type} eq 'folder' or $req->authenticated) and return TRUE;
+
+   my $roles = is_arrayref( $node->{role} ) ?   $node->{role}
+             :              $node->{role}   ? [ $node->{role} ]
+                                            : [];
+
+   return is_member( 'anon', $roles ) ? TRUE : FALSE;
+};
+
 sub build_navigation ($$) {
    my ($req, $opts) = @_; my @nav = ();
 
    my $ids = $req->uri_params->() // []; my $iter = iterator( $opts->{node} );
 
    while (defined (my $node = $iter->())) {
-      $node->{id} eq 'index' and next;
+      $node->{id} eq 'index' and next; $_can_see_link->( $req, $node ) or next;
 
       my $link   = clone( $node ); delete $link->{tree};
       my $prefix = $link->{prefix};
