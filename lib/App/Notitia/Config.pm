@@ -230,6 +230,8 @@ has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
 has 'title'           => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'Notitia';
 
+has 'transport_attr'  => is => 'ro',   isa => HashRef, default => sub { {} };
+
 has 'user'            => is => 'ro',   isa => SimpleStr, default => NUL;
 
 has 'user_home'       => is => 'lazy', isa => Path, coerce => TRUE,
@@ -632,6 +634,11 @@ URIs. Their values are persisted between requests stored in the session store
 
 A non empty simple string that defaults to C<Notitia>. The applcation's
 title as displayed in the title bar of all pages
+
+=item C<transport_attr>
+
+A hash reference. Set in the configuration file it is passed to the transport
+in the email role
 
 =item C<user>
 

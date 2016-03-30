@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added transport_attr to config. Fixes #6
           - Fixed address_viewer authorisation #5
           - Exception handler uses users first name
           - Can login using username, email_address or shortcode
