@@ -212,6 +212,7 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       query           => [ SimpleStr | Undef                ],
       roles           => [ ArrayRef, sub { [] }             ],
       roles_mtime     => [ PositiveInt, 0                   ],
+      rota_date       => [ SimpleStr | Undef                ],
       skin            => [ NonEmptySimpleStr, $_[ 0 ]->skin ],
       theme           => [ NonEmptySimpleStr, 'yellow'      ],
       wanted          => [ SimpleStr | Undef                ], } };

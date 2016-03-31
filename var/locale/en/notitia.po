@@ -830,5 +830,8 @@ msgstr "Displays 'vehicle' records"
 msgid "vrn"
 msgstr "Registration"
 
+msgid "year_management_heading"
+msgstr "Select Year"
+
 msgid "yield_slot_tip"
 msgstr "Yield this [_1] slot"

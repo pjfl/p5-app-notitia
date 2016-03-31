@@ -29,12 +29,12 @@ my $nav_linkto = sub {
    my $depth      = $opts->{depth} // 1;
    my $label_opts = { params => $opts->{label_args} // [],
                       no_quote_bind_values => TRUE, };
+   my $label      = loc $req, $opts->{label} // "${name}_link", $label_opts;
+   my $tip        = loc $req, $opts->{tip} // "${name}_tip";
+   my $uri        = uri_for_action $req, $actionp, @args;
 
-   return { depth => $depth,
-            label => loc( $req, "${name}_link", $label_opts ),
-            tip   => loc( $req, "${name}_tip"  ),
-            type  => 'link',
-            uri   => uri_for_action( $req, $actionp, @args ), };
+   return { depth => $depth, label => $label,
+            tip   => $tip,   type  => 'link', uri => $uri, };
 };
 
 # Private methods
@@ -108,12 +108,27 @@ sub admin_navigation_links {
    return $nav;
 }
 
+my $_year_link = sub {
+   my ($req, $actionp, $name, $date) = @_;
+
+   my $tip    = 'Navigate to this year';
+   my $opts   = { label => $date->year, name => $date->year, tip => $tip };
+   my $args   = [ $name, $date->ymd ];
+   my $params = { rota_date => $date->ymd };
+
+   return $nav_linkto->( $req, $opts, $actionp, $args, $params );
+};
+
 sub rota_navigation_links {
    my ($self, $req, $period, $name) = @_;
 
-   my $actionp = "sched/${period}_rota";
-   my $now     = str2date_time time2str '%Y-%m-01';
-   my $nav     = [ $nav_folder->( $req, 'months' ) ];
+   my $actionp = "sched/${period}_rota"; my $date = $req->session->rota_date;
+
+   $date or $req->session->rota_date( $date = time2str '%Y-%m-01' );
+
+   my $now = str2date_time( $date )->truncate( to => 'day' )->set( day => 1 );
+
+   my $nav = [ $nav_folder->( $req, 'months' ) ];
 
    for my $mno (0 .. 11) {
       my $offset = $mno - 5;
@@ -126,6 +141,12 @@ sub rota_navigation_links {
 
       push @{ $nav }, $nav_linkto->( $req, $opts, $actionp, $args );
    }
+
+   push @{ $nav }, $nav_folder->( $req, 'year' );
+   $date = $now->clone->subtract( years => 1 );
+   push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
+   $date = $now->clone->add( years => 1 );
+   push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
 
    return $nav;
 }
