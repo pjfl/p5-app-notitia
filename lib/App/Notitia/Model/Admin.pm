@@ -5,8 +5,9 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE
                                 TYPE_CLASS_ENUM );
 use App::Notitia::Util      qw( bind bind_fields button check_field_server
                                 create_link delete_button field_options loc
-                                make_tip management_link register_action_paths
-                                save_button uri_for_action );
+                                mail_domain make_tip management_link
+                                register_action_paths save_button
+                                uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
 use Class::Usul::Time       qw( str2date_time );
@@ -267,14 +268,13 @@ my $_create_person_email = sub {
    my $conf    = $self->config;
    my $key     = substr create_token, 0, 32;
    my $opts    = { params => [ $conf->title ], no_quote_bind_values => TRUE };
-   my $from    = loc $req, 'UserRegistration@[_1]', $opts;
    my $subject = loc $req, 'Account activation for [_1]', $opts;
    my $href    = uri_for_action $req, $self->moniker.'/activate', [ $key ];
    my $post    = {
       attributes      => {
          charset      => $conf->encoding,
          content_type => 'text/html', },
-      from            => $from,
+      from            => $conf->title.'@'.mail_domain(),
       stash           => {
          app_name     => $conf->title,
          first_name   => $person->first_name,

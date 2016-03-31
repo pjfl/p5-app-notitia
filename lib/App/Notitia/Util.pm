@@ -7,7 +7,7 @@ use App::Notitia::Constants    qw( FALSE HASH_CHAR NUL SPC TILDE TRUE
                                    VARCHAR_MAX_SIZE );
 use Class::Usul::Functions     qw( class2appdir create_token
                                    ensure_class_loaded find_apphome
-                                   first_char fold get_cfgfiles is_arrayref
+                                   first_char fold get_cfgfiles io is_arrayref
                                    is_hashref is_member throw );
 use Class::Usul::Time          qw( str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
@@ -24,8 +24,8 @@ our @EXPORT_OK = qw( assign_link bind bind_fields bool_data_type
                      delete_button dialog_anchor enumerated_data_type enhance
                      field_options foreign_key_data_type get_hashed_pw get_salt
                      is_draft is_encrypted iterator js_anchor_config lcm_for
-                     loc localise_tree make_id_from make_name_from make_tip
-                     management_link mtime new_salt
+                     loc localise_tree mail_domain make_id_from make_name_from
+                     make_tip management_link mtime new_salt
                      nullable_foreign_key_data_type nullable_varchar_data_type
                      numerical_id_data_type register_action_paths save_button
                      serial_data_type set_element_focus
@@ -55,6 +55,18 @@ my $bind_option = sub {
                                         : undef),
             %{ $v->[ 2 ] // {} } }
         : { label => "${v}", value => ($numify ? 0 + $v : $prefix.$v) };
+};
+
+my $_can_see_link = sub {
+   my ($req, $node) = @_;
+
+   ($node->{type} eq 'folder' or $req->authenticated) and return TRUE;
+
+   my $roles = is_arrayref( $node->{role} ) ?   $node->{role}
+             :              $node->{role}   ? [ $node->{role} ]
+                                            : [];
+
+   return is_member( 'anon', $roles ) ? TRUE : FALSE;
 };
 
 my $_check_field = sub {
@@ -219,18 +231,6 @@ sub bool_data_type (;$) {
             default_value => $_[ 0 ] // FALSE,
             is_nullable   => FALSE, };
 }
-
-my $_can_see_link = sub {
-   my ($req, $node) = @_;
-
-   ($node->{type} eq 'folder' or $req->authenticated) and return TRUE;
-
-   my $roles = is_arrayref( $node->{role} ) ?   $node->{role}
-             :              $node->{role}   ? [ $node->{role} ]
-                                            : [];
-
-   return is_member( 'anon', $roles ) ? TRUE : FALSE;
-};
 
 sub build_navigation ($$) {
    my ($req, $opts) = @_; my @nav = ();
@@ -525,6 +525,14 @@ sub localise_tree ($$) {
       and return $tree->{ $locale };
 
    return FALSE;
+}
+
+sub mail_domain {
+   my $mailname_path = io[ NUL, 'etc', 'mailname' ]; my $domain = 'example.com';
+
+   $mailname_path->exists and $domain = $mailname_path->chomp->getline;
+
+   return $domain;
 }
 
 sub make_id_from ($) {

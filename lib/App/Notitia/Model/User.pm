@@ -2,8 +2,9 @@ package App::Notitia::Model::User;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Util      qw( bind check_form_field loc register_action_paths
-                                set_element_focus uri_for_action );
+use App::Notitia::Util      qw( bind check_form_field loc mail_domain
+                                register_action_paths set_element_focus
+                                uri_for_action );
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
@@ -41,14 +42,13 @@ my $_create_reset_email = sub {
    my $key     = substr create_token, 0, 32;
    my $opts    = { params => [ $conf->title, $person->name ],
                    no_quote_bind_values => TRUE };
-   my $from    = loc $req, 'UserRegistration@[_1]', $opts;
    my $subject = loc $req, 'Password reset for [_2]@[_1]', $opts;
    my $href    = uri_for_action $req, $self->moniker.'/reset', [ $key ];
    my $post    = {
       attributes      => {
          charset      => $conf->encoding,
          content_type => 'text/html', },
-      from            => $from,
+      from            => $conf->title.'@'.mail_domain(),
       stash           => {
          app_name     => $conf->title,
          first_name   => $person->first_name,
@@ -179,10 +179,10 @@ sub logout_action : Role(any) {
    my ($self, $req) = @_; my $message;
 
    if ($req->authenticated) {
-      $message  = [ 'Person [_1] logged out', $req->username ];
+      $message  = [ '[_1] logged out', $req->username ];
       $req->session->authenticated( FALSE );
    }
-   else { $message = [ 'Person not logged in' ] }
+   else { $message = [ 'Not logged in' ] }
 
    return { redirect => { location => $req->base, message => $message } };
 }

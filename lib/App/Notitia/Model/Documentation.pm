@@ -104,6 +104,7 @@ sub dialog : Role(any) {
 sub index : Role(anon) {
    my ($self, $req) = @_;
 
+   # TODO: This double logs the message at the info level
    my $location = $_[ 0 ]->docs_url( $_[ 1 ] );
    my $message  = [ $req->session->collect_status_message( $req ) ];
 

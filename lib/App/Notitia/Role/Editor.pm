@@ -289,7 +289,7 @@ sub save_file {
    my $rel_path =  $path->abs2rel( $self->config->docs_root );
    my $message  =  [ 'File [_1] updated by [_2]', $rel_path, $req->username ];
 
-   $node->{mtime} = $path->stat->{mtime};
+   $self->invalidate_docs_cache( $path->stat->{mtime} );
 
    return { redirect => { location => $req->uri, message => $message } };
 }
