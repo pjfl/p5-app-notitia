@@ -14,14 +14,14 @@
 [%       IF node.url == page.url -%]
 <div class="section-nav">
    <div class="left align-right">
-[%          IF loop.first -%]
+[%          IF loop.first || loop.prev.type == 'folder' -%]
       <span class="prev disabled">[% loc( 'Back' ) %]</span>
 [%          ELSE -%]
       <a href="[% loop.prev.uri %]" class="prev">[% loc( 'Back' ) %]</a>
 [%          END -%]
    </div>
    <div class="right align-left">
-[%          IF loop.last -%]
+[%          IF loop.last || loop.next.type == 'folder' -%]
       <span class="next disabled">[% loc( 'Next' ) %]</span>
 [%          ELSE -%]
       <a href="[% loop.next.uri %]" class="next">[% loc( 'Next' ) %]</a>
