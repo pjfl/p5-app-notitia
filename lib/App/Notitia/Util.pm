@@ -250,9 +250,7 @@ sub build_navigation ($$) {
       $link->{depth} -= 2;
 
       if (defined $ids->[ 0 ] and $ids->[ 0 ] eq $node->{id}) {
-         $link->{class} .= $node->{url} eq $opts->{wanted}
-                         ? ' active' : ' open';
-         shift @{ $ids };
+         $link->{class} .= ' open'; shift @{ $ids };
       }
 
       push @nav, $link;

@@ -135,15 +135,14 @@ sub navigation {
    my $node   = $self->localised_tree( $locale )
       or  throw 'Default locale [_1] has no document tree', [ $locale ],
                 rv => HTTP_NOT_FOUND;
-   my $wanted = $stash->{page}->{wanted} // NUL;
-   my $tuple  = $_nav_cache->{ $wanted };
+   my $key    = $req->authenticated ? 'auth' : 'anon';
+   my $tuple  = $_nav_cache->{ $key };
 
    if (not $tuple or mtime $node > $tuple->{mtime}) {
       my $opts = { config => $conf, label => $self->nav_label,
-                   node   => $node, path  => $self->moniker.'/page',
-                   wanted => $wanted };
+                   node   => $node, path  => $self->moniker.'/page' };
 
-      $tuple  =  $_nav_cache->{ $wanted } = {
+      $tuple  =  $_nav_cache->{ $key } = {
          list => build_navigation( $req, $opts ), mtime => mtime( $node ), };
    }
 

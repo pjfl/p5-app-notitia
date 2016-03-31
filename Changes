@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixed #4. Cache invalidation
           - Use real mail domain for emails
           - Year navigation on month view. Fixes #2
           - Navigation link suppression if not authorised
