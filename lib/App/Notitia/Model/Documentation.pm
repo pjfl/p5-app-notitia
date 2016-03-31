@@ -3,7 +3,7 @@ package App::Notitia::Model::Documentation;
 use App::Notitia::Attributes;  # Will do cleaning
 use App::Notitia::Util     qw( build_tree iterator localise_tree mtime
                                register_action_paths uri_for_action );
-use Class::Usul::Constants qw( NUL );
+use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( first_char throw );
 use HTTP::Status           qw( HTTP_NOT_FOUND );
 use Try::Tiny;
@@ -102,13 +102,13 @@ sub dialog : Role(any) {
 }
 
 sub index : Role(anon) {
-   my ($self, $req) = @_;
+   my ($self, $req) = @_; my $location = $_[ 0 ]->docs_url( $_[ 1 ] );
 
-   # TODO: This double logs the message at the info level
-   my $location = $_[ 0 ]->docs_url( $_[ 1 ] );
-   my $message  = [ $req->session->collect_status_message( $req ) ];
+   my $mid = $req->query_params->( 'mid', { optional => TRUE } );
 
-   return { redirect => { location => $location, message => $message } };
+   $mid and $location->query_form( mid => $mid );
+
+   return { redirect => { location => $location } };
 }
 
 sub locales {
