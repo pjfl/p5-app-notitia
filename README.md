@@ -12,7 +12,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 10 $ of **App::Notitia**
+This documents version v0.3.$Rev: 15 $ of **App::Notitia**
 
 # Description
 
@@ -125,13 +125,11 @@ database schema. Next it populates the database with initial data
 including creating an administration user. You will need the database
 administration password to complete this step
 
-For the user name generation to work you will need to edit the configuration
-file `lib/App/Notitia/app-notitia.json` and add the line
-
-    "person_prefix": "xxx",
-
-substituting a two or three character prefix for \*xxx\* that reflects the
-name of the organisation that is operating the application
+For the user name generation to work you will be prompted to enter a two or
+three character string that reflects the name of the organisation that is
+operating the application. If one is not entered then a random one will
+be generated. This information will be stored in the file
+`lib/App/Notitia/app-notitia_local.json`
 
 By default the development server will run at http://localhost:5000 and can be
 started in the foreground with:
@@ -199,9 +197,13 @@ TODO: Setup a virtualbox environment to do Explorer testing
 
 TODO: Loose traffic lights from rota
 
-TODO: Cache roles on the session for WebAuthorisation and menu link suppression
-
 TODO: Invalidate document cache when docs updated
+
+TODO: Limit list lengths when number of users increases
+
+TODO: Add media query to reduce form size on mobiles
+
+TODO: Schema version numbers and workflow
 
 # Dependencies
 

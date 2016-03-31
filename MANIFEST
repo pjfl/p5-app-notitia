@@ -29,6 +29,7 @@ lib/App/Notitia/Model/Schedule.pm
 lib/App/Notitia/Model/User.pm
 lib/App/Notitia/Model/Vehicle.pm
 lib/App/Notitia/Role/Editor.pm
+lib/App/Notitia/Role/Navigation.pm
 lib/App/Notitia/Role/PageConfiguration.pm
 lib/App/Notitia/Role/PageLoading.pm
 lib/App/Notitia/Role/RSS.pm
@@ -150,12 +151,6 @@ var/root/templates/hyde/vehicle-request_content.tt
 var/root/templates/hyde/vehicle_content.tt
 var/root/templates/hyde/wrapper.tt
 var/root/templates/hyde/yield-slot.tt
-var/share/App-Notitia-Schema-Schedule-0.1-MySQL.sql
-var/share/App-Notitia-Schema-Schedule-0.1-PostgreSQL.sql
-var/share/App-Notitia-Schema-Schedule-0.1-SQLite.sql
-var/share/App-Notitia-Schema-Schedule-0.2-MySQL.sql
-var/share/App-Notitia-Schema-Schedule-0.2-PostgreSQL.sql
-var/share/App-Notitia-Schema-Schedule-0.2-SQLite.sql
 var/share/App-Notitia-Schema-Schedule-0.3-MySQL.sql
 var/share/App-Notitia-Schema-Schedule-0.3-PostgreSQL.sql
 var/share/App-Notitia-Schema-Schedule-0.3-SQLite.sql
