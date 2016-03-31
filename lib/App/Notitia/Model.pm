@@ -63,7 +63,7 @@ sub exception_handler {
    my $redirect = $_auth_redirect->( $req, $e, $summary );
       $redirect and return $redirect;
 
-   my $name = $req->session->first_name // $req->username;
+   my $name = $req->session->first_name || $req->username || 'unknown';
    my $opts = { params   => [ $name ], no_quote_bind_values => TRUE };
    my $page = { debug    => $self->application->debug,
                 error    => $e,

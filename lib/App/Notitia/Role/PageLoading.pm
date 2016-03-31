@@ -130,13 +130,14 @@ sub invalidate_docs_cache {
 sub navigation {
    my ($self, $req, $stash) = @_;
 
-   my $conf   = $self->config;
-   my $locale = $conf->locale; # Always index config default language
-   my $node   = $self->localised_tree( $locale )
+   my $conf     = $self->config;
+   my $locale   = $conf->locale; # Always index config default language
+   my $node     = $self->localised_tree( $locale )
       or  throw 'Default locale [_1] has no document tree', [ $locale ],
                 rv => HTTP_NOT_FOUND;
-   my $key    = $req->authenticated ? 'auth' : 'anon';
-   my $tuple  = $_nav_cache->{ $key };
+   my $location = $stash->{page}->{location};
+   my $key      = $req->authenticated ? "${location}_auth" : "${location}_anon";
+   my $tuple    = $_nav_cache->{ $key };
 
    if (not $tuple or mtime $node > $tuple->{mtime}) {
       my $opts = { config => $conf, label => $self->nav_label,
