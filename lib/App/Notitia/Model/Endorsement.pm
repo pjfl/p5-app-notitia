@@ -2,10 +2,10 @@ package App::Notitia::Model::Endorsement;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( admin_navigation_links bind bind_fields
-                                check_field_server delete_button
-                                loc management_link register_action_paths
-                                save_button uri_for_action );
+use App::Notitia::Util      qw( bind bind_fields check_field_server
+                                delete_button loc management_link
+                                register_action_paths save_button
+                                uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( str2date_time time2str );
@@ -14,6 +14,7 @@ use Moo;
 extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
+with    q(App::Notitia::Role::Navigation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
 
@@ -30,7 +31,7 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{nav }->{list    } = admin_navigation_links $req;
+   $stash->{nav }->{list    } = $self->admin_navigation_links( $req );
    $stash->{page}->{location} = 'admin';
 
    return $stash;

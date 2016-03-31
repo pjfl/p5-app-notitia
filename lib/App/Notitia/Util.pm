@@ -9,32 +9,29 @@ use Class::Usul::Functions     qw( class2appdir create_token
                                    ensure_class_loaded find_apphome
                                    first_char fold get_cfgfiles is_arrayref
                                    is_hashref is_member throw );
-use Class::Usul::Time          qw( str2date_time str2time time2str );
+use Class::Usul::Time          qw( str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
 use Data::Validation;
-use DateTime                   qw( );
 use HTTP::Status               qw( HTTP_OK );
 use JSON::MaybeXS;
 use Scalar::Util               qw( blessed weaken );
 use Try::Tiny;
 use YAML::Tiny;
 
-our @EXPORT_OK = qw( admin_navigation_links assign_link bind bind_fields
-                     bool_data_type build_navigation build_tree button
-                     check_field_server check_form_field clone create_link
-                     date_data_type delete_button dialog_anchor
-                     enumerated_data_type enhance field_options
-                     foreign_key_data_type get_hashed_pw get_salt is_draft
-                     is_encrypted iterator js_anchor_config lcm_for loc
-                     localise_tree make_id_from make_name_from make_tip
+our @EXPORT_OK = qw( assign_link bind bind_fields bool_data_type
+                     build_navigation build_tree button check_field_server
+                     check_form_field clone create_link date_data_type
+                     delete_button dialog_anchor enumerated_data_type enhance
+                     field_options foreign_key_data_type get_hashed_pw get_salt
+                     is_draft is_encrypted iterator js_anchor_config lcm_for
+                     loc localise_tree make_id_from make_name_from make_tip
                      management_link mtime new_salt
                      nullable_foreign_key_data_type nullable_varchar_data_type
-                     numerical_id_data_type register_action_paths
-                     rota_navigation_links save_button serial_data_type
-                     set_element_focus set_on_create_datetime_data_type
-                     slot_claimed slot_identifier slot_limit_index show_node
-                     stash_functions table_link uri_for_action
-                     varchar_data_type );
+                     numerical_id_data_type register_action_paths save_button
+                     serial_data_type set_element_focus
+                     set_on_create_datetime_data_type slot_claimed
+                     slot_identifier slot_limit_index show_node stash_functions
+                     table_link uri_for_action varchar_data_type );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -130,26 +127,6 @@ my $make_tuple = sub {
    return [ 0, $keys, $node ];
 };
 
-my $nav_folder = sub {
-   return { depth => $_[ 2 ] // 0,
-            title => loc( $_[ 0 ], $_[ 1 ].'_management_heading' ),
-            type  => 'folder', };
-};
-
-my $nav_linkto = sub {
-   my ($req, $opts, $actionp, @args) = @_; my $name = $opts->{name};
-
-   my $depth      = $opts->{depth} // 1;
-   my $label_opts = { params => $opts->{label_args} // [],
-                      no_quote_bind_values => TRUE, };
-
-   return { depth => $depth,
-            label => loc( $req, "${name}_link", $label_opts ),
-            tip   => loc( $req, "${name}_tip"  ),
-            type  => 'link',
-            uri   => uri_for_action( $req, $actionp, @args ), };
-};
-
 my $_vehicle_link = sub {
    my ($req, $page, $args, $opts) = @_;
 
@@ -176,44 +153,7 @@ my $_vehicle_link = sub {
 };
 
 # Public functions
-sub admin_navigation_links ($) {
-   my $req = shift; my $now = DateTime->now;
-
-   return
-      [ $nav_folder->( $req, 'events' ),
-        $nav_linkto->( $req, { name => 'current_events' }, 'event/events', [],
-                       after  => $now->clone->subtract( days => 1 )->ymd ),
-        $nav_linkto->( $req, { name => 'previous_events' }, 'event/events', [],
-                       before => $now->ymd ),
-        $nav_folder->( $req, 'people' ),
-        $nav_linkto->( $req, { name => 'contacts_list' }, 'admin/contacts', [],
-                       status => 'current' ),
-        $nav_linkto->( $req, { name => 'people_list' }, 'admin/people', [] ),
-        $nav_linkto->( $req, { name => 'current_people_list' }, 'admin/people',
-                       [], status => 'current' ),
-        $nav_linkto->( $req, { name => 'bike_rider_list' }, 'admin/people', [],
-                       role => 'bike_rider', status => 'current' ),
-        $nav_linkto->( $req, { name => 'controller_list' }, 'admin/people', [],
-                       role => 'controller', status => 'current' ),
-        $nav_linkto->( $req, { name => 'driver_list' }, 'admin/people', [],
-                       role => 'driver', status => 'current' ),
-        $nav_linkto->( $req, { name => 'fund_raiser_list' }, 'admin/people', [],
-                       role => 'fund_raiser', status => 'current' ),
-        $nav_folder->( $req, 'types' ),
-        $nav_linkto->( $req, { name => 'types_list' }, 'admin/types', [] ),
-        $nav_folder->( $req, 'vehicles' ),
-        $nav_linkto->( $req, { name => 'vehicles_list' },
-                       'asset/vehicles', [] ),
-        $nav_linkto->( $req, { name => 'bike_list' },
-                       'asset/vehicles', [], type => 'bike' ),
-        $nav_linkto->( $req, { name => 'service_bikes' },
-                       'asset/vehicles', [], type => 'bike', service => TRUE ),
-        $nav_linkto->( $req, { name => 'private_bikes' },
-                       'asset/vehicles', [], type => 'bike', private => TRUE ),
-        ];
-}
-
-sub assign_link ($$$$) { # Traffic lights
+sub assign_link ($$$$) {
    my ($req, $page, $args, $opts) = @_; my $type = $opts->{type};
 
    my $name = $opts->{name}; my $value = $opts->{vehicle};
@@ -675,27 +615,6 @@ sub register_action_paths (;@) {
    return;
 }
 
-sub rota_navigation_links ($$$) {
-   my ($req, $period, $name) = @_; my $now = str2date_time time2str '%Y-%m-01';
-
-   my $actionp = "sched/${period}_rota";
-   my $nav     = [ $nav_folder->( $req, 'months' ) ];
-
-   for my $mno (0 .. 11) {
-      my $offset = $mno - 5;
-      my $month  = $offset > 0 ? $now->clone->add( months => $offset )
-                 : $offset < 0 ? $now->clone->subtract( months => -$offset )
-                 :               $now->clone;
-      my $opts   = { label_args => [ $month->year ],
-                     name       => lc 'month_'.$month->month_abbr };
-      my $args   = [ $name, $month->ymd ];
-
-      push @{ $nav }, $nav_linkto->( $req, $opts, $actionp, $args );
-   }
-
-   return $nav;
-}
-
 sub save_button ($$;$) {
    my ($req, $name, $type) = @_; my $k = $name ? 'update' : 'create';
 
@@ -826,8 +745,6 @@ Defines no attributes
 
 =head1 Subroutines/Methods
 
-=item C<admin_navigation_links>
-
 =item C<assign_link>
 
 =item C<bind>
@@ -917,8 +834,6 @@ LCM for a list of integers
 Used by L</uri_for_action> to lookup the partial URI for the action path
 prior to calling L<uri_for|Web::ComposableRequest::Base/uri_for>
 
-=item C<rota_navigation_links>
-
 =item C<save_button>
 
 =item C<serial_data_type>
@@ -964,8 +879,6 @@ None
 =item L<Crypt::Eksblowfish::Bcrypt>
 
 =item L<Data::Validation>
-
-=item L<DateTime>
 
 =item L<Exporter::Tiny>
 

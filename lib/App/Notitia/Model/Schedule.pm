@@ -5,8 +5,8 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SHIFT_TYPE_ENUM
                                 SPC TRUE );
 use App::Notitia::Util      qw( assign_link bind button dialog_anchor
                                 js_anchor_config lcm_for loc
-                                register_action_paths rota_navigation_links
-                                set_element_focus slot_claimed slot_identifier
+                                register_action_paths set_element_focus
+                                slot_claimed slot_identifier
                                 slot_limit_index table_link uri_for_action );
 use Class::Usul::Functions  qw( sum throw );
 use Class::Usul::Time       qw( str2date_time time2str );
@@ -16,6 +16,7 @@ use Moo;
 extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
+with    q(App::Notitia::Role::Navigation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
 
@@ -34,7 +35,7 @@ around 'get_stash' => sub {
    my $stash  = $orig->( $self, $req, @args );
    my $name   = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
 
-   $stash->{nav }->{list    } = rota_navigation_links $req, 'month', $name;
+   $stash->{nav}->{list} = $self->rota_navigation_links( $req, 'month', $name );
    $stash->{page}->{location} = 'schedule';
 
    return $stash;

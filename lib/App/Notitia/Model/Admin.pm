@@ -3,10 +3,9 @@ package App::Notitia::Model::Admin;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE
                                 TYPE_CLASS_ENUM );
-use App::Notitia::Util      qw( admin_navigation_links bind bind_fields button
-                                check_field_server create_link
-                                delete_button field_options loc make_tip
-                                management_link register_action_paths
+use App::Notitia::Util      qw( bind bind_fields button check_field_server
+                                create_link delete_button field_options loc
+                                make_tip management_link register_action_paths
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
@@ -17,6 +16,7 @@ use Moo;
 extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
+with    q(App::Notitia::Role::Navigation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
 with    q(Web::Components::Role::Email);
@@ -39,7 +39,7 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{nav }->{list    }   = admin_navigation_links $req;
+   $stash->{nav }->{list    }   = $self->admin_navigation_links( $req );
    $stash->{page}->{location} //= 'admin';
 
    return $stash;
@@ -339,7 +339,7 @@ sub add_type_action : Role(administrator) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub contacts : Role(person_manager) Role(person_viewer) {
+sub contacts : Role(person_manager) Role(address_viewer) {
    my ($self, $req) = @_; return $self->people( $req, 'contacts' );
 }
 
@@ -428,7 +428,7 @@ sub person : Role(person_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub person_summary : Role(administrator) Role(address_viewer) {
+sub person_summary : Role(person_manager) Role(address_viewer) {
    my ($self, $req) = @_; my $people;
 
    my $name       =  $req->uri_params->( 0 );
@@ -454,14 +454,13 @@ sub person_summary : Role(administrator) Role(address_viewer) {
 }
 
 sub people : Role(any) {
-   my ($self, $req, $type) = @_; $type //= NUL;
+   my ($self, $req, $type) = @_;
 
    my $params    =  $req->query_params->( { optional => TRUE } );
    my $role      =  $params->{role  } // NUL;
    my $status    =  $params->{status} // NUL;
 
-   # TODO: Wtf?
-   delete $params->{type}; $type and $params->{type} = $type;
+   $type //= NUL; delete $params->{type}; $type and $params->{type} = $type;
 
    my $title_key =  $role   ? "${role}_list_link"
                  :  $type   ? "${type}_list_heading"

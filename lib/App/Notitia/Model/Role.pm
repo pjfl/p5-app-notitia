@@ -2,14 +2,15 @@ package App::Notitia::Model::Role;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( admin_navigation_links bind button loc
-                                register_action_paths uri_for_action );
+use App::Notitia::Util      qw( bind button loc register_action_paths
+                                uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Moo;
 
 extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
+with    q(App::Notitia::Role::Navigation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
 
@@ -24,7 +25,7 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{nav }->{list    } = admin_navigation_links $req;
+   $stash->{nav }->{list    } = $self->admin_navigation_links( $req );
    $stash->{page}->{location} = 'admin';
    return $stash;
 };

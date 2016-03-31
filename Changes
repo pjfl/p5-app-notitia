@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Navigation link suppression if not authorised
+          - Cache roles on the session for WebAuthorisation
           - Caches person roles on the session
           - Month view indicators less confusing. Fixes #3
           - Only shows full error messages when debug is on
