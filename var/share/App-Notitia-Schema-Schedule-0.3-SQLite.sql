@@ -11,22 +11,27 @@ CREATE TABLE "person" (
   "joined" datetime DEFAULT '0000-00-00',
   "resigned" datetime DEFAULT '0000-00-00',
   "subscription" datetime DEFAULT '0000-00-00',
+  "shortcode" varchar(6) NOT NULL DEFAULT '',
   "name" varchar(64) NOT NULL DEFAULT '',
   "password" varchar(128) NOT NULL DEFAULT '',
-  "first_name" varchar(64) NOT NULL DEFAULT '',
-  "last_name" varchar(64) NOT NULL DEFAULT '',
+  "first_name" varchar(30) NOT NULL DEFAULT '',
+  "last_name" varchar(30) NOT NULL DEFAULT '',
   "address" varchar(64) NOT NULL DEFAULT '',
   "postcode" varchar(16) NOT NULL DEFAULT '',
   "email_address" varchar(64) NOT NULL DEFAULT '',
-  "mobile_phone" varchar(64) NOT NULL DEFAULT '',
-  "home_phone" varchar(64) NOT NULL DEFAULT '',
+  "mobile_phone" varchar(32) NOT NULL DEFAULT '',
+  "home_phone" varchar(32) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
   FOREIGN KEY ("next_of_kin") REFERENCES "person"("id")
 );
 
 CREATE INDEX "person_idx_next_of_kin" ON "person" ("next_of_kin");
 
+CREATE UNIQUE INDEX "person_email_address" ON "person" ("email_address");
+
 CREATE UNIQUE INDEX "person_name" ON "person" ("name");
+
+CREATE UNIQUE INDEX "person_shortcode" ON "person" ("shortcode");
 
 DROP TABLE "type";
 
@@ -44,13 +49,16 @@ CREATE TABLE "endorsement" (
   "recipient_id" integer NOT NULL,
   "points" smallint NOT NULL,
   "endorsed" datetime DEFAULT '0000-00-00',
-  "type_code" varchar(16) NOT NULL DEFAULT '',
+  "type_code" varchar(25) NOT NULL DEFAULT '',
+  "uri" varchar(32) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY ("recipient_id", "type_code"),
   FOREIGN KEY ("recipient_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE INDEX "endorsement_idx_recipient_id" ON "endorsement" ("recipient_id");
+
+CREATE UNIQUE INDEX "endorsement_uri" ON "endorsement" ("uri");
 
 DROP TABLE "rota";
 
@@ -100,7 +108,7 @@ DROP TABLE "shift";
 CREATE TABLE "shift" (
   "id" INTEGER PRIMARY KEY NOT NULL,
   "rota_id" integer NOT NULL,
-  "type" enum NOT NULL DEFAULT 'day',
+  "type_name" enum NOT NULL DEFAULT 'day',
   FOREIGN KEY ("rota_id") REFERENCES "rota"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -163,17 +171,32 @@ CREATE INDEX "participent_idx_event_id" ON "participent" ("event_id");
 
 CREATE INDEX "participent_idx_participent_id" ON "participent" ("participent_id");
 
+DROP TABLE "vehicle_request";
+
+CREATE TABLE "vehicle_request" (
+  "event_id" integer NOT NULL,
+  "type_id" integer NOT NULL,
+  "quantity" smallint NOT NULL,
+  PRIMARY KEY ("event_id", "type_id"),
+  FOREIGN KEY ("event_id") REFERENCES "event"("id"),
+  FOREIGN KEY ("type_id") REFERENCES "type"("id")
+);
+
+CREATE INDEX "vehicle_request_idx_event_id" ON "vehicle_request" ("event_id");
+
+CREATE INDEX "vehicle_request_idx_type_id" ON "vehicle_request" ("type_id");
+
 DROP TABLE "slot";
 
 CREATE TABLE "slot" (
   "shift_id" integer NOT NULL,
   "operator_id" integer NOT NULL,
-  "type" enum NOT NULL DEFAULT '0',
+  "type_name" enum NOT NULL DEFAULT '0',
   "subslot" smallint NOT NULL,
   "bike_requested" boolean NOT NULL DEFAULT 0,
   "vehicle_assigner_id" integer,
   "vehicle_id" integer,
-  PRIMARY KEY ("shift_id", "type", "subslot"),
+  PRIMARY KEY ("shift_id", "type_name", "subslot"),
   FOREIGN KEY ("operator_id") REFERENCES "person"("id"),
   FOREIGN KEY ("shift_id") REFERENCES "shift"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY ("vehicle_id") REFERENCES "vehicle"("id"),

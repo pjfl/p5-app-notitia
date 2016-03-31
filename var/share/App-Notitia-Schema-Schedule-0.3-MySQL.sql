@@ -11,19 +11,22 @@ CREATE TABLE `person` (
   `joined` datetime NULL DEFAULT '0000-00-00',
   `resigned` datetime NULL DEFAULT '0000-00-00',
   `subscription` datetime NULL DEFAULT '0000-00-00',
+  `shortcode` varchar(6) NOT NULL DEFAULT '',
   `name` varchar(64) NOT NULL DEFAULT '',
   `password` varchar(128) NOT NULL DEFAULT '',
-  `first_name` varchar(64) NOT NULL DEFAULT '',
-  `last_name` varchar(64) NOT NULL DEFAULT '',
+  `first_name` varchar(30) NOT NULL DEFAULT '',
+  `last_name` varchar(30) NOT NULL DEFAULT '',
   `address` varchar(64) NOT NULL DEFAULT '',
   `postcode` varchar(16) NOT NULL DEFAULT '',
   `email_address` varchar(64) NOT NULL DEFAULT '',
-  `mobile_phone` varchar(64) NOT NULL DEFAULT '',
-  `home_phone` varchar(64) NOT NULL DEFAULT '',
+  `mobile_phone` varchar(32) NOT NULL DEFAULT '',
+  `home_phone` varchar(32) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',
   INDEX `person_idx_next_of_kin` (`next_of_kin`),
   PRIMARY KEY (`id`),
+  UNIQUE `person_email_address` (`email_address`),
   UNIQUE `person_name` (`name`),
+  UNIQUE `person_shortcode` (`shortcode`),
   CONSTRAINT `person_fk_next_of_kin` FOREIGN KEY (`next_of_kin`) REFERENCES `person` (`id`)
 ) ENGINE=InnoDB;
 
@@ -43,10 +46,12 @@ CREATE TABLE `endorsement` (
   `recipient_id` integer unsigned NOT NULL,
   `points` smallint NOT NULL,
   `endorsed` datetime NULL DEFAULT '0000-00-00',
-  `type_code` varchar(16) NOT NULL DEFAULT '',
+  `type_code` varchar(25) NOT NULL DEFAULT '',
+  `uri` varchar(32) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',
   INDEX `endorsement_idx_recipient_id` (`recipient_id`),
   PRIMARY KEY (`recipient_id`, `type_code`),
+  UNIQUE `endorsement_uri` (`uri`),
   CONSTRAINT `endorsement_fk_recipient_id` FOREIGN KEY (`recipient_id`) REFERENCES `person` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
@@ -93,7 +98,7 @@ DROP TABLE IF EXISTS `shift`;
 CREATE TABLE `shift` (
   `id` integer unsigned NOT NULL auto_increment,
   `rota_id` integer unsigned NOT NULL,
-  `type` enum('day', 'night') NOT NULL DEFAULT 'day',
+  `type_name` enum('day', 'night') NOT NULL DEFAULT 'day',
   INDEX `shift_idx_rota_id` (`rota_id`),
   PRIMARY KEY (`id`),
   CONSTRAINT `shift_fk_rota_id` FOREIGN KEY (`rota_id`) REFERENCES `rota` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -150,12 +155,25 @@ CREATE TABLE `participent` (
   CONSTRAINT `participent_fk_participent_id` FOREIGN KEY (`participent_id`) REFERENCES `person` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS `vehicle_request`;
+
+CREATE TABLE `vehicle_request` (
+  `event_id` integer unsigned NOT NULL,
+  `type_id` integer unsigned NOT NULL,
+  `quantity` smallint NOT NULL,
+  INDEX `vehicle_request_idx_event_id` (`event_id`),
+  INDEX `vehicle_request_idx_type_id` (`type_id`),
+  PRIMARY KEY (`event_id`, `type_id`),
+  CONSTRAINT `vehicle_request_fk_event_id` FOREIGN KEY (`event_id`) REFERENCES `event` (`id`),
+  CONSTRAINT `vehicle_request_fk_type_id` FOREIGN KEY (`type_id`) REFERENCES `type` (`id`)
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS `slot`;
 
 CREATE TABLE `slot` (
   `shift_id` integer unsigned NOT NULL,
   `operator_id` integer unsigned NOT NULL,
-  `type` enum('controller', 'rider', 'driver', '0') NOT NULL DEFAULT '0',
+  `type_name` enum('controller', 'rider', 'driver', '0') NOT NULL DEFAULT '0',
   `subslot` smallint NOT NULL,
   `bike_requested` enum('0','1') NOT NULL DEFAULT '0',
   `vehicle_assigner_id` integer unsigned NULL,
@@ -164,7 +182,7 @@ CREATE TABLE `slot` (
   INDEX `slot_idx_shift_id` (`shift_id`),
   INDEX `slot_idx_vehicle_id` (`vehicle_id`),
   INDEX `slot_idx_vehicle_assigner_id` (`vehicle_assigner_id`),
-  PRIMARY KEY (`shift_id`, `type`, `subslot`),
+  PRIMARY KEY (`shift_id`, `type_name`, `subslot`),
   CONSTRAINT `slot_fk_operator_id` FOREIGN KEY (`operator_id`) REFERENCES `person` (`id`),
   CONSTRAINT `slot_fk_shift_id` FOREIGN KEY (`shift_id`) REFERENCES `shift` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `slot_fk_vehicle_id` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicle` (`id`),

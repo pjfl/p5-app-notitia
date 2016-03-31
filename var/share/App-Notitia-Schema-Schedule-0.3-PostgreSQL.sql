@@ -8,18 +8,21 @@ CREATE TABLE "person" (
   "joined" timestamp DEFAULT '0000-00-00',
   "resigned" timestamp DEFAULT '0000-00-00',
   "subscription" timestamp DEFAULT '0000-00-00',
+  "shortcode" character varying(6) DEFAULT '' NOT NULL,
   "name" character varying(64) DEFAULT '' NOT NULL,
   "password" character varying(128) DEFAULT '' NOT NULL,
-  "first_name" character varying(64) DEFAULT '' NOT NULL,
-  "last_name" character varying(64) DEFAULT '' NOT NULL,
+  "first_name" character varying(30) DEFAULT '' NOT NULL,
+  "last_name" character varying(30) DEFAULT '' NOT NULL,
   "address" character varying(64) DEFAULT '' NOT NULL,
   "postcode" character varying(16) DEFAULT '' NOT NULL,
   "email_address" character varying(64) DEFAULT '' NOT NULL,
-  "mobile_phone" character varying(64) DEFAULT '' NOT NULL,
-  "home_phone" character varying(64) DEFAULT '' NOT NULL,
+  "mobile_phone" character varying(32) DEFAULT '' NOT NULL,
+  "home_phone" character varying(32) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "person_name" UNIQUE ("name")
+  CONSTRAINT "person_email_address" UNIQUE ("email_address"),
+  CONSTRAINT "person_name" UNIQUE ("name"),
+  CONSTRAINT "person_shortcode" UNIQUE ("shortcode")
 );
 CREATE INDEX "person_idx_next_of_kin" on "person" ("next_of_kin");
 
@@ -37,9 +40,11 @@ CREATE TABLE "endorsement" (
   "recipient_id" integer NOT NULL,
   "points" smallint NOT NULL,
   "endorsed" timestamp DEFAULT '0000-00-00',
-  "type_code" character varying(16) DEFAULT '' NOT NULL,
+  "type_code" character varying(25) DEFAULT '' NOT NULL,
+  "uri" character varying(32) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,
-  PRIMARY KEY ("recipient_id", "type_code")
+  PRIMARY KEY ("recipient_id", "type_code"),
+  CONSTRAINT "endorsement_uri" UNIQUE ("uri")
 );
 CREATE INDEX "endorsement_idx_recipient_id" on "endorsement" ("recipient_id");
 
@@ -77,7 +82,7 @@ DROP TABLE "shift" CASCADE;
 CREATE TABLE "shift" (
   "id" serial NOT NULL,
   "rota_id" integer NOT NULL,
-  "type" character varying DEFAULT 'day' NOT NULL,
+  "type_name" character varying DEFAULT 'day' NOT NULL,
   PRIMARY KEY ("id")
 );
 CREATE INDEX "shift_idx_rota_id" on "shift" ("rota_id");
@@ -124,16 +129,26 @@ CREATE TABLE "participent" (
 CREATE INDEX "participent_idx_event_id" on "participent" ("event_id");
 CREATE INDEX "participent_idx_participent_id" on "participent" ("participent_id");
 
+DROP TABLE "vehicle_request" CASCADE;
+CREATE TABLE "vehicle_request" (
+  "event_id" integer NOT NULL,
+  "type_id" integer NOT NULL,
+  "quantity" smallint NOT NULL,
+  PRIMARY KEY ("event_id", "type_id")
+);
+CREATE INDEX "vehicle_request_idx_event_id" on "vehicle_request" ("event_id");
+CREATE INDEX "vehicle_request_idx_type_id" on "vehicle_request" ("type_id");
+
 DROP TABLE "slot" CASCADE;
 CREATE TABLE "slot" (
   "shift_id" integer NOT NULL,
   "operator_id" integer NOT NULL,
-  "type" character varying DEFAULT '0' NOT NULL,
+  "type_name" character varying DEFAULT '0' NOT NULL,
   "subslot" smallint NOT NULL,
   "bike_requested" boolean DEFAULT '0' NOT NULL,
   "vehicle_assigner_id" integer,
   "vehicle_id" integer,
-  PRIMARY KEY ("shift_id", "type", "subslot")
+  PRIMARY KEY ("shift_id", "type_name", "subslot")
 );
 CREATE INDEX "slot_idx_operator_id" on "slot" ("operator_id");
 CREATE INDEX "slot_idx_shift_id" on "slot" ("shift_id");
@@ -192,6 +207,12 @@ ALTER TABLE "participent" ADD CONSTRAINT "participent_fk_event_id" FOREIGN KEY (
 
 ALTER TABLE "participent" ADD CONSTRAINT "participent_fk_participent_id" FOREIGN KEY ("participent_id")
   REFERENCES "person" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
+
+ALTER TABLE "vehicle_request" ADD CONSTRAINT "vehicle_request_fk_event_id" FOREIGN KEY ("event_id")
+  REFERENCES "event" ("id") DEFERRABLE;
+
+ALTER TABLE "vehicle_request" ADD CONSTRAINT "vehicle_request_fk_type_id" FOREIGN KEY ("type_id")
+  REFERENCES "type" ("id") DEFERRABLE;
 
 ALTER TABLE "slot" ADD CONSTRAINT "slot_fk_operator_id" FOREIGN KEY ("operator_id")
   REFERENCES "person" ("id") DEFERRABLE;
