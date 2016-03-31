@@ -30,3 +30,4 @@ var/tmp
 var/logs
 var/run
 *.tar.gz
+App-Notitia-*.*.*

@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 19 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 20 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 19 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 20 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -231,8 +231,6 @@ C<stderr> is redirected to F<var/tmp/daemon.err>
 TODO: Setup a virtualbox environment to do Explorer testing
 
 TODO: Loose traffic lights from rota
-
-TODO: Invalidate document cache when docs updated
 
 TODO: Limit list lengths when number of users increases
 

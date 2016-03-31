@@ -12,7 +12,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 15 $ of **App::Notitia**
+This documents version v0.3.$Rev: 20 $ of **App::Notitia**
 
 # Description
 
@@ -196,8 +196,6 @@ to emit the SQL it generates to `stderr`. On the production server
 TODO: Setup a virtualbox environment to do Explorer testing
 
 TODO: Loose traffic lights from rota
-
-TODO: Invalidate document cache when docs updated
 
 TODO: Limit list lengths when number of users increases
 
