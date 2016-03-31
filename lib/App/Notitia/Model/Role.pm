@@ -61,6 +61,8 @@ sub add_role_action : Role(administrator) Role(person_manager) {
 
    $person->add_member_to( $_ ) for (@{ $roles });
 
+   $self->config->roles_mtime->touch;
+
    my $location = uri_for_action( $req, $self->moniker.'/role', [ $name ] );
    my $message  =
       [ '[_1] role(s) added by [_2]', $person->label, $req->username ];
@@ -76,6 +78,8 @@ sub remove_role_action : Role(administrator) Role(person_manager) {
    my $roles  = $req->body_params->( 'person_roles', { multiple => TRUE } );
 
    $person->delete_member_from( $_ ) for (@{ $roles });
+
+   $self->config->roles_mtime->touch;
 
    my $location = uri_for_action( $req, $self->moniker.'/role', [ $name ] );
    my $message  =

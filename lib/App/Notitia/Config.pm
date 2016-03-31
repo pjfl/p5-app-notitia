@@ -187,6 +187,9 @@ has 'repo_url'        => is => 'ro',   isa => SimpleStr, default => NUL;
 has 'request_roles'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    builder            => sub { [ 'L10N', 'Session', 'JSON', 'Cookie' ] };
 
+has 'roles_mtime'     => is => 'lazy', isa => Path, coerce => TRUE,
+   builder            => sub { $_[ 0 ]->tempdir->catfile( 'roles_mtime' ) };
+
 has 'schema_classes'  => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
    builder            => sub { {
       'schedule'      => 'App::Notitia::Schema::Schedule', } };
@@ -207,6 +210,8 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
    builder            => sub { {
       first_name      => [ SimpleStr | Undef                ],
       query           => [ SimpleStr | Undef                ],
+      roles           => [ ArrayRef, sub { [] }             ],
+      roles_mtime     => [ PositiveInt, 0                   ],
       skin            => [ NonEmptySimpleStr, $_[ 0 ]->skin ],
       theme           => [ NonEmptySimpleStr, 'yellow'      ],
       wanted          => [ SimpleStr | Undef                ], } };
@@ -530,6 +535,10 @@ for this project
 
 Defaults to C<L10N>, C<Session>, C<JSON>, and C<Cookie>. The list of roles to
 apply to the default request base class
+
+=item C<roles_mtime>
+
+Path object for the roles cache modification time file
 
 =item C<schema_classes>
 

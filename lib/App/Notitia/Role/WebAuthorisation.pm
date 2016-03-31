@@ -18,6 +18,24 @@ my $_list_roles_of = sub {
    my $attr = attributes::get( shift ) // {}; return $attr->{Role} // [];
 };
 
+my $_user_roles = sub {
+   my ($self, $req) = @_; my $roles_mtime = $self->config->roles_mtime;
+
+   my $session = $req->session; my $roles = $session->roles; my $person;
+
+   $roles_mtime = $roles_mtime->exists ? $roles_mtime->stat->{mtime} : 0;
+
+   $session->roles_mtime < $roles_mtime and $roles = [];
+
+   unless (defined $roles->[ 0 ]) {
+      $person = $self->components->{admin}->find_by_shortcode( $req->username );
+      $person and $session->roles( $roles = $person->list_roles );
+      defined $roles->[ 0 ] and $session->roles_mtime( $roles_mtime );
+   }
+
+   return $roles, $person ? $person->label : $req->username;
+};
+
 # Construction
 around 'execute' => sub {
    my ($orig, $self, $method, $req) = @_; my $class = blessed $self || $self;
@@ -32,20 +50,19 @@ around 'execute' => sub {
 
    is_member 'anon', $method_roles and return $orig->( $self, $method, $req );
 
-   $req->authenticated or throw AuthenticationRequired,
-                                [ $req->path ], rv => HTTP_UNAUTHORIZED;
+   $req->authenticated
+      or throw AuthenticationRequired, [ $req->path ], rv => HTTP_UNAUTHORIZED;
 
-   is_member 'any', $method_roles and return $orig->( $self, $method, $req );
+   is_member 'any',  $method_roles and return $orig->( $self, $method, $req );
 
-   my $person = $self->components->{admin}->find_by_shortcode( $req->username );
+   my ($roles, $name) = $self->$_user_roles( $req );
 
-   for my $role_name (@{ $person->list_roles }) {
+   for my $role_name (@{ $roles }) {
       is_member $role_name, $method_roles
          and return $orig->( $self, $method, $req );
    }
 
-   throw 'Person [_1] permission denied', [ $req->username ],
-         rv => HTTP_FORBIDDEN;
+   throw '[_1] permission denied', [ $name ], rv => HTTP_FORBIDDEN;
 };
 
 1;

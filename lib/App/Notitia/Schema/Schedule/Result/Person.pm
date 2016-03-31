@@ -22,6 +22,8 @@ use Unexpected::Functions      qw( AccountInactive IncorrectPassword
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
+my $left_join = { join_type => 'left' };
+
 $class->table( 'person' );
 
 $class->add_columns
@@ -51,6 +53,7 @@ $class->add_unique_constraint( [ 'name' ] );
 $class->add_unique_constraint( [ 'email_address' ] );
 $class->add_unique_constraint( [ 'shortcode' ] );
 
+# TODO: Rename attribute to next_of_kin_id and make this a left_join
 $class->belongs_to( next_of_kin => "${class}" );
 
 $class->has_many( certs        => "${result}::Certification", 'recipient_id'  );
@@ -298,11 +301,11 @@ sub delete_participent_for {
 }
 
 sub insert {
-   my $self      = shift;
-   my $columns   = { $self->get_inflated_columns };
-   my $first     = $columns->{first_name};
-   my $last      = $columns->{last_name};
-   my $password  = $columns->{password};
+   my $self     = shift;
+   my $columns  = { $self->get_inflated_columns };
+   my $first    = $columns->{first_name};
+   my $last     = $columns->{last_name};
+   my $password = $columns->{password};
 
    $columns->{name} or $columns->{name} = lc "${first}.${last}";
    $columns->{shortcode} or $columns->{shortcode}
