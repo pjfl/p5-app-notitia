@@ -68,6 +68,19 @@ my $_add_endorsement_js = sub {
             check_field_server( 'endorsed',  $opts ), ];
 };
 
+my $_bind_endorsement_fields = sub {
+   my ($self, $blot) = @_;
+
+   my $map      =  {
+      type_code => { class => 'standard-field server' },
+      endorsed  => { class => 'standard-field server' },
+      notes     => { class => 'standard-field autosize' },
+      points    => {},
+   };
+
+   return bind_fields $self->schema, $blot, $map, 'Endorsement';
+};
+
 my $_endorsement_links = sub {
    my ($self, $req, $name, $uri) = @_;
 
@@ -83,20 +96,6 @@ my $_endorsement_links = sub {
    $_blots_links_cache->{ $uri } = $links;
 
    return @{ $links };
-};
-
-# Private methods
-my $_bind_endorsement_fields = sub {
-   my ($self, $blot) = @_;
-
-   my $map      =  {
-      type_code => { class => 'standard-field server' },
-      endorsed  => { class => 'standard-field server' },
-      notes     => { class => 'standard-field autosize' },
-      points    => {},
-   };
-
-   return bind_fields $self->schema, $blot, $map, 'Endorsement';
 };
 
 my $_find_endorsement_by = sub {
@@ -132,7 +131,7 @@ my $_update_endorsement_from_request = sub {
    return;
 };
 
-# Public functions
+# Public methods
 sub endorsement : Role(person_manager) {
    my ($self, $req) = @_;
 
