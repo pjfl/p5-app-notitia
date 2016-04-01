@@ -53,6 +53,7 @@ my $prereqs  = {
     'Type::Tiny' => '1.000005',
     'Unexpected' => 'v0.43.0',
     'Web::Components' => 'v0.6.0',
+    'Web::Components::Role::Email' => 'v0.2.0',
     'Web::Components::Role::TT' => 'v0.5.0',
     'Web::ComposableRequest' => 'v0.8.0',
     'Web::Simple' => '0.030',

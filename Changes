@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Released W:C:R:Email to CPAN. Added as dependency
           - Fixed double logging on docs index
           - Fixed section nav on folders. Fixes #8
           - Fixed #4. More cache invalidation
