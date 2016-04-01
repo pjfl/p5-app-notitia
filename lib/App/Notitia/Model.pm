@@ -4,6 +4,7 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( uri_for_action );
 use Class::Usul::Functions  qw( exception throw );
+use Class::Usul::Time       qw( str2date_time );
 use Class::Usul::Types      qw( Plinth );
 use HTTP::Status            qw( HTTP_BAD_REQUEST HTTP_NOT_FOUND HTTP_OK );
 use Scalar::Util            qw( blessed );
@@ -106,6 +107,10 @@ sub initialise_stash {
 
 sub load_page {
    my ($self, $req, $page) = @_; $page //= {}; return $page;
+}
+
+sub to_dt {
+   my ($self, $date) = @_; return str2date_time $date, 'GMT';
 }
 
 sub not_found : Role(anon) {

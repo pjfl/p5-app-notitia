@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Herded str2date_time calls into model method
           - Released W:C:R:Email to CPAN. Added as dependency
           - Fixed double logging on docs index
           - Fixed section nav on folders. Fixes #8

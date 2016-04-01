@@ -85,15 +85,11 @@ sub list_all_events {
    my $after  = delete $opts->{after}; my $before = delete $opts->{before};
 
    if ($after) {
-      my $date = $parser->format_datetime( str2date_time( $after, 'GMT' ) );
-
-      $where = { 'rota.date' => { '>' => $date } };
+      $where = { 'rota.date' => { '>' => $parser->format_datetime( $after ) } };
       $opts->{order_by} //= 'date';
    }
    elsif ($before) {
-      my $date = $parser->format_datetime( str2date_time( $before, 'GMT' ) );
-
-      $where = { 'rota.date' => { '<' => $date } };
+      $where = { 'rota.date' => { '<' => $parser->format_datetime( $before ) }};
    }
 
    $opts->{order_by} //= { -desc => 'date' };

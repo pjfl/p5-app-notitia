@@ -10,7 +10,6 @@ use App::Notitia::Util      qw( bind bind_fields button check_field_server
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
-use Class::Usul::Time       qw( str2date_time );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Moo;
 
@@ -229,38 +228,6 @@ my $_types_links = sub {
    return @{ $links };
 };
 
-my $_update_person_from_request = sub {
-   my ($req, $schema, $person) = @_; my $params = $req->body_params;
-
-   my $opts = { optional => TRUE };
-
-   for my $attr (qw( active address dob email_address first_name home_phone
-                     joined last_name mobile_phone notes password_expired
-                     postcode resigned subscription )) {
-      if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
-      else { delete $opts->{raw} }
-
-      my $v = $params->( $attr, $opts );
-
-      not defined $v and is_member $attr, [ qw( active password_expired ) ]
-          and $v = FALSE;
-
-      defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
-
-      # No tz and 1/1/1970 is the last day in 69
-      length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
-         and $v = str2date_time $v, 'GMT';
-
-      $person->$attr( $v );
-   }
-
-   $person->name( $params->( 'username', $opts ) );
-   $person->next_of_kin
-      ( $_assert_not_self->( $person, $params->( 'next_of_kin', $opts ) ) );
-
-   return;
-};
-
 # Private methods
 my $_create_person_email = sub {
    my ($self, $req, $person, $password) = @_;
@@ -300,6 +267,38 @@ my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
    return [ [ NUL, NUL ], $type_rs->list_role_types->all ];
+};
+
+my $_update_person_from_request = sub {
+   my ($self, $req, $schema, $person) = @_; my $params = $req->body_params;
+
+   my $opts = { optional => TRUE };
+
+   for my $attr (qw( active address dob email_address first_name home_phone
+                     joined last_name mobile_phone notes password_expired
+                     postcode resigned subscription )) {
+      if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
+      else { delete $opts->{raw} }
+
+      my $v = $params->( $attr, $opts );
+
+      not defined $v and is_member $attr, [ qw( active password_expired ) ]
+          and $v = FALSE;
+
+      defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
+
+      # No tz and 1/1/1970 is the last day in 69
+      length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
+         and $v = $self->to_dt( $v );
+
+      $person->$attr( $v );
+   }
+
+   $person->name( $params->( 'username', $opts ) );
+   $person->next_of_kin
+      ( $_assert_not_self->( $person, $params->( 'next_of_kin', $opts ) ) );
+
+   return;
 };
 
 # Public methods
@@ -348,7 +347,7 @@ sub create_person_action : Role(person_manager) {
 
    my $person = $self->schema->resultset( 'Person' )->new_result( {} );
 
-   $_update_person_from_request->( $req, $self->schema, $person );
+   $self->$_update_person_from_request( $req, $self->schema, $person );
 
    my $role = $req->body_params->( 'primary_role', { optional => TRUE } );
 
@@ -571,7 +570,7 @@ sub update_person_action : Role(person_manager) {
    my $person = $self->find_by_shortcode( $name );
    my $label  = $person->label;
 
-   $_update_person_from_request->( $req, $self->schema, $person );
+   $self->$_update_person_from_request( $req, $self->schema, $person );
    $person->update;
 
    my $message = [ 'Person [_1] updated by [_2]', $label, $req->username ];

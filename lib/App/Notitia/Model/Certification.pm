@@ -8,7 +8,7 @@ use App::Notitia::Util      qw( bind bind_fields check_field_server
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
-use Class::Usul::Time       qw( str2date_time time2str );
+use Class::Usul::Time       qw( time2str );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -108,9 +108,9 @@ my $_maybe_find_cert = sub {
 };
 
 my $_update_cert_from_request = sub {
-   my ($self, $req, $cert) = @_; my $params = $req->body_params;
+   my ($self, $req, $cert) = @_;
 
-   my $opts = { optional => TRUE };
+   my $opts = { optional => TRUE }; my $params = $req->body_params;
 
    for my $attr (qw( completed notes )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
@@ -121,7 +121,7 @@ my $_update_cert_from_request = sub {
       defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
       length $v and is_member $attr, [ qw( completed ) ]
-         and $v = str2date_time( $v, 'GMT' );
+         and $v = $self->to_dt( $v );
 
       $cert->$attr( $v );
    }

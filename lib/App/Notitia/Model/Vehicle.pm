@@ -10,7 +10,6 @@ use App::Notitia::Util      qw( assign_link bind bind_fields button
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
-use Class::Usul::Time       qw( str2date_time );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Try::Tiny;
 use Moo;
@@ -126,31 +125,6 @@ my $_quantity_list = sub {
 
    return { class => 'single-digit-select narrow',
             value => bind( "${type}_quantity", $values, $opts ) };
-};
-
-my $_update_vehicle_from_request = sub {
-   my ($req, $vehicle) = @_; my $params = $req->body_params; my $v;
-
-   my $opts = { optional => TRUE };
-
-   for my $attr (qw( aquired disposed name notes vrn )) {
-      if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
-      else { delete $opts->{raw} }
-
-      my $v = $params->( $attr, $opts ); defined $v or next;
-
-      $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
-
-      length $v and is_member $attr, [ qw( aquired disposed ) ]
-         and $v = str2date_time $v, 'GMT';
-
-      $vehicle->$attr( $v );
-   }
-
-   $v = $params->( 'owner_id', $opts ); $vehicle->owner_id( $v ? $v : undef );
-   $v = $params->( 'type', $opts ); defined $v and $vehicle->type_id( $v );
-
-   return;
 };
 
 my $_update_vehicle_req_from_request = sub {
@@ -337,6 +311,31 @@ my $_toggle_assignment = sub {
    return { redirect => { location => $location, message => $message } };
 };
 
+my $_update_vehicle_from_request = sub {
+   my ($self, $req, $vehicle) = @_; my $params = $req->body_params; my $v;
+
+   my $opts = { optional => TRUE };
+
+   for my $attr (qw( aquired disposed name notes vrn )) {
+      if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
+      else { delete $opts->{raw} }
+
+      my $v = $params->( $attr, $opts ); defined $v or next;
+
+      $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
+
+      length $v and is_member $attr, [ qw( aquired disposed ) ]
+         and $v = $self->to_dt( $v );
+
+      $vehicle->$attr( $v );
+   }
+
+   $v = $params->( 'owner_id', $opts ); $vehicle->owner_id( $v ? $v : undef );
+   $v = $params->( 'type', $opts ); defined $v and $vehicle->type_id( $v );
+
+   return;
+};
+
 # Public methods
 sub assign : Role(rota_manager) {
    my ($self, $req) = @_; my $params = $req->uri_params;
@@ -386,7 +385,7 @@ sub create_vehicle_action : Role(rota_manager) {
 
    my $vehicle  = $self->schema->resultset( 'Vehicle' )->new_result( {} );
 
-   $_update_vehicle_from_request->( $req, $vehicle ); $vehicle->insert;
+   $self->$_update_vehicle_from_request( $req, $vehicle ); $vehicle->insert;
 
    my $vrn      = $vehicle->vrn;
    my $message  = [ 'Vehicle [_1] created by [_2]', $vrn, $req->username ];
@@ -475,7 +474,7 @@ sub update_vehicle_action : Role(rota_manager) {
    my $vrn     = $req->uri_params->( 0 );
    my $vehicle = $self->schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
 
-   $_update_vehicle_from_request->( $req, $vehicle ); $vehicle->update;
+   $self->$_update_vehicle_from_request( $req, $vehicle ); $vehicle->update;
 
    my $message = [ 'Vehicle [_1] updated by [_2]', $vrn, $req->username ];
 

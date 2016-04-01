@@ -8,7 +8,7 @@ use App::Notitia::Util      qw( bind bind_fields button check_field_server
                                 save_button uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
-use Class::Usul::Time       qw( str2date_time time2str );
+use Class::Usul::Time       qw( time2str );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -207,7 +207,7 @@ my $_write_blog_post = sub {
 sub create_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $date     =  str2date_time $req->body_params->( 'event_date' ), 'GMT';
+   my $date     =  $self->to_dt( $req->body_params->( 'event_date' ) );
    my $event    =  $self->schema->resultset( 'Event' )->new_result
       ( { rota  => 'main', # TODO: Naughty
           date  => $date->ymd,
@@ -299,11 +299,13 @@ sub events : Role(any) {
 
    my $actionp   =  $self->moniker.'/event';
    my $params    =  $req->query_params;
-   my $opts      =  { after  => $params->( 'after',  { optional => TRUE } ),
-                      before => $params->( 'before', { optional => TRUE } ), };
-   my $title     =  $opts->{after } ? 'current_events_heading'
-                 :  $opts->{before} ? 'previous_events_heading'
-                 :                    'events_management_heading';
+   my $after     =  $params->( 'after',  { optional => TRUE } );
+   my $before    =  $params->( 'before', { optional => TRUE } );
+   my $opts      =  { after  => $after  ? $self->to_dt( $after  ) : FALSE,
+                      before => $before ? $self->to_dt( $before ) : FALSE, };
+   my $title     =  $after  ? 'current_events_heading'
+                 :  $before ? 'previous_events_heading'
+                 :            'events_management_heading';
    my $page      =  {
       fields     => {
          add     => create_link( $req, $actionp, 'event' ),
