@@ -3,6 +3,7 @@
 <form action="[% page.fields.slot_href %]" class="standard-form"
      enctype="application/x-www-form-urlencoded"
       method="post" name="claim-slot">
+[% IF page.fields.assignee; Select( page.fields.assignee ); END -%]
 [% IF page.fields.request_bike; CheckBox( page.fields.request_bike ); END -%]
 [% Button( page.fields.confirm ) -%]
 </form>

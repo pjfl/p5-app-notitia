@@ -8,7 +8,7 @@ use App::Notitia::Util      qw( assign_link bind button dialog_anchor
                                 register_action_paths set_element_focus
                                 slot_claimed slot_identifier
                                 slot_limit_index table_link uri_for_action );
-use Class::Usul::Functions  qw( sum throw );
+use Class::Usul::Functions  qw( is_member sum throw );
 use Class::Usul::Time       qw( time2str );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Moo;
@@ -503,7 +503,8 @@ my $_get_page = sub {
 };
 
 # Public methods
-sub claim_slot_action : Role(bike_rider) Role(controller) Role(driver) {
+sub claim_slot_action : Role(rota_manager) Role(bike_rider) Role(controller)
+                        Role(driver) {
    my ($self, $req) = @_;
 
    my $params    = $req->uri_params;
@@ -512,8 +513,9 @@ sub claim_slot_action : Role(bike_rider) Role(controller) Role(driver) {
    my $name      = $params->( 2 );
    my $opts      = { optional => TRUE };
    my $bike      = $req->body_params->( 'request_bike', $opts ) // FALSE;
+   my $assignee  = $req->body_params->( 'assignee', $opts ) || $req->username;
    my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_by_shortcode( $req->username );
+   my $person    = $person_rs->find_by_shortcode( $assignee );
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
@@ -629,12 +631,27 @@ sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
+   if ($action eq 'claim') {
+      my $role = $slot_type eq 'controller' ? 'controller'
+               : $slot_type eq 'rider'      ? 'bike_rider'
+               : $slot_type eq 'driver'     ? 'driver'
+                                            : FALSE;
+
+      if ($role and is_member 'rota_manager', $req->session->roles) {
+         my $person_rs = $self->schema->resultset( 'Person' );
+         my $person    = $person_rs->find_by_shortcode( $req->username );
+         my $opts      = { fields => { selected => $person } };
+         my $people    = $person_rs->list_people( $role, $opts );
+
+         $fields->{assignee} = bind 'assignee', [ [ NUL, NUL ], @{ $people } ];
+      }
+
+      $slot_type eq 'rider' and $fields->{request_bike}
+            = bind( 'request_bike', TRUE, { container_class => 'right-last' } );
+   }
+
    $fields->{confirm  } = $_confirm_slot_button->( $req, $action );
    $fields->{slot_href} = uri_for_action( $req, $self->moniker.'/slot', $args );
-
-   $action eq 'claim' and $slot_type eq 'rider'
-      and $fields->{request_bike}
-         = bind( 'request_bike', TRUE, { container_class => 'right-last' } );
 
    return $stash;
 }

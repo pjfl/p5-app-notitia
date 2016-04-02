@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Implemented #9. Rota manager can assign slots
+          - Implemented #10. Add links on person, vehicle and event
           - Fixed #18. Added logout button mobile styling
           - Moved field help to after label
           - Fixed serving of asset files

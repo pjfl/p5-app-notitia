@@ -63,6 +63,9 @@ msgstr "Assessment"
 msgid "assign_management_tip"
 msgstr "Assign a vehicle to this slot"
 
+msgid "assignee"
+msgstr "Assign To"
+
 msgid "aquired"
 msgstr "Aquired"
 
