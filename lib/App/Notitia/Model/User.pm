@@ -162,6 +162,7 @@ sub login_action : Role(anon) {
 
    $person->authenticate( $password );
    $session->authenticated( TRUE );
+   $session->roles( [] );
    $session->username( $person->shortcode );
    $session->first_name( $person->first_name );
 
@@ -181,6 +182,7 @@ sub logout_action : Role(any) {
    if ($req->authenticated) {
       $message  = [ '[_1] logged out', $req->username ];
       $req->session->authenticated( FALSE );
+      $req->session->roles( [] );
    }
    else { $message = [ 'Not logged in' ] }
 
