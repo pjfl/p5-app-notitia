@@ -25,7 +25,9 @@ with 'Web::Components::Loader';
 around 'to_psgi_app' => sub {
    my ($orig, $self, @args) = @_; my $psgi_app = $orig->( $self, @args );
 
-   my $conf = $self->config; my $serve_as_static = $conf->serve_as_static;
+   my $conf = $self->config; my $assets = $conf->assets;
+
+   my $serve_as_static = $conf->serve_as_static;
 
    return builder {
       enable 'ContentLength';
@@ -36,6 +38,9 @@ around 'to_psgi_app' => sub {
             content_type => $conf->deflate_types, vary_user_agent => TRUE;
          enable 'Static',
             path => qr{ \A / (?: $serve_as_static ) }mx, root => $conf->root;
+         enable 'Static',
+            path => qr{ \A / $assets }mx, pass_through => TRUE,
+            root => $conf->docs_root;
          enable 'Session::Cookie',
             expires     => 7_776_000,
             httponly    => TRUE,

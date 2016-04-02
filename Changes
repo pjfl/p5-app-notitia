@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixed serving of asset files
           - Invalidate role cache. Fixes #16
           - Reduced font size. Fixes #19
           - Herded str2date_time calls into model method

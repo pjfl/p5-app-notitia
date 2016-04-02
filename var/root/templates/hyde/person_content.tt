@@ -7,6 +7,7 @@
       <form action="[% href %]" class="standard-form with-field-help"
            enctype="application/x-www-form-urlencoded"
             method="post" name="person-admin">
+[% IF page.fields.add; Dispatch( page.fields.add ); END -%]
 [% TextField( page.fields.first_name ) -%]
 [% TextField( page.fields.last_name ) -%]
 [% Select( page.fields.primary_role ) -%]

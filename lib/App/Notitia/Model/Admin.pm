@@ -402,7 +402,7 @@ sub person : Role(person_manager) {
       title       => loc( $req, $name ? 'person_edit_heading'
                                       : 'person_create_heading' ), };
    my $fields     =  $page->{fields};
-   my $action     =  $self->moniker.'/person';
+   my $actionp    =  $self->moniker.'/person';
    my $opts       =  field_options $self->schema, 'Person', 'name',
                         { class => 'standard-field',
                           tip   => make_tip( $req, 'username_field_tip' ) };
@@ -413,9 +413,11 @@ sub person : Role(person_manager) {
       my $opts = { fields => { selected => $person->next_of_kin } };
 
       $people  = $person_rs->list_all_people( $opts );
-      $fields->{user_href   } = uri_for_action $req, $action, [ $name ];
+      $fields->{user_href   } = uri_for_action $req, $actionp, [ $name ];
       $fields->{delete      } = delete_button $req, $name, 'person';
       $fields->{primary_role} = bind 'primary_role', $person->list_roles;
+      $fields->{add         } = create_link $req, $actionp, 'person',
+                                            { container_class => 'right' };
    }
    else {
       $people  = $person_rs->list_all_people();

@@ -485,7 +485,7 @@ sub vehicle : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $schema     =  $self->schema;
-   my $action     =  $self->moniker.'/vehicle';
+   my $actionp    =  $self->moniker.'/vehicle';
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
    my $vehicle    =  $_maybe_find_vehicle->( $schema, $vrn );
    my $page       =  {
@@ -499,7 +499,9 @@ sub vehicle : Role(rota_manager) {
 
    if ($vrn) {
       $fields->{delete} = delete_button $req, $vrn, 'vehicle';
-      $fields->{href  } = uri_for_action $req, $action, [ $vrn ];
+      $fields->{href  } = uri_for_action $req, $actionp, [ $vrn ];
+      $fields->{add   } = create_link $req, $actionp, 'vehicle',
+                                      { container_class => 'right' };
    }
 
    $fields->{owner} = $_owner_list->( $schema, $vehicle );
@@ -516,10 +518,10 @@ sub vehicles : Role(rota_manager) {
    my $type      =  $params->( 'type',    { optional => TRUE } );
    my $private   =  $params->( 'private', { optional => TRUE } ) || FALSE;
    my $service   =  $params->( 'service', { optional => TRUE } ) || FALSE;
-   my $action    =  $self->moniker.'/vehicle';
+   my $actionp   =  $self->moniker.'/vehicle';
    my $page      =  {
       fields     => {
-         add     => create_link( $req, $action, 'vehicle' ),
+         add     => create_link( $req, $actionp, 'vehicle' ),
          headers => $_vehicles_headers->( $req ),
          rows    => [], },
       template   => [ 'contents', 'table' ],

@@ -259,6 +259,8 @@ sub event : Role(event_manager) {
       $fields->{delete} = delete_button $req, $uri, 'event';
       $fields->{href  } = uri_for_action $req, $actionp, [ $uri ];
       $fields->{owner } = $self->$_owner_list( $event );
+      $fields->{add   } = create_link $req, $actionp, 'event',
+                                      { container_class => 'right' };
    }
    else { $fields->{date} = bind 'event_date', time2str '%d/%m/%Y' }
 
@@ -284,7 +286,7 @@ sub event_summary : Role(any) {
    my $actionp =  $self->moniker.'/event';
 
    $fields->{add } = create_link $req, $actionp, 'event',
-                        { container_class => 'right' };
+                                 { container_class => 'right' };
    $fields->{date} = bind 'event_date', $event->rota->date, $opts;
    $fields->{href} = uri_for_action $req, $actionp, [ $uri ];
    $opts = $person->is_participent_of( $uri ) ? { cancel => TRUE } : {};
