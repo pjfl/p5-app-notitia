@@ -356,7 +356,8 @@ sub clone (;$) {
 sub create_link ($$$;$) {
    my ($req, $actionp, $k, $opts) = @_; $opts //= {};
 
-   return { container_class => $opts->{container_class} // NUL,
+   return { class => $opts->{class} // NUL,
+            container_class => $opts->{container_class} // NUL,
             hint  => loc( $req, 'Hint' ),
             href  => uri_for_action( $req, $actionp, $opts->{args} // [] ),
             name  => "create_${k}",
@@ -373,14 +374,15 @@ sub date_data_type () {
 }
 
 sub delete_button ($$;$) {
-   my ($req, $name, $type) = @_;
+   my ($req, $name, $opts) = @_; $opts //= {};
 
-   my $button = { container_class => 'right', label => 'delete',
-                  value           => "delete_${type}" };
+   my $class = $opts->{container_class} // 'delete-button right';
+   my $tip   = make_tip( $req, 'delete_tip', [ $opts->{type}, $name ] );
 
-   $type and $button->{tip} = make_tip( $req, 'delete_tip', [ $type, $name ] );
-
-   return $button;
+   return { container_class => $class,
+            label           => 'delete',
+            tip             => $tip,
+            value           => 'delete_'.$opts->{type}, };
 }
 
 sub dialog_anchor ($$$) {
@@ -622,14 +624,16 @@ sub register_action_paths (;@) {
 }
 
 sub save_button ($$;$) {
-   my ($req, $name, $type) = @_; my $k = $name ? 'update' : 'create';
+   my ($req, $name, $opts) = @_; $opts //= {};
 
-   my $button = { container_class => 'right-last', label => $k,
-                  value           => "${k}_${type}" };
+   my $action = $name ? 'update' : 'create';
+   my $class  = $opts->{container_class} // 'save-button right-last';
+   my $tip    = make_tip( $req, "${action}_tip", [ $opts->{type}, $name ] );
 
-   $type and $button->{tip} = make_tip( $req, "${k}_tip", [ $type, $name ] );
-
-   return $button;
+   return { container_class => $class,
+            label           => $action,
+            tip             => $tip,
+            value           => "${action}_".$opts->{type} };
 }
 
 sub serial_data_type () {

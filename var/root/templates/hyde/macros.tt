@@ -16,16 +16,16 @@
 [% MACRO DateField( f ) BLOCK -%]
 [%    IF f.label -%]<label class="label">
       <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
+[%    IF f.tip -%]
+      <span class="field-help [% f.container_class %] tips"
+            title="[% f.tip %]">&dagger;</span>
+[%    END -%]
       <input
 [%    IF f.disabled %]disabled="disabled"[% END -%]
 [%       IF f.class; class = f.class; -%]
 [%       ELSE; class = 'standard-field'; END -%]
          class="[% class %] pick-date" id="[% f.name %]"
           name="[% f.name %]" value="[% f.value %]">
-[%    IF f.tip -%]
-      <span class="field-help [% f.container_class %] tips"
-            title="[% f.tip %]">&dagger;</span>
-[%    END -%]
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>
 [%    IF f.label -%]</label>[% END -%]
@@ -86,21 +86,25 @@
 [% MACRO PasswordField( f ) BLOCK -%]
    <label class="label">
       <span class="field-label">[% loc( f.label ) %]</span>
+[%    IF f.tip -%]
+      <span class="field-help tips [% f.container_class %]"
+            title="[% f.tip %]">&dagger;</span>
+[%    END -%]
       <input
 [%    IF f.autocomplete %]autocomplete="[% f.autocomplete %]"[% END -%]
 [%    IF f.class; class = f.class; -%]
 [%    ELSE; class = 'standard-field'; END -%]
           class="[% class %]" id="[% f.name %]" name="[% f.name %]"
            type="password">
-[%    IF f.tip -%]
-      <span class="field-help tips [% f.container_class %]"
-            title="[% f.tip %]">&dagger;</span>
-[%    END -%]
    </label>
 [% END -%]
 [% MACRO Select( f ) BLOCK -%]
 [%    IF f.label -%]<label class="label">
       <span class="field-label">[% loc( f.label ) %]</span>[% END %]
+[%    IF f.tip -%]
+      <span class="field-help tips [% f.container_class %]"
+            title="[% f.tip %]">&dagger;</span>
+[%    END -%]
 [%    IF f.class; class = f.class; -%]
 [%    ELSE; class = 'standard-field'; END -%]
       <select class="[% class %]" name="[% f.name %]"
@@ -112,10 +116,6 @@
              value="[% option.value %]">[% loc( option.label ) %]</option>
 [%    END -%]
       </select>
-[%    IF f.tip -%]
-      <span class="field-help tips [% f.container_class %]"
-            title="[% f.tip %]">&dagger;</span>
-[%    END -%]
 [%    IF f.label -%]</label>[% END -%]
 [% END -%]
 [% MACRO Table( table ) BLOCK -%]
@@ -154,6 +154,10 @@
 [% MACRO TextArea( f ) BLOCK -%]
    <label class="label">
       <span class="field-label">[% loc( f.label ) %]</span>
+[%    IF f.tip -%]
+      <span class="field-help tips [% f.container_class %]"
+            title="[% f.tip %]">&dagger;</span>
+[%    END -%]
       <div class="field-container">
          <textarea [% IF f.disabled %]disabled="disabled"[% END -%]
 [%    IF f.class; class = f.class; -%]
@@ -161,10 +165,6 @@
             class="[% class %]" id="[% f.name %]"
              name="[% f.name %]">[% f.value %]</textarea>
       </div>
-[%    IF f.tip -%]
-      <span class="field-help tips [% f.container_class %]"
-            title="[% f.tip %]">&dagger;</span>
-[%    END -%]
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>
    </label>
@@ -172,16 +172,16 @@
 [% MACRO TextField( f ) BLOCK -%]
    <label class="label">
       <span class="field-label">[% loc( f.label ) %]</span>
+[%    IF f.tip -%]
+      <span class="field-help tips [% f.container_class %]"
+            title="[% f.tip %]">&dagger;</span>
+[%    END -%]
       <input
 [%    IF f.disabled %]disabled="disabled"[% END -%]
 [%    IF f.class; class = f.class; -%]
 [%    ELSE; class = 'standard-field'; END -%]
          class="[% class %]" id="[% f.name %]"
           name="[% f.name %]" type="textfield" value="[% f.value %]">
-[%    IF f.tip -%]
-      <span class="field-help tips [% f.container_class %]"
-            title="[% f.tip %]">&dagger;</span>
-[%    END -%]
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>
    </label>
@@ -189,15 +189,15 @@
 [% MACRO TimeField( f ) BLOCK -%]
    <label class="label">
       <span class="field-label">[% loc( f.label ) %]</span>
+[%    IF f.tip -%]
+      <span class="field-help tips [% f.container_class %]"
+            title="[% f.tip %]">&dagger;</span>
+[%    END -%]
       <input
 [%    IF f.disabled %]disabled="disabled"[% END -%]
 [%    IF f.class; class = f.class; -%]
 [%    ELSE; class = 'standard-field'; END -%]
          class="[% class %] pick-time"
             id="[% f.name %]" name="[% f.name %]" value="[% f.value %]">
-[%    IF f.tip -%]
-      <span class="field-help tips [% f.container_class %]"
-            title="[% f.tip %]">&dagger;</span>
-[%    END -%]
    </label>
 [% END -%]

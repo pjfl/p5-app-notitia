@@ -4,7 +4,7 @@
       <h4>[% page.title %]</h4>
 [% IF page.fields.user_href; href = page.fields.user_href -%]
 [% ELSE; href = uri_for_action( 'admin/person' ); END -%]
-      <form action="[% href %]" class="standard-form with-field-help"
+      <form action="[% href %]" class="standard-form"
            enctype="application/x-www-form-urlencoded"
             method="post" name="person-admin">
 [% IF page.fields.add; Dispatch( page.fields.add ); END -%]

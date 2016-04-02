@@ -256,15 +256,15 @@ sub event : Role(event_manager) {
    if ($uri) {
       $fields->{date  } = bind 'event_date', $event->rota->date,
                           { disabled => TRUE };
-      $fields->{delete} = delete_button $req, $uri, 'event';
+      $fields->{delete} = delete_button $req, $uri, { type => 'event' };
       $fields->{href  } = uri_for_action $req, $actionp, [ $uri ];
       $fields->{owner } = $self->$_owner_list( $event );
       $fields->{add   } = create_link $req, $actionp, 'event',
-                                      { container_class => 'right' };
+                             { container_class => 'add-link right' };
    }
    else { $fields->{date} = bind 'event_date', time2str '%d/%m/%Y' }
 
-   $fields->{save} = save_button $req, $uri, 'event';
+   $fields->{save} = save_button $req, $uri, { type => 'event' };
 
    return $self->get_stash( $req, $page );
 }

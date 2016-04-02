@@ -148,15 +148,15 @@ sub certification : Role(person_manager) {
    if ($type) {
       my $opts = { disabled => TRUE }; $args = [ $name, $type ];
 
-      $fields->{cert_type } = bind 'cert_type', loc( $req, $type ), $opts;
-      $fields->{delete    } = delete_button $req, $type, 'certification';
+      $fields->{cert_type} = bind 'cert_type', loc( $req, $type ), $opts;
+      $fields->{delete} = delete_button $req, $type, { type => 'certification'};
    }
    else {
       $fields->{completed } = bind 'completed', time2str '%Y-%m-%d';
       $fields->{cert_types} = bind 'cert_types', $self->$_list_all_certs();
    }
 
-   $fields->{save} = save_button $req, $type, 'certification';
+   $fields->{save} = save_button $req, $type, { type => 'certification' };
    $fields->{href} = uri_for_action $req, 'certs/certification', $args;
 
    return $self->get_stash( $req, $page );

@@ -498,15 +498,15 @@ sub vehicle : Role(rota_manager) {
    my $fields     =  $page->{fields};
 
    if ($vrn) {
-      $fields->{delete} = delete_button $req, $vrn, 'vehicle';
+      $fields->{delete} = delete_button $req, $vrn, { type => 'vehicle' };
       $fields->{href  } = uri_for_action $req, $actionp, [ $vrn ];
       $fields->{add   } = create_link $req, $actionp, 'vehicle',
-                                      { container_class => 'right' };
+                             { container_class => 'add-link right' };
    }
 
    $fields->{owner} = $_owner_list->( $schema, $vehicle );
    $fields->{type } = $_vehicle_type_list->( $schema, $vehicle );
-   $fields->{save } = save_button $req, $vrn, 'vehicle';
+   $fields->{save } = save_button $req, $vrn, { type => 'vehicle' };
 
    return $self->get_stash( $req, $page );
 }

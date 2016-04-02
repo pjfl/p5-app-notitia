@@ -414,10 +414,10 @@ sub person : Role(person_manager) {
 
       $people  = $person_rs->list_all_people( $opts );
       $fields->{user_href   } = uri_for_action $req, $actionp, [ $name ];
-      $fields->{delete      } = delete_button $req, $name, 'person';
+      $fields->{delete      } = delete_button $req, $name, { type => 'person' };
       $fields->{primary_role} = bind 'primary_role', $person->list_roles;
       $fields->{add         } = create_link $req, $actionp, 'person',
-                                            { container_class => 'right' };
+                                { container_class => 'add-link right' };
    }
    else {
       $people  = $person_rs->list_all_people();
@@ -425,7 +425,7 @@ sub person : Role(person_manager) {
    }
 
    $fields->{next_of_kin} = $_next_of_kin_list->( $people );
-   $fields->{save} = save_button $req, $name, 'person';
+   $fields->{save} = save_button $req, $name, { type => 'person' };
 
    return $self->get_stash( $req, $page );
 }

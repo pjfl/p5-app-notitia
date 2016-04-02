@@ -159,7 +159,7 @@ footer {
    text-shadow: @lighter 1px 1px 1px; vertical-align: middle;
 }
 .button:hover { color: #f90; }
-.button-help, .field-help, .link-help {
+.button-help, .link-help {
    display: inline-block; position: relative;
 }
 .dialog {
@@ -178,7 +178,8 @@ footer {
 .field-group { display: block; }
 .field-help {
    color: @brighter; cursor: pointer; display: inline-block;
-   font-size: 0.75em; height: 25px; text-align: center; width: 20px;
+   font-size: 0.75em; height: 20px; left: -25px; margin-right: -25px;
+   position: relative; text-align: center; width: 20px;
 }
 .field-label {
    border: 2px solid transparent; .box-sizing; display: inline-block;
@@ -207,8 +208,8 @@ footer {
 .standard-form {
    display: block; max-width: 446px; margin: auto; overflow: hidden;
 }
-.with-field-help { max-width: 471px; }
-.with-field-help .right-last { margin-right: 25px; }
+.standard-form .add-link { margin-bottom: 5px; }
+.standard-form .delete-button, .standard-form .save-button { margin-top: 5px; }
 .upload-file { margin: 0.25em 0; overflow: hidden; position: relative; }
 .upload-file .upload {
    cursor: pointer; .opacity( 0 ); position: absolute; top: 0; right: 0;

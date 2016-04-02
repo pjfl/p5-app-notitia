@@ -85,7 +85,7 @@ sub change_password : Role(anon) {
             class => 'standard-field reveal',
             label => 'new_password' } ),
          update   => bind( 'update', 'change_password', {
-            class => 'right-last' } ),
+            class => 'save-button right-last' } ),
          username => bind( 'username', $person->name ), },
       literal_js  =>
          [ "   behaviour.config.inputs[ 'again' ]",
@@ -145,7 +145,8 @@ sub login : Role(anon) {
 
    $fields->{password} = bind 'password', NUL;
    $fields->{username} = bind 'username', NUL;
-   $fields->{login   } = bind 'login',    'login', { class => 'right-last' };
+   $fields->{login   } = bind 'login', 'login',
+                            { class => 'save-button right-last' };
 
    return $self->get_stash( $req, $page );
 }
