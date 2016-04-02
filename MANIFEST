@@ -66,7 +66,6 @@ lib/App/Notitia/View/HTML/Markdown.pm
 lib/App/Notitia/View/JSON.pm
 lib/App/Notitia/View/RSS.pm
 lib/App/Notitia/app-notitia.json
-lib/Web/Components/Role/Email.pm
 t/02pod.t
 t/03podcoverage.t
 t/05kwalitee.t
@@ -87,6 +86,7 @@ t/50endorsement.t
 t/boilerplate.pm
 var/locale/en/notitia.po
 var/root/css/hyde-yellow.css
+var/root/docs/assets/bilbo_speaks.jpg
 var/root/docs/en/01_information/01_getting-started.md
 var/root/docs/en/01_information/02_a_new_beginning.md
 var/root/img/article-footer.png

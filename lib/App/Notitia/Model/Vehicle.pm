@@ -154,8 +154,8 @@ my $_vehicle_links = sub {
 };
 
 my $_vehicle_request_button = sub {
-   return button $_[ 0 ], { class => 'right-last' }, 'request', 'vehicle',
-          [ $_[ 1 ] ];
+   return button $_[ 0 ], { class => 'save-button right-last' },
+             'request', 'vehicle', [ $_[ 1 ] ];
 };
 
 my $_vehicle_request_headers = sub {

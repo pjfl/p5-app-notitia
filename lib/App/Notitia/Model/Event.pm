@@ -70,9 +70,10 @@ my $_event_links = sub {
 my $_participate_button = sub {
    my ($req, $name, $opts) = @_; $opts //= {};
 
+   my $class  = 'save-button right-last';
    my $action = $opts->{cancel} ? 'unparticipate' : 'participate';
 
-   return button $req, { class => 'right-last' }, $action, 'event', [ $name ];
+   return button $req, { class => $class }, $action, 'event', [ $name ];
 };
 
 my $_participent_headers = sub {
@@ -286,7 +287,7 @@ sub event_summary : Role(any) {
    my $actionp =  $self->moniker.'/event';
 
    $fields->{add } = create_link $req, $actionp, 'event',
-                                 { container_class => 'right' };
+                        { container_class => 'add-link right' };
    $fields->{date} = bind 'event_date', $event->rota->date, $opts;
    $fields->{href} = uri_for_action $req, $actionp, [ $uri ];
    $opts = $person->is_participent_of( $uri ) ? { cancel => TRUE } : {};

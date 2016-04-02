@@ -12,7 +12,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 22 $ of **App::Notitia**
+This documents version v0.3.$Rev: 30 $ of **App::Notitia**
 
 # Description
 
@@ -192,10 +192,6 @@ to emit the SQL it generates to `stderr`. On the production server
 `stderr` is redirected to `var/tmp/daemon.err`
 
 # Project To Do List
-
-TODO: Setup a virtualbox environment to do Explorer testing
-
-TODO: Loose traffic lights from rota
 
 TODO: Limit list lengths when number of users increases
 

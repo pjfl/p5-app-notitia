@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 29 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 30 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 29 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 30 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -227,10 +227,6 @@ to emit the SQL it generates to C<stderr>. On the production server
 C<stderr> is redirected to F<var/tmp/daemon.err>
 
 =head1 Project To Do List
-
-TODO: Setup a virtualbox environment to do Explorer testing
-
-TODO: Loose traffic lights from rota
 
 TODO: Limit list lengths when number of users increases
 

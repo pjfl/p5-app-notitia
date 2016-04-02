@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixed #18. Added logout button mobile styling
           - Moved field help to after label
           - Fixed serving of asset files
           - Invalidate role cache. Fixes #16
