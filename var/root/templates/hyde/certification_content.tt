@@ -5,6 +5,7 @@
       <form action="[% page.fields.href %]" class="standard-form"
            enctype="application/x-www-form-urlencoded"
             method="post" name="certification-admin">
+[% TextField( page.fields.username ) -%]
 [% IF page.fields.cert_type; TextField( page.fields.cert_type ) %]
 [% ELSE; Select( page.fields.cert_types ); END -%]
 [% DateField( page.fields.completed ) -%]

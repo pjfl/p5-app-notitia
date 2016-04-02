@@ -145,6 +145,8 @@ sub endorsement : Role(person_manager) {
       template    => [ 'contents', 'endorsement' ],
       title       => loc( $req, $uri ? 'endorsement_edit_heading'
                                      : 'endorsement_create_heading' ), };
+   my $person_rs  =  $self->schema->resultset( 'Person' );
+   my $person     =  $person_rs->find_by_shortcode( $name );
    my $args       =  $uri ? [ $name, $uri ] : [ $name ];
    my $fields     =  $page->{fields};
 
@@ -156,6 +158,7 @@ sub endorsement : Role(person_manager) {
       $fields->{endorsed} = bind 'endorsed', time2str '%Y-%m-%d';
    }
 
+   $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
    $fields->{save} = save_button $req, $uri, { type => 'endorsement' };
    $fields->{href} = uri_for_action $req, 'blots/endorsement', $args;
 

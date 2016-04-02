@@ -142,6 +142,8 @@ sub certification : Role(person_manager) {
       template   => [ 'contents', 'certification' ],
       title      => loc( $req, $type ? 'certification_edit_heading'
                                      : 'certification_create_heading' ), };
+   my $person_rs =  $self->schema->resultset( 'Person' );
+   my $person    =  $person_rs->find_by_shortcode( $name );
    my $fields    =  $page->{fields};
    my $args      =  [ $name ];
 
@@ -156,6 +158,7 @@ sub certification : Role(person_manager) {
       $fields->{cert_types} = bind 'cert_types', $self->$_list_all_certs();
    }
 
+   $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
    $fields->{save} = save_button $req, $type, { type => 'certification' };
    $fields->{href} = uri_for_action $req, 'certs/certification', $args;
 
