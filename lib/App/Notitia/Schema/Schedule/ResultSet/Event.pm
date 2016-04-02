@@ -5,7 +5,6 @@ use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions  qw( throw );
-use Class::Usul::Time       qw( str2date_time );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Private functions
