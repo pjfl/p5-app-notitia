@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Changed edit-panel icons
           - Added username display field to certs and offences
           - Implemented #9. Rota manager can assign slots
           - Implemented #10. Add links on person, vehicle and event
