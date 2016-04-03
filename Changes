@@ -1,5 +1,9 @@
 Revision history for App::Notitia
 
+          - Added Event/Person rels. Fixes #21 and #22
+          - Added slot_criteria result class
+          - Renamed next_of_kin_id and made it a left_join
+          - Schema versions are one minor rel ahead of application
           - Changed edit-panel icons
           - Added username display field to certs and offences
           - Implemented #9. Rota manager can assign slots

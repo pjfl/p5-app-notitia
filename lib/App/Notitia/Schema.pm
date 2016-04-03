@@ -9,8 +9,14 @@ use Moo;
 extends q(Class::Usul::Schema);
 with    q(App::Notitia::Role::Schema);
 
-our $VERSION         = $App::Notitia::VERSION;
-my ($schema_version) = $VERSION =~ m{ (\d+\.\d+) }mx;
+our $VERSION = $App::Notitia::VERSION;
+
+my $_build_schema_version = sub {
+   my ($major, $minor) = $VERSION =~ m{ (\d+) \. (\d+) }mx;
+
+   # TODO: This will break when major number bumps
+   return $major.'.'.($minor + 1);
+};
 
 # Public attributes (override defaults in base class)
 has '+config_class'   => default => 'App::Notitia::Config';
@@ -19,7 +25,7 @@ has '+database'       => default => sub { $_[ 0 ]->config->database };
 
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
-has '+schema_version' => default => $schema_version;
+has '+schema_version' => default => $_build_schema_version;
 
 # Construction
 around 'deploy_file' => sub {

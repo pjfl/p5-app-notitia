@@ -33,8 +33,9 @@ $class->add_unique_constraint( [ 'uri' ] );
 $class->belongs_to( rota  => "${result}::Rota", 'rota_id' );
 $class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
 
-$class->has_many( participents => "${result}::Participent", 'event_id' );
-$class->has_many( transports   => "${result}::Transport",   'event_id' );
+$class->has_many( participents     => "${result}::Participent",    'event_id' );
+$class->has_many( vehicle_requests => "${result}::VehicleRequest", 'event_id' );
+$class->has_many( transports       => "${result}::Transport",      'event_id' );
 
 # Private methods
 sub _as_string {

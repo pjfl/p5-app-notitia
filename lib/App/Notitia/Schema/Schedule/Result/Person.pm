@@ -28,7 +28,7 @@ $class->table( 'person' );
 
 $class->add_columns
    ( id               => serial_data_type,
-     next_of_kin      => nullable_foreign_key_data_type,
+     next_of_kin_id   => nullable_foreign_key_data_type,
      active           => bool_data_type,
      password_expired => bool_data_type( TRUE ),
      dob              => date_data_type,
@@ -53,13 +53,13 @@ $class->add_unique_constraint( [ 'name' ] );
 $class->add_unique_constraint( [ 'email_address' ] );
 $class->add_unique_constraint( [ 'shortcode' ] );
 
-# TODO: Rename attribute to next_of_kin_id and make this a left_join
-$class->belongs_to( next_of_kin => "${class}" );
+$class->belongs_to( next_of_kin => "${class}", 'next_of_kin_id', $left_join );
 
 $class->has_many( certs        => "${result}::Certification", 'recipient_id'  );
 $class->has_many( endorsements => "${result}::Endorsement",   'recipient_id'  );
 $class->has_many( participents => "${result}::Participent",   'participent_id');
 $class->has_many( roles        => "${result}::Role",          'member_id'     );
+$class->has_many( slots        => "${result}::Slot",          'operator_id'   );
 $class->has_many( vehicles     => "${result}::Vehicle",       'owner_id'      );
 
 # Private methods

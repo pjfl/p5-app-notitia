@@ -296,7 +296,7 @@ my $_update_person_from_request = sub {
    }
 
    $person->name( $params->( 'username', $opts ) );
-   $person->next_of_kin
+   $person->next_of_kin_id
       ( $_assert_not_self->( $person, $params->( 'next_of_kin', $opts ) ) );
 
    return;
