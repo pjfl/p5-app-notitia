@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS `person`;
 
 CREATE TABLE `person` (
   `id` integer unsigned NOT NULL auto_increment,
-  `next_of_kin` integer unsigned NULL,
+  `next_of_kin_id` integer unsigned NULL,
   `active` enum('0','1') NOT NULL DEFAULT '0',
   `password_expired` enum('0','1') NOT NULL DEFAULT '1',
   `dob` datetime NULL DEFAULT '0000-00-00',
@@ -22,12 +22,12 @@ CREATE TABLE `person` (
   `mobile_phone` varchar(32) NOT NULL DEFAULT '',
   `home_phone` varchar(32) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',
-  INDEX `person_idx_next_of_kin` (`next_of_kin`),
+  INDEX `person_idx_next_of_kin_id` (`next_of_kin_id`),
   PRIMARY KEY (`id`),
   UNIQUE `person_email_address` (`email_address`),
   UNIQUE `person_name` (`name`),
   UNIQUE `person_shortcode` (`shortcode`),
-  CONSTRAINT `person_fk_next_of_kin` FOREIGN KEY (`next_of_kin`) REFERENCES `person` (`id`)
+  CONSTRAINT `person_fk_next_of_kin_id` FOREIGN KEY (`next_of_kin_id`) REFERENCES `person` (`id`)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `type`;
@@ -65,6 +65,18 @@ CREATE TABLE `rota` (
   PRIMARY KEY (`id`),
   UNIQUE `rota_type_id_date` (`type_id`, `date`),
   CONSTRAINT `rota_fk_type_id` FOREIGN KEY (`type_id`) REFERENCES `type` (`id`)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `slot_criteria`;
+
+CREATE TABLE `slot_criteria` (
+  `role_type_id` integer unsigned NOT NULL,
+  `certification_type_id` integer unsigned NOT NULL,
+  INDEX `slot_criteria_idx_certification_type_id` (`certification_type_id`),
+  INDEX `slot_criteria_idx_role_type_id` (`role_type_id`),
+  PRIMARY KEY (`role_type_id`, `certification_type_id`),
+  CONSTRAINT `slot_criteria_fk_certification_type_id` FOREIGN KEY (`certification_type_id`) REFERENCES `type` (`id`),
+  CONSTRAINT `slot_criteria_fk_role_type_id` FOREIGN KEY (`role_type_id`) REFERENCES `type` (`id`)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `certification`;
@@ -164,7 +176,7 @@ CREATE TABLE `vehicle_request` (
   INDEX `vehicle_request_idx_event_id` (`event_id`),
   INDEX `vehicle_request_idx_type_id` (`type_id`),
   PRIMARY KEY (`event_id`, `type_id`),
-  CONSTRAINT `vehicle_request_fk_event_id` FOREIGN KEY (`event_id`) REFERENCES `event` (`id`),
+  CONSTRAINT `vehicle_request_fk_event_id` FOREIGN KEY (`event_id`) REFERENCES `event` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `vehicle_request_fk_type_id` FOREIGN KEY (`type_id`) REFERENCES `type` (`id`)
 ) ENGINE=InnoDB;
 
@@ -183,7 +195,7 @@ CREATE TABLE `slot` (
   INDEX `slot_idx_vehicle_id` (`vehicle_id`),
   INDEX `slot_idx_vehicle_assigner_id` (`vehicle_assigner_id`),
   PRIMARY KEY (`shift_id`, `type_name`, `subslot`),
-  CONSTRAINT `slot_fk_operator_id` FOREIGN KEY (`operator_id`) REFERENCES `person` (`id`),
+  CONSTRAINT `slot_fk_operator_id` FOREIGN KEY (`operator_id`) REFERENCES `person` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `slot_fk_shift_id` FOREIGN KEY (`shift_id`) REFERENCES `shift` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `slot_fk_vehicle_id` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicle` (`id`),
   CONSTRAINT `slot_fk_vehicle_assigner_id` FOREIGN KEY (`vehicle_assigner_id`) REFERENCES `person` (`id`)

@@ -4,7 +4,7 @@ DROP TABLE "person";
 
 CREATE TABLE "person" (
   "id" INTEGER PRIMARY KEY NOT NULL,
-  "next_of_kin" integer,
+  "next_of_kin_id" integer,
   "active" boolean NOT NULL DEFAULT 0,
   "password_expired" boolean NOT NULL DEFAULT 1,
   "dob" datetime DEFAULT '0000-00-00',
@@ -22,10 +22,10 @@ CREATE TABLE "person" (
   "mobile_phone" varchar(32) NOT NULL DEFAULT '',
   "home_phone" varchar(32) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
-  FOREIGN KEY ("next_of_kin") REFERENCES "person"("id")
+  FOREIGN KEY ("next_of_kin_id") REFERENCES "person"("id")
 );
 
-CREATE INDEX "person_idx_next_of_kin" ON "person" ("next_of_kin");
+CREATE INDEX "person_idx_next_of_kin_id" ON "person" ("next_of_kin_id");
 
 CREATE UNIQUE INDEX "person_email_address" ON "person" ("email_address");
 
@@ -72,6 +72,20 @@ CREATE TABLE "rota" (
 CREATE INDEX "rota_idx_type_id" ON "rota" ("type_id");
 
 CREATE UNIQUE INDEX "rota_type_id_date" ON "rota" ("type_id", "date");
+
+DROP TABLE "slot_criteria";
+
+CREATE TABLE "slot_criteria" (
+  "role_type_id" integer NOT NULL,
+  "certification_type_id" integer NOT NULL,
+  PRIMARY KEY ("role_type_id", "certification_type_id"),
+  FOREIGN KEY ("certification_type_id") REFERENCES "type"("id"),
+  FOREIGN KEY ("role_type_id") REFERENCES "type"("id")
+);
+
+CREATE INDEX "slot_criteria_idx_certification_type_id" ON "slot_criteria" ("certification_type_id");
+
+CREATE INDEX "slot_criteria_idx_role_type_id" ON "slot_criteria" ("role_type_id");
 
 DROP TABLE "certification";
 
@@ -178,7 +192,7 @@ CREATE TABLE "vehicle_request" (
   "type_id" integer NOT NULL,
   "quantity" smallint NOT NULL,
   PRIMARY KEY ("event_id", "type_id"),
-  FOREIGN KEY ("event_id") REFERENCES "event"("id"),
+  FOREIGN KEY ("event_id") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY ("type_id") REFERENCES "type"("id")
 );
 
@@ -197,7 +211,7 @@ CREATE TABLE "slot" (
   "vehicle_assigner_id" integer,
   "vehicle_id" integer,
   PRIMARY KEY ("shift_id", "type_name", "subslot"),
-  FOREIGN KEY ("operator_id") REFERENCES "person"("id"),
+  FOREIGN KEY ("operator_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY ("shift_id") REFERENCES "shift"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY ("vehicle_id") REFERENCES "vehicle"("id"),
   FOREIGN KEY ("vehicle_assigner_id") REFERENCES "person"("id")

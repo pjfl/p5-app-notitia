@@ -1,7 +1,7 @@
 DROP TABLE "person" CASCADE;
 CREATE TABLE "person" (
   "id" serial NOT NULL,
-  "next_of_kin" integer,
+  "next_of_kin_id" integer,
   "active" boolean DEFAULT '0' NOT NULL,
   "password_expired" boolean DEFAULT '1' NOT NULL,
   "dob" timestamp DEFAULT '0000-00-00',
@@ -24,7 +24,7 @@ CREATE TABLE "person" (
   CONSTRAINT "person_name" UNIQUE ("name"),
   CONSTRAINT "person_shortcode" UNIQUE ("shortcode")
 );
-CREATE INDEX "person_idx_next_of_kin" on "person" ("next_of_kin");
+CREATE INDEX "person_idx_next_of_kin_id" on "person" ("next_of_kin_id");
 
 DROP TABLE "type" CASCADE;
 CREATE TABLE "type" (
@@ -57,6 +57,15 @@ CREATE TABLE "rota" (
   CONSTRAINT "rota_type_id_date" UNIQUE ("type_id", "date")
 );
 CREATE INDEX "rota_idx_type_id" on "rota" ("type_id");
+
+DROP TABLE "slot_criteria" CASCADE;
+CREATE TABLE "slot_criteria" (
+  "role_type_id" integer NOT NULL,
+  "certification_type_id" integer NOT NULL,
+  PRIMARY KEY ("role_type_id", "certification_type_id")
+);
+CREATE INDEX "slot_criteria_idx_certification_type_id" on "slot_criteria" ("certification_type_id");
+CREATE INDEX "slot_criteria_idx_role_type_id" on "slot_criteria" ("role_type_id");
 
 DROP TABLE "certification" CASCADE;
 CREATE TABLE "certification" (
@@ -166,13 +175,19 @@ CREATE INDEX "transport_idx_event_id" on "transport" ("event_id");
 CREATE INDEX "transport_idx_vehicle_id" on "transport" ("vehicle_id");
 CREATE INDEX "transport_idx_vehicle_assigner_id" on "transport" ("vehicle_assigner_id");
 
-ALTER TABLE "person" ADD CONSTRAINT "person_fk_next_of_kin" FOREIGN KEY ("next_of_kin")
+ALTER TABLE "person" ADD CONSTRAINT "person_fk_next_of_kin_id" FOREIGN KEY ("next_of_kin_id")
   REFERENCES "person" ("id") DEFERRABLE;
 
 ALTER TABLE "endorsement" ADD CONSTRAINT "endorsement_fk_recipient_id" FOREIGN KEY ("recipient_id")
   REFERENCES "person" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE "rota" ADD CONSTRAINT "rota_fk_type_id" FOREIGN KEY ("type_id")
+  REFERENCES "type" ("id") DEFERRABLE;
+
+ALTER TABLE "slot_criteria" ADD CONSTRAINT "slot_criteria_fk_certification_type_id" FOREIGN KEY ("certification_type_id")
+  REFERENCES "type" ("id") DEFERRABLE;
+
+ALTER TABLE "slot_criteria" ADD CONSTRAINT "slot_criteria_fk_role_type_id" FOREIGN KEY ("role_type_id")
   REFERENCES "type" ("id") DEFERRABLE;
 
 ALTER TABLE "certification" ADD CONSTRAINT "certification_fk_recipient_id" FOREIGN KEY ("recipient_id")
@@ -209,13 +224,13 @@ ALTER TABLE "participent" ADD CONSTRAINT "participent_fk_participent_id" FOREIGN
   REFERENCES "person" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE "vehicle_request" ADD CONSTRAINT "vehicle_request_fk_event_id" FOREIGN KEY ("event_id")
-  REFERENCES "event" ("id") DEFERRABLE;
+  REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE "vehicle_request" ADD CONSTRAINT "vehicle_request_fk_type_id" FOREIGN KEY ("type_id")
   REFERENCES "type" ("id") DEFERRABLE;
 
 ALTER TABLE "slot" ADD CONSTRAINT "slot_fk_operator_id" FOREIGN KEY ("operator_id")
-  REFERENCES "person" ("id") DEFERRABLE;
+  REFERENCES "person" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE "slot" ADD CONSTRAINT "slot_fk_shift_id" FOREIGN KEY ("shift_id")
   REFERENCES "shift" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
