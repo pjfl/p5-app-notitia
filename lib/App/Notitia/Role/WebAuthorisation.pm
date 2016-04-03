@@ -57,7 +57,7 @@ sub list_roles {
    $session->roles_mtime < $roles_mtime and $roles = [];
 
    unless (defined $roles->[ 0 ]) {
-      $person = $self->components->{admin}->find_by_shortcode( $req->username );
+      $person = $self->components->{person}->find_by_shortcode( $req->username);
       $person and $session->roles( $roles = $person->list_roles );
       defined $roles->[ 0 ] and $session->roles_mtime( $roles_mtime );
    }

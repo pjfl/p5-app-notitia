@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Created Person model. Moved in code from Admin
+          - Changed edit-panel icons
           - Implements #24. Type edit link changed to remove
           - Implements #23. Vehicle request link from vehicle edit
           - Exception handler returns 400

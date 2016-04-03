@@ -64,7 +64,7 @@ my $_format_page = sub {
               and $content = $formatter->serialize( $req, $page );
 
    my $author = $page->{author} // 'admin';
-   my $person = $self->components->{admin}->find_by_shortcode( $author );
+   my $person = $self->components->{person}->find_by_shortcode( $author );
    my $email  = $person ? $person->email_address : "${author}\@example.com";
    my $label  = $person ? $person->label : $author;
 

@@ -69,22 +69,22 @@ sub admin_navigation_links {
                        before => $now->ymd ),
         $nav_folder->( $req, 'people' ), ];
 
-   $self->$_allowed( $roles, 'admin/contacts' ) and push @{ $nav },
-        $nav_linkto->( $req, { name => 'contacts_list' }, 'admin/contacts', [],
+   $self->$_allowed( $roles, 'person/contacts' ) and push @{ $nav },
+        $nav_linkto->( $req, { name => 'contacts_list' }, 'person/contacts', [],
                        status => 'current' );
 
    push @{ $nav },
-        $nav_linkto->( $req, { name => 'people_list' }, 'admin/people', [] ),
-        $nav_linkto->( $req, { name => 'current_people_list' }, 'admin/people',
+        $nav_linkto->( $req, { name => 'people_list' }, 'person/people', [] ),
+        $nav_linkto->( $req, { name => 'current_people_list' }, 'person/people',
                        [], status => 'current' ),
-        $nav_linkto->( $req, { name => 'bike_rider_list' }, 'admin/people', [],
-                       role => 'bike_rider', status => 'current' ),
-        $nav_linkto->( $req, { name => 'controller_list' }, 'admin/people', [],
-                       role => 'controller', status => 'current' ),
-        $nav_linkto->( $req, { name => 'driver_list' }, 'admin/people', [],
-                       role => 'driver', status => 'current' ),
-        $nav_linkto->( $req, { name => 'fund_raiser_list' }, 'admin/people', [],
-                       role => 'fund_raiser', status => 'current' );
+        $nav_linkto->( $req, { name => 'bike_rider_list' }, 'person/people',
+                       [], role => 'bike_rider', status => 'current' ),
+        $nav_linkto->( $req, { name => 'controller_list' }, 'person/people',
+                       [], role => 'controller', status => 'current' ),
+        $nav_linkto->( $req, { name => 'driver_list' }, 'person/people',
+                       [], role => 'driver', status => 'current' ),
+        $nav_linkto->( $req, { name => 'fund_raiser_list' }, 'person/people',
+                       [], role => 'fund_raiser', status => 'current' );
 
    if ($self->$_allowed( $roles, 'admin/types' )) {
       push @{ $nav },

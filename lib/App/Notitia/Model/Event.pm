@@ -173,7 +173,7 @@ my $_participent_links = sub {
    $links = [];
 
    push @{ $links },
-         { value => management_link( $req, 'admin/person_summary', $name ) };
+         { value => management_link( $req, 'person/person_summary', $name ) };
    push @{ $links },
          { value => management_link( $req, 'event/event', 'unparticipate',
                        { args => [ $event->uri ], type => 'form_button' } ) };
