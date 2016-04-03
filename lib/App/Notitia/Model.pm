@@ -6,7 +6,7 @@ use App::Notitia::Util      qw( uri_for_action );
 use Class::Usul::Functions  qw( exception throw );
 use Class::Usul::Time       qw( str2date_time );
 use Class::Usul::Types      qw( Plinth );
-use HTTP::Status            qw( HTTP_BAD_REQUEST HTTP_NOT_FOUND HTTP_OK );
+use HTTP::Status            qw( HTTP_NOT_FOUND HTTP_OK );
 use Scalar::Util            qw( blessed );
 use Unexpected::Functions   qw( Authentication AuthenticationRequired
                                 ValidationErrors );
@@ -76,9 +76,7 @@ sub exception_handler {
 
    $e->class eq ValidationErrors->() and $page->{validation_error} = $e->args;
 
-   my $stash = $self->get_stash( $req, $page );
-
-   $stash->{code} = $e->rv >= HTTP_OK ? $e->rv : HTTP_BAD_REQUEST;
+   my $stash = $self->get_stash( $req, $page ); $stash->{code} = HTTP_OK;
 
    return $stash;
 }

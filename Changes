@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Exception handler returns 400
           - Fixes change password failing to lookup unknown user
           - Implemented #20. Add/edit person returns to people list
           - Added Event/Person rels. Fixes #21 and #22
