@@ -67,6 +67,21 @@ my $_event_links = sub {
    return @{ $links };
 };
 
+my $_event_operation_links = sub {
+   my ($req, $actionp, $uri) = @_;
+
+   my $add_ev = create_link $req, $actionp, 'event',
+                            { container_class => 'add-link' };
+   my $vreq   = management_link $req, 'asset/request_vehicle', $uri;
+
+   return { class        => 'right-last',
+            content      => {
+               list      => [ $vreq, $add_ev ],
+               separator => '|',
+               type      => 'list', },
+            type         => 'container', };
+};
+
 my $_participate_button = sub {
    my ($req, $name, $opts) = @_; $opts //= {};
 
@@ -259,9 +274,8 @@ sub event : Role(event_manager) {
                           { disabled => TRUE };
       $fields->{delete} = delete_button $req, $uri, { type => 'event' };
       $fields->{href  } = uri_for_action $req, $actionp, [ $uri ];
+      $fields->{links } = $_event_operation_links->( $req, $actionp, $uri );
       $fields->{owner } = $self->$_owner_list( $event );
-      $fields->{add   } = create_link $req, $actionp, 'event',
-                             { container_class => 'add-link right' };
    }
    else { $fields->{date} = bind 'event_date', time2str '%d/%m/%Y' }
 
@@ -286,10 +300,9 @@ sub event_summary : Role(any) {
    my $fields  =  $page->{fields};
    my $actionp =  $self->moniker.'/event';
 
-   $fields->{add } = create_link $req, $actionp, 'event',
-                        { container_class => 'add-link right' };
-   $fields->{date} = bind 'event_date', $event->rota->date, $opts;
-   $fields->{href} = uri_for_action $req, $actionp, [ $uri ];
+   $fields->{date } = bind 'event_date', $event->rota->date, $opts;
+   $fields->{href } = uri_for_action $req, $actionp, [ $uri ];
+   $fields->{links} = $_event_operation_links->( $req, $actionp, $uri );
    $opts = $person->is_participent_of( $uri ) ? { cancel => TRUE } : {};
    $fields->{participate} = $_participate_button->( $req, $uri, $opts );
    delete $fields->{notes};

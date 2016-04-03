@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #23. Vehicle request link from vehicle edit
           - Exception handler returns 400
           - Fixes change password failing to lookup unknown user
           - Implemented #20. Add/edit person returns to people list

@@ -13,6 +13,9 @@
          name="[% f.name %]" type="checkbox" value="[% f.value %]">
    </label>
 [% END -%]
+[% MACRO Container( f ) BLOCK -%]
+   <div class="[% f.class %]">[% Dispatch( f.content ) %]</div>
+[% END -%]
 [% MACRO DateField( f ) BLOCK -%]
 [%    IF f.label -%]<label class="label">
       <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
@@ -31,6 +34,7 @@
 [%    IF f.label -%]</label>[% END -%]
 [% END -%]
 [% MACRO Dispatch( f ) BLOCK -%]
+[%    IF f.type == 'container'; Container( f ); END -%]
 [%    IF f.type == 'date'; DateField( f ); END -%]
 [%    IF f.type == 'form'; Form( f ); END -%]
 [%    IF f.type == 'form_button' -%]
