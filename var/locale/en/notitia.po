@@ -709,7 +709,7 @@ msgid "type_management_heading"
 msgstr "[_1] Type"
 
 msgid "type_management_link"
-msgstr "Edit"
+msgstr "Remove"
 
 msgid "type_name"
 msgstr "Type Name"
@@ -721,7 +721,7 @@ msgid "types_heading_1"
 msgstr "Type Name"
 
 msgid "types_heading_2"
-msgstr "Edit"
+msgstr "Remove"
 
 msgid "types_list_link"
 msgstr "All Types"

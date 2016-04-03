@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 38 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 39 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 38 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 39 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -232,7 +232,7 @@ TODO: Limit list lengths when number of users increases
 
 TODO: Add media query to reduce form size on mobiles
 
-TODO: Colour pallette issues. Icons and logo
+TODO: Colour pallette issues. Logo
 
 TODO: Add editor role. Someone who can edit documents
 
