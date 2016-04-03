@@ -74,9 +74,13 @@ my $_create_reset_email = sub {
 sub change_password : Role(anon) {
    my ($self, $req) = @_;
 
-   my $name   = $req->uri_params->( 0, { optional => TRUE } ) // $req->username;
-   my $person = $self->schema->resultset( 'Person' )->find_person( $name );
-   my $page   = {
+   my $opts       =  { optional => TRUE };
+   my $name       =  $req->uri_params->( 0, $opts ) // $req->username;
+   my $person     =  $name
+                  ?  $self->schema->resultset( 'Person' )->find_person( $name )
+                  :  FALSE;
+   my $username   =  $person ? $person->name : $req->username;
+   my $page       =  {
       fields      => {
          again    => bind( 'again',    NUL, {
             class => 'standard-field reveal' } ),
@@ -86,7 +90,7 @@ sub change_password : Role(anon) {
             label => 'new_password' } ),
          update   => bind( 'update', 'change_password', {
             class => 'save-button right-last' } ),
-         username => bind( 'username', $person->name ), },
+         username => bind( 'username', $username ), },
       literal_js  =>
          [ "   behaviour.config.inputs[ 'again' ]",
            "      = { event     : [ 'focus', 'blur' ],",
