@@ -12,7 +12,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 30 $ of **App::Notitia**
+This documents version v0.3.$Rev: 35 $ of **App::Notitia**
 
 # Description
 
@@ -197,7 +197,13 @@ TODO: Limit list lengths when number of users increases
 
 TODO: Add media query to reduce form size on mobiles
 
-TODO: Schema version numbers and workflow
+TODO: Colour pallette issues. Icons and logo
+
+TODO: Add editor role. Someone who can edit documents
+
+TODO: Event delettion leaves a left over event post
+
+TODO: Schema version numbers. DDL files ignored by git
 
 # Dependencies
 

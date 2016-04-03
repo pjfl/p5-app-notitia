@@ -47,6 +47,7 @@ lib/App/Notitia/Schema/Schedule/Result/Role.pm
 lib/App/Notitia/Schema/Schedule/Result/Rota.pm
 lib/App/Notitia/Schema/Schedule/Result/Shift.pm
 lib/App/Notitia/Schema/Schedule/Result/Slot.pm
+lib/App/Notitia/Schema/Schedule/Result/SlotCriteria.pm
 lib/App/Notitia/Schema/Schedule/Result/Transport.pm
 lib/App/Notitia/Schema/Schedule/Result/Type.pm
 lib/App/Notitia/Schema/Schedule/Result/Vehicle.pm
@@ -151,9 +152,9 @@ var/root/templates/hyde/vehicle-request_content.tt
 var/root/templates/hyde/vehicle_content.tt
 var/root/templates/hyde/wrapper.tt
 var/root/templates/hyde/yield-slot.tt
-var/share/App-Notitia-Schema-Schedule-0.3-MySQL.sql
-var/share/App-Notitia-Schema-Schedule-0.3-PostgreSQL.sql
-var/share/App-Notitia-Schema-Schedule-0.3-SQLite.sql
+var/share/App-Notitia-Schema-Schedule-0.4-MySQL.sql
+var/share/App-Notitia-Schema-Schedule-0.4-PostgreSQL.sql
+var/share/App-Notitia-Schema-Schedule-0.4-SQLite.sql
 var/share/App-Notitia-Schema-Schedule-001-Type.json
 var/share/App-Notitia-Schema-Schedule-002-Person.json
 var/share/App-Notitia-Schema-Schedule-003-Role.json

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implemented #20. Add/edit person returns to people list
           - Added Event/Person rels. Fixes #21 and #22
           - Added slot_criteria result class
           - Renamed next_of_kin_id and made it a left_join

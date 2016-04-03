@@ -364,10 +364,8 @@ sub create_person_action : Role(person_manager) {
    $self->config->no_user_email
       or $self->$_create_person_email( $req, $person, $password );
 
-   my $actionp  = $self->moniker.'/person';
-   my $location = uri_for_action $req, $actionp, [ $person->shortcode ];
-   my $message  =
-      [ '[_1] created by [_2]', $person->label, $req->username ];
+   my $location = uri_for_action $req, $self->moniker.'/people';
+   my $message  = [ '[_1] created by [_2]', $person->label, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -576,9 +574,10 @@ sub update_person_action : Role(person_manager) {
    $self->$_update_person_from_request( $req, $self->schema, $person );
    $person->update;
 
-   my $message = [ 'Person [_1] updated by [_2]', $label, $req->username ];
+   my $location = uri_for_action $req, $self->moniker.'/people';
+   my $message  = [ '[_1] updated by [_2]', $label, $req->username ];
 
-   return { redirect => { location => $req->uri, message => $message } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 1;
