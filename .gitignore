@@ -21,6 +21,7 @@ README
 README.pod
 lib/App/Notitia/app-notitia_local.json
 t/ipc_srlock*
+var/backups
 var/etc/app-notitia.json
 var/etc/profile
 var/root/docs/.mtime

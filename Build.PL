@@ -42,6 +42,7 @@ my $prereqs  = {
     'JSON::MaybeXS' => '1.003005',
     'MIME::Types' => '2.11',
     'Moo' => '2.000001',
+    'MySQL::Backup' => '0.04',
     'Plack' => '1.0036',
     'Plack::Middleware::Debug' => '0.16',
     'Plack::Middleware::Deflater' => '0.08',

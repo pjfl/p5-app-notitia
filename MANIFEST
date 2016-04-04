@@ -23,6 +23,7 @@ lib/App/Notitia/Model/Certification.pm
 lib/App/Notitia/Model/Documentation.pm
 lib/App/Notitia/Model/Endorsement.pm
 lib/App/Notitia/Model/Event.pm
+lib/App/Notitia/Model/Person.pm
 lib/App/Notitia/Model/Posts.pm
 lib/App/Notitia/Model/Role.pm
 lib/App/Notitia/Model/Schedule.pm
@@ -142,6 +143,7 @@ var/root/templates/hyde/rota_content.tt
 var/root/templates/hyde/search-file.tt
 var/root/templates/hyde/secondary-nav-items.tt
 var/root/templates/hyde/section_nav.tt
+var/root/templates/hyde/slot-certs_content.tt
 var/root/templates/hyde/standard.tt
 var/root/templates/hyde/table_content.tt
 var/root/templates/hyde/type_content.tt

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added backup_data to Schema
           - A little fettling for #27
           - Implments #25. Configurable slot roles
           - Fixed #28. Documentation typo

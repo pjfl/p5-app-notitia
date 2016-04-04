@@ -20,6 +20,7 @@ requires "HTTP::Message" => "6.06";
 requires "JSON::MaybeXS" => "1.003005";
 requires "MIME::Types" => "2.11";
 requires "Moo" => "2.000001";
+requires "MySQL::Backup" => "0.04";
 requires "Plack" => "1.0036";
 requires "Plack::Middleware::Debug" => "0.16";
 requires "Plack::Middleware::Deflater" => "0.08";

@@ -12,7 +12,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 35 $ of **App::Notitia**
+This documents version v0.3.$Rev: 43 $ of **App::Notitia**
 
 # Description
 
@@ -142,7 +142,7 @@ change that via the change password page the link for which is at
 the top of the default page. To start the production server in the
 background listening on a Unix socket:
 
-    bin/notiita-daemon start
+    bin/notitia-daemon start
 
 The `notitia-daemon` program provides normal SysV init script
 semantics. Additionally the daemon program will write an init script to
@@ -197,7 +197,7 @@ TODO: Limit list lengths when number of users increases
 
 TODO: Add media query to reduce form size on mobiles
 
-TODO: Colour pallette issues. Icons and logo
+TODO: Colour pallette issues. Logo
 
 TODO: Add editor role. Someone who can edit documents
 

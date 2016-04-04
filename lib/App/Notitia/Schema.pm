@@ -3,7 +3,10 @@ package App::Notitia::Schema;
 use namespace::autoclean;
 
 use App::Notitia;
-use App::Notitia::Constants qw( OK SLOT_TYPE_ENUM TRUE );
+use App::Notitia::Constants qw( NUL OK SLOT_TYPE_ENUM TRUE );
+use Archive::Tar::Constant  qw( COMPRESS_GZIP );
+use Class::Usul::Functions  qw( ensure_class_loaded );
+use DateTime                qw( );
 use Moo;
 
 extends q(Class::Usul::Schema);
@@ -37,6 +40,40 @@ around 'deploy_file' => sub {
 };
 
 # Public methods
+sub backup_data : method {
+   my $self = shift;
+   my $now  = DateTime->now;
+   my $conf = $self->config;
+   my $date = $now->ymd( NUL ).'-'.$now->hms( NUL );
+   my $file = $self->database."-${date}.sql";
+   my $bdir = $conf->vardir->catdir( 'backups' );
+   my $path = $bdir->catfile( $file )->assert_filepath;
+   my $out  = $bdir->catfile( $conf->title."-${date}.tgz" );
+
+   if (lc $self->driver eq 'mysql') {
+      ensure_class_loaded 'MySQL::Backup';
+
+      my $opts = { USE_REPLACE => TRUE, SHOW_TABLE_NAMES => TRUE };
+      my $mb   = MySQL::Backup->new
+         ( $self->database, $self->host, $self->user, $self->password, $opts );
+
+      $path->print( $mb->create_structure().$mb->data_backup() );
+   }
+
+   ensure_class_loaded 'Archive::Tar'; my $arc = Archive::Tar->new;
+
+   chdir $conf->appldir;
+   $path->exists and $arc->add_files( $path->abs2rel( $conf->appldir ) );
+
+   for my $doc ($conf->docs_root->clone->deep->all_files) {
+      $arc->add_files( $doc->abs2rel( $conf->appldir ) );
+   }
+
+   $arc->write( $out->pathname, COMPRESS_GZIP ); $path->unlink;
+
+   return OK;
+}
+
 sub dump_connect_attr : method {
    my $self = shift; $self->dumper( $self->connect_info ); return OK;
 }
@@ -88,7 +125,11 @@ Defines the following attributes;
 
 =head1 Subroutines/Methods
 
+=head2 C<backup_data> - Creates a backup of the database and documents
+
 =head2 C<dump_connect_attr> - Displays database connection information
+
+=head2 C<deploy_and_populate> - Create tables and populates them with initial data
 
 =head1 Diagnostics
 
