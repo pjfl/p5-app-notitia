@@ -27,6 +27,12 @@ msgstr "Create a new [_1] record for [_2]"
 msgid "add_cert"
 msgstr "Add Certification"
 
+msgid "add_certification"
+msgstr "Add Certification"
+
+msgid "add_certification_tip"
+msgstr "Add these certificates to the required list for this slot role"
+
 msgid "add_cert_tip"
 msgstr "Create a new [_1] record for [_2]"
 
@@ -137,6 +143,9 @@ msgstr "Certs"
 
 msgid "certifications_management_tip"
 msgstr "Administer certification records for [_1]"
+
+msgid "certs"
+msgstr "All Certificates"
 
 msgid "certs_heading_0"
 msgstr "Certification"
@@ -621,6 +630,12 @@ msgstr "Vehicles"
 msgid "request_vehicle_management_tip"
 msgstr "Request vehicles for the [_1] event"
 
+msgid "remove_certification"
+msgstr "Remove Certification"
+
+msgid "remove_certification_tip"
+msgstr "Remove these certificates from the required list for this slot role"
+
 msgid "remove_role"
 msgstr "Remove Role"
 
@@ -651,6 +666,9 @@ msgstr "Password Reset Request"
 msgid "resigned"
 msgstr "Resigned"
 
+msgid "rider"
+msgstr "Rider"
+
 msgid "role_management_heading"
 msgstr "Manage Roles"
 
@@ -664,9 +682,6 @@ msgid "role_type_create_link"
 msgstr "Add Role Type"
 
 msgid "roles"
-msgstr "Roles"
-
-msgid "roles_list_link"
 msgstr "Roles"
 
 msgid "rota_manager"
@@ -689,6 +704,33 @@ msgstr "List the service bikes"
 
 msgid "Site Description"
 msgstr "People and resource scheduling"
+
+msgid "slot_certs"
+msgstr "Required Certificates"
+
+msgid "slot_certs_management_heading"
+msgstr "Slot Certificates"
+
+msgid "slot_certs_management_link"
+msgstr "Certificates"
+
+msgid "slot_certs_management_tip"
+msgstr "Manage the certificates required by the slot roles"
+
+msgid "slot_roles_heading_0"
+msgstr "Slot Role"
+
+msgid "slot_roles_heading_1"
+msgstr "Certificates"
+
+msgid "slot_roles_list_link"
+msgstr "Slot Roles"
+
+msgid "slot_roles_list_tip"
+msgstr "Manage the certificates required by the slot roles"
+
+msgid "slotname"
+msgstr "Slot Name"
 
 msgid "start_time"
 msgstr "Start Time"

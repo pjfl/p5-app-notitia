@@ -3,7 +3,7 @@ package App::Notitia::Schema;
 use namespace::autoclean;
 
 use App::Notitia;
-use App::Notitia::Constants qw( OK TRUE );
+use App::Notitia::Constants qw( OK SLOT_TYPE_ENUM TRUE );
 use Moo;
 
 extends q(Class::Usul::Schema);
@@ -40,6 +40,24 @@ around 'deploy_file' => sub {
 sub dump_connect_attr : method {
    my $self = shift; $self->dumper( $self->connect_info ); return OK;
 }
+
+sub deploy_and_populate : method {
+   my $self    = shift;
+   my $rv      = $self->SUPER::deploy_and_populate;
+   my $type_rs = $self->schema->resultset( 'Type' );
+   my $sc_rs   = $self->schema->resultset( 'SlotCriteria' );
+
+   for my $slot_type (@{ SLOT_TYPE_ENUM() }) {
+      for my $cert_name (@{ $self->config->slot_certs->{ $slot_type } }) {
+         my $cert = $type_rs->find_certification_by( $cert_name );
+
+         $sc_rs->create( { slot_type             => $slot_type,
+                           certification_type_id => $cert->id } );
+      }
+   }
+
+   return $rv;
+};
 
 1;
 

@@ -220,8 +220,11 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
 has 'skin'            => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'hyde';
 
-has 'slot_certs'      => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
-   builder            => sub { [ 'catagory_b' ] };
+has 'slot_certs'      => is => 'ro',   isa => HashRef[ArrayRef],
+   builder            => sub { {
+      controller      => [ 'controller' ],
+      driver          => [ 'catagory_b', 'c_advanced' ],
+      rider           => [ 'catagory_a', 'm_advanced' ], } };
 
 has 'slot_limits'     => is => 'ro',   isa => ArrayRef[PositiveInt],
    builder            => sub { [ 2, 1, 3, 3, 1, 1 ] };

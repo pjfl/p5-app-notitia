@@ -78,7 +78,7 @@ around 'load_page' => sub {
 
    $page->{editing}   = $editing;
    $page->{editing} and $page->{user}
-      = $self->components->{admin}->find_by_shortcode( $req->username );
+      = $self->components->{person}->find_by_shortcode( $req->username );
    $page->{editing}  or $self->$_add_editing_js( $req, $page );
 
    return $page;
