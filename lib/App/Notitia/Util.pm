@@ -240,17 +240,16 @@ sub build_navigation ($$) {
    while (defined (my $node = $iter->())) {
       $node->{id} eq 'index' and next; $_can_see_link->( $req, $node ) or next;
 
-      if ( $node->{type} eq 'folder' ) {
-         my $keepit = undef;
-         next if $node->{fcount} < 1;
-         foreach my $n ( grep {!/^_/} keys %{$node->{tree}} ) {
-            if ( $_can_see_link->( $req, $node->{tree}->{$n} ) ) {
-               $keepit = 1;
-               last;
-            }
+      if ($node->{type} eq 'folder') {
+         my $keepit = FALSE; $node->{fcount} < 1 and next;
+
+         for my $n (grep { not m{ \A _ }mx } keys %{ $node->{tree} }) {
+            $_can_see_link->( $req, $node->{tree}->{ $n } ) and $keepit = TRUE
+               and last;
          }
-         next unless $keepit;
-      }  
+
+         $keepit or next;
+      }
 
       my $link   = clone( $node ); delete $link->{tree};
       my $prefix = $link->{prefix};

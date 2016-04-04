@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - A little fettling for #27
           - Implments #25. Configurable slot roles
           - Fixed #28. Documentation typo
           - Created Person model. Moved in code from Admin
