@@ -90,6 +90,8 @@ sub admin_navigation_links {
       push @{ $nav },
         $nav_folder->( $req, 'types' ),
         $nav_linkto->( $req, { name => 'types_list' }, 'admin/types', [] ),
+        $nav_linkto->( $req, { name => 'slot_roles_list' },
+                       'admin/slot_roles', [] ),
    }
 
    if ($self->$_allowed( $roles, 'asset/vehicles' )) {

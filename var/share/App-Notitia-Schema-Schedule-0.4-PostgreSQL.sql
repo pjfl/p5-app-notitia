@@ -60,12 +60,11 @@ CREATE INDEX "rota_idx_type_id" on "rota" ("type_id");
 
 DROP TABLE "slot_criteria" CASCADE;
 CREATE TABLE "slot_criteria" (
-  "role_type_id" integer NOT NULL,
+  "slot_type" character varying DEFAULT '0' NOT NULL,
   "certification_type_id" integer NOT NULL,
-  PRIMARY KEY ("role_type_id", "certification_type_id")
+  PRIMARY KEY ("slot_type", "certification_type_id")
 );
 CREATE INDEX "slot_criteria_idx_certification_type_id" on "slot_criteria" ("certification_type_id");
-CREATE INDEX "slot_criteria_idx_role_type_id" on "slot_criteria" ("role_type_id");
 
 DROP TABLE "certification" CASCADE;
 CREATE TABLE "certification" (
@@ -185,10 +184,7 @@ ALTER TABLE "rota" ADD CONSTRAINT "rota_fk_type_id" FOREIGN KEY ("type_id")
   REFERENCES "type" ("id") DEFERRABLE;
 
 ALTER TABLE "slot_criteria" ADD CONSTRAINT "slot_criteria_fk_certification_type_id" FOREIGN KEY ("certification_type_id")
-  REFERENCES "type" ("id") DEFERRABLE;
-
-ALTER TABLE "slot_criteria" ADD CONSTRAINT "slot_criteria_fk_role_type_id" FOREIGN KEY ("role_type_id")
-  REFERENCES "type" ("id") DEFERRABLE;
+  REFERENCES "type" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE "certification" ADD CONSTRAINT "certification_fk_recipient_id" FOREIGN KEY ("recipient_id")
   REFERENCES "person" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;

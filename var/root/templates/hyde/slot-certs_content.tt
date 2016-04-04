@@ -1,0 +1,16 @@
+<!-- Slot Certs Content -->
+<div class="unit four-fifths">
+   <article>
+      <h4>[% page.title %]</h4>
+      <form action="[% page.fields.href %]" class="standard-form"
+           enctype="application/x-www-form-urlencoded"
+            method="post" name="role-certs-admin">
+[% TextField( page.fields.slotname ) -%]
+[% Select( page.fields.slot_certs ) -%]
+[% Button( page.fields.remove ) -%]
+         <div class="form-separator"><hr/></div>
+[% Select( page.fields.certs ) -%]
+[% Button( page.fields.add ) -%]
+      </form>
+   </article>
+</div>

@@ -3,19 +3,19 @@ package App::Notitia::Schema::Schedule::Result::SlotCriteria;
 use strictures;
 use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::Util qw( foreign_key_data_type );
+use App::Notitia::Constants qw( SLOT_TYPE_ENUM );
+use App::Notitia::Util      qw( enumerated_data_type foreign_key_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
 $class->table( 'slot_criteria' );
 
 $class->add_columns
-   ( role_type_id          => foreign_key_data_type,
+   ( slot_type             => enumerated_data_type( SLOT_TYPE_ENUM, 0 ),
      certification_type_id => foreign_key_data_type, );
 
-$class->set_primary_key( 'role_type_id', 'certification_type_id' );
+$class->set_primary_key( 'slot_type', 'certification_type_id' );
 
-$class->belongs_to( role_type => "${result}::Type", 'role_type_id' );
 $class->belongs_to( certification_type => "${result}::Type",
                     'certification_type_id' );
 

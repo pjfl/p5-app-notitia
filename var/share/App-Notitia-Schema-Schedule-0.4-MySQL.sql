@@ -70,13 +70,11 @@ CREATE TABLE `rota` (
 DROP TABLE IF EXISTS `slot_criteria`;
 
 CREATE TABLE `slot_criteria` (
-  `role_type_id` integer unsigned NOT NULL,
+  `slot_type` enum('controller', 'rider', 'driver', '0') NOT NULL DEFAULT '0',
   `certification_type_id` integer unsigned NOT NULL,
   INDEX `slot_criteria_idx_certification_type_id` (`certification_type_id`),
-  INDEX `slot_criteria_idx_role_type_id` (`role_type_id`),
-  PRIMARY KEY (`role_type_id`, `certification_type_id`),
-  CONSTRAINT `slot_criteria_fk_certification_type_id` FOREIGN KEY (`certification_type_id`) REFERENCES `type` (`id`),
-  CONSTRAINT `slot_criteria_fk_role_type_id` FOREIGN KEY (`role_type_id`) REFERENCES `type` (`id`)
+  PRIMARY KEY (`slot_type`, `certification_type_id`),
+  CONSTRAINT `slot_criteria_fk_certification_type_id` FOREIGN KEY (`certification_type_id`) REFERENCES `type` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `certification`;

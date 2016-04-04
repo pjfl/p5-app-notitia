@@ -71,6 +71,17 @@ sub _as_string {
    return $_[ 0 ]->shortcode;
 }
 
+my $_list_slot_certs_for = sub {
+   my ($self, $slot_type) = @_;
+
+   my $schema = $self->result_source->schema;
+   my $rs     = $schema->resultset( 'SlotCriteria' );
+   my $where  = { 'slot_type' => $slot_type };
+   my $opts   = { prefetch => 'certification_type' };
+
+   return [ map { $_->certification_type } $rs->search( $where, $opts )->all ];
+};
+
 my $_assert_claim_allowed = sub {
    my ($self, $shift_type, $slot_type, $subslot, $bike_wanted) = @_;
 
@@ -80,10 +91,8 @@ my $_assert_claim_allowed = sub {
    $slot_type ne 'rider' and $bike_wanted
       and throw 'Cannot request a bike for slot type [_1]', [ $slot_type ];
 
-   if ($slot_type eq 'rider') {
-      for my $cert (@{ $conf->slot_certs }) {
-         $self->assert_certified_for( $cert );
-      }
+   for my $cert (@{ $self->$_list_slot_certs_for( $slot_type ) }) {
+      $self->assert_certified_for( $cert );
    }
 
    my $i = slot_limit_index $shift_type, $slot_type;

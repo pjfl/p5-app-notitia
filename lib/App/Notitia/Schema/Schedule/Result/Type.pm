@@ -5,9 +5,11 @@ use overload '""' => sub { $_[ 0 ]->_as_string },
              '+'  => sub { $_[ 0 ]->_as_number }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( TYPE_CLASS_ENUM );
+use App::Notitia::Constants qw( FALSE TRUE TYPE_CLASS_ENUM );
 use App::Notitia::Util      qw( enumerated_data_type serial_data_type
                                 varchar_data_type );
+use Class::Usul::Functions  qw( throw );
+use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -22,6 +24,9 @@ $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'name', 'type_class' ] );
 
+$class->has_many( slot_certs => "${result}::SlotCriteria",
+                  'certification_type_id' );
+
 # Private methods
 sub _as_number {
    return $_[ 0 ]->id;
@@ -29,6 +34,40 @@ sub _as_number {
 
 sub _as_string {
    return $_[ 0 ]->name;
+}
+
+# Public methods
+sub add_cert_type_to {
+   my ($self, $slot_type) = @_;
+
+   $self->is_cert_type_member_of( $slot_type )
+      and throw 'Cert. [_1] already required by slot type [_2]',
+          [ $self, $slot_type ];
+
+   return $self->create_related( 'slot_certs', { slot_type => $slot_type } );
+}
+
+sub assert_cert_type_member_of {
+   my ($self, $slot_type) = @_;
+
+   my $slot_role = $self->slot_certs->find( $slot_type, $self->id );
+
+   defined $slot_role
+      or throw 'Cert. [_1] is not required by slot type [_2]',
+               [ $self, $slot_type ], level => 2, rv => HTTP_EXPECTATION_FAILED;
+
+   return $slot_role;
+}
+
+sub delete_cert_type_from {
+   return $_[ 0 ]->assert_cert_type_member_of( $_[ 1 ] )->delete;
+}
+
+sub is_cert_type_member_of {
+   my ($self, $slot_type) = @_;
+
+   return $slot_type && $self->slot_certs->find( $slot_type, $self->id )
+        ? TRUE : FALSE;
 }
 
 1;

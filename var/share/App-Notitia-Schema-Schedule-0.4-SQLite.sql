@@ -76,16 +76,13 @@ CREATE UNIQUE INDEX "rota_type_id_date" ON "rota" ("type_id", "date");
 DROP TABLE "slot_criteria";
 
 CREATE TABLE "slot_criteria" (
-  "role_type_id" integer NOT NULL,
+  "slot_type" enum NOT NULL DEFAULT '0',
   "certification_type_id" integer NOT NULL,
-  PRIMARY KEY ("role_type_id", "certification_type_id"),
-  FOREIGN KEY ("certification_type_id") REFERENCES "type"("id"),
-  FOREIGN KEY ("role_type_id") REFERENCES "type"("id")
+  PRIMARY KEY ("slot_type", "certification_type_id"),
+  FOREIGN KEY ("certification_type_id") REFERENCES "type"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE INDEX "slot_criteria_idx_certification_type_id" ON "slot_criteria" ("certification_type_id");
-
-CREATE INDEX "slot_criteria_idx_role_type_id" ON "slot_criteria" ("role_type_id");
 
 DROP TABLE "certification";
 

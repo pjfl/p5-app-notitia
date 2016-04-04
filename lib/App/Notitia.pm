@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 40 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 41 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 40 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 41 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -177,7 +177,7 @@ change that via the change password page the link for which is at
 the top of the default page. To start the production server in the
 background listening on a Unix socket:
 
-   bin/notiita-daemon start
+   bin/notitia-daemon start
 
 The C<notitia-daemon> program provides normal SysV init script
 semantics. Additionally the daemon program will write an init script to

@@ -64,7 +64,7 @@ sub add_role_action : Role(administrator) Role(person_manager) {
 
    $self->config->roles_mtime->touch;
 
-   my $location = uri_for_action( $req, $self->moniker.'/role', [ $name ] );
+   my $location = uri_for_action $req, $self->moniker.'/role', [ $name ];
    my $message  =
       [ '[_1] role(s) added by [_2]', $person->label, $req->username ];
 
@@ -82,7 +82,7 @@ sub remove_role_action : Role(administrator) Role(person_manager) {
 
    $self->config->roles_mtime->touch;
 
-   my $location = uri_for_action( $req, $self->moniker.'/role', [ $name ] );
+   my $location = uri_for_action $req, $self->moniker.'/role', [ $name ];
    my $message  =
       [ '[_1] role(s) removed by [_2]', $person->label, $req->username ];
 
@@ -95,7 +95,7 @@ sub role : Role(administrator) Role(person_manager) {
    my $name      =  $req->uri_params->( 0 );
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $name );
-   my $href      =  uri_for_action( $req, $self->moniker.'/role', [ $name ] );
+   my $href      =  uri_for_action $req, $self->moniker.'/role', [ $name ];
    my $page      =  {
       fields     => { href => $href },
       template   => [ 'contents', 'role' ],
@@ -107,7 +107,7 @@ sub role : Role(administrator) Role(person_manager) {
 
    $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
    $fields->{roles}
-      = bind 'roles', $available, { multiple => TRUE, size => 5 };
+      = bind 'roles', $available, { multiple => TRUE, size => 10 };
    $fields->{person_roles}
       = bind 'person_roles', $person_roles, { multiple => TRUE, size => 5 };
    $fields->{add   } = $_add_role_button->( $req, $name );

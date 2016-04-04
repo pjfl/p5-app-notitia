@@ -21,7 +21,7 @@ sub dispatch_request {
    sub (GET  + /user/reset      + ?*) { [ 'user/request_reset',   @_ ] },
    sub (GET  + /index | /       + ?*) { [ 'docs/index',           @_ ] },
    sub (GET  + /**              + ?*) { [ 'docs/not_found',       @_ ] },
-   sub (POST                    + ?*) { [ 'docs/index',           @_ ] },
+   sub (POST                    + ?*) { [ 'docs/not_found',       @_ ] },
    sub (GET                     + ?*) { [ 'docs/index',           @_ ] };
 }
 
