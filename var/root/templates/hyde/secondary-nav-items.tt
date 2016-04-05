@@ -20,11 +20,12 @@
    <li>
 [%    LinkWithTips( '#', 'windows', text, page.hint, tip, 'profile-user' ) -%]
    </li>
-[%    href = uri_for_action( 'user/logout_action' ) -%]
+[%    href = uri_for_action( 'user/logout_action' ) -%] 
+
    <li>
-[%    FormWithButton( href, 'windows', loc( 'Logout' ), 'authentication',
+[%    FormWithButton( href, 'windows', loc( 'Logout' ) _ "  (" _ page.username _ ")", 'authentication',
                       loc( 'Logout from [_1]', config.title ),
-                     'logout-user', 'logout' ) -%]
+                     'logout-user', 'logout') -%]
    </li>
 [% ELSE -%]
 [%    text = loc( 'Login' ) -%]
