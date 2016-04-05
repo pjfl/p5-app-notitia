@@ -103,7 +103,7 @@ msgid "bluelight"
 msgstr "Bluelight"
 
 msgid "c_advanced"
-msgstr "C Advanced"
+msgstr "Advanced Car"
 
 msgid "car"
 msgstr "Car"
@@ -211,7 +211,7 @@ msgid "create_tip"
 msgstr "Create a new [_1] record"
 
 msgid "current_people_list_link"
-msgstr "Current People"
+msgstr "Active People"
 
 msgid "current_events_heading"
 msgstr "Current Events"
@@ -229,7 +229,7 @@ msgid "day_controller_1"
 msgstr "Ctrl. PM"
 
 msgid "day_driver_0"
-msgstr "Day SD"
+msgstr "Day Driver"
 
 msgid "day_rider_0"
 msgstr "Day North"
@@ -266,6 +266,9 @@ msgstr "Disposed"
 
 msgid "dob"
 msgstr "Date of Birth"
+
+msgid "Documentation"
+msgstr "Information"
 
 msgid "driver"
 msgstr "Driver"
@@ -403,10 +406,10 @@ msgid "login"
 msgstr "Login"
 
 msgid "login_title"
-msgstr "Stop! You have your papers?"
+msgstr "Please login"
 
 msgid "m_advanced"
-msgstr "M Advanced"
+msgstr "Advanced Motorcycle"
 
 msgid "main_index_title"
 msgstr "Welcome to [_1]"
@@ -484,7 +487,7 @@ msgid "night_controller_0"
 msgstr "Ctrl. Night"
 
 msgid "night_driver_0"
-msgstr "Night SD"
+msgstr "Night Driver"
 
 msgid "night_rider_0"
 msgstr "Night North"
@@ -618,11 +621,11 @@ msgstr "List previous events"
 msgid "primary_role"
 msgstr "Primary Role"
 
-msgid "private_bikes_link"
-msgstr "Private Bikes"
+msgid "private_vehicles_link"
+msgstr "Private Vehicles"
 
-msgid "private_bikes_tip"
-msgstr "List privately owned bikes"
+msgid "private_vehicles_tip"
+msgstr "List privately owned vehicles"
 
 msgid "request_vehicle_management_link"
 msgstr "Vehicles"
@@ -696,11 +699,11 @@ msgstr "Route"
 msgid "select_person"
 msgstr "Select Person"
 
-msgid "service_bikes_link"
-msgstr "Service Bikes"
+msgid "service_vehicles_link"
+msgstr "Service Vehicles"
 
-msgid "service_bikes_tip"
-msgstr "List the service bikes"
+msgid "service_vehicles_tip"
+msgstr "List the service vehicle"
 
 msgid "Site Description"
 msgstr "People and resource scheduling"

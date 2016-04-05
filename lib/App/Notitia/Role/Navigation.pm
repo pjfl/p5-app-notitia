@@ -99,12 +99,10 @@ sub admin_navigation_links {
         $nav_folder->( $req, 'vehicles' ),
         $nav_linkto->( $req, { name => 'vehicles_list' },
                        'asset/vehicles', [] ),
-        $nav_linkto->( $req, { name => 'bike_list' },
-                       'asset/vehicles', [], type => 'bike' ),
-        $nav_linkto->( $req, { name => 'service_bikes' },
-                       'asset/vehicles', [], type => 'bike', service => TRUE ),
-        $nav_linkto->( $req, { name => 'private_bikes' },
-                       'asset/vehicles', [], type => 'bike', private => TRUE );
+        $nav_linkto->( $req, { name => 'service_vehicles' },
+                       'asset/vehicles', [], service => TRUE ),
+        $nav_linkto->( $req, { name => 'private_vehicles' },
+                       'asset/vehicles', [], private => TRUE );
    }
 
    return $nav;

@@ -128,8 +128,7 @@ my $_people_headers = sub {
    if ($type eq 'contacts') { $header = 'contacts_heading'; $max = 5 }
    else {
       $header = 'people_heading';
-      $max    = ($role eq 'bike_rider' || $role eq 'driver') ? 4
-              : (                     $role eq 'controller') ? 3 : 2;
+      $max    = ($role eq 'bike_rider' || $role eq 'driver') ? 4 : 3;
    }
 
    return [ map { { value => loc( $req, "${header}_${_}" ) } } 0 .. $max ];
@@ -145,11 +144,10 @@ my $_people_links = sub {
    my $k     = $role ? "${role}_${scode}" : $scode;
    my $links = $_people_links_cache->{ $k }; $links and return @{ $links };
 
-   $links = []; my @paths = ( 'person/person', 'role/role' );
+   $links = []; my @paths = ( 'person/person', 'role/role', 'certs/certifications' );
 
    $role and ($role eq 'bike_rider' or $role eq 'driver')
-         and push @paths, 'certs/certifications', 'blots/endorsements';
-   $role and $role eq 'controller' and push @paths, 'certs/certifications';
+         and push @paths, 'blots/endorsements';
 
    for my $actionp ( @paths ) {
       push @{ $links }, { value => management_link( $req, $actionp, $scode ) };
