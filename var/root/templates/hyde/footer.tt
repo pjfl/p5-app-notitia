@@ -1,13 +1,14 @@
 <!-- Footer -->
 <footer role="contentinfo">
    <div class="grid">
-      <div class="unit one-third center-on-mobiles">
+      <div class="unit two-thirds center-on-mobiles">
 [% IF config.links.0 -%]
          <ul class="footer-nav">
 [%    FOR link IN config.links -%]
-            <li><a href="[% link.url | eval %]" target="_blank">
-               [% link.name %]</a></li>
+            | <a href="[% link.url | eval %]" target="_blank">
+               [% link.name %]</a>
 [%    END -%]
+            |
          </ul>
 [% END -%]
       </div>
