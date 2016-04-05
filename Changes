@@ -1,5 +1,8 @@
 Revision history for App::Notitia
 
+          - Added restore_data to Schema. Implements #11
+          - Rewrote backup_data to not use MySQL::Backup
+            Cannot cope with multi-column primary keys
           - Added backup_data to Schema
           - A little fettling for #27
           - Implments #25. Configurable slot roles

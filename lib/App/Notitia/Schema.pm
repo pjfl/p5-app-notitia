@@ -3,10 +3,12 @@ package App::Notitia::Schema;
 use namespace::autoclean;
 
 use App::Notitia;
-use App::Notitia::Constants qw( NUL OK SLOT_TYPE_ENUM TRUE );
+use App::Notitia::Constants qw( AS_PARA AS_PASSWORD EXCEPTION_CLASS NUL
+                                OK SLOT_TYPE_ENUM TRUE );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
-use Class::Usul::Functions  qw( ensure_class_loaded );
+use Class::Usul::Functions  qw( ensure_class_loaded io throw );
 use DateTime                qw( );
+use Unexpected::Functions   qw( PathNotFound Unspecified );
 use Moo;
 
 extends q(Class::Usul::Schema);
@@ -39,6 +41,25 @@ around 'deploy_file' => sub {
    return $orig->( $self, @args );
 };
 
+# Private methods
+my $_get_db_admin_creds = sub {
+   my ($self, $reason) = @_;
+
+   my $attrs  = { password => NUL, user => NUL, };
+   my $text   = 'Need the database administrators id and password to perform '
+              . "a ${reason} operation";
+
+   $self->output( $text, AS_PARA );
+
+   my $prompt = '+Database administrator id';
+   my $user   = $self->db_admin_ids->{ lc $self->driver } || NUL;
+
+   $attrs->{user    } = $self->get_line( $prompt, $user, TRUE, 0 );
+   $prompt    = '+Database administrator password';
+   $attrs->{password} = $self->get_line( $prompt, AS_PASSWORD );
+   return $attrs;
+};
+
 # Public methods
 sub backup_data : method {
    my $self = shift;
@@ -46,18 +67,17 @@ sub backup_data : method {
    my $conf = $self->config;
    my $date = $now->ymd( NUL ).'-'.$now->hms( NUL );
    my $file = $self->database."-${date}.sql";
+   my $path = $conf->tempdir->catfile( $file );
    my $bdir = $conf->vardir->catdir( 'backups' );
-   my $path = $bdir->catfile( $file )->assert_filepath;
-   my $out  = $bdir->catfile( $conf->title."-${date}.tgz" );
+   my $tarb = $conf->title."-${date}.tgz";
+   my $out  = $bdir->catfile( $tarb )->assert_filepath;
+   my $cred = $self->$_get_db_admin_creds( 'backup' );
 
    if (lc $self->driver eq 'mysql') {
-      ensure_class_loaded 'MySQL::Backup';
-
-      my $opts = { USE_REPLACE => TRUE, SHOW_TABLE_NAMES => TRUE };
-      my $mb   = MySQL::Backup->new
-         ( $self->database, $self->host, $self->user, $self->password, $opts );
-
-      $path->print( $mb->create_structure().$mb->data_backup() );
+      $self->run_cmd
+         ( [ 'mysqldump', '--opt', '--host', $self->host,
+             '--password='.$cred->{password}, '--result-file', $path->pathname,
+             '--user', $cred->{user}, '--databases', $self->database ] );
    }
 
    ensure_class_loaded 'Archive::Tar'; my $arc = Archive::Tar->new;
@@ -69,6 +89,7 @@ sub backup_data : method {
       $arc->add_files( $doc->abs2rel( $conf->appldir ) );
    }
 
+   $self->info( 'Generating backup [_1]', { args => [ $tarb ] } );
    $arc->write( $out->pathname, COMPRESS_GZIP ); $path->unlink;
 
    return OK;
@@ -95,6 +116,33 @@ sub deploy_and_populate : method {
 
    return $rv;
 };
+
+sub restore_data : method {
+   my $self = shift; my $conf = $self->config;
+
+   my $path = $self->next_argv or throw Unspecified, [ 'pathname' ];
+
+   $path = io $path; $path->exists or throw PathNotFound, [ $path ];
+
+   my $cred = $self->$_get_db_admin_creds( 'restore' );
+
+   ensure_class_loaded 'Archive::Tar'; my $arc = Archive::Tar->new;
+
+   chdir $conf->appldir; $arc->read( $path->pathname ); $arc->extract();
+
+   my (undef, $date) = split m{ - }mx, $path->basename( '.tgz' ), 2;
+   my $bdir = $conf->vardir->catdir( 'backups' );
+   my $sql  = $conf->tempdir->catfile( $conf->database."-${date}.sql" );
+
+   if ($sql->exists and lc $self->driver eq 'mysql') {
+      $self->run_cmd
+         ( [ 'mysql', '--host', $self->host, '--password='.$cred->{password},
+             '--user', $cred->{user}, $self->database ], { in => $sql } );
+      $sql->unlink;
+   }
+
+   return OK;
+}
 
 1;
 
