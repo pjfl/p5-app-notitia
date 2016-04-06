@@ -3,10 +3,12 @@ package App::Notitia::Schema;
 use namespace::autoclean;
 
 use App::Notitia;
-use App::Notitia::Constants qw( AS_PARA AS_PASSWORD EXCEPTION_CLASS NUL
+use App::Notitia::Constants qw( AS_PASSWORD EXCEPTION_CLASS NUL
                                 OK SLOT_TYPE_ENUM TRUE );
+use App::Notitia::Util      qw( encrypted_attr );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( ensure_class_loaded io throw );
+use Class::Usul::Types      qw( NonEmptySimpleStr );
 use DateTime                qw( );
 use Unexpected::Functions   qw( PathNotFound Unspecified );
 use Moo;
@@ -16,6 +18,14 @@ with    q(App::Notitia::Role::Schema);
 
 our $VERSION = $App::Notitia::VERSION;
 
+# Attribute constructors
+my $_build_admin_password = sub {
+   my $self = shift; my $prompt = '+Database administrator password';
+
+   return encrypted_attr $self->config, $self->config->ctlfile,
+             'admin_password', sub { $self->get_line( $prompt, AS_PASSWORD ) };
+};
+
 my $_build_schema_version = sub {
    my ($major, $minor) = $VERSION =~ m{ (\d+) \. (\d+) }mx;
 
@@ -24,6 +34,9 @@ my $_build_schema_version = sub {
 };
 
 # Public attributes (override defaults in base class)
+has 'admin_password'  => is => 'lazy', isa => NonEmptySimpleStr,
+   builder            => $_build_admin_password;
+
 has '+config_class'   => default => 'App::Notitia::Config';
 
 has '+database'       => default => sub { $_[ 0 ]->config->database };
@@ -41,25 +54,6 @@ around 'deploy_file' => sub {
    return $orig->( $self, @args );
 };
 
-# Private methods
-my $_get_db_admin_creds = sub {
-   my ($self, $reason) = @_;
-
-   my $attrs  = { password => NUL, user => NUL, };
-   my $text   = 'Need the database administrators id and password to perform '
-              . "a ${reason} operation";
-
-   $self->output( $text, AS_PARA );
-
-   my $prompt = '+Database administrator id';
-   my $user   = $self->db_admin_ids->{ lc $self->driver } || NUL;
-
-   $attrs->{user    } = $self->get_line( $prompt, $user, TRUE, 0 );
-   $prompt    = '+Database administrator password';
-   $attrs->{password} = $self->get_line( $prompt, AS_PASSWORD );
-   return $attrs;
-};
-
 # Public methods
 sub backup_data : method {
    my $self = shift;
@@ -71,13 +65,15 @@ sub backup_data : method {
    my $bdir = $conf->vardir->catdir( 'backups' );
    my $tarb = $conf->title."-${date}.tgz";
    my $out  = $bdir->catfile( $tarb )->assert_filepath;
-   my $cred = $self->$_get_db_admin_creds( 'backup' );
 
    if (lc $self->driver eq 'mysql') {
+      my $user = $self->db_admin_ids->{mysql};
+
       $self->run_cmd
          ( [ 'mysqldump', '--opt', '--host', $self->host,
-             '--password='.$cred->{password}, '--result-file', $path->pathname,
-             '--user', $cred->{user}, '--databases', $self->database ] );
+             '--password='.$self->admin_password, '--result-file',
+             $path->pathname, '--user', $user,
+             '--databases', $self->database ] );
    }
 
    ensure_class_loaded 'Archive::Tar'; my $arc = Archive::Tar->new;
@@ -124,8 +120,6 @@ sub restore_data : method {
 
    $path = io $path; $path->exists or throw PathNotFound, [ $path ];
 
-   my $cred = $self->$_get_db_admin_creds( 'restore' );
-
    ensure_class_loaded 'Archive::Tar'; my $arc = Archive::Tar->new;
 
    chdir $conf->appldir; $arc->read( $path->pathname ); $arc->extract();
@@ -135,9 +129,12 @@ sub restore_data : method {
    my $sql  = $conf->tempdir->catfile( $conf->database."-${date}.sql" );
 
    if ($sql->exists and lc $self->driver eq 'mysql') {
+      my $user = $self->db_admin_ids->{mysql};
+
       $self->run_cmd
-         ( [ 'mysql', '--host', $self->host, '--password='.$cred->{password},
-             '--user', $cred->{user}, $self->database ], { in => $sql } );
+         ( [ 'mysql', '--host', $self->host,
+             '--password='.$self->admin_password, '--user', $user,
+             $self->database ], { in => $sql } );
       $sql->unlink;
    }
 

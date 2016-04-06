@@ -5,6 +5,8 @@ use parent 'Exporter::Tiny';
 
 use App::Notitia::Constants    qw( FALSE HASH_CHAR NUL SPC TILDE TRUE
                                    VARCHAR_MAX_SIZE );
+use Class::Usul::Crypt::Util   qw( decrypt_from_config encrypt_for_config );
+use Class::Usul::File;
 use Class::Usul::Functions     qw( class2appdir create_token
                                    ensure_class_loaded find_apphome
                                    first_char fold get_cfgfiles io is_arrayref
@@ -21,10 +23,11 @@ use YAML::Tiny;
 our @EXPORT_OK = qw( assign_link bind bind_fields bool_data_type
                      build_navigation build_tree button check_field_server
                      check_form_field clone create_link date_data_type
-                     delete_button dialog_anchor enumerated_data_type enhance
-                     field_options foreign_key_data_type get_hashed_pw get_salt
-                     is_draft is_encrypted iterator js_anchor_config lcm_for
-                     loc localise_tree mail_domain make_id_from make_name_from
+                     delete_button dialog_anchor encrypted_attr
+                     enhance enumerated_data_type field_options
+                     foreign_key_data_type get_hashed_pw get_salt is_draft
+                     is_encrypted iterator js_anchor_config lcm_for loc
+                     localise_tree mail_domain make_id_from make_name_from
                      make_tip management_link mtime new_salt
                      nullable_foreign_key_data_type nullable_varchar_data_type
                      numerical_id_data_type register_action_paths save_button
@@ -402,11 +405,20 @@ sub dialog_anchor ($$$) {
    return js_anchor_config( $k, 'modalDialog', 'click', [ "${href}", $opts ] );
 }
 
-sub enumerated_data_type ($;$) {
-   return { data_type     => 'enum',
-            default_value => $_[ 1 ],
-            extra         => { list => $_[ 0 ] },
-            is_enum       => TRUE, };
+sub encrypted_attr ($$$$) {
+   my ($conf, $file, $k, $default) = @_; my $data = {}; my $v;
+
+   if ($file->exists) {
+      $data = Class::Usul::File->data_load( paths => [ $file ] ) // {};
+      $v    = decrypt_from_config $conf, $data->{ $k };
+   }
+
+   unless ($v) {
+      $data->{ $k } = encrypt_for_config $conf, $v = $default->();
+      Class::Usul::File->data_dump( { path => $file->assert, data => $data } );
+   }
+
+   return $v;
 }
 
 sub enhance ($) {
@@ -420,6 +432,13 @@ sub enhance ($) {
    $conf->{cfgfiles    } //= get_cfgfiles $conf->{appclass}, $conf->{home};
 
    return $attr;
+}
+
+sub enumerated_data_type ($;$) {
+   return { data_type     => 'enum',
+            default_value => $_[ 1 ],
+            extra         => { list => $_[ 0 ] },
+            is_enum       => TRUE, };
 }
 
 sub field_options ($$$;$) {
@@ -793,6 +812,8 @@ Defines no attributes
 =item C<delete_button>
 
 =item C<dialog_anchor>
+
+=item C<encrypted_attr>
 
 =item C<enhance>
 

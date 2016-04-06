@@ -2,16 +2,15 @@ package App::Notitia::Config;
 
 use namespace::autoclean;
 
-use Class::Usul::Constants       qw( FALSE NUL TRUE );
-use Class::Usul::Crypt::Util     qw( decrypt_from_config encrypt_for_config );
-use Class::Usul::File;
-use Class::Usul::Functions       qw( class2appdir create_token );
-use Data::Validation::Constants  qw( );
-use File::DataClass::Types       qw( ArrayRef Bool CodeRef Directory File
-                                     HashRef NonEmptySimpleStr
-                                     NonNumericSimpleStr
-                                     NonZeroPositiveInt Object Path
-                                     PositiveInt SimpleStr Str Undef );
+use App::Notitia::Util          qw( encrypted_attr );
+use Class::Usul::Constants      qw( FALSE NUL TRUE );
+use Class::Usul::Functions      qw( class2appdir create_token );
+use Data::Validation::Constants qw( );
+use File::DataClass::Types      qw( ArrayRef Bool CodeRef Directory File
+                                    HashRef NonEmptySimpleStr
+                                    NonNumericSimpleStr NonZeroPositiveInt
+                                    Object Path PositiveInt SimpleStr
+                                    Str Undef );
 use Moo;
 
 extends q(Class::Usul::Config::Programs);
@@ -49,19 +48,7 @@ my $_build_links = sub {
 };
 
 my $_build_secret = sub {
-   my $self = shift; my $file = $self->ctlfile; my $data = {}; my $token;
-
-   if ($file->exists) {
-      $data  = Class::Usul::File->data_load( paths => [ $file ] ) // {};
-      $token = decrypt_from_config $self, $data->{secret};
-   }
-
-   unless ($token) {
-      $data->{secret} = encrypt_for_config $self, $token = create_token;
-      Class::Usul::File->data_dump( { path => $file->assert, data => $data } );
-   }
-
-   return $token;
+   encrypted_attr $_[ 0 ], $_[ 0 ]->ctlfile, 'secret', \&create_token;
 };
 
 my $_build_user_home = sub {
