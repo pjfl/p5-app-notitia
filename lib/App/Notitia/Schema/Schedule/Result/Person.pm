@@ -413,6 +413,7 @@ sub validation_attributes {
          address       => { validate => 'isValidLength isValidText' },
          dob           => { validate => 'isValidDate' },
          email_address => {
+            unique     => TRUE,
             validate   => 'isMandatory isValidLength isValidEmail' },
          first_name    => {
             filters    => 'filterUCFirst',
@@ -426,6 +427,7 @@ sub validation_attributes {
          mobile_phone  => { filters  => 'filterNonNumeric',
                             validate => 'isValidInteger' },
          name          => {
+            unique     => TRUE,
             validate   => 'isMandatory isValidLength isSimpleText' },
          notes         => { validate => 'isValidLength isValidText' },
          password      => {

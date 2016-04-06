@@ -170,9 +170,9 @@ my $_vehicle_title = sub {
 
    my $k = 'vehicles_management_heading';
 
-   if    ($type and $private) { $k = 'vehicle_private_heading' }
-   elsif ($type and $service) { $k = 'vehicle_service_heading' }
-   elsif ($type)              { $k = "${type}_list_link" }
+   if    ($private) { $k = 'vehicle_private_heading' }
+   elsif ($service) { $k = 'vehicle_service_heading' }
+   elsif ($type)    { $k = "${type}_list_link" }
 
    return loc $req, $k;
 };

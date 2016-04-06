@@ -4,6 +4,7 @@ use strictures;
 use parent 'DBIx::Class::Core';
 
 use App::Notitia::Constants qw( NUL TRUE );
+use App::Notitia::Util      qw( assert_unique );
 use Data::Validation;
 
 __PACKAGE__->load_components( qw( InflateColumn::Object::Enum TimeStamp ) );
@@ -32,8 +33,12 @@ sub validate {
    defined $attr->{fields} or return TRUE;
 
    my $columns = { $self->get_inflated_columns };
+   my $rs      = $self->result_source->resultset;
 
    for my $field (keys %{ $attr->{fields} }) {
+      $attr->{fields}->{ $field }->{unique} and exists $columns->{ $field }
+         and assert_unique $rs, $columns, $attr->{fields}, $field;
+
       my $valids =  $attr->{fields}->{ $field }->{validate} or next;
          $valids =~ m{ isMandatory }msx and $columns->{ $field } //= undef;
    }

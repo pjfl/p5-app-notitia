@@ -233,6 +233,7 @@ sub validation_attributes {
          name        => { validate => 'isValidLength isValidIdentifier' },
          notes       => { validate => 'isValidLength isValidText' },
          vrn         => {
+            unique   => TRUE,
             validate => 'isMandatory isValidLength isValidIdentifier' },
       },
       level => 8,

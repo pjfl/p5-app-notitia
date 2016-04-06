@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Added server side test for unique field values
+          - Fixed broken vehicle screen titles
           - Remove accordian from docs menu
           - Implements #17. Adds accordian to docs nav menu
           - Backup data now caches admin password
