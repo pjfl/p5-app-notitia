@@ -26,16 +26,6 @@ register_action_paths
    'docs/upload' => 'assets';
 
 # Construction
-around 'get_stash' => sub {
-   my ($orig, $self, $req, @args) = @_;
-
-   my $stash = $orig->( $self, $req, @args );
-
-   $stash->{nav}->{id} = 'navigation';
-
-   return $stash;
-};
-
 around 'load_page' => sub {
    my ($orig, $self, $req, @args) = @_;
 
