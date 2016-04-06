@@ -26,6 +26,16 @@ register_action_paths
    'docs/upload' => 'assets';
 
 # Construction
+around 'get_stash' => sub {
+   my ($orig, $self, $req, @args) = @_;
+
+   my $stash = $orig->( $self, $req, @args );
+
+   $stash->{nav}->{id} = 'navigation';
+
+   return $stash;
+};
+
 around 'load_page' => sub {
    my ($orig, $self, $req, @args) = @_;
 
@@ -107,6 +117,7 @@ sub index : Role(anon) {
    my $mid = $req->query_params->( 'mid', { optional => TRUE } );
 
    $mid and $location->query_form( mid => $mid );
+   $location->query_form( navigation_reset => TRUE );
 
    return { redirect => { location => $location } };
 }
@@ -128,7 +139,15 @@ sub nav_label {
 }
 
 sub page : Role(anon) {
-   return $_[ 0 ]->get_stash( $_[ 1 ] );
+   my ($self, $req) = @_;
+
+   my $reset = $req->query_params->( 'navigation_reset', { optional => TRUE } );
+   my $stash = $self->get_stash( $req );
+
+   $reset and push @{ $stash->{page}->{literal_js} },
+      "   behaviour.config[ 'sidebars' ] = { 'navigation_reset': true };";
+
+   return $stash;
 }
 
 sub rename_file_action : Role(administrator) {

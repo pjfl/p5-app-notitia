@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #17. Adds accordian to docs nav menu
           - Backup data now caches admin password
           - Added restore_data to Schema. Implements #11
           - Rewrote backup_data to not use MySQL::Backup

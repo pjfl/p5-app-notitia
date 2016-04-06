@@ -23,9 +23,7 @@ nav {
    li { display: inline-block; }
 }
 .centre { text-align: center; }
-.clear {
-   display: block;
-}
+.clear { display: block; }
 .clear:after {
    clear: both; content: " "; display: block; height: 0; visibility: hidden;
 }
@@ -416,7 +414,8 @@ article {
 aside {
    padding-top: 30px;
    h4 {
-      border-bottom: 1px solid @divider; display: inline-block; font-size: 12px;
+      border-bottom: 1px solid @divider; color: @subtle;
+      display: inline-block; font-size: 12px;
       font-weight: 700; margin-bottom: 5px; margin-left: -30px;
       padding: 0 0 5px 30px; text-transform: uppercase;
    }
@@ -434,6 +433,10 @@ aside {
       padding-left: 0;
       &:first-child { margin-top: 0; }
    }
+   .aj-nav.active { outline: none; }
+   .aj-nav.active h4 { color: @foreground; }
+   .aj-nav.inactive { outline: none; }
+   .aj-nav.inactive h4 { color: @contrast; }
 }
 /* Documentation */
 .standard-section {

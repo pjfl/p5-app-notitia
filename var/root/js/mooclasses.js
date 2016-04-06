@@ -306,6 +306,213 @@ var Dialog = new Class( {
    }
 } );
 
+/* Description: An Fx.Elements extension which allows you to easily
+ *              create accordion type controls.
+ * License: MIT-style license
+ * Authors: Valerio Proietti, Peter Flanigan */
+
+Fx.Accordion = new Class( {
+   Extends: Fx.Elements,
+
+   options               : {
+      alwaysHide        : false,
+      display           : 0,
+      fixedHeight       : false,
+      fixedWidth        : false,
+      height            : true,
+      initialDisplayFx  : true,
+/*    onActive          : function( togglers, index, section ) {}, */
+/*    onBackground      : function( togglers, index, section ) {}, */
+      opacity           : true,
+      returnHeightToAuto: true,
+      show              : false,
+      trigger           : 'click',
+      wait              : false,
+      width             : false
+   },
+
+   initialize: function() {
+      var defined = function( obj ) { return obj != null };
+      var params  = Array.link( arguments, {
+         'options'  : Type.isObject,
+         'togglers' : defined,
+         'elements' : defined
+      } );
+
+      this.parent( params.elements, params.options );
+      this.togglers      = $$( params.togglers );
+      this.internalChain = new Chain();
+      this.previous      = -1;
+      this.effects       = {};
+
+      var opt = this.options;
+
+      if (opt.alwaysHide) opt.wait = true;
+
+      if (opt.show || opt.show === 0) {
+         opt.display = false; this.previous = opt.show;
+      }
+
+      if (opt.opacity) this.effects.opacity = 'fullOpacity';
+
+      if (opt.width) this.effects.width = opt.fixedWidth ? 'fullWidth'
+                                                         : 'offsetWidth';
+
+      if (opt.height) this.effects.height = opt.fixedHeight ? 'fullHeight'
+                                                            : 'scrollHeight';
+
+      for (var i = 0, l = this.togglers.length; i < l; i++) {
+         var toggler = this.togglers[ i ];
+
+         if (i == 0) toggler.addClass( 'accordion_header_first' );
+
+         this.addSection( toggler, this.elements[ i ] );
+      }
+
+      this.elements.each( function( el, i ) {
+         if (opt.show === i) {
+            this.fireEvent( 'active', [ this.togglers, i, el ] );
+         }
+         else {
+            for (var fx in this.effects) el.setStyle( fx, 0 );
+         }
+      }, this );
+
+      if (opt.display || opt.display === 0)
+         this.display( opt.display, opt.initialDisplayFx );
+
+      this.addEvent( 'complete',
+                     this.internalChain.callChain.bind( this.internalChain ) );
+   },
+
+   addSection: function( toggler, el ) {
+      toggler = document.id( toggler ); el = document.id( el );
+
+      var test = this.togglers.contains( toggler );
+
+      this.togglers.include( toggler ); this.elements.include( el );
+
+      var opt       = this.options;
+      var index     = this.togglers.indexOf( toggler );
+      var displayer = this.display.pass( [ index, true ], this );
+
+      toggler.addEvent( opt.trigger, displayer );
+      toggler.store( 'accordion:display', displayer );
+      el.setStyle( 'overflow-y', opt.fixedHeight ? 'auto' : 'hidden' );
+      el.setStyle( 'overflow-x', opt.fixedWidth  ? 'auto' : 'hidden' );
+      el.fullOpacity = 1;
+
+      if (! test) { for (var fx in this.effects) el.setStyle( fx, 0 ); }
+
+      this.internalChain.chain( function() {
+         if (! opt.fixedHeight && opt.returnHeightToAuto
+             && ! this.selfHidden) {
+            if (this.now == index) el.setStyle( 'height', 'auto' );
+         };
+      }.bind( this ) );
+
+      return this;
+   },
+
+   detach: function( toggler ) {
+      var remove = function( toggler ) {
+         toggler.removeEvent( this.options.trigger,
+                              toggler.retrieve( 'accordion:display' ) );
+      }.bind( this );
+
+      if (! toggler) this.togglers.each( remove );
+      else remove( toggler );
+
+      return this;
+   },
+
+   display: function( index, useFx ) {
+      if (! this.check( index, useFx )) return this;
+
+      var els = this.elements, opt = this.options;
+
+      index = (typeOf( index ) == 'element') ? els.indexOf( index )
+                                             : index;
+      index = index >= els.length ? els.length - 1 : index;
+      useFx = useFx != null ? useFx : true;
+
+      if (! opt.fixedHeight && opt.returnHeightToAuto) {
+         var prev = this.previous > -1 ? els[ this.previous ] : false;
+
+         if (prev && ! this.selfHidden) {
+            for (var fx in this.effects) {
+               prev.setStyle( fx, prev[ this.effects[ fx ] ] );
+            }
+         }
+      }
+
+      if (this.timer && opt.wait) return this;
+
+      this.previous = this.now != undefined ? this.now : -1;
+      this.now      = index;
+
+      var obj = this._element_iterator( function( el, i, hide ) {
+         this.fireEvent( hide ? 'background' : 'active',
+                         [ this.togglers, i, el ] );
+      }.bind( this ) );
+
+      return useFx ? this.start( obj ) : this.set( obj );
+   },
+
+   _element_iterator: function( f ) {
+      var obj = {}, opt = this.options;
+
+      this.elements.each( function( el, i ) {
+         var hide = false; obj[ i ] = {};
+
+         if (i != this.now) { hide = true }
+         else if (opt.alwaysHide && ((el.offsetHeight > 0 && opt.height)
+                                   || el.offsetWidth  > 0 && opt.width)) {
+            hide = this.selfHidden = true;
+         }
+
+         f( el, i, hide );
+
+         for (var fx in this.effects)
+            obj[ i ][ fx ] = hide ? 0 : el[ this.effects[ fx ] ];
+      }, this );
+
+      return obj;
+   },
+
+   removeSection: function( toggler, displayIndex ) {
+      var index   = this.togglers.indexOf( toggler );
+      var el      = this.elements[ index ];
+      var remover = function() {
+         this.togglers.erase( toggler );
+         this.elements.erase( el );
+         this.detach( toggler );
+      }.bind( this );
+
+      if (this.now == index || displayIndex != null){
+         this.display( displayIndex != null ? displayIndex
+                       : (index - 1 >= 0 ? index - 1 : 0) ).chain( remover );
+      }
+      else { remover() }
+
+      return this;
+   },
+
+   resize: function() {
+      var opt    = this.options;
+      var height = typeOf( opt.fixedHeight ) == 'function'
+                 ? opt.fixedHeight.call() : opt.fixedHeight;
+      var width  = typeOf( opt.fixedWidth  ) == 'function'
+                 ? opt.fixedWidth.call()  : opt.fixedWidth;
+      var obj    = this._element_iterator( function( el, i, hide ) {
+         if (height) el.fullHeight = height;
+         if (width)  el.fullWidth  = width;
+      }.bind( this ) );
+
+      this.set( obj );
+   }
+} );
+
 var Headroom = new Class( {
    Implements: [ Options ],
 
@@ -543,6 +750,72 @@ var LoadMore = new Class( {
       if (resp.script) Browser.exec( resp.script );
 
       if (this.onComplete) this.onComplete.call( this.context, resp );
+   }
+} );
+
+var Navigation = new Class( {
+   Implements: [ Options ],
+
+   options         : {
+      config_attr  : 'sidebars',
+      panel        : 0,
+      panelClass   : '.nav-panel',
+      reset        : false,
+      selector     : 'navigation',
+      togglerClass : '.aj-nav'
+   },
+
+   initialize: function( options ) {
+      this.config  = options.config; delete options[ 'config'  ];
+      this.context = options.context || {}; delete options[ 'context' ];
+
+      this.setOptions( options );
+
+      var opt = this.options, selector = opt.selector;
+
+      if (!this.config && opt.config_attr)
+         this.config = this.context.config[ opt.config_attr ];
+
+      if (!this.config) this.config = {};
+
+      var sb; if (! (sb = this.el = $( selector ))) return;
+
+      var cookies   = this.context.cookies || {};
+      var sb_panel  = cookies.get( selector + 'Panel' ) || opt.panel;
+      var togglers  = $$( opt.togglerClass ), panels = $$( opt.panelClass );
+
+      if (this.config.navigation_reset) { sb_panel = opt.panel }
+
+      // Create an Accordion widget in the side bar
+      this.accordion = new Fx.Accordion( togglers, panels, {
+         display      : sb_panel,
+         opacity      : false,
+         onActive     : function( togglers, index, el ) {
+            var toggler = togglers[ index ];
+
+            toggler.swapClass( 'inactive', 'active' );
+            this.context.cookies.set( selector + 'Panel', index );
+
+            var cfg; if (! (cfg = this.config[ toggler.id ])) return;
+
+            if (cfg.action && cfg.name) {
+               this.context.server.request( cfg.action, cfg.name,
+                                            cfg.value,  cfg.onComplete );
+            }
+         }.bind( this ),
+         onBackground : function( togglers, index, el ) {
+            togglers[ index ].swapClass( 'active', 'inactive' );
+         }
+      } );
+
+      return;
+   },
+
+   reset: function() {
+      var opt = this.options;
+
+      this.context.cookies.set( opt.selector + 'Panel', opt.panel );
+      return;
    }
 } );
 
