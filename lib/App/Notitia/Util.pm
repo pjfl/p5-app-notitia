@@ -73,7 +73,7 @@ my $_can_see_link = sub {
 };
 
 my $_check_field = sub {
-   my ($req, $class_base) = @_;
+   my ($schema, $req) = @_;
 
    my $params = $req->query_params;
    my $domain = $params->( 'domain' );
@@ -81,14 +81,18 @@ my $_check_field = sub {
    my $id     = $params->( 'id'     );
    my $val    = $params->( 'val', { raw => TRUE } );
 
-   if    (first_char $class eq '+') { $class = substr $class, 1 }
-   elsif (defined $class_base)      { $class = "${class_base}::${class}" }
+   if (first_char $class eq '+') { $class = substr $class, 1 }
+   else { $class = (blessed $schema)."::Result::${class}" }
 
    $result_class_cache->{ $class }
       or (ensure_class_loaded( $class )
           and $result_class_cache->{ $class } = TRUE);
 
    my $attr = $class->validation_attributes; $attr->{level} = 4;
+
+   my $rs; $attr->{fields}->{ $id }->{unique} and defined $val
+      and $rs = $schema->resultset( $class )
+      and assert_unique( $rs, { $id => $val }, $attr->{fields}, $id );
 
    return Data::Validation->new( $attr )->check_field( $id, $val );
 };
@@ -171,7 +175,8 @@ my $_vehicle_link = sub {
 sub assert_unique ($$$$) {
    my ($rs, $columns, $fields, $k) = @_;
 
-   ref $fields->{ $k }->{unique} and return TRUE;
+   defined $columns->{ $k } or return;
+   is_arrayref $fields->{ $k }->{unique} and return;
 
    my $v = ($rs->search( { $k => $columns->{ $k } } )->all)[ 0 ];
 
@@ -352,17 +357,17 @@ sub check_field_server ($$) {
           "      args      : ${args} };";
 }
 
-sub check_form_field ($;$$) {
-   my ($req, $log, $result_class_base) = @_; my $mesg;
+sub check_form_field ($$;$) {
+   my ($schema, $req, $log) = @_; my $mesg;
 
    my $id = $req->query_params->( 'id' ); my $meta = { id => "${id}_ajax" };
 
-   try   { $_check_field->( $req, $result_class_base ) }
+   try   { $_check_field->( $schema, $req ) }
    catch {
-      my $e = $_; my $args = { params => $e->args };
+      my $e = $_;
 
       $log and $log->debug( "${e}" );
-      $mesg = $req->loc( $e->error, $args );
+      $mesg = $req->loc( $e->error, { params => $e->args } );
       $meta->{class_name} = 'field-error';
    };
 

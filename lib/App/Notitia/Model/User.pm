@@ -8,7 +8,6 @@ use App::Notitia::Util      qw( bind check_form_field loc mail_domain
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
-use Scalar::Util            qw( blessed );
 use Unexpected::Functions   qw( Unspecified );
 use Moo;
 
@@ -74,8 +73,8 @@ my $_create_reset_email = sub {
 sub change_password : Role(anon) {
    my ($self, $req) = @_;
 
-   my $opts       =  { optional => TRUE };
-   my $name       =  $req->uri_params->( 0, $opts ) // $req->username;
+   my $params     =  $req->uri_params;
+   my $name       =  $params->( 0, { optional => TRUE } ) // $req->username;
    my $person     =  $name
                   ?  $self->schema->resultset( 'Person' )->find_person( $name )
                   :  FALSE;
@@ -131,7 +130,7 @@ sub change_password_action : Role(anon) {
 sub check_field : Role(any) {
    my ($self, $req) = @_;
 
-   return check_form_field $req, $self->log, (blessed $self->schema).'::Result';
+   return check_form_field $self->schema, $req, $self->log;
 }
 
 sub login : Role(anon) {
