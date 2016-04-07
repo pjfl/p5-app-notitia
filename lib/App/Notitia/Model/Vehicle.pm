@@ -383,9 +383,15 @@ sub assign_vehicle_action : Role(rota_manager) {
 sub create_vehicle_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $vehicle  = $self->schema->resultset( 'Vehicle' )->new_result( {} );
+   my $vehicle = $self->schema->resultset( 'Vehicle' )->new_result( {} );
 
-   $self->$_update_vehicle_from_request( $req, $vehicle ); $vehicle->insert;
+   $self->$_update_vehicle_from_request( $req, $vehicle );
+
+   try { $vehicle->insert }
+   catch {
+      $self->log->error( $_ );
+      throw 'Vehicle [_1] failed to create', [ $vehicle->vrn ];
+   };
 
    my $vrn      = $vehicle->vrn;
    my $message  = [ 'Vehicle [_1] created by [_2]', $vrn, $req->username ];
@@ -474,7 +480,13 @@ sub update_vehicle_action : Role(rota_manager) {
    my $vrn     = $req->uri_params->( 0 );
    my $vehicle = $self->schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
 
-   $self->$_update_vehicle_from_request( $req, $vehicle ); $vehicle->update;
+   $self->$_update_vehicle_from_request( $req, $vehicle );
+
+   try { $vehicle->update }
+   catch {
+      $self->log->error( $_ );
+      throw 'Vehicle [_1] failed to update', [ $vehicle->vrn ];
+   };
 
    my $message = [ 'Vehicle [_1] updated by [_2]', $vrn, $req->username ];
 

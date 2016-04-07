@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #13. Friendly errors for most creates/updates
           - Perform async calls to test for unique form field values
           - Added server side test for unique field values
           - Fixed broken vehicle screen titles

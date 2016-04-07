@@ -28,7 +28,7 @@ sub find_slot {
 }
 
 sub validate {
-   my $self = shift; my $attr = $self->validation_attributes;
+   my ($self, $for_update) = @_; my $attr = $self->validation_attributes;
 
    defined $attr->{fields} or return TRUE;
 
@@ -36,7 +36,9 @@ sub validate {
    my $rs      = $self->result_source->resultset;
 
    for my $field (keys %{ $attr->{fields} }) {
-      $attr->{fields}->{ $field }->{unique} and exists $columns->{ $field }
+      $attr->{fields}->{ $field }->{unique}
+         and not $for_update
+         and exists $columns->{ $field }
          and assert_unique $rs, $columns, $attr->{fields}, $field;
 
       my $valids =  $attr->{fields}->{ $field }->{validate} or next;

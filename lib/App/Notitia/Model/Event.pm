@@ -9,6 +9,7 @@ use App::Notitia::Util      qw( bind bind_fields button check_field_server
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
+use Try::Tiny;
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -229,7 +230,14 @@ sub create_event_action : Role(event_manager) {
           date  => $date->ymd,
           owner => $req->username, } );
 
-   $self->$_update_event_from_request( $req, $event ); $event->insert;
+   $self->$_update_event_from_request( $req, $event );
+
+   try   { $event->insert }
+   catch {
+      $self->log->error( $_ );
+      throw 'Failed to create the [_1] event', [ $event->name ];
+   };
+
    $self->$_write_blog_post( $req, $event, $date->ymd );
 
    my $actionp  = $self->moniker.'/event';
@@ -405,7 +413,14 @@ sub update_event_action : Role(event_manager) {
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
 
-   $self->$_update_event_from_request( $req, $event ); $event->update;
+   $self->$_update_event_from_request( $req, $event );
+
+   try { $event->update }
+   catch {
+      $self->log->error( $_ );
+      throw 'Failed to update the [_1] event', [ $event->name ];
+   };
+
    $self->$_write_blog_post( $req, $event, $event->rota->date->ymd );
 
    my $actionp  = $self->moniker.'/event';

@@ -10,6 +10,7 @@ use App::Notitia::Util      qw( bind bind_fields button check_field_server
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
+use Try::Tiny;
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -273,7 +274,10 @@ sub create_person_action : Role(person_manager) {
       $person->insert; $role and $person->add_member_to( $role );
    };
 
-   $self->schema->txn_do( $coderef );
+   try   { $self->schema->txn_do( $coderef ) }
+   catch {
+      $self->log->error( $_ ); throw 'Failed to create [_1]', [ $person->name ];
+   };
 
    $self->config->no_user_email
       or $self->$_create_person_email( $req, $person, $password );
@@ -415,7 +419,9 @@ sub update_person_action : Role(person_manager) {
    my $label  = $person->label;
 
    $self->$_update_person_from_request( $req, $self->schema, $person );
-   $person->update;
+
+   try   { $person->update }
+   catch { $self->log->error( $_ ); throw 'Failed to update [_1]', [ $name ] };
 
    my $location = uri_for_action $req, $self->moniker.'/people';
    my $message  = [ '[_1] updated by [_2]', $label, $req->username ];

@@ -390,7 +390,7 @@ sub update {
    $password and not is_encrypted( $password ) and $columns->{password}
       = $self->$_encrypt_password( $columns->{shortcode}, $password );
 
-   $self->set_inflated_columns( $columns ); $self->validate;
+   $self->set_inflated_columns( $columns ); $self->validate( TRUE );
 
    return $self->next::method;
 }
