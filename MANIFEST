@@ -42,6 +42,7 @@ lib/App/Notitia/Schema/Schedule.pm
 lib/App/Notitia/Schema/Schedule/Result/Certification.pm
 lib/App/Notitia/Schema/Schedule/Result/Endorsement.pm
 lib/App/Notitia/Schema/Schedule/Result/Event.pm
+lib/App/Notitia/Schema/Schedule/Result/Job.pm
 lib/App/Notitia/Schema/Schedule/Result/Participent.pm
 lib/App/Notitia/Schema/Schedule/Result/Person.pm
 lib/App/Notitia/Schema/Schedule/Result/Role.pm
@@ -88,7 +89,6 @@ t/50endorsement.t
 t/boilerplate.pm
 var/locale/en/notitia.po
 var/root/css/hyde-yellow.css
-var/root/docs/assets/bilbo_speaks.jpg
 var/root/docs/en/01_information/01_getting-started.md
 var/root/docs/en/01_information/02_a_new_beginning.md
 var/root/img/article-footer.png
@@ -129,6 +129,7 @@ var/root/templates/hyde/header.tt
 var/root/templates/hyde/index.tt
 var/root/templates/hyde/login_content.tt
 var/root/templates/hyde/macros.tt
+var/root/templates/hyde/mailshot-people.tt
 var/root/templates/hyde/month-table.tt
 var/root/templates/hyde/password_email.tt
 var/root/templates/hyde/person_content.tt

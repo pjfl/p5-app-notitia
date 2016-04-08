@@ -1,6 +1,6 @@
 Revision history for App::Notitia
 
-          - Added job queue
+          - Implements #12. Added job queue
           - Added mailshot links
           - Implements #13. Friendly errors for most creates/updates
           - Perform async calls to test for unique form field values
