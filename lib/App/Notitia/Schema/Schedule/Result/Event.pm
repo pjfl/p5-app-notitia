@@ -16,22 +16,24 @@ my $left_join = { join_type => 'left' };
 $class->table( 'event' );
 
 $class->add_columns
-   ( id          => serial_data_type,
-     rota_id     => foreign_key_data_type,
-     owner_id    => foreign_key_data_type,
-     start_time  => varchar_data_type(   5 ),
-     end_time    => varchar_data_type(   5 ),
-     name        => varchar_data_type(  57 ),
-     uri         => varchar_data_type(  64 ),
-     description => varchar_data_type( 128 ),
-     notes       => varchar_data_type, );
+   ( id            => serial_data_type,
+     event_type_id => foreign_key_data_type,
+     rota_id       => foreign_key_data_type,
+     owner_id      => foreign_key_data_type,
+     start_time    => varchar_data_type(   5 ),
+     end_time      => varchar_data_type(   5 ),
+     name          => varchar_data_type(  57 ),
+     uri           => varchar_data_type(  64 ),
+     description   => varchar_data_type( 128 ),
+     notes         => varchar_data_type, );
 
 $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'uri' ] );
 
-$class->belongs_to( rota  => "${result}::Rota", 'rota_id' );
-$class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
+$class->belongs_to( event_type => "${result}::Type", 'event_type_id' );
+$class->belongs_to( rota       => "${result}::Rota", 'rota_id' );
+$class->belongs_to( owner      => "${result}::Person", 'owner_id', $left_join );
 
 $class->has_many( participents     => "${result}::Participent",    'event_id' );
 $class->has_many( vehicle_requests => "${result}::VehicleRequest", 'event_id' );

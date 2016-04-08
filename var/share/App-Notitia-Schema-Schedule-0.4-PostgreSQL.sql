@@ -1,3 +1,11 @@
+DROP TABLE "job" CASCADE;
+CREATE TABLE "job" (
+  "id" serial NOT NULL,
+  "name" character varying(32) DEFAULT '' NOT NULL,
+  "command" character varying(255) DEFAULT '' NOT NULL,
+  PRIMARY KEY ("id")
+);
+
 DROP TABLE "person" CASCADE;
 CREATE TABLE "person" (
   "id" serial NOT NULL,
@@ -114,6 +122,7 @@ CREATE INDEX "vehicle_idx_type_id" on "vehicle" ("type_id");
 DROP TABLE "event" CASCADE;
 CREATE TABLE "event" (
   "id" serial NOT NULL,
+  "event_type_id" integer NOT NULL,
   "rota_id" integer NOT NULL,
   "owner_id" integer NOT NULL,
   "start_time" character varying(5) DEFAULT '' NOT NULL,
@@ -125,6 +134,7 @@ CREATE TABLE "event" (
   PRIMARY KEY ("id"),
   CONSTRAINT "event_uri" UNIQUE ("uri")
 );
+CREATE INDEX "event_idx_event_type_id" on "event" ("event_type_id");
 CREATE INDEX "event_idx_owner_id" on "event" ("owner_id");
 CREATE INDEX "event_idx_rota_id" on "event" ("rota_id");
 
@@ -205,6 +215,9 @@ ALTER TABLE "vehicle" ADD CONSTRAINT "vehicle_fk_owner_id" FOREIGN KEY ("owner_i
   REFERENCES "person" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE "vehicle" ADD CONSTRAINT "vehicle_fk_type_id" FOREIGN KEY ("type_id")
+  REFERENCES "type" ("id") DEFERRABLE;
+
+ALTER TABLE "event" ADD CONSTRAINT "event_fk_event_type_id" FOREIGN KEY ("event_type_id")
   REFERENCES "type" ("id") DEFERRABLE;
 
 ALTER TABLE "event" ADD CONSTRAINT "event_fk_owner_id" FOREIGN KEY ("owner_id")

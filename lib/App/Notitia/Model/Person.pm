@@ -1,7 +1,7 @@
 package App::Notitia::Model::Person;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( bind bind_fields button check_field_server
                                 create_link delete_button dialog_anchor
                                 field_options loc mail_domain make_tip
@@ -9,6 +9,8 @@ use App::Notitia::Util      qw( bind bind_fields button check_field_server
                                 save_button table_link uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
+use Class::Usul::IPC;
+use Class::Usul::Types      qw( ProcCommer );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Try::Tiny;
 use Moo;
@@ -23,6 +25,10 @@ with    q(Web::Components::Role::Email);
 
 # Public attributes
 has '+moniker' => default => 'person';
+
+# Private attributes
+has '_ipc' => is => 'lazy', isa => ProcCommer, handles => [ 'run_cmd' ],
+   builder => sub { Class::Usul::IPC->new( builder => $_[ 0 ]->application ) };
 
 register_action_paths
    'person/activate'       => 'person-activate',
@@ -215,6 +221,7 @@ my $_create_person_email = sub {
       stash           => {
          app_name     => $conf->title,
          first_name   => $person->first_name,
+         last_name    => $person->last_name,
          link         => $href,
          password     => $password,
          title        => $subject,
@@ -237,6 +244,14 @@ my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
    return [ [ NUL, NUL ], $type_rs->list_role_types->all ];
+};
+
+my $_list_mailshot_templates = sub {
+   my $self   = shift;
+   my $dir    = $self->config->assetdir->clone;
+   my $plates = $dir->filter( sub { m{ \.tt \z }mx } );
+
+   return [ map { [ $_->basename( '.tt' ), "${_}" ] } $plates->all_files ];
 };
 
 my $_update_person_from_request = sub {
@@ -350,7 +365,7 @@ sub mailshot : Role(person_manager) {
    my $page      = $stash->{page};
    my $fields    = $page->{fields};
    my $actionp   = $self->moniker.'/mailshot';
-   my $templates = [ [ 'default', 'default' ] ];
+   my $templates = $self->$_list_mailshot_templates;
    my $params    = $req->query_params->( { optional => TRUE } ) // {};
 
    delete $params->{id}; delete $params->{val};
@@ -361,17 +376,25 @@ sub mailshot : Role(person_manager) {
    return $stash;
 }
 
-sub mailshot_create_action : Role(administrator) {
+sub mailshot_create_action : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $params   = $req->query_params->( { optional => TRUE } ) // {};
+
+   delete $params->{mid};
+
+   my $conf     = $self->config;
    my $template = $req->body_params->( 'template' );
-   my $rs       = $self->schema->resultset( 'Job' );
-   my $cmd      = 'notitia-cli '.$_flatten->( $params )." mailshot ${template}";
-   my $job      = $rs->create( { command => $cmd } );
-   my $actionp  = $self->moniker.'/people';
-   my $location = uri_for_action $req, $actionp, [ $job->id ];
-   my $message  = [ 'Job [_1] created', $job->id ];
+   my $job_rs   = $self->schema->resultset( 'Job' );
+   my $cmd      = $conf->binsdir->catfile( 'notitia-schema' ).SPC
+                . $_flatten->( $params )."mailshot ${template}";
+   my $job      = $job_rs->create( { command => $cmd, name => 'mailshot' } );
+
+   $self->run_cmd( [ $conf->binsdir->catfile( 'notitia-schema' ),
+                     '-q', 'runqueue' ], { async => TRUE } );
+
+   my $message  = [ 'Job mailshot-[_1] created', $job->id ];
+   my $location = uri_for_action $req, $self->moniker.'/people';
 
    return { redirect => { location => $location, message => $message } };
 }

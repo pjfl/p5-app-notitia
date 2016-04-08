@@ -31,6 +31,10 @@ sub find_certification_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'certification' );
 }
 
+sub find_event_by {
+   return $_[ 0 ]->$_find_by( $_[ 1 ], 'event' );
+}
+
 sub find_role_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'role' );
 }
@@ -60,6 +64,13 @@ sub list_certification_types {
    my ($self, $opts) = @_; $opts //= {};
 
    return $self->search( { type_class => 'certification' },
+                         { columns    => [ 'id', 'name' ], %{ $opts } } );
+}
+
+sub list_event_types {
+   my ($self, $opts) = @_; $opts //= {};
+
+   return $self->search( { type_class => 'event' },
                          { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 

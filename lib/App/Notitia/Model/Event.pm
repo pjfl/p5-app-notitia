@@ -226,9 +226,10 @@ sub create_event_action : Role(event_manager) {
 
    my $date     =  $self->to_dt( $req->body_params->( 'event_date' ) );
    my $event    =  $self->schema->resultset( 'Event' )->new_result
-      ( { rota  => 'main', # TODO: Naughty
-          date  => $date->ymd,
-          owner => $req->username, } );
+      ( { rota       => 'main', # TODO: Naughty
+          date       => $date->ymd,
+          event_type => 'person',
+          owner      => $req->username, } );
 
    $self->$_update_event_from_request( $req, $event );
 
@@ -325,8 +326,9 @@ sub events : Role(any) {
    my $params    =  $req->query_params;
    my $after     =  $params->( 'after',  { optional => TRUE } );
    my $before    =  $params->( 'before', { optional => TRUE } );
-   my $opts      =  { after  => $after  ? $self->to_dt( $after  ) : FALSE,
-                      before => $before ? $self->to_dt( $before ) : FALSE, };
+   my $opts      =  { after      => $after  ? $self->to_dt( $after  ) : FALSE,
+                      before     => $before ? $self->to_dt( $before ) : FALSE,
+                      event_type => 'person' };
    my $title     =  $after  ? 'current_events_heading'
                  :  $before ? 'previous_events_heading'
                  :            'events_management_heading';

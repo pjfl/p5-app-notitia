@@ -747,6 +747,9 @@ msgstr "Submarine"
 msgid "subscription"
 msgstr "Subscription"
 
+msgid "template"
+msgstr "Template"
+
 msgid "trailer"
 msgstr "Trailer"
 

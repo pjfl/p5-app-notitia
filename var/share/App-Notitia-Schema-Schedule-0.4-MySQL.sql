@@ -1,5 +1,14 @@
 SET foreign_key_checks=0;
 
+DROP TABLE IF EXISTS `job`;
+
+CREATE TABLE `job` (
+  `id` integer unsigned NOT NULL auto_increment,
+  `name` varchar(32) NOT NULL DEFAULT '',
+  `command` varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`)
+);
+
 DROP TABLE IF EXISTS `person`;
 
 CREATE TABLE `person` (
@@ -35,7 +44,7 @@ DROP TABLE IF EXISTS `type`;
 CREATE TABLE `type` (
   `id` integer unsigned NOT NULL auto_increment,
   `name` varchar(32) NOT NULL DEFAULT '',
-  `type_class` enum('certification', 'role', 'rota', 'vehicle') NOT NULL,
+  `type_class` enum('certification', 'event', 'role', 'rota', 'vehicle') NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE `type_name_type_class` (`name`, `type_class`)
 ) ENGINE=InnoDB;
@@ -137,6 +146,7 @@ DROP TABLE IF EXISTS `event`;
 
 CREATE TABLE `event` (
   `id` integer unsigned NOT NULL auto_increment,
+  `event_type_id` integer unsigned NOT NULL,
   `rota_id` integer unsigned NOT NULL,
   `owner_id` integer unsigned NOT NULL,
   `start_time` varchar(5) NOT NULL DEFAULT '',
@@ -145,10 +155,12 @@ CREATE TABLE `event` (
   `uri` varchar(64) NOT NULL DEFAULT '',
   `description` varchar(128) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',
+  INDEX `event_idx_event_type_id` (`event_type_id`),
   INDEX `event_idx_owner_id` (`owner_id`),
   INDEX `event_idx_rota_id` (`rota_id`),
   PRIMARY KEY (`id`),
   UNIQUE `event_uri` (`uri`),
+  CONSTRAINT `event_fk_event_type_id` FOREIGN KEY (`event_type_id`) REFERENCES `type` (`id`),
   CONSTRAINT `event_fk_owner_id` FOREIGN KEY (`owner_id`) REFERENCES `person` (`id`),
   CONSTRAINT `event_fk_rota_id` FOREIGN KEY (`rota_id`) REFERENCES `rota` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;

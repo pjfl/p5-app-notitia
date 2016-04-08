@@ -6,6 +6,7 @@
       "bike_rider, role",
       "controller, role",
       "driver, role",
+      "editor, role",
       "event_manager, role",
       "fund_raiser, role",
       "person_manager, role",
@@ -25,6 +26,8 @@
       "car, vehicle",
       "submarine, vehicle",
       "trailer, vehicle",
+      "person, event",
+      "vehicle, event",
       "main, rota"
    ]
 }

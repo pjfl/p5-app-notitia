@@ -18,6 +18,12 @@ my $_field_tuple = sub {
 };
 
 # Private methods
+my $_find_event_type = sub {
+   my ($self, $type_name) = @_; my $schema = $self->result_source->schema;
+
+   return $schema->resultset( 'Type' )->find_event_by( $type_name );
+};
+
 my $_find_owner = sub {
    my ($self, $scode) = @_; my $schema = $self->result_source->schema;
 
@@ -39,6 +45,10 @@ sub new_result {
 
    $name and $date
          and $columns->{rota_id} = $self->$_find_rota( $name, $date )->id;
+
+   my $type = delete $columns->{event_type};
+
+   $type and $columns->{event_type_id} = $self->$_find_event_type( $type )->id;
 
    my $owner = delete $columns->{owner};
 
@@ -78,8 +88,10 @@ sub find_events_for {
 }
 
 sub list_all_events {
-   my ($self, $opts) = @_; my $where = {}; $opts = { %{ $opts // {} } };
+   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
 
+   my $type   = delete $opts->{event_type} // 'person';
+   my $where  = { 'event_type.name' => $type };
    my $parser = $self->result_source->schema->datetime_parser;
    my $after  = delete $opts->{after}; my $before = delete $opts->{before};
 
@@ -96,7 +108,7 @@ sub list_all_events {
    my $fields = delete $opts->{fields} // {};
    my $events = $self->search
       ( $where, { columns  => [ 'name', 'uri' ],
-                  prefetch => [ 'rota' ], %{ $opts } } );
+                  prefetch => [ 'event_type', 'rota' ], %{ $opts } } );
 
    return [ map { $_field_tuple->( $_, $fields ) } $events->all ];
 }

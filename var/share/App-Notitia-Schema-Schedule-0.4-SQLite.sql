@@ -1,5 +1,13 @@
 BEGIN TRANSACTION;
 
+DROP TABLE "job";
+
+CREATE TABLE "job" (
+  "id" INTEGER PRIMARY KEY NOT NULL,
+  "name" varchar(32) NOT NULL DEFAULT '',
+  "command" varchar(255) NOT NULL DEFAULT ''
+);
+
 DROP TABLE "person";
 
 CREATE TABLE "person" (
@@ -150,6 +158,7 @@ DROP TABLE "event";
 
 CREATE TABLE "event" (
   "id" INTEGER PRIMARY KEY NOT NULL,
+  "event_type_id" integer NOT NULL,
   "rota_id" integer NOT NULL,
   "owner_id" integer NOT NULL,
   "start_time" varchar(5) NOT NULL DEFAULT '',
@@ -158,9 +167,12 @@ CREATE TABLE "event" (
   "uri" varchar(64) NOT NULL DEFAULT '',
   "description" varchar(128) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
+  FOREIGN KEY ("event_type_id") REFERENCES "type"("id"),
   FOREIGN KEY ("owner_id") REFERENCES "person"("id"),
   FOREIGN KEY ("rota_id") REFERENCES "rota"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+CREATE INDEX "event_idx_event_type_id" ON "event" ("event_type_id");
 
 CREATE INDEX "event_idx_owner_id" ON "event" ("owner_id");
 

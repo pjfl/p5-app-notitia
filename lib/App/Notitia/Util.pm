@@ -26,15 +26,15 @@ our @EXPORT_OK = qw( assert_unique assign_link bind bind_fields bool_data_type
                      delete_button dialog_anchor encrypted_attr enhance
                      enumerated_data_type field_options foreign_key_data_type
                      get_hashed_pw get_salt is_draft is_encrypted iterator
-                     js_anchor_config lcm_for loc localise_tree mail_domain
-                     make_id_from make_name_from make_tip management_link mtime
-                     new_salt nullable_foreign_key_data_type
-                     nullable_varchar_data_type numerical_id_data_type
-                     register_action_paths save_button serial_data_type
-                     set_element_focus set_on_create_datetime_data_type
-                     slot_claimed slot_identifier slot_limit_index show_node
-                     stash_functions table_link uri_for_action
-                     varchar_data_type );
+                     js_anchor_config lcm_for load_file_data loc localise_tree
+                     mail_domain make_id_from make_name_from make_tip
+                     management_link mtime new_salt
+                     nullable_foreign_key_data_type nullable_varchar_data_type
+                     numerical_id_data_type register_action_paths save_button
+                     serial_data_type set_element_focus
+                     set_on_create_datetime_data_type slot_claimed
+                     slot_identifier slot_limit_index show_node stash_functions
+                     table_link uri_for_action varchar_data_type );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -114,25 +114,15 @@ my $get_tip_text = sub {
    return $text;
 };
 
+my $load_file_data = sub {
+   load_file_data( $_[ 0 ] ); return TRUE;
+};
+
 my $sorted_keys = sub {
    my $node = shift;
 
    return [ sort { $node->{ $a }->{_order} <=> $node->{ $b }->{_order} }
             grep { first_char $_ ne '_' } keys %{ $node } ];
-};
-
-my $load_file_data = sub {
-   my $node = shift; my $markdown = $node->{path}->all;
-
-   my $yaml; $markdown =~ s{ \A --- $ ( .* ) ^ --- $ }{}msx and $yaml = $1;
-
-   $yaml or return TRUE; my $data = $yaml_coder->read_string( $yaml )->[ 0 ];
-
-   exists $data->{created} and $data->{created} = str2time $data->{created};
-
-   $node->{ $_ } = $data->{ $_ } for (keys %{ $data });
-
-   return TRUE;
 };
 
 my $make_tuple = sub {
@@ -555,6 +545,20 @@ sub lcm_for (@) {
    return ((fold { lcm $_[ 0 ], $_[ 1 ] })->( shift ))->( @_ );
 }
 
+sub load_file_data {
+   my $node = shift; my $body = $node->{path}->all;
+
+   my $yaml; $body =~ s{ \A --- $ ( .* ) ^ --- $ }{}msx and $yaml = $1;
+
+   $yaml or return $body; my $data = $yaml_coder->read_string( $yaml )->[ 0 ];
+
+   exists $data->{created} and $data->{created} = str2time $data->{created};
+
+   $node->{ $_ } = $data->{ $_ } for (keys %{ $data });
+
+   return $body;
+}
+
 sub loc ($$;@) {
    my ($req, $k, @args) = @_;
 
@@ -866,6 +870,8 @@ Least common muliple
 =item C<lcm_for>
 
 LCM for a list of integers
+
+=item C<load_file_data>
 
 =item C<loc>
 

@@ -3,18 +3,20 @@ package App::Notitia::Schema;
 use namespace::autoclean;
 
 use App::Notitia;
-use App::Notitia::Constants qw( AS_PASSWORD EXCEPTION_CLASS NUL
+use App::Notitia::Constants qw( AS_PASSWORD EXCEPTION_CLASS FALSE NUL
                                 OK SLOT_TYPE_ENUM TRUE );
-use App::Notitia::Util      qw( encrypted_attr );
+use App::Notitia::Util      qw( encrypted_attr load_file_data mail_domain );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( ensure_class_loaded io throw );
 use Class::Usul::Types      qw( NonEmptySimpleStr );
 use DateTime                qw( );
+use Try::Tiny;
 use Unexpected::Functions   qw( PathNotFound Unspecified );
 use Moo;
 
 extends q(Class::Usul::Schema);
 with    q(App::Notitia::Role::Schema);
+with    q(Web::Components::Role::Email);
 
 our $VERSION = $App::Notitia::VERSION;
 
@@ -54,6 +56,51 @@ around 'deploy_file' => sub {
    return $orig->( $self, @args );
 };
 
+# Private class attributes
+my @extensions = qw( .csv .doc .docx .jpeg .jpg .png .xls .xlsx );
+
+# Private methods
+my $_qualify_assets = sub {
+   my ($self, $files) = @_; $files or return FALSE; my $assets = {};
+
+   for my $file (@{ $files }) {
+      my $path = $self->config->assetdir->catfile( $file );
+
+      $path->exists or $path = io $file; $path->exists or next;
+
+      $assets->{ $path->basename( @extensions ) } = $path;
+   }
+
+   return $assets;
+};
+
+my $_send_email = sub {
+   my ($self, $stash, $template, $attaches, $person) = @_;
+
+   $stash->{first_name} = $person->first_name;
+   $stash->{last_name } = $person->last_name;
+   $stash->{username  } = $person->name;
+
+   my $post   = {
+      attributes      => {
+         charset      => $self->config->encoding,
+         content_type => 'text/html', },
+      from            => $self->config->title.'@'.mail_domain(),
+      stash           => $stash,
+      subject         => $stash->{subject} // 'No subject',
+      template        => \$template,
+      to              => $person->email_address, };
+
+   $attaches and $post->{attachments} = $attaches;
+
+   my $r      = $self->send_email( $post );
+   my ($id)   = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
+   my $params = { args => [ $person->shortcode, $id ] };
+
+   $self->info( 'Emailed [_1] - [_2]', $params );
+   return;
+};
+
 # Public methods
 sub backup_data : method {
    my $self = shift;
@@ -67,12 +114,10 @@ sub backup_data : method {
    my $out  = $bdir->catfile( $tarb )->assert_filepath;
 
    if (lc $self->driver eq 'mysql') {
-      my $user = $self->db_admin_ids->{mysql};
-
       $self->run_cmd
          ( [ 'mysqldump', '--opt', '--host', $self->host,
              '--password='.$self->admin_password, '--result-file',
-             $path->pathname, '--user', $user,
+             $path->pathname, '--user', $self->db_admin_ids->{mysql},
              '--databases', $self->database ] );
    }
 
@@ -113,6 +158,29 @@ sub deploy_and_populate : method {
    return $rv;
 };
 
+sub mailshot : method {
+   my $self       = shift;
+   my $conf       = $self->config;
+   my $plate_name = $self->next_argv or throw Unspecified, [ 'template name' ];
+   my $stash      = { app_name => $conf->title, path => io( $plate_name ), };
+   my $template   = load_file_data( $stash );
+   my $attaches   = $self->$_qualify_assets( delete $stash->{attachments} );
+   my $person_rs  = $self->schema->resultset( 'Person' );
+   my $opts       = { columns => [ 'email_address' ] };
+   my $role       = $self->options->{role};
+
+   $self->options->{current} and $opts->{current} = TRUE;
+
+   my $people     = $role ? $person_rs->list_people( $role, $opts )
+                          : $person_rs->list_all_people( $opts );
+
+   for my $person (map { $_->[ 1 ] } @{ $people }) {
+      $self->$_send_email( $stash, $template, $attaches, $person );
+   }
+
+   return OK;
+}
+
 sub restore_data : method {
    my $self = shift; my $conf = $self->config;
 
@@ -129,14 +197,42 @@ sub restore_data : method {
    my $sql  = $conf->tempdir->catfile( $conf->database."-${date}.sql" );
 
    if ($sql->exists and lc $self->driver eq 'mysql') {
-      my $user = $self->db_admin_ids->{mysql};
-
       $self->run_cmd
          ( [ 'mysql', '--host', $self->host,
-             '--password='.$self->admin_password, '--user', $user,
-             $self->database ], { in => $sql } );
+             '--password='.$self->admin_password, '--user',
+             $self->db_admin_ids->{mysql}, $self->database ],
+           { in => $sql } );
       $sql->unlink;
    }
+
+   return OK;
+}
+
+sub runqueue : method {
+   my $self = shift;
+
+   $self->lock->set( k => 'runqueue' );
+
+   for my $job ($self->schema->resultset( 'Job' )->search( {} )->all) {
+      try {
+         $self->info( 'Running job [_1]-[_2]',
+                      { args => [ $job->name, $job->id ] } );
+
+         my $r = $self->run_cmd( [ split SPC, $job->command ] );
+
+         $self->info( 'Job [_1]-[_2] rv [_3]',
+                      { args => [ $job->name, $job->id, $r->rv ] } );
+      }
+      catch {
+         $self->error( 'Job [_1]-[_2] rv [_3]: [_4]',
+                       { args => [ $job->name, $job->id, $_->rv, "${_}" ],
+                         no_quote_bind_values => TRUE } );
+      };
+
+      $job->delete;
+   }
+
+   $self->lock->reset( k => 'runqueue' );
 
    return OK;
 }
