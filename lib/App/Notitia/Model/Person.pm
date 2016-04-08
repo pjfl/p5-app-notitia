@@ -3,10 +3,10 @@ package App::Notitia::Model::Person;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( bind bind_fields button check_field_server
-                                create_link delete_button field_options loc
-                                mail_domain make_tip management_link
-                                register_action_paths save_button
-                                uri_for_action );
+                                create_link delete_button dialog_anchor
+                                field_options loc mail_domain make_tip
+                                management_link register_action_paths
+                                save_button table_link uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
@@ -27,6 +27,7 @@ has '+moniker' => default => 'person';
 register_action_paths
    'person/activate'       => 'person-activate',
    'person/contacts'       => 'contacts',
+   'person/mailshot'       => 'mailshot',
    'person/people'         => 'people',
    'person/person'         => 'person',
    'person/person_summary' => 'person-summary';
@@ -54,6 +55,16 @@ my $_add_person_js = sub {
             check_field_server( 'last_name',     $opts ),
             check_field_server( 'email_address', $opts ),
             check_field_server( 'postcode',      $opts ), ];
+};
+
+my $_assert_not_self = sub {
+   my ($person, $nok) = @_; $nok or undef $nok;
+
+   $nok and $person->id and $nok == $person->id
+        and throw 'Cannot set self as next of kin',
+                  level => 2, rv => HTTP_EXPECTATION_FAILED;
+
+   return $nok;
 };
 
 my $_bind_person_fields = sub {
@@ -88,6 +99,11 @@ my $_bind_person_fields = sub {
    return bind_fields $schema, $person, $map, 'Person';
 };
 
+my $_confirm_mailshot_button = sub {
+   return button $_[ 0 ],
+      { class => 'right-last', label => 'confirm', value => 'mailshot_create' };
+};
+
 my $_contact_links = sub {
    my ($req, $person) = @_; my $links = [];
 
@@ -103,14 +119,12 @@ my $_contact_links = sub {
    return @{ $links };
 };
 
-my $_assert_not_self = sub {
-   my ($person, $nok) = @_; $nok or undef $nok;
+my $_flatten = sub {
+   my $params = shift; my $r = NUL;
 
-   $nok and $person->id and $nok == $person->id
-        and throw 'Cannot set self as next of kin',
-                  level => 2, rv => HTTP_EXPECTATION_FAILED;
+   for my $k (keys %{ $params }) { $r .= "-o ${k}=".$params->{ $k }.' ' }
 
-   return $nok;
+   return $r;
 };
 
 my $_maybe_find_person = sub {
@@ -144,11 +158,12 @@ my $_people_links = sub {
    my $scode = $person->[ 1 ]->shortcode;
    my $k     = $role ? "${role}_${scode}" : $scode;
    my $links = $_people_links_cache->{ $k }; $links and return @{ $links };
-
-   $links = []; my @paths = ( 'person/person', 'role/role', 'certs/certifications' );
+   my @paths = ( 'person/person', 'role/role', 'certs/certifications' );
 
    $role and ($role eq 'bike_rider' or $role eq 'driver')
          and push @paths, 'blots/endorsements';
+
+   $links = [];
 
    for my $actionp ( @paths ) {
       push @{ $links }, { value => management_link( $req, $actionp, $scode ) };
@@ -157,6 +172,30 @@ my $_people_links = sub {
    $_people_links_cache->{ $k } = $links;
 
    return @{ $links };
+};
+
+my $_people_ops_links = sub {
+   my ($req, $page, $moniker, $params) = @_; $params = { %{ $params // {} } };
+
+   my $add_user  = create_link $req, "${moniker}/person", 'person',
+                      { container_class => 'add-link' };
+   my $mail_shot = table_link $req, 'mailshot',
+                      loc( $req, 'mailshot_management_link' ),
+                      loc( $req, 'mailshot_management_tip' );
+   my $href      = uri_for_action $req, 'person/mailshot', [], $params;
+
+   push @{ $page->{literal_js} //= [] },
+      dialog_anchor( 'mailshot', $href, {
+         name    => 'mailshot_people',
+         title   => loc( $req, 'Send email to people' ),
+         useIcon => \1 } );
+
+   return { class        => 'operation-links right-last',
+            content      => {
+               list      => [ $mail_shot, $add_user ],
+               separator => '|',
+               type      => 'list', },
+            type         => 'container', };
 };
 
 # Private methods
@@ -304,6 +343,39 @@ sub find_by_shortcode {
    return shift->schema->resultset( 'Person' )->find_by_shortcode( @_ );
 }
 
+sub mailshot : Role(person_manager) {
+   my ($self, $req) = @_;
+
+   my $stash     = $self->dialog_stash( $req, 'mailshot-people' );
+   my $page      = $stash->{page};
+   my $fields    = $page->{fields};
+   my $actionp   = $self->moniker.'/mailshot';
+   my $templates = [ [ 'default', 'default' ] ];
+   my $params    = $req->query_params->( { optional => TRUE } ) // {};
+
+   delete $params->{id}; delete $params->{val};
+   $fields->{confirm } = $_confirm_mailshot_button->( $req );
+   $fields->{href    } = uri_for_action $req, $actionp, [], $params;
+   $fields->{template} = bind 'template', [ [ NUL, NUL ], @{ $templates } ];
+
+   return $stash;
+}
+
+sub mailshot_create_action : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $params   = $req->query_params->( { optional => TRUE } ) // {};
+   my $template = $req->body_params->( 'template' );
+   my $rs       = $self->schema->resultset( 'Job' );
+   my $cmd      = 'notitia-cli '.$_flatten->( $params )." mailshot ${template}";
+   my $job      = $rs->create( { command => $cmd } );
+   my $actionp  = $self->moniker.'/people';
+   my $location = uri_for_action $req, $actionp, [ $job->id ];
+   my $message  = [ 'Job [_1] created', $job->id ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub person : Role(person_manager) {
    my ($self, $req) = @_; my $people;
 
@@ -386,15 +458,17 @@ sub people : Role(any) {
                  :            'people_management_heading';
    my $page      =  {
       fields     => {
-         add     => create_link( $req, $self->moniker.'/person', 'person' ),
          headers => $_people_headers->( $req, $params ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => loc( $req, $title_key ), };
    my $person_rs =  $self->schema->resultset( 'Person' );
-   my $rows      =  $page->{fields}->{rows};
+   my $moniker   =  $self->moniker;
+   my $fields    =  $page->{fields};
+   my $rows      =  $fields->{rows};
    my $opts      =  {};
 
+   $fields->{links} = $_people_ops_links->( $req, $page, $moniker, $params );
    $status eq 'current'  and $opts->{current } = TRUE;
    $type   eq 'contacts' and $opts->{prefetch} = [ 'next_of_kin' ]
       and $opts->{columns} = [ 'home_phone', 'mobile_phone' ]

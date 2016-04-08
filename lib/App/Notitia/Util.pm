@@ -608,8 +608,9 @@ sub management_link ($$$;$) {
    my ($req, $actionp, $name, $opts) = @_; $opts //= {};
 
    my $args   = $opts->{args} // [ $name ];
+   my $params = $opts->{params} // {};
    my ($moniker, $action) = split m{ / }mx, $actionp, 2;
-   my $href   = uri_for_action( $req, $actionp, $args );
+   my $href   = uri_for_action( $req, $actionp, $args, $params );
    my $type   = $opts->{type} // 'link';
    my $button = { class => 'table-link',
                   hint  => loc( $req, 'Hint' ),

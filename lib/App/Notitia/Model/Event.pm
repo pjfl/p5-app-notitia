@@ -332,8 +332,8 @@ sub events : Role(any) {
                  :            'events_management_heading';
    my $page      =  {
       fields     => {
-         add     => create_link( $req, $actionp, 'event' ),
          headers => $_events_headers->( $req ),
+         links   => create_link( $req, $actionp, 'event' ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => loc( $req, $title ), };

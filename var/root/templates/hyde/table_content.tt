@@ -2,8 +2,8 @@
 <div class="unit four-fifths">
    <article>
       <h4>[% page.title %]</h4>
-[% IF page.fields.add; Dispatch( page.fields.add ); END -%]
+[% IF page.fields.links; Dispatch( page.fields.links ); END -%]
 [% Table( page.fields ) -%]
-[% IF page.fields.add; Dispatch( page.fields.add ); END -%]
+[% IF page.fields.links; Dispatch( page.fields.links ); END -%]
    </article>
 </div>

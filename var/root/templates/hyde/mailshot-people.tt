@@ -1,0 +1,8 @@
+[% PROCESS 'hyde/macros.tt' -%]
+<!-- Mailshot People -->
+<form action="[% page.fields.href %]" class="standard-form"
+     enctype="application/x-www-form-urlencoded"
+      method="post" name="mailshot-people">
+[% Select( page.fields.template ) -%]
+[% Button( page.fields.confirm ) -%]
+</form>

@@ -21,6 +21,8 @@ sub dispatch_request {
    sub (GET  + /events             + ?*) { [ 'event/events',          @_ ] },
    sub (POST + /event/*   | /event + ?*) { [ 'event/from_request',    @_ ] },
    sub (GET  + /event/*   | /event + ?*) { [ 'event/event',           @_ ] },
+   sub (POST + /mailshot           + ?*) { [ 'person/from_request',   @_ ] },
+   sub (GET  + /mailshot           + ?*) { [ 'person/mailshot',       @_ ] },
    sub (GET  + /month-rota/**      + ?*) { [ 'sched/month_rota',      @_ ] },
    sub (GET  + /month-rota         + ?*) { [ 'sched/month_rota',      @_ ] },
    sub (GET  + /participate/*      + ?*) { [ 'event/participate',     @_ ] },

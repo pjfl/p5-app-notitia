@@ -533,8 +533,8 @@ sub vehicles : Role(rota_manager) {
    my $actionp   =  $self->moniker.'/vehicle';
    my $page      =  {
       fields     => {
-         add     => create_link( $req, $actionp, 'vehicle' ),
          headers => $_vehicles_headers->( $req ),
+         links   => create_link( $req, $actionp, 'vehicle' ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => $_vehicle_title->( $req, $type, $private, $service ), };

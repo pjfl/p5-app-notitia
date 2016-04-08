@@ -306,8 +306,8 @@ sub types : Role(administrator) {
    my $type_class =  $req->query_params->( 'type_class', { optional => TRUE } );
    my $page       =  {
       fields      => {
-         add      => $_add_type_create_links->( $req, $moniker, $type_class ),
          headers  => $_types_headers->( $req ),
+         links    => $_add_type_create_links->( $req, $moniker, $type_class ),
          rows     => [], },
       template    => [ 'contents', 'table' ],
       title       => loc( $req, $type_class ? "${type_class}_list_link"
