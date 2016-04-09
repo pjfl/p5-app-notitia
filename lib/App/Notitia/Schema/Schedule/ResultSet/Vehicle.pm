@@ -70,6 +70,9 @@ sub list_vehicles {
    $params->{private} and $where->{owner_id} = { '!=' => undef };
    $params->{service} and $where->{owner_id} = { '='  => undef };
 
+   ($params->{private} or $params->{service})
+      and $where->{disposed} = { '=' => undef };
+
    my $vehicles = $self->search( $where, $opts );
 
    return [ map { $_field_tuple->( $_, $fields ) } $vehicles->all ];

@@ -9,8 +9,6 @@ use App::Notitia::Util      qw( bind bind_fields button check_field_server
                                 save_button table_link uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
-use Class::Usul::IPC;
-use Class::Usul::Types      qw( ProcCommer );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Try::Tiny;
 use Moo;
@@ -25,10 +23,6 @@ with    q(Web::Components::Role::Email);
 
 # Public attributes
 has '+moniker' => default => 'person';
-
-# Private attributes
-has '_ipc' => is => 'lazy', isa => ProcCommer, handles => [ 'run_cmd' ],
-   builder => sub { Class::Usul::IPC->new( builder => $_[ 0 ]->application ) };
 
 register_action_paths
    'person/activate'       => 'person-activate',
@@ -55,7 +49,8 @@ my $_people_links_cache = {};
 
 # Private functions
 my $_add_person_js = sub {
-   my $opts = { domain => 'schedule', form => 'Person' };
+   my $name = shift;
+   my $opts = { domain => $name ? 'update' : 'insert', form => 'Person' };
 
    return [ check_field_server( 'first_name',    $opts ),
             check_field_server( 'last_name',     $opts ),
@@ -98,7 +93,8 @@ my $_bind_person_fields = sub {
                             disabled => $disabled },
       postcode         => { class    => 'standard-field server',
                             disabled => $disabled },
-      resigned         => { disabled => $disabled },
+      resigned         => { class    => 'standard-field clearable',
+                            disabled => $disabled },
       subscription     => { disabled => $disabled },
    };
 
@@ -330,7 +326,8 @@ sub create_person_action : Role(person_manager) {
 
    try   { $self->schema->txn_do( $coderef ) }
    catch {
-      $self->log->error( $_ ); throw 'Failed to create [_1]', [ $person->name ];
+      $self->application->debug and throw $_; $self->log->error( $_ );
+      throw 'Failed to create [_1]', [ $person->name ];
    };
 
    $self->config->no_user_email
@@ -389,10 +386,6 @@ sub mailshot_create_action : Role(person_manager) {
    my $cmd      = $conf->binsdir->catfile( 'notitia-schema' ).SPC
                 . $_flatten->( $params )."mailshot ${template}";
    my $job      = $job_rs->create( { command => $cmd, name => 'mailshot' } );
-
-   $self->run_cmd( [ $conf->binsdir->catfile( 'notitia-schema' ),
-                     '-q', 'runqueue' ], { async => TRUE } );
-
    my $message  = [ 'Job mailshot-[_1] created', $job->id ];
    my $location = uri_for_action $req, $self->moniker.'/people';
 
@@ -408,7 +401,7 @@ sub person : Role(person_manager) {
    my $page       =  {
       fields      => $_bind_person_fields->( $self->schema, $person ),
       first_field => 'first_name',
-      literal_js  => $_add_person_js->(),
+      literal_js  => $_add_person_js->( $name ),
       template    => [ 'contents', 'person' ],
       title       => loc( $req, $name ? 'person_edit_heading'
                                       : 'person_create_heading' ), };
@@ -518,7 +511,10 @@ sub update_person_action : Role(person_manager) {
    $self->$_update_person_from_request( $req, $self->schema, $person );
 
    try   { $person->update }
-   catch { $self->log->error( $_ ); throw 'Failed to update [_1]', [ $name ] };
+   catch {
+      $self->application->debug and throw $_; $self->log->error( $_ );
+      throw 'Failed to update [_1]', [ $name ];
+   };
 
    my $location = uri_for_action $req, $self->moniker.'/people';
    my $message  = [ '[_1] updated by [_2]', $label, $req->username ];

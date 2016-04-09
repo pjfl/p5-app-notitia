@@ -235,7 +235,7 @@ sub create_event_action : Role(event_manager) {
 
    try   { $event->insert }
    catch {
-      $self->log->error( $_ );
+      $self->application->debug and throw $_; $self->log->error( $_ );
       throw 'Failed to create the [_1] event', [ $event->name ];
    };
 
@@ -255,7 +255,11 @@ sub delete_event_action : Role(event_manager) {
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
 
-   $event->delete;
+   try   { $event->delete }
+   catch {
+      $self->application->debug and throw $_; $self->log->error( $_ );
+      throw 'Failed to delete the [_1] event', [ $event->name ];
+   };
 
    my $location = uri_for_action $req, $self->moniker.'/events';
    my $message  = [ 'Event [_1] deleted by [_2]', $uri, $req->username ];
@@ -419,7 +423,7 @@ sub update_event_action : Role(event_manager) {
 
    try { $event->update }
    catch {
-      $self->log->error( $_ );
+      $self->application->debug and throw $_; $self->log->error( $_ );
       throw 'Failed to update the [_1] event', [ $event->name ];
    };
 

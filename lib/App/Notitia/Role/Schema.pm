@@ -11,7 +11,7 @@ requires qw( config get_connect_info );
 my $_build_schema = sub {
    my $self = shift; my $extra = $self->config->connect_params;
 
-   $self->schema_class->config( $self->config );
+   $self->schema_class->application( $self );
 
    return $self->schema_class->connect( @{ $self->get_connect_info }, $extra );
 };

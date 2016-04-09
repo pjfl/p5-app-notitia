@@ -169,7 +169,7 @@ sub mailshot : method {
    my $opts       = { columns => [ 'email_address' ] };
    my $role       = $self->options->{role};
 
-   $self->options->{current} and $opts->{current} = TRUE;
+   not $self->options->{current} or $opts->{current} = TRUE;
 
    my $people     = $role ? $person_rs->list_people( $role, $opts )
                           : $person_rs->list_all_people( $opts );

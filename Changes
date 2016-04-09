@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Job queue now even smarter
+          - Client side unique field value test on add only
           - Fixed missing cert/endorsement add links
           - Implements #12. Added job queue
           - Added mailshot links

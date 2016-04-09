@@ -5,7 +5,7 @@ use overload '""' => sub { $_[ 0 ]->_as_string },
              '+'  => sub { $_[ 0 ]->_as_number }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( VARCHAR_MAX_SIZE );
+use App::Notitia::Constants qw( VARCHAR_MAX_SIZE TRUE );
 use App::Notitia::Util      qw( date_data_type foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 serial_data_type varchar_data_type );
@@ -213,7 +213,8 @@ sub unassign_slot {
 sub update {
    my ($self, $columns) = @_;
 
-   $columns and $self->set_inflated_columns( $columns ); $self->validate;
+   $columns and $self->set_inflated_columns( $columns );
+   $self->validate( TRUE );
 
    $self->$_assert_public_or_private();
 

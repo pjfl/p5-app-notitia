@@ -48,7 +48,8 @@ my $_vehicle_links_cache = {};
 
 # Private functions
 my $_add_vehicle_js = sub {
-   my $opts = { domain => 'schedule', form => 'Vehicle' };
+   my $vrn  = shift;
+   my $opts = { domain => $vrn ? 'update' : 'insert', form => 'Vehicle' };
 
    return [ check_field_server( 'vrn', $opts ) ];
 };
@@ -70,7 +71,8 @@ my $_bind_vehicle_fields = sub {
    my $disabled =  $opts->{disabled} // FALSE;
    my $map      =  {
       aquired   => { disabled => $disabled },
-      disposed  => { disabled => $disabled },
+      disposed  => { class    => 'standard-field clearable',
+                     disabled => $disabled },
       name      => { disabled => $disabled,
                      label    => 'vehicle_name',
                      tip      => make_tip( $req, 'vehicle_name_field_tip') },
@@ -389,7 +391,7 @@ sub create_vehicle_action : Role(rota_manager) {
 
    try { $vehicle->insert }
    catch {
-      $self->log->error( $_ );
+      $self->application->debug and throw $_; $self->log->error( $_ );
       throw 'Vehicle [_1] failed to create', [ $vehicle->vrn ];
    };
 
@@ -482,9 +484,9 @@ sub update_vehicle_action : Role(rota_manager) {
 
    $self->$_update_vehicle_from_request( $req, $vehicle );
 
-   try { $vehicle->update }
+   try   { $vehicle->update }
    catch {
-      $self->log->error( $_ );
+      $self->application->debug and throw $_; $self->log->error( $_ );
       throw 'Vehicle [_1] failed to update', [ $vehicle->vrn ];
    };
 
@@ -503,10 +505,10 @@ sub vehicle : Role(rota_manager) {
    my $page       =  {
       fields      => $_bind_vehicle_fields->( $schema, $req, $vehicle ),
       first_field => 'vrn',
-      literal_js  => $_add_vehicle_js->(),
+      literal_js  => $_add_vehicle_js->( $vrn ),
       template    => [ 'contents', 'vehicle' ],
       title       => loc( $req, $vrn ? 'vehicle_edit_heading'
-                                    : 'vehicle_create_heading' ), };
+                                     : 'vehicle_create_heading' ), };
    my $fields     =  $page->{fields};
 
    if ($vrn) {

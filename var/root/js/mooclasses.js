@@ -2113,8 +2113,9 @@ var isUnavailable = function(type, date, options){
 var Pickers = new Class( {
    Implements: [ Options ],
 
-   options : {
-      selector : [ '.pick-date', '.pick-time' ]
+   options       : {
+      pickerClass: 'datepicker_vista',
+      selector   : [ '.pick-date', '.pick-time' ]
    },
 
    initialize: function( options ) {
@@ -2127,7 +2128,9 @@ var Pickers = new Class( {
             if (! el.id) el.id = String.uniqueID();
 
             if (! this.collection.contains( el.id )) {
-               var opts = { pickerClass: 'datepicker_vista' };
+               var opts = { pickerClass: this.options.pickerClass };
+
+               if (el.hasClass( 'clearable' )) { opts.blockKeydown = false }
 
                if (el.hasClass( 'pick-time')) {
                   opts[ 'format'        ] = '%H:%M';

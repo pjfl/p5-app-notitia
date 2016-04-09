@@ -90,7 +90,8 @@ my $_check_field = sub {
 
    my $attr = $class->validation_attributes; $attr->{level} = 4;
 
-   my $rs; $attr->{fields}->{ $id }->{unique} and defined $val
+   my $rs; $attr->{fields}->{ $id }->{unique} and $domain eq 'insert'
+      and defined $val
       and $rs = $schema->resultset( $class )
       and assert_unique( $rs, { $id => $val }, $attr->{fields}, $id );
 
