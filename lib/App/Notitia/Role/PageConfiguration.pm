@@ -39,10 +39,7 @@ around 'initialise_stash' => sub {
    $links->{base_uri} = $req->base;
    $links->{req_uri } = $req->uri;
 
-   my $now = DateTime->now;
-
-   $stash->{nav}->{admin}->{href} = uri_for_action $req, 'event/events', [],
-                           { after => $now->clone->subtract( days => 1 )->ymd };
+   $stash->{nav}->{admin}->{href} = uri_for_action $req, 'person/people';
 
    return $stash;
 };
