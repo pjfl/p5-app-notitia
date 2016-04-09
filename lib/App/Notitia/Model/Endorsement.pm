@@ -177,9 +177,10 @@ sub endorsements : Role(person_manager) {
       title    => loc( $req, 'endorsements_management_heading' ), };
    my $blot_rs =  $self->schema->resultset( 'Endorsement' );
    my $actionp =  $self->moniker.'/endorsement';
-   my $rows    =  $page->{fields}->{rows};
+   my $fields  =  $page->{fields};
+   my $rows    =  $fields->{rows};
 
-   $page->{fields}->{add} = $_add_endorsement_button->( $req, $actionp, $name );
+   $fields->{links} = $_add_endorsement_button->( $req, $actionp, $name );
 
    for my $blot (@{ $blot_rs->list_endorsements_for( $req, $name ) }) {
       push @{ $rows },

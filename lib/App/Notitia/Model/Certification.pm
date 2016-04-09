@@ -179,7 +179,7 @@ sub certifications : Role(person_manager) {
    my $actionp =  $self->moniker.'/certification';
    my $rows    =  $page->{fields}->{rows};
 
-   $page->{fields}->{add} = $_add_cert_button->( $req, $actionp, $name );
+   $page->{fields}->{links} = $_add_cert_button->( $req, $actionp, $name );
 
    for my $cert (@{ $cert_rs->list_certification_for( $req, $name ) }) {
       push @{ $rows },
