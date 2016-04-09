@@ -175,7 +175,8 @@ sub login_action : Role(anon) {
 
    $wanted =~ m{ check_field }mx and $wanted = NUL;
 
-   my $location = $req->uri_for( $wanted ? $wanted : 'month-rota' );
+   my $location  = $wanted ? $req->uri_for( $wanted )
+                           : uri_for_action $req, 'sched/month_rota';
 
    return { redirect => { location => $location, message => $message } };
 }

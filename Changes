@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Moved admin href to secondary-nav-items.tt
           - Job queue now even smarter
           - Client side unique field value test on add only
           - Fixed missing cert/endorsement add links
