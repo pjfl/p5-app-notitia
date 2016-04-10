@@ -12,7 +12,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 52 $ of **App::Notitia**
+This documents version v0.3.$Rev: 58 $ of **App::Notitia**
 
 # Description
 
@@ -197,13 +197,28 @@ TODO: Limit list lengths when number of users increases
 
 TODO: Add media query to reduce form size on mobiles
 
-TODO: Colour pallette issues. Logo
-
 TODO: Add editor role. Someone who can edit documents
 
-TODO: Event delettion leaves a left over event post
+TODO: Event deletion leaves a left over event post
 
 TODO: Schema version numbers. DDL files ignored by git
+
+TODO: Event\_type needs an index
+
+TODO: Cancel button on md edit screen
+
+TODO: Undo nav template accordian changes
+
+TODO: Wrap mailshot templates with head and body
+
+TODO: Plack middleware to stop serving assets if not logged in
+      Public subdir of assets checkbox on upload dialog
+
+TODO: Work a plan for row life
+
+TODO: Month rota pull all 321 rows by date and loop through
+
+TODO: Events should give better duplicate key error messages
 
 # Dependencies
 

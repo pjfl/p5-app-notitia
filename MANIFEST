@@ -87,10 +87,10 @@ t/41role.t
 t/42vehicle.t
 t/50endorsement.t
 t/boilerplate.pm
+var/docs/en/01_information/01_getting-started.md
+var/docs/en/01_information/02_a_new_beginning.md
 var/locale/en/notitia.po
 var/root/css/hyde-yellow.css
-var/root/docs/en/01_information/01_getting-started.md
-var/root/docs/en/01_information/02_a_new_beginning.md
 var/root/img/article-footer.png
 var/root/img/dp-buttons.png
 var/root/img/dp-days.png

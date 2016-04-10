@@ -24,9 +24,9 @@ t/ipc_srlock*
 var/backups
 var/etc/app-notitia.json
 var/etc/profile
-var/root/docs/.mtime
-var/root/docs/assets
-var/root/docs/en/*
+var/docs/.mtime
+var/docs/assets
+var/docs/en/*
 var/session
 var/tmp
 var/logs

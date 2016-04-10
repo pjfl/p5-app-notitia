@@ -104,7 +104,7 @@ has 'docs_mtime'      => is => 'lazy', isa => Path, coerce => TRUE,
    builder            => sub { $_[ 0 ]->docs_root->catfile( '.mtime' ) };
 
 has 'docs_root'       => is => 'lazy', isa => Directory, coerce => TRUE,
-   builder            => sub { $_[ 0 ]->root->catdir( 'docs' ) };
+   builder            => sub { $_[ 0 ]->vardir->catdir( 'docs' ) };
 
 has 'drafts'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'drafts';
