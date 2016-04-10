@@ -57,6 +57,7 @@ around 'deploy_file' => sub {
 };
 
 # Private class attributes
+# TODO: Slit uploads by extension
 my @extensions = qw( .csv .doc .docx .jpeg .jpg .png .xls .xlsx );
 
 # Private methods
@@ -68,7 +69,7 @@ my $_qualify_assets = sub {
 
       $path->exists or $path = io $file; $path->exists or next;
 
-      $assets->{ $path->basename( @extensions ) } = $path;
+      $assets->{ $path->basename } = $path;
    }
 
    return $assets;

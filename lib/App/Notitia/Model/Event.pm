@@ -24,10 +24,11 @@ has '+moniker' => default => 'event';
 
 register_action_paths
    'event/event'         => 'event',
+   'event/event_summary' => 'event-summary',
    'event/events'        => 'events',
    'event/participate'   => 'participate',
    'event/participents'  => 'participents',
-   'event/event_summary' => 'event-summary';
+   'event/vehicle_event' => 'vehicle-event';
 
 # Construction
 around 'get_stash' => sub {
@@ -434,6 +435,39 @@ sub update_event_action : Role(event_manager) {
    my $message  = [ 'Event [_1] updated by [_2]', $uri, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub vehicle_event : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
+   my $uri        =  $req->uri_params->( 1, { optional => TRUE } );
+   my $event      =  $self->$_maybe_find_event( $uri );
+   my $page       =  {
+      fields      => $self->$_bind_event_fields( $event ),
+      first_field => 'name',
+      literal_js  => $self->$_add_event_js(),
+      template    => [ 'contents', 'event' ],
+      title       => loc( $req, $uri ? 'vehicle_event_edit_heading'
+                                     : 'vehicle_event_create_heading' ), };
+   my $fields     =  $page->{fields};
+   my $actionp    =  $self->moniker.'/vehicle_event';
+
+   if ($uri) {
+      $fields->{date  } = bind 'event_date', $event->rota->date,
+                          { disabled => TRUE };
+      $fields->{delete} = delete_button $req, $uri, { type => 'vehicle_event' };
+      $fields->{href  } = uri_for_action $req, $actionp, [ $vrn, $uri ];
+      $fields->{owner } = $self->$_owner_list( $event );
+   }
+   else {
+      $fields->{date} = bind 'event_date', time2str '%d/%m/%Y';
+      $fields->{href} = uri_for_action $req, $actionp, [ $vrn ];
+   }
+
+   $fields->{save} = save_button $req, $uri, { type => 'vehicle_event' };
+
+   return $self->get_stash( $req, $page );
 }
 
 1;

@@ -820,6 +820,9 @@ msgstr "Add Vehicle"
 msgid "vehicle_edit_heading"
 msgstr "Edit Vehicle"
 
+msgid "vehicle_event_create_heading"
+msgstr "Create Vehicle Event"
+
 msgid "vehicle_management_link"
 msgstr "Edit"
 
@@ -871,6 +874,9 @@ msgstr "Vehicle"
 
 msgid "vehicles_heading_1"
 msgstr "Edit"
+
+msgid "vehicles_heading_2"
+msgstr "Add Event"
 
 msgid "vehicles_management_heading"
 msgstr "Vehicles"

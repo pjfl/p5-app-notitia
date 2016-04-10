@@ -25,9 +25,9 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'asset';
 
 register_action_paths
-   'asset/assign'          => 'vehicle/assign',
-   'asset/request_vehicle' => 'vehicle/request',
-   'asset/unassign'        => 'vehicle/assign',
+   'asset/assign'          => 'vehicle-assign',
+   'asset/request_vehicle' => 'vehicle-request',
+   'asset/unassign'        => 'vehicle-assign',
    'asset/vehicle'         => 'vehicle',
    'asset/vehicles'        => 'vehicles';
 
@@ -140,17 +140,22 @@ my $_update_vehicle_req_from_request = sub {
 };
 
 my $_vehicle_links = sub {
-   my ($moniker, $req, $vehicle) = @_; my $vrn = $vehicle->[ 1 ]->vrn;
+   my ($moniker, $req, $service, $vehicle) = @_;
 
-   my $links = $_vehicle_links_cache->{ $vrn }; $links and return @{ $links };
+   my $vrn   = $vehicle->[ 1 ]->vrn; my $k = $vrn.$service;
+
+   my $links = $_vehicle_links_cache->{ $k }; $links and return @{ $links };
 
    $links = [];
 
-   for my $actionp (map { "${moniker}/${_}" } 'vehicle') {
-      push @{ $links }, { value => management_link( $req, $actionp, $vrn ) };
-   }
+   push @{ $links },
+      { value => management_link( $req, "${moniker}/vehicle", $vrn ) };
 
-   $_vehicle_links_cache->{ $vrn } = $links;
+   $service and push @{ $links },
+      { value => create_link
+         ( $req, "event/vehicle_event", 'event', { args => [ $vrn ] } ) };
+
+   $_vehicle_links_cache->{ $k } = $links;
 
    return @{ $links };
 };
@@ -189,9 +194,10 @@ my $_vehicle_type_tuple = sub {
 };
 
 my $_vehicles_headers = sub {
-   my $req = shift;
+   my ($req, $service) = @_; my $max = $service ? 2 : 1;
 
-   return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } } 0 .. 1 ];
+   return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } }
+            0 .. $max ];
 };
 
 my $_find_or_create_vreq = sub {
@@ -535,7 +541,7 @@ sub vehicles : Role(rota_manager) {
    my $actionp   =  $self->moniker.'/vehicle';
    my $page      =  {
       fields     => {
-         headers => $_vehicles_headers->( $req ),
+         headers => $_vehicles_headers->( $req, $service ),
          links   => create_link( $req, $actionp, 'vehicle' ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
@@ -546,7 +552,7 @@ sub vehicles : Role(rota_manager) {
 
    for my $vehicle (@{ $rs->list_vehicles( $where ) }) {
       push @{ $rows }, [ { value => $vehicle->[ 0 ] },
-                         $_vehicle_links->( $self->moniker, $req, $vehicle ) ];
+               $_vehicle_links->( $self->moniker, $req, $service, $vehicle ) ];
    }
 
    return $self->get_stash( $req, $page );

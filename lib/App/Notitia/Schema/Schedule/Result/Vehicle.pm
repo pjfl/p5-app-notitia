@@ -234,6 +234,7 @@ sub validation_attributes {
          name        => { validate => 'isValidLength isValidIdentifier' },
          notes       => { validate => 'isValidLength isValidText' },
          vrn         => {
+            filters  => 'filterWhiteSpace',
             unique   => TRUE,
             validate => 'isMandatory isValidLength isValidIdentifier' },
       },
