@@ -8,14 +8,20 @@ use Scalar::Util          qw( blessed );
 
 __PACKAGE__->load_namespaces;
 
-my $Application = {};
+my ($context, $config);
+
+sub accept_context {
+   return defined $_[ 1 ] ? $context = $_[ 1 ] : $context;
+}
 
 sub application {
-   my ($self, $v) = @_; return defined $v ? $Application = $v : $Application;
+   return $context;
 }
 
 sub config {
-   return blessed $Application ? $Application->config : {};
+   return $context        ? $context->config
+        : defined $_[ 1 ] ? $config = $_[ 1 ]
+        :                   $config;
 }
 
 sub ddl_filename {

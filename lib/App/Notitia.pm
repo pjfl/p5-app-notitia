@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 56 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 57 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 56 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 57 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -232,11 +232,9 @@ TODO: Limit list lengths when number of users increases
 
 TODO: Add media query to reduce form size on mobiles
 
-TODO: Colour pallette issues. Logo
-
 TODO: Add editor role. Someone who can edit documents
 
-TODO: Event delettion leaves a left over event post
+TODO: Event deletion leaves a left over event post
 
 TODO: Schema version numbers. DDL files ignored by git
 
@@ -252,6 +250,14 @@ TODO: Plack middleware to stop serving assets if not logged in
       Public subdir of assets checkbox on upload dialog
 
 TODO: Work a plan for row life
+
+TODO: Add all _local file to backup_data including new notitia_local.po
+
+TODO: Month rota pull all 321 rows by date and loop through
+
+TODO: Events should give better duplicate key error messages
+
+TODO: Add SSL support for mail handling
 
 =head1 Dependencies
 

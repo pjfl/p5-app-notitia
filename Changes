@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixed application / accept_context in Schema::Schedule
           - Added vehicle event screen
           - Moved admin href to secondary-nav-items.tt
           - Job queue now even smarter
