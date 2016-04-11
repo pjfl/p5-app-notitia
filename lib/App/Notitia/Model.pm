@@ -22,17 +22,15 @@ has 'application' => is => 'ro', isa => Plinth,
 my $_auth_redirect = sub {
    my ($req, $e, $summary) = @_;
 
-   if ($e->class eq AuthenticationRequired->()) {
-      my $location = uri_for_action $req, 'user/login';
+   my $location = uri_for_action $req, 'user/login';
 
+   if ($e->class eq AuthenticationRequired->()) {
       $req->session->wanted( $req->path );
 
       return { redirect => { location => $location, message => [ $summary ] } };
    }
 
    if ($e->instance_of( Authentication->() )) {
-      my $location = uri_for_action $req, 'user/login';
-
       return { redirect => { location => $location, message => [ $summary ] } };
    }
 

@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 58 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 59 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -32,7 +32,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 58 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 59 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -245,9 +245,6 @@ TODO: Cancel button on md edit screen
 TODO: Undo nav template accordian changes
 
 TODO: Wrap mailshot templates with head and body
-
-TODO: Plack middleware to stop serving assets if not logged in
-      Public subdir of assets checkbox on upload dialog
 
 TODO: Work a plan for row life
 

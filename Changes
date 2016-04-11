@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Stop serving assets if not logged in
           - Fixed application / accept_context in Schema::Schedule
           - Added vehicle event screen
           - Moved admin href to secondary-nav-items.tt

@@ -20,15 +20,15 @@ use Scalar::Util               qw( blessed weaken );
 use Try::Tiny;
 use YAML::Tiny;
 
-our @EXPORT_OK = qw( assert_unique assign_link bind bind_fields bool_data_type
-                     build_navigation build_tree button check_field_server
-                     check_form_field clone create_link date_data_type
-                     delete_button dialog_anchor encrypted_attr enhance
-                     enumerated_data_type field_options foreign_key_data_type
-                     get_hashed_pw get_salt is_draft is_encrypted iterator
-                     js_anchor_config lcm_for load_file_data loc localise_tree
-                     mail_domain make_id_from make_name_from make_tip
-                     management_link mtime new_salt
+our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
+                     bind_fields bool_data_type build_navigation build_tree
+                     button check_field_server check_form_field clone
+                     create_link date_data_type delete_button dialog_anchor
+                     encrypted_attr enhance enumerated_data_type field_options
+                     foreign_key_data_type get_hashed_pw get_salt is_draft
+                     is_encrypted iterator js_anchor_config lcm_for
+                     load_file_data loc localise_tree mail_domain make_id_from
+                     make_name_from make_tip management_link mtime new_salt
                      nullable_foreign_key_data_type nullable_varchar_data_type
                      numerical_id_data_type register_action_paths save_button
                      serial_data_type set_element_focus
@@ -201,6 +201,17 @@ sub assign_link ($$$$) {
    my $class = "centre narrow ${state}";
 
    return { value => $value, class => $class };
+}
+
+sub authenticated_only ($) {
+   my $assets = shift;
+
+   return sub {
+      my ($path_info, $env) = @_;
+
+      return ($path_info =~ m{ \A / $assets }mx
+          &&  $env->{ 'psgix.session' }->{authenticated}) ? TRUE : FALSE;
+   };
 }
 
 sub bind ($;$$) {
@@ -811,6 +822,8 @@ Defines no attributes
 =item C<assert_unique>
 
 =item C<assign_link>
+
+=item C<authenticated_only>
 
 =item C<bind>
 

@@ -12,7 +12,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 58 $ of **App::Notitia**
+This documents version v0.3.$Rev: 59 $ of **App::Notitia**
 
 # Description
 
@@ -210,9 +210,6 @@ TODO: Cancel button on md edit screen
 TODO: Undo nav template accordian changes
 
 TODO: Wrap mailshot templates with head and body
-
-TODO: Plack middleware to stop serving assets if not logged in
-      Public subdir of assets checkbox on upload dialog
 
 TODO: Work a plan for row life
 

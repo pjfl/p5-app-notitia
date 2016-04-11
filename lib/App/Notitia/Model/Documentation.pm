@@ -102,14 +102,17 @@ sub dialog : Role(any) {
 }
 
 sub index : Role(anon) {
-   my ($self, $req) = @_; my $location = $_[ 0 ]->docs_url( $_[ 1 ] );
+   my ($self, $req) = @_;
 
-   my $mid = $req->query_params->( 'mid', { optional => TRUE } );
+   my $location = $self->docs_url( $req );
 
-   $mid and $location->query_form( mid => $mid );
    $location->query_form( navigation_reset => TRUE );
 
-   return { redirect => { location => $location } };
+   my $params   = { redirect => { location => $location } };
+   my $message  = $req->session->collect_status_message( $req );
+
+   $message and $params->{redirect}->{message} = [ $message ];
+   return $params;
 }
 
 sub locales {

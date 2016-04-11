@@ -2,7 +2,7 @@ package App::Notitia::Server;
 
 use namespace::autoclean;
 
-use App::Notitia::Util     qw( enhance );
+use App::Notitia::Util     qw( authenticated_only enhance );
 use Class::Usul;
 use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( ensure_class_loaded );
@@ -38,15 +38,15 @@ around 'to_psgi_app' => sub {
             content_type => $conf->deflate_types, vary_user_agent => TRUE;
          enable 'Static',
             path => qr{ \A / (?: $serve_as_static ) }mx, root => $conf->root;
-         enable 'Static',
-            path => qr{ \A / $assets }mx, pass_through => TRUE,
-            root => $conf->docs_root;
          enable 'Session::Cookie',
             expires     => 7_776_000,
             httponly    => TRUE,
             path        => $conf->mount_point,
             secret      => $conf->secret,
             session_key => $conf->prefix.'_session';
+         enable 'Static',
+            path => authenticated_only( $assets ), pass_through => TRUE,
+            root => $conf->docs_root;
          enable 'LogDispatch', logger => $self->log;
          enable_if { $self->debug } 'Debug';
          $psgi_app;
