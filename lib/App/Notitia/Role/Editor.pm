@@ -2,9 +2,9 @@ package App::Notitia::Role::Editor;
 
 use namespace::autoclean;
 
-use App::Notitia::Util     qw( dialog_anchor loc make_id_from make_name_from
-                               mtime set_element_focus stash_functions
-                               uri_for_action );
+use App::Notitia::Util     qw( bind dialog_anchor loc make_id_from
+                               make_name_from mtime set_element_focus
+                               stash_functions uri_for_action );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions qw( io throw trim untaint_path );
 use Class::Usul::IPC;
@@ -250,6 +250,7 @@ sub get_dialog {
       $page->{literal_js } = set_element_focus "${name}-file", 'query';
    }
    elsif ($name eq 'upload') {
+      $page->{fields}->{public} = bind 'public_access', TRUE;
       $page->{literal_js } = $_copy_element_value->();
    }
 
@@ -301,7 +302,10 @@ sub search_files {
 }
 
 sub upload_file {
-   my ($self, $req) = @_; my $conf = $self->config;
+   my ($self, $req, $public) = @_; my $conf = $self->config;
+
+   $public ||= $req->body_params( 'public_access', { optional => TRUE } );
+   $public ||= FALSE;
 
    $req->has_upload and my $upload = $req->upload
       or  throw Unspecified, [ 'upload object' ], rv => HTTP_EXPECTATION_FAILED;
@@ -313,7 +317,8 @@ sub upload_file {
                 [ $upload->filename, $upload->size ],
                 rv => HTTP_REQUEST_ENTITY_TOO_LARGE;
 
-   my $dest = $conf->assetdir->catfile( $upload->filename )->assert_filepath;
+   my $dir  = $public ? $conf->assetdir->catdir( 'public' ) : $conf->assetdir;
+   my $dest = $dir->catfile( $upload->filename )->assert_filepath;
 
    io( $upload->path )->copy( $dest );
 

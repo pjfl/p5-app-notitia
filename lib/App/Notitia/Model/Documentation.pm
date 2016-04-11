@@ -23,7 +23,7 @@ register_action_paths
    'docs/index'  => 'docs',
    'docs/page'   => 'docs',
    'docs/search' => 'docs/search',
-   'docs/upload' => 'assets';
+   'docs/upload' => 'asset';
 
 # Construction
 around 'load_page' => sub {

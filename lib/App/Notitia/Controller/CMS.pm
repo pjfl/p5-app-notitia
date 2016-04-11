@@ -7,7 +7,7 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'cms';
 
 sub dispatch_request {
-   sub (POST + /assets + *file~   + ?*) { [ 'docs/upload',        @_ ] },
+   sub (POST + /asset + *file~    + ?*) { [ 'docs/upload',        @_ ] },
    sub (GET  + /docs/dialog       + ?*) { [ 'docs/dialog',        @_ ] },
    sub (GET  + /docs/search       + ?*) { [ 'docs/search',        @_ ] },
    sub (GET  + /docs/**           + ?*) { [ 'docs/page',          @_ ] },

@@ -207,10 +207,10 @@ sub authenticated_only ($) {
    my $assets = shift;
 
    return sub {
-      my ($path_info, $env) = @_;
+      $_ =~ m{ \A / $assets         }mx or  return FALSE;
+      $_ =~ m{ \A / $assets /public }mx and return TRUE;
 
-      return ($path_info =~ m{ \A / $assets }mx
-          &&  $env->{ 'psgix.session' }->{authenticated}) ? TRUE : FALSE;
+      return $_[ 1 ]->{ 'psgix.session' }->{authenticated} ? TRUE : FALSE;
    };
 }
 
