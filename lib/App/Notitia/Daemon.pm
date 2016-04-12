@@ -95,8 +95,9 @@ my $_daemon = sub {
 my $_build_daemon_control = sub {
    my $self = shift; my $conf = $self->config; my $name = $conf->name;
 
-   my $appdir = class2appdir $conf->appclass;
-   my $args   = {
+   my $tempdir = $conf->tempdir;
+   my $appdir  = class2appdir $conf->appclass;
+   my $args    = {
       name         => blessed $self || $self,
       lsb_start    => '$syslog $remote_fs',
       lsb_stop     => '$syslog',
@@ -104,7 +105,7 @@ my $_build_daemon_control = sub {
       lsb_desc     => 'People and resource scheduling server daemon',
       path         => $conf->pathname,
 
-      init_code    => "# Init code\nDAEMON_ARGS=",
+      init_code    => "# Init code\nDAEMON_ARGS=\nTMPDIR=${tempdir}",
       init_config  => catfile( NUL, 'etc', 'default', $appdir ),
 
       directory    => $conf->appldir,

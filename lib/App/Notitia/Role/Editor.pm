@@ -304,7 +304,7 @@ sub search_files {
 sub upload_file {
    my ($self, $req, $public) = @_; my $conf = $self->config;
 
-   $public ||= $req->body_params( 'public_access', { optional => TRUE } );
+   $public ||= $req->body_params->( 'public_access', { optional => TRUE } );
    $public ||= FALSE;
 
    $req->has_upload and my $upload = $req->upload
