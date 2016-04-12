@@ -45,6 +45,7 @@ sub dispatch_request {
    sub (GET  + /vehicles           + ?*) { [ 'asset/vehicles',        @_ ] },
    sub (GET  + /vehicle-assign/**  + ?*) { [ 'asset/assign',          @_ ] },
    sub (GET  + /vehicle-event/**   + ?*) { [ 'event/vehicle_event',   @_ ] },
+   sub (POST + /vehicle-event/*    + ?*) { [ 'event/from_request',    @_ ] },
    sub (GET  + /vehicle-event/*    + ?*) { [ 'event/vehicle_event',   @_ ] },
    sub (GET  + /vehicle-request/*  + ?*) { [ 'asset/request_vehicle', @_ ] },
    sub (POST + /vehicle/**         + ?*) { [ 'asset/from_request',    @_ ] },

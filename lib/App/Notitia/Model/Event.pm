@@ -206,19 +206,33 @@ my $_update_event_from_request = sub {
    return;
 };
 
-my $_write_blog_post = sub {
-   my ($self, $req, $event, $date) = @_;
+my $_update_blog_post = sub {
+   my ($self, $req, $file, $event) = @_;
 
    my $posts_model = $self->components->{posts};
    my $dir         = $posts_model->localised_posts_dir( $req->locale );
-   my $file        = $date.'_'.$event->uri;
-   my $path        = $dir->catfile( 'events', $file.'.md' );
-   my $markdown    = $self->$_format_as_markdown( $req, $event );
+   my $path        = $dir->catfile( 'events', "${file}.md" );
 
-   $path->assert_filepath->println( $markdown );
-   $posts_model->invalidate_docs_cache( $path->stat->{mtime} );
+   if ($event) {
+      my $markdown = $self->$_format_as_markdown( $req, $event );
+
+      $path->assert_filepath->println( $markdown );
+      $posts_model->invalidate_docs_cache( $path->stat->{mtime} );
+   }
+   else {
+      $path->exists and $path->unlink;
+      $posts_model->invalidate_docs_cache( time );
+   }
 
    return;
+};
+
+my $_create_blog_post = sub {
+   return shift->$_update_blog_post( @_ );
+};
+
+my $_delete_blog_post = sub {
+   return shift->$_update_blog_post( @_ );
 };
 
 # Public methods
@@ -240,7 +254,7 @@ sub create_event_action : Role(event_manager) {
       throw 'Failed to create the [_1] event', [ $event->name ];
    };
 
-   $self->$_write_blog_post( $req, $event, $date->ymd );
+   $self->$_create_blog_post( $req, $date->ymd.'_'.$event->uri, $event );
 
    my $actionp  = $self->moniker.'/event';
    my $location = uri_for_action $req, $actionp, [ $event->uri ];
@@ -250,17 +264,25 @@ sub create_event_action : Role(event_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub create_vehicle_event_action : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+}
+
 sub delete_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $file  = $event->rota->date->ymd.'_'.$event->uri;
 
    try   { $event->delete }
    catch {
       $self->application->debug and throw $_; $self->log->error( $_ );
       throw 'Failed to delete the [_1] event', [ $event->name ];
    };
+
+   $self->$_delete_blog_post( $req, $file );
 
    my $location = uri_for_action $req, $self->moniker.'/events';
    my $message  = [ 'Event [_1] deleted by [_2]', $uri, $req->username ];
@@ -419,16 +441,17 @@ sub update_event_action : Role(event_manager) {
 
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $file  = $event->rota->date->ymd.'_'.$event->uri;
 
    $self->$_update_event_from_request( $req, $event );
 
-   try { $event->update }
+   try   { $event->update }
    catch {
       $self->application->debug and throw $_; $self->log->error( $_ );
       throw 'Failed to update the [_1] event', [ $event->name ];
    };
 
-   $self->$_write_blog_post( $req, $event, $event->rota->date->ymd );
+   $self->$_update_blog_post( $req, $file, $event );
 
    my $actionp  = $self->moniker.'/event';
    my $location = uri_for_action $req, $actionp, [ $uri ];
