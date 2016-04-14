@@ -58,11 +58,15 @@ sub new_result {
 }
 
 sub count_events_for {
-   my ($self, $type_id, $date) = @_;
+   my ($self, $rota_type_id, $rota_date, $event_type) = @_;
+
+   $event_type //= 'person';
 
    return $self->count
-      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
-        { join           => [ 'rota' ] } );
+      ( { 'event_type.name' => $event_type,
+          'rota.type_id'    => $rota_type_id,
+          'rota.date'       => $rota_date },
+        { join              => [ 'rota', 'event_type' ] } );
 }
 
 sub find_event_by {
@@ -79,12 +83,16 @@ sub find_event_by {
 }
 
 sub find_events_for {
-   my ($self, $type_id, $date) = @_;
+   my ($self, $rota_type_id, $rota_date, $event_type) = @_;
+
+   $event_type //= 'person';
 
    return $self->search
-      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
-        { columns  => [ 'id', 'name', 'rota.date', 'rota.type_id', 'uri' ],
-          join     => [ 'rota' ] } );
+      ( { 'event_type.name' => $event_type,
+          'rota.type_id'    => $rota_type_id,
+          'rota.date'       => $rota_date },
+        { columns => [ 'id', 'name', 'rota.date', 'rota.type_id', 'uri' ],
+          join    => [ 'rota', 'event_type' ] } );
 }
 
 sub list_all_events {

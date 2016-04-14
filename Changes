@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Can create vehicle events
           - Event deletion deletes event posts
           - Fixed uploading/serving of public/private assets
           - Started uploading and serving public assets

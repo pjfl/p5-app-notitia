@@ -231,20 +231,14 @@ my $_create_blog_post = sub {
    return shift->$_update_blog_post( @_ );
 };
 
-my $_delete_blog_post = sub {
-   return shift->$_update_blog_post( @_ );
-};
+my $_create_event = sub {
+   my ($self, $req, $date, $event_type, $owner) = @_;
 
-# Public methods
-sub create_event_action : Role(event_manager) {
-   my ($self, $req) = @_;
-
-   my $date     =  $self->to_dt( $req->body_params->( 'event_date' ) );
-   my $event    =  $self->schema->resultset( 'Event' )->new_result
+   my $event = $self->schema->resultset( 'Event' )->new_result
       ( { rota       => 'main', # TODO: Naughty
           date       => $date->ymd,
-          event_type => 'person',
-          owner      => $req->username, } );
+          event_type => $event_type,
+          owner      => $owner, } );
 
    $self->$_update_event_from_request( $req, $event );
 
@@ -253,6 +247,20 @@ sub create_event_action : Role(event_manager) {
       $self->application->debug and throw $_; $self->log->error( $_ );
       throw 'Failed to create the [_1] event', [ $event->name ];
    };
+
+   return $event;
+};
+
+my $_delete_blog_post = sub {
+   return shift->$_update_blog_post( @_ );
+};
+
+# Public methods
+sub create_event_action : Role(event_manager) {
+   my ($self, $req) = @_;
+
+   my $date  = $self->to_dt( $req->body_params->( 'event_date' ) );
+   my $event = $self->$_create_event( $req, $date, 'person', $req->username );
 
    $self->$_create_blog_post( $req, $date->ymd.'_'.$event->uri, $event );
 
@@ -267,6 +275,15 @@ sub create_event_action : Role(event_manager) {
 sub create_vehicle_event_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
+   my $vrn   = $self->uri_params->( 0 );
+   my $date  = $self->to_dt( $req->body_params->( 'event_date' ) );
+   my $event = $self->$_create_event( $req, $date, 'vehicle', $req->username );
+
+   my $location = uri_for_action $req, 'asset/vehicles', [], { service => TRUE};
+   my $message  =
+      [ 'Vehicle event [_1] created by [_2]', $event->name, $req->username ];
+
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub delete_event_action : Role(event_manager) {
