@@ -50,7 +50,7 @@ my $_assert_event_assignment_allowed = sub {
    $assigner->assert_member_of( 'rota_manager' );
 
    my $schema     = $self->result_source->schema;
-   my $event_date = $schema->format_datetime( $event->rota->date );
+   my $event_date = $schema->format_datetime( $event->start_date );
    my $event_rs   = $schema->resultset( 'Event' );
    my $rota_rs    = $schema->resultset( 'Rota'  );
 

@@ -41,10 +41,15 @@ my $_find_rota = sub {
 sub new_result {
    my ($self, $columns) = @_;
 
-   my $name = delete $columns->{rota}; my $date = delete $columns->{date};
+   my $name = delete $columns->{rota}; my $date = delete $columns->{start_date};
 
    $name and $date
-         and $columns->{rota_id} = $self->$_find_rota( $name, $date )->id;
+         and $columns->{start_rota_id} = $self->$_find_rota( $name, $date )->id;
+
+   $date = delete $columns->{end_date};
+
+   $name and $date
+         and $columns->{end_rota_id} = $self->$_find_rota( $name, $date )->id;
 
    my $type = delete $columns->{event_type};
 
@@ -58,21 +63,21 @@ sub new_result {
 }
 
 sub count_events_for {
-   my ($self, $rota_type_id, $rota_date, $event_type) = @_;
+   my ($self, $rota_type_id, $start_rota_date, $event_type) = @_;
 
    $event_type //= 'person';
 
    return $self->count
-      ( { 'event_type.name' => $event_type,
-          'rota.type_id'    => $rota_type_id,
-          'rota.date'       => $rota_date },
-        { join              => [ 'rota', 'event_type' ] } );
+      ( { 'event_type.name'    => $event_type,
+          'start_rota.type_id' => $rota_type_id,
+          'start_rota.date'    => $start_rota_date },
+        { join                 => [ 'start_rota', 'event_type' ] } );
 }
 
 sub find_event_by {
    my ($self, $uri, $opts) = @_; $opts //= {};
 
-   $opts->{prefetch} //= []; push @{ $opts->{prefetch} }, 'rota';
+   $opts->{prefetch} //= []; push @{ $opts->{prefetch} }, 'start_rota';
 
    my $event = $self->search( { uri => $uri }, $opts )->single;
 
@@ -83,16 +88,17 @@ sub find_event_by {
 }
 
 sub find_events_for {
-   my ($self, $rota_type_id, $rota_date, $event_type) = @_;
+   my ($self, $rota_type_id, $start_rota_date, $event_type) = @_;
 
    $event_type //= 'person';
 
    return $self->search
-      ( { 'event_type.name' => $event_type,
-          'rota.type_id'    => $rota_type_id,
-          'rota.date'       => $rota_date },
-        { columns => [ 'id', 'name', 'rota.date', 'rota.type_id', 'uri' ],
-          join    => [ 'rota', 'event_type' ] } );
+      ( { 'event_type.name'    => $event_type,
+          'start_rota.type_id' => $rota_type_id,
+          'start_rota.date'    => $start_rota_date },
+        { columns => [ 'id', 'name', 'start_rota.date',
+                       'start_rota.type_id', 'uri' ],
+          join    => [ 'start_rota', 'event_type' ] } );
 }
 
 sub list_all_events {
@@ -104,11 +110,13 @@ sub list_all_events {
    my $after  = delete $opts->{after}; my $before = delete $opts->{before};
 
    if ($after) {
-      $where = { 'rota.date' => { '>' => $parser->format_datetime( $after ) } };
+      $where = { 'start_rota.date' =>
+                 { '>' => $parser->format_datetime( $after ) } };
       $opts->{order_by} //= 'date';
    }
    elsif ($before) {
-      $where = { 'rota.date' => { '<' => $parser->format_datetime( $before ) }};
+      $where = { 'start_rota.date' =>
+                 { '<' => $parser->format_datetime( $before ) }};
    }
 
    $opts->{order_by} //= { -desc => 'date' };
@@ -116,7 +124,7 @@ sub list_all_events {
    my $fields = delete $opts->{fields} // {};
    my $events = $self->search
       ( $where, { columns  => [ 'name', 'uri' ],
-                  prefetch => [ 'event_type', 'rota' ], %{ $opts } } );
+                  prefetch => [ 'event_type', 'start_rota' ], %{ $opts } } );
 
    return [ map { $_field_tuple->( $_, $fields ) } $events->all ];
 }

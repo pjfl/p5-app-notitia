@@ -133,7 +133,7 @@ my $_format_as_markdown = sub {
    my ($self, $req, $event) = @_;
 
    my $name    = $event->name;
-   my $date    = $event->rota->date;
+   my $date    = $event->start_date;
    my $created = time2str '%Y-%m-%d %H:%M:%S %z', time, 'UTC';
    my $yaml    = "---\nauthor: ".$event->owner."\n"
                . "created: ${created}\nrole: anon\ntitle: ${name}\n---\n";
@@ -232,11 +232,11 @@ my $_create_blog_post = sub {
 };
 
 my $_create_event = sub {
-   my ($self, $req, $date, $event_type, $owner) = @_;
+   my ($self, $req, $start_date, $event_type, $owner) = @_;
 
    my $event = $self->schema->resultset( 'Event' )->new_result
       ( { rota       => 'main', # TODO: Naughty
-          date       => $date->ymd,
+          start_date => $start_date->ymd,
           event_type => $event_type,
           owner      => $owner, } );
 
@@ -262,7 +262,7 @@ sub create_event_action : Role(event_manager) {
    my $date  = $self->to_dt( $req->body_params->( 'event_date' ) );
    my $event = $self->$_create_event( $req, $date, 'person', $req->username );
 
-   $self->$_create_blog_post( $req, $date->ymd.'_'.$event->uri, $event );
+   $self->$_create_blog_post( $req, $event->post_filename, $event );
 
    my $actionp  = $self->moniker.'/event';
    my $location = uri_for_action $req, $actionp, [ $event->uri ];
@@ -291,7 +291,7 @@ sub delete_event_action : Role(event_manager) {
 
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $file  = $event->rota->date->ymd.'_'.$event->uri;
+   my $file  = $event->post_filename;
 
    try   { $event->delete }
    catch {
@@ -323,7 +323,7 @@ sub event : Role(event_manager) {
    my $actionp    =  $self->moniker.'/event';
 
    if ($uri) {
-      $fields->{date  } = bind 'event_date', $event->rota->date,
+      $fields->{date  } = bind 'event_date', $event->start_date,
                           { disabled => TRUE };
       $fields->{delete} = delete_button $req, $uri, { type => 'event' };
       $fields->{href  } = uri_for_action $req, $actionp, [ $uri ];
@@ -353,7 +353,7 @@ sub event_summary : Role(any) {
    my $fields  =  $page->{fields};
    my $actionp =  $self->moniker.'/event';
 
-   $fields->{date } = bind 'event_date', $event->rota->date, $opts;
+   $fields->{date } = bind 'event_date', $event->start_date, $opts;
    $fields->{href } = uri_for_action $req, $actionp, [ $uri ];
    $fields->{links} = $_event_operation_links->( $req, $actionp, $uri );
    $opts = $person->is_participent_of( $uri ) ? { cancel => TRUE } : {};
@@ -458,7 +458,6 @@ sub update_event_action : Role(event_manager) {
 
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $file  = $event->rota->date->ymd.'_'.$event->uri;
 
    $self->$_update_event_from_request( $req, $event );
 
@@ -468,7 +467,7 @@ sub update_event_action : Role(event_manager) {
       throw 'Failed to update the [_1] event', [ $event->name ];
    };
 
-   $self->$_update_blog_post( $req, $file, $event );
+   $self->$_update_blog_post( $req, $event->post_filename, $event );
 
    my $actionp  = $self->moniker.'/event';
    my $location = uri_for_action $req, $actionp, [ $uri ];
@@ -494,7 +493,7 @@ sub vehicle_event : Role(rota_manager) {
    my $actionp    =  $self->moniker.'/vehicle_event';
 
    if ($uri) {
-      $fields->{date  } = bind 'event_date', $event->rota->date,
+      $fields->{date  } = bind 'event_date', $event->start_date,
                           { disabled => TRUE };
       $fields->{delete} = delete_button $req, $uri, { type => 'vehicle_event' };
       $fields->{href  } = uri_for_action $req, $actionp, [ $vrn, $uri ];

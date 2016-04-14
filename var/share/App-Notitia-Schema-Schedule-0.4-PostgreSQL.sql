@@ -123,8 +123,10 @@ DROP TABLE "event" CASCADE;
 CREATE TABLE "event" (
   "id" serial NOT NULL,
   "event_type_id" integer NOT NULL,
-  "rota_id" integer NOT NULL,
   "owner_id" integer NOT NULL,
+  "start_rota_id" integer NOT NULL,
+  "end_rota_id" integer,
+  "vehicle_id" integer,
   "start_time" character varying(5) DEFAULT '' NOT NULL,
   "end_time" character varying(5) DEFAULT '' NOT NULL,
   "name" character varying(57) DEFAULT '' NOT NULL,
@@ -134,9 +136,11 @@ CREATE TABLE "event" (
   PRIMARY KEY ("id"),
   CONSTRAINT "event_uri" UNIQUE ("uri")
 );
+CREATE INDEX "event_idx_end_rota_id" on "event" ("end_rota_id");
 CREATE INDEX "event_idx_event_type_id" on "event" ("event_type_id");
 CREATE INDEX "event_idx_owner_id" on "event" ("owner_id");
-CREATE INDEX "event_idx_rota_id" on "event" ("rota_id");
+CREATE INDEX "event_idx_start_rota_id" on "event" ("start_rota_id");
+CREATE INDEX "event_idx_vehicle_id" on "event" ("vehicle_id");
 
 DROP TABLE "participent" CASCADE;
 CREATE TABLE "participent" (
@@ -146,16 +150,6 @@ CREATE TABLE "participent" (
 );
 CREATE INDEX "participent_idx_event_id" on "participent" ("event_id");
 CREATE INDEX "participent_idx_participent_id" on "participent" ("participent_id");
-
-DROP TABLE "vehicle_request" CASCADE;
-CREATE TABLE "vehicle_request" (
-  "event_id" integer NOT NULL,
-  "type_id" integer NOT NULL,
-  "quantity" smallint NOT NULL,
-  PRIMARY KEY ("event_id", "type_id")
-);
-CREATE INDEX "vehicle_request_idx_event_id" on "vehicle_request" ("event_id");
-CREATE INDEX "vehicle_request_idx_type_id" on "vehicle_request" ("type_id");
 
 DROP TABLE "slot" CASCADE;
 CREATE TABLE "slot" (
@@ -183,6 +177,16 @@ CREATE TABLE "transport" (
 CREATE INDEX "transport_idx_event_id" on "transport" ("event_id");
 CREATE INDEX "transport_idx_vehicle_id" on "transport" ("vehicle_id");
 CREATE INDEX "transport_idx_vehicle_assigner_id" on "transport" ("vehicle_assigner_id");
+
+DROP TABLE "vehicle_request" CASCADE;
+CREATE TABLE "vehicle_request" (
+  "event_id" integer NOT NULL,
+  "type_id" integer NOT NULL,
+  "quantity" smallint NOT NULL,
+  PRIMARY KEY ("event_id", "type_id")
+);
+CREATE INDEX "vehicle_request_idx_event_id" on "vehicle_request" ("event_id");
+CREATE INDEX "vehicle_request_idx_type_id" on "vehicle_request" ("type_id");
 
 ALTER TABLE "person" ADD CONSTRAINT "person_fk_next_of_kin_id" FOREIGN KEY ("next_of_kin_id")
   REFERENCES "person" ("id") DEFERRABLE;
@@ -217,26 +221,26 @@ ALTER TABLE "vehicle" ADD CONSTRAINT "vehicle_fk_owner_id" FOREIGN KEY ("owner_i
 ALTER TABLE "vehicle" ADD CONSTRAINT "vehicle_fk_type_id" FOREIGN KEY ("type_id")
   REFERENCES "type" ("id") DEFERRABLE;
 
+ALTER TABLE "event" ADD CONSTRAINT "event_fk_end_rota_id" FOREIGN KEY ("end_rota_id")
+  REFERENCES "rota" ("id") DEFERRABLE;
+
 ALTER TABLE "event" ADD CONSTRAINT "event_fk_event_type_id" FOREIGN KEY ("event_type_id")
   REFERENCES "type" ("id") DEFERRABLE;
 
 ALTER TABLE "event" ADD CONSTRAINT "event_fk_owner_id" FOREIGN KEY ("owner_id")
   REFERENCES "person" ("id") DEFERRABLE;
 
-ALTER TABLE "event" ADD CONSTRAINT "event_fk_rota_id" FOREIGN KEY ("rota_id")
+ALTER TABLE "event" ADD CONSTRAINT "event_fk_start_rota_id" FOREIGN KEY ("start_rota_id")
   REFERENCES "rota" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
+
+ALTER TABLE "event" ADD CONSTRAINT "event_fk_vehicle_id" FOREIGN KEY ("vehicle_id")
+  REFERENCES "vehicle" ("id") DEFERRABLE;
 
 ALTER TABLE "participent" ADD CONSTRAINT "participent_fk_event_id" FOREIGN KEY ("event_id")
   REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE "participent" ADD CONSTRAINT "participent_fk_participent_id" FOREIGN KEY ("participent_id")
   REFERENCES "person" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
-
-ALTER TABLE "vehicle_request" ADD CONSTRAINT "vehicle_request_fk_event_id" FOREIGN KEY ("event_id")
-  REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
-
-ALTER TABLE "vehicle_request" ADD CONSTRAINT "vehicle_request_fk_type_id" FOREIGN KEY ("type_id")
-  REFERENCES "type" ("id") DEFERRABLE;
 
 ALTER TABLE "slot" ADD CONSTRAINT "slot_fk_operator_id" FOREIGN KEY ("operator_id")
   REFERENCES "person" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
@@ -258,4 +262,10 @@ ALTER TABLE "transport" ADD CONSTRAINT "transport_fk_vehicle_id" FOREIGN KEY ("v
 
 ALTER TABLE "transport" ADD CONSTRAINT "transport_fk_vehicle_assigner_id" FOREIGN KEY ("vehicle_assigner_id")
   REFERENCES "person" ("id") DEFERRABLE;
+
+ALTER TABLE "vehicle_request" ADD CONSTRAINT "vehicle_request_fk_event_id" FOREIGN KEY ("event_id")
+  REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
+
+ALTER TABLE "vehicle_request" ADD CONSTRAINT "vehicle_request_fk_type_id" FOREIGN KEY ("type_id")
+  REFERENCES "type" ("id") DEFERRABLE;
 

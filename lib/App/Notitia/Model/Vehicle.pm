@@ -440,7 +440,7 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    my $fields    =  $page->{fields};
 
    $fields->{action  } = uri_for_action $req, 'asset/vehicle', [ $uri ];
-   $fields->{date    } = bind 'event_date', $event->rota->date, $opts;
+   $fields->{date    } = bind 'event_date', $event->start_date, $opts;
    $fields->{request } = $_vehicle_request_button->( $req, $event );
    $fields->{vehicles} = { class   => 'smaller-table',
                            headers => $_vehicle_request_headers->( $req ) };

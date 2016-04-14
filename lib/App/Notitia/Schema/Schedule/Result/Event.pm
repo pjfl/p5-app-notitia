@@ -6,6 +6,7 @@ use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( VARCHAR_MAX_SIZE TRUE );
 use App::Notitia::Util      qw( date_data_type foreign_key_data_type
+                                nullable_foreign_key_data_type
                                 serial_data_type varchar_data_type );
 use Class::Usul::Functions  qw( create_token );
 
@@ -18,8 +19,10 @@ $class->table( 'event' );
 $class->add_columns
    ( id            => serial_data_type,
      event_type_id => foreign_key_data_type,
-     rota_id       => foreign_key_data_type,
      owner_id      => foreign_key_data_type,
+     start_rota_id => foreign_key_data_type,
+     end_rota_id   => nullable_foreign_key_data_type,
+     vehicle_id    => nullable_foreign_key_data_type,
      start_time    => varchar_data_type(   5 ),
      end_time      => varchar_data_type(   5 ),
      name          => varchar_data_type(  57 ),
@@ -31,9 +34,13 @@ $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'uri' ] );
 
-$class->belongs_to( event_type => "${result}::Type", 'event_type_id' );
-$class->belongs_to( rota       => "${result}::Rota", 'rota_id' );
-$class->belongs_to( owner      => "${result}::Person", 'owner_id', $left_join );
+$class->belongs_to( event_type => "${result}::Type",   'event_type_id' );
+$class->belongs_to( owner      => "${result}::Person", 'owner_id' );
+$class->belongs_to( start_rota => "${result}::Rota",   'start_rota_id' );
+$class->belongs_to( end_rota   =>
+                    "${result}::Rota", 'end_rota_id', $left_join );
+$class->belongs_to( vehicle    =>
+                    "${result}::Vehicle", 'vehicle_id', $left_join );
 
 $class->has_many( participents     => "${result}::Participent",    'event_id' );
 $class->has_many( vehicle_requests => "${result}::VehicleRequest", 'event_id' );
@@ -47,7 +54,7 @@ sub _as_string {
 my $_set_uri = sub {
    my $self    = shift;
    my $columns = { $self->get_inflated_columns };
-   my $rota_id = $columns->{rota_id};
+   my $rota_id = $columns->{start_rota_id};
    my $name    = lc $columns->{name}; $name =~ s{ [ ] }{-}gmx;
    my $token   = lc substr create_token( $name.$rota_id ), 0, 6;
 
@@ -57,6 +64,10 @@ my $_set_uri = sub {
 };
 
 # Public methods
+sub end_date {
+   return $_[ 0 ]->end_rota->date;
+}
+
 sub insert {
    my $self = shift;
 
@@ -68,7 +79,15 @@ sub insert {
 }
 
 sub label {
-   return $_[ 0 ]->name.' ('.$_[ 0 ]->rota->date->dmy( '/' ).')';
+   return $_[ 0 ]->name.' ('.$_[ 0 ]->start_rota->date->dmy( '/' ).')';
+}
+
+sub post_filename {
+   return $_[ 0 ]->start_date->ymd.'_'.$_[ 0 ]->uri;
+}
+
+sub start_date {
+   return $_[ 0 ]->start_rota->date;
 }
 
 sub update {
@@ -76,7 +95,6 @@ sub update {
 
    $columns and $self->set_inflated_columns( $columns );
    $self->validate( TRUE );
-
    $self->$_set_uri;
 
    return $self->next::method;

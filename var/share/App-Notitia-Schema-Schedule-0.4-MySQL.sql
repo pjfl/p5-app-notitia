@@ -147,22 +147,28 @@ DROP TABLE IF EXISTS `event`;
 CREATE TABLE `event` (
   `id` integer unsigned NOT NULL auto_increment,
   `event_type_id` integer unsigned NOT NULL,
-  `rota_id` integer unsigned NOT NULL,
   `owner_id` integer unsigned NOT NULL,
+  `start_rota_id` integer unsigned NOT NULL,
+  `end_rota_id` integer unsigned NULL,
+  `vehicle_id` integer unsigned NULL,
   `start_time` varchar(5) NOT NULL DEFAULT '',
   `end_time` varchar(5) NOT NULL DEFAULT '',
   `name` varchar(57) NOT NULL DEFAULT '',
   `uri` varchar(64) NOT NULL DEFAULT '',
   `description` varchar(128) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',
+  INDEX `event_idx_end_rota_id` (`end_rota_id`),
   INDEX `event_idx_event_type_id` (`event_type_id`),
   INDEX `event_idx_owner_id` (`owner_id`),
-  INDEX `event_idx_rota_id` (`rota_id`),
+  INDEX `event_idx_start_rota_id` (`start_rota_id`),
+  INDEX `event_idx_vehicle_id` (`vehicle_id`),
   PRIMARY KEY (`id`),
   UNIQUE `event_uri` (`uri`),
+  CONSTRAINT `event_fk_end_rota_id` FOREIGN KEY (`end_rota_id`) REFERENCES `rota` (`id`),
   CONSTRAINT `event_fk_event_type_id` FOREIGN KEY (`event_type_id`) REFERENCES `type` (`id`),
   CONSTRAINT `event_fk_owner_id` FOREIGN KEY (`owner_id`) REFERENCES `person` (`id`),
-  CONSTRAINT `event_fk_rota_id` FOREIGN KEY (`rota_id`) REFERENCES `rota` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `event_fk_start_rota_id` FOREIGN KEY (`start_rota_id`) REFERENCES `rota` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `event_fk_vehicle_id` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicle` (`id`)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `participent`;
@@ -175,19 +181,6 @@ CREATE TABLE `participent` (
   PRIMARY KEY (`event_id`, `participent_id`),
   CONSTRAINT `participent_fk_event_id` FOREIGN KEY (`event_id`) REFERENCES `event` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `participent_fk_participent_id` FOREIGN KEY (`participent_id`) REFERENCES `person` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
-DROP TABLE IF EXISTS `vehicle_request`;
-
-CREATE TABLE `vehicle_request` (
-  `event_id` integer unsigned NOT NULL,
-  `type_id` integer unsigned NOT NULL,
-  `quantity` smallint NOT NULL,
-  INDEX `vehicle_request_idx_event_id` (`event_id`),
-  INDEX `vehicle_request_idx_type_id` (`type_id`),
-  PRIMARY KEY (`event_id`, `type_id`),
-  CONSTRAINT `vehicle_request_fk_event_id` FOREIGN KEY (`event_id`) REFERENCES `event` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `vehicle_request_fk_type_id` FOREIGN KEY (`type_id`) REFERENCES `type` (`id`)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `slot`;
@@ -224,6 +217,19 @@ CREATE TABLE `transport` (
   CONSTRAINT `transport_fk_event_id` FOREIGN KEY (`event_id`) REFERENCES `event` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `transport_fk_vehicle_id` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicle` (`id`),
   CONSTRAINT `transport_fk_vehicle_assigner_id` FOREIGN KEY (`vehicle_assigner_id`) REFERENCES `person` (`id`)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `vehicle_request`;
+
+CREATE TABLE `vehicle_request` (
+  `event_id` integer unsigned NOT NULL,
+  `type_id` integer unsigned NOT NULL,
+  `quantity` smallint NOT NULL,
+  INDEX `vehicle_request_idx_event_id` (`event_id`),
+  INDEX `vehicle_request_idx_type_id` (`type_id`),
+  PRIMARY KEY (`event_id`, `type_id`),
+  CONSTRAINT `vehicle_request_fk_event_id` FOREIGN KEY (`event_id`) REFERENCES `event` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `vehicle_request_fk_type_id` FOREIGN KEY (`type_id`) REFERENCES `type` (`id`)
 ) ENGINE=InnoDB;
 
 SET foreign_key_checks=1;

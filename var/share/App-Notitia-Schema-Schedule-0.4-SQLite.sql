@@ -159,24 +159,32 @@ DROP TABLE "event";
 CREATE TABLE "event" (
   "id" INTEGER PRIMARY KEY NOT NULL,
   "event_type_id" integer NOT NULL,
-  "rota_id" integer NOT NULL,
   "owner_id" integer NOT NULL,
+  "start_rota_id" integer NOT NULL,
+  "end_rota_id" integer,
+  "vehicle_id" integer,
   "start_time" varchar(5) NOT NULL DEFAULT '',
   "end_time" varchar(5) NOT NULL DEFAULT '',
   "name" varchar(57) NOT NULL DEFAULT '',
   "uri" varchar(64) NOT NULL DEFAULT '',
   "description" varchar(128) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
+  FOREIGN KEY ("end_rota_id") REFERENCES "rota"("id"),
   FOREIGN KEY ("event_type_id") REFERENCES "type"("id"),
   FOREIGN KEY ("owner_id") REFERENCES "person"("id"),
-  FOREIGN KEY ("rota_id") REFERENCES "rota"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  FOREIGN KEY ("start_rota_id") REFERENCES "rota"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("vehicle_id") REFERENCES "vehicle"("id")
 );
+
+CREATE INDEX "event_idx_end_rota_id" ON "event" ("end_rota_id");
 
 CREATE INDEX "event_idx_event_type_id" ON "event" ("event_type_id");
 
 CREATE INDEX "event_idx_owner_id" ON "event" ("owner_id");
 
-CREATE INDEX "event_idx_rota_id" ON "event" ("rota_id");
+CREATE INDEX "event_idx_start_rota_id" ON "event" ("start_rota_id");
+
+CREATE INDEX "event_idx_vehicle_id" ON "event" ("vehicle_id");
 
 CREATE UNIQUE INDEX "event_uri" ON "event" ("uri");
 
@@ -193,21 +201,6 @@ CREATE TABLE "participent" (
 CREATE INDEX "participent_idx_event_id" ON "participent" ("event_id");
 
 CREATE INDEX "participent_idx_participent_id" ON "participent" ("participent_id");
-
-DROP TABLE "vehicle_request";
-
-CREATE TABLE "vehicle_request" (
-  "event_id" integer NOT NULL,
-  "type_id" integer NOT NULL,
-  "quantity" smallint NOT NULL,
-  PRIMARY KEY ("event_id", "type_id"),
-  FOREIGN KEY ("event_id") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY ("type_id") REFERENCES "type"("id")
-);
-
-CREATE INDEX "vehicle_request_idx_event_id" ON "vehicle_request" ("event_id");
-
-CREATE INDEX "vehicle_request_idx_type_id" ON "vehicle_request" ("type_id");
 
 DROP TABLE "slot";
 
@@ -251,5 +244,20 @@ CREATE INDEX "transport_idx_event_id" ON "transport" ("event_id");
 CREATE INDEX "transport_idx_vehicle_id" ON "transport" ("vehicle_id");
 
 CREATE INDEX "transport_idx_vehicle_assigner_id" ON "transport" ("vehicle_assigner_id");
+
+DROP TABLE "vehicle_request";
+
+CREATE TABLE "vehicle_request" (
+  "event_id" integer NOT NULL,
+  "type_id" integer NOT NULL,
+  "quantity" smallint NOT NULL,
+  PRIMARY KEY ("event_id", "type_id"),
+  FOREIGN KEY ("event_id") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("type_id") REFERENCES "type"("id")
+);
+
+CREATE INDEX "vehicle_request_idx_event_id" ON "vehicle_request" ("event_id");
+
+CREATE INDEX "vehicle_request_idx_type_id" ON "vehicle_request" ("type_id");
 
 COMMIT;
