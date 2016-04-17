@@ -56,8 +56,8 @@ my $_assert_event_assignment_allowed = sub {
 
    for my $rota ($rota_rs->search( { date    => $event_date },
                                    { columns => [ 'id' ]    } )) {
-      for my $other ($event_rs->search( { rota_id  => $rota->id },
-                                        { prefetch => 'transports' } )) {
+      for my $other ($event_rs->search( { start_rota_id => $rota->id },
+                                        { prefetch      => 'transports' } )) {
          for my $transport ($other->transports) {
             $transport->vehicle_id != $self->id and next;
 

@@ -8,15 +8,14 @@
            enctype="application/x-www-form-urlencoded"
             method="post" name="event-admin">
 [% IF page.fields.links; Dispatch( page.fields.links ); END -%]
+[% IF page.fields.vehicle; TextField( page.fields.vehicle ); END -%]
 [% TextField( page.fields.name ) -%]
 [% TextArea( page.fields.description ) -%]
 [% DateField( page.fields.date ) -%]
 [% TimeField( page.fields.start_time ) -%]
 [% TimeField( page.fields.end_time ) -%]
 [% IF page.fields.notes; TextArea( page.fields.notes ); END -%]
-[% IF page.fields.name.value && page.fields.owner -%]
-[%    Select( page.fields.owner ) -%]
-[% END -%]
+[% IF page.fields.owner; Select( page.fields.owner ); END -%]
 [% IF page.fields.participate; Button( page.fields.participate ); END %]
 [% IF page.fields.save; Button( page.fields.save ); END -%]
 [% IF page.fields.delete; Button( page.fields.delete ); END -%]

@@ -252,6 +252,9 @@ msgstr "Name"
 msgid "day_rota_heading_3"
 msgstr "C4"
 
+msgid "day_rota_management_link"
+msgstr "Edit"
+
 msgid "delete"
 msgstr "Delete"
 
@@ -811,6 +814,9 @@ msgid "username_field_tip"
 msgstr "If left blank a username will be generated from the "
        "person's first and last name"
 
+msgid "vehicle"
+msgstr "Vehicle"
+
 msgid "vehicle_create_link"
 msgstr "Add Vehicle"
 
@@ -825,6 +831,24 @@ msgstr "Edit Vehicle"
 
 msgid "vehicle_event_create_heading"
 msgstr "Create Vehicle Event"
+
+msgid "vehicle_event_edit_heading"
+msgstr "Service Vehicle Event"
+
+msgid "vehicle_event_management_link"
+msgstr "Edit"
+
+msgid "vehicle_events_heading_0"
+msgstr "Event"
+
+msgid "vehicle_events_heading_1"
+msgstr "Edit"
+
+msgid "vehicle_events_management_heading"
+msgstr "Service Vehicle Events"
+
+msgid "vehicle_events_management_link"
+msgstr "Events"
 
 msgid "vehicle_management_link"
 msgstr "Edit"
@@ -880,6 +904,9 @@ msgstr "Edit"
 
 msgid "vehicles_heading_2"
 msgstr "Add Event"
+
+msgid "vehicles_heading_3"
+msgstr "Events"
 
 msgid "vehicles_management_heading"
 msgstr "Vehicles"

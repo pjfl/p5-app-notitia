@@ -51,7 +51,7 @@ my $_events_headers = sub {
 };
 
 my $_event_links = sub {
-   my ($self, $req, $event) = @_; my $uri = $event->[ 1 ]->uri;
+   my ($self, $req, $event) = @_; my $uri = $event->uri;
 
    my $links = $_links_cache->{ $uri }; $links and return @{ $links };
 
@@ -159,12 +159,14 @@ my $_maybe_find_event = sub {
 };
 
 my $_owner_list = sub {
-   my ($self, $event) = @_; my $schema = $self->schema;
+   my ($self, $event, $disabled) = @_; my $schema = $self->schema;
 
    my $opts   = { fields => { selected => $event->owner } };
    my $people = $schema->resultset( 'Person' )->list_all_people( $opts );
 
-   return bind( 'owner', [ [ NUL, NUL ], @{ $people } ], { numify => TRUE } );
+   $opts = { numify => TRUE }; $disabled and $opts->{disabled} = TRUE;
+
+   return bind( 'owner', [ [ NUL, NUL ], @{ $people } ], $opts );
 };
 
 my $_participent_links = sub {
@@ -232,13 +234,16 @@ my $_create_blog_post = sub {
 };
 
 my $_create_event = sub {
-   my ($self, $req, $start_date, $event_type, $owner) = @_;
+   my ($self, $req, $start_date, $event_type, $owner, $vrn) = @_;
 
-   my $event = $self->schema->resultset( 'Event' )->new_result
-      ( { rota       => 'main', # TODO: Naughty
-          start_date => $start_date->ymd,
-          event_type => $event_type,
-          owner      => $owner, } );
+   my $attr  = { rota       => 'main', # TODO: Naughty
+                 start_date => $start_date->ymd,
+                 event_type => $event_type,
+                 owner      => $owner, };
+
+   $vrn and $attr->{vehicle} = $vrn;
+
+   my $event = $self->schema->resultset( 'Event' )->new_result( $attr );
 
    $self->$_update_event_from_request( $req, $event );
 
@@ -275,9 +280,10 @@ sub create_event_action : Role(event_manager) {
 sub create_vehicle_event_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $vrn   = $self->uri_params->( 0 );
+   my $vrn   = $req->uri_params->( 0 );
    my $date  = $self->to_dt( $req->body_params->( 'event_date' ) );
-   my $event = $self->$_create_event( $req, $date, 'vehicle', $req->username );
+   my $event = $self->$_create_event
+      ( $req, $date, 'vehicle', $req->username, $vrn );
 
    my $location = uri_for_action $req, 'asset/vehicles', [], { service => TRUE};
    my $message  =
@@ -311,6 +317,7 @@ sub event : Role(event_manager) {
    my ($self, $req) = @_;
 
    my $uri        =  $req->uri_params->( 0, { optional => TRUE } );
+   my $date       =  $req->query_params->( 'date', { optional => TRUE } );
    my $event      =  $self->$_maybe_find_event( $uri );
    my $page       =  {
       fields      => $self->$_bind_event_fields( $event ),
@@ -330,7 +337,10 @@ sub event : Role(event_manager) {
       $fields->{links } = $_event_operation_links->( $req, $actionp, $uri );
       $fields->{owner } = $self->$_owner_list( $event );
    }
-   else { $fields->{date} = bind 'event_date', time2str '%d/%m/%Y' }
+   else {
+      $fields->{date  } = bind 'event_date',
+         $self->to_dt( $date // time2str '%Y-%m-%d' )->dmy( '/' );
+   }
 
    $fields->{save} = save_button $req, $uri, { type => 'event' };
 
@@ -356,6 +366,7 @@ sub event_summary : Role(any) {
    $fields->{date } = bind 'event_date', $event->start_date, $opts;
    $fields->{href } = uri_for_action $req, $actionp, [ $uri ];
    $fields->{links} = $_event_operation_links->( $req, $actionp, $uri );
+   $fields->{owner} = $self->$_owner_list( $event, TRUE );
    $opts = $person->is_participent_of( $uri ) ? { cancel => TRUE } : {};
    $fields->{participate} = $_participate_button->( $req, $uri, $opts );
    delete $fields->{notes};
@@ -386,9 +397,9 @@ sub events : Role(any) {
    my $event_rs  =  $self->schema->resultset( 'Event' );
    my $rows      =  $page->{fields}->{rows};
 
-   for my $event (@{ $event_rs->list_all_events( $opts ) }) {
+   for my $event ($event_rs->search_for_events( $opts )->all) {
       push @{ $rows },
-         [  { value => $event->[ 0 ] }, $self->$_event_links( $req, $event ) ];
+         [  { value => $event->label }, $self->$_event_links( $req, $event ) ];
    }
 
    return $self->get_stash( $req, $page );
@@ -497,14 +508,16 @@ sub vehicle_event : Role(rota_manager) {
                           { disabled => TRUE };
       $fields->{delete} = delete_button $req, $uri, { type => 'vehicle_event' };
       $fields->{href  } = uri_for_action $req, $actionp, [ $vrn, $uri ];
-      $fields->{owner } = $self->$_owner_list( $event );
    }
    else {
       $fields->{date} = bind 'event_date', time2str '%d/%m/%Y';
       $fields->{href} = uri_for_action $req, $actionp, [ $vrn ];
    }
 
-   $fields->{save} = save_button $req, $uri, { type => 'vehicle_event' };
+   $fields->{owner  } = $self->$_owner_list( $event );
+   $fields->{save   } = save_button $req, $uri, { type => 'vehicle_event' };
+   $fields->{vehicle} = bind 'vehicle', $uri ? $event->vehicle->label : $vrn,
+                             { disabled => TRUE };
 
    return $self->get_stash( $req, $page );
 }

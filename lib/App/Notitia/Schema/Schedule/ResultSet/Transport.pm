@@ -1,32 +1,13 @@
-package App::Notitia::Schema::Schedule::ResultSet::Slot;
+package App::Notitia::Schema::Schedule::ResultSet::Transport;
 
 use strictures;
 use parent 'DBIx::Class::ResultSet';
 
-use App::Notitia::Constants qw( FALSE NUL TRUE );
-use Class::Usul::Functions  qw( throw );
-use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
-
-# Public methods
-sub assignment_slots {
-   my ($self, $type_id, $date) = @_;
-
-   return $self->search
-      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
-        { 'columns' => [ $self->me( 'type_name' ), 'subslot' ],
-          'join'    => [ { 'shift' => 'rota' }, 'vehicle', ],
-          '+select' => [ 'shift.type_name', 'vehicle.name', 'vehicle.vrn' ],
-          '+as'     => [ 'shift_type', 'vehicle_name', 'vehicle_vrn' ] } );
+sub assigned_vehicle_count {
+   return $_[ 0 ]->count( { event_id => $_[ 1 ] } );
 }
 
-sub find_slot_by {
-   my ($self, $shift, $slot_type, $subslot) = @_;
-
-   return $self->find( { shift_id => $shift->id, type_name => $slot_type,
-                         subslot  => $subslot } );
-}
-
-sub search_for_assigned_slots {
+sub search_for_assigned_vehicles {
    my ($self, $opts) = @_; $opts = { %{ $opts } };
 
    my $where  = { 'vehicle.vrn' => delete $opts->{vehicle} };
@@ -34,39 +15,28 @@ sub search_for_assigned_slots {
    my $after  = delete $opts->{after}; my $before = delete $opts->{before};
 
    if ($after) {
-      $where->{ 'rota.date' } =
+      $where->{ 'start_rota.date' } =
               { '>' => $parser->format_datetime( $after ) };
       $opts->{order_by} //= 'date';
    }
    elsif ($before) {
-      $where->{ 'rota.date' } =
+      $where->{ 'start_rota.date' } =
               { '<' => $parser->format_datetime( $before ) };
    }
 
-   my $prefetch = [ 'vehicle', { 'shift' => { 'rota' => 'type' } } ];
+   $opts->{order_by} //= { -desc => 'date' }; delete $opts->{event_type};
 
-   $opts->{order_by} //= { -desc => 'date' };
+   my $prefetch = [ { 'event' => 'start_rota' }, 'vehicle' ];
 
    return $self->search( $where, { prefetch => $prefetch, %{ $opts } } );
 }
 
-sub list_slots_for {
-   my ($self, $type_id, $date) = @_;
-
-   my $attr = [ 'operator.first_name', 'operator.id', 'operator.last_name',
-                'operator.name', 'vehicle.name', 'vehicle.vrn' ];
+sub search_for_vehicle_by_type {
+   my ($self, $event_id, $vehicle_type_id) = @_;
 
    return $self->search
-      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
-        { 'columns'  => [ qw( bike_requested type_name subslot ) ],
-          'join'     => [ 'operator', 'vehicle' ],
-          'prefetch' => [ { 'shift' => 'rota' }, 'operator_vehicles' ],
-          '+select'  => $attr,
-          '+as'      => $attr, } );
-}
-
-sub me {
-   return join '.', $_[ 0 ]->current_source_alias, $_[ 1 ] // NUL;
+      ( { event_id => $event_id, 'vehicle.type_id' => $vehicle_type_id },
+        { prefetch => 'vehicle' } );
 }
 
 1;
@@ -79,11 +49,11 @@ __END__
 
 =head1 Name
 
-App::Notitia::Schema::Schedule::ResultSet::Slot - People and resource scheduling
+App::Notitia::Schema::Schedule::ResultSet::Transport - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia::Schema::Schedule::ResultSet::Slot;
+   use App::Notitia::Schema::Schedule::ResultSet::Transport;
    # Brief but working code examples
 
 =head1 Description

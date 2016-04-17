@@ -7,16 +7,6 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions  qw( throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
-# Private functions
-my $_field_tuple = sub {
-   my ($event, $opts) = @_; $opts = { %{ $opts // {} } };
-
-   $opts->{selected} //= NUL;
-   $opts->{selected}   = $opts->{selected} eq $event ? TRUE : FALSE;
-
-   return [ $event->label, $event, $opts ];
-};
-
 # Private methods
 my $_find_event_type = sub {
    my ($self, $type_name) = @_; my $schema = $self->result_source->schema;
@@ -35,6 +25,12 @@ my $_find_owner = sub {
 my $_find_rota = sub {
    return $_[ 0 ]->result_source->schema->resultset( 'Rota' )->find_rota
       (   $_[ 1 ], $_[ 2 ] );
+};
+
+my $_find_vehicle = sub {
+   my ($self, $vrn) = @_; my $schema = $self->result_source->schema;
+
+   return $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
 };
 
 # Public methods
@@ -58,6 +54,10 @@ sub new_result {
    my $owner = delete $columns->{owner};
 
    $owner and $columns->{owner_id} = $self->$_find_owner( $owner )->id;
+
+   my $vrn = delete $columns->{vehicle};
+
+   $vrn and $columns->{vehicle_id} = $self->$_find_vehicle( $vrn )->id;
 
    return $self->next::method( $columns );
 }
@@ -87,7 +87,7 @@ sub find_event_by {
    return $event;
 }
 
-sub find_events_for {
+sub search_for_a_days_events {
    my ($self, $rota_type_id, $start_rota_date, $event_type) = @_;
 
    $event_type //= 'person';
@@ -101,32 +101,36 @@ sub find_events_for {
           join    => [ 'start_rota', 'event_type' ] } );
 }
 
-sub list_all_events {
-   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
+sub search_for_events {
+   my ($self, $opts) = @_; my $where = {}; $opts = { %{ $opts // {} } };
 
-   my $type   = delete $opts->{event_type} // 'person';
-   my $where  = { 'event_type.name' => $type };
+   my $type   = delete $opts->{event_type};
+      $type and $where->{ 'event_type.name' } = $type;
+   my $vrn    = delete $opts->{vehicle};
+      $vrn  and $where->{ 'vehicle.vrn' } = $vrn;
    my $parser = $self->result_source->schema->datetime_parser;
    my $after  = delete $opts->{after}; my $before = delete $opts->{before};
 
    if ($after) {
-      $where = { 'start_rota.date' =>
-                 { '>' => $parser->format_datetime( $after ) } };
+      $where->{ 'start_rota.date' } =
+              { '>' => $parser->format_datetime( $after ) };
       $opts->{order_by} //= 'date';
    }
    elsif ($before) {
-      $where = { 'start_rota.date' =>
-                 { '<' => $parser->format_datetime( $before ) }};
+      $where->{ 'start_rota.date' } =
+              { '<' => $parser->format_datetime( $before ) };
    }
 
-   $opts->{order_by} //= { -desc => 'date' };
+   $opts->{order_by} //= { -desc => 'date' }; my $prefetch = [ 'start_rota' ];
+
+   $type and push @{ $prefetch }, 'event_type';
+   $vrn  and push @{ $prefetch }, 'vehicle';
 
    my $fields = delete $opts->{fields} // {};
-   my $events = $self->search
-      ( $where, { columns  => [ 'name', 'uri' ],
-                  prefetch => [ 'event_type', 'start_rota' ], %{ $opts } } );
 
-   return [ map { $_field_tuple->( $_, $fields ) } $events->all ];
+   return $self->search
+      ( $where, { columns  => [ 'name', 'uri' ],
+                  prefetch => $prefetch, %{ $opts } } );
 }
 
 1;

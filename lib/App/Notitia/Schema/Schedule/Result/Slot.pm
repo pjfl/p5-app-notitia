@@ -6,7 +6,7 @@ use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( FALSE SLOT_TYPE_ENUM );
 use App::Notitia::Util      qw( bool_data_type enumerated_data_type
-                                foreign_key_data_type
+                                foreign_key_data_type loc
                                 nullable_foreign_key_data_type
                                 numerical_id_data_type );
 
@@ -42,6 +42,22 @@ sub _as_string {
 
    return $rota->type.'_'.$rota->date->dmy.'_'.$shift.'_'
         . $self->type_name.'_'.$self->subslot;
+}
+
+sub date {
+   return $_[ 0 ]->shift->rota->date;
+}
+
+sub key {
+   return $_[ 0 ]->shift.'_'.$_[ 0 ]->type_name.'_'.$_[ 0 ]->subslot;
+}
+
+sub label {
+   return loc( $_[ 1 ], $_[ 0 ]->key ).' ('.$_[ 0 ]->date->dmy( '/' ).')';
+}
+
+sub rota_type {
+   return $_[ 0 ]->shift->rota->type;
 }
 
 1;

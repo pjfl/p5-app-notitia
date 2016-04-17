@@ -10,6 +10,7 @@ use App::Notitia::Util      qw( assign_link bind bind_fields button
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
+use DateTime;
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Try::Tiny;
 use Moo;
@@ -29,6 +30,7 @@ register_action_paths
    'asset/request_vehicle' => 'vehicle-request',
    'asset/unassign'        => 'vehicle-assign',
    'asset/vehicle'         => 'vehicle',
+   'asset/vehicle_events'  => 'vehicle-events',
    'asset/vehicles'        => 'vehicles';
 
 # Construction
@@ -42,9 +44,6 @@ around 'get_stash' => sub {
 
    return $stash;
 };
-
-# Private class attributes
-my $_vehicle_links_cache = {};
 
 # Private functions
 my $_add_vehicle_js = sub {
@@ -129,6 +128,18 @@ my $_quantity_list = sub {
             value => bind( "${type}_quantity", $values, $opts ) };
 };
 
+my $_transport_links = sub {
+   my ($self, $req, $tport) = @_; my @links;
+
+   my $moniker = $self->moniker; my $uri = $tport->event->uri;
+
+   push @links, {
+      value => management_link
+         ( $req, "${moniker}/request_vehicle", 'edit', { args => [ $uri ] } ) };
+
+   return @links;
+};
+
 my $_update_vehicle_req_from_request = sub {
    my ($req, $vreq, $vehicle_type) = @_;
 
@@ -139,23 +150,55 @@ my $_update_vehicle_req_from_request = sub {
    return;
 };
 
+my $_vehicle_events_headers = sub {
+   return [ map { { value => loc( $_[ 0 ], "vehicle_events_heading_${_}" ) } }
+            0 .. 1 ];
+};
+
+my $_vehicle_event_links = sub {
+   my ($self, $req, $event) = @_; my @links;
+
+   my $uri = $event->uri; my $vrn = $event->vehicle->vrn;
+
+   push @links, {
+      value => management_link
+         ( $req, 'event/vehicle_event', 'edit', { args => [ $vrn, $uri ] } ) };
+
+   return @links;
+};
+
+my $_vehicle_slot_links = sub {
+   my ($self, $req, $slot) = @_; my @links;
+
+   my $type = $slot->rota_type; my $date = $slot->date->ymd;
+
+   push @links, {
+      value => management_link
+         ( $req, 'sched/day_rota', 'edit', { args => [ $type, $date ] } ) };
+
+   return @links;
+};
+
 my $_vehicle_links = sub {
    my ($moniker, $req, $service, $vehicle) = @_;
 
-   my $vrn   = $vehicle->[ 1 ]->vrn; my $k = $vrn.$service;
-
-   my $links = $_vehicle_links_cache->{ $k }; $links and return @{ $links };
-
-   $links = [];
+   my $vrn = $vehicle->[ 1 ]->vrn; my $links = [];
 
    push @{ $links },
       { value => management_link( $req, "${moniker}/vehicle", $vrn ) };
 
-   $service and push @{ $links },
-      { value => create_link
-         ( $req, "event/vehicle_event", 'event', { args => [ $vrn ] } ) };
+   if ($service) {
+      my $now = DateTime->now;
 
-   $_vehicle_links_cache->{ $k } = $links;
+      push @{ $links },
+         { value => create_link
+              ( $req, 'event/vehicle_event', 'event', { args => [ $vrn ] } ) };
+
+      push @{ $links },
+         { value => management_link
+              ( $req, "${moniker}/vehicle_events", $vrn,
+                { params => { after => $now->subtract( days => 1 )->ymd } } ) };
+   }
 
    return @{ $links };
 };
@@ -194,7 +237,7 @@ my $_vehicle_type_tuple = sub {
 };
 
 my $_vehicles_headers = sub {
-   my ($req, $service) = @_; my $max = $service ? 2 : 1;
+   my ($req, $service) = @_; my $max = $service ? 3 : 1;
 
    return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } }
             0 .. $max ];
@@ -229,34 +272,6 @@ my $_req_quantity = sub {
    return $vreq ? $vreq->quantity : 0;
 };
 
-my $_request_row = sub {
-   my ($schema, $req, $page, $event, $vehicle_type) = @_;
-
-   my $uri    = $page->{event_uri};
-   my $tports = $schema->resultset( 'Transport' )->search
-      ( { event_id => $event->id, 'vehicle.type_id' => $vehicle_type->id },
-        { prefetch => 'vehicle' } );
-   my $quant  = $_req_quantity->( $schema, $event, $vehicle_type );
-   my $row    = [ { value => loc( $req, $vehicle_type ) },
-                  $_quantity_list->( $vehicle_type, $quant ) ];
-
-   if ($quant) {
-      for my $slotno (0 .. $quant - 1) {
-         my $transport = $tports->next;
-         my $vehicle   = $transport ? $transport->vehicle : undef;
-         my $opts      = { name        => "${vehicle_type}_event_${slotno}",
-                           operator    => $event->owner,
-                           type        => $vehicle_type,
-                           vehicle     => $vehicle,
-                           vehicle_req => TRUE, };
-
-         push @{ $row }, assign_link( $req, $page, [ $uri ], $opts );
-      }
-   }
-
-   return $row;
-};
-
 my $_vehicle_type_list = sub {
    my ($schema, $vehicle) = @_;
 
@@ -264,6 +279,33 @@ my $_vehicle_type_list = sub {
    my $values = [ [ NUL, NUL ], @{ $_list_vehicle_types->( $schema, $opts ) } ];
 
    return bind 'type', $values, { label => 'vehicle_type', numify => TRUE };
+};
+
+my $_vreq_row = sub {
+   my ($schema, $req, $page, $event, $vehicle_type) = @_;
+
+   my $uri    = $page->{event_uri};
+   my $tports = $schema->resultset( 'Transport' )->search_for_vehicle_by_type
+      ( $event->id, $vehicle_type->id );
+   my $quant  = $_req_quantity->( $schema, $event, $vehicle_type );
+   my $row    = [ { value => loc( $req, $vehicle_type ) },
+                  $_quantity_list->( $vehicle_type, $quant ) ];
+
+   $quant or return $row;
+
+   for my $slotno (0 .. $quant - 1) {
+      my $transport = $tports->next;
+      my $vehicle   = $transport ? $transport->vehicle : undef;
+      my $opts      = { name        => "${vehicle_type}_event_${slotno}",
+                        operator    => $event->owner,
+                        type        => $vehicle_type,
+                        vehicle     => $vehicle,
+                        vehicle_req => TRUE, };
+
+      push @{ $row }, assign_link( $req, $page, [ $uri ], $opts );
+   }
+
+   return $row;
 };
 
 # Private methods
@@ -342,6 +384,39 @@ my $_update_vehicle_from_request = sub {
    $v = $params->( 'type', $opts ); defined $v and $vehicle->type_id( $v );
 
    return;
+};
+
+my $_vehicle_events = sub {
+   my ($self, $req, $opts) = @_; my @rows;
+
+   my $event_rs = $self->schema->resultset( 'Event' );
+
+   for my $event ($event_rs->search_for_events( $opts )->all) {
+      push @rows,
+         [ $event->start_date,
+           [ { value => $event->label },
+             $self->$_vehicle_event_links( $req, $event ) ] ];
+   }
+
+   my $tport_rs = $self->schema->resultset( 'Transport' );
+
+   for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
+      push @rows,
+         [ $tport->event->start_date,
+           [ { value => $tport->event->label },
+             $self->$_transport_links( $req, $tport ) ] ];
+   }
+
+   my $slot_rs = $self->schema->resultset( 'Slot' );
+
+   for my $slot ($slot_rs->search_for_assigned_slots( $opts )->all) {
+      push @rows,
+         [ $slot->date,
+           [ { value => $slot->label( $req ) },
+             $self->$_vehicle_slot_links( $req, $slot ) ] ];
+   }
+
+   return [ map { $_->[ 1 ] } sort { $a->[ 0 ] <=> $b->[ 0 ] } @rows ] ;
 };
 
 # Public methods
@@ -446,7 +521,7 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
                            headers => $_vehicle_request_headers->( $req ) };
 
    for my $vehicle_type ($type_rs->list_types( 'vehicle' )->all) {
-      my $row = $_request_row->( $schema, $req, $page, $event, $vehicle_type );
+      my $row = $_vreq_row->( $schema, $req, $page, $event, $vehicle_type );
 
       push @{ $fields->{vehicles}->{rows} }, $row;
    }
@@ -527,6 +602,29 @@ sub vehicle : Role(rota_manager) {
    $fields->{owner} = $_owner_list->( $schema, $vehicle );
    $fields->{type } = $_vehicle_type_list->( $schema, $vehicle );
    $fields->{save } = save_button $req, $vrn, { type => 'vehicle' };
+
+   return $self->get_stash( $req, $page );
+}
+
+sub vehicle_events : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $vrn       =  $req->uri_params->( 0 );
+   my $params    =  $req->query_params;
+   my $after     =  $params->( 'after',  { optional => TRUE } );
+   my $before    =  $params->( 'before', { optional => TRUE } );
+   my $opts      =  { after      => $after  ? $self->to_dt( $after  ) : FALSE,
+                      before     => $before ? $self->to_dt( $before ) : FALSE,
+                      event_type => 'vehicle',
+                      vehicle    => $vrn, };
+   my $page      =  {
+      fields     => {
+         headers => $_vehicle_events_headers->( $req ),
+         links   => create_link
+            ( $req, 'event/vehicle_event', 'event', { args => [ $vrn ] } ),
+         rows    => $self->$_vehicle_events( $req, $opts ), },
+      template   => [ 'contents', 'table' ],
+      title      => loc( $req, 'vehicle_events_management_heading' ), };
 
    return $self->get_stash( $req, $page );
 }

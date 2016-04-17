@@ -185,12 +185,13 @@ my $_slot_label = sub {
 };
 
 my $_event_link = sub {
-   my ($req, $page, $event) = @_;
+   my ($req, $page, $rota_dt, $event) = @_;
 
    unless ($event) {
       my $name  = 'create-event';
       my $class = 'blank-event windows';
-      my $href  = uri_for_action $req, 'event/event';
+      my $href  = uri_for_action $req, 'event/event', [],
+                                 { date => $rota_dt->ymd };
 
       push @{ $page->{literal_js} }, $_onclick_relocate->( $name, $href );
 
@@ -255,11 +256,11 @@ my $_summary_cells = sub {
 };
 
 my $_vreq_state = sub {
-   my ($tports, $vreqs) = @_;
+   my ($n_assigned, $vreqs) = @_;
 
-   my $nvreqs = $vreqs->get_column( 'quantity' )->sum;
+   my $n_requested = $vreqs->get_column( 'quantity' )->sum;
 
-   return { vehicle     => ($tports == $nvreqs ? TRUE : FALSE),
+   return { vehicle     => ($n_assigned == $n_requested ? TRUE : FALSE),
             vehicle_req => TRUE };
 };
 
@@ -270,10 +271,10 @@ my $_vehicle_request_link = sub {
    my $href     = uri_for_action $req, 'asset/request_vehicle', [ $event->uri ];
    my $tip      = loc $req, 'vehicle_request_link', [ $event->label ];
    my $tport_rs = $schema->resultset( 'Transport' );
-   my $tports   = $tport_rs->count( { event_id => $event->id } );
+   my $assigned = $tport_rs->assigned_vehicle_count( $event->id );
    my $vreq_rs  = $schema->resultset( 'VehicleRequest' );
    my $vreqs    = $vreq_rs->search( { event_id => $event->id } );
-   my $opts     = $vreqs->count ? $_vreq_state->( $tports, $vreqs ) : FALSE;
+   my $opts     = $vreqs->count ? $_vreq_state->( $assigned, $vreqs ) : FALSE;
    my $link     = $_rota_summary_link->( 1, $opts );
 
    $link->{class} .= ' small-slot';
@@ -348,7 +349,7 @@ my $_events = sub {
 
    while (defined (my $event = $todays_events->next) or $first) {
       my $col2 = $_vehicle_request_link->( $schema, $req, $page, $event );
-      my $col3 = $_event_link->( $req, $page, $event );
+      my $col3 = $_event_link->( $req, $page, $rota_dt, $event );
       my $col4 = $_participents_link->( $req, $page, $event );
       my $cols = [ $col1, $col2, $col3 ];
 
@@ -543,7 +544,7 @@ sub day_rota : Role(any) {
    my $slot_rs  = $self->schema->resultset( 'Slot' );
    my $slots    = $slot_rs->list_slots_for( $type_id, $date );
    my $event_rs = $self->schema->resultset( 'Event' );
-   my $events   = $event_rs->find_events_for( $type_id, $date );
+   my $events   = $event_rs->search_for_a_days_events( $type_id, $date );
    my $rows     = {};
 
    for my $slot ($slots->all) {

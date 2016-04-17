@@ -112,6 +112,7 @@
 [%    IF f.class; class = f.class; -%]
 [%    ELSE; class = 'standard-field'; END -%]
       <select class="[% class %]" name="[% f.name %]"
+[%    IF f.disabled %]disabled="disabled"[% END -%]
 [%    IF f.multiple %]multiple="multiple" size="[% f.size %]" [% END -%]
 [%    IF f.onchange -%]
          onchange="if (this.value) window.location.href=this.value"[% END -%]>
