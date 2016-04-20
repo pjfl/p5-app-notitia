@@ -129,7 +129,7 @@ sub search_for_events {
    my $fields = delete $opts->{fields} // {};
 
    return $self->search
-      ( $where, { columns  => [ 'name', 'uri' ],
+      ( $where, { columns  => [ 'end_time', 'name', 'start_time', 'uri' ],
                   prefetch => $prefetch, %{ $opts } } );
 }
 

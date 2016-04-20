@@ -48,12 +48,20 @@ sub date {
    return $_[ 0 ]->shift->rota->date;
 }
 
+sub end_time {
+   return $_[ 0 ]->shift->type_name eq 'day' ? '18:00' : '09:00';
+}
+
 sub key {
    return $_[ 0 ]->shift.'_'.$_[ 0 ]->type_name.'_'.$_[ 0 ]->subslot;
 }
 
 sub label {
    return loc( $_[ 1 ], $_[ 0 ]->key ).' ('.$_[ 0 ]->date->dmy( '/' ).')';
+}
+
+sub start_time {
+   return $_[ 0 ]->shift->type_name eq 'day' ? '09:00' : '18:00';
 }
 
 sub rota_type {

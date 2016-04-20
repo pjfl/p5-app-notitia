@@ -2,11 +2,11 @@ package App::Notitia::Model::Person;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Util      qw( bind bind_fields button check_field_server
+use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 create_link delete_button dialog_anchor
                                 field_options loc mail_domain make_tip
                                 management_link register_action_paths
-                                save_button table_link uri_for_action );
+                                save_button table_link to_dt uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
@@ -52,10 +52,10 @@ my $_add_person_js = sub {
    my $name = shift;
    my $opts = { domain => $name ? 'update' : 'insert', form => 'Person' };
 
-   return [ check_field_server( 'first_name',    $opts ),
-            check_field_server( 'last_name',     $opts ),
-            check_field_server( 'email_address', $opts ),
-            check_field_server( 'postcode',      $opts ), ];
+   return [ check_field_js( 'first_name',    $opts ),
+            check_field_js( 'last_name',     $opts ),
+            check_field_js( 'email_address', $opts ),
+            check_field_js( 'postcode',      $opts ), ];
 };
 
 my $_assert_not_self = sub {
@@ -107,18 +107,18 @@ my $_confirm_mailshot_button = sub {
 };
 
 my $_contact_links = sub {
-   my ($req, $person) = @_; my $links = [];
+   my ($req, $person) = @_; my @links;
 
-   push @{ $links }, { value => $person->home_phone };
-   push @{ $links }, { value => $person->mobile_phone };
-   push @{ $links }, { value => $person->next_of_kin
-                              ? $person->next_of_kin->label : NUL };
-   push @{ $links }, { value => $person->next_of_kin
-                              ? $person->next_of_kin->home_phone : NUL };
-   push @{ $links }, { value => $person->next_of_kin
-                              ? $person->next_of_kin->mobile_phone : NUL };
+   push @links, { value => $person->home_phone };
+   push @links, { value => $person->mobile_phone };
+   push @links, { value => $person->next_of_kin
+                         ? $person->next_of_kin->label : NUL };
+   push @links, { value => $person->next_of_kin
+                         ? $person->next_of_kin->home_phone : NUL };
+   push @links, { value => $person->next_of_kin
+                         ? $person->next_of_kin->mobile_phone : NUL };
 
-   return @{ $links };
+   return @links;
 };
 
 my $_flatten = sub {
@@ -270,7 +270,7 @@ my $_update_person_from_request = sub {
 
       # No tz and 1/1/1970 is the last day in 69
       length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
-         and $v = $self->to_dt( $v );
+         and $v = to_dt $v;
 
       $person->$attr( $v );
    }

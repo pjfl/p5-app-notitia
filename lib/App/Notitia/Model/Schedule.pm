@@ -7,7 +7,8 @@ use App::Notitia::Util      qw( assign_link bind button dialog_anchor
                                 js_anchor_config lcm_for loc
                                 register_action_paths set_element_focus
                                 slot_claimed slot_identifier
-                                slot_limit_index table_link uri_for_action );
+                                slot_limit_index table_link to_dt
+                                uri_for_action );
 use Class::Usul::Functions  qw( is_member sum throw );
 use Class::Usul::Time       qw( time2str );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
@@ -476,8 +477,8 @@ my $_rota_summary = sub {
 my $_get_page = sub {
    my ($self, $req, $name, $date, $todays_events, $rows) = @_;
 
+   my $rota_dt =  to_dt $date;
    my $schema  =  $self->schema;
-   my $rota_dt =  $self->to_dt( $date );
    my $limits  =  $self->config->slot_limits;
    my $title   =  ucfirst( loc( $req, $name ) ).SPC.loc( $req, 'rota for' ).SPC
                .  $rota_dt->month_name.SPC.$rota_dt->day.SPC.$rota_dt->year;
@@ -570,7 +571,7 @@ sub month_rota : Role(any) {
    my $params    =  $req->uri_params;
    my $rota_name =  $params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date =  $params->( 1, { optional => TRUE } ) // time2str '%Y-%m-01';
-   my $month     =  $self->to_dt( $rota_date );
+   my $month     =  to_dt $rota_date;
    my $title     =  $_month_rota_title->( $req, $rota_name, $month->clone );
    my $max_slots =  $_month_rota_max_slots->( $self->config->slot_limits );
    my $lcm       =  lcm_for 4, @{ $max_slots };
@@ -611,7 +612,7 @@ sub rota_redirect_action : Role(any) {
    my $period    = 'day';
    my $params    = $req->body_params;
    my $rota_name = $params->( 'rota_name' );
-   my $rota_date = $self->to_dt( $params->( 'rota_date' ) );
+   my $rota_date = to_dt $params->( 'rota_date' );
    my $args      = [ $rota_name, $rota_date->ymd ];
    my $location  = uri_for_action $req, $self->moniker."/${period}_rota", $args;
    my $message   = [ $req->session->collect_status_message( $req ) ];

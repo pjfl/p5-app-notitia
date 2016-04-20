@@ -60,6 +60,7 @@ lib/App/Notitia/Schema/Schedule/ResultSet/Event.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Person.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Rota.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Slot.pm
+lib/App/Notitia/Schema/Schedule/ResultSet/Transport.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Type.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Vehicle.pm
 lib/App/Notitia/Server.pm
@@ -151,6 +152,7 @@ var/root/templates/hyde/type_content.tt
 var/root/templates/hyde/unassign-vehicle.tt
 var/root/templates/hyde/upload-file.tt
 var/root/templates/hyde/user_email.tt
+var/root/templates/hyde/vehicle-events_content.tt
 var/root/templates/hyde/vehicle-request_content.tt
 var/root/templates/hyde/vehicle_content.tt
 var/root/templates/hyde/wrapper.tt

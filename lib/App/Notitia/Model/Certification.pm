@@ -2,9 +2,9 @@ package App::Notitia::Model::Certification;
 
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( bind bind_fields check_field_server
+use App::Notitia::Util      qw( bind bind_fields check_field_js
                                 delete_button loc management_link
-                                register_action_paths save_button
+                                register_action_paths save_button to_dt
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
@@ -64,7 +64,7 @@ my $_add_certification_js = sub {
    my $self = shift;
    my $opts = { domain => 'schedule', form => 'Certification' };
 
-   return [ check_field_server( 'completed', $opts ), ];
+   return [ check_field_js( 'completed', $opts ), ];
 };
 
 my $_bind_cert_fields = sub {
@@ -120,8 +120,7 @@ my $_update_cert_from_request = sub {
 
       defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
-      length $v and is_member $attr, [ qw( completed ) ]
-         and $v = $self->to_dt( $v );
+      length $v and is_member $attr, [ qw( completed ) ] and $v = to_dt $v;
 
       $cert->$attr( $v );
    }

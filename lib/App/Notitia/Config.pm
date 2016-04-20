@@ -223,6 +223,9 @@ has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
       request         => [ qw( authenticated host language locale username ) ],
       session         => [ sort keys %{ $_[ 0 ]->session_attr } ], } };
 
+has 'time_zone'       => is => 'ro',   isa => NonEmptySimpleStr,
+   default            => 'GMT0BST1';
+
 has 'title'           => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'Notitia';
 
@@ -252,6 +255,10 @@ sub _build_ctlfile {
 
 sub _build__l10n_attributes {
    return { gettext_catagory => NUL, };
+}
+
+sub BUILD {
+   my $self = shift; $ENV{TZ} = $self->time_zone; return;
 }
 
 1;
@@ -629,6 +636,11 @@ reference. List of attributes that can be specified as query parameters in
 URIs. Their values are persisted between requests stored in the session store
 
 =back
+
+=item C<time_zone>
+
+A non empty simple string. The time zone in which the application is being
+run. Defaults to C<GMT0BST1>
 
 =item C<title>
 

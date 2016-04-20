@@ -1,6 +1,8 @@
 Revision history for App::Notitia
 
-          - List vehicle events in date order
+          - Can update and delete vehicle events
+          - To dt is now a function
+          - List vehicle events in date and time order
           - Added end_rota_id and vehicle_id to event
           - Can create vehicle events
           - Event deletion deletes event posts

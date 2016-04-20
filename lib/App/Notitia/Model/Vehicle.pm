@@ -3,10 +3,10 @@ package App::Notitia::Model::Vehicle;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( assign_link bind bind_fields button
-                                check_field_server create_link delete_button
+                                check_field_js create_link delete_button
                                 loc make_tip management_link
                                 register_action_paths save_button
-                                set_element_focus slot_identifier
+                                set_element_focus slot_identifier to_dt
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
@@ -50,7 +50,7 @@ my $_add_vehicle_js = sub {
    my $vrn  = shift;
    my $opts = { domain => $vrn ? 'update' : 'insert', form => 'Vehicle' };
 
-   return [ check_field_server( 'vrn', $opts ) ];
+   return [ check_field_js( 'vrn', $opts ) ];
 };
 
 my $_bind_request_fields = sub {
@@ -82,6 +82,17 @@ my $_bind_vehicle_fields = sub {
    };
 
    return bind_fields $schema, $vehicle, $map, 'Vehicle';
+};
+
+my $_compare_datetimes = sub {
+   my ($x, $y) = @_;
+
+   $x->[ 0 ] < $y->[ 0 ] and return -1; $x->[ 0 ] > $y->[ 0 ] and return 1;
+
+   $x = $x->[ 1 ]->[ 1 ]->{value}; $x =~ s{ : }{}mx; $x or $x = 0;
+   $y = $y->[ 1 ]->[ 1 ]->{value}; $y =~ s{ : }{}mx; $y or $y = 0;
+
+   $x < $y and return -1; $x > $y and return 1; return 0;
 };
 
 my $_confirm_vehicle_button = sub {
@@ -129,9 +140,9 @@ my $_quantity_list = sub {
 };
 
 my $_transport_links = sub {
-   my ($self, $req, $tport) = @_; my @links;
+   my ($self, $req, $event) = @_; my @links;
 
-   my $moniker = $self->moniker; my $uri = $tport->event->uri;
+   my $moniker = $self->moniker; my $uri = $event->uri;
 
    push @links, {
       value => management_link
@@ -152,7 +163,7 @@ my $_update_vehicle_req_from_request = sub {
 
 my $_vehicle_events_headers = sub {
    return [ map { { value => loc( $_[ 0 ], "vehicle_events_heading_${_}" ) } }
-            0 .. 1 ];
+            0 .. 3 ];
 };
 
 my $_vehicle_event_links = sub {
@@ -375,7 +386,7 @@ my $_update_vehicle_from_request = sub {
       $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
       length $v and is_member $attr, [ qw( aquired disposed ) ]
-         and $v = $self->to_dt( $v );
+         and $v = to_dt $v;
 
       $vehicle->$attr( $v );
    }
@@ -390,33 +401,39 @@ my $_vehicle_events = sub {
    my ($self, $req, $opts) = @_; my @rows;
 
    my $event_rs = $self->schema->resultset( 'Event' );
+   my $slot_rs  = $self->schema->resultset( 'Slot' );
+   my $tport_rs = $self->schema->resultset( 'Transport' );
 
    for my $event ($event_rs->search_for_events( $opts )->all) {
       push @rows,
          [ $event->start_date,
            [ { value => $event->label },
+             { value => $event->start_time },
+             { value => $event->end_time },
              $self->$_vehicle_event_links( $req, $event ) ] ];
    }
-
-   my $tport_rs = $self->schema->resultset( 'Transport' );
-
-   for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
-      push @rows,
-         [ $tport->event->start_date,
-           [ { value => $tport->event->label },
-             $self->$_transport_links( $req, $tport ) ] ];
-   }
-
-   my $slot_rs = $self->schema->resultset( 'Slot' );
 
    for my $slot ($slot_rs->search_for_assigned_slots( $opts )->all) {
       push @rows,
          [ $slot->date,
            [ { value => $slot->label( $req ) },
+             { value => $slot->start_time },
+             { value => $slot->end_time },
              $self->$_vehicle_slot_links( $req, $slot ) ] ];
    }
 
-   return [ map { $_->[ 1 ] } sort { $a->[ 0 ] <=> $b->[ 0 ] } @rows ] ;
+   for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
+      my $event = $tport->event;
+
+      push @rows,
+         [ $event->start_date,
+           [ { value => $event->label },
+             { value => $event->start_time },
+             { value => $event->end_time },
+             $self->$_transport_links( $req, $event ) ] ];
+   }
+
+   return [ map { $_->[ 1 ] } sort { $_compare_datetimes->( $a, $b ) } @rows ];
 };
 
 # Public methods
@@ -595,7 +612,7 @@ sub vehicle : Role(rota_manager) {
    if ($vrn) {
       $fields->{delete} = delete_button $req, $vrn, { type => 'vehicle' };
       $fields->{href  } = uri_for_action $req, $actionp, [ $vrn ];
-      $fields->{add   } = create_link $req, $actionp, 'vehicle',
+      $fields->{links } = create_link $req, $actionp, 'vehicle',
                              { container_class => 'add-link right' };
    }
 
@@ -609,22 +626,25 @@ sub vehicle : Role(rota_manager) {
 sub vehicle_events : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $vrn       =  $req->uri_params->( 0 );
-   my $params    =  $req->query_params;
-   my $after     =  $params->( 'after',  { optional => TRUE } );
-   my $before    =  $params->( 'before', { optional => TRUE } );
-   my $opts      =  { after      => $after  ? $self->to_dt( $after  ) : FALSE,
-                      before     => $before ? $self->to_dt( $before ) : FALSE,
-                      event_type => 'vehicle',
-                      vehicle    => $vrn, };
-   my $page      =  {
-      fields     => {
-         headers => $_vehicle_events_headers->( $req ),
-         links   => create_link
-            ( $req, 'event/vehicle_event', 'event', { args => [ $vrn ] } ),
-         rows    => $self->$_vehicle_events( $req, $opts ), },
-      template   => [ 'contents', 'table' ],
-      title      => loc( $req, 'vehicle_events_management_heading' ), };
+   my $vrn          =  $req->uri_params->( 0 );
+   my $params       =  $req->query_params;
+   my $after        =  $params->( 'after',  { optional => TRUE } );
+   my $before       =  $params->( 'before', { optional => TRUE } );
+   my $opts         =  { after      => $after  ? to_dt( $after  ) : FALSE,
+                         before     => $before ? to_dt( $before ) : FALSE,
+                         event_type => 'vehicle',
+                         vehicle    => $vrn, };
+   my $page         =  {
+      fields        => {
+         events     => {
+            headers => $_vehicle_events_headers->( $req ),
+            rows    => $self->$_vehicle_events( $req, $opts ), },
+         links      => create_link
+            ( $req, 'event/vehicle_event', 'event',
+              { args => [ $vrn ], container_class => 'add-link right-last' } ),
+         name       => bind 'vehicle', $vrn, { disabled => TRUE }, },
+      template      => [ 'contents', 'vehicle-events' ],
+      title         => loc( $req, 'vehicle_events_management_heading' ), };
 
    return $self->get_stash( $req, $page );
 }

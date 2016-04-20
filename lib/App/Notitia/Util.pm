@@ -11,7 +11,7 @@ use Class::Usul::Functions     qw( class2appdir create_token
                                    ensure_class_loaded find_apphome
                                    first_char fold get_cfgfiles io is_arrayref
                                    is_hashref is_member throw );
-use Class::Usul::Time          qw( str2time time2str );
+use Class::Usul::Time          qw( str2date_time str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
 use Data::Validation;
 use HTTP::Status               qw( HTTP_OK );
@@ -22,7 +22,7 @@ use YAML::Tiny;
 
 our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      bind_fields bool_data_type build_navigation build_tree
-                     button check_field_server check_form_field clone
+                     button check_field_js check_form_field clone
                      create_link date_data_type delete_button dialog_anchor
                      encrypted_attr enhance enumerated_data_type field_options
                      foreign_key_data_type get_hashed_pw get_salt is_draft
@@ -34,7 +34,7 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      serial_data_type set_element_focus
                      set_on_create_datetime_data_type slot_claimed
                      slot_identifier slot_limit_index show_node stash_functions
-                     table_link uri_for_action varchar_data_type );
+                     table_link to_dt uri_for_action varchar_data_type );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -348,7 +348,7 @@ sub button ($$;$$$) {
    return $button;
 }
 
-sub check_field_server ($$) {
+sub check_field_js ($$) {
    my ($k, $opts) = @_;
 
    my $args = $json_coder->encode( [ $k, $opts->{form}, $opts->{domain} ] );
@@ -774,6 +774,17 @@ sub table_link ($$$$) {
             value => $_[ 2 ], };
 }
 
+sub to_dt ($;$) {
+   my ($dstr, $zone) = @_; $zone //= NUL;
+
+   my $dt = ($zone and $zone ne 'local') ? str2date_time( $dstr, $zone )
+                                         : str2date_time( $dstr );
+
+   $zone or $dt->set_time_zone( 'GMT' );
+
+   return $dt;
+}
+
 sub uri_for_action ($$;@) {
    my ($req, $action, @args) = @_;
 
@@ -837,7 +848,7 @@ Defines no attributes
 
 =item C<button>
 
-=item C<check_field_server>
+=item C<check_field_js>
 
 =item C<check_form_field>
 
@@ -935,6 +946,8 @@ prior to calling L<uri_for|Web::ComposableRequest::Base/uri_for>
 =item C<stash_functions>
 
 =item C<table_link>
+
+=item C<to_dt>
 
 =item C<uri_for_action>
 

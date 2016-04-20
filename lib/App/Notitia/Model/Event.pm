@@ -2,13 +2,14 @@ package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( bind bind_fields button check_field_server
+use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 create_link delete_button loc
                                 management_link register_action_paths
-                                save_button uri_for_action );
+                                save_button to_dt uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
+use DateTime;
 use Try::Tiny;
 use Moo;
 
@@ -98,12 +99,19 @@ my $_participent_headers = sub {
             0 .. 2 ];
 };
 
+my $_vehicle_events_uri = sub {
+   my ($req, $vrn) = @_; my $after = DateTime->now->subtract( days => 1 )->ymd;
+
+   return uri_for_action $req, 'asset/vehicle_events', [ $vrn ],
+                         after => $after, service => TRUE;
+};
+
 # Private methods
 my $_add_event_js = sub {
    my $self = shift; my $opts = { domain => 'schedule', form => 'Event' };
 
-   return [ check_field_server( 'description', $opts ),
-            check_field_server( 'name', $opts ) ];
+   return [ check_field_js( 'description', $opts ),
+            check_field_js( 'name', $opts ) ];
 };
 
 my $_bind_event_fields = sub {
@@ -260,11 +268,41 @@ my $_delete_blog_post = sub {
    return shift->$_update_blog_post( @_ );
 };
 
+my $_delete_event = sub {
+   my ($self, $uri) = @_;
+
+   my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
+
+   try   { $event->delete }
+   catch {
+      $self->application->debug and throw $_; $self->log->error( $_ );
+      throw 'Failed to delete the [_1] event', [ $event->name ];
+   };
+
+   return $event;
+};
+
+my $_update_event = sub {
+   my ($self, $req, $uri) = @_;
+
+   my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
+
+   $self->$_update_event_from_request( $req, $event );
+
+   try   { $event->update }
+   catch {
+      $self->application->debug and throw $_; $self->log->error( $_ );
+      throw 'Failed to update the [_1] event', [ $event->name ];
+   };
+
+   return $event;
+};
+
 # Public methods
 sub create_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $date  = $self->to_dt( $req->body_params->( 'event_date' ) );
+   my $date  = to_dt $req->body_params->( 'event_date' );
    my $event = $self->$_create_event( $req, $date, 'person', $req->username );
 
    $self->$_create_blog_post( $req, $event->post_filename, $event );
@@ -280,12 +318,11 @@ sub create_event_action : Role(event_manager) {
 sub create_vehicle_event_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $vrn   = $req->uri_params->( 0 );
-   my $date  = $self->to_dt( $req->body_params->( 'event_date' ) );
-   my $event = $self->$_create_event
-      ( $req, $date, 'vehicle', $req->username, $vrn );
-
-   my $location = uri_for_action $req, 'asset/vehicles', [], { service => TRUE};
+   my $vrn      = $req->uri_params->( 0 );
+   my $date     = to_dt $req->body_params->( 'event_date' );
+   my $event    = $self->$_create_event
+                ( $req, $date, 'vehicle', $req->username, $vrn );
+   my $location = $_vehicle_events_uri->( $req, $vrn );
    my $message  =
       [ 'Vehicle event [_1] created by [_2]', $event->name, $req->username ];
 
@@ -296,19 +333,25 @@ sub delete_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
    my $uri   = $req->uri_params->( 0 );
-   my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $file  = $event->post_filename;
+   my $event = $self->$_delete_event( $uri );
 
-   try   { $event->delete }
-   catch {
-      $self->application->debug and throw $_; $self->log->error( $_ );
-      throw 'Failed to delete the [_1] event', [ $event->name ];
-   };
-
-   $self->$_delete_blog_post( $req, $file );
+   $self->$_delete_blog_post( $req, $event->post_filename );
 
    my $location = uri_for_action $req, $self->moniker.'/events';
    my $message  = [ 'Event [_1] deleted by [_2]', $uri, $req->username ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub delete_vehicle_event_action : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $vrn      = $req->uri_params->( 0 );
+   my $uri      = $req->uri_params->( 1 );
+   my $event    = $self->$_delete_event( $uri );
+   my $location = $_vehicle_events_uri->( $req, $vrn );
+   my $message  =
+      [ 'Vehicle event [_1] deleted by [_2]', $event->name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -339,7 +382,7 @@ sub event : Role(event_manager) {
    }
    else {
       $fields->{date  } = bind 'event_date',
-         $self->to_dt( $date // time2str '%Y-%m-%d' )->dmy( '/' );
+         to_dt( ($date // time2str '%Y-%m-%d'), 'local' )->dmy( '/' );
    }
 
    $fields->{save} = save_button $req, $uri, { type => 'event' };
@@ -381,8 +424,8 @@ sub events : Role(any) {
    my $params    =  $req->query_params;
    my $after     =  $params->( 'after',  { optional => TRUE } );
    my $before    =  $params->( 'before', { optional => TRUE } );
-   my $opts      =  { after      => $after  ? $self->to_dt( $after  ) : FALSE,
-                      before     => $before ? $self->to_dt( $before ) : FALSE,
+   my $opts      =  { after      => $after  ? to_dt( $after  ) : FALSE,
+                      before     => $before ? to_dt( $before ) : FALSE,
                       event_type => 'person' };
    my $title     =  $after  ? 'current_events_heading'
                  :  $before ? 'previous_events_heading'
@@ -468,15 +511,7 @@ sub update_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
    my $uri   = $req->uri_params->( 0 );
-   my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-
-   $self->$_update_event_from_request( $req, $event );
-
-   try   { $event->update }
-   catch {
-      $self->application->debug and throw $_; $self->log->error( $_ );
-      throw 'Failed to update the [_1] event', [ $event->name ];
-   };
+   my $event = $self->$_update_event( $req, $uri );
 
    $self->$_update_blog_post( $req, $event->post_filename, $event );
 
@@ -486,6 +521,19 @@ sub update_event_action : Role(event_manager) {
 
    return { redirect => { location => $location, message => $message } };
 }
+
+sub update_vehicle_event_action : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $vrn      = $req->uri_params->( 0 );
+   my $uri      = $req->uri_params->( 1 );
+   my $event    = $self->$_update_event( $req, $uri );
+   my $location = $_vehicle_events_uri->( $req, $vrn );
+   my $message  =
+      [ 'Vehicle event [_1] updated by [_2]', $event->name, $req->username ];
+
+   return { redirect => { location => $location, message => $message } };
+};
 
 sub vehicle_event : Role(rota_manager) {
    my ($self, $req) = @_;
@@ -500,8 +548,8 @@ sub vehicle_event : Role(rota_manager) {
       template    => [ 'contents', 'event' ],
       title       => loc( $req, $uri ? 'vehicle_event_edit_heading'
                                      : 'vehicle_event_create_heading' ), };
-   my $fields     =  $page->{fields};
    my $actionp    =  $self->moniker.'/vehicle_event';
+   my $fields     =  $page->{fields};
 
    if ($uri) {
       $fields->{date  } = bind 'event_date', $event->start_date,
