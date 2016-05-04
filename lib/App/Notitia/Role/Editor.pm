@@ -192,7 +192,7 @@ sub create_file {
    my $pathname = $params->( 'pathname' );
    my $draft    = $params->( 'draft', { optional => TRUE } ) || FALSE;
    my $new_node = $self->$_new_node( $req->locale, $pathname, $draft );
-   my $created  = time2str '%Y-%m-%d %H:%M:%S %z', time, 'UTC';
+   my $created  = time2str '%Y-%m-%d %H:%M:%S %z', time, 'GMT';
    my $stash    = { page => { author  => $req->username,
                               created => $created,
                               layout  => 'blank-page', }, };

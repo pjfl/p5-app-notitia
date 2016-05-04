@@ -1,3 +1,5 @@
+\[!\[Gitter\](https://badges.gitter.im/pjfl/p5-app-notitia.svg)\](https://gitter.im/pjfl/p5-app-notitia?utm\_source=badge&utm\_medium=badge&utm\_campaign=pr-badge&utm\_content=body\_badge)
+
 # Name
 
 App::Notitia - People and resource scheduling
@@ -12,7 +14,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 69 $ of **App::Notitia**
+This documents version v0.3.$Rev: 70 $ of **App::Notitia**
 
 # Description
 

@@ -153,7 +153,7 @@ sub certification : Role(person_manager) {
       $fields->{delete} = delete_button $req, $type, { type => 'certification'};
    }
    else {
-      $fields->{completed } = bind 'completed', time2str '%Y-%m-%d';
+      $fields->{completed } = bind 'completed', time2str '%d/%m/%Y';
       $fields->{cert_types} = bind 'cert_types', $self->$_list_all_certs();
    }
 

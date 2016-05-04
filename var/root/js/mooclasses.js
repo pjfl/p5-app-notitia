@@ -1496,9 +1496,8 @@ this.DatePicker = Picker.Date = new Class( {
    },
 
    initialize: function(attachTo, options){
-      this.parent(attachTo, options);
+      this.parent(attachTo, options); this.setOptions(options);
 
-      this.setOptions(options);
       options = this.options;
 
       // If we only want to use one picker / backwards compatibility
@@ -1539,9 +1538,9 @@ this.DatePicker = Picker.Date = new Class( {
 
       // Some link or input has fired an event!
       this.addEvent('attached', function(event, element){
-
          // This is where we store the selected date
-         if (!this.currentView || !options.openLastView) this.currentView = options.startView;
+         if (!this.currentView || !options.openLastView)
+            this.currentView = options.startView;
 
          this.date = limitDate(new Date(), options.minDate, options.maxDate);
          var tag = element.get('tag'), input;
@@ -1558,13 +1557,16 @@ this.DatePicker = Picker.Date = new Class( {
    },
 
    getInputDate: function(input){
-      this.date = new Date();
-      if (!input) return;
-      var date = Date.parse(input.get('value'));
+      this.date = new Date(); if (!input) return;
+
+      var date = Date.parse( input.get( 'value' ) );
+
       if (date == null || !date.isValid()){
-         var storeDate = input.retrieve('datepicker:value');
-         if (storeDate) date = Date.parse(storeDate);
+         var storeDate = input.retrieve( 'datepicker:value' );
+
+         if (storeDate) date = Date.parse( storeDate );
       }
+
       if (date != null && date.isValid()) this.date = date;
    },
 
@@ -2131,6 +2133,10 @@ var Pickers = new Class( {
                var opts = { pickerClass: this.options.pickerClass };
 
                if (el.hasClass( 'clearable' )) { opts.blockKeydown = false }
+
+               if (el.hasClass( 'pick-date')) {
+                  opts[ 'format' ] = '%Y-%m-%d';
+               }
 
                if (el.hasClass( 'pick-time')) {
                   opts[ 'format'        ] = '%H:%M';

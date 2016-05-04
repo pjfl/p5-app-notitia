@@ -121,13 +121,13 @@ my $_bind_event_fields = sub {
    my $map      = {
       description => { class    => 'standard-field autosize server',
                        disabled => $disabled },
-      end_time    => { disabled => $disabled },
+      end_time    => { class    => 'standard-field', disabled => $disabled },
       name        => { class    => 'standard-field server',
                        disabled => $disabled,
                        label    => 'event_name' },
       notes       => { class    => 'standard-field autosize',
                        disabled => $disabled },
-      start_time  => { disabled => $disabled},
+      start_time  => { class    => 'standard-field', disabled => $disabled },
    };
 
    return bind_fields $self->schema, $event, $map, 'Event';
@@ -141,8 +141,8 @@ my $_format_as_markdown = sub {
    my ($self, $req, $event) = @_;
 
    my $name    = $event->name;
-   my $date    = $event->start_date;
-   my $created = time2str '%Y-%m-%d %H:%M:%S %z', time, 'UTC';
+   my $date    = $event->start_date->clone->set_time_zone( 'local' );
+   my $created = time2str '%Y-%m-%d %H:%M:%S %z', time, 'GMT';
    my $yaml    = "---\nauthor: ".$event->owner."\n"
                . "created: ${created}\nrole: anon\ntitle: ${name}\n---\n";
    my $desc    = $event->description."\n\n";
@@ -302,7 +302,7 @@ my $_update_event = sub {
 sub create_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $date  = to_dt $req->body_params->( 'event_date' );
+   my $date  = to_dt $req->body_params->( 'event_date' ), 'GMT';
    my $event = $self->$_create_event( $req, $date, 'person', $req->username );
 
    $self->$_create_blog_post( $req, $event->post_filename, $event );
@@ -319,7 +319,7 @@ sub create_vehicle_event_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $vrn      = $req->uri_params->( 0 );
-   my $date     = to_dt $req->body_params->( 'event_date' );
+   my $date     = to_dt $req->body_params->( 'event_date' ), 'GMT';
    my $event    = $self->$_create_event
                 ( $req, $date, 'vehicle', $req->username, $vrn );
    my $location = $_vehicle_events_uri->( $req, $vrn );
@@ -381,8 +381,8 @@ sub event : Role(event_manager) {
       $fields->{owner } = $self->$_owner_list( $event );
    }
    else {
-      $fields->{date  } = bind 'event_date',
-         to_dt( ($date // time2str '%Y-%m-%d'), 'local' )->dmy( '/' );
+      $date = $date ? to_dt( $date, 'GMT' )->dmy( '/' ) : time2str '%d/%m/%Y';
+      $fields->{date  } = bind 'event_date', $date;
    }
 
    $fields->{save} = save_button $req, $uri, { type => 'event' };

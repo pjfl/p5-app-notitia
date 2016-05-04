@@ -40,8 +40,9 @@ sub label {
    my ($self, $req) = @_;
 
    my $type = $req ? loc( $req, $self->type ) : $self->type;
+   my $date = $self->completed->clone->set_time_zone( 'local' );
 
-   return $type.' ('.$self->completed->dmy.')';
+   return $type.' ('.$date->dmy( '/' ).')';
 }
 
 sub update {

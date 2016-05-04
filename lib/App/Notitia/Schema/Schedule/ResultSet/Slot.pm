@@ -4,15 +4,19 @@ use strictures;
 use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( FALSE NUL TRUE );
+use App::Notitia::Util      qw( to_dt );
 use Class::Usul::Functions  qw( throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Public methods
 sub assignment_slots {
-   my ($self, $type_id, $date) = @_;
+   my ($self, $type_id, $date) = @_; $date = to_dt $date;
+
+   my $parser = $self->result_source->schema->datetime_parser;
 
    return $self->search
-      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
+      ( { 'rota.type_id' => $type_id,
+          'rota.date'    => $parser->format_datetime( $date ) },
         { 'columns' => [ $self->me( 'type_name' ), 'subslot' ],
           'join'    => [ { 'shift' => 'rota' }, 'vehicle', ],
           '+select' => [ 'shift.type_name', 'vehicle.name', 'vehicle.vrn' ],
@@ -51,18 +55,20 @@ sub search_for_assigned_slots {
 }
 
 sub list_slots_for {
-   my ($self, $type_id, $date) = @_;
+   my ($self, $type_id, $date) = @_; $date = to_dt $date;
 
-   my $attr = [ 'operator.first_name', 'operator.id', 'operator.last_name',
-                'operator.name', 'vehicle.name', 'vehicle.vrn' ];
+   my $parser = $self->result_source->schema->datetime_parser;
+   my $attr   = [ 'operator.first_name', 'operator.id', 'operator.last_name',
+                  'operator.name', 'vehicle.name', 'vehicle.vrn' ];
 
    return $self->search
-      ( { 'rota.type_id' => $type_id, 'rota.date' => $date },
-        { 'columns'  => [ qw( bike_requested type_name subslot ) ],
-          'join'     => [ 'operator', 'vehicle' ],
-          'prefetch' => [ { 'shift' => 'rota' }, 'operator_vehicles' ],
-          '+select'  => $attr,
-          '+as'      => $attr, } );
+      ( { 'rota.type_id' => $type_id,
+          'rota.date'    => $parser->format_datetime( $date ) },
+        { 'columns'      => [ qw( bike_requested type_name subslot ) ],
+          'join'         => [ 'operator', 'vehicle' ],
+          'prefetch'     => [ { 'shift' => 'rota' }, 'operator_vehicles' ],
+          '+select'      => $attr,
+          '+as'          => $attr, } );
 }
 
 sub me {

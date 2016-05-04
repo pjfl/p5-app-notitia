@@ -55,6 +55,7 @@
 [%       END -%]
 [%    END -%]
 [%    IF f.type == 'select'; Select( f ); END -%]
+[%    IF f.type == 'textfield'; TextField( f ); END -%]
 [%    IF f.type == 'table'; Table( f ); END -%]
 [% END -%]
 [% MACRO Form( f ) BLOCK -%]
@@ -175,8 +176,8 @@
    </label>
 [% END -%]
 [% MACRO TextField( f ) BLOCK -%]
-   <label class="label">
-      <span class="field-label">[% loc( f.label ) %]</span>
+[%    IF f.label -%]<label class="label">
+      <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
 [%    IF f.tip -%]
       <span class="field-help tips [% f.container_class %]"
             title="[% f.tip %]">&dagger;</span>

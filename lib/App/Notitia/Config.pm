@@ -204,6 +204,11 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       theme           => [ NonEmptySimpleStr, 'yellow'      ],
       wanted          => [ SimpleStr | Undef                ], } };
 
+has 'shift_times'     => is => 'ro',   isa => HashRef,
+   builder            => sub { {
+      day_start       => '09:00', day_end   => '17:59',
+      night_start     => '18:00', night_end => '08:59', } };
+
 has 'skin'            => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'hyde';
 
@@ -224,7 +229,7 @@ has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
       session         => [ sort keys %{ $_[ 0 ]->session_attr } ], } };
 
 has 'time_zone'       => is => 'ro',   isa => NonEmptySimpleStr,
-   default            => 'GMT0BST1';
+   default            => 'Europe/London';
 
 has 'title'           => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'Notitia';
@@ -586,6 +591,11 @@ A non empty simple string that defaults to C<yellow>. The name of the
 default colour scheme
 
 =back
+
+=item C<shift_times>
+
+A hash reference containing the start and end times for the day and night
+shifts
 
 =item C<skin>
 

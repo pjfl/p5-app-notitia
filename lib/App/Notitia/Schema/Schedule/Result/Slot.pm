@@ -38,10 +38,9 @@ $class->has_many  ( operator_vehicles  => "${result}::Vehicle",
 
 # Private methods
 sub _as_string {
-   my $self = shift; my $shift = $self->shift; my $rota = $shift->rota;
+   my $self = shift; my $date = $self->date->clone->set_time_zone( 'local' );
 
-   return $rota->type.'_'.$rota->date->dmy.'_'.$shift.'_'
-        . $self->type_name.'_'.$self->subslot;
+   return $self->rota_type.'_'.$date->ymd.'_'.$self->key;
 }
 
 sub date {
@@ -49,7 +48,9 @@ sub date {
 }
 
 sub end_time {
-   return $_[ 0 ]->shift->type_name eq 'day' ? '18:00' : '09:00';
+   my $self = shift; my $schema = $self->result_source->schema;
+
+   return $schema->config->shift_times->{ $self->shift->type_name.'_end' };
 }
 
 sub key {
@@ -57,11 +58,17 @@ sub key {
 }
 
 sub label {
-   return loc( $_[ 1 ], $_[ 0 ]->key ).' ('.$_[ 0 ]->date->dmy( '/' ).')';
+   my ($self, $req) = @_;
+
+   my $date = $self->date->clone->set_time_zone( 'local' );
+
+   return loc( $req, $self->key ).' ('.$date->dmy( '/' ).')';
 }
 
 sub start_time {
-   return $_[ 0 ]->shift->type_name eq 'day' ? '09:00' : '18:00';
+   my $self = shift; my $schema = $self->result_source->schema;
+
+   return $schema->config->shift_times->{ $self->shift->type_name.'_start' };
 }
 
 sub rota_type {

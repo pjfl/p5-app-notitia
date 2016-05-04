@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added timezone to date_data_type definition
           - Can update and delete vehicle events
           - To dt is now a function
           - List vehicle events in date and time order

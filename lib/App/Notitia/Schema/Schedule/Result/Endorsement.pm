@@ -59,8 +59,9 @@ sub label {
    my ($self, $req) = @_;
 
    my $code = $req ? loc( $req, $self->type_code ) : $self->type_code;
+   my $date = $self->endorsed->clone->set_time_zone( 'local' );
 
-   return $code.' ('.$self->endorsed->dmy.')';
+   return $code.' ('.$date->dmy( '/' ).')';
 }
 
 sub update {

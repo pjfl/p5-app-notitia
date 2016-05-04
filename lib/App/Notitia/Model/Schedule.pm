@@ -79,9 +79,12 @@ my $_day_rota_headers = sub {
 };
 
 my $_first_month_rota_date = sub {
-   my $month = shift;
-   my $date  = $month->set_time_zone( 'floating' )
-                     ->truncate( to => 'day' )->set( day => 1 );
+   my ($req, $date) = @_;
+
+   $date = $date->set_time_zone( 'floating' )
+                ->truncate( to => 'day' )->set( day => 1 );
+
+   $req->session->rota_date( $date->ymd );
 
    while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
 
@@ -328,25 +331,34 @@ my $_driver_row = sub {
 my $_events = sub {
    my ($schema, $req, $page, $name, $rota_dt, $todays_events) = @_;
 
-   my $date   = $rota_dt->day_abbr.SPC.$rota_dt->day;
-   my $href   = uri_for_action $req, $page->{moniker}.'/day_rota';
-   my $picker = { class       => 'rota-date-form',
-                  content     => {
-                     list     => [ {
-                        name  => 'rota_name',
-                        type  => 'hidden',
-                        value => $name, }, {
-                        class => 'rota-date-field submit',
-                        name  => 'rota_date',
-                        label => NUL,
-                        type  => 'date',
-                        value => $date, } ],
-                     type     => 'list', },
-                  form_name   => 'day-rota',
-                  href        => $href,
-                  type        => 'form', };
-   my $col1   = { value => $picker, class => 'rota-date narrow' };
-   my $first  = TRUE;
+   my $display = $rota_dt->day_abbr.SPC.$rota_dt->day;
+   my $href    = uri_for_action $req, $page->{moniker}.'/day_rota';
+   my $picker  = { class       => 'rota-date-form',
+                   content     => {
+                      list     => [ {
+                         name  => 'rota_name',
+                         type  => 'hidden',
+                         value => $name,
+                      }, {
+                         class => 'rota-date-field shadow submit',
+                         label => NUL,
+                         name  => 'rota_date',
+                         type  => 'date',
+                         value => $rota_dt->ymd,
+                      }, {
+                         class => 'rota-date-field',
+                         disabled => TRUE,
+                         name  => 'rota_date_display',
+                         label => NUL,
+                         type  => 'textfield',
+                         value => $display,
+                      }, ],
+                      type     => 'list', },
+                   form_name   => 'day-rota',
+                   href        => $href,
+                   type        => 'form', };
+   my $col1    = { value => $picker, class => 'rota-date narrow' };
+   my $first   = TRUE;
 
    while (defined (my $event = $todays_events->next) or $first) {
       my $col2 = $_vehicle_request_link->( $schema, $req, $page, $event );
@@ -477,7 +489,7 @@ my $_rota_summary = sub {
 my $_get_page = sub {
    my ($self, $req, $name, $date, $todays_events, $rows) = @_;
 
-   my $rota_dt =  to_dt $date;
+   my $rota_dt =  to_dt $date, 'GMT';
    my $schema  =  $self->schema;
    my $limits  =  $self->config->slot_limits;
    my $title   =  ucfirst( loc( $req, $name ) ).SPC.loc( $req, 'rota for' ).SPC
@@ -571,7 +583,7 @@ sub month_rota : Role(any) {
    my $params    =  $req->uri_params;
    my $rota_name =  $params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date =  $params->( 1, { optional => TRUE } ) // time2str '%Y-%m-01';
-   my $month     =  to_dt $rota_date;
+   my $month     =  to_dt $rota_date, 'GMT';
    my $title     =  $_month_rota_title->( $req, $rota_name, $month->clone );
    my $max_slots =  $_month_rota_max_slots->( $self->config->slot_limits );
    my $lcm       =  lcm_for 4, @{ $max_slots };
@@ -584,7 +596,7 @@ sub month_rota : Role(any) {
                       lcm => $lcm, max_slots => $max_slots, rows => [] },
       template   => [ 'contents', 'rota', 'month-table' ],
       title      => $title, };
-   my $first     =  $_first_month_rota_date->( $month->clone );
+   my $first     =  $_first_month_rota_date->( $req, $month->clone );
 
    for my $rno (0 .. 5) {
       my $row = []; my $dayno;
@@ -612,7 +624,7 @@ sub rota_redirect_action : Role(any) {
    my $period    = 'day';
    my $params    = $req->body_params;
    my $rota_name = $params->( 'rota_name' );
-   my $rota_date = to_dt $params->( 'rota_date' );
+   my $rota_date = to_dt $params->( 'rota_date' ), 'GMT';
    my $args      = [ $rota_name, $rota_date->ymd ];
    my $location  = uri_for_action $req, $self->moniker."/${period}_rota", $args;
    my $message   = [ $req->session->collect_status_message( $req ) ];

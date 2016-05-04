@@ -154,7 +154,7 @@ sub endorsement : Role(person_manager) {
       $fields->{delete} = delete_button $req, $uri, { type => 'endorsement' };
    }
    else {
-      $fields->{endorsed} = bind 'endorsed', time2str '%Y-%m-%d';
+      $fields->{endorsed} = bind 'endorsed', time2str '%d/%m/%Y';
    }
 
    $fields->{username} = bind 'username', $person->label, { disabled => TRUE };

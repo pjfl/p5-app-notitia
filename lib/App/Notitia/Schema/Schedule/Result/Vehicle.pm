@@ -5,10 +5,10 @@ use overload '""' => sub { $_[ 0 ]->_as_string },
              '+'  => sub { $_[ 0 ]->_as_number }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( VARCHAR_MAX_SIZE TRUE );
+use App::Notitia::Constants qw( VARCHAR_MAX_SIZE SPC TRUE );
 use App::Notitia::Util      qw( date_data_type foreign_key_data_type
                                 nullable_foreign_key_data_type
-                                serial_data_type varchar_data_type );
+                                serial_data_type to_dt varchar_data_type );
 use Class::Usul::Functions  qw( throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
@@ -94,6 +94,8 @@ my $_find_rota_type_id_for = sub {
 my $_assert_slot_assignment_allowed = sub {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $person, $bike) = @_;
 
+   my $schema = $self->result_source->schema;
+
    $person->assert_member_of( 'rota_manager' );
 
    $slot_type eq 'rider' and $bike and $self->type ne 'bike'
@@ -104,7 +106,7 @@ my $_assert_slot_assignment_allowed = sub {
 
    if ($slot_type eq 'rider') {
       my $type_id  = $self->$_find_rota_type_id_for( $rota_name );
-      my $slots_rs = $self->result_source->schema->resultset( 'Slot' );
+      my $slots_rs = $schema->resultset( 'Slot' );
       my $slots    = $slots_rs->assignment_slots( $type_id, $date );
 
       for my $slot (grep { $_->type_name->is_rider } $slots->all) {
@@ -114,6 +116,22 @@ my $_assert_slot_assignment_allowed = sub {
             and throw 'Vehicle [_1] already assigned to slot [_2]',
                       [ $self, $slot->subslot ], level => 2,
                       rv => HTTP_EXPECTATION_FAILED;
+      }
+
+      my $shift_times = $schema->config->shift_times;
+      my $shift_start = to_dt "${date} ".$shift_times->{ "${shift_type}_start" };
+      my $shift_end   = to_dt "${date} ".$shift_times->{ "${shift_type}_end" };
+      my $event_rs    = $schema->resultset( 'Event' );
+      my $vrn         = $self->vrn;
+         warn "$shift_start $shift_end\n";
+
+      for my $event ($event_rs->search_for_vehicle_events( $date, $vrn )->all) {
+         warn "$event\n";
+         warn $event->start_date."\n";
+         warn $event->start_time."\n";
+         my $event_start = to_dt $event->start_date.SPC.$event->start_time, 'GMT';
+         my $event_end   = to_dt $event->end_date.SPC.$event->end_time, 'GMT';
+         warn "$event_start $event_end\n";
       }
    }
 
@@ -234,7 +252,7 @@ sub validation_attributes {
          name        => { validate => 'isValidLength isValidIdentifier' },
          notes       => { validate => 'isValidLength isValidText' },
          vrn         => {
-            filters  => 'filterWhiteSpace',
+            filters  => 'filterWhiteSpace filterUpperCase',
             unique   => TRUE,
             validate => 'isMandatory isValidLength isValidIdentifier' },
       },

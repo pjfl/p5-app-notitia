@@ -4,9 +4,9 @@ use attributes ();
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE TRUE );
-use App::Notitia::Util      qw( loc uri_for_action );
+use App::Notitia::Util      qw( loc to_dt uri_for_action );
 use Class::Usul::Functions  qw( is_member );
-use Class::Usul::Time       qw( str2date_time time2str );
+use Class::Usul::Time       qw( time2str );
 use DateTime                qw( );
 use Moo::Role;
 
@@ -35,6 +35,17 @@ my $nav_linkto = sub {
 
    return { depth => $depth, label => $label,
             tip   => $tip,   type  => 'link', uri => $uri, };
+};
+
+my $_year_link = sub {
+   my ($req, $actionp, $name, $date) = @_;
+
+   my $tip    = 'Navigate to this year';
+   my $opts   = { label => $date->year, name => $date->year, tip => $tip };
+   my $args   = [ $name, $date->ymd ];
+   my $params = { rota_date => $date->ymd };
+
+   return $nav_linkto->( $req, $opts, $actionp, $args, $params );
 };
 
 # Private methods
@@ -108,25 +119,15 @@ sub admin_navigation_links {
    return $nav;
 }
 
-my $_year_link = sub {
-   my ($req, $actionp, $name, $date) = @_;
-
-   my $tip    = 'Navigate to this year';
-   my $opts   = { label => $date->year, name => $date->year, tip => $tip };
-   my $args   = [ $name, $date->ymd ];
-   my $params = { rota_date => $date->ymd };
-
-   return $nav_linkto->( $req, $opts, $actionp, $args, $params );
-};
-
 sub rota_navigation_links {
    my ($self, $req, $period, $name) = @_;
 
    my $actionp = "sched/${period}_rota"; my $date = $req->session->rota_date;
 
-   $date or $req->session->rota_date( $date = time2str '%Y-%m-01' );
+   $date or $req->session->rota_date( $date = time2str '%Y-%m-01', 'GMT' );
 
-   my $now = str2date_time( $date )->truncate( to => 'day' )->set( day => 1 );
+   my $now = to_dt( $date, 'GMT' )->set_time_zone( 'floating' )
+                                  ->truncate( to => 'day' )->set( day => 1 );
 
    my $nav = [ $nav_folder->( $req, 'months' ) ];
 

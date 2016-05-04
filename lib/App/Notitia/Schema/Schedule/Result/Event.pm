@@ -5,7 +5,7 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( VARCHAR_MAX_SIZE TRUE );
-use App::Notitia::Util      qw( date_data_type foreign_key_data_type
+use App::Notitia::Util      qw( foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 serial_data_type varchar_data_type );
 use Class::Usul::Functions  qw( create_token );
@@ -65,7 +65,9 @@ my $_set_uri = sub {
 
 # Public methods
 sub end_date {
-   return $_[ 0 ]->end_rota->date;
+   my $self = shift; my $end = $self->end_rota;
+
+   return defined $end ? $end->date : $self->start_date;
 }
 
 sub insert {
@@ -79,11 +81,15 @@ sub insert {
 }
 
 sub label {
-   return $_[ 0 ]->name.' ('.$_[ 0 ]->start_rota->date->dmy( '/' ).')';
+   my $self = shift; my $date = $self->start_rota->date->clone;
+
+   return $self->name.' ('.$date->set_time_zone( 'local' )->dmy( '/' ).')';
 }
 
 sub post_filename {
-   return $_[ 0 ]->start_date->ymd.'_'.$_[ 0 ]->uri;
+   my $self = shift; my $date = $self->start_rota->date->clone;
+
+   return $date->set_time_zone( 'local' )->ymd.'_'.$self->uri;
 }
 
 sub start_date {
@@ -103,7 +109,7 @@ sub update {
 sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       constraints    => {
-         description => { max_length => 128, min_length => 10, },
+         description => { max_length => 128, min_length =>  5, },
          end_time    => { max_length =>   5, min_length =>  0,
                           pattern    => '\A \d\d : \d\d (?: : \d\d )? \z', },
          name        => { max_length =>  57, min_length =>  3, },
@@ -115,12 +121,14 @@ sub validation_attributes {
          description => {
             filters  => 'filterUCFirst',
             validate => 'isMandatory isValidLength isValidText' },
-         end_time    => { validate => 'isValidLength isMatchingRegex' },
+         end_time    => {
+            validate => 'isMandatory isValidLength isMatchingRegex' },
          name        => {
             filters  => 'filterTitleCase',
             validate => 'isMandatory isValidLength isSimpleText' },
          notes       => { validate => 'isValidLength isValidText' },
-         start_time  => { validate => 'isValidLength isMatchingRegex' },
+         start_time  => {
+            validate => 'isMandatory isValidLength isMatchingRegex' },
       },
       level => 8,
    };

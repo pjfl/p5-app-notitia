@@ -6,7 +6,7 @@ use App::Notitia::Util      qw( assign_link bind bind_fields button
                                 check_field_js create_link delete_button
                                 loc make_tip management_link
                                 register_action_paths save_button
-                                set_element_focus slot_identifier to_dt
+                                set_element_focus slot_identifier time2int to_dt
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
@@ -89,8 +89,8 @@ my $_compare_datetimes = sub {
 
    $x->[ 0 ] < $y->[ 0 ] and return -1; $x->[ 0 ] > $y->[ 0 ] and return 1;
 
-   $x = $x->[ 1 ]->[ 1 ]->{value}; $x =~ s{ : }{}mx; $x or $x = 0;
-   $y = $y->[ 1 ]->[ 1 ]->{value}; $y =~ s{ : }{}mx; $y or $y = 0;
+   $x = time2int $x->[ 1 ]->[ 1 ]->{value};
+   $y = time2int $y->[ 1 ]->[ 1 ]->{value};
 
    $x < $y and return -1; $x > $y and return 1; return 0;
 };

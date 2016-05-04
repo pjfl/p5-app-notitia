@@ -4,6 +4,7 @@ use strictures;
 use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Util      qw( to_dt );
 use Class::Usul::Functions  qw( throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
@@ -63,14 +64,16 @@ sub new_result {
 }
 
 sub count_events_for {
-   my ($self, $rota_type_id, $start_rota_date, $event_type) = @_;
+   my ($self, $rota_type_id, $start_date, $event_type) = @_;
 
-   $event_type //= 'person';
+   my $parser = $self->result_source->schema->datetime_parser;
+
+   $event_type //= 'person'; $start_date = to_dt $start_date;
 
    return $self->count
       ( { 'event_type.name'    => $event_type,
           'start_rota.type_id' => $rota_type_id,
-          'start_rota.date'    => $start_rota_date },
+          'start_rota.date'    => $parser->format_datetime( $start_date ) },
         { join                 => [ 'start_rota', 'event_type' ] } );
 }
 
@@ -88,14 +91,16 @@ sub find_event_by {
 }
 
 sub search_for_a_days_events {
-   my ($self, $rota_type_id, $start_rota_date, $event_type) = @_;
+   my ($self, $rota_type_id, $start_date, $event_type) = @_;
 
-   $event_type //= 'person';
+   my $parser = $self->result_source->schema->datetime_parser;
+
+   $event_type //= 'person'; $start_date = to_dt $start_date;
 
    return $self->search
       ( { 'event_type.name'    => $event_type,
           'start_rota.type_id' => $rota_type_id,
-          'start_rota.date'    => $start_rota_date },
+          'start_rota.date'    => $parser->format_datetime( $start_date ) },
         { columns => [ 'id', 'name', 'start_rota.date',
                        'start_rota.type_id', 'uri' ],
           join    => [ 'start_rota', 'event_type' ] } );
@@ -109,19 +114,25 @@ sub search_for_events {
    my $vrn    = delete $opts->{vehicle};
       $vrn  and $where->{ 'vehicle.vrn' } = $vrn;
    my $parser = $self->result_source->schema->datetime_parser;
-   my $after  = delete $opts->{after}; my $before = delete $opts->{before};
 
-   if ($after) {
+   if (my $after  = delete $opts->{after}) {
       $where->{ 'start_rota.date' } =
               { '>' => $parser->format_datetime( $after ) };
-      $opts->{order_by} //= 'date';
+      $opts->{order_by} //= 'start_rota.date';
    }
-   elsif ($before) {
+
+   if (my $before = delete $opts->{before}) {
       $where->{ 'start_rota.date' } =
               { '<' => $parser->format_datetime( $before ) };
    }
 
-   $opts->{order_by} //= { -desc => 'date' }; my $prefetch = [ 'start_rota' ];
+   if (my $ondate = delete $opts->{on}) {
+      $where->{ 'start_rota.date' } = $parser->format_datetime( $ondate );
+   }
+
+   $opts->{order_by} //= { -desc => 'start_rota.date' };
+
+   my $prefetch = [ 'end_rota', 'start_rota' ];
 
    $type and push @{ $prefetch }, 'event_type';
    $vrn  and push @{ $prefetch }, 'vehicle';
@@ -131,6 +142,14 @@ sub search_for_events {
    return $self->search
       ( $where, { columns  => [ 'end_time', 'name', 'start_time', 'uri' ],
                   prefetch => $prefetch, %{ $opts } } );
+}
+
+sub search_for_vehicle_events {
+   my ($self, $date, $vrn) = @_;
+
+   return $self->search_for_events( { event_type => 'vehicle',
+                                      on         => to_dt( $date ),
+                                      vehicle    => $vrn, } );
 }
 
 1;

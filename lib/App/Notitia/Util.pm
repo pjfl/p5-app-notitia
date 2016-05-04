@@ -22,9 +22,9 @@ use YAML::Tiny;
 
 our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      bind_fields bool_data_type build_navigation build_tree
-                     button check_field_js check_form_field clone
-                     create_link date_data_type delete_button dialog_anchor
-                     encrypted_attr enhance enumerated_data_type field_options
+                     button check_field_js check_form_field clone create_link
+                     date_data_type delete_button dialog_anchor encrypted_attr
+                     enhance enumerated_data_type field_options
                      foreign_key_data_type get_hashed_pw get_salt is_draft
                      is_encrypted iterator js_anchor_config lcm_for
                      load_file_data loc localise_tree mail_domain make_id_from
@@ -34,7 +34,8 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      serial_data_type set_element_focus
                      set_on_create_datetime_data_type slot_claimed
                      slot_identifier slot_limit_index show_node stash_functions
-                     table_link to_dt uri_for_action varchar_data_type );
+                     table_link time2int to_dt uri_for_action varchar_data_type
+                     );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -221,7 +222,7 @@ sub bind ($;$$) {
    my $params = { label => $name, name => $name }; my $class;
 
    if (defined $v and $class = blessed $v and $class eq 'DateTime') {
-      $params->{value} = $v->dmy( '/' );
+      $params->{value} = $v->set_time_zone( 'local' )->dmy( '/' );
    }
    elsif (is_arrayref $v) {
       $params->{value} = [ map { $bind_option->( $_, $opts ) } @{ $v } ];
@@ -403,7 +404,8 @@ sub date_data_type () {
    return { data_type     => 'datetime',
             default_value => '0000-00-00',
             is_nullable   => TRUE,
-            datetime_undef_if_invalid => TRUE, }
+            datetime_undef_if_invalid => TRUE,
+            timezone      => 'GMT', }
 }
 
 sub delete_button ($$;$) {
@@ -774,6 +776,10 @@ sub table_link ($$$$) {
             value => $_[ 2 ], };
 }
 
+sub time2int ($) {
+   my $x = shift; $x or $x = 0; $x =~ s{ : }{}mx; return $x;
+}
+
 sub to_dt ($;$) {
    my ($dstr, $zone) = @_; $zone //= NUL;
 
@@ -946,6 +952,8 @@ prior to calling L<uri_for|Web::ComposableRequest::Base/uri_for>
 =item C<stash_functions>
 
 =item C<table_link>
+
+=item C<time2int>
 
 =item C<to_dt>
 
