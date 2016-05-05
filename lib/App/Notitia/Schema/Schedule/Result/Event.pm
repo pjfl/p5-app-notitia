@@ -67,7 +67,7 @@ my $_set_uri = sub {
 sub end_date {
    my $self = shift; my $end = $self->end_rota;
 
-   return defined $end ? $end->date : $self->start_date;
+   return defined $end ? $end->date->clone : $self->start_date->clone;
 }
 
 sub insert {
@@ -93,7 +93,7 @@ sub post_filename {
 }
 
 sub start_date {
-   return $_[ 0 ]->start_rota->date;
+   return $_[ 0 ]->start_rota->date->clone;
 }
 
 sub update {

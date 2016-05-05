@@ -173,7 +173,7 @@ sub login_action : Role(anon) {
    my $message   = [ '[_1] logged in', $person->label ];
    my $wanted    = $session->wanted; $req->session->wanted( NUL );
 
-   $wanted =~ m{ check_field }mx and $wanted = NUL;
+   $wanted and $wanted =~ m{ check_field }mx and $wanted = NUL;
 
    my $location  = $wanted ? $req->uri_for( $wanted )
                            : uri_for_action $req, 'sched/month_rota';

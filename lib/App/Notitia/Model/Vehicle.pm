@@ -181,7 +181,8 @@ my $_vehicle_event_links = sub {
 my $_vehicle_slot_links = sub {
    my ($self, $req, $slot) = @_; my @links;
 
-   my $type = $slot->rota_type; my $date = $slot->date->ymd;
+   my $type = $slot->rota_type;
+   my $date = $slot->date->clone->set_time_zone( 'local' )->ymd;
 
    push @links, {
       value => management_link

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Can detect shift and vehicle event collisions
           - Added timezone to date_data_type definition
           - Can update and delete vehicle events
           - To dt is now a function

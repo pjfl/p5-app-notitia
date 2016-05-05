@@ -91,10 +91,61 @@ my $_find_rota_type_id_for = sub {
    return $schema->resultset( 'Type' )->find_rota_by( $name )->id;
 };
 
+my $_detect_shift_slot_collision = sub {
+   my ($self, $rota_name, $date, $shift_type) = @_;
+
+   my $schema   = $self->result_source->schema;
+   my $type_id  = $self->$_find_rota_type_id_for( $rota_name );
+   my $slots_rs = $schema->resultset( 'Slot' );
+   my $slots    = $slots_rs->assignment_slots( $type_id, $date );
+
+   for my $slot (grep { $_->type_name->is_rider } $slots->all) {
+      $slot->get_column( 'shift_type' ) eq $shift_type
+         and $slot->get_column( 'vehicle_name' )
+         and $slot->get_column( 'vehicle_vrn'  ) eq $self->vrn
+         and throw 'Vehicle [_1] already assigned to slot [_2]',
+                   [ $self, $slot->subslot ], level => 2,
+                   rv => HTTP_EXPECTATION_FAILED;
+   }
+
+   return;
+};
+
+my $_detect_shift_vehicle_event_collision = sub {
+   my ($self, $date, $shift_type) = @_;
+
+   my $schema      = $self->result_source->schema;
+   my $shift_times = $schema->config->shift_times;
+   my $start_time  = $shift_times->{ "${shift_type}_start" };
+   my $end_time    = $shift_times->{ "${shift_type}_end" };
+   my $shift_start = to_dt "${date} ${start_time}";
+   my $shift_end   = to_dt "${date} ${end_time}";
+   my $event_rs    = $schema->resultset( 'Event' );
+   my $vrn         = $self->vrn;
+
+   $shift_end < $shift_start and $shift_end->add( days => 1 );
+
+   for my $event ($event_rs->search_for_vehicle_events( $date, $vrn )->all) {
+      my ($hours, $mins) = split m{ : }mx, $event->start_time, 2;
+      my $event_start = $event->start_date->add( hours   => $hours )
+                                          ->add( minutes => $mins  );
+
+      ($hours, $mins) = split m{ : }mx, $event->end_time, 2;
+
+      my $event_end   = $event->end_date->add( hours   => $hours )
+                                        ->add( minutes => $mins  );
+
+      $shift_end <= $event_start and next; $event_end <= $shift_start and next;
+
+      throw 'Vehicle [_1] already assigned to vehicle event [_2]',
+            [ $self, $event ], level => 2, rv => HTTP_EXPECTATION_FAILED;
+   }
+
+   return;
+};
+
 my $_assert_slot_assignment_allowed = sub {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $person, $bike) = @_;
-
-   my $schema = $self->result_source->schema;
 
    $person->assert_member_of( 'rota_manager' );
 
@@ -105,34 +156,8 @@ my $_assert_slot_assignment_allowed = sub {
       and throw 'Vehicle [_1] is not a service vehicle', [ $self ];
 
    if ($slot_type eq 'rider') {
-      my $type_id  = $self->$_find_rota_type_id_for( $rota_name );
-      my $slots_rs = $schema->resultset( 'Slot' );
-      my $slots    = $slots_rs->assignment_slots( $type_id, $date );
-
-      for my $slot (grep { $_->type_name->is_rider } $slots->all) {
-         $slot->get_column( 'shift_type' ) eq $shift_type
-            and $slot->get_column( 'vehicle_name' )
-            and $slot->get_column( 'vehicle_vrn'  ) eq $self->vrn
-            and throw 'Vehicle [_1] already assigned to slot [_2]',
-                      [ $self, $slot->subslot ], level => 2,
-                      rv => HTTP_EXPECTATION_FAILED;
-      }
-
-      my $shift_times = $schema->config->shift_times;
-      my $shift_start = to_dt "${date} ".$shift_times->{ "${shift_type}_start" };
-      my $shift_end   = to_dt "${date} ".$shift_times->{ "${shift_type}_end" };
-      my $event_rs    = $schema->resultset( 'Event' );
-      my $vrn         = $self->vrn;
-         warn "$shift_start $shift_end\n";
-
-      for my $event ($event_rs->search_for_vehicle_events( $date, $vrn )->all) {
-         warn "$event\n";
-         warn $event->start_date."\n";
-         warn $event->start_time."\n";
-         my $event_start = to_dt $event->start_date.SPC.$event->start_time, 'GMT';
-         my $event_end   = to_dt $event->end_date.SPC.$event->end_time, 'GMT';
-         warn "$event_start $event_end\n";
-      }
+      $self->$_detect_shift_slot_collision( $rota_name, $date, $shift_type );
+      $self->$_detect_shift_vehicle_event_collision( $date, $shift_type );
    }
 
    return;
