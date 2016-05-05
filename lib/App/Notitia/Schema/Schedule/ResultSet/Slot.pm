@@ -4,13 +4,12 @@ use strictures;
 use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( FALSE NUL TRUE );
-use App::Notitia::Util      qw( to_dt );
 use Class::Usul::Functions  qw( throw );
 use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Public methods
 sub assignment_slots {
-   my ($self, $type_id, $date) = @_; $date = to_dt $date;
+   my ($self, $type_id, $date) = @_;
 
    my $parser = $self->result_source->schema->datetime_parser;
 
@@ -35,27 +34,29 @@ sub search_for_assigned_slots {
 
    my $where  = { 'vehicle.vrn' => delete $opts->{vehicle} };
    my $parser = $self->result_source->schema->datetime_parser;
-   my $after  = delete $opts->{after}; my $before = delete $opts->{before};
 
-   if ($after) {
-      $where->{ 'rota.date' } =
-              { '>' => $parser->format_datetime( $after ) };
-      $opts->{order_by} //= 'date';
+   if (my $after = delete $opts->{after}) {
+      $where->{ 'rota.date' } = { '>' => $parser->format_datetime( $after ) };
+      $opts->{order_by} //= 'rota.date';
    }
-   elsif ($before) {
-      $where->{ 'rota.date' } =
-              { '<' => $parser->format_datetime( $before ) };
+
+   if (my $before = delete $opts->{before}) {
+      $where->{ 'rota.date' } = { '<' => $parser->format_datetime( $before ) };
    }
+
+   if (my $ondate = delete $opts->{on}) {
+      $where->{ 'rota.date' } = $parser->format_datetime( $ondate );
+   }
+
+   $opts->{order_by} //= { -desc => 'rota.date' };
 
    my $prefetch = [ 'vehicle', { 'shift' => { 'rota' => 'type' } } ];
-
-   $opts->{order_by} //= { -desc => 'date' };
 
    return $self->search( $where, { prefetch => $prefetch, %{ $opts } } );
 }
 
 sub list_slots_for {
-   my ($self, $type_id, $date) = @_; $date = to_dt $date;
+   my ($self, $type_id, $date) = @_;
 
    my $parser = $self->result_source->schema->datetime_parser;
    my $attr   = [ 'operator.first_name', 'operator.id', 'operator.last_name',

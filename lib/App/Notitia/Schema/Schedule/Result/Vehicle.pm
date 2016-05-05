@@ -35,82 +35,7 @@ $class->add_unique_constraint( [ 'vrn' ] );
 $class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
 $class->belongs_to( type  => "${result}::Type", 'type_id' );
 
-# Private methods
-sub _as_number {
-   return $_[ 0 ]->id;
-}
-
-sub _as_string {
-   return $_[ 0 ]->vrn;
-}
-
-my $_assert_event_assignment_allowed = sub {
-   my ($self, $event, $assigner) = @_;
-
-   $assigner->assert_member_of( 'rota_manager' );
-
-   my $schema     = $self->result_source->schema;
-   my $event_date = $schema->format_datetime( $event->start_date );
-   my $event_rs   = $schema->resultset( 'Event' );
-   my $rota_rs    = $schema->resultset( 'Rota'  );
-
-   for my $rota ($rota_rs->search( { date    => $event_date },
-                                   { columns => [ 'id' ]    } )) {
-      for my $other ($event_rs->search( { start_rota_id => $rota->id },
-                                        { prefetch      => 'transports' } )) {
-         for my $transport ($other->transports) {
-            $transport->vehicle_id != $self->id and next;
-
-            $transport->event_id == $event->id
-               and throw 'Vehicle [_1] already assigned to this event',
-                         [ $self ], level => 2;
-            # TODO: Test for overlapping times
-            throw 'Vehicle [_1] already assigned to another event',
-                  [ $self ], level => 2;
-         }
-      }
-   }
-
-   return;
-};
-
-my $_assert_public_or_private = sub {
-   my $self = shift;
-
-   $self->name and $self->owner_id and throw 'Cannot set name and owner',
-                                     level => 2, rv => HTTP_EXPECTATION_FAILED;
-   $self->name or  $self->owner_id or  throw 'Must set either name or owner',
-                                     level => 2, rv => HTTP_EXPECTATION_FAILED;
-
-   return;
-};
-
-my $_find_rota_type_id_for = sub {
-   my ($self, $name) = @_; my $schema = $self->result_source->schema;
-
-   return $schema->resultset( 'Type' )->find_rota_by( $name )->id;
-};
-
-my $_detect_shift_slot_collision = sub {
-   my ($self, $rota_name, $date, $shift_type) = @_;
-
-   my $schema   = $self->result_source->schema;
-   my $type_id  = $self->$_find_rota_type_id_for( $rota_name );
-   my $slots_rs = $schema->resultset( 'Slot' );
-   my $slots    = $slots_rs->assignment_slots( $type_id, $date );
-
-   for my $slot (grep { $_->type_name->is_rider } $slots->all) {
-      $slot->get_column( 'shift_type' ) eq $shift_type
-         and $slot->get_column( 'vehicle_name' )
-         and $slot->get_column( 'vehicle_vrn'  ) eq $self->vrn
-         and throw 'Vehicle [_1] already assigned to slot [_2]',
-                   [ $self, $slot->subslot ], level => 2,
-                   rv => HTTP_EXPECTATION_FAILED;
-   }
-
-   return;
-};
-
+# Private functions
 my $_shift_times = sub {
    my ($schema, $date, $shift_type) = @_;
 
@@ -125,36 +50,86 @@ my $_shift_times = sub {
    return $shift_start, $shift_end;
 };
 
-my $_event_times = sub {
-   my $event          = shift;
-   my ($hours, $mins) = split m{ : }mx, $event->start_time, 2;
-   my $event_start    = $event->start_date->add( hours   => $hours )
-                                          ->add( minutes => $mins  );
+# Private methods
+sub _as_number {
+   return $_[ 0 ]->id;
+}
 
-   ($hours, $mins)    = split m{ : }mx, $event->end_time, 2;
+sub _as_string {
+   return $_[ 0 ]->vrn;
+}
 
-   my $event_end      = $event->end_date->add( hours   => $hours )
-                                        ->add( minutes => $mins  );
+my $_assert_public_or_private = sub {
+   my $self = shift;
 
-   return $event_start, $event_end;
+   $self->name and $self->owner_id and throw 'Cannot set name and owner',
+                                     level => 2, rv => HTTP_EXPECTATION_FAILED;
+   $self->name or  $self->owner_id or  throw 'Must set either name or owner',
+                                     level => 2, rv => HTTP_EXPECTATION_FAILED;
+
+   return;
 };
 
-my $_detect_shift_vehicle_event_collision = sub {
-   my ($self, $date, $shift_type) = @_;
+my $_detect_event_assignment_collisions = sub {
+   my ($self, $event, $opts) = @_;
 
-   my $schema      = $self->result_source->schema;
-   my ($shift_start, $shift_end)
-                   = $_shift_times->( $schema, $date, $shift_type );
-   my $event_rs    = $schema->resultset( 'Event' );
-   my $vrn         = $self->vrn;
+   my $schema   = $self->result_source->schema;
+   my $tport_rs = $schema->resultset( 'Transport' );
+   my ($event_start, $event_end) = $event->duration;
 
-   for my $event ($event_rs->search_for_vehicle_events( $date, $vrn )->all) {
-      my ($event_start, $event_end) = $_event_times->( $event );
+   for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
+      $tport->event_id == $event->id
+         and throw 'Vehicle [_1] already assigned to this event',
+                   [ $self ], level => 2, rv => HTTP_EXPECTATION_FAILED;
+
+      my ($tport_ev_start, $tport_ev_end) = $tport->event->duration;
+
+      $tport_ev_end <= $event_start    and next;
+      $event_end    <= $tport_ev_start and next;
+
+      throw 'Vehicle [_1] already assigned to the [_2] event',
+            [ $self, $tport->event ], level => 2, rv => HTTP_EXPECTATION_FAILED;
+   }
+
+   return;
+};
+
+my $_detect_event_slot_assignment_collisions = sub {
+   my ($self, $event, $opts) = @_;
+
+   my $schema   = $self->result_source->schema;
+   my ($event_start, $event_end) = $event->duration;
+   my $slots_rs = $schema->resultset( 'Slot' );
+   my $date     = $event->start_date->set_time_zone( 'local' )->ymd;
+
+   for my $slot ($slots_rs->search_for_assigned_slots( $opts )->all) {
+      my ($shift_start, $shift_end)
+            = $_shift_times->( $schema, $date, $slot->shift->type_name );
 
       $shift_end <= $event_start and next; $event_end <= $shift_start and next;
 
-      throw 'Vehicle [_1] already assigned to vehicle event [_2]',
-            [ $self, $event ], level => 2, rv => HTTP_EXPECTATION_FAILED;
+      throw 'Vehicle [_1] already assigned to slot [_2]',
+            [ $self, $slot ], level => 2, rv => HTTP_EXPECTATION_FAILED;
+   }
+
+   return;
+};
+
+my $_detect_event_vehicle_event_collisions = sub {
+   my ($self, $event, $opts) = @_;
+
+   my $schema   = $self->result_source->schema;
+   my $event_rs = $schema->resultset( 'Event' );
+   my ($event_start, $event_end) = $event->duration;
+
+   for my $vehicle_event ($event_rs->search_for_vehicle_events( $opts )->all) {
+      my ($vehicle_ev_start, $vehicle_ev_end) = $vehicle_event->duration;
+
+      $vehicle_ev_end <= $event_start      and next;
+      $event_end      <= $vehicle_ev_start and next;
+
+      throw 'Vehicle [_1] already assigned to the [_2] vehicle event',
+         [ $self, $vehicle_event ], level => 2, rv => HTTP_EXPECTATION_FAILED;
    }
 
    return;
@@ -170,32 +145,33 @@ my $_detect_shift_person_event_collision = sub {
    my $opts     = { on => to_dt( $date ), vehicle => $self->vrn };
 
    for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
-      my ($event_start, $event_end) = $_event_times->( $tport->event );
+      my ($event_start, $event_end) = $tport->event->duration;
 
       $shift_end <= $event_start and next; $event_end <= $shift_start and next;
 
-      throw 'Vehicle [_1] already assigned to event [_2]',
+      throw 'Vehicle [_1] already assigned to the [_2] event',
             [ $self, $tport->event ], level => 2, rv => HTTP_EXPECTATION_FAILED;
    }
 
    return;
 };
 
-my $_assert_slot_assignment_allowed = sub {
-   my ($self, $rota_name, $date, $shift_type, $slot_type, $person, $bike) = @_;
+my $_detect_shift_vehicle_event_collision = sub {
+   my ($self, $date, $shift_type) = @_;
 
-   $person->assert_member_of( 'rota_manager' );
+   my $schema      = $self->result_source->schema;
+   my ($shift_start, $shift_end)
+                   = $_shift_times->( $schema, $date, $shift_type );
+   my $event_rs    = $schema->resultset( 'Event' );
+   my $opts        = { on => to_dt( $date ), vehicle => $self->vrn, };
 
-   $slot_type eq 'rider' and $bike and $self->type ne 'bike'
-      and throw 'Vehicle [_1] is not a bike and one was requested', [ $self ];
+   for my $event ($event_rs->search_for_vehicle_events( $opts )->all) {
+      my ($event_start, $event_end) = $event->duration;
 
-   $slot_type eq 'rider' and $bike and not $self->name
-      and throw 'Vehicle [_1] is not a service vehicle', [ $self ];
+      $shift_end <= $event_start and next; $event_end <= $shift_start and next;
 
-   if ($slot_type eq 'rider') {
-      $self->$_detect_shift_slot_collision( $rota_name, $date, $shift_type );
-      $self->$_detect_shift_vehicle_event_collision( $date, $shift_type );
-      $self->$_detect_shift_person_event_collision( $date, $shift_type );
+      throw 'Vehicle [_1] already assigned to the [_2] vehicle event',
+            [ $self, $event ], level => 2, rv => HTTP_EXPECTATION_FAILED;
    }
 
    return;
@@ -207,6 +183,12 @@ my $_find_assigner = sub {
    return $schema->resultset( 'Person' )->find_by_shortcode( $scode );
 };
 
+my $_find_rota_type_id_for = sub {
+   my ($self, $name) = @_; my $schema = $self->result_source->schema;
+
+   return $schema->resultset( 'Type' )->find_rota_by( $name )->id;
+};
+
 my $_find_slot = sub {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot) = @_;
 
@@ -216,6 +198,59 @@ my $_find_slot = sub {
    $slot or throw 'Slot [_1] has not been claimed', [ $slot ];
 
    return $slot;
+};
+
+my $_detect_shift_slot_collision = sub {
+   my ($self, $rota_name, $date, $shift_type) = @_;
+
+   my $schema   = $self->result_source->schema;
+   my $type_id  = $self->$_find_rota_type_id_for( $rota_name );
+   my $slots_rs = $schema->resultset( 'Slot' );
+   my $slots    = $slots_rs->assignment_slots( $type_id, to_dt $date );
+
+   for my $slot (grep { $_->type_name->is_rider } $slots->all) {
+      $slot->get_column( 'shift_type' ) eq $shift_type
+         and $slot->get_column( 'vehicle_name' )
+         and $slot->get_column( 'vehicle_vrn'  ) eq $self->vrn
+         and throw 'Vehicle [_1] already assigned to slot [_2]',
+                   [ $self, $slot->subslot ], level => 2,
+                   rv => HTTP_EXPECTATION_FAILED;
+   }
+
+   return;
+};
+
+my $_assert_event_assignment_allowed = sub {
+   my ($self, $event, $person) = @_;
+
+   $person->assert_member_of( 'rota_manager' );
+
+   my $opts = { on => $event->start_date, vehicle => $self->vrn };
+
+   $self->$_detect_event_assignment_collisions( $event, $opts );
+   $self->$_detect_event_vehicle_event_collisions( $event, $opts );
+   $self->$_detect_event_slot_assignment_collisions( $event, $opts );
+   return;
+};
+
+my $_assert_slot_assignment_allowed = sub {
+   my ($self, $rota_name, $date, $shift_type, $slot_type, $person, $bike) = @_;
+
+   $person->assert_member_of( 'rota_manager' );
+
+   if ($slot_type eq 'rider') {
+      $bike and $self->type ne 'bike' and
+         throw 'Vehicle [_1] is not a bike and one was requested', [ $self ];
+
+      $bike and not $self->name and
+         throw 'Vehicle [_1] is not a service vehicle', [ $self ];
+
+      $self->$_detect_shift_slot_collision( $rota_name, $date, $shift_type );
+      $self->$_detect_shift_vehicle_event_collision( $date, $shift_type );
+      $self->$_detect_shift_person_event_collision( $date, $shift_type );
+   }
+
+   return;
 };
 
 # Public methods
@@ -295,9 +330,8 @@ sub update {
    my ($self, $columns) = @_;
 
    $columns and $self->set_inflated_columns( $columns );
-   $self->validate( TRUE );
 
-   $self->$_assert_public_or_private();
+   $self->validate( TRUE ); $self->$_assert_public_or_private();
 
    return $self->next::method;
 }

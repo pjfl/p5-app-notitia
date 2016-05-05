@@ -2135,7 +2135,7 @@ var Pickers = new Class( {
                if (el.hasClass( 'clearable' )) { opts.blockKeydown = false }
 
                if (el.hasClass( 'pick-date')) {
-                  opts[ 'format' ] = '%Y-%m-%d';
+                  opts[ 'format' ] = '%d/%m/%Y';
                }
 
                if (el.hasClass( 'pick-time')) {

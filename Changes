@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Can detect person event and slot collisions
           - Can detect shift and person event collisions
           - Can detect shift and vehicle event collisions
           - Added timezone to date_data_type definition

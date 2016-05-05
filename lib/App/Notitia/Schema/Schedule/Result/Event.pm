@@ -64,6 +64,20 @@ my $_set_uri = sub {
 };
 
 # Public methods
+sub duration {
+   my $self  = shift;
+   my ($hours, $mins) = split m{ : }mx, $self->start_time, 2;
+   my $start = $self->start_date->add( hours   => $hours )
+                                ->add( minutes => $mins  );
+
+   ($hours, $mins) = split m{ : }mx, $self->end_time, 2;
+
+   my $end   = $self->end_date->add( hours   => $hours )
+                              ->add( minutes => $mins  );
+
+   return $start, $end;
+}
+
 sub end_date {
    my $self = shift; my $end = $self->end_rota;
 

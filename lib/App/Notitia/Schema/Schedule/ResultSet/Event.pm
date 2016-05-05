@@ -145,11 +145,9 @@ sub search_for_events {
 }
 
 sub search_for_vehicle_events {
-   my ($self, $date, $vrn) = @_;
+   my ($self, $opts) = @_; $opts->{event_type} = 'vehicle';
 
-   return $self->search_for_events( { event_type => 'vehicle',
-                                      on         => to_dt( $date ),
-                                      vehicle    => $vrn, } );
+   return $self->search_for_events( $opts );
 }
 
 1;

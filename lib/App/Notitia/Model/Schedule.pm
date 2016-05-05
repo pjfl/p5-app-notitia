@@ -461,7 +461,7 @@ my $_rota_summary = sub {
    my $type_id   = $self->$_find_rota_type_id_for( $name );
    my $slot_rs   = $self->schema->resultset( 'Slot' );
    # TODO: Do not need the personal_vehicle join
-   my $slots     = $slot_rs->list_slots_for( $type_id, $date->ymd );
+   my $slots     = $slot_rs->list_slots_for( $type_id, to_dt $date->ymd );
    my $event_rs  = $self->schema->resultset( 'Event' );
    my $events    = $event_rs->count_events_for( $type_id, $date->ymd );
    my $has_event = $events > 0 ? loc( $req, 'Events' ) : NUL;
@@ -555,7 +555,7 @@ sub day_rota : Role(any) {
    my $date     = $params->( 1, { optional => TRUE } ) // $today;
    my $type_id  = $self->$_find_rota_type_id_for( $name );
    my $slot_rs  = $self->schema->resultset( 'Slot' );
-   my $slots    = $slot_rs->list_slots_for( $type_id, $date );
+   my $slots    = $slot_rs->list_slots_for( $type_id, to_dt $date );
    my $event_rs = $self->schema->resultset( 'Event' );
    my $events   = $event_rs->search_for_a_days_events( $type_id, $date );
    my $rows     = {};

@@ -206,8 +206,8 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
 
 has 'shift_times'     => is => 'ro',   isa => HashRef,
    builder            => sub { {
-      day_start       => '09:00', day_end   => '17:59',
-      night_start     => '18:00', night_end => '08:59', } };
+      day_start       => '09:00', day_end   => '18:00',
+      night_start     => '18:00', night_end => '09:00', } };
 
 has 'skin'            => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'hyde';
