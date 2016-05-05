@@ -12,16 +12,20 @@ sub search_for_assigned_vehicles {
 
    my $where  = { 'vehicle.vrn' => delete $opts->{vehicle} };
    my $parser = $self->result_source->schema->datetime_parser;
-   my $after  = delete $opts->{after}; my $before = delete $opts->{before};
 
-   if ($after) {
+   if (my $after = delete $opts->{after}) {
       $where->{ 'start_rota.date' } =
               { '>' => $parser->format_datetime( $after ) };
       $opts->{order_by} //= 'date';
    }
-   elsif ($before) {
+
+   if (my $before = delete $opts->{before}) {
       $where->{ 'start_rota.date' } =
               { '<' => $parser->format_datetime( $before ) };
+   }
+
+   if (my $ondate = delete $opts->{on}) {
+      $where->{ 'start_rota.date' } = $parser->format_datetime( $ondate );
    }
 
    $opts->{order_by} //= { -desc => 'date' }; delete $opts->{event_type};

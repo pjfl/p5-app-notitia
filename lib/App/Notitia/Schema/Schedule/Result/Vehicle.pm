@@ -111,34 +111,71 @@ my $_detect_shift_slot_collision = sub {
    return;
 };
 
+my $_shift_times = sub {
+   my ($schema, $date, $shift_type) = @_;
+
+   my $shift_times = $schema->config->shift_times;
+   my $start_time  = $shift_times->{ "${shift_type}_start" };
+   my $end_time    = $shift_times->{ "${shift_type}_end" };
+   my $shift_start = to_dt( "${date} ${start_time}" );
+   my $shift_end   = to_dt( "${date} ${end_time}" );
+
+   $shift_end < $shift_start and $shift_end->add( days => 1 );
+
+   return $shift_start, $shift_end;
+};
+
+my $_event_times = sub {
+   my $event          = shift;
+   my ($hours, $mins) = split m{ : }mx, $event->start_time, 2;
+   my $event_start    = $event->start_date->add( hours   => $hours )
+                                          ->add( minutes => $mins  );
+
+   ($hours, $mins)    = split m{ : }mx, $event->end_time, 2;
+
+   my $event_end      = $event->end_date->add( hours   => $hours )
+                                        ->add( minutes => $mins  );
+
+   return $event_start, $event_end;
+};
+
 my $_detect_shift_vehicle_event_collision = sub {
    my ($self, $date, $shift_type) = @_;
 
    my $schema      = $self->result_source->schema;
-   my $shift_times = $schema->config->shift_times;
-   my $start_time  = $shift_times->{ "${shift_type}_start" };
-   my $end_time    = $shift_times->{ "${shift_type}_end" };
-   my $shift_start = to_dt "${date} ${start_time}";
-   my $shift_end   = to_dt "${date} ${end_time}";
+   my ($shift_start, $shift_end)
+                   = $_shift_times->( $schema, $date, $shift_type );
    my $event_rs    = $schema->resultset( 'Event' );
    my $vrn         = $self->vrn;
 
-   $shift_end < $shift_start and $shift_end->add( days => 1 );
-
    for my $event ($event_rs->search_for_vehicle_events( $date, $vrn )->all) {
-      my ($hours, $mins) = split m{ : }mx, $event->start_time, 2;
-      my $event_start = $event->start_date->add( hours   => $hours )
-                                          ->add( minutes => $mins  );
-
-      ($hours, $mins) = split m{ : }mx, $event->end_time, 2;
-
-      my $event_end   = $event->end_date->add( hours   => $hours )
-                                        ->add( minutes => $mins  );
+      my ($event_start, $event_end) = $_event_times->( $event );
 
       $shift_end <= $event_start and next; $event_end <= $shift_start and next;
 
       throw 'Vehicle [_1] already assigned to vehicle event [_2]',
             [ $self, $event ], level => 2, rv => HTTP_EXPECTATION_FAILED;
+   }
+
+   return;
+};
+
+my $_detect_shift_person_event_collision = sub {
+   my ($self, $date, $shift_type) = @_;
+
+   my $schema   = $self->result_source->schema;
+   my ($shift_start, $shift_end)
+                = $_shift_times->( $schema, $date, $shift_type );
+   my $tport_rs = $schema->resultset( 'Transport' );
+   my $opts     = { on => to_dt( $date ), vehicle => $self->vrn };
+
+   for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
+      my ($event_start, $event_end) = $_event_times->( $tport->event );
+
+      $shift_end <= $event_start and next; $event_end <= $shift_start and next;
+
+      throw 'Vehicle [_1] already assigned to event [_2]',
+            [ $self, $tport->event ], level => 2, rv => HTTP_EXPECTATION_FAILED;
    }
 
    return;
@@ -158,6 +195,7 @@ my $_assert_slot_assignment_allowed = sub {
    if ($slot_type eq 'rider') {
       $self->$_detect_shift_slot_collision( $rota_name, $date, $shift_type );
       $self->$_detect_shift_vehicle_event_collision( $date, $shift_type );
+      $self->$_detect_shift_person_event_collision( $date, $shift_type );
    }
 
    return;
