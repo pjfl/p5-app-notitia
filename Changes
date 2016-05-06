@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Collision detection complete
           - Can detect vehicle events collisions
           - Can detect person event and slot collisions
           - Can detect shift and person event collisions

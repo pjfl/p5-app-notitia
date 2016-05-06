@@ -11,7 +11,6 @@ use App::Notitia::Util      qw( assign_link bind bind_fields button
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use DateTime;
-use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Try::Tiny;
 use Moo;
 

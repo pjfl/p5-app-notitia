@@ -6,7 +6,6 @@ use parent 'DBIx::Class::ResultSet';
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( to_dt );
 use Class::Usul::Functions  qw( throw );
-use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Private methods
 my $_find_event_type = sub {
@@ -84,8 +83,7 @@ sub find_event_by {
 
    my $event = $self->search( { uri => $uri }, $opts )->single;
 
-   defined $event or throw 'Event [_1] unknown', [ $uri ],
-                           level => 2, rv => HTTP_EXPECTATION_FAILED;
+   defined $event or throw 'Event [_1] unknown', [ $uri ], level => 2;
 
    return $event;
 }

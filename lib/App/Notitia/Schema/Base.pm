@@ -4,10 +4,73 @@ use strictures;
 use parent 'DBIx::Class::Core';
 
 use App::Notitia::Constants qw( NUL TRUE );
-use App::Notitia::Util      qw( assert_unique );
+use App::Notitia::Util      qw( assert_unique to_dt );
+use Class::Usul::Functions  qw( throw );
 use Data::Validation;
 
 __PACKAGE__->load_components( qw( InflateColumn::Object::Enum TimeStamp ) );
+
+sub assert_not_assigned_to_event {
+   my ($self, $event, $opts) = @_;
+
+   my ($event_start, $event_end) = $event->duration;
+   my $tport_rs = $self->result_source->schema->resultset( 'Transport' );
+
+   for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
+      $tport->event_id == $event->id
+         and throw 'Vehicle [_1] already assigned to this event',
+                   [ $opts->{vehicle} ], level => 2;
+
+      my ($tport_ev_start, $tport_ev_end) = $tport->event->duration;
+
+      $tport_ev_end <= $event_start    and next;
+      $event_end    <= $tport_ev_start and next;
+
+      throw 'Vehicle [_1] already assigned to the [_2] event',
+            [ $opts->{vehicle}, $tport->event ], level => 2;
+   }
+
+   return;
+}
+
+sub assert_not_assigned_to_slot {
+   my ($self, $event, $opts) = @_;
+
+   my ($event_start, $event_end) = $event->duration;
+   my $slots_rs = $self->result_source->schema->resultset( 'Slot' );
+   my $date     = $event->start_date->set_time_zone( 'local' )->ymd;
+
+   for my $slot ($slots_rs->search_for_assigned_slots( $opts )->all) {
+      my $type_name = $slot->shift->type_name;
+      my ($shift_start, $shift_end) = $self->shift_times( $date, $type_name );
+
+      $shift_end <= $event_start and next; $event_end <= $shift_start and next;
+
+      throw 'Vehicle [_1] already assigned to slot [_2]',
+            [ $opts->{vehicle}, $slot ], level => 2;
+   }
+
+   return;
+}
+
+sub assert_not_assigned_to_vehicle_event {
+   my ($self, $event, $opts) = @_;
+
+   my ($event_start, $event_end) = $event->duration;
+   my $event_rs = $self->result_source->schema->resultset( 'Event' );
+
+   for my $vehicle_event ($event_rs->search_for_vehicle_events( $opts )->all) {
+      my ($vehicle_ev_start, $vehicle_ev_end) = $vehicle_event->duration;
+
+      $vehicle_ev_end <= $event_start      and next;
+      $event_end      <= $vehicle_ev_start and next;
+
+      throw 'Vehicle [_1] already assigned to the [_2] vehicle event',
+            [ $opts->{vehicle}, $vehicle_event ], level => 2;
+   }
+
+   return;
+}
 
 sub find_shift {
    my ($self, $rota_name, $date, $shift_type) = @_;
@@ -25,6 +88,20 @@ sub find_slot {
    my $slot_rs = $self->result_source->schema->resultset( 'Slot' );
 
    return $slot_rs->find_slot_by( $shift, $slot_type, $subslot );
+}
+
+sub shift_times {
+   my ($self, $date, $shift_type) = @_;
+
+   my $shift_times = $self->result_source->schema->config->shift_times;
+   my $start_time  = $shift_times->{ "${shift_type}_start" };
+   my $end_time    = $shift_times->{ "${shift_type}_end" };
+   my $shift_start = to_dt "${date} ${start_time}";
+   my $shift_end   = to_dt "${date} ${end_time}";
+
+   $shift_end < $shift_start and $shift_end->add( days => 1 );
+
+   return $shift_start, $shift_end;
 }
 
 sub validate {

@@ -125,7 +125,7 @@ my $_write_local_config = sub {
 
    $self->output( $text, AS_PARA );
 
-   my $prompt      = '+Enter the organisation prefix';
+   my $prompt = '+Enter the organisation prefix';
    my $prefix = $self->get_line( $prompt, NUL, TRUE, 0 );
 
    length $prefix > 1 or $prefix = $_random_chars->();

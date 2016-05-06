@@ -5,7 +5,6 @@ use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions  qw( throw );
-use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Private methods
 my $_find_recipient = sub {
@@ -36,7 +35,7 @@ sub find_endorsement_by {
 
    defined $endorsement
         or throw 'Endorsement [_1] for [_2] not found', [ $uri, $scode ],
-                 level => 2, rv => HTTP_EXPECTATION_FAILED;
+                 level => 2;
 
    return $endorsement;
 };

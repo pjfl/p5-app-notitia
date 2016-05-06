@@ -8,7 +8,7 @@ use Class::Usul::Functions qw( create_token throw );
 use Class::Usul::Time      qw( time2str );
 use Class::Usul::Types     qw( HashRef NonEmptySimpleStr
                                NonZeroPositiveInt Object Str );
-use HTTP::Status           qw( HTTP_OK HTTP_NOT_FOUND );
+use HTTP::Status           qw( HTTP_OK );
 use Moo::Role;
 
 requires qw( base_uri config initialise_page localised_tree );
@@ -83,8 +83,8 @@ my $_format_page = sub {
 sub get_rss_feed {
    my ($self, $req) = @_; my $locale = $req->locale;
 
-   my $tree = $self->localised_tree( $locale ) or throw
-      'Locale [_1] has no document tree', [ $locale ], rv => HTTP_NOT_FOUND;
+   my $tree = $self->localised_tree( $locale )
+      or throw 'Locale [_1] has no document tree', [ $locale ];
    my $iter = iterator $tree;
 
    my @tuples; while (defined( my $node = $iter->() )) {

@@ -5,7 +5,6 @@ use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions  qw( throw );
-use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Private methods
 my $_find_recipient = sub {
@@ -44,9 +43,8 @@ sub find_cert_by {
       ( { 'recipient.shortcode' => $scode, 'type.name' => $type },
         { join => [ 'recipient', 'type' ] } )->single;
 
-   defined $cert
-      or throw 'Certification [_1] for [_2] not found', [ $type, $scode ],
-               level => 2, rv => HTTP_EXPECTATION_FAILED;
+   defined $cert or throw 'Certification [_1] for [_2] not found',
+                          [ $type, $scode ], level => 2;
 
    return $cert;
 };

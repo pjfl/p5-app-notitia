@@ -7,7 +7,6 @@ use App::Notitia::Util      qw( bind check_form_field loc mail_domain
                                 uri_for_action );
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef );
-use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Unexpected::Functions   qw( Unspecified );
 use Moo;
 
@@ -115,8 +114,7 @@ sub change_password_action : Role(anon) {
    my $again    = $params->( 'again',    { raw => TRUE } );
    my $person   = $self->schema->resultset( 'Person' )->find_person( $name );
 
-   $password eq $again
-      or throw 'Passwords do not match', rv => HTTP_EXPECTATION_FAILED;
+   $password eq $again or throw 'Passwords do not match';
    $person->set_password( $oldpass, $password );
    $session->authenticated( TRUE );
    $session->username( $person->shortcode );

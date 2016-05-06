@@ -5,7 +5,6 @@ use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::Functions  qw( throw );
-use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Private functions
 my $_person_tuple = sub {
@@ -35,8 +34,7 @@ sub find_person {
    defined( $person = $self->search( { email_address => $key } )->single )
        and  return $person;
 
-   throw 'Person [_1] unknown', [ $key ], level => 2,
-         rv => HTTP_EXPECTATION_FAILED;
+   throw 'Person [_1] unknown', [ $key ], level => 2;
 }
 
 sub find_by_shortcode {
@@ -44,8 +42,7 @@ sub find_by_shortcode {
 
    my $person = $self->search( { shortcode => $shortcode }, $opts )->single;
 
-   defined $person or throw 'Person [_1] unknown', [ $shortcode ], level => 2,
-                            rv => HTTP_EXPECTATION_FAILED;
+   defined $person or throw 'Person [_1] unknown', [ $shortcode ], level => 2;
 
    return $person;
 }

@@ -5,7 +5,7 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( uri_for_action );
 use Class::Usul::Functions  qw( exception throw );
 use Class::Usul::Types      qw( Plinth );
-use HTTP::Status            qw( HTTP_NOT_FOUND HTTP_OK );
+use HTTP::Status            qw( HTTP_OK );
 use Scalar::Util            qw( blessed );
 use Unexpected::Functions   qw( Authentication AuthenticationRequired
                                 ValidationErrors );
@@ -19,18 +19,18 @@ has 'application' => is => 'ro', isa => Plinth,
 
 # Private functions
 my $_auth_redirect = sub {
-   my ($req, $e, $summary) = @_;
+   my ($req, $e, $message) = @_;
 
    my $location = uri_for_action $req, 'user/login';
 
    if ($e->class eq AuthenticationRequired->()) {
       $req->session->wanted( $req->path );
 
-      return { redirect => { location => $location, message => [ $summary ] } };
+      return { redirect => { location => $location, message => [ $message ] } };
    }
 
    if ($e->instance_of( Authentication->() )) {
-      return { redirect => { location => $location, message => [ $summary ] } };
+      return { redirect => { location => $location, message => [ $message ] } };
    }
 
    return;
@@ -109,7 +109,7 @@ sub not_found : Role(anon) {
 
   (my $mp   = $self->config->mount_point) =~ s{ \A / \z }{}mx;
    my $want = join '/', $mp, $req->path;
-   my $e    = exception 'URI [_1] not found', [ $want ], rv => HTTP_NOT_FOUND;
+   my $e    = exception 'URI [_1] not found', [ $want ];
 
    return $self->exception_handler( $req, $e );
 }

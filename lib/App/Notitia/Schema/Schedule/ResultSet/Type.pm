@@ -4,7 +4,6 @@ use strictures;
 use parent 'DBIx::Class::ResultSet';
 
 use Class::Usul::Functions qw( throw );
-use HTTP::Status           qw( HTTP_EXPECTATION_FAILED );
 
 # Private class attributes
 my $_types = {};
@@ -20,8 +19,7 @@ my $_find_by = sub {
    my $type  = $self->search
       ( { 'name' => $name, 'type_class' => $type_class }, $opts )->single;
 
-   defined $type or throw "${label} type [_1] not found", [ $name ],
-                          level => 3, rv => HTTP_EXPECTATION_FAILED;
+   defined $type or throw "${label} type [_1] not found", [ $name ], level => 3;
 
    return $_types->{ $k } = $type;
 };

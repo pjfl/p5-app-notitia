@@ -5,8 +5,6 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS );
 use Class::Usul::Functions  qw( is_member throw );
-use HTTP::Status            qw( HTTP_FORBIDDEN HTTP_NOT_FOUND
-                                HTTP_UNAUTHORIZED );
 use Scalar::Util            qw( blessed );
 use Unexpected::Functions   qw( AuthenticationRequired );
 use Moo::Role;
@@ -23,17 +21,14 @@ around 'execute' => sub {
    my ($orig, $self, $method, $req) = @_; my $class = blessed $self || $self;
 
    my $code_ref = $self->can( $method )
-      or throw 'Class [_1] has no method [_2]', [ $class, $method ],
-               rv => HTTP_NOT_FOUND;
+      or throw 'Class [_1] has no method [_2]', [ $class, $method ];
 
    my $method_roles = $_list_roles_of->( $code_ref ); $method_roles->[ 0 ]
-      or throw 'Class [_1] method [_2] is private', [ $class, $method ],
-               rv => HTTP_FORBIDDEN;
+      or throw 'Class [_1] method [_2] is private', [ $class, $method ];
 
    is_member 'anon', $method_roles and return $orig->( $self, $method, $req );
 
-   $req->authenticated
-      or throw AuthenticationRequired, [ $req->path ], rv => HTTP_UNAUTHORIZED;
+   $req->authenticated or throw AuthenticationRequired, [ $req->path ];
 
    is_member 'any',  $method_roles and return $orig->( $self, $method, $req );
 
@@ -44,7 +39,7 @@ around 'execute' => sub {
          and return $orig->( $self, $method, $req );
    }
 
-   throw '[_1] permission denied', [ $name ], rv => HTTP_FORBIDDEN;
+   throw '[_1] permission denied', [ $name ];
 };
 
 sub list_roles {

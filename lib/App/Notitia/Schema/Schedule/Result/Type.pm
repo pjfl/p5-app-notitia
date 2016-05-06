@@ -9,7 +9,6 @@ use App::Notitia::Constants qw( FALSE TRUE TYPE_CLASS_ENUM );
 use App::Notitia::Util      qw( enumerated_data_type serial_data_type
                                 varchar_data_type );
 use Class::Usul::Functions  qw( throw );
-use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -54,7 +53,7 @@ sub assert_cert_type_member_of {
 
    defined $slot_role
       or throw 'Cert. [_1] is not required by slot type [_2]',
-               [ $self, $slot_type ], level => 2, rv => HTTP_EXPECTATION_FAILED;
+               [ $self, $slot_type ], level => 2;
 
    return $slot_role;
 }

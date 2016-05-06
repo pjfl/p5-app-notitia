@@ -5,7 +5,6 @@ use App::Notitia::Util     qw( build_tree iterator localise_tree mtime
                                register_action_paths uri_for_action );
 use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( first_char throw );
-use HTTP::Status           qw( HTTP_NOT_FOUND );
 use Try::Tiny;
 use Unexpected::Functions  qw( catch_class );
 use Moo;
@@ -63,8 +62,7 @@ my $_docs_url = sub {
    my ($self, $locale) = @_;
 
    my $tree  = $self->localised_tree( $locale )
-      or throw 'Locale [_1] has no document tree', [ $locale ],
-         rv => HTTP_NOT_FOUND;
+      or throw 'Locale [_1] has no document tree', [ $locale ];
    my $tuple = $_docs_url_cache->{ $locale };
    my $mtime = mtime $tree;
 

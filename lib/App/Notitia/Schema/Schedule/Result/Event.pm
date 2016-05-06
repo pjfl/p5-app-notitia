@@ -51,27 +51,6 @@ sub _as_string {
    return $_[ 0 ]->uri;
 }
 
-my $_assert_vehicle_event_allowed = sub {
-   my $self = shift;
-
-   my $opts = { on => $self->start_date, vehicle => $self->vehicle };
-
-   my $event_rs = $self->result_source->schema->resultset( 'Event' );
-   my ($event_start, $event_end) = $self->duration;
-
-   for my $vehicle_event ($event_rs->search_for_vehicle_events( $opts )->all) {
-      my ($vehicle_ev_start, $vehicle_ev_end) = $vehicle_event->duration;
-
-      $vehicle_ev_end <= $event_start      and next;
-      $event_end      <= $vehicle_ev_start and next;
-
-      throw 'Vehicle [_1] already assigned to the [_2] vehicle event',
-            [ $self->vehicle, $vehicle_event ], level => 2;
-   }
-
-   return;
-};
-
 my $_set_uri = sub {
    my $self    = shift;
    my $columns = { $self->get_inflated_columns };
@@ -97,6 +76,19 @@ my $_vehicle_event_id = sub {
    return $_vehicle_event_id_cache = $type->id;
 };
 
+my $_assert_event_allowed = sub {
+   my $self = shift;
+
+   $self->event_type_id == $self->$_vehicle_event_id or return;
+
+   my $opts = { on => $self->start_date, vehicle => $self->vehicle };
+
+   $self->assert_not_assigend_to_event( $self, $opts );
+   $self->assert_not_assigned_to_slot( $self, $opts );
+   $self->assert_not_assigned_to_vehicle_event( $self, $opts );
+   return;
+};
+
 # Public methods
 sub duration {
    my $self  = shift;
@@ -119,10 +111,7 @@ sub end_date {
 }
 
 sub insert {
-   my $self = shift;
-
-   $self->event_type_id == $self->$_vehicle_event_id
-      and $self->$_assert_vehicle_event_allowed;
+   my $self = shift; $self->$_assert_event_allowed;
 
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
 
@@ -149,8 +138,7 @@ sub update {
    my ($self, $columns) = @_;
 
    $columns and $self->set_inflated_columns( $columns );
-   $self->event_type_id == $self->$_vehicle_event_id
-      and $self->$_assert_vehicle_event_allowed;
+   $self->$_assert_event_allowed;
    $self->validate( TRUE );
    $self->$_set_uri;
 

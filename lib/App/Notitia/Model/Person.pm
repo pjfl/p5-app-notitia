@@ -9,7 +9,6 @@ use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 save_button table_link to_dt uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
-use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Try::Tiny;
 use Moo;
 
@@ -62,8 +61,7 @@ my $_assert_not_self = sub {
    my ($person, $nok) = @_; $nok or undef $nok;
 
    $nok and $person->id and $nok == $person->id
-        and throw 'Cannot set self as next of kin',
-                  level => 2, rv => HTTP_EXPECTATION_FAILED;
+        and throw 'Cannot set self as next of kin', level => 2;
 
    return $nok;
 };

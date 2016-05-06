@@ -11,7 +11,6 @@ use App::Notitia::Util      qw( assign_link bind button dialog_anchor
                                 uri_for_action );
 use Class::Usul::Functions  qw( is_member sum throw );
 use Class::Usul::Time       qw( time2str );
-use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 use Moo;
 
 extends q(App::Notitia::Model);

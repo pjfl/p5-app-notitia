@@ -5,7 +5,6 @@ use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( FALSE NUL TRUE );
 use Class::Usul::Functions  qw( throw );
-use HTTP::Status            qw( HTTP_EXPECTATION_FAILED );
 
 # Private functions
 my $_field_tuple = sub {
@@ -52,8 +51,7 @@ sub find_vehicle_by {
 
    my $vehicle = $self->search( { 'vrn' => $vrn }, $opts )->single;
 
-   defined $vehicle
-     or throw 'Vehicle [_1] not found', [ $vrn ], rv => HTTP_EXPECTATION_FAILED;
+   defined $vehicle or throw 'Vehicle [_1] not found', [ $vrn ];
 
    return $vehicle;
 }

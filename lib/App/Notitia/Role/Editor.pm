@@ -10,9 +10,6 @@ use Class::Usul::Functions qw( io throw trim untaint_path );
 use Class::Usul::IPC;
 use Class::Usul::Time      qw( time2str );
 use Class::Usul::Types     qw( ProcCommer );
-use HTTP::Status           qw( HTTP_EXPECTATION_FAILED HTTP_NOT_FOUND
-                               HTTP_PRECONDITION_FAILED
-                               HTTP_REQUEST_ENTITY_TOO_LARGE );
 use Scalar::Util           qw( blessed );
 use Unexpected::Functions  qw( Unspecified );
 use Moo::Role;
@@ -135,8 +132,7 @@ my $_new_node = sub {
    $parent and $parent->{type} eq 'folder'
       and exists $parent->{tree}->{ $id }
       and $parent->{tree}->{ $id }->{path} eq $path
-      and throw 'Path [_1] already exists', [ $path ],
-                rv => HTTP_PRECONDITION_FAILED;
+      and throw 'Path [_1] already exists', [ $path ];
 
    return { path => $path, url => $url, };
 };
@@ -216,7 +212,7 @@ sub delete_file {
    my ($self, $req) = @_;
 
    my $node = $self->find_node( $req->locale, $req->uri_params->() )
-      or throw 'Cannot find document tree node to delete', rv => HTTP_NOT_FOUND;
+      or throw 'Cannot find document tree node to delete';
    my $path = $node->{path};
 
    $path->exists and $path->unlink; $_prune->( $path );
@@ -265,7 +261,7 @@ sub rename_file {
    my $old_path = $self->rename_file_path_fix
       ( [ split m{ / }mx, $params->( 'old_path' ) ] );
    my $node     = $self->find_node( $req->locale, $old_path )
-      or throw 'Cannot find document tree node to rename', rv => HTTP_NOT_FOUND;
+      or throw 'Cannot find document tree node to rename';
    my $new_node = $self->$_new_node( $req->locale, $params->( 'pathname' ) );
 
    $new_node->{path}->assert_filepath;
@@ -283,7 +279,7 @@ sub save_file {
    my ($self, $req) = @_;
 
    my $node     =  $self->find_node( $req->locale, $req->uri_params->() )
-      or throw 'Cannot find document tree node to update', rv => HTTP_NOT_FOUND;
+      or throw 'Cannot find document tree node to update';
    my $content  =  $req->body_params->( 'content', { raw => TRUE } );
       $content  =~ s{ \r\n }{\n}gmx; $content =~ s{ \s+ \z }{}mx;
    my $path     =  $node->{path}; $path->println( $content ); $path->close;
@@ -308,14 +304,12 @@ sub upload_file {
    $public ||= FALSE;
 
    $req->has_upload and my $upload = $req->upload
-      or  throw Unspecified, [ 'upload object' ], rv => HTTP_EXPECTATION_FAILED;
+      or  throw Unspecified, [ 'upload object' ];
 
-   $upload->is_upload or throw $upload->reason, rv => HTTP_EXPECTATION_FAILED;
+   $upload->is_upload or throw $upload->reason;
 
-   $upload->size > $conf->max_asset_size
-      and throw 'File [_1] size [_2] too big',
-                [ $upload->filename, $upload->size ],
-                rv => HTTP_REQUEST_ENTITY_TOO_LARGE;
+   $upload->size > $conf->max_asset_size and
+      throw 'File [_1] size [_2] too big', [ $upload->filename, $upload->size ];
 
    my $dir  = $public ? $conf->assetdir->catdir( 'public' ) : $conf->assetdir;
    my $dest = $dir->catfile( $upload->filename )->assert_filepath;

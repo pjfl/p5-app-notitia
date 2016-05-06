@@ -7,7 +7,6 @@ use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::File;
 use Class::Usul::Functions qw( is_arrayref is_member throw );
 use Class::Usul::Types     qw( HashRef );
-use HTTP::Status           qw( HTTP_FORBIDDEN HTTP_NOT_FOUND );
 use Moo::Role;
 
 requires qw( components config initialise_stash load_page localised_tree );
@@ -69,15 +68,14 @@ around 'load_page' => sub {
       my $node = $self->find_node( $locale, $req->uri_params->() ) or next;
 
       $self->$_is_user_authorised( $req, $node )
-         or throw 'Person [_1] permission denied', [ $req->username ],
-                  rv => HTTP_FORBIDDEN;
+         or throw 'Person [_1] permission denied', [ $req->username ];
 
       my $page = $self->initialise_page( $req, $node, $locale );
 
       return $orig->( $self, $req, $page );
    }
 
-   throw 'Page [_1] not found', [ $req->path ], rv => HTTP_NOT_FOUND;
+   throw 'Page [_1] not found', [ $req->path ];
 };
 
 # Private methods
@@ -133,8 +131,7 @@ sub navigation {
    my $conf     = $self->config;
    my $locale   = $conf->locale; # Always index config default language
    my $node     = $self->localised_tree( $locale )
-      or  throw 'Default locale [_1] has no document tree', [ $locale ],
-                rv => HTTP_NOT_FOUND;
+      or  throw 'Default locale [_1] has no document tree', [ $locale ];
    my $location = $stash->{page}->{location};
    my $key      = $req->authenticated ? "${location}_auth" : "${location}_anon";
    my $tuple    = $_nav_cache->{ $key };
