@@ -8,7 +8,7 @@ use App::Notitia::Constants qw( VARCHAR_MAX_SIZE TRUE );
 use App::Notitia::Util      qw( foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 serial_data_type varchar_data_type );
-use Class::Usul::Functions  qw( create_token );
+use Class::Usul::Functions  qw( create_token throw );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -51,6 +51,27 @@ sub _as_string {
    return $_[ 0 ]->uri;
 }
 
+my $_assert_vehicle_event_allowed = sub {
+   my $self = shift;
+
+   my $opts = { on => $self->start_date, vehicle => $self->vehicle };
+
+   my $event_rs = $self->result_source->schema->resultset( 'Event' );
+   my ($event_start, $event_end) = $self->duration;
+
+   for my $vehicle_event ($event_rs->search_for_vehicle_events( $opts )->all) {
+      my ($vehicle_ev_start, $vehicle_ev_end) = $vehicle_event->duration;
+
+      $vehicle_ev_end <= $event_start      and next;
+      $event_end      <= $vehicle_ev_start and next;
+
+      throw 'Vehicle [_1] already assigned to the [_2] vehicle event',
+            [ $self->vehicle, $vehicle_event ], level => 2;
+   }
+
+   return;
+};
+
 my $_set_uri = sub {
    my $self    = shift;
    my $columns = { $self->get_inflated_columns };
@@ -61,6 +82,19 @@ my $_set_uri = sub {
    $columns->{uri} = "${name}-${token}";
    $self->set_inflated_columns( $columns );
    return;
+};
+
+my $_vehicle_event_id_cache;
+
+my $_vehicle_event_id = sub {
+   my $self   = shift;
+
+   $_vehicle_event_id_cache and return $_vehicle_event_id_cache;
+
+   my $schema = $self->result_source->schema;
+   my $type   = $schema->resultset( 'Type' )->find_event_by( 'vehicle' );
+
+   return $_vehicle_event_id_cache = $type->id;
 };
 
 # Public methods
@@ -81,11 +115,14 @@ sub duration {
 sub end_date {
    my $self = shift; my $end = $self->end_rota;
 
-   return defined $end ? $end->date->clone : $self->start_date->clone;
+   return defined $end ? $end->date->clone : $self->start_date;
 }
 
 sub insert {
    my $self = shift;
+
+   $self->event_type_id == $self->$_vehicle_event_id
+      and $self->$_assert_vehicle_event_allowed;
 
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
 
@@ -95,15 +132,13 @@ sub insert {
 }
 
 sub label {
-   my $self = shift; my $date = $self->start_rota->date->clone;
+   my $self = shift; my $date = $self->start_date;
 
    return $self->name.' ('.$date->set_time_zone( 'local' )->dmy( '/' ).')';
 }
 
 sub post_filename {
-   my $self = shift; my $date = $self->start_rota->date->clone;
-
-   return $date->set_time_zone( 'local' )->ymd.'_'.$self->uri;
+   return $_[ 0 ]->start_date->set_time_zone( 'local' )->ymd.'_'.$_[ 0 ]->uri;
 }
 
 sub start_date {
@@ -114,6 +149,8 @@ sub update {
    my ($self, $columns) = @_;
 
    $columns and $self->set_inflated_columns( $columns );
+   $self->event_type_id == $self->$_vehicle_event_id
+      and $self->$_assert_vehicle_event_allowed;
    $self->validate( TRUE );
    $self->$_set_uri;
 

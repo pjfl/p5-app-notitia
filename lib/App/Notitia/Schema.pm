@@ -57,7 +57,7 @@ around 'deploy_file' => sub {
 };
 
 # Private class attributes
-# TODO: Slit uploads by extension
+# TODO: Split uploads by extension
 my @extensions = qw( .csv .doc .docx .jpeg .jpg .png .xls .xlsx );
 
 # Private methods

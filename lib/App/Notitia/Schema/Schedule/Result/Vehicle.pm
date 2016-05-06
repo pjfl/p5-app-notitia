@@ -70,7 +70,7 @@ my $_assert_public_or_private = sub {
    return;
 };
 
-my $_detect_event_assignment_collisions = sub {
+my $_assert_event_assignment_collisions = sub {
    my ($self, $event, $opts) = @_;
 
    my $schema   = $self->result_source->schema;
@@ -94,7 +94,7 @@ my $_detect_event_assignment_collisions = sub {
    return;
 };
 
-my $_detect_event_slot_assignment_collisions = sub {
+my $_assert_event_slot_assignment_collisions = sub {
    my ($self, $event, $opts) = @_;
 
    my $schema   = $self->result_source->schema;
@@ -115,7 +115,7 @@ my $_detect_event_slot_assignment_collisions = sub {
    return;
 };
 
-my $_detect_event_vehicle_event_collisions = sub {
+my $_assert_event_vehicle_event_collisions = sub {
    my ($self, $event, $opts) = @_;
 
    my $schema   = $self->result_source->schema;
@@ -135,7 +135,7 @@ my $_detect_event_vehicle_event_collisions = sub {
    return;
 };
 
-my $_detect_shift_person_event_collision = sub {
+my $_assert_shift_person_event_collision = sub {
    my ($self, $date, $shift_type) = @_;
 
    my $schema   = $self->result_source->schema;
@@ -156,7 +156,7 @@ my $_detect_shift_person_event_collision = sub {
    return;
 };
 
-my $_detect_shift_vehicle_event_collision = sub {
+my $_assert_shift_vehicle_event_collision = sub {
    my ($self, $date, $shift_type) = @_;
 
    my $schema      = $self->result_source->schema;
@@ -200,7 +200,7 @@ my $_find_slot = sub {
    return $slot;
 };
 
-my $_detect_shift_slot_collision = sub {
+my $_assert_shift_slot_collision = sub {
    my ($self, $rota_name, $date, $shift_type) = @_;
 
    my $schema   = $self->result_source->schema;
@@ -227,9 +227,9 @@ my $_assert_event_assignment_allowed = sub {
 
    my $opts = { on => $event->start_date, vehicle => $self->vrn };
 
-   $self->$_detect_event_assignment_collisions( $event, $opts );
-   $self->$_detect_event_vehicle_event_collisions( $event, $opts );
-   $self->$_detect_event_slot_assignment_collisions( $event, $opts );
+   $self->$_assert_event_assignment_collisions( $event, $opts );
+   $self->$_assert_event_vehicle_event_collisions( $event, $opts );
+   $self->$_assert_event_slot_assignment_collisions( $event, $opts );
    return;
 };
 
@@ -245,9 +245,9 @@ my $_assert_slot_assignment_allowed = sub {
       $bike and not $self->name and
          throw 'Vehicle [_1] is not a service vehicle', [ $self ];
 
-      $self->$_detect_shift_slot_collision( $rota_name, $date, $shift_type );
-      $self->$_detect_shift_vehicle_event_collision( $date, $shift_type );
-      $self->$_detect_shift_person_event_collision( $date, $shift_type );
+      $self->$_assert_shift_slot_collision( $rota_name, $date, $shift_type );
+      $self->$_assert_shift_vehicle_event_collision( $date, $shift_type );
+      $self->$_assert_shift_person_event_collision( $date, $shift_type );
    }
 
    return;
