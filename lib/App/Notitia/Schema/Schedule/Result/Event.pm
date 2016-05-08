@@ -83,7 +83,7 @@ my $_assert_event_allowed = sub {
 
    my $opts = { on => $self->start_date, vehicle => $self->vehicle };
 
-   $self->assert_not_assigend_to_event( $self, $opts );
+   $self->assert_not_assigned_to_event( $self, $opts );
    $self->assert_not_assigned_to_slot( $self, $opts );
    $self->assert_not_assigned_to_vehicle_event( $self, $opts );
    return;
