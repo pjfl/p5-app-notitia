@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added last keeper. Implements #30
           - Collision detection complete
           - Can detect vehicle events collisions
           - Can detect person event and slot collisions

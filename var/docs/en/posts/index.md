@@ -1,6 +1,6 @@
 ---
 author: admin
 role: anon
-title: Events
+title: Posts
 ---
 Page intentionally created blank

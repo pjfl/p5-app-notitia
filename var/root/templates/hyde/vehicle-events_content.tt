@@ -3,12 +3,12 @@
    <article>
       <h4>[% page.title %]</h4>
       <form action="[% page.fields.action %]"
-             class="standard-form no-header-wrap"
+             class="wide-form no-header-wrap"
            enctype="application/x-www-form-urlencoded"
             method="post" name="vehicle-request">
 [% TextField( page.fields.name ) -%]
+      </form>
 [% Table( page.fields.events ) -%]
 [% IF page.fields.links; Dispatch( page.fields.links ); END -%]
-      </form>
    </article>
 </div>

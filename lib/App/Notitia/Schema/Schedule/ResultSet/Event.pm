@@ -130,7 +130,7 @@ sub search_for_events {
 
    $opts->{order_by} //= { -desc => 'start_rota.date' };
 
-   my $prefetch = [ 'end_rota', 'start_rota' ];
+   my $prefetch = delete $opts->{prefetch} // [ 'end_rota', 'start_rota' ];
 
    $type and push @{ $prefetch }, 'event_type';
    $vrn  and push @{ $prefetch }, 'vehicle';

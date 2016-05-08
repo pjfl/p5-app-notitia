@@ -10,7 +10,7 @@ use App::Notitia::Util      qw( assign_link bind bind_fields button
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
-use DateTime;
+use Class::Usul::Time       qw( time2str );
 use Try::Tiny;
 use Moo;
 
@@ -86,10 +86,11 @@ my $_bind_vehicle_fields = sub {
 my $_compare_datetimes = sub {
    my ($x, $y) = @_;
 
-   $x->[ 0 ] < $y->[ 0 ] and return -1; $x->[ 0 ] > $y->[ 0 ] and return 1;
+   $x->[ 0 ]->start_date < $y->[ 0 ]->start_date and return -1;
+   $x->[ 0 ]->start_date > $y->[ 0 ]->start_date and return  1;
 
-   $x = time2int $x->[ 1 ]->[ 1 ]->{value};
-   $y = time2int $y->[ 1 ]->[ 1 ]->{value};
+   $x = time2int $x->[ 1 ]->[ 2 ]->{value};
+   $y = time2int $y->[ 1 ]->[ 2 ]->{value};
 
    $x < $y and return -1; $x > $y and return 1; return 0;
 };
@@ -162,7 +163,7 @@ my $_update_vehicle_req_from_request = sub {
 
 my $_vehicle_events_headers = sub {
    return [ map { { value => loc( $_[ 0 ], "vehicle_events_heading_${_}" ) } }
-            0 .. 3 ];
+            0 .. 4 ];
 };
 
 my $_vehicle_event_links = sub {
@@ -188,30 +189,6 @@ my $_vehicle_slot_links = sub {
          ( $req, 'sched/day_rota', 'edit', { args => [ $type, $date ] } ) };
 
    return @links;
-};
-
-my $_vehicle_links = sub {
-   my ($moniker, $req, $service, $vehicle) = @_;
-
-   my $vrn = $vehicle->[ 1 ]->vrn; my $links = [];
-
-   push @{ $links },
-      { value => management_link( $req, "${moniker}/vehicle", $vrn ) };
-
-   if ($service) {
-      my $now = DateTime->now;
-
-      push @{ $links },
-         { value => create_link
-              ( $req, 'event/vehicle_event', 'event', { args => [ $vrn ] } ) };
-
-      push @{ $links },
-         { value => management_link
-              ( $req, "${moniker}/vehicle_events", $vrn,
-                { params => { after => $now->subtract( days => 1 )->ymd } } ) };
-   }
-
-   return @{ $links };
 };
 
 my $_vehicle_request_button = sub {
@@ -248,7 +225,7 @@ my $_vehicle_type_tuple = sub {
 };
 
 my $_vehicles_headers = sub {
-   my ($req, $service) = @_; my $max = $service ? 3 : 1;
+   my ($req, $service) = @_; my $max = $service ? 4 : 1;
 
    return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } }
             0 .. $max ];
@@ -404,36 +381,90 @@ my $_vehicle_events = sub {
    my $slot_rs  = $self->schema->resultset( 'Slot' );
    my $tport_rs = $self->schema->resultset( 'Transport' );
 
-   for my $event ($event_rs->search_for_events( $opts )->all) {
-      push @rows,
-         [ $event->start_date,
-           [ { value => $event->label },
-             { value => $event->start_time },
-             { value => $event->end_time },
-             $self->$_vehicle_event_links( $req, $event ) ] ];
-   }
-
    for my $slot ($slot_rs->search_for_assigned_slots( $opts )->all) {
       push @rows,
-         [ $slot->date,
+         [ $slot,
            [ { value => $slot->label( $req ) },
+             { value => $slot->operator->label },
              { value => $slot->start_time },
              { value => $slot->end_time },
              $self->$_vehicle_slot_links( $req, $slot ) ] ];
    }
 
+   $opts->{prefetch} = [ 'end_rota', 'owner', 'start_rota' ];
+
+   for my $event ($event_rs->search_for_events( $opts )->all) {
+      push @rows,
+         [ $event,
+           [ { value => $event->label },
+             { value => $event->owner->label },
+             { value => $event->start_time },
+             { value => $event->end_time },
+             $self->$_vehicle_event_links( $req, $event ) ] ];
+   }
+
+   $opts->{prefetch} = [ { 'event' => [ 'owner', 'start_rota' ] }, 'vehicle' ];
+
    for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
       my $event = $tport->event;
 
       push @rows,
-         [ $event->start_date,
+         [ $event,
            [ { value => $event->label },
+             { value => $event->owner->label },
              { value => $event->start_time },
              { value => $event->end_time },
              $self->$_transport_links( $req, $event ) ] ];
    }
 
-   return [ map { $_->[ 1 ] } sort { $_compare_datetimes->( $a, $b ) } @rows ];
+   return [ sort { exists $opts->{before} ? $_compare_datetimes->( $b, $a )
+                                          : $_compare_datetimes->( $a, $b ) }
+            @rows ];
+};
+
+my $_find_last_keeper = sub {
+   my ($self, $req, $vehicle, $now) = @_; my $keeper;
+
+   my $tommorrow = $now->clone->truncate( to => 'day' )->add( days => 1 );
+   my $opts      = { event_type => 'vehicle',
+                     before     => $tommorrow,
+                     vehicle    => $vehicle->vrn, };
+
+   for my $tuple (@{ $self->$_vehicle_events( $req, $opts ) }) {
+      my ($start_datetime) = $tuple->[ 0 ]->duration;
+
+      $start_datetime > $now and next;
+      $keeper = $tuple->[ 1 ]->[ 1 ]->{value}; last;
+   }
+
+   return $keeper;
+};
+
+my $_vehicle_links = sub {
+   my ($self, $moniker, $req, $service, $tuple) = @_;
+
+   my $vrn = $tuple->[ 1 ]->vrn; my $links = [ { value => $tuple->[ 0 ] } ];
+
+   if ($service) {
+      my $now = to_dt( time2str );
+
+      push @{ $links },
+         { value => $self->$_find_last_keeper( $req, $tuple->[ 1 ], $now ) };
+
+      push @{ $links },
+         { value => create_link
+              ( $req, 'event/vehicle_event', 'event', { args => [ $vrn ] } ) };
+
+      push @{ $links },
+         { value => management_link
+              ( $req, "${moniker}/vehicle_events", $vrn,
+                { params => { after => $now->subtract( days => 1 )->ymd } } ) };
+   }
+
+   push @{ $links },
+      { value => management_link( $req, "${moniker}/vehicle", $vrn ) };
+
+   return $links;
 };
 
 # Public methods
@@ -638,7 +669,8 @@ sub vehicle_events : Role(rota_manager) {
       fields        => {
          events     => {
             headers => $_vehicle_events_headers->( $req ),
-            rows    => $self->$_vehicle_events( $req, $opts ), },
+            rows    => [ map  { $_->[ 1 ] }
+                         @{ $self->$_vehicle_events( $req, $opts ) } ], },
          links      => create_link
             ( $req, 'event/vehicle_event', 'event',
               { args => [ $vrn ], container_class => 'add-link right-last' } ),
@@ -664,13 +696,13 @@ sub vehicles : Role(rota_manager) {
          rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => $_vehicle_title->( $req, $type, $private, $service ), };
-   my $where     =  { private => $private, service => $service, type => $type };
+   my $opts      =  { private => $private, service => $service, type => $type };
    my $rs        =  $self->schema->resultset( 'Vehicle' );
    my $rows      =  $page->{fields}->{rows};
 
-   for my $vehicle (@{ $rs->list_vehicles( $where ) }) {
-      push @{ $rows }, [ { value => $vehicle->[ 0 ] },
-               $_vehicle_links->( $self->moniker, $req, $service, $vehicle ) ];
+   for my $tuple (@{ $rs->list_vehicles( $opts ) }) {
+      push @{ $rows },
+         $self->$_vehicle_links( $self->moniker, $req, $service, $tuple );
    }
 
    return $self->get_stash( $req, $page );

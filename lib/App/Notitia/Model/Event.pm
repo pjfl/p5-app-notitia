@@ -216,7 +216,7 @@ my $_update_event_from_request = sub {
    return;
 };
 
-my $_update_blog_post = sub {
+my $_update_event_post = sub {
    my ($self, $req, $file, $event) = @_;
 
    my $posts_model = $self->components->{posts};
@@ -237,8 +237,8 @@ my $_update_blog_post = sub {
    return;
 };
 
-my $_create_blog_post = sub {
-   return shift->$_update_blog_post( @_ );
+my $_create_event_post = sub {
+   return shift->$_update_event_post( @_ );
 };
 
 my $_create_event = sub {
@@ -264,8 +264,8 @@ my $_create_event = sub {
    return $event;
 };
 
-my $_delete_blog_post = sub {
-   return shift->$_update_blog_post( @_ );
+my $_delete_event_post = sub {
+   return shift->$_update_event_post( @_ );
 };
 
 my $_delete_event = sub {
@@ -305,7 +305,7 @@ sub create_event_action : Role(event_manager) {
    my $date  = to_dt $req->body_params->( 'event_date' ), 'GMT';
    my $event = $self->$_create_event( $req, $date, 'person', $req->username );
 
-   $self->$_create_blog_post( $req, $event->post_filename, $event );
+   $self->$_create_event_post( $req, $event->post_filename, $event );
 
    my $actionp  = $self->moniker.'/event';
    my $location = uri_for_action $req, $actionp, [ $event->uri ];
@@ -335,7 +335,7 @@ sub delete_event_action : Role(event_manager) {
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->$_delete_event( $uri );
 
-   $self->$_delete_blog_post( $req, $event->post_filename );
+   $self->$_delete_event_post( $req, $event->post_filename );
 
    my $location = uri_for_action $req, $self->moniker.'/events';
    my $message  = [ 'Event [_1] deleted by [_2]', $uri, $req->username ];
@@ -513,7 +513,7 @@ sub update_event_action : Role(event_manager) {
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->$_update_event( $req, $uri );
 
-   $self->$_update_blog_post( $req, $event->post_filename, $event );
+   $self->$_update_event_post( $req, $event->post_filename, $event );
 
    my $actionp  = $self->moniker.'/event';
    my $location = uri_for_action $req, $actionp, [ $uri ];

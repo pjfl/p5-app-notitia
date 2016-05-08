@@ -30,7 +30,8 @@ sub search_for_assigned_vehicles {
 
    $opts->{order_by} //= { -desc => 'date' }; delete $opts->{event_type};
 
-   my $prefetch = [ { 'event' => 'start_rota' }, 'vehicle' ];
+   my $prefetch = delete $opts->{prefetch}
+               // [ { 'event' => 'start_rota' }, 'vehicle' ];
 
    return $self->search( $where, { prefetch => $prefetch, %{ $opts } } );
 }

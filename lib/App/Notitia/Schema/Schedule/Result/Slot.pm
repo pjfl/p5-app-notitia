@@ -43,8 +43,15 @@ sub _as_string {
    return $self->rota_type.'_'.$date->ymd.'_'.$self->key;
 }
 
+# Public methods
 sub date {
    return $_[ 0 ]->shift->rota->date;
+}
+
+sub duration {
+   my $self  = shift;
+
+   return $self->shift_times( $self->start_date->ymd, $self->shift->type_name );
 }
 
 sub end_time {
@@ -63,6 +70,10 @@ sub label {
    my $date = $self->date->clone->set_time_zone( 'local' );
 
    return loc( $req, $self->key ).' ('.$date->dmy( '/' ).')';
+}
+
+sub start_date {
+   return $_[ 0 ]->shift->rota->date;
 }
 
 sub start_time {
