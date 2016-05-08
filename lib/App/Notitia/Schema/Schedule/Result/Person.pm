@@ -196,7 +196,8 @@ sub add_member_to {
    my $type = $self->$_find_role_type( $role_name );
 
    $self->is_member_of( $role_name, $type )
-      and throw 'Person [_1] already a member of role [_2]', [ $self, $type ];
+      and throw 'Person [_1] already a member of role [_2]',
+                [ $self->label, $type ];
 
    $self->$_assert_membership_allowed( $type );
 
@@ -210,7 +211,8 @@ sub add_participent_for {
    my $event    = $event_rs->find_event_by( $event_uri );
 
    $self->is_participent_of( $event_uri, $event )
-      and throw 'Person [_1] already participating in [_2]', [ $self, $event ];
+      and throw 'Person [_1] already participating in [_2]',
+                [ $self->label, $event ];
 
    return $self->create_related( 'participents', { event_id => $event->id } );
 }
@@ -222,7 +224,7 @@ sub assert_certified_for {
 
    my $cert = $self->certs->find( $self->id, $type->id )
       or throw 'Person [_1] has no certification for [_2]',
-               [ $self, $type ], level => 2;
+               [ $self->label, $type ], level => 2;
 
    return $cert;
 }
@@ -232,7 +234,7 @@ sub assert_endorsement_for {
 
    my $endorsement = $self->endorsements->find( $self->id, $code_name )
       or throw 'Person [_1] has no endorsement for [_2]',
-               [ $self, $code_name ], level => 2;
+               [ $self->label, $code_name ], level => 2;
 
    return $endorsement;
 }
@@ -244,7 +246,7 @@ sub assert_member_of {
 
    my $role = $self->roles->find( $self->id, $type->id )
       or throw 'Person [_1] is not a member of role [_2]',
-               [ $self, $type ], level => 2;
+               [ $self->label, $type ], level => 2;
 
    return $role;
 }
@@ -256,7 +258,7 @@ sub assert_participent_for {
    my $event       = $event_rs->find_event_by( $event_uri );
    my $participent = $self->participents->find( $event->id, $self->id )
       or throw 'Person [_1] is not participating in [_2]',
-               [ $self, $event ], level => 2;
+               [ $self->label, $event ], level => 2;
 
    return $participent;
 }

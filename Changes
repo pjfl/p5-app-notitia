@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Person errors display label. Implements #39
           - Added last keeper. Implements #30
           - Collision detection complete
           - Can detect vehicle events collisions
