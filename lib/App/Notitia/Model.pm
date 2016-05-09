@@ -5,7 +5,7 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( uri_for_action );
 use Class::Usul::Functions  qw( exception throw );
 use Class::Usul::Types      qw( Plinth );
-use HTTP::Status            qw( HTTP_OK );
+use HTTP::Status            qw( HTTP_NOT_FOUND HTTP_OK );
 use Scalar::Util            qw( blessed );
 use Unexpected::Functions   qw( Authentication AuthenticationRequired
                                 ValidationErrors );
@@ -73,7 +73,9 @@ sub exception_handler {
 
    $e->class eq ValidationErrors->() and $page->{validation_error} = $e->args;
 
-   my $stash = $self->get_stash( $req, $page ); $stash->{code} = HTTP_OK;
+   my $stash = $self->get_stash( $req, $page );
+
+   $stash->{code} = $e->rv > HTTP_OK ? $e->rv : HTTP_OK;
 
    return $stash;
 }
@@ -109,7 +111,7 @@ sub not_found : Role(anon) {
 
   (my $mp   = $self->config->mount_point) =~ s{ \A / \z }{}mx;
    my $want = join '/', $mp, $req->path;
-   my $e    = exception 'URI [_1] not found', [ $want ];
+   my $e    = exception 'URI [_1] not found', [ $want ], rv => HTTP_NOT_FOUND;
 
    return $self->exception_handler( $req, $e );
 }

@@ -1,11 +1,11 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Upload File -->
-<form action="[% uri_for_action( 'docs/upload' ) %]" class="standard-form"
+<form action="[% page.fields.href %]" class="standard-form"
      enctype="multipart/form-data" method="post" name="upload-file">
    <input class="pathname" disabled="disabled"
              id="upload-path" placeholder="Choose File"><br/>
-   <div class="field-group">
-[%    CheckBox( page.fields.public ) %]</div>
+[% IF page.fields.public %]<div class="field-group">
+[%    CheckBox( page.fields.public ) %]</div>[% END %]
    <div class="upload-file button">
       <span>[% loc( 'Browse' ) %]</span><br>
       <input class="upload" id="upload-btn" name="file" type="file">

@@ -13,6 +13,7 @@ sub dispatch_request {
    sub (GET  + /docs/**           + ?*) { [ 'docs/page',          @_ ] },
    sub (POST + /docs/**  | /docs  + ?*) { [ 'docs/from_request',  @_ ] },
    sub (GET  + /docs              + ?*) { [ 'docs/index',         @_ ] },
+   sub (GET  + /mugshot/*         + ?*) { [ 'person/mugshot',     @_ ] },
    sub (GET  + /posts/dialog      + ?*) { [ 'posts/dialog',       @_ ] },
    sub (GET  + /posts/rss         + ?*) { [ 'posts/rss_feed',     @_ ] },
    sub (GET  + /posts/** | /posts + ?*) { [ 'posts/page',         @_ ] },

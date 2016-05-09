@@ -483,6 +483,12 @@ msgstr "Sun"
 msgid "months_management_heading"
 msgstr "Select Month"
 
+msgid "mugshot_upload_link"
+msgstr "Upload Mugshot"
+
+msgid "mugshot_upload_tip"
+msgstr "Upload the mugshot image file for this person"
+
 msgid "new_password"
 msgstr "New Password"
 

@@ -56,10 +56,6 @@ around 'deploy_file' => sub {
    return $orig->( $self, @args );
 };
 
-# Private class attributes
-# TODO: Split uploads by extension
-my @extensions = qw( .csv .doc .docx .jpeg .jpg .png .xls .xlsx );
-
 # Private methods
 my $_qualify_assets = sub {
    my ($self, $files) = @_; $files or return FALSE; my $assets = {};

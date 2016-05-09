@@ -27,6 +27,7 @@ register_action_paths
    'person/activate'       => 'person-activate',
    'person/contacts'       => 'contacts',
    'person/mailshot'       => 'mailshot',
+   'person/mugshot'        => 'mugshot',
    'person/people'         => 'people',
    'person/person'         => 'person',
    'person/person_summary' => 'person-summary';
@@ -66,42 +67,14 @@ my $_assert_not_self = sub {
    return $nok;
 };
 
-my $_bind_person_fields = sub {
-   my ($schema, $person, $opts) = @_; $opts //= {};
-
-   my $disabled = $opts->{disabled} // FALSE;
-   my $map      = {
-      active           => { checked  => $person->active, disabled => $disabled,
-                            nobreak  => TRUE, },
-      address          => { disabled => $disabled },
-      dob              => { disabled => $disabled },
-      email_address    => { class    => 'standard-field server',
-                            disabled => $disabled },
-      first_name       => { class    => 'standard-field server',
-                            disabled => $disabled },
-      home_phone       => { disabled => $disabled },
-      joined           => { disabled => $disabled },
-      last_name        => { class    => 'standard-field server',
-                            disabled => $disabled },
-      mobile_phone     => { disabled => $disabled },
-      notes            => { class    => 'standard-field autosize',
-                            disabled => $disabled },
-      password_expired => { checked  => $person->password_expired,
-                            container_class => 'right-last',
-                            disabled => $disabled },
-      postcode         => { class    => 'standard-field server',
-                            disabled => $disabled },
-      resigned         => { class    => 'standard-field clearable',
-                            disabled => $disabled },
-      subscription     => { disabled => $disabled },
-   };
-
-   return bind_fields $schema, $person, $map, 'Person';
-};
-
 my $_confirm_mailshot_button = sub {
    return button $_[ 0 ],
       { class => 'right-last', label => 'confirm', value => 'mailshot_create' };
+};
+
+my $_confirm_mugshot_button = sub {
+   return button $_[ 0 ],
+      { class => 'right-last', label => 'confirm', value => 'mugshot_create' };
 };
 
 my $_contact_links = sub {
@@ -119,6 +92,11 @@ my $_contact_links = sub {
    return @links;
 };
 
+my $_copy_element_value = sub {
+   return [ "\$( 'upload-btn' ).addEvent( 'change', function( ev ) {",
+            "   ev.stop(); \$( 'upload-path' ).value = this.value } )", ];
+};
+
 my $_flatten = sub {
    my $params = shift; my $r = NUL;
 
@@ -132,7 +110,11 @@ my $_maybe_find_person = sub {
 };
 
 my $_next_of_kin_list = sub {
-   return bind 'next_of_kin', [ [ NUL, NUL ], @{ $_[ 0 ] } ], { numify => TRUE};
+   my ($people, $disabled) = @_; my $opts = { numify => TRUE };
+
+   $disabled and $opts->{disabled} = TRUE;
+
+   return bind 'next_of_kin', [ [ NUL, NUL ], @{ $people } ], $opts;
 };
 
 my $_people_headers = sub {
@@ -178,10 +160,10 @@ my $_people_ops_links = sub {
    my ($req, $page, $moniker, $params) = @_; $params = { %{ $params // {} } };
 
    my $add_user  = create_link $req, "${moniker}/person", 'person',
-                      { container_class => 'add-link' };
-   my $mail_shot = table_link $req, 'mailshot',
-                      loc( $req, 'mailshot_management_link' ),
-                      loc( $req, 'mailshot_management_tip' );
+                               { container_class => 'add-link' };
+   my $mail_shot = table_link  $req, 'mailshot',
+                               loc( $req, 'mailshot_management_link' ),
+                               loc( $req, 'mailshot_management_tip' );
    my $href      = uri_for_action $req, 'person/mailshot', [], $params;
 
    push @{ $page->{literal_js} //= [] },
@@ -193,6 +175,52 @@ my $_people_ops_links = sub {
    return { class        => 'operation-links right-last',
             content      => {
                list      => [ $mail_shot, $add_user ],
+               separator => '|',
+               type      => 'list', },
+            type         => 'container', };
+};
+
+my $_person_mugshot = sub {
+   my ($conf, $req, $person) = @_;
+
+   my $uri = $conf->assets.'/mugshot/'; my $href;
+
+   if ($person->shortcode) {
+      my $assets = $conf->assetdir->catdir( 'mugshot' );
+
+      for my $extn (qw( .gif .jpeg .jpg .png )) {
+         my $path = $assets->catfile( $person->shortcode.$extn );
+
+         $path->exists
+            and $href = $req->uri_for( $uri.$person->shortcode.$extn )
+            and last;
+      }
+   }
+
+   $href //= $req->uri_for( $uri.'nomugshot.png' );
+
+   return { class => 'mugshot', href => $href, title => loc( $req, 'mugshot' )};
+};
+
+my $_person_ops_links = sub {
+   my ($req, $page, $actionp, $scode) = @_;
+
+   my $add_person = create_link $req, $actionp, 'person',
+                                { container_class => 'add-link' };
+   my $mugshot    = table_link  $req, 'mugshot',
+                                loc( $req, 'mugshot_upload_link' ),
+                                loc( $req, 'mugshot_upload_tip' );
+   my $href       = uri_for_action $req, 'person/mugshot', [ $scode ];
+
+   push @{ $page->{literal_js} //= [] },
+      dialog_anchor( 'mugshot', $href, {
+         name    => 'mugshot_upload',
+         title   => loc( $req, 'Mugshot Upload' ),
+         useIcon => \1 } );
+
+   return { class        => 'right-last',
+            content      => {
+               list      => [ $mugshot, $add_person ],
                separator => '|',
                type      => 'list', },
             type         => 'container', };
@@ -266,18 +294,63 @@ my $_update_person_from_request = sub {
 
       defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
-      # No tz and 1/1/1970 is the last day in 69
       length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
          and $v = to_dt $v;
 
       $person->$attr( $v );
    }
 
+   $person->resigned and $person->active( FALSE );
    $person->name( $params->( 'username', $opts ) );
    $person->next_of_kin_id
       ( $_assert_not_self->( $person, $params->( 'next_of_kin', $opts ) ) );
 
    return;
+};
+
+my $_bind_person_fields = sub {
+   my ($self, $req, $person, $opts) = @_; $opts //= {};
+
+   my $disabled = $opts->{disabled} // FALSE;
+   my $map      = {
+      active           => { checked  => $person->active,
+                            disabled => $disabled },
+      address          => { disabled => $disabled },
+      dob              => { disabled => $disabled },
+      email_address    => { class    => 'standard-field server',
+                            disabled => $disabled },
+      first_name       => { class    => 'narrow-field server',
+                            disabled => $disabled },
+      home_phone       => { disabled => $disabled },
+      joined           => { disabled => $disabled },
+      last_name        => { class    => 'narrow-field server',
+                            disabled => $disabled },
+      mobile_phone     => { disabled => $disabled },
+      notes            => { class    => 'standard-field autosize',
+                            disabled => $disabled },
+      password_expired => { checked  => $person->password_expired,
+                            container_class => 'right-last',
+                            disabled => $disabled },
+      postcode         => { class    => 'standard-field server',
+                            disabled => $disabled },
+      resigned         => { class    => 'standard-field clearable',
+                            disabled => $disabled },
+      subscription     => { disabled => $disabled },
+   };
+
+   my $fields = bind_fields $self->schema, $person, $map, 'Person';
+
+   $opts = { class => 'narrow-field', disabled => $disabled };
+   $fields->{primary_role} = $person->shortcode
+      ? bind 'primary_role', $person->list_roles, $opts,
+      : bind 'primary_role', $self->$_list_all_roles(), $opts;
+   $opts = { fields => { selected => $person->next_of_kin } };
+
+   my $people = $self->schema->resultset( 'Person' )->list_all_people( $opts );
+
+   $fields->{next_of_kin} = $_next_of_kin_list->( $people, $disabled );
+   $fields->{mugshot} = $_person_mugshot->( $self->config, $req, $person );
+   return $fields;
 };
 
 # Public methods
@@ -390,6 +463,20 @@ sub mailshot_create_action : Role(person_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub mugshot : Role(person_manager) {
+   my ($self, $req) = @_;
+
+   my $scode  = $req->uri_params->( 0 );
+   my $stash  = $self->dialog_stash( $req, 'upload-file' );
+   my $params = { name => $scode, type => 'mugshot' };
+   my $page   = $stash->{page};
+
+   $page->{fields}->{href} = uri_for_action $req, 'docs/upload', [], $params;
+   $stash->{page}->{literal_js} = $_copy_element_value->();
+
+   return $stash;
+}
+
 sub person : Role(person_manager) {
    my ($self, $req) = @_; my $people;
 
@@ -397,7 +484,7 @@ sub person : Role(person_manager) {
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $_maybe_find_person->( $person_rs, $name );
    my $page       =  {
-      fields      => $_bind_person_fields->( $self->schema, $person ),
+      fields      => $self->$_bind_person_fields( $req, $person ),
       first_field => 'first_name',
       literal_js  => $_add_person_js->( $name ),
       template    => [ 'contents', 'person' ],
@@ -412,21 +499,11 @@ sub person : Role(person_manager) {
    $fields->{username} = bind 'username', $person->name, $opts;
 
    if ($name) {
-      my $opts = { fields => { selected => $person->next_of_kin } };
-
-      $people  = $person_rs->list_all_people( $opts );
-      $fields->{user_href   } = uri_for_action $req, $actionp, [ $name ];
-      $fields->{delete      } = delete_button $req, $name, { type => 'person' };
-      $fields->{primary_role} = bind 'primary_role', $person->list_roles;
-      $fields->{add         } = create_link $req, $actionp, 'person',
-                                { container_class => 'add-link right' };
-   }
-   else {
-      $people  = $person_rs->list_all_people();
-      $fields->{primary_role} = bind 'primary_role', $self->$_list_all_roles();
+      $fields->{user_href} = uri_for_action $req, $actionp, [ $name ];
+      $fields->{delete} = delete_button $req, $name, { type => 'person' };
+      $fields->{links} = $_person_ops_links->( $req, $page, $actionp, $name );
    }
 
-   $fields->{next_of_kin} = $_next_of_kin_list->( $people );
    $fields->{save} = save_button $req, $name, { type => 'person' };
 
    return $self->get_stash( $req, $page );
@@ -440,18 +517,14 @@ sub person_summary : Role(person_manager) Role(address_viewer) {
    my $person     =  $_maybe_find_person->( $person_rs, $name );
    my $opts       =  { class => 'standard-field', disabled => TRUE };
    my $page       =  {
-      fields      => $_bind_person_fields->( $self->schema, $person, $opts ),
+      fields      => $self->$_bind_person_fields( $req, $person, $opts ),
       first_field => 'first_name',
       template    => [ 'contents', 'person' ],
       title       => loc( $req, 'person_summary_heading' ), };
    my $fields     =  $page->{fields};
 
-   $opts    = field_options $self->schema, 'Person', 'name', $opts;
-   $fields->{username    } = bind 'username', $person->name, $opts;
-   $opts    = { fields => { selected => $person->next_of_kin } };
-   $people  = $person_rs->list_all_people( $opts );
-   $fields->{next_of_kin } = $_next_of_kin_list->( $people );
-   $fields->{primary_role} = bind 'primary_role', $person->list_roles;
+   $opts = field_options $self->schema, 'Person', 'name', $opts;
+   $fields->{username} = bind 'username', $person->name, $opts;
    delete $fields->{notes};
 
    return $self->get_stash( $req, $page );
@@ -511,7 +584,7 @@ sub update_person_action : Role(person_manager) {
    try   { $person->update }
    catch {
       $self->application->debug and throw $_; $self->log->error( $_ );
-      throw 'Failed to update [_1]', [ $name ];
+      throw 'Failed to update [_1]', [ $label ];
    };
 
    my $location = uri_for_action $req, $self->moniker.'/people';

@@ -79,6 +79,9 @@
 [% MACRO HiddenField( f ) BLOCK -%]
    <input name="[% f.name %]" type="hidden" value="[% f.value %]">
 [% END -%]
+[% MACRO Image( f ) BLOCK -%]
+   <img alt="[% f.title %]" class=[% f.class %] src="[% f.href %]">
+[% END -%]
 [% MACRO Link( href, class, content, id ) BLOCK -%]
    <a class="[% class %]" href="[% href %]"[% IF id -%]
          id="[% id %]"[% END %]>[% content %]</a>

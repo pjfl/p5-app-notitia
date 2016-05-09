@@ -194,14 +194,21 @@ footer {
    vertical-align: top; white-space: nowrap;
 }
 .label-column { white-space: nowrap; }
-.pathname, .single-digit, .standard-field {
+.mugshot {
+   .border-radius; float: right; height: 85px; margin: 5px 5px 0 0; width: 85px;
+}
+.narrow-field { min-width: 200px; }
+.pathname, .narrow-field, .single-digit, .standard-field {
    background-color: #fff; border: 2px inset; .border-radius;
    .box-sizing; color: @darker; margin: 0;
    padding: 3.25px 0.75em; vertical-align: middle;
 }
 .pathname, .standard-field { min-width: 300px; }
-.pathname[disabled], .standard-field[disabled] { background-color: @subtle; }
-.standard-field[type=date], .standard-field[type=time] {
+.pathname[disabled], .narrow-field[disabled], .standard-field[disabled] {
+   background-color: @subtle;
+}
+.standard-field[type=date], .narrow-field[type=time],
+.standard-field[type=time] {
    padding-bottom: 0; padding-top: 0;
 }
 .required { border-right: 3px solid @divider; }
@@ -568,7 +575,7 @@ a {
 }
 h1, h2, h3, h4, h5, h6 { margin: 0; }
 p { line-height: 1.5em; }
-select.standard-field { padding-left: 0.5em; }
+select.standard-field, select.narrow-field { padding-left: 0.5em; }
 strong { font-weight: 700; }
 .align-center { text-align: center; }
 .align-left { text-align: left; }

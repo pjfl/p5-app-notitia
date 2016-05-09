@@ -6,7 +6,7 @@ use App::Notitia::Util     qw( bind dialog_anchor loc make_id_from
                                make_name_from mtime set_element_focus
                                stash_functions uri_for_action );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use Class::Usul::Functions qw( io throw trim untaint_path );
+use Class::Usul::Functions qw( io is_member throw trim untaint_path );
 use Class::Usul::IPC;
 use Class::Usul::Time      qw( time2str );
 use Class::Usul::Types     qw( ProcCommer );
@@ -22,6 +22,9 @@ with q(Web::Components::Role::TT);
 # Private attributes
 has '_ipc' => is => 'lazy', isa => ProcCommer, handles => [ 'run_cmd' ],
    builder => sub { Class::Usul::IPC->new( builder => $_[ 0 ]->application ) };
+
+# Private class attributes
+my @extensions = qw( .csv .doc .docx .gif .jpeg .jpg .png .xls .xlsx );
 
 # Private methods
 my $_add_dialog_js = sub {
@@ -246,6 +249,7 @@ sub get_dialog {
       $page->{literal_js } = set_element_focus "${name}-file", 'query';
    }
    elsif ($name eq 'upload') {
+      $page->{fields}->{href  } = uri_for_action $req, 'docs/upload';
       $page->{fields}->{public} = bind 'public_access', TRUE;
       $page->{literal_js } = $_copy_element_value->();
    }
@@ -298,21 +302,30 @@ sub search_files {
 }
 
 sub upload_file {
-   my ($self, $req, $public) = @_; my $conf = $self->config;
+   my ($self, $req) = @_; my $conf = $self->config;
 
-   $public ||= $req->body_params->( 'public_access', { optional => TRUE } );
-   $public ||= FALSE;
+   my $public = $req->body_params->( 'public_access', { optional => TRUE } )
+             || FALSE;
+   my $name   = $req->query_params->( 'name', { optional => TRUE } );
+   my $type   = $req->query_params->( 'type', { optional => TRUE } );
 
-   $req->has_upload and my $upload = $req->upload
-      or  throw Unspecified, [ 'upload object' ];
+   my $upload; ($req->has_upload and $upload = $req->upload)
+      or throw Unspecified, [ 'upload object' ];
 
    $upload->is_upload or throw $upload->reason;
 
    $upload->size > $conf->max_asset_size and
       throw 'File [_1] size [_2] too big', [ $upload->filename, $upload->size ];
 
-   my $dir  = $public ? $conf->assetdir->catdir( 'public' ) : $conf->assetdir;
-   my $dest = $dir->catfile( $upload->filename )->assert_filepath;
+   my $dir    = $public ? $conf->assetdir->catdir( 'public' )
+              : $type   ? $conf->assetdir->catdir( $type )
+              :           $conf->assetdir;
+   my ($extn) = $upload->filename =~ m{ ( \. .+) \z }mx;
+
+   is_member $extn, @extensions or throw 'File type [_1] unknown', [ $extn ];
+
+   my $file   = $name ? "${name}${extn}" : $upload->filename;
+   my $dest   = $dir->catfile( $file )->assert_filepath;
 
    io( $upload->path )->copy( $dest );
 
