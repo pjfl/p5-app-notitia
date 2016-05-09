@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Better duplicate key errors on events
           - Added mugshots. Implements #36
           - Fixed assert event allowed
           - Person errors display label. Implements #39

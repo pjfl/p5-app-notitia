@@ -47,6 +47,13 @@ around 'get_stash' => sub {
 my $_links_cache = {};
 
 # Private functions
+my $_bind_event_date = sub {
+   my ($date, $disabled) = @_;
+
+   return bind 'event_date', $date, { class    => 'standard-field required',
+                                      disabled => $disabled };
+};
+
 my $_events_headers = sub {
    return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 4 ];
 };
@@ -258,6 +265,8 @@ my $_create_event = sub {
    try   { $event->insert }
    catch {
       $self->application->debug and throw $_; $self->log->error( $_ );
+      $_ =~ m{ duplicate }imx and throw 'Duplicate entry [_1] on [_2]',
+                                  [ $event->name, $start_date->dmy( '/' ) ];
       throw 'Failed to create the [_1] event', [ $event->name ];
    };
 
@@ -373,8 +382,7 @@ sub event : Role(event_manager) {
    my $actionp    =  $self->moniker.'/event';
 
    if ($uri) {
-      $fields->{date  } = bind 'event_date', $event->start_date,
-                          { disabled => TRUE };
+      $fields->{date  } = $_bind_event_date->( $event->start_date, TRUE );
       $fields->{delete} = delete_button $req, $uri, { type => 'event' };
       $fields->{href  } = uri_for_action $req, $actionp, [ $uri ];
       $fields->{links } = $_event_operation_links->( $req, $actionp, $uri );
@@ -382,7 +390,7 @@ sub event : Role(event_manager) {
    }
    else {
       $date = $date ? to_dt( $date, 'GMT' )->dmy( '/' ) : time2str '%d/%m/%Y';
-      $fields->{date  } = bind 'event_date', $date;
+      $fields->{date  } = $_bind_event_date->( $date );
    }
 
    $fields->{save} = save_button $req, $uri, { type => 'event' };
@@ -406,7 +414,7 @@ sub event_summary : Role(any) {
    my $fields  =  $page->{fields};
    my $actionp =  $self->moniker.'/event';
 
-   $fields->{date } = bind 'event_date', $event->start_date, $opts;
+   $fields->{date } = $_bind_event_date->( $event->start_date, TRUE );
    $fields->{href } = uri_for_action $req, $actionp, [ $uri ];
    $fields->{links} = $_event_operation_links->( $req, $actionp, $uri );
    $fields->{owner} = $self->$_owner_list( $event, TRUE );
