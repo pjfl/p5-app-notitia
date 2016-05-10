@@ -57,6 +57,28 @@ around 'deploy_file' => sub {
 };
 
 # Private methods
+my $_list_participents = sub {
+   my $self      = shift;
+   my $uri       = $self->options->{event};
+   my $event     = $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $opts      = { columns => [ 'email_address' ] };
+   my $person_rs = $self->schema->resultset( 'Person' );
+
+   return $person_rs->list_participents( $event, $opts );
+};
+
+my $_list_people = sub {
+   my $self      = shift;
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $opts      = { columns => [ 'email_address' ] };
+   my $role      = $self->options->{role};
+
+   not defined $self->options->{current} and $opts->{current} = TRUE;
+
+   return $role ? $person_rs->list_people( $role, $opts )
+                : $person_rs->list_all_people( $opts );
+};
+
 my $_qualify_assets = sub {
    my ($self, $files) = @_; $files or return FALSE; my $assets = {};
 
@@ -162,16 +184,10 @@ sub mailshot : method {
    my $stash      = { app_name => $conf->title, path => io( $plate_name ), };
    my $template   = load_file_data( $stash );
    my $attaches   = $self->$_qualify_assets( delete $stash->{attachments} );
-   my $person_rs  = $self->schema->resultset( 'Person' );
-   my $opts       = { columns => [ 'email_address' ] };
-   my $role       = $self->options->{role};
+   my $tuples     = $self->options->{event} ? $self->$_list_participents
+                                            : $self->$_list_people;
 
-   not $self->options->{current} or $opts->{current} = TRUE;
-
-   my $people     = $role ? $person_rs->list_people( $role, $opts )
-                          : $person_rs->list_all_people( $opts );
-
-   for my $person (map { $_->[ 1 ] } @{ $people }) {
+   for my $person (map { $_->[ 1 ] } @{ $tuples }) {
       $self->$_send_email( $stash, $template, $attaches, $person );
    }
 

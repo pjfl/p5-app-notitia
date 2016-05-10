@@ -1,7 +1,7 @@
 package App::Notitia::Model::Person;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 create_link delete_button dialog_anchor
                                 field_options loc mail_domain make_tip
@@ -19,6 +19,7 @@ with    q(App::Notitia::Role::Navigation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
 with    q(Web::Components::Role::Email);
+with    q(App::Notitia::Role::Messaging);
 
 # Public attributes
 has '+moniker' => default => 'person';
@@ -26,7 +27,7 @@ has '+moniker' => default => 'person';
 register_action_paths
    'person/activate'       => 'person-activate',
    'person/contacts'       => 'contacts',
-   'person/mailshot'       => 'mailshot',
+   'person/mailshot'       => 'mailshot-people',
    'person/mugshot'        => 'mugshot',
    'person/people'         => 'people',
    'person/person'         => 'person',
@@ -67,11 +68,6 @@ my $_assert_not_self = sub {
    return $nok;
 };
 
-my $_confirm_mailshot_button = sub {
-   return button $_[ 0 ],
-      { class => 'right-last', label => 'confirm', value => 'mailshot_create' };
-};
-
 my $_confirm_mugshot_button = sub {
    return button $_[ 0 ],
       { class => 'right-last', label => 'confirm', value => 'mugshot_create' };
@@ -95,14 +91,6 @@ my $_contact_links = sub {
 my $_copy_element_value = sub {
    return [ "\$( 'upload-btn' ).addEvent( 'change', function( ev ) {",
             "   ev.stop(); \$( 'upload-path' ).value = this.value } )", ];
-};
-
-my $_flatten = sub {
-   my $params = shift; my $r = NUL;
-
-   for my $k (keys %{ $params }) { $r .= "-o ${k}=".$params->{ $k }.' ' }
-
-   return $r;
 };
 
 my $_maybe_find_person = sub {
@@ -132,12 +120,12 @@ my $_people_headers = sub {
 };
 
 my $_people_links = sub {
-   my ($req, $person, $params) = @_; my $role = $params->{role};
+   my ($req, $tuple, $params) = @_; my $role = $params->{role};
 
    $params->{type} and $params->{type} eq 'contacts'
-                   and return $_contact_links->( $req, $person->[ 1 ] );
+                   and return $_contact_links->( $req, $tuple->[ 1 ] );
 
-   my $scode = $person->[ 1 ]->shortcode;
+   my $scode = $tuple->[ 1 ]->shortcode;
    my $k     = $role ? "${role}_${scode}" : $scode;
    my $links = $_people_links_cache->{ $k }; $links and return @{ $links };
    my @paths = ( 'person/person', 'role/role', 'certs/certifications' );
@@ -154,30 +142,6 @@ my $_people_links = sub {
    $_people_links_cache->{ $k } = $links;
 
    return @{ $links };
-};
-
-my $_people_ops_links = sub {
-   my ($req, $page, $moniker, $params) = @_; $params = { %{ $params // {} } };
-
-   my $add_user  = create_link $req, "${moniker}/person", 'person',
-                               { container_class => 'add-link' };
-   my $mail_shot = table_link  $req, 'mailshot',
-                               loc( $req, 'mailshot_management_link' ),
-                               loc( $req, 'mailshot_management_tip' );
-   my $href      = uri_for_action $req, 'person/mailshot', [], $params;
-
-   push @{ $page->{literal_js} //= [] },
-      dialog_anchor( 'mailshot', $href, {
-         name    => 'mailshot_people',
-         title   => loc( $req, 'Send email to people' ),
-         useIcon => \1 } );
-
-   return { class        => 'operation-links right-last',
-            content      => {
-               list      => [ $mail_shot, $add_user ],
-               separator => '|',
-               type      => 'list', },
-            type         => 'container', };
 };
 
 my $_person_mugshot = sub {
@@ -268,12 +232,23 @@ my $_list_all_roles = sub {
    return [ [ NUL, NUL ], $type_rs->list_role_types->all ];
 };
 
-my $_list_mailshot_templates = sub {
-   my $self   = shift;
-   my $dir    = $self->config->assetdir->clone;
-   my $plates = $dir->filter( sub { m{ \.tt \z }mx } );
+my $_people_ops_links = sub {
+   my ($self, $req, $page, $params) = @_;
 
-   return [ map { [ $_->basename( '.tt' ), "${_}" ] } $plates->all_files ];
+   $params->{name} = 'mailshot_people';
+
+   my $moniker  = $self->moniker;
+   my $actionp  = "${moniker}/mailshot";
+   my $mailshot = $self->mailshot_link( $req, $page, $actionp, $params );
+   my $opts     = { container_class => 'add-link' };
+   my $add_user = create_link $req, "${moniker}/person", 'person', $opts;
+
+   return { class        => 'operation-links right-last',
+            content      => {
+               list      => [ $mailshot, $add_user ],
+               separator => '|',
+               type      => 'list', },
+            type         => 'container', };
 };
 
 my $_update_person_from_request = sub {
@@ -429,38 +404,13 @@ sub find_by_shortcode {
 sub mailshot : Role(person_manager) {
    my ($self, $req) = @_;
 
-   my $stash     = $self->dialog_stash( $req, 'mailshot-people' );
-   my $page      = $stash->{page};
-   my $fields    = $page->{fields};
-   my $actionp   = $self->moniker.'/mailshot';
-   my $templates = $self->$_list_mailshot_templates;
-   my $params    = $req->query_params->( { optional => TRUE } ) // {};
+   my $opts = { action => 'mailshot-people', layout => 'mailshot-people'};
 
-   delete $params->{id}; delete $params->{val};
-   $fields->{confirm } = $_confirm_mailshot_button->( $req );
-   $fields->{href    } = uri_for_action $req, $actionp, [], $params;
-   $fields->{template} = bind 'template', [ [ NUL, NUL ], @{ $templates } ];
-
-   return $stash;
+   return $self->mailshot_stash( $req, $opts );
 }
 
 sub mailshot_create_action : Role(person_manager) {
-   my ($self, $req) = @_;
-
-   my $params   = $req->query_params->( { optional => TRUE } ) // {};
-
-   delete $params->{mid};
-
-   my $conf     = $self->config;
-   my $template = $req->body_params->( 'template' );
-   my $job_rs   = $self->schema->resultset( 'Job' );
-   my $cmd      = $conf->binsdir->catfile( 'notitia-schema' ).SPC
-                . $_flatten->( $params )."mailshot ${template}";
-   my $job      = $job_rs->create( { command => $cmd, name => 'mailshot' } );
-   my $message  = [ 'Job mailshot-[_1] created', $job->id ];
-   my $location = uri_for_action $req, $self->moniker.'/people';
-
-   return { redirect => { location => $location, message => $message } };
+   return $_[ 0 ]->mailshot_create( $_[ 1 ], { action => 'people' } );
 }
 
 sub mugshot : Role(person_manager) {
@@ -550,12 +500,11 @@ sub people : Role(any) {
       template   => [ 'contents', 'table' ],
       title      => loc( $req, $title_key ), };
    my $person_rs =  $self->schema->resultset( 'Person' );
-   my $moniker   =  $self->moniker;
    my $fields    =  $page->{fields};
    my $rows      =  $fields->{rows};
    my $opts      =  {};
 
-   $fields->{links} = $_people_ops_links->( $req, $page, $moniker, $params );
+   $fields->{links} = $self->$_people_ops_links( $req, $page, $params );
    $status eq 'current'  and $opts->{current } = TRUE;
    $type   eq 'contacts' and $opts->{prefetch} = [ 'next_of_kin' ]
       and $opts->{columns} = [ 'home_phone', 'mobile_phone' ]

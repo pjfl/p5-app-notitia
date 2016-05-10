@@ -19,6 +19,7 @@ with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
+with    q(App::Notitia::Role::Messaging);
 
 # Public attributes
 has '+moniker' => default => 'event';
@@ -27,6 +28,7 @@ register_action_paths
    'event/event'         => 'event',
    'event/event_summary' => 'event-summary',
    'event/events'        => 'events',
+   'event/mailshot'      => 'mailshot-participents',
    'event/participate'   => 'participate',
    'event/participents'  => 'participents',
    'event/vehicle_event' => 'vehicle-event';
@@ -125,12 +127,13 @@ my $_bind_event_fields = sub {
    my ($self, $event, $opts) = @_; $opts //= {};
 
    my $disabled = $opts->{disabled} // FALSE;
+   my $editing  = $disabled ? $disabled : $event->uri ? TRUE : FALSE;
    my $map      = {
       description => { class    => 'standard-field autosize server',
                        disabled => $disabled },
       end_time    => { class    => 'standard-field', disabled => $disabled },
       name        => { class    => 'standard-field server',
-                       disabled => $disabled,
+                       disabled => $editing,
                        label    => 'event_name' },
       notes       => { class    => 'standard-field autosize',
                        disabled => $disabled },
@@ -185,9 +188,9 @@ my $_owner_list = sub {
 };
 
 my $_participent_links = sub {
-   my ($self, $req, $person, $event) = @_; my $name = $person->[ 1 ]->name;
+   my ($self, $req, $tuple, $event) = @_; my $name = $tuple->[ 1 ]->shortcode;
 
-   my $links = $_links_cache->{$name }; $links and return @{ $links };
+   my $links = $_links_cache->{ $name }; $links and return @{ $links };
 
    $links = [];
 
@@ -200,6 +203,22 @@ my $_participent_links = sub {
    $_links_cache->{ $name } = $links;
 
    return @{ $links };
+};
+
+my $_participent_ops_links = sub {
+   my ($self, $req, $page, $params) = @_;
+
+   $params->{name} = 'mailshot_participents';
+
+   my $actionp  = $self->moniker.'/mailshot';
+   my $mailshot = $self->mailshot_link( $req, $page, $actionp, $params );
+
+   return { class        => 'operation-links right-last',
+            content      => {
+               list      => [ $mailshot ],
+               separator => '|',
+               type      => 'list', },
+            type         => 'container', };
 };
 
 my $_update_event_from_request = sub {
@@ -456,6 +475,18 @@ sub events : Role(any) {
    return $self->get_stash( $req, $page );
 }
 
+sub mailshot : Role(event_manager) {
+   my ($self, $req) = @_;
+
+   my $opts = { action => 'mailshot-participents', layout => 'mailshot-people'};
+
+   return $self->mailshot_stash( $req, $opts );
+}
+
+sub mailshot_create_action : Role(event_manager) {
+   return $_[ 0 ]->mailshot_create( $_[ 1 ], { action => 'events' } );
+}
+
 sub participate_event_action : Role(any) {
    my ($self, $req) = @_;
 
@@ -486,12 +517,16 @@ sub participents : Role(any) {
                          { params => [ $event->name ],
                            no_quote_bind_values => TRUE } ) };
    my $person_rs =  $self->schema->resultset( 'Person' );
-   my $rows      =  $page->{fields}->{rows};
+   my $opts      =  { event => $uri };
+   my $fields    =  $page->{fields};
+   my $rows      =  $fields->{rows};
 
-   for my $person (@{ $person_rs->list_participents( $event ) }) {
+   $fields->{links} = $self->$_participent_ops_links( $req, $page, $opts );
+
+   for my $tuple (@{ $person_rs->list_participents( $event ) }) {
       push @{ $rows },
-         [ { value => $person->[ 0 ] },
-           $self->$_participent_links( $req, $person, $event ) ];
+         [ { value => $tuple->[ 0 ] },
+           $self->$_participent_links( $req, $tuple, $event ) ];
    }
 
    return $self->get_stash( $req, $page );

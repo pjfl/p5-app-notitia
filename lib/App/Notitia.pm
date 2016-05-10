@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 81 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 82 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -38,7 +38,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 81 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 82 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -253,6 +253,9 @@ TODO: Wrap mailshot templates with head and body
 TODO: Work a plan for row life
 
 TODO: Month rota pull all 321 rows by date and loop through
+
+TODO: Review caches; people_links_cache, (event)_links_cache, cert_links_cache,
+      blot_links_cache
 
 =head1 Dependencies
 
