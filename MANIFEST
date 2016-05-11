@@ -30,6 +30,7 @@ lib/App/Notitia/Model/Schedule.pm
 lib/App/Notitia/Model/User.pm
 lib/App/Notitia/Model/Vehicle.pm
 lib/App/Notitia/Role/Editor.pm
+lib/App/Notitia/Role/Messaging.pm
 lib/App/Notitia/Role/Navigation.pm
 lib/App/Notitia/Role/PageConfiguration.pm
 lib/App/Notitia/Role/PageLoading.pm
@@ -122,6 +123,7 @@ var/root/templates/hyde/create-file.tt
 var/root/templates/hyde/docs_content.tt
 var/root/templates/hyde/editing-links.tt
 var/root/templates/hyde/editor.tt
+var/root/templates/hyde/email_layout.tt
 var/root/templates/hyde/endorsement_content.tt
 var/root/templates/hyde/event_content.tt
 var/root/templates/hyde/exception_content.tt

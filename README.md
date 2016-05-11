@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 74 $ of **App::Notitia**
+This documents version v0.3.$Rev: 85 $ of **App::Notitia**
 
 # Description
 
@@ -201,23 +201,20 @@ TODO: Limit list lengths when number of users increases
 
 TODO: Add media query to reduce form size on mobiles
 
-TODO: Add editor role. Someone who can edit documents
-
 TODO: Schema version numbers. DDL files ignored by git
 
 TODO: Event\_type needs an index
 
-TODO: Cancel button on md edit screen
-
 TODO: Undo nav template accordian changes
-
-TODO: Wrap mailshot templates with head and body
 
 TODO: Work a plan for row life
 
 TODO: Month rota pull all 321 rows by date and loop through
 
-TODO: Events should give better duplicate key error messages
+TODO: Review caches; people\_links\_cache, (event)\_links\_cache, cert\_links\_cache,
+      blot\_links\_cache
+
+TODO: Remove rota and shift from schema!
 
 # Dependencies
 

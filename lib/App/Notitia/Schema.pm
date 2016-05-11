@@ -96,6 +96,8 @@ my $_qualify_assets = sub {
 my $_send_email = sub {
    my ($self, $stash, $template, $attaches, $person) = @_;
 
+   $template = "[% WRAPPER 'hyde/email_layout.tt' %]${template}[% END %]";
+
    $stash->{first_name} = $person->first_name;
    $stash->{last_name } = $person->last_name;
    $stash->{username  } = $person->name;
