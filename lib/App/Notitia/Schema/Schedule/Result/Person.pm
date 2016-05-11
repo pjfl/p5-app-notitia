@@ -113,7 +113,7 @@ my $_assert_membership_allowed = sub {
 my $_assert_yield_allowed = sub {
    my ($self, $slot) = @_;
 
-   $self->is_member_of( 'administrator' ) or $self->id == $slot->operator_id
+   $self->is_member_of( 'rota_manager' ) or $self->id == $slot->operator_id
       or throw 'Yield slot - permission denied';
 
    return;

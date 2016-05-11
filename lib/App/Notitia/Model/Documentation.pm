@@ -81,11 +81,11 @@ sub cancel_edit_action : Role(anon) {
    return $_[ 0 ]->page( $_[ 1 ], { cancel_edit => TRUE } );
 }
 
-sub create_file_action : Role(administrator) {
+sub create_file_action : Role(editor) {
    return $_[ 0 ]->create_file( $_[ 1 ] );
 }
 
-sub delete_file_action : Role(administrator) {
+sub delete_file_action : Role(editor) {
    my ($self, $req) = @_; my $res = $self->delete_file( $req );
 
    $res->{redirect}->{location} = $self->docs_url( $req );
@@ -145,7 +145,7 @@ sub page : Role(anon) {
    return $stash;
 }
 
-sub rename_file_action : Role(administrator) {
+sub rename_file_action : Role(editor) {
    return $_[ 0 ]->rename_file( $_[ 1 ] );
 }
 
@@ -153,7 +153,7 @@ sub rename_file_path_fix {
    return $_[ 1 ];
 }
 
-sub save_file_action : Role(administrator) {
+sub save_file_action : Role(editor) {
    return $_[ 0 ]->save_file( $_[ 1 ] );
 }
 
@@ -178,7 +178,7 @@ sub tree_root {
    return $_docs_tree_cache;
 }
 
-sub upload : Role(administrator) {
+sub upload : Role(editor) Role(person_manager) {
    my ($self, $req) = @_; my $res = $self->upload_file( $req );
 
    $res->{redirect}->{location} = $self->docs_url( $req );

@@ -50,7 +50,7 @@ my $_is_user_authorised = sub {
    my $person = $self->components->{person}->find_by_shortcode( $req->username);
    my $proles = $person->list_roles;
 
-   is_member 'administrator', $proles and return TRUE;
+   is_member 'editor', $proles and return TRUE;
 
    for my $role (@{ $nroles }) { is_member $role, $proles and return TRUE }
 

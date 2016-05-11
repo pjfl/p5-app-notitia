@@ -282,6 +282,9 @@ msgstr "Drivers"
 msgid "driver_list_tip"
 msgstr "List drivers"
 
+msgid "editor"
+msgstr "Editor"
+
 msgid "email_address"
 msgstr "Email Address"
 

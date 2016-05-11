@@ -72,11 +72,11 @@ sub cancel_edit_action : Role(anon) {
    return $_[ 0 ]->page( $_[ 1 ], { cancel_edit => TRUE } );
 }
 
-sub create_file_action : Role(administrator) {
+sub create_file_action : Role(editor) {
    return $_[ 0 ]->create_file( $_[ 1 ] );
 }
 
-sub delete_file_action : Role(administrator) {
+sub delete_file_action : Role(editor) {
    my ($self, $req) = @_; my $res = $self->delete_file( $req );
 
    $res->{redirect}->{location} = uri_for_action( $req, 'posts/page' );
@@ -112,7 +112,7 @@ sub page : Role(anon) {
    my $self = shift; return $self->get_stash( @_ );
 }
 
-sub rename_file_action : Role(administrator) {
+sub rename_file_action : Role(editor) {
    return $_[ 0 ]->rename_file( $_[ 1 ] );
 }
 
@@ -124,7 +124,7 @@ sub rss_feed : Role(anon) {
    return $_[ 0 ]->get_rss_feed( $_[ 1 ] );
 }
 
-sub save_file_action : Role(administrator) {
+sub save_file_action : Role(editor) {
    return $_[ 0 ]->save_file( $_[ 1 ] );
 }
 
