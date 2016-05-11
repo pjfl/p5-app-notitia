@@ -151,6 +151,17 @@ sub backup_data : method {
       $arc->add_files( $doc->abs2rel( $conf->appldir ) );
    }
 
+   for my $cfgfile (map { io $_ } @{ $conf->cfgfiles }) {
+      $arc->add_files( $cfgfile->abs2rel( $conf->appldir ) );
+   }
+
+   my $localedir = $conf->localedir
+                        ->clone->filter( sub { m{ _local\.po \z }mx } )->deep;
+
+   for my $pofile ($localedir->all_files ) {
+      $arc->add_files( $pofile->abs2rel( $conf->appldir ) );
+   }
+
    $self->info( 'Generating backup [_1]', { args => [ $tarb ] } );
    $arc->write( $out->pathname, COMPRESS_GZIP ); $path->unlink;
 
