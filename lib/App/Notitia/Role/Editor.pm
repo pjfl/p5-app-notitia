@@ -76,7 +76,7 @@ around 'load_page' => sub {
    my $editing = $req->query_params->( 'edit', { optional => TRUE } )
                ? TRUE : FALSE;
 
-   $page->{editing}   = $editing;
+   $page->{editing}   = $page->{cancel_edit} ? FALSE : $editing;
    $page->{editing} and $page->{user}
       = $self->components->{person}->find_by_shortcode( $req->username );
    $page->{editing}  or $self->$_add_editing_js( $req, $page );

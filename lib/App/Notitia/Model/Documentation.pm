@@ -77,6 +77,10 @@ sub base_uri {
    return uri_for_action( $_[ 1 ], 'docs/page', $_[ 2 ] );
 }
 
+sub cancel_edit_action : Role(anon) {
+   return $_[ 0 ]->page( $_[ 1 ], { cancel_edit => TRUE } );
+}
+
 sub create_file_action : Role(administrator) {
    return $_[ 0 ]->create_file( $_[ 1 ] );
 }
@@ -130,10 +134,10 @@ sub nav_label {
 }
 
 sub page : Role(anon) {
-   my ($self, $req) = @_;
+   my ($self, $req, $page) = @_;
 
    my $reset = $req->query_params->( 'navigation_reset', { optional => TRUE } );
-   my $stash = $self->get_stash( $req );
+   my $stash = $self->get_stash( $req, $page );
 
    $reset and push @{ $stash->{page}->{literal_js} },
       "   behaviour.config[ 'sidebars' ] = { 'navigation_reset': true };";

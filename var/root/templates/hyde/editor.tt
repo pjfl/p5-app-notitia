@@ -6,6 +6,9 @@
    <textarea class="standard-field autosize" id="markdown-editor"
               name="content">[% page.content | html %]</textarea>
    <br/>
+   <div class="field-group right-last">
    <button class="button" name="_method" type="submit"
-           value="save_file">[% loc( 'Save' ) %]</button>
+           value="cancel_edit">[% loc( 'Cancel' ) %]</button>
+   <button class="button" name="_method" type="submit"
+           value="save_file">[% loc( 'Save' ) %]</button></div>
 </form>

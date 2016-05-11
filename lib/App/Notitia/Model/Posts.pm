@@ -68,6 +68,10 @@ sub base_uri {
    return uri_for_action( $_[ 1 ], 'posts/page', $_[ 2 ] );
 }
 
+sub cancel_edit_action : Role(anon) {
+   return $_[ 0 ]->page( $_[ 1 ], { cancel_edit => TRUE } );
+}
+
 sub create_file_action : Role(administrator) {
    return $_[ 0 ]->create_file( $_[ 1 ] );
 }
@@ -105,7 +109,7 @@ sub nav_label {
 }
 
 sub page : Role(anon) {
-   return $_[ 0 ]->get_stash( $_[ 1 ] );
+   my $self = shift; return $self->get_stash( @_ );
 }
 
 sub rename_file_action : Role(administrator) {

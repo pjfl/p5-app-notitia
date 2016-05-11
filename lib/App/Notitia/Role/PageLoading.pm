@@ -58,9 +58,12 @@ my $_is_user_authorised = sub {
 };
 
 around 'load_page' => sub {
-   my ($orig, $self, $req, @args) = @_; my %seen = ();
+   my ($orig, $self, $req, @args) = @_; my $page = $args[ 0 ]; my %seen = ();
 
-   $args[ 0 ] and return $orig->( $self, $req, $args[ 0 ] );
+   $page and not $page->{cancel_edit}
+         and return $orig->( $self, $req, @args );
+
+   my $cancel_edit = $page->{cancel_edit} ? TRUE : FALSE;
 
    for my $locale ($req->locale, @{ $req->locales }, $self->config->locale) {
       $seen{ $locale } and next; $seen{ $locale } = TRUE;
@@ -71,6 +74,8 @@ around 'load_page' => sub {
          or throw 'Person [_1] permission denied', [ $req->username ];
 
       my $page = $self->initialise_page( $req, $node, $locale );
+
+      $page->{cancel_edit} = $cancel_edit;
 
       return $orig->( $self, $req, $page );
    }

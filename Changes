@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added cancel button to the markdown edit screen
           - Can mailshot event participents
           - Better duplicate key errors on events
           - Added mugshots. Implements #36
