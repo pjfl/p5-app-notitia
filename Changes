@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #40. Vehicle assignment summary
           - Implements #29. Added more files to data_backup
           - Wrapped mailshot templates with head and body
           - Added editor role. Someone who can edit documents

@@ -423,7 +423,7 @@ sub delete_button ($$;$) {
 sub dialog_anchor ($$$) {
    my ($k, $href, $opts) = @_;
 
-   return js_anchor_config( $k, 'modalDialog', 'click', [ "${href}", $opts ] );
+   return js_anchor_config( $k, 'click', 'modalDialog', [ "${href}", $opts ] );
 }
 
 sub encrypted_attr ($$$$) {
@@ -543,7 +543,7 @@ sub iterator ($) {
 }
 
 sub js_anchor_config ($$$$) {
-   my ($k, $method, $event, $args) = @_; $args = $json_coder->encode( $args );
+   my ($k, $event, $method, $args) = @_; $args = $json_coder->encode( $args );
 
    return "   behaviour.config.anchors[ '${k}' ] = {",
           "      event     : '${event}',",

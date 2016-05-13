@@ -2579,9 +2579,9 @@ this.Tips = new Class( {
       }
 
       this.term = new Element( 'dt', {
-         'class' : klass + '-term' } ).inject( dlist );
+         'class' : klass + '-term', 'id' : klass + '-term' } ).inject( dlist );
       this.defn = new Element( 'dd', {
-         'class' : klass + '-defn' } ).inject( dlist );
+         'class' : klass + '-defn', 'id' : klass + '-defn' } ).inject( dlist );
    },
 
    detach: function() {
@@ -2832,6 +2832,11 @@ var WindowUtils = new Class( {
 
       this.dialogs = [];
       this.build();
+   },
+
+   asyncTips: function( url, id, val ) {
+      this.request( url, id, val, function () {
+         $( id ).setStyle( 'display', '' ) } );
    },
 
    location: function( href ) {

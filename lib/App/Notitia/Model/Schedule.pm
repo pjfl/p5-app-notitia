@@ -24,9 +24,10 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'sched';
 
 register_action_paths
-   'sched/day_rota'   => 'day-rota',
-   'sched/month_rota' => 'month-rota',
-   'sched/slot'       => 'slot';
+   'sched/vassign_summary' => 'assignment-summary',
+   'sched/day_rota'        => 'day-rota',
+   'sched/month_rota'      => 'month-rota',
+   'sched/slot'            => 'slot';
 
 # Construction
 around 'get_stash' => sub {
@@ -75,6 +76,35 @@ my $_day_label = sub {
 
 my $_day_rota_headers = sub {
    return [ map {  $_day_label->( $_[ 0 ], $_ ) } 0 .. $_max_rota_cols - 1 ];
+};
+
+my $_date_picker = sub {
+   my ($name, $rota_dt, $href) = @_;
+
+   return { class       => 'rota-date-form',
+            content     => {
+               list     => [ {
+                  name  => 'rota_name',
+                  type  => 'hidden',
+                  value => $name,
+               }, {
+                  class => 'rota-date-field shadow submit',
+                  label => NUL,
+                  name  => 'rota_date',
+                  type  => 'date',
+                  value => $rota_dt->ymd,
+               }, {
+                  class => 'rota-date-field',
+                  disabled => TRUE,
+                  name  => 'rota_date_display',
+                  label => NUL,
+                  type  => 'textfield',
+                  value => $rota_dt->day_abbr.SPC.$rota_dt->day,
+               }, ],
+               type     => 'list', },
+            form_name   => 'day-rota',
+            href        => $href,
+            type        => 'form', };
 };
 
 my $_first_month_rota_date = sub {
@@ -136,14 +166,14 @@ my $_next_month = sub {
 };
 
 my $_onchange_submit = sub {
-   return js_anchor_config 'rota_date', 'submitForm', 'change',
+   return js_anchor_config 'rota_date', 'change', 'submitForm',
                          [ 'rota_redirect', 'day-rota' ];
 };
 
 my $_onclick_relocate = sub {
    my ($k, $href) = @_;
 
-   return js_anchor_config $k, 'location', 'click', [ "${href}" ];
+   return js_anchor_config $k, 'click', 'location', [ "${href}" ];
 };
 
 my $_operators_vehicle = sub {
@@ -170,7 +200,7 @@ my $_prev_month = sub {
 };
 
 my $_rota_summary_link = sub {
-   my ($span, $opts) = @_;
+   my ($req, $span, $id, $opts) = @_;
 
    $opts or return { colspan => $span, value => '&nbsp;' x 2 };
 
@@ -179,7 +209,10 @@ my $_rota_summary_link = sub {
    if    ($opts->{vehicle    }) { $value = 'V'; $class = 'vehicle-assigned'  }
    elsif ($opts->{vehicle_req}) { $value = 'V'; $class = 'vehicle-requested' }
 
-   return { class => $class, colspan => $span, value => $value };
+   $class .= ' windows tips';
+
+   return { class => $class, colspan => $span, name => $id,
+            title => loc( $req, 'Vehicle Assignment' ), value => $value };
 };
 
 my $_slot_label = sub {
@@ -242,15 +275,28 @@ my $_slot_link = sub {
 };
 
 my $_summary_cells = sub {
-   my ($shift_types, $slot_types, $limits, $span, $rows) = @_; my $cells = [];
+   my ($self, $req, $page, $date, $shift_types, $slot_types, $data, $rno) = @_;
+
+   my $actionp = $self->moniker.'/vassign_summary';
+   my $limits  = $self->config->slot_limits;
+   my $name    = $page->{rota}->{name};
+   my $span    = $page->{rota}->{lcm } / $page->{rota}->{max_slots}->[ $rno ];
+   my $cells   = [];
 
    for my $shift_type (@{ $shift_types }) {
       for my $slot_type (@{ $slot_types }) {
          my $i = slot_limit_index $shift_type, $slot_type;
 
          for my $slotno (0 .. $limits->[ $i ] - 1) {
-            push @{ $cells }, $_rota_summary_link->
-               ( $span, $rows->{ "${shift_type}_${slot_type}_${slotno}" } );
+            my $key  = "${shift_type}_${slot_type}_${slotno}";
+            my $id   = $date->ymd."_${key}";
+            my $href = uri_for_action $req, $actionp, [ "${name}_${id}" ];
+
+            push @{ $cells },
+               $_rota_summary_link->( $req, $span, $id, $data->{ $key } );
+
+            $data->{ $key } and push @{ $page->{literal_js} }, js_anchor_config
+               $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
          }
       }
    }
@@ -278,7 +324,7 @@ my $_vehicle_request_link = sub {
    my $vreq_rs  = $schema->resultset( 'VehicleRequest' );
    my $vreqs    = $vreq_rs->search( { event_id => $event->id } );
    my $opts     = $vreqs->count ? $_vreq_state->( $assigned, $vreqs ) : FALSE;
-   my $link     = $_rota_summary_link->( 1, $opts );
+   my $link     = $_rota_summary_link->( $req, 1, $name, $opts );
 
    $link->{class} .= ' small-slot';
    $link->{value}  = { hint  => loc( $req, 'Hint' ),
@@ -330,32 +376,8 @@ my $_driver_row = sub {
 my $_events = sub {
    my ($schema, $req, $page, $name, $rota_dt, $todays_events) = @_;
 
-   my $display = $rota_dt->day_abbr.SPC.$rota_dt->day;
    my $href    = uri_for_action $req, $page->{moniker}.'/day_rota';
-   my $picker  = { class       => 'rota-date-form',
-                   content     => {
-                      list     => [ {
-                         name  => 'rota_name',
-                         type  => 'hidden',
-                         value => $name,
-                      }, {
-                         class => 'rota-date-field shadow submit',
-                         label => NUL,
-                         name  => 'rota_date',
-                         type  => 'date',
-                         value => $rota_dt->ymd,
-                      }, {
-                         class => 'rota-date-field',
-                         disabled => TRUE,
-                         name  => 'rota_date_display',
-                         label => NUL,
-                         type  => 'textfield',
-                         value => $display,
-                      }, ],
-                      type     => 'list', },
-                   form_name   => 'day-rota',
-                   href        => $href,
-                   type        => 'form', };
+   my $picker  = $_date_picker->( $name, $rota_dt, $href );
    my $col1    = { value => $picker, class => 'rota-date narrow' };
    my $first   = TRUE;
 
@@ -426,59 +448,61 @@ my $_find_rota_type_id_for = sub {
 };
 
 my $_summary_table = sub {
-   my ($self, $page, $date, $has_event, $rows) = @_;
+   my ($self, $req, $page, $date, $has_event, $data) = @_;
 
-   my $rota   = $page->{rota};
-   my $lcm    = $rota->{lcm};
-   my $limits = $self->config->slot_limits;
-   my $span   = $lcm / $rota->{max_slots}->[ 0 ];
-   my $table  = { class => 'month-rota', rows => [], type => 'table' };
+   my $table = { class => 'month-rota', rows => [], type => 'table' };
+   my $lcm   = $page->{rota}->{lcm};
 
    push @{ $table->{rows} },
       [ { colspan =>     $lcm / 4, value => $date->day },
         { colspan => 3 * $lcm / 4, value => $has_event } ];
 
-   push @{ $table->{rows} }, $_summary_cells->
-      ( [ 'day', 'night' ], [ 'controller' ], $limits, $span, $rows );
+   push @{ $table->{rows} }, $self->$_summary_cells
+      ( $req, $page, $date, [ 'day', 'night' ], [ 'controller' ], $data, 0 );
 
-   $span = $lcm / $rota->{max_slots}->[ 1 ];
+   push @{ $table->{rows} }, $self->$_summary_cells
+      ( $req, $page, $date, [ 'day' ], [ 'rider', 'driver' ], $data, 1 );
 
-   push @{ $table->{rows} }, $_summary_cells->
-      ( [ 'day' ], [ 'rider', 'driver' ], $limits, $span, $rows );
-
-   $span = $lcm / $rota->{max_slots}->[ 2 ];
-
-   push @{ $table->{rows} }, $_summary_cells->
-      ( [ 'night' ], [ 'rider', 'driver' ], $limits, $span, $rows );
+   push @{ $table->{rows} }, $self->$_summary_cells
+      ( $req, $page, $date, [ 'night' ], [ 'rider', 'driver' ], $data, 2 );
 
    return $table;
 };
 
-my $_rota_summary = sub {
-   my ($self, $req, $page, $name, $date) = @_;
+my $_vehicle_assignments = sub {
+   my ($self, $type_id, $date) = @_;
 
-   my $type_id   = $self->$_find_rota_type_id_for( $name );
-   my $slot_rs   = $self->schema->resultset( 'Slot' );
-   # TODO: Do not need the personal_vehicle join
-   my $slots     = $slot_rs->list_slots_for( $type_id, to_dt $date->ymd );
-   my $event_rs  = $self->schema->resultset( 'Event' );
-   my $events    = $event_rs->count_events_for( $type_id, $date->ymd );
-   my $has_event = $events > 0 ? loc( $req, 'Events' ) : NUL;
-   my $rows      = {};
+   my $slot_rs = $self->schema->resultset( 'Slot' );
+   my $slots   = $slot_rs->list_slots_for( $type_id, to_dt $date->ymd );
+   my $data    = {};
 
    for my $slot ($slots->all) {
       my $shift = $slot->shift;
       my $key   = $shift->type_name.'_'.$slot->type_name.'_'.$slot->subslot;
 
-      $rows->{ $key } = { name        => $key,
+      $data->{ $key } = { name        => $key,
+                          operator    => $slot->operator,
                           vehicle     => $slot->vehicle,
                           vehicle_req => $slot->bike_requested };
    }
 
-   my $table   = $self->$_summary_table( $page, $date, $has_event, $rows );
-   my $actionp = $self->moniker.'/day_rota';
-   my $href    = uri_for_action $req, $actionp, [ $name, $date->ymd ];
-   my $id      = "${name}_".$date->ymd;
+   return $data;
+};
+
+my $_rota_summary = sub {
+   my ($self, $req, $page, $date) = @_;
+
+   my $name      = $page->{rota}->{name};
+   my $type_id   = $self->$_find_rota_type_id_for( $name );
+   my $event_rs  = $self->schema->resultset( 'Event' );
+   my $events    = $event_rs->count_events_for( $type_id, $date->ymd );
+   my $has_event = $events > 0 ? loc( $req, 'Events' ) : NUL;
+   my $data      = $self->$_vehicle_assignments( $type_id, $date );
+   my $table     = $self->$_summary_table
+      ( $req, $page, $date, $has_event, $data );
+   my $actionp   = $self->moniker.'/day_rota';
+   my $href      = uri_for_action $req, $actionp, [ $name, $date->ymd ];
+   my $id        = "${name}_".$date->ymd;
 
    push @{ $page->{literal_js} }, $_onclick_relocate->( $id, $href );
 
@@ -591,8 +615,11 @@ sub month_rota : Role(any) {
    my $next      =  $_next_month->( $req, $actionp, $rota_name, $month->clone );
    my $page      =  {
       fields     => { nav => { next => $next, prev => $prev }, },
-      rota       => { headers => $_month_rota_headers->( $req ),
-                      lcm => $lcm, max_slots => $max_slots, rows => [] },
+      rota       => { headers   => $_month_rota_headers->( $req ),
+                      lcm       => $lcm,
+                      max_slots => $max_slots,
+                      name      => $rota_name,
+                      rows      => [] },
       template   => [ 'contents', 'rota', 'month-table' ],
       title      => $title, };
    my $first     =  $_first_month_rota_date->( $req, $month->clone );
@@ -606,7 +633,7 @@ sub month_rota : Role(any) {
 
          $dayno = $date->day; $rno > 3 and $dayno == 1 and last;
          $_is_this_month->( $rno, $date )
-            and $cell = $self->$_rota_summary( $req, $page, $rota_name, $date );
+            and $cell = $self->$_rota_summary( $req, $page, $date );
          push @{ $row }, $cell;
       }
 
@@ -665,6 +692,23 @@ sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
 
    $fields->{confirm  } = $_confirm_slot_button->( $req, $action );
    $fields->{slot_href} = uri_for_action( $req, $self->moniker.'/slot', $args );
+
+   return $stash;
+}
+
+sub vassign_summary : Role(any) {
+   my ($self, $req) = @_;
+
+   my ($rota_name, $date, $shift_type, $slot_type, $subslot)
+      = split m{ _ }mx, $req->uri_params->( 0 ), 5;
+   my $key     = "${shift_type}_${slot_type}_${subslot}";
+   my $type_id = $self->$_find_rota_type_id_for( $rota_name );
+   my $data    = $self->$_vehicle_assignments( $type_id, to_dt $date, 'GMT' );
+   my $stash   = $self->dialog_stash( $req, 'vassign-summary' );
+   my $fields  = $stash->{page}->{fields};
+
+   $fields->{operator} = $data->{ $key }->{operator}->label;
+   $fields->{vehicle } = $data->{ $key }->{vehicle }->label;
 
    return $stash;
 }
