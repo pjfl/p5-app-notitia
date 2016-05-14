@@ -59,7 +59,8 @@ sub list_slots_for {
 
    my $parser = $self->result_source->schema->datetime_parser;
    my $attr   = [ 'operator.first_name', 'operator.id', 'operator.last_name',
-                  'operator.name', 'vehicle.name', 'vehicle.vrn' ];
+                  'operator.name', 'operator.postcode', 'vehicle.name',
+                  'vehicle.vrn' ];
 
    return $self->search
       ( { 'rota.type_id' => $type_id,

@@ -368,6 +368,13 @@ sub list_roles {
    return [ map { $_->type->name } $self->roles->search( {}, $opts )->all ];
 }
 
+sub outer_postcode {
+   my $self    = shift;
+   my ($outer) = split SPC, ($self->postcode // NUL); $outer //= NUL;
+
+   return $outer;
+}
+
 sub set_password {
    my ($self, $old, $new) = @_;
 

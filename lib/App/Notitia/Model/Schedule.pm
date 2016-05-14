@@ -548,15 +548,18 @@ sub assign_summary : Role(any) {
 
    my ($rota_name, $date, $shift_type, $slot_type, $subslot)
       = split m{ _ }mx, $req->uri_params->( 0 ), 5;
-   my $key     = "${shift_type}_${slot_type}_${subslot}";
-   my $type_id = $self->$_find_rota_type_id_for( $rota_name );
-   my $data    = $self->$_slot_assignments( $type_id, to_dt $date, 'GMT' );
-   my $stash   = $self->dialog_stash( $req, 'assign-summary' );
-   my $fields  = $stash->{page}->{fields};
-   my $slot    = $data->{ $key };
+   my $key      = "${shift_type}_${slot_type}_${subslot}";
+   my $type_id  = $self->$_find_rota_type_id_for( $rota_name );
+   my $data     = $self->$_slot_assignments( $type_id, to_dt $date, 'GMT' );
+   my $stash    = $self->dialog_stash( $req, 'assign-summary' );
+   my $fields   = $stash->{page}->{fields};
+   my $slot     = $data->{ $key };
+   my $operator = $slot->{operator};
 
-   $fields->{operator} = $slot->{operator}->label;
-   $slot->{vehicle} and $fields->{vehicle} = $slot->{vehicle }->label;
+   $fields->{operator} = $operator->label;
+   $operator->postcode
+      and $fields->{operator} .= ' ('.$operator->outer_postcode.')';
+   $slot->{vehicle} and $fields->{vehicle} = $slot->{vehicle}->label;
 
    return $stash;
 }
