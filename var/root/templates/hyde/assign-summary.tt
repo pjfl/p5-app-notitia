@@ -1,0 +1,4 @@
+[% PROCESS 'hyde/macros.tt' -%]
+<!-- Assignment Summary -->
+<p class="label-column">[% page.fields.operator %]</p>
+<p class="label-column">[% page.fields.vehicle  %]</p>

@@ -112,6 +112,7 @@ var/root/less/hyde/pygments.less
 var/root/less/hyde/style.less
 var/root/less/hyde/yellow.less
 var/root/templates/hyde/admin-index_content.tt
+var/root/templates/hyde/assign-summary.tt
 var/root/templates/hyde/assign-vehicle.tt
 var/root/templates/hyde/blank-page.tt
 var/root/templates/hyde/certification_content.tt
