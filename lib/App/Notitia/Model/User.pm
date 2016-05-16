@@ -167,6 +167,7 @@ sub login_action : Role(anon) {
    $session->roles( [] );
    $session->username( $person->shortcode );
    $session->first_name( $person->first_name );
+   $session->user_label( $person->label );
 
    my $message   = [ '[_1] logged in', $person->label ];
    my $wanted    = $session->wanted; $req->session->wanted( NUL );

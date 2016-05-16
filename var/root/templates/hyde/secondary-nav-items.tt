@@ -22,7 +22,7 @@
    </li>
 [%    href = uri_for_action( 'user/logout_action' ) -%]
    <li>
-[%    text = loc( 'Logout' ) _ '  (' _ page.username _ ')' -%]
+[%    text = loc( 'Logout' ) _ '  (' _ prefs.user_label _ ')' -%]
 [%    FormWithButton( href, 'windows', text, 'authentication',
                       loc( 'Logout from [_1]', config.title ),
                      'logout-user', 'logout') -%]

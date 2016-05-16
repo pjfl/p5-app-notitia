@@ -202,12 +202,13 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       rota_date       => [ SimpleStr | Undef                ],
       skin            => [ NonEmptySimpleStr, $_[ 0 ]->skin ],
       theme           => [ NonEmptySimpleStr, 'yellow'      ],
+      user_label      => [ SimpleStr | Undef                ],
       wanted          => [ SimpleStr | Undef                ], } };
 
 has 'shift_times'     => is => 'ro',   isa => HashRef,
    builder            => sub { {
-      day_start       => '09:00', day_end   => '18:00',
-      night_start     => '18:00', night_end => '09:00', } };
+      day_start       => '07:00', day_end   => '18:00',
+      night_start     => '18:00', night_end => '07:00', } };
 
 has 'skin'            => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'hyde';

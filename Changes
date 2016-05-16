@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #42. Use person label on secondary nav
           - Added outer postcode to assinment summaries
           - Added controller and driver assignment summaries
           - Implements #40. Vehicle assignment summary

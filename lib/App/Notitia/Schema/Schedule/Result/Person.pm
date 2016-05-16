@@ -359,7 +359,7 @@ sub is_participent_of {
 }
 
 sub label {
-   return ucfirst( $_[ 0 ]->first_name ).SPC.$_[ 0 ]->last_name;
+   return ucfirst( $_[ 0 ]->first_name ).SPC.ucfirst( $_[ 0 ]->last_name );
 }
 
 sub list_roles {
