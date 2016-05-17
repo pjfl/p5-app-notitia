@@ -51,6 +51,10 @@ my $_build_secret = sub {
    encrypted_attr $_[ 0 ], $_[ 0 ]->ctlfile, 'secret', \&create_token;
 };
 
+my $_build_sms_password = sub {
+   encrypted_attr $_[ 0 ], $_[ 0 ]->ctlfile, 'sms_password', \&create_token;
+};
+
 my $_build_user_home = sub {
    my $appldir = $_[ 0 ]->appldir; my $verdir = $appldir->basename;
 
@@ -221,6 +225,12 @@ has 'slot_certs'      => is => 'ro',   isa => HashRef[ArrayRef],
 
 has 'slot_limits'     => is => 'ro',   isa => ArrayRef[PositiveInt],
    builder            => sub { [ 2, 1, 3, 3, 1, 1 ] };
+
+has 'sms_password'    => is => 'ro',   isa => NonEmptySimpleStr,
+   builder            => $_build_sms_password;
+
+has 'sms_username'    => is => 'ro',   isa => NonEmptySimpleStr,
+   default            => 'unknown';
 
 has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
    builder            => sub { {
@@ -602,6 +612,18 @@ shifts
 
 A non empty simple string that defaults to C<hyde>. The name of the default
 skin used to theme the appearance of the application
+
+=item C<sms_password>
+
+A non empty simple string that defaults to C<NUL>. The password used to send
+SMS text messages. This should be set using
+
+   notitia-cli set-sms-password
+
+=item C<sms_username>
+
+A non empty simple string that defaults to C<unknown>. The username used to
+send SMS text messages. This should be set in the local configuation file
 
 =item C<slot_certs>
 

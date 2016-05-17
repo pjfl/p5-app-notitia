@@ -5,6 +5,7 @@ use namespace::autoclean;
 use App::Notitia;
 use App::Notitia::Constants qw( AS_PASSWORD EXCEPTION_CLASS FALSE NUL
                                 OK SLOT_TYPE_ENUM TRUE );
+use App::Notitia::SMS;
 use App::Notitia::Util      qw( encrypted_attr load_file_data mail_domain );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( ensure_class_loaded io throw );
@@ -17,6 +18,7 @@ use Moo;
 extends q(Class::Usul::Schema);
 with    q(App::Notitia::Role::Schema);
 with    q(Web::Components::Role::Email);
+with    q(Web::Components::Role::TT);
 
 our $VERSION = $App::Notitia::VERSION;
 
@@ -61,7 +63,7 @@ my $_list_participents = sub {
    my $self      = shift;
    my $uri       = $self->options->{event};
    my $event     = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $opts      = { columns => [ 'email_address' ] };
+   my $opts      = { columns => [ 'email_address', 'mobile_phone' ] };
    my $person_rs = $self->schema->resultset( 'Person' );
 
    return $person_rs->list_participents( $event, $opts );
@@ -70,7 +72,7 @@ my $_list_participents = sub {
 my $_list_people = sub {
    my $self      = shift;
    my $person_rs = $self->schema->resultset( 'Person' );
-   my $opts      = { columns => [ 'email_address' ] };
+   my $opts      = { columns => [ 'email_address', 'mobile_phone' ] };
    my $role      = $self->options->{role};
 
    not defined $self->options->{current} and $opts->{current} = TRUE;
@@ -119,6 +121,26 @@ my $_send_email = sub {
    my $params = { args => [ $person->shortcode, $id ] };
 
    $self->info( 'Emailed [_1] - [_2]', $params );
+   return;
+};
+
+my $_send_sms = sub {
+   my ($self, $stash, $template, $tuples) = @_; my @recipients;
+
+   $stash->{layout} = \$template;
+
+   my $conf    = $self->config;
+   my $attr    = { log      => $self->log,
+                   password => $conf->sms_password,
+                   username => $conf->sms_username };
+   my $sender  = App::Notitia::SMS->new( $attr );
+   my $message = $self->render_template( $stash );
+
+   for my $person (map { $_->[ 1 ] } @{ $tuples }) {
+      $person->mobile_phone and push @recipients, $person->mobile_phone;
+   }
+
+   $sender->send_sms( $message, @recipients );
    return;
 };
 
@@ -194,14 +216,18 @@ sub mailshot : method {
    my $self       = shift;
    my $conf       = $self->config;
    my $plate_name = $self->next_argv or throw Unspecified, [ 'template name' ];
+   my $sink       = $self->next_argv // 'email';
    my $stash      = { app_name => $conf->title, path => io( $plate_name ), };
    my $template   = load_file_data( $stash );
    my $attaches   = $self->$_qualify_assets( delete $stash->{attachments} );
    my $tuples     = $self->options->{event} ? $self->$_list_participents
                                             : $self->$_list_people;
 
-   for my $person (map { $_->[ 1 ] } @{ $tuples }) {
-      $self->$_send_email( $stash, $template, $attaches, $person );
+   if ($sink eq 'sms') { $self->$_send_sms( $stash, $template, $tuples ) }
+   else {
+      for my $person (map { $_->[ 1 ] } @{ $tuples }) {
+         $self->$_send_email( $stash, $template, $attaches, $person );
+      }
    }
 
    return OK;
