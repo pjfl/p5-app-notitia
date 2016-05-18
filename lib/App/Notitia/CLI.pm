@@ -4,12 +4,14 @@ use namespace::autoclean;
 
 use App::Notitia; our $VERSION = $App::Doh::VERSION;
 
-use Archive::Tar::Constant qw( COMPRESS_GZIP );
-use Class::Usul::Constants qw( AS_PARA FALSE NUL OK TRUE );
-use Class::Usul::Functions qw( bson64id class2appdir create_token
-                               ensure_class_loaded io );
-use Class::Usul::Types     qw( LoadableClass NonEmptySimpleStr Object );
-use English                qw( -no_match_vars );
+use Archive::Tar::Constant   qw( COMPRESS_GZIP );
+use Class::Usul::Constants   qw( AS_PARA AS_PASSWORD FALSE NUL OK TRUE );
+use Class::Usul::Crypt::Util qw( encrypt_for_config );
+use Class::Usul::File;
+use Class::Usul::Functions   qw( bson64id class2appdir create_token
+                                 ensure_class_loaded io );
+use Class::Usul::Types       qw( LoadableClass NonEmptySimpleStr Object );
+use English                  qw( -no_match_vars );
 use User::grent;
 use User::pwent;
 use Moo;
@@ -219,6 +221,21 @@ sub post_install : method {
    return OK;
 }
 
+sub set_sms_password : method {
+   my $self     = shift;
+   my $conf     = $self->config;
+   my $password = $self->get_line( '+Enter SMS password', AS_PASSWORD );
+   my $file     = $conf->ctlfile;
+   my $data     = {};
+
+   $file->exists
+      and $data = Class::Usul::File->data_load( paths => [ $file ] ) // {};
+   $data->{sms_password} = encrypt_for_config $conf, $password;
+   Class::Usul::File->data_dump( { path => $file->assert, data => $data } );
+
+   return OK;
+}
+
 sub uninstall : method {
    my $self    = shift;
    my $conf    = $self->config;
@@ -283,6 +300,12 @@ F<hyde> skin
 
 Performs a sequence of tasks after installation of the applications files
 is complete
+
+=head2 C<set_sms_password> - Set the SMS password
+
+   bin/notitia-cli set-sms-password
+
+Set the SMS password used to send bulk text messages
 
 =head2 C<uninstall> - Remove the application from the system
 

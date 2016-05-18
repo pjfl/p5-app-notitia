@@ -3,7 +3,7 @@ package App::Notitia::SMS;
 use namespace::autoclean;
 
 use Class::Null;
-use Class::Usul::Constants qw( FALSE NUL SPC );
+use Class::Usul::Constants qw( FALSE NUL );
 use Class::Usul::Functions qw( throw );
 use Class::Usul::Time      qw( nap );
 use Class::Usul::Types     qw( ArrayRef Bool HashRef Logger NonEmptySimpleStr
@@ -28,24 +28,23 @@ has 'quote'        => is => 'ro', isa => Bool, default => FALSE;
 
 has 'send_options' => is => 'ro', isa => HashRef, builder => sub { {} };
 
-has 'timeout'      => is => 'ro', isa => PositiveInt, default => 30;
+has 'timeout'      => is => 'ro', isa => PositiveInt, default => 10;
 
 has 'username'     => is => 'ro', isa => NonEmptySimpleStr;
 
-# Private attributes
-has '_option_keys' => is => 'ro', isa => ArrayRef[NonEmptySimpleStr],
-   builder         => sub {
-      qw( allow_concat_text_sms dca msg_class oncat_text_sms_max_parts
-          repliable routing_group scheduling_description send_time
-          send_time_unixtime sender source_id stop_dup_id
-          strip_dup_recipients test_always_fail test_always_succeed
-          want_report ) };
+# Private functions
+my $_option_keys =
+   [ qw( allow_concat_text_sms dca msg_class oncat_text_sms_max_parts
+         repliable routing_group scheduling_description send_time
+         send_time_unixtime sender source_id stop_dup_id
+         strip_dup_recipients test_always_fail test_always_succeed
+         want_report ) ];
 
 # Constructions
 around 'BUILDARGS' => sub {
    my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
 
-   for my $k (@{ $self->_option_keys }) {
+   for my $k (@{ $_option_keys }) {
       exists $attr->{ $k }
          and $attr->{send_options}->{ $k } = delete $attr->{ $k };
    }
@@ -57,7 +56,9 @@ around 'BUILDARGS' => sub {
 my $_flatten = sub {
    my $params = shift; my $r = NUL;
 
-   for my $k (keys %{ $params }) { $r .= "${k}=".$params->{ $k } }
+   for my $k (keys %{ $params }) { $r .= "${k}=".$params->{ $k }.' ' }
+
+   $r =~ s{ \n }{ }gmx;
 
    return $r;
 };
@@ -65,6 +66,8 @@ my $_flatten = sub {
 # Public methods
 sub send_sms {
    my ($self, $message, @recipients) = @_;
+
+   $recipients[ 0 ] or throw 'No SMS recipients';
 
    my $options = { %{ $self->http_options } };
    my $params  = { %{ $self->send_options } };
@@ -77,7 +80,7 @@ sub send_sms {
    my $url    = $self->base_url."/submission/${method}/2/2.0";
    my $http   = HTTP::Tiny->new( %{ $options } );
 
-   $self->log->debug( $url.SPC.$_flatten->( $params ) );
+   $self->log->debug( "SMS ${url} ".$_flatten->( $params ) );
 
    my ($code, $desc, $id);
 
@@ -92,7 +95,7 @@ sub send_sms {
       $res->{success} or throw 'SMS transport error [_1]: [_2]',
                          [ $res->{status}, $res->{reason} ];
 
-      ($code, $desc, $id) = split m{ \| }mx,  $res->{content};
+      ($code, $desc, $id) = split m{ \| }mx, $res->{content};
       $code == 0 and last; nap 0.25;
    }
 

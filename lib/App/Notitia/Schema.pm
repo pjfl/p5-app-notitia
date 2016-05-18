@@ -127,7 +127,7 @@ my $_send_email = sub {
 my $_send_sms = sub {
    my ($self, $stash, $template, $tuples) = @_; my @recipients;
 
-   $stash->{layout} = \$template;
+   $stash->{template}->{layout} = \$template;
 
    my $conf    = $self->config;
    my $attr    = { log      => $self->log,

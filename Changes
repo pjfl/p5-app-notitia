@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added setting SMS password
           - Started adding SMS mailshots
           - Implements #42. Use person label on secondary nav
           - Added outer postcode to assinment summaries
