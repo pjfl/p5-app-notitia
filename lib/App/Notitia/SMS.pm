@@ -13,7 +13,7 @@ use Moo;
 
 # Public attributes
 has 'base_url'     => is => 'ro', isa => NonEmptySimpleStr,
-   default         => 'http://www.bulksms.co.uk:5567';
+   default         => 'http://www.bulksms.co.uk:5567/eapi';
 
 has 'http_options' => is => 'ro', isa => HashRef, builder => sub { {} };
 

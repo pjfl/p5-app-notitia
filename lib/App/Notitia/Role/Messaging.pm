@@ -10,9 +10,9 @@ use Moo::Role;
 requires qw( config dialog_stash moniker );
 
 # Private functions
-my $_confirm_mailshot_button = sub {
+my $_confirm_message_button = sub {
    return button $_[ 0 ],
-      { class => 'right-last', label => 'confirm', value => 'mailshot_create' };
+      { class => 'right-last', label => 'confirm', value => 'message_create' };
 };
 
 my $_flatten = sub {
@@ -24,7 +24,7 @@ my $_flatten = sub {
 };
 
 # Private methods
-my $_list_mailshot_templates = sub {
+my $_list_message_templates = sub {
    my $self   = shift;
    my $dir    = $self->config->assetdir->clone;
    my $plates = $dir->filter( sub { m{ \.tt \z }mx } );
@@ -33,7 +33,7 @@ my $_list_mailshot_templates = sub {
 };
 
 # Public methods
-sub mailshot_create {
+sub message_create {
    my ($self, $req, $opts) = @_;
 
    my $params   = $req->query_params->( { optional => TRUE } ) // {};
@@ -42,17 +42,18 @@ sub mailshot_create {
 
    my $conf     = $self->config;
    my $template = $req->body_params->( 'template' );
+   my $sink     = $req->body_params->( 'sink' );
    my $job_rs   = $self->schema->resultset( 'Job' );
    my $cmd      = $conf->binsdir->catfile( 'notitia-schema' ).SPC
-                . $_flatten->( $params )."mailshot ${template}";
-   my $job      = $job_rs->create( { command => $cmd, name => 'mailshot' } );
-   my $message  = [ 'Job mailshot-[_1] created', $job->id ];
+                . $_flatten->( $params )."send_message ${template} ${sink}";
+   my $job      = $job_rs->create( { command => $cmd, name => 'send_message' });
+   my $message  = [ 'Job send-message-[_1] created', $job->id ];
    my $location = uri_for_action $req, $self->moniker.'/'.$opts->{action};
 
    return { redirect => { location => $location, message => $message } };
 }
 
-sub mailshot_link {
+sub message_link {
    my ($self, $req, $page, $actionp, $params) = @_;
 
    $params = { %{ $params // {} } };
@@ -61,27 +62,30 @@ sub mailshot_link {
    my $href = uri_for_action $req, $actionp, [], $params;
 
    push @{ $page->{literal_js} //= [] },
-      dialog_anchor( 'mailshot', $href, {
+      dialog_anchor( 'message', $href, {
          name    => $name,
-         title   => loc( $req, 'Send email to people' ),
+         title   => loc( $req, 'message_title' ),
          useIcon => \1 } );
 
-   return table_link $req, 'mailshot', loc( $req, 'mailshot_management_link' ),
-                                       loc( $req, 'mailshot_management_tip' );
+   return table_link $req, 'message', loc( $req, 'message_management_link' ),
+                                      loc( $req, 'message_management_tip' );
 }
 
-sub mailshot_stash {
+sub message_stash {
    my ($self, $req, $opts) = @_;
 
    my $params    = $req->query_params->( { optional => TRUE } ) // {};
    my $stash     = $self->dialog_stash( $req, $opts->{layout} );
    my $actionp   = $self->moniker.'/'.$opts->{action};
-   my $templates = $self->$_list_mailshot_templates;
+   my $templates = $self->$_list_message_templates;
    my $fields    = $stash->{page}->{fields};
+   my $values    = [ [ 'Email', 'email', { selected => TRUE } ],
+                     [ 'SMS',   'sms' ] ];
 
    delete $params->{id}; delete $params->{val};
-   $fields->{confirm } = $_confirm_mailshot_button->( $req );
+   $fields->{confirm } = $_confirm_message_button->( $req );
    $fields->{href    } = uri_for_action $req, $actionp, [], $params;
+   $fields->{sink    } = bind 'sink', $values, { label => 'Message sink' };
    $fields->{template} = bind 'template', [ [ NUL, NUL ], @{ $templates } ];
 
    return $stash;

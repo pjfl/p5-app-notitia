@@ -417,8 +417,14 @@ msgstr "Please login"
 msgid "m_advanced"
 msgstr "Advanced Motorcycle"
 
-msgid "mailshot_management_link"
-msgstr "Mail Shot"
+msgid "message_management_link"
+msgstr "Send Message"
+
+msgid "message_management_tip"
+msgstr "Send email or SMS to people"
+
+msgid "message_title"
+msgstr "Send Message"
 
 msgid "main_index_title"
 msgstr "Welcome to [_1]"

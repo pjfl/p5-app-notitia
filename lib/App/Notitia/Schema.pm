@@ -212,7 +212,7 @@ sub deploy_and_populate : method {
    return $rv;
 };
 
-sub mailshot : method {
+sub send_message : method {
    my $self       = shift;
    my $conf       = $self->config;
    my $plate_name = $self->next_argv or throw Unspecified, [ 'template name' ];
@@ -323,6 +323,12 @@ Defines the following attributes;
 =head2 C<dump_connect_attr> - Displays database connection information
 
 =head2 C<deploy_and_populate> - Create tables and populates them with initial data
+
+=head2 C<send_message> - Send email or SMS to people
+
+=head2 C<restore_data> - Restore a backup of the database and documents
+
+=head2 C<runqueue> - Process the queue of background tasks
 
 =head1 Diagnostics
 

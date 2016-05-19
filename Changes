@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Can send messages to buld SMS
+            Need username and password
           - Added setting SMS password
           - Started adding SMS mailshots
           - Implements #42. Use person label on secondary nav

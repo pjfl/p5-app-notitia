@@ -27,7 +27,7 @@ has '+moniker' => default => 'person';
 register_action_paths
    'person/activate'       => 'person-activate',
    'person/contacts'       => 'contacts',
-   'person/mailshot'       => 'mailshot-people',
+   'person/message'        => 'message-people',
    'person/mugshot'        => 'mugshot',
    'person/people'         => 'people',
    'person/person'         => 'person',
@@ -235,17 +235,17 @@ my $_list_all_roles = sub {
 my $_people_ops_links = sub {
    my ($self, $req, $page, $params) = @_;
 
-   $params->{name} = 'mailshot_people';
+   $params->{name} = 'message_people';
 
    my $moniker  = $self->moniker;
-   my $actionp  = "${moniker}/mailshot";
-   my $mailshot = $self->mailshot_link( $req, $page, $actionp, $params );
+   my $actionp  = "${moniker}/message";
+   my $message  = $self->message_link( $req, $page, $actionp, $params );
    my $opts     = { container_class => 'add-link' };
    my $add_user = create_link $req, "${moniker}/person", 'person', $opts;
 
    return { class        => 'operation-links right-last',
             content      => {
-               list      => [ $mailshot, $add_user ],
+               list      => [ $message, $add_user ],
                separator => '|',
                type      => 'list', },
             type         => 'container', };
@@ -401,16 +401,16 @@ sub find_by_shortcode {
    return shift->schema->resultset( 'Person' )->find_by_shortcode( @_ );
 }
 
-sub mailshot : Role(person_manager) {
+sub message : Role(person_manager) {
    my ($self, $req) = @_;
 
-   my $opts = { action => 'mailshot-people', layout => 'mailshot-people'};
+   my $opts = { action => 'message-people', layout => 'message-people'};
 
-   return $self->mailshot_stash( $req, $opts );
+   return $self->message_stash( $req, $opts );
 }
 
-sub mailshot_create_action : Role(person_manager) {
-   return $_[ 0 ]->mailshot_create( $_[ 1 ], { action => 'people' } );
+sub message_create_action : Role(person_manager) {
+   return $_[ 0 ]->message_create( $_[ 1 ], { action => 'people' } );
 }
 
 sub mugshot : Role(person_manager) {

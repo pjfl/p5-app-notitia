@@ -106,6 +106,19 @@
            type="password">
    </label>
 [% END -%]
+[% MACRO RadioButtons( f ) BLOCK -%]
+   <label class="label [% f.container_class %]">
+      <span class="field-label">[% loc( f.label ) %]</span>
+[%    FOR option IN f.value -%]
+      <label class="label [% option.container_class %]">
+         <input [% IF option.selected %]checked="checked"[% END %]
+            class="[% option.class %]" name="[% f.name %]"
+             type="radio" value="[% option.value %]">
+         <span class="option-label">[% loc( option.label ) %]</span>
+      </label>
+[%    END -%]
+   </label>
+[% END -%]
 [% MACRO Select( f ) BLOCK -%]
 [%    IF f.label -%]<label class="label">
       <span class="field-label">[% loc( f.label ) %]</span>[% END %]

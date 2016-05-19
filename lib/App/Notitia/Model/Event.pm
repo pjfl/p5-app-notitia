@@ -28,7 +28,7 @@ register_action_paths
    'event/event'         => 'event',
    'event/event_summary' => 'event-summary',
    'event/events'        => 'events',
-   'event/mailshot'      => 'mailshot-participents',
+   'event/message'       => 'message-participents',
    'event/participate'   => 'participate',
    'event/participents'  => 'participents',
    'event/vehicle_event' => 'vehicle-event';
@@ -208,14 +208,14 @@ my $_participent_links = sub {
 my $_participent_ops_links = sub {
    my ($self, $req, $page, $params) = @_;
 
-   $params->{name} = 'mailshot_participents';
+   $params->{name} = 'message_participents';
 
-   my $actionp  = $self->moniker.'/mailshot';
-   my $mailshot = $self->mailshot_link( $req, $page, $actionp, $params );
+   my $actionp      = $self->moniker.'/message';
+   my $message_link = $self->message_link( $req, $page, $actionp, $params );
 
    return { class        => 'operation-links right-last',
             content      => {
-               list      => [ $mailshot ],
+               list      => [ $message_link ],
                separator => '|',
                type      => 'list', },
             type         => 'container', };
@@ -475,16 +475,16 @@ sub events : Role(any) {
    return $self->get_stash( $req, $page );
 }
 
-sub mailshot : Role(event_manager) {
+sub message : Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $opts = { action => 'mailshot-participents', layout => 'mailshot-people'};
+   my $opts = { action => 'message-participents', layout => 'message-people' };
 
-   return $self->mailshot_stash( $req, $opts );
+   return $self->message_stash( $req, $opts );
 }
 
-sub mailshot_create_action : Role(event_manager) {
-   return $_[ 0 ]->mailshot_create( $_[ 1 ], { action => 'events' } );
+sub message_create_action : Role(event_manager) {
+   return $_[ 0 ]->message_create( $_[ 1 ], { action => 'events' } );
 }
 
 sub participate_event_action : Role(any) {
