@@ -266,7 +266,11 @@ my $_vehicle_type_list = sub {
    my $opts   = { fields => { selected => $vehicle->type } };
    my $values = [ [ NUL, NUL ], @{ $_list_vehicle_types->( $schema, $opts ) } ];
 
-   return bind 'type', $values, { label => 'vehicle_type', numify => TRUE };
+   $opts = { class  => 'standard-field required',
+             label  => 'vehicle_type',
+             numify => TRUE };
+
+   return bind 'type', $values, $opts;
 };
 
 my $_vreq_row = sub {

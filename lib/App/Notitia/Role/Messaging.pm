@@ -23,13 +23,17 @@ my $_flatten = sub {
    return $r;
 };
 
+my $_plate_label = sub {
+   my $v = ucfirst $_[ 0 ]->basename( '.tt' ); $v =~ s{[_\-]}{ }gmx; return $v;
+};
+
 # Private methods
 my $_list_message_templates = sub {
    my $self   = shift;
    my $dir    = $self->config->assetdir->clone;
    my $plates = $dir->filter( sub { m{ \.tt \z }mx } );
 
-   return [ map { [ $_->basename( '.tt' ), "${_}" ] } $plates->all_files ];
+   return [ map { [ $_plate_label->( $_ ), "${_}" ] } $plates->all_files ];
 };
 
 # Public methods

@@ -4,7 +4,6 @@ use strictures;
 use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( to_dt );
 use Class::Usul::Functions  qw( throw );
 
 # Private methods
@@ -67,7 +66,7 @@ sub count_events_for {
 
    my $parser = $self->result_source->schema->datetime_parser;
 
-   $event_type //= 'person'; $start_date = to_dt $start_date;
+   $event_type //= 'person';
 
    return $self->count
       ( { 'event_type.name'    => $event_type,
@@ -93,7 +92,7 @@ sub search_for_a_days_events {
 
    my $parser = $self->result_source->schema->datetime_parser;
 
-   $event_type //= 'person'; $start_date = to_dt $start_date;
+   $event_type //= 'person';
 
    return $self->search
       ( { 'event_type.name'    => $event_type,

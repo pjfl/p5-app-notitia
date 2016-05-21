@@ -57,7 +57,8 @@ sub dispatch_request {
    sub (POST + /vehicle/*             + ?*) { [ 'asset/from_request',    @_ ] },
    sub (POST + /vehicle               + ?*) { [ 'asset/from_request',    @_ ] },
    sub (GET  + /vehicle/*             + ?*) { [ 'asset/vehicle',         @_ ] },
-   sub (GET  + /vehicle               + ?*) { [ 'asset/vehicle',         @_ ] };
+   sub (GET  + /vehicle               + ?*) { [ 'asset/vehicle',         @_ ] },
+   sub (GET  + /week-rota/**          + ?*) { [ 'sched/week_rota',       @_ ] };
 }
 
 1;

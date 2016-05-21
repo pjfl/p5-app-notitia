@@ -27,7 +27,8 @@ register_action_paths
    'sched/assign_summary' => 'assignment-summary',
    'sched/day_rota'       => 'day-rota',
    'sched/month_rota'     => 'month-rota',
-   'sched/slot'           => 'slot';
+   'sched/slot'           => 'slot',
+   'sched/week_rota'      => 'week-rota';
 
 # Construction
 around 'get_stash' => sub {
@@ -107,11 +108,24 @@ my $_date_picker = sub {
             type        => 'form', };
 };
 
-my $_first_month_rota_date = sub {
+my $_first_day_of_month = sub {
    my ($req, $date) = @_;
 
-   $date = $date->set_time_zone( 'floating' )
-                ->truncate( to => 'day' )->set( day => 1 );
+   $date = $date->clone->set_time_zone( 'floating' )
+                       ->truncate( to => 'day' )->set( day => 1 );
+
+   $req->session->rota_date( $date->ymd );
+
+   while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
+
+   return $date;
+};
+
+my $_first_day_of_week = sub {
+   my ($req, $date) = @_;
+
+   $date = $date->clone->set_time_zone( 'floating' )
+                       ->truncate( to => 'day' );
 
    $req->session->rota_date( $date->ymd );
 
@@ -147,20 +161,20 @@ my $_month_rota_max_slots = sub {
 };
 
 my $_month_rota_title = sub {
-   my ($req, $rota_name, $month) = @_;
+   my ($req, $rota_name, $date) = @_;
 
    my $title = ucfirst( loc( $req, $rota_name ) ).SPC
-             . loc( $req, 'rota for' ).SPC.$month->month_name.SPC
-             . $month->year;
+             . loc( $req, 'rota for' ).SPC.$date->month_name.SPC
+             . $date->year;
 
    return $title;
 };
 
 my $_next_month = sub {
-   my ($req, $actionp, $rota_name, $month) = @_;
+   my ($req, $actionp, $rota_name, $date) = @_;
 
-   my $date = $month->set_time_zone( 'floating' )->truncate( to => 'day' )
-                    ->set( day => 1 )->add( months => 1 );
+   $date = $date->clone->set_time_zone( 'floating' )->truncate( to => 'day' )
+                       ->set( day => 1 )->add( months => 1 );
 
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
 };
@@ -191,10 +205,10 @@ my $_operators_vehicle = sub {
 };
 
 my $_prev_month = sub {
-   my ($req, $actionp, $rota_name, $month) = @_;
+   my ($req, $actionp, $rota_name, $date) = @_;
 
-   my $date = $month->set_time_zone( 'floating' )->truncate( to => 'day' )
-                    ->set( day => 1 )->subtract( months => 1 );
+   $date = $date->clone->set_time_zone( 'floating' )->truncate( to => 'day' )
+                       ->set( day => 1 )->subtract( months => 1 );
 
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
 };
@@ -222,14 +236,19 @@ my $_summary_link = sub {
             title => $title, value   => $value };
 };
 
+my $_week_label = sub {
+   return { class => 'day-of-week',
+            value => loc( $_[ 0 ], 'month_rota_heading_'.$_[ 1 ] ) };
+};
+
 my $_event_link = sub {
    my ($req, $page, $rota_dt, $event) = @_;
 
    unless ($event) {
       my $name  = 'create-event';
       my $class = 'blank-event windows';
-      my $href  = uri_for_action $req, 'event/event', [],
-                                 { date => $rota_dt->ymd };
+      my $href  =
+         uri_for_action $req, 'event/event', [], { date => $rota_dt->ymd };
 
       push @{ $page->{literal_js} }, $_onclick_relocate->( $name, $href );
 
@@ -266,10 +285,10 @@ my $_participents_link = sub {
 };
 
 my $_slot_link = sub {
-   my ($req, $page, $rows, $k, $slot_type) = @_;
+   my ($req, $page, $data, $k, $slot_type) = @_;
 
-   my $claimed = slot_claimed $rows->{ $k };
-   my $value   = $_slot_label->( $req, $rows->{ $k } );
+   my $claimed = slot_claimed $data->{ $k };
+   my $value   = $_slot_label->( $req, $data->{ $k } );
    my $tip     = loc( $req, ($claimed ? 'yield_slot_tip' : 'claim_slot_tip'),
                       $slot_type );
 
@@ -298,7 +317,7 @@ my $_summary_cells = sub {
             push @{ $cells },
                $_summary_link->( $req, $slot_type, $span, $id, $slot );
 
-            $data->{ $key } and push @{ $page->{literal_js} }, js_anchor_config
+            $slot and push @{ $page->{literal_js} }, js_anchor_config
                $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
          }
       }
@@ -340,8 +359,23 @@ my $_vehicle_request_link = sub {
    return $link;
 };
 
+my $_week_rota_headers = sub {
+   return [     { class => '', value => 'vehicle', },
+            map {  $_week_label->( $_[ 0 ], $_ ) } 0 .. 6 ];
+};
+
+my $_week_rota_title = sub {
+   my ($req, $rota_name, $date) = @_;
+
+   my $title = ucfirst( loc( $req, $rota_name ) ).SPC
+             . loc( $req, 'rota for week' ).SPC.$date->week_number.SPC
+             . $date->week_year;
+
+   return $title;
+};
+
 my $_controllers = sub {
-   my ($req, $page, $rota_name, $rota_date, $rows, $limits) = @_;
+   my ($req, $page, $rota_name, $rota_date, $data, $limits) = @_;
 
    my $rota = $page->{rota}; my $controls = $rota->{controllers};
 
@@ -350,9 +384,9 @@ my $_controllers = sub {
 
       for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
          my $k      = "${shift_type}_controller_${subslot}";
-         my $action = slot_claimed( $rows->{ $k } ) ? 'yield' : 'claim';
+         my $action = slot_claimed( $data->{ $k } ) ? 'yield' : 'claim';
          my $args   = [ $rota_name, $rota_date, $k ];
-         my $link   = $_slot_link->( $req, $page, $rows, $k, 'controller');
+         my $link   = $_slot_link->( $req, $page, $data, $k, 'controller');
 
          push @{ $controls },
             [ { class => 'rota-header', value   => loc( $req, $k ), },
@@ -368,12 +402,12 @@ my $_controllers = sub {
 };
 
 my $_driver_row = sub {
-   my ($req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
+   my ($req, $page, $args, $data) = @_; my $k = $args->[ 2 ];
 
    return [ { value => loc( $req, $k ), class => 'rota-header' },
             { value => undef },
-            $_slot_link->( $req, $page, $rows, $k, 'driver' ),
-            { value => $rows->{ $k }->{ops_veh}, class => 'narrow' }, ];
+            $_slot_link->( $req, $page, $data, $k, 'driver' ),
+            { value => $data->{ $k }->{ops_veh}, class => 'narrow' }, ];
 };
 
 my $_events = sub {
@@ -400,16 +434,16 @@ my $_events = sub {
 };
 
 my $_rider_row = sub {
-   my ($req, $page, $args, $rows) = @_; my $k = $args->[ 2 ];
+   my ($req, $page, $args, $data) = @_; my $k = $args->[ 2 ];
 
    return [ { value => loc( $req, $k ), class => 'rota-header' },
-            assign_link( $req, $page, $args, $rows->{ $k } ),
-            $_slot_link->( $req, $page, $rows, $k, 'rider' ),
-            { value => $rows->{ $k }->{ops_veh}, class => 'narrow' }, ];
+            assign_link( $req, $page, $args, $data->{ $k } ),
+            $_slot_link->( $req, $page, $data, $k, 'rider' ),
+            { value => $data->{ $k }->{ops_veh}, class => 'narrow' }, ];
 };
 
 my $_riders_n_drivers = sub {
-   my ($req, $page, $rota_name, $rota_date, $rows, $limits) = @_;
+   my ($req, $page, $rota_name, $rota_date, $data, $limits) = @_;
 
    my $shift_no = 0;
 
@@ -421,10 +455,10 @@ my $_riders_n_drivers = sub {
 
       for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
          my $k      = "${shift_type}_rider_${subslot}";
-         my $action = slot_claimed( $rows->{ $k } ) ? 'yield' : 'claim';
+         my $action = slot_claimed( $data->{ $k } ) ? 'yield' : 'claim';
          my $args   = [ $rota_name, $rota_date, $k ];
 
-         push @{ $riders }, $_rider_row->( $req, $page, $args, $rows );
+         push @{ $riders }, $_rider_row->( $req, $page, $args, $data );
          $_add_js_dialog->( $req, $page, $args, $action,
                             'rider-slot', 'Rider Slot' );
       }
@@ -433,10 +467,10 @@ my $_riders_n_drivers = sub {
 
       for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
          my $k      = "${shift_type}_driver_${subslot}";
-         my $action = slot_claimed( $rows->{ $k } ) ? 'yield' : 'claim';
+         my $action = slot_claimed( $data->{ $k } ) ? 'yield' : 'claim';
          my $args   = [ $rota_name, $rota_date, $k ];
 
-         push @{ $drivers }, $_driver_row->( $req, $page, $args, $rows );
+         push @{ $drivers }, $_driver_row->( $req, $page, $args, $data );
          $_add_js_dialog->( $req, $page, $args, $action,
                             'driver-slot', 'Driver Slot' );
       }
@@ -446,8 +480,20 @@ my $_riders_n_drivers = sub {
 };
 
 # Private methods
-my $_find_rota_type_id_for = sub {
+my $_find_rota_type_id = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] )->id;
+};
+
+my $_next_week = sub {
+   my ($self, $rota_name, $date) = @_;
+
+   my $actionp =  $self->moniker.'/week_rota';
+};
+
+my $_prev_week = sub {
+   my ($self, $rota_name, $date) = @_;
+
+   my $actionp =  $self->moniker.'/week_rota';
 };
 
 my $_summary_table = sub {
@@ -480,8 +526,7 @@ my $_slot_assignments = sub {
    my $data    = {};
 
    for my $slot ($slots->all) {
-      my $shift = $slot->shift;
-      my $key   = $shift->type_name.'_'.$slot->type_name.'_'.$slot->subslot;
+      my $key  = $slot->key;
 
       $data->{ $key } = { name        => $key,
                           operator    => $slot->operator,
@@ -496,27 +541,27 @@ my $_rota_summary = sub {
    my ($self, $req, $page, $date) = @_;
 
    my $name      = $page->{rota}->{name};
-   my $type_id   = $self->$_find_rota_type_id_for( $name );
+   my $type_id   = $self->$_find_rota_type_id( $name );
    my $event_rs  = $self->schema->resultset( 'Event' );
-   my $events    = $event_rs->count_events_for( $type_id, $date->ymd );
+   my $events    = $event_rs->count_events_for( $type_id, to_dt $date->ymd );
    my $has_event = $events > 0 ? loc( $req, 'Events' ) : NUL;
    my $data      = $self->$_slot_assignments( $type_id, $date );
-   my $table     = $self->$_summary_table
-      ( $req, $page, $date, $has_event, $data );
+   my $value     =
+      $self->$_summary_table( $req, $page, $date, $has_event, $data );
    my $actionp   = $self->moniker.'/day_rota';
    my $href      = uri_for_action $req, $actionp, [ $name, $date->ymd ];
    my $id        = "${name}_".$date->ymd;
 
    push @{ $page->{literal_js} }, $_onclick_relocate->( $id, $href );
 
-   return { class => 'month-rota windows', name => $id, value => $table };
+   return { class => 'month-rota windows', name => $id, value => $value };
 };
 
 my $_get_page = sub {
-   my ($self, $req, $name, $date, $todays_events, $rows) = @_;
+   my ($self, $req, $name, $rota_date, $todays_events, $data) = @_;
 
-   my $rota_dt =  to_dt $date, 'GMT';
    my $schema  =  $self->schema;
+   my $rota_dt =  to_dt $rota_date, 'GMT';
    my $limits  =  $self->config->slot_limits;
    my $title   =  ucfirst( loc( $req, $name ) ).SPC.loc( $req, 'rota for' ).SPC
                .  $rota_dt->month_name.SPC.$rota_dt->day.SPC.$rota_dt->year;
@@ -536,8 +581,8 @@ my $_get_page = sub {
       title    => $title };
 
    $_events->( $schema, $req, $page, $name, $rota_dt, $todays_events );
-   $_controllers->( $req, $page, $name, $date, $rows, $limits );
-   $_riders_n_drivers->( $req, $page, $name, $date, $rows, $limits );
+   $_controllers->( $req, $page, $name, $rota_date, $data, $limits );
+   $_riders_n_drivers->( $req, $page, $name, $rota_date, $data, $limits );
 
    return $page;
 };
@@ -547,9 +592,9 @@ sub assign_summary : Role(any) {
    my ($self, $req) = @_;
 
    my ($rota_name, $date, $shift_type, $slot_type, $subslot)
-      = split m{ _ }mx, $req->uri_params->( 0 ), 5;
+                = split m{ _ }mx, $req->uri_params->( 0 ), 5;
    my $key      = "${shift_type}_${slot_type}_${subslot}";
-   my $type_id  = $self->$_find_rota_type_id_for( $rota_name );
+   my $type_id  = $self->$_find_rota_type_id( $rota_name );
    my $data     = $self->$_slot_assignments( $type_id, to_dt $date, 'GMT' );
    my $stash    = $self->dialog_stash( $req, 'assign-summary' );
    my $fields   = $stash->{page}->{fields};
@@ -596,30 +641,28 @@ sub claim_slot_action : Role(rota_manager) Role(bike_rider) Role(controller)
 sub day_rota : Role(any) {
    my ($self, $req) = @_; my $vehicle_cache = {};
 
-   my $params   = $req->uri_params;
-   my $today    = time2str '%Y-%m-%d';
-   my $name     = $params->( 0, { optional => TRUE } ) // 'main';
-   my $date     = $params->( 1, { optional => TRUE } ) // $today;
-   my $type_id  = $self->$_find_rota_type_id_for( $name );
-   my $slot_rs  = $self->schema->resultset( 'Slot' );
-   my $slots    = $slot_rs->list_slots_for( $type_id, to_dt $date );
-   my $event_rs = $self->schema->resultset( 'Event' );
-   my $events   = $event_rs->search_for_a_days_events( $type_id, $date );
-   my $rows     = {};
+   my $params    = $req->uri_params;
+   my $today     = time2str '%Y-%m-%d';
+   my $name      = $params->( 0, { optional => TRUE } ) // 'main';
+   my $rota_date = $params->( 1, { optional => TRUE } ) // $today;
+   my $rota_dt   = to_dt $rota_date;
+   my $type_id   = $self->$_find_rota_type_id( $name );
+   my $slot_rs   = $self->schema->resultset( 'Slot' );
+   my $slots     = $slot_rs->list_slots_for( $type_id, $rota_dt );
+   my $event_rs  = $self->schema->resultset( 'Event' );
+   my $events    = $event_rs->search_for_a_days_events( $type_id, $rota_dt );
+   my $slot_data = {};
 
    for my $slot ($slots->all) {
-      my $shift = $slot->shift;
-      my $key   = $shift->type_name.'_'.$slot->type_name.'_'.$slot->subslot;
-
-      $rows->{ $key }
-         = { name        => $key,
-             operator    => $slot->operator,
-             ops_veh     => $_operators_vehicle->( $slot, $vehicle_cache ),
-             vehicle     => $slot->vehicle,
-             vehicle_req => $slot->bike_requested };
+      $slot_data->{ $slot->key } =
+         { name        => $slot->key,
+           operator    => $slot->operator,
+           ops_veh     => $_operators_vehicle->( $slot, $vehicle_cache ),
+           vehicle     => $slot->vehicle,
+           vehicle_req => $slot->bike_requested };
    }
 
-   my $page = $self->$_get_page( $req, $name, $date, $events, $rows );
+   my $page = $self->$_get_page( $req, $name, $rota_date, $events, $slot_data );
 
    return $self->get_stash( $req, $page );
 }
@@ -630,30 +673,29 @@ sub month_rota : Role(any) {
    my $params    =  $req->uri_params;
    my $rota_name =  $params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date =  $params->( 1, { optional => TRUE } ) // time2str '%Y-%m-01';
-   my $month     =  to_dt $rota_date, 'GMT';
-   my $title     =  $_month_rota_title->( $req, $rota_name, $month->clone );
+   my $rota_dt   =  to_dt $rota_date, 'GMT';
+   my $title     =  $_month_rota_title->( $req, $rota_name, $rota_dt );
    my $max_slots =  $_month_rota_max_slots->( $self->config->slot_limits );
-   my $lcm       =  lcm_for 4, @{ $max_slots };
    my $actionp   =  $self->moniker.'/month_rota';
-   my $prev      =  $_prev_month->( $req, $actionp, $rota_name, $month->clone );
-   my $next      =  $_next_month->( $req, $actionp, $rota_name, $month->clone );
+   my $prev      =  $_prev_month->( $req, $actionp, $rota_name, $rota_dt );
+   my $next      =  $_next_month->( $req, $actionp, $rota_name, $rota_dt );
    my $page      =  {
-      fields     => { nav => { next => $next, prev => $prev }, },
+      fields     => { nav       => { next => $next, prev => $prev }, },
       rota       => { headers   => $_month_rota_headers->( $req ),
-                      lcm       => $lcm,
+                      lcm       => lcm_for( 4, @{ $max_slots } ),
                       max_slots => $max_slots,
                       name      => $rota_name,
                       rows      => [] },
       template   => [ 'contents', 'rota', 'month-table' ],
       title      => $title, };
-   my $first     =  $_first_month_rota_date->( $req, $month->clone );
+   my $first     =  $_first_day_of_month->( $req, $rota_dt );
 
    for my $rno (0 .. 5) {
       my $row = []; my $dayno;
 
       for my $cno (0 .. 6) {
-         my $date  = $first->clone->add( days => 7 * $rno + $cno );
-         my $cell  = { class => 'month-rota', value => NUL };
+         my $date = $first->clone->add( days => 7 * $rno + $cno );
+         my $cell = { class => 'month-rota', value => NUL };
 
          $dayno = $date->day; $rno > 3 and $dayno == 1 and last;
          $_is_this_month->( $rno, $date )
@@ -718,6 +760,52 @@ sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
    $fields->{slot_href} = uri_for_action( $req, $self->moniker.'/slot', $args );
 
    return $stash;
+}
+
+sub week_rota : Role(any) {
+   my ($self, $req) = @_;
+
+   my $params     =  $req->uri_params;
+   my $today      =  time2str '%Y-%m-%d';
+   my $rota_name  =  $params->( 0, { optional => TRUE } ) // 'main';
+   my $rota_date  =  $params->( 1, { optional => TRUE } ) // $today;
+   my $rota_dt    =  to_dt $rota_date, 'GMT';
+   my $next       =  $self->$_next_week( $req, $rota_name, $rota_dt );
+   my $prev       =  $self->$_prev_week( $req, $rota_name, $rota_dt );
+   my $page       =  {
+      fields      => { nav     => { next => $next, prev => $prev }, },
+      rota        => { headers => $_week_rota_headers->( $req ),
+                       name    => $rota_name,
+                       rows    => [] },
+      template    => [ 'contents', 'rota', 'week-table' ],
+      title       => $_week_rota_title->( $req, $rota_name, $rota_dt ), };
+   my $type_id    =  $self->$_find_rota_type_id( $rota_name );
+   my $first      =  $_first_day_of_week->( $req, $rota_dt );
+   my $row        =  [ { class => 'narrow', value => 'Requests' } ];
+   my $rows       =  $page->{rota}->{rows};
+
+   for my $cno (0 .. 6) {
+      my $date               = $first->clone->add( days => $cno );
+      my $slot_data          = $self->$_slot_assignments( $type_id, $date );
+#      my $transport_data     = ;
+#      my $vehicle_event_data = ;
+
+#      push @{ $row }, ;
+   }
+
+   push @{ $rows }, $row;
+
+   my $vehicle_rs =  $self->schema->resultset( 'Vehicle' );
+   my $tuples     =  $vehicle_rs->list_vehicles( { service => TRUE } );
+
+   for my $tuple (@{ $tuples }) {
+      my $col1 = { class => 'narrow', value => $tuple->[ 0 ] };
+      my $row  = [ $col1 ];
+
+      push @{ $rows }, $row;
+   }
+
+   return $self->get_stash( $req, $page );
 }
 
 sub yield_slot_action : Role(rota_manager) Role(bike_rider) Role(controller)

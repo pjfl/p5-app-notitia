@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Started adding week view
           - Can send messages to buld SMS
             Need username and password
           - Added setting SMS password

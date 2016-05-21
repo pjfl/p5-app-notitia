@@ -1,0 +1,2 @@
+<!-- Week Table -->
+[% Table( page.rota ) -%]

@@ -28,6 +28,24 @@ sub find_slot_by {
                          subslot  => $subslot } );
 }
 
+sub list_slots_for {
+   my ($self, $type_id, $date) = @_;
+
+   my $parser = $self->result_source->schema->datetime_parser;
+   my $attr   = [ 'operator.first_name', 'operator.id', 'operator.last_name',
+                  'operator.name', 'operator.postcode', 'vehicle.name',
+                  'vehicle.vrn' ];
+
+   return $self->search
+      ( { 'rota.type_id' => $type_id,
+          'rota.date'    => $parser->format_datetime( $date ) },
+        { 'columns'      => [ qw( bike_requested type_name subslot ) ],
+          'join'         => [ 'operator', 'vehicle' ],
+          'prefetch'     => [ { 'shift' => 'rota' }, 'operator_vehicles' ],
+          '+select'      => $attr,
+          '+as'          => $attr, } );
+}
+
 sub search_for_assigned_slots {
    my ($self, $opts) = @_; $opts = { %{ $opts } };
 
@@ -52,24 +70,6 @@ sub search_for_assigned_slots {
    my $prefetch = [ 'vehicle', { 'shift' => { 'rota' => 'type' } } ];
 
    return $self->search( $where, { prefetch => $prefetch, %{ $opts } } );
-}
-
-sub list_slots_for {
-   my ($self, $type_id, $date) = @_;
-
-   my $parser = $self->result_source->schema->datetime_parser;
-   my $attr   = [ 'operator.first_name', 'operator.id', 'operator.last_name',
-                  'operator.name', 'operator.postcode', 'vehicle.name',
-                  'vehicle.vrn' ];
-
-   return $self->search
-      ( { 'rota.type_id' => $type_id,
-          'rota.date'    => $parser->format_datetime( $date ) },
-        { 'columns'      => [ qw( bike_requested type_name subslot ) ],
-          'join'         => [ 'operator', 'vehicle' ],
-          'prefetch'     => [ { 'shift' => 'rota' }, 'operator_vehicles' ],
-          '+select'      => $attr,
-          '+as'          => $attr, } );
 }
 
 sub me {

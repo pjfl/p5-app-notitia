@@ -82,7 +82,7 @@ sub send_sms {
 
    $self->log->debug( "SMS ${url} ".$_flatten->( $params ) );
 
-   my ($code, $desc, $id);
+   my ($code, $desc, $rval);
 
    for (1 .. $self->num_tries) {
       my $res;
@@ -95,13 +95,13 @@ sub send_sms {
       $res->{success} or throw 'SMS transport error [_1]: [_2]',
                          [ $res->{status}, $res->{reason} ];
 
-      ($code, $desc, $id) = split m{ \| }mx, $res->{content};
+      ($code, $desc, $rval) = split m{ \| }mx, $res->{content};
       $code == 0 and last; nap 0.25;
    }
 
    $code == 0 or throw 'SMS send error [_1]: [_2]', [ $code, $desc ];
 
-   return $id;
+   return $rval;
 }
 
 1;

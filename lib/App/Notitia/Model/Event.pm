@@ -182,7 +182,9 @@ my $_owner_list = sub {
    my $opts   = { fields => { selected => $event->owner } };
    my $people = $schema->resultset( 'Person' )->list_all_people( $opts );
 
-   $opts = { numify => TRUE }; $disabled and $opts->{disabled} = TRUE;
+   $opts = { class => 'standard-field required', numify => TRUE };
+
+   $disabled and $opts->{disabled} = TRUE;
 
    return bind( 'owner', [ [ NUL, NUL ], @{ $people } ], $opts );
 };
@@ -595,13 +597,12 @@ sub vehicle_event : Role(rota_manager) {
    my $fields     =  $page->{fields};
 
    if ($uri) {
-      $fields->{date  } = bind 'event_date', $event->start_date,
-                          { disabled => TRUE };
+      $fields->{date  } = $_bind_event_date->( $event->start_date, TRUE );
       $fields->{delete} = delete_button $req, $uri, { type => 'vehicle_event' };
       $fields->{href  } = uri_for_action $req, $actionp, [ $vrn, $uri ];
    }
    else {
-      $fields->{date} = bind 'event_date', time2str '%d/%m/%Y';
+      $fields->{date} = $_bind_event_date->( time2str( '%d/%m/%Y' ) );
       $fields->{href} = uri_for_action $req, $actionp, [ $vrn ];
    }
 

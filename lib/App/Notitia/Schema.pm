@@ -96,7 +96,7 @@ my $_qualify_assets = sub {
 };
 
 my $_send_email = sub {
-   my ($self, $stash, $template, $attaches, $person) = @_;
+   my ($self, $template, $person, $stash, $attaches) = @_;
 
    $template = "[% WRAPPER 'hyde/email_layout.tt' %]${template}[% END %]";
 
@@ -125,14 +125,16 @@ my $_send_email = sub {
 };
 
 my $_send_sms = sub {
-   my ($self, $stash, $template, $tuples) = @_; my @recipients;
+   my ($self, $template, $tuples, $stash) = @_; my @recipients;
+
+   my $conf = $self->config; my $attr = $stash->{sms_attributes} // {};
 
    $stash->{template}->{layout} = \$template;
 
-   my $conf    = $self->config;
-   my $attr    = { log      => $self->log,
-                   password => $conf->sms_password,
-                   username => $conf->sms_username };
+   $attr->{log     } //= $self->log;
+   $attr->{password} //= $conf->sms_password;
+   $attr->{username} //= $conf->sms_username;
+
    my $sender  = App::Notitia::SMS->new( $attr );
    my $message = $self->render_template( $stash );
 
@@ -140,7 +142,9 @@ my $_send_sms = sub {
       $person->mobile_phone and push @recipients, $person->mobile_phone;
    }
 
-   $sender->send_sms( $message, @recipients );
+   my $rv = $sender->send_sms( $message, @recipients );
+
+   $self->info( 'SMS message rv: [_1]', { args => [ $rv ] } );
    return;
 };
 
@@ -217,16 +221,19 @@ sub send_message : method {
    my $conf       = $self->config;
    my $plate_name = $self->next_argv or throw Unspecified, [ 'template name' ];
    my $sink       = $self->next_argv // 'email';
-   my $stash      = { app_name => $conf->title, path => io( $plate_name ), };
+   my $quote      = $self->next_argv ? TRUE : FALSE;
+   my $stash      = { app_name       => $conf->title,
+                      path           => io( $plate_name ),
+                      sms_attributes => { quote => $quote }, };
    my $template   = load_file_data( $stash );
    my $attaches   = $self->$_qualify_assets( delete $stash->{attachments} );
    my $tuples     = $self->options->{event} ? $self->$_list_participents
                                             : $self->$_list_people;
 
-   if ($sink eq 'sms') { $self->$_send_sms( $stash, $template, $tuples ) }
+   if ($sink eq 'sms') { $self->$_send_sms( $template, $tuples, $stash ) }
    else {
       for my $person (map { $_->[ 1 ] } @{ $tuples }) {
-         $self->$_send_email( $stash, $template, $attaches, $person );
+         $self->$_send_email( $template, $person, $stash, $attaches );
       }
    }
 

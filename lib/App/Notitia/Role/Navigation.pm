@@ -37,6 +37,19 @@ my $nav_linkto = sub {
             tip   => $tip,   type  => 'link', uri => $uri, };
 };
 
+my $_week_link = sub {
+   my ($req, $actionp, $name, $date) = @_;
+
+   my $tip    = 'Navigate to this week';
+   my $label  = 'Week '.$date->week_number;
+   my $opts   = { label => $label, name => 'wk'.$date->week_number,
+                  tip   => $tip };
+   my $args   = [ $name, $date->ymd ];
+   my $params = { rota_date => $date->ymd };
+
+   return $nav_linkto->( $req, $opts, $actionp, $args, $params );
+};
+
 my $_year_link = sub {
    my ($req, $actionp, $name, $date) = @_;
 
@@ -148,6 +161,16 @@ sub rota_navigation_links {
    push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
    $date = $now->clone->add( years => 1 );
    push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
+
+   $actionp = "sched/week_rota";
+   $now     = to_dt( time2str( '%Y-%m-%d' ), 'GMT' )->truncate( to => 'day' );
+   push @{ $nav }, $nav_folder->( $req, 'week' );
+   $date = $now->clone->subtract( weeks => 1 );
+   push @{ $nav }, $_week_link->( $req, $actionp, $name, $date );
+   $date = $now->clone;
+   push @{ $nav }, $_week_link->( $req, $actionp, $name, $date );
+   $date = $now->clone->add( weeks => 1 );
+   push @{ $nav }, $_week_link->( $req, $actionp, $name, $date );
 
    return $nav;
 }
