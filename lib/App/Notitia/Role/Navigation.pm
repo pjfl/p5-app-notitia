@@ -135,40 +135,38 @@ sub admin_navigation_links {
 sub rota_navigation_links {
    my ($self, $req, $period, $name) = @_;
 
-   my $actionp = "sched/${period}_rota"; my $date = $req->session->rota_date;
+   my $actionp  = "sched/${period}_rota";
+   my $date     = $req->session->rota_date // time2str '%Y-%m-01';
+   my $local_dt = to_dt( $date )->set_time_zone( 'local' )->set( day => 1 );
+   my $nav      = [ $nav_folder->( $req, 'months' ) ];
 
-   $date or $req->session->rota_date( $date = time2str '%Y-%m-01', 'GMT' );
-
-   my $now = to_dt( $date, 'GMT' )->set_time_zone( 'floating' )
-                                  ->truncate( to => 'day' )->set( day => 1 );
-
-   my $nav = [ $nav_folder->( $req, 'months' ) ];
+   $req->session->rota_date or $req->session->rota_date( $local_dt->ymd );
 
    for my $mno (0 .. 11) {
       my $offset = $mno - 5;
-      my $month  = $offset > 0 ? $now->clone->add( months => $offset )
-                 : $offset < 0 ? $now->clone->subtract( months => -$offset )
-                 :               $now->clone;
-      my $opts   = { label_args => [ $month->year ],
-                     name       => lc 'month_'.$month->month_abbr };
-      my $args   = [ $name, $month->ymd ];
+      my $date   = $offset > 0 ? $local_dt->clone->add( months => $offset )
+                 : $offset < 0 ? $local_dt->clone->subtract( months => -$offset)
+                 :               $local_dt->clone;
+      my $opts   = { label_args => [ $date->year ],
+                     name       => lc 'month_'.$date->month_abbr };
+      my $args   = [ $name, $date->ymd ];
 
       push @{ $nav }, $nav_linkto->( $req, $opts, $actionp, $args );
    }
 
    push @{ $nav }, $nav_folder->( $req, 'year' );
-   $date = $now->clone->subtract( years => 1 );
+   $date = $local_dt->clone->subtract( years => 1 );
    push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
-   $date = $now->clone->add( years => 1 );
+   $date = $local_dt->clone->add( years => 1 );
    push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
 
+   my $now  = to_dt( time2str( '%Y-%m-%d' ), 'local' );
+
    $actionp = "sched/week_rota";
-   $now     = to_dt( time2str( '%Y-%m-%d' ), 'GMT' )->truncate( to => 'day' );
    push @{ $nav }, $nav_folder->( $req, 'week' );
    $date = $now->clone->subtract( weeks => 1 );
    push @{ $nav }, $_week_link->( $req, $actionp, $name, $date );
-   $date = $now->clone;
-   push @{ $nav }, $_week_link->( $req, $actionp, $name, $date );
+   push @{ $nav }, $_week_link->( $req, $actionp, $name, $now  );
    $date = $now->clone->add( weeks => 1 );
    push @{ $nav }, $_week_link->( $req, $actionp, $name, $date );
 

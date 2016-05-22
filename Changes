@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixed date handling in day_rota and month_rota
           - Started adding week view
           - Can send messages to buld SMS
             Need username and password

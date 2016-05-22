@@ -781,12 +781,12 @@ sub time2int ($) {
 }
 
 sub to_dt ($;$) {
-   my ($dstr, $zone) = @_; $zone //= NUL;
+   my ($dstr, $zone) = @_;
 
    my $dt = ($zone and $zone ne 'local') ? str2date_time( $dstr, $zone )
                                          : str2date_time( $dstr );
 
-   $zone or $dt->set_time_zone( 'GMT' );
+   $zone and $zone eq 'local' and $dt->set_time_zone( 'local' );
 
    return $dt;
 }
