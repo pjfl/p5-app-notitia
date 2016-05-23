@@ -3,12 +3,13 @@ package App::Notitia::Model::Endorsement;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( bind bind_fields check_field_js
-                                delete_button loc management_link
+                                delete_button field_options loc management_link
                                 register_action_paths save_button to_dt
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
+use Try::Tiny;
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -131,6 +132,45 @@ my $_update_endorsement_from_request = sub {
 };
 
 # Public methods
+sub create_endorsement_action : Role(person_manager) {
+   my ($self, $req) = @_;
+
+   my $name    = $req->uri_params->( 0 );
+   my $blot_rs = $self->schema->resultset( 'Endorsement' );
+   my $blot    = $blot_rs->new_result( { recipient => $name } );
+
+   $self->$_update_endorsement_from_request( $req, $blot );
+
+   try   { $blot->insert }
+   catch {
+      $self->application->debug and throw $_; $self->log->error( $_ );
+      $_ =~ m{ duplicate }imx
+         and throw 'Duplicate endorsement [_1]', [ $blot->label( $req ) ];
+      throw 'Failed to create endorsement [_1]', [ $blot->label( $req ) ];
+   };
+
+   my $action   = $self->moniker.'/endorsements';
+   my $location = uri_for_action $req, $action, [ $name ];
+   my $message  = [ 'Endorsement [_1] for [_2] added by [_3]',
+                    $blot->type_code, $name, $req->username ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub delete_endorsement_action : Role(person_manager) {
+   my ($self, $req) = @_;
+
+   my $name     = $req->uri_params->( 0 );
+   my $uri      = $req->uri_params->( 1 );
+   my $blot     = $self->$_find_endorsement_by( $name, $uri ); $blot->delete;
+   my $action   = $self->moniker.'/endorsements';
+   my $location = uri_for_action $req, $action, [ $name ];
+   my $message  = [ 'Endorsement [_1] for [_2] deleted by [_3]',
+                    $uri, $name, $req->username ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub endorsement : Role(person_manager) {
    my ($self, $req) = @_;
 
@@ -154,7 +194,10 @@ sub endorsement : Role(person_manager) {
       $fields->{delete} = delete_button $req, $uri, { type => 'endorsement' };
    }
    else {
-      $fields->{endorsed} = bind 'endorsed', time2str '%d/%m/%Y';
+      my $opts = field_options $self->schema, 'Endorsement', 'endorsed',
+                               { class => 'standard-field' };
+
+      $fields->{endorsed} = bind 'endorsed', time2str( '%d/%m/%Y' ), $opts;
    }
 
    $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
@@ -188,37 +231,6 @@ sub endorsements : Role(person_manager) {
    }
 
    return $self->get_stash( $req, $page );
-}
-
-sub create_endorsement_action : Role(person_manager) {
-   my ($self, $req) = @_;
-
-   my $name    = $req->uri_params->( 0 );
-   my $blot_rs = $self->schema->resultset( 'Endorsement' );
-   my $blot    = $blot_rs->new_result( { recipient => $name } );
-
-   $self->$_update_endorsement_from_request( $req, $blot ); $blot->insert;
-
-   my $action   = $self->moniker.'/endorsements';
-   my $location = uri_for_action $req, $action, [ $name ];
-   my $message  = [ 'Endorsement [_1] for [_2] added by [_3]',
-                    $blot->type_code, $name, $req->username ];
-
-   return { redirect => { location => $location, message => $message } };
-}
-
-sub delete_endorsement_action : Role(person_manager) {
-   my ($self, $req) = @_;
-
-   my $name     = $req->uri_params->( 0 );
-   my $uri      = $req->uri_params->( 1 );
-   my $blot     = $self->$_find_endorsement_by( $name, $uri ); $blot->delete;
-   my $action   = $self->moniker.'/endorsements';
-   my $location = uri_for_action $req, $action, [ $name ];
-   my $message  = [ 'Endorsement [_1] for [_2] deleted by [_3]',
-                    $uri, $name, $req->username ];
-
-   return { redirect => { location => $location, message => $message } };
 }
 
 sub update_endorsement_action : Role(person_manager) {

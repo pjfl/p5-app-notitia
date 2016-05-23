@@ -9,6 +9,7 @@ use App::Notitia::Util      qw( bind bind_fields check_field_js
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
+use Try::Tiny;
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -197,7 +198,15 @@ sub create_certification_action : Role(person_manager) {
    my $cert_rs = $self->schema->resultset( 'Certification' );
    my $cert    = $cert_rs->new_result( { recipient => $name, type => $type } );
 
-   $self->$_update_cert_from_request( $req, $cert ); $cert->insert;
+   $self->$_update_cert_from_request( $req, $cert );
+
+   try   { $cert->insert }
+   catch {
+      $self->application->debug and throw $_; $self->log->error( $_ );
+      $_ =~ m{ duplicate }imx
+         and throw 'Duplicate certification [_1]', [ $cert->label( $req ) ];
+      throw 'Failed to create certification [_1]', [ $cert->label( $req ) ];
+   };
 
    my $action   = $self->moniker.'/certifications';
    my $location = uri_for_action( $req, $action, [ $name ] );
