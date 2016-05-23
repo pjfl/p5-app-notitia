@@ -32,6 +32,18 @@ register_action_paths
    'user/profile'         => 'user/profile',
    'user/request_reset'   => 'user/reset';
 
+# Private functions
+my $_update_session = sub {
+   my ($session, $person) = @_;
+
+   $session->authenticated( TRUE );
+   $session->roles( [] );
+   $session->username( $person->shortcode );
+   $session->first_name( $person->first_name );
+   $session->user_label( $person->label );
+   return;
+};
+
 # Private methods
 my $_create_reset_email = sub {
    my ($self, $req, $person, $password) = @_;
@@ -116,9 +128,7 @@ sub change_password_action : Role(anon) {
 
    $password eq $again or throw 'Passwords do not match';
    $person->set_password( $oldpass, $password );
-   $session->authenticated( TRUE );
-   $session->username( $person->shortcode );
-   $session->first_name( $person->first_name );
+   $_update_session->( $session, $person );
 
    my $message = [ '[_1] password changed', $person->label ];
 
@@ -162,12 +172,7 @@ sub login_action : Role(anon) {
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_person( $name );
 
-   $person->authenticate( $password );
-   $session->authenticated( TRUE );
-   $session->roles( [] );
-   $session->username( $person->shortcode );
-   $session->first_name( $person->first_name );
-   $session->user_label( $person->label );
+   $person->authenticate( $password ); $_update_session->( $session, $person );
 
    my $message   = [ '[_1] logged in', $person->label ];
    my $wanted    = $session->wanted; $req->session->wanted( NUL );
