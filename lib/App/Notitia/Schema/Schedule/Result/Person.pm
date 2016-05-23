@@ -81,28 +81,6 @@ my $_list_slot_certs_for = sub {
    return [ map { $_->certification_type } $rs->search( $where, $opts )->all ];
 };
 
-my $_assert_claim_allowed = sub {
-   my ($self, $shift_type, $slot_type, $subslot, $bike_wanted) = @_;
-
-   my $conf = $self->result_source->schema->config;
-
-   $slot_type eq 'rider' and $self->assert_member_of( 'bike_rider' );
-   $slot_type ne 'rider' and $bike_wanted
-      and throw 'Cannot request a bike for slot type [_1]', [ $slot_type ];
-
-   for my $cert (@{ $self->$_list_slot_certs_for( $slot_type ) }) {
-      $self->assert_certified_for( $cert );
-   }
-
-   my $i = slot_limit_index $shift_type, $slot_type;
-
-   $subslot > $conf->slot_limits->[ $i ] - 1
-      and throw 'Cannot claim subslot [_1] greater than slot limit [_2]',
-          [ $subslot, $conf->slot_limits->[ $i ] - 1 ];
-
-   return;
-};
-
 my $_assert_membership_allowed = sub {
    my ($self, $type) = @_;
 
@@ -139,6 +117,12 @@ my $_find_role_type = sub {
    my ($self, $name) = @_; my $schema = $self->result_source->schema;
 
    return $schema->resultset( 'Type' )->find_role_by( $name );
+};
+
+my $_find_rota_type = sub {
+   my ($self, $name) = @_; my $schema = $self->result_source->schema;
+
+   return $schema->resultset( 'Type' )->find_rota_by( $name );
 };
 
 my $_new_shortcode = sub {
@@ -183,6 +167,43 @@ my $_new_shortcode = sub {
        and throw 'Person name [_1] no ids left', [ $first_name.SPC.$last_name ];
    $lid or throw 'Person name [_1] no id', [ $name ];
    return $prefix.$lid;
+};
+
+my $_assert_no_slot_collision = sub {
+   my ($self, $rota_name, $date, $shift_type) = @_;
+
+   my $rs      = $self->result_source->schema->resultset( 'Slot' );
+   my $type_id = $self->$_find_rota_type( $rota_name )->id;
+
+   for my $slot ($rs->list_slots_for( $type_id, $date )->all) {
+      $slot->shift eq $shift_type and $self->id == $slot->operator->id
+         and throw 'Person already assigned to slot [_1]', [ $slot ];
+   }
+
+   return;
+};
+
+my $_assert_claim_allowed = sub {
+   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $bike) = @_;
+
+   $self->$_assert_no_slot_collision( $rota_name, $date, $shift_type );
+
+   $slot_type eq 'rider' and $self->assert_member_of( 'bike_rider' );
+   $slot_type ne 'rider' and $bike
+      and throw 'Cannot request a bike for slot type [_1]', [ $slot_type ];
+
+   for my $cert (@{ $self->$_list_slot_certs_for( $slot_type ) }) {
+      $self->assert_certified_for( $cert );
+   }
+
+   my $conf = $self->result_source->schema->config;
+   my $i    = slot_limit_index $shift_type, $slot_type;
+
+   $subslot > $conf->slot_limits->[ $i ] - 1
+      and throw 'Cannot claim subslot [_1] greater than slot limit [_2]',
+          [ $subslot, $conf->slot_limits->[ $i ] - 1 ];
+
+   return;
 };
 
 # Public methods
@@ -283,7 +304,8 @@ sub authenticate {
 sub claim_slot {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $bike) = @_;
 
-   $self->$_assert_claim_allowed( $shift_type, $slot_type, $subslot, $bike );
+   $self->$_assert_claim_allowed
+      ( $rota_name, $date, $shift_type, $slot_type, $subslot, $bike );
 
    my $shift = $self->find_shift( $rota_name, $date, $shift_type );
    my $slot  = $self->find_slot( $shift, $slot_type, $subslot );

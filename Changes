@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #44. Collision detection on slot claiming
           - Added a file in var/etc to include directory in git
           - Fixed date handling in day_rota and month_rota
           - Started adding week view

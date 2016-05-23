@@ -386,7 +386,8 @@ my $_controllers = sub {
       for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
          my $k      = "${shift_type}_controller_${subslot}";
          my $action = slot_claimed( $data->{ $k } ) ? 'yield' : 'claim';
-         my $args   = [ $rota_name, $local_dt, $k ];
+         my $date   = $local_dt->clone->truncate( to => 'day' );
+         my $args   = [ $rota_name, $date->ymd, $k ];
          my $link   = $_slot_link->( $req, $page, $data, $k, 'controller');
 
          push @{ $controls },
@@ -457,7 +458,8 @@ my $_riders_n_drivers = sub {
       for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
          my $k      = "${shift_type}_rider_${subslot}";
          my $action = slot_claimed( $data->{ $k } ) ? 'yield' : 'claim';
-         my $args   = [ $rota_name, $local_dt, $k ];
+         my $date   = $local_dt->clone->truncate( to => 'day' );
+         my $args   = [ $rota_name, $date->ymd, $k ];
 
          push @{ $riders }, $_rider_row->( $req, $page, $args, $data );
          $_add_js_dialog->( $req, $page, $args, $action,
@@ -469,7 +471,8 @@ my $_riders_n_drivers = sub {
       for (my $subslot = 0; $subslot < $max_slots; $subslot++) {
          my $k      = "${shift_type}_driver_${subslot}";
          my $action = slot_claimed( $data->{ $k } ) ? 'yield' : 'claim';
-         my $args   = [ $rota_name, $local_dt, $k ];
+         my $date   = $local_dt->clone->truncate( to => 'day' );
+         my $args   = [ $rota_name, $date->ymd, $k ];
 
          push @{ $drivers }, $_driver_row->( $req, $page, $args, $data );
          $_add_js_dialog->( $req, $page, $args, $action,
@@ -628,8 +631,8 @@ sub claim_slot_action : Role(rota_manager) Role(bike_rider) Role(controller)
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
    # Without tz will create rota records prev. day @ 23:00 during summer time
-   $person->claim_slot( $rota_name, $rota_date, $shift_type,
-                        $slot_type, $subslot,   $bike );
+   $person->claim_slot( $rota_name, to_dt( $rota_date ), $shift_type,
+                        $slot_type, $subslot, $bike );
 
    my $args     = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, 'sched/day_rota', $args;

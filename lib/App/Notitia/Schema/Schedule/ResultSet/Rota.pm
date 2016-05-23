@@ -4,10 +4,13 @@ use strictures;
 use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Util qw( to_dt );
+use Scalar::Util qw( blessed );
 
 # Public methods
 sub find_rota {
-   my ($self, $name, $date) = @_; $date = to_dt $date;
+   my ($self, $name, $date) = @_;
+
+   blessed $date or $date = to_dt $date;
 
    my $schema     =  $self->result_source->schema;
    my $rota_type  =  $schema->resultset( 'Type' )->find_rota_by( $name );
