@@ -4,6 +4,7 @@ use strictures;
 use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( FALSE NUL TRUE );
+use App::Notitia::Util      qw( set_rota_date );
 use Class::Usul::Functions  qw( throw );
 
 # Public methods
@@ -29,18 +30,21 @@ sub find_slot_by {
 }
 
 sub list_slots_for {
-   my ($self, $type_id, $date) = @_;
+   my ($self, $opts) = @_; $opts = { %{ $opts } };
 
-   my $parser = $self->result_source->schema->datetime_parser;
    my $attr   = [ 'operator.first_name', 'operator.id', 'operator.last_name',
                   'operator.name', 'operator.postcode', 'vehicle.name',
                   'vehicle.vrn' ];
+   my $where  = { 'rota.type_id' => $opts->{rota_type} };
+   my $parser = $self->result_source->schema->datetime_parser;
+
+   set_rota_date $parser, $where, 'rota.date', $opts;
 
    return $self->search
-      ( { 'rota.type_id' => $type_id,
-          'rota.date'    => $parser->format_datetime( $date ) },
+      ( $where,
         { 'columns'      => [ qw( bike_requested type_name subslot ) ],
           'join'         => [ 'operator', 'vehicle' ],
+          'order_by'     => 'shift.type_name',
           'prefetch'     => [ { 'shift' => 'rota' }, 'operator_vehicles' ],
           '+select'      => $attr,
           '+as'          => $attr, } );
@@ -49,25 +53,12 @@ sub list_slots_for {
 sub search_for_assigned_slots {
    my ($self, $opts) = @_; $opts = { %{ $opts } };
 
-   my $where  = { 'vehicle.vrn' => delete $opts->{vehicle} };
-   my $parser = $self->result_source->schema->datetime_parser;
-
-   if (my $after = delete $opts->{after}) {
-      $where->{ 'rota.date' } = { '>' => $parser->format_datetime( $after ) };
-      $opts->{order_by} //= 'rota.date';
-   }
-
-   if (my $before = delete $opts->{before}) {
-      $where->{ 'rota.date' } = { '<' => $parser->format_datetime( $before ) };
-   }
-
-   if (my $ondate = delete $opts->{on}) {
-      $where->{ 'rota.date' } = $parser->format_datetime( $ondate );
-   }
-
-   $opts->{order_by} //= { -desc => 'rota.date' };
-
+   my $where    = { 'vehicle.vrn' => delete $opts->{vehicle} };
    my $prefetch = [ 'vehicle', { 'shift' => { 'rota' => 'type' } } ];
+   my $parser   = $self->result_source->schema->datetime_parser;
+
+   set_rota_date $parser, $where, 'rota.date', $opts;
+   $opts->{order_by} //= { -desc => 'rota.date' };
 
    return $self->search( $where, { prefetch => $prefetch, %{ $opts } } );
 }

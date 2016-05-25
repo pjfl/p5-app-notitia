@@ -33,7 +33,7 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      nullable_foreign_key_data_type nullable_varchar_data_type
                      numerical_id_data_type register_action_paths save_button
                      serial_data_type set_element_focus
-                     set_on_create_datetime_data_type slot_claimed
+                     set_on_create_datetime_data_type set_rota_date slot_claimed
                      slot_identifier slot_limit_index show_node stash_functions
                      table_link time2int to_dt uri_for_action varchar_data_type
                      );
@@ -725,6 +725,25 @@ sub set_on_create_datetime_data_type () {
    return { %{ date_data_type() }, set_on_create => TRUE };
 }
 
+sub set_rota_date ($$$$) {
+   my ($parser, $where, $key, $opts) = @_;
+
+   if (my $after = delete $opts->{after}) {
+      $where->{ $key }->{ '>' } = $parser->format_datetime( $after );
+      $opts->{order_by} //= $key;
+   }
+
+   if (my $before = delete $opts->{before}) {
+      $where->{ $key }->{ '<' } = $parser->format_datetime( $before );
+   }
+
+   if (my $ondate = delete $opts->{on}) {
+      $where->{ $key } = $parser->format_datetime( $ondate );
+   }
+
+   return;
+}
+
 sub show_node ($;$$) {
    my ($node, $wanted, $wanted_depth) = @_;
 
@@ -942,6 +961,8 @@ prior to calling L<uri_for|Web::ComposableRequest::Base/uri_for>
 =item C<set_element_focus>
 
 =item C<set_on_create_datetime_data_type>
+
+=item C<set_rota_date>
 
 =item C<show_node>
 

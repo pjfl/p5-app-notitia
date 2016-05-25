@@ -3,35 +3,24 @@ package App::Notitia::Schema::Schedule::ResultSet::Transport;
 use strictures;
 use parent 'DBIx::Class::ResultSet';
 
+use App::Notitia::Util qw( set_rota_date );
+
 sub assigned_vehicle_count {
    return $_[ 0 ]->count( { event_id => $_[ 1 ] } );
 }
 
 sub search_for_assigned_vehicles {
-   my ($self, $opts) = @_; $opts = { %{ $opts } };
+   my ($self, $opts) = @_; my $where = {}; $opts = { %{ $opts } };
 
-   my $where  = { 'vehicle.vrn' => delete $opts->{vehicle} };
-   my $parser = $self->result_source->schema->datetime_parser;
-
-   if (my $after = delete $opts->{after}) {
-      $where->{ 'start_rota.date' } =
-              { '>' => $parser->format_datetime( $after ) };
-      $opts->{order_by} //= 'date';
-   }
-
-   if (my $before = delete $opts->{before}) {
-      $where->{ 'start_rota.date' } =
-              { '<' => $parser->format_datetime( $before ) };
-   }
-
-   if (my $ondate = delete $opts->{on}) {
-      $where->{ 'start_rota.date' } = $parser->format_datetime( $ondate );
-   }
-
-   $opts->{order_by} //= { -desc => 'date' }; delete $opts->{event_type};
-
+   my $parser   = $self->result_source->schema->datetime_parser;
    my $prefetch = delete $opts->{prefetch}
                // [ { 'event' => 'start_rota' }, 'vehicle' ];
+
+   exists $opts->{vehicle}
+      and $where->{ 'vehicle.vrn' } = delete $opts->{vehicle};
+   set_rota_date( $parser, $where, 'start_rota.date', $opts );
+   $opts->{order_by} //= { -desc => 'date' };
+   delete $opts->{event_type}; delete $opts->{rota_type};
 
    return $self->search( $where, { prefetch => $prefetch, %{ $opts } } );
 }

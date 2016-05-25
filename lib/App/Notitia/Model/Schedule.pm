@@ -360,13 +360,11 @@ my $_week_rota_headers = sub {
 my $_week_rota_title = sub {
    my ($req, $rota_name, $date) = @_;
 
-   $date = $date->clone->set_time_zone( 'local' );
+   my $local_dt = $date->clone->set_time_zone( 'local' );
 
-   my $title = ucfirst( loc( $req, $rota_name ) ).SPC
-             . loc( $req, 'rota for week' ).SPC.$date->week_number.SPC
-             . $date->week_year;
-
-   return $title;
+   return ucfirst( loc( $req, $rota_name ) ).SPC
+        . loc( $req, 'rota commencing' ).SPC
+        . $local_dt->day.SPC.$local_dt->month_name.SPC.$local_dt->year;
 };
 
 my $_controllers = sub {
@@ -520,10 +518,10 @@ my $_slot_assignments = sub {
    my ($self, $type_id, $date) = @_;
 
    my $slot_rs = $self->schema->resultset( 'Slot' );
-   my $slots   = $slot_rs->list_slots_for( $type_id, $date );
+   my $opts    = { rota_type => $type_id, on => $date };
    my $data    = {};
 
-   for my $slot ($slots->all) {
+   for my $slot ($slot_rs->list_slots_for( $opts )->all) {
       my $key  = $slot->key;
 
       $data->{ $key } = { name        => $key,
@@ -646,8 +644,8 @@ sub day_rota : Role(any) {
    my $rota_date = $params->( 1, { optional => TRUE } ) // $today;
    my $rota_dt   = to_dt $rota_date;
    my $type_id   = $self->$_find_rota_type_id( $name );
-   my $slot_rs   = $self->schema->resultset( 'Slot' );
-   my $slots     = $slot_rs->list_slots_for( $type_id, $rota_dt );
+   my $opts      = { rota_type => $type_id, on => $rota_dt };
+   my $slots     = $self->schema->resultset( 'Slot' )->list_slots_for( $opts );
    my $event_rs  = $self->schema->resultset( 'Event' );
    my $events    = $event_rs->search_for_a_days_events( $type_id, $rota_dt );
    my $slot_data = {};
@@ -771,38 +769,44 @@ sub week_rota : Role(any) {
    my $rota_dt    =  to_dt $rota_date;
    my $next       =  $self->$_next_week( $req, $rota_name, $rota_dt );
    my $prev       =  $self->$_prev_week( $req, $rota_name, $rota_dt );
+   my $first      =  $_first_day_of_week->( $req, $rota_dt );
    my $page       =  {
       fields      => { nav     => { next => $next, prev => $prev }, },
       rota        => { headers => $_week_rota_headers->( $req ),
                        name    => $rota_name,
                        rows    => [] },
       template    => [ 'contents', 'rota', 'week-table' ],
-      title       => $_week_rota_title->( $req, $rota_name, $rota_dt ), };
+      title       => $_week_rota_title->( $req, $rota_name, $first ), };
    my $event_rs   =  $self->schema->resultset( 'Event' );
    my $slot_rs    =  $self->schema->resultset( 'Slot' );
    my $tport_rs   =  $self->schema->resultset( 'Transport' );
    my $vehicle_rs =  $self->schema->resultset( 'Vehicle' );
    my $vreq_rs    =  $self->schema->resultset( 'VehicleRequest' );
    my $type_id    =  $self->$_find_rota_type_id( $rota_name );
-   my $first      =  $_first_day_of_week->( $req, $rota_dt );
+   my $opts       =  { after     => $first->clone->subtract( days => 1),
+                       before    => $first->clone->add( days => 7 ),
+                       rota_type => $type_id };
+   my @slots      =  $slot_rs->list_slots_for( $opts )->all;
+   my @uv_events  =  $vreq_rs->search_for_events_with_unassigned_vreqs( $opts );
+   my @tports     =  $tport_rs->search_for_assigned_vehicles( $opts )->all;
+   my @v_events   =  $event_rs->search_for_vehicle_events( $opts )->all;
    my $rows       =  $page->{rota}->{rows};
    my $row        =  [ { class => 'narrow', value => 'Requests' } ];
    my $slot_cache =  [];
 
    for my $cno (0 .. 6) {
       my $date  = $first->clone->add( days => $cno );
-      my $opts  = { on => $date };
       my $table = { class => 'month-rota', rows => [], type => 'table' };
 
       push @{ $table->{rows} },
-         map  { [ { class => 'narrow', value => $_->label( $req ) } ] }
+         map  { [ { class => 'narrow', value => loc( $req, $_->key ) } ] }
          grep { $_->bike_requested and not $_->vehicle }
          map  { push @{ $slot_cache->[ $cno ] }, $_; $_ }
-            $slot_rs->list_slots_for( $type_id, $date )->all;
+         grep { $_->date eq $date } @slots;
 
       push @{ $table->{rows} },
-         map  { [ { class => 'narrow', value => $_->label } ] }
-            $vreq_rs->search_for_events_with_unassigned_vreqs( $opts );
+         map  { [ { class => 'narrow', value => $_->name } ] }
+         grep { $_->start_date eq $date } @uv_events;
 
       push @{ $row }, { class => 'narrow', value => $table };
    }
@@ -814,22 +818,23 @@ sub week_rota : Role(any) {
 
       for my $cno (0 .. 6) {
          my $date  = $first->clone->add( days => $cno );
-         my $opts  = { on => $date, vehicle => $tuple->[ 1 ]->vrn };
          my $table = { class => 'month-rota', rows => [], type => 'table' };
 
          push @{ $table->{rows} },
-            map  { [ { class => 'narrow', value => $_->label( $req ) } ] }
+            map  { [ { class => 'narrow', value => loc( $req, $_->key ) } ] }
             grep { $_->vehicle->name eq $tuple->[ 1 ]->name }
             grep { $_->bike_requested and $_->vehicle }
                 @{ $slot_cache->[ $cno ] };
 
          push @{ $table->{rows} },
-            map { [ { class => 'narrow', value => $_->event->label } ] }
-               $tport_rs->search_for_assigned_vehicles( $opts )->all;
+            map  { [ { class => 'narrow', value => $_->event->name } ] }
+            grep { $_->vehicle->vrn eq $tuple->[ 1 ]->vrn }
+            grep { $_->event->start_date eq $date } @tports;
 
          push @{ $table->{rows} },
-            map { [ { class => 'narrow', value => $_->label } ] }
-               $event_rs->search_for_vehicle_events( $opts )->all;
+            map  { [ { class => 'narrow', value => $_->name } ] }
+            grep { $_->vehicle->vrn eq $tuple->[ 1 ]->vrn }
+            grep { $_->start_date eq $date } @v_events;
 
          push @{ $row }, { class => 'narrow', value => $table };
       }

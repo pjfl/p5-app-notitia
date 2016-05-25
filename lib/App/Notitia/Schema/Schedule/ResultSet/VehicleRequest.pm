@@ -4,20 +4,18 @@ use strictures;
 use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( FALSE TRUE );
+use App::Notitia::Util      qw( set_rota_date );
 use Class::Usul::Functions  qw( is_member );
 
 sub search_for_events_with_unassigned_vreqs {
    my ($self, $opts) = @_; my @tuples; $opts = { %{ $opts } };
 
-   my $where  = { 'quantity' => { '>' => 0 } };
-   my $parser = $self->result_source->schema->datetime_parser;
-
-   if (my $ondate = delete $opts->{on}) {
-      $where->{ 'start_rota.date' } = $parser->format_datetime( $ondate );
-   }
-
+   my $where    = { 'quantity' => { '>' => 0 } };
    my $prefetch = [ { 'event' => 'start_rota' } ];
+   my $parser   = $self->result_source->schema->datetime_parser;
    my $tport_rs = $self->result_source->schema->resultset( 'Transport' );
+
+   set_rota_date $parser, $where, 'start_rota.date', $opts;
 
    for my $vreq ($self->search( $where, { prefetch => $prefetch } )->all) {
       my $where    = { 'event.id'        => $vreq->event_id,

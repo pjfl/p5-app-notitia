@@ -4,7 +4,8 @@ use strictures;
 use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use Class::Usul::Functions  qw( throw );
+use App::Notitia::Util      qw( set_rota_date );
+use Class::Usul::Functions  qw( is_member throw );
 
 # Private methods
 my $_find_event_type = sub {
@@ -106,35 +107,20 @@ sub search_for_a_days_events {
 sub search_for_events {
    my ($self, $opts) = @_; my $where = {}; $opts = { %{ $opts // {} } };
 
-   my $type   = delete $opts->{event_type};
+   my $type     = delete $opts->{event_type};
       $type and $where->{ 'event_type.name' } = $type;
-   my $vrn    = delete $opts->{vehicle};
+   my $vrn      = delete $opts->{vehicle};
       $vrn  and $where->{ 'vehicle.vrn' } = $vrn;
-   my $parser = $self->result_source->schema->datetime_parser;
-
-   if (my $after  = delete $opts->{after}) {
-      $where->{ 'start_rota.date' } =
-              { '>' => $parser->format_datetime( $after ) };
-      $opts->{order_by} //= 'start_rota.date';
-   }
-
-   if (my $before = delete $opts->{before}) {
-      $where->{ 'start_rota.date' } =
-              { '<' => $parser->format_datetime( $before ) };
-   }
-
-   if (my $ondate = delete $opts->{on}) {
-      $where->{ 'start_rota.date' } = $parser->format_datetime( $ondate );
-   }
-
-   $opts->{order_by} //= { -desc => 'start_rota.date' };
-
+   my $parser   = $self->result_source->schema->datetime_parser;
    my $prefetch = delete $opts->{prefetch} // [ 'end_rota', 'start_rota' ];
 
+   set_rota_date $parser, $where, 'start_rota.date', $opts;
+   $opts->{order_by} //= { -desc => 'start_rota.date' };
    $type and push @{ $prefetch }, 'event_type';
-   $vrn  and push @{ $prefetch }, 'vehicle';
+   $vrn  and not is_member 'vehicle', $prefetch
+         and push @{ $prefetch }, 'vehicle';
 
-   my $fields = delete $opts->{fields} // {};
+   my $fields = delete $opts->{fields} // {}; delete $opts->{rota_type};
 
    return $self->search
       ( $where, { columns  => [ 'end_time', 'name', 'start_time', 'uri' ],
@@ -142,7 +128,10 @@ sub search_for_events {
 }
 
 sub search_for_vehicle_events {
-   my ($self, $opts) = @_; $opts->{event_type} = 'vehicle';
+   my ($self, $opts) = @_; $opts = { %{ $opts } };
+
+   $opts->{event_type}   = 'vehicle';
+   $opts->{prefetch  } //= [ 'end_rota', 'start_rota', 'vehicle' ];
 
    return $self->search_for_events( $opts );
 }

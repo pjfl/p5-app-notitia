@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Optimised week rota
           - Week rota displays requests and assignments
             Currently does not scale, 13 vehicles results in 196 queries
           - Implements #46. Simplified duplication error
