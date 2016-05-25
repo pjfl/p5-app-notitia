@@ -202,10 +202,8 @@ sub create_certification_action : Role(person_manager) {
 
    try   { $cert->insert }
    catch {
-      $self->application->debug and throw $_; $self->log->error( $_ );
-      $_ =~ m{ duplicate }imx
-         and throw 'Duplicate certification [_1]', [ $cert->label( $req ) ];
-      throw 'Failed to create certification [_1]', [ $cert->label( $req ) ];
+      $self->rethrow_exception
+         ( $_, 'create', 'certification', $cert->label( $req ) );
    };
 
    my $action   = $self->moniker.'/certifications';

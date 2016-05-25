@@ -34,8 +34,8 @@ register_action_paths
 around 'get_stash' => sub {
    my ($orig, $self, $req, @args) = @_;
 
-   my $stash  = $orig->( $self, $req, @args );
-   my $name   = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
+   my $stash = $orig->( $self, $req, @args );
+   my $name  = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
 
    $stash->{nav}->{list} = $self->rota_navigation_links( $req, 'month', $name );
    $stash->{page}->{location} = 'schedule';
@@ -51,14 +51,14 @@ my $_max_rota_cols = 4;
 my $_add_js_dialog = sub {
    my ($req, $page, $args, $action, $name, $title) = @_;
 
-   $name = "${action}-${name}"; $title = (ucfirst $action).SPC.$title;
+   $name = "${action}-${name}"; $title = loc $req, (ucfirst $action).SPC.$title;
 
    my $path = $page->{moniker}.'/slot';
    my $href = uri_for_action $req, $path, $args, { action => $action };
    my $js   = $page->{literal_js} //= [];
 
    push @{ $js }, dialog_anchor( $args->[ 2 ], $href, {
-      name => $name, title => loc( $req, $title ), useIcon => \1 } );
+      name => $name, title => $title, useIcon => \1 } );
 
    return;
 };
@@ -69,10 +69,10 @@ my $_confirm_slot_button = sub {
 };
 
 my $_day_label = sub {
-   my $map = { 0 => 1, 1 => 1, 2 => 2, 3 => 1 };
-   my $v   = loc( $_[ 0 ], 'day_rota_heading_'.$_[ 1 ] );
+   my $v    = loc $_[ 0 ], 'day_rota_heading_'.$_[ 1 ];
+   my $span = { 0 => 1, 1 => 1, 2 => 2, 3 => 1 }->{ $_[ 1 ] };
 
-   return { colspan => $map->{ $_[ 1 ] }, value => $v };
+   return { colspan => $span, value => $v };
 };
 
 my $_day_rota_headers = sub {
@@ -128,7 +128,7 @@ my $_first_day_of_week = sub {
 
    $req->session->rota_date( $date->ymd );
 
-   return $date;
+   return $date->set_time_zone( 'GMT' );
 };
 
 my $_is_this_month = sub {
@@ -254,7 +254,6 @@ my $_event_link = sub {
       return { class => $class, colspan => $_max_rota_cols, name => $name, };
    }
 
-   my $name = my $value = $event->name;
    my $href = uri_for_action $req, 'event/event_summary', [ $event->uri ];
    my $tip  = loc $req, 'Click to view the [_1] event', [ $event->label ];
 
@@ -262,24 +261,22 @@ my $_event_link = sub {
       colspan  => $_max_rota_cols - 2,
       value    => {
          class => 'table-link', hint => loc( $req, 'Hint' ),
-         href  => $href,        name => $name,
+         href  => $href,        name => $event->name,
          tip   => $tip,         type => 'link',
-         value => $value, }, };
+         value => $event->name, }, };
 };
 
 my $_participents_link = sub {
    my ($req, $page, $event) = @_; $event or return;
 
-   my $class = 'list-icon';
-   my $name  = 'view-participents';
    my $href  = uri_for_action $req, 'event/participents', [ $event->uri ];
    my $tip   = loc $req, 'participents_view_link', [ $event->label ];
 
    return { class   => 'narrow',
             colspan => 1,
-            value   => { class => $class, hint => loc( $req, 'Hint' ),
-                         href  => $href,  name => $name,
-                         tip   => $tip,   type => 'link',
+            value   => { class => 'list-icon', hint => loc( $req, 'Hint' ),
+                         href  => $href,       name => 'view-participents',
+                         tip   => $tip,        type => 'link',
                          value => '&nbsp;', } };
 };
 
@@ -348,12 +345,9 @@ my $_vehicle_request_link = sub {
    my $link     = $_summary_link->( $req, 'event', 1, $name, $opts );
 
    $link->{class} .= ' small-slot';
-   $link->{value}  = { hint  => loc( $req, 'Hint' ),
-                       href  => $href,
-                       name  => $name,
-                       tip   => $tip,
-                       type  => 'link',
-                       value => $link->{value}, };
+   $link->{value}  = { hint  => loc( $req, 'Hint' ), href  => $href,
+                       name  => $name,               tip   => $tip,
+                       type  => 'link',              value => $link->{value}, };
 
    return $link;
 };
@@ -679,7 +673,6 @@ sub month_rota : Role(any) {
    my $rota_name =  $params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date =  $params->( 1, { optional => TRUE } ) // time2str '%Y-%m-01';
    my $rota_dt   =  to_dt $rota_date;
-   my $title     =  $_month_rota_title->( $req, $rota_name, $rota_dt );
    my $max_slots =  $_month_rota_max_slots->( $self->config->slot_limits );
    my $actionp   =  $self->moniker.'/month_rota';
    my $prev      =  $_prev_month->( $req, $actionp, $rota_name, $rota_dt );
@@ -692,7 +685,7 @@ sub month_rota : Role(any) {
                       name      => $rota_name,
                       rows      => [] },
       template   => [ 'contents', 'rota', 'month-table' ],
-      title      => $title, };
+      title      => $_month_rota_title->( $req, $rota_name, $rota_dt ), };
    my $first     =  $_first_day_of_month->( $req, $rota_dt );
 
    for my $rno (0 .. 5) {
@@ -785,28 +778,61 @@ sub week_rota : Role(any) {
                        rows    => [] },
       template    => [ 'contents', 'rota', 'week-table' ],
       title       => $_week_rota_title->( $req, $rota_name, $rota_dt ), };
+   my $event_rs   =  $self->schema->resultset( 'Event' );
+   my $slot_rs    =  $self->schema->resultset( 'Slot' );
+   my $tport_rs   =  $self->schema->resultset( 'Transport' );
+   my $vehicle_rs =  $self->schema->resultset( 'Vehicle' );
+   my $vreq_rs    =  $self->schema->resultset( 'VehicleRequest' );
    my $type_id    =  $self->$_find_rota_type_id( $rota_name );
    my $first      =  $_first_day_of_week->( $req, $rota_dt );
-   my $row        =  [ { class => 'narrow', value => 'Requests' } ];
    my $rows       =  $page->{rota}->{rows};
+   my $row        =  [ { class => 'narrow', value => 'Requests' } ];
+   my $slot_cache =  [];
 
    for my $cno (0 .. 6) {
-      my $date               = $first->clone->add( days => $cno );
-      my $slot_data          = $self->$_slot_assignments( $type_id, $date );
-#      my $transport_data     = ;
-#      my $vehicle_event_data = ;
+      my $date  = $first->clone->add( days => $cno );
+      my $opts  = { on => $date };
+      my $table = { class => 'month-rota', rows => [], type => 'table' };
 
-#      push @{ $row }, ;
+      push @{ $table->{rows} },
+         map  { [ { class => 'narrow', value => $_->label( $req ) } ] }
+         grep { $_->bike_requested and not $_->vehicle }
+         map  { push @{ $slot_cache->[ $cno ] }, $_; $_ }
+            $slot_rs->list_slots_for( $type_id, $date )->all;
+
+      push @{ $table->{rows} },
+         map  { [ { class => 'narrow', value => $_->label } ] }
+            $vreq_rs->search_for_events_with_unassigned_vreqs( $opts );
+
+      push @{ $row }, { class => 'narrow', value => $table };
    }
 
    push @{ $rows }, $row;
 
-   my $vehicle_rs =  $self->schema->resultset( 'Vehicle' );
-   my $tuples     =  $vehicle_rs->list_vehicles( { service => TRUE } );
+   for my $tuple (@{ $vehicle_rs->list_vehicles( { service => TRUE } ) }) {
+      my $row = [ { class => 'narrow', value => $tuple->[ 0 ] } ];
 
-   for my $tuple (@{ $tuples }) {
-      my $col1 = { class => 'narrow', value => $tuple->[ 0 ] };
-      my $row  = [ $col1 ];
+      for my $cno (0 .. 6) {
+         my $date  = $first->clone->add( days => $cno );
+         my $opts  = { on => $date, vehicle => $tuple->[ 1 ]->vrn };
+         my $table = { class => 'month-rota', rows => [], type => 'table' };
+
+         push @{ $table->{rows} },
+            map  { [ { class => 'narrow', value => $_->label( $req ) } ] }
+            grep { $_->vehicle->name eq $tuple->[ 1 ]->name }
+            grep { $_->bike_requested and $_->vehicle }
+                @{ $slot_cache->[ $cno ] };
+
+         push @{ $table->{rows} },
+            map { [ { class => 'narrow', value => $_->event->label } ] }
+               $tport_rs->search_for_assigned_vehicles( $opts )->all;
+
+         push @{ $table->{rows} },
+            map { [ { class => 'narrow', value => $_->label } ] }
+               $event_rs->search_for_vehicle_events( $opts )->all;
+
+         push @{ $row }, { class => 'narrow', value => $table };
+      }
 
       push @{ $rows }, $row;
    }

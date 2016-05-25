@@ -371,10 +371,7 @@ sub create_person_action : Role(person_manager) {
    };
 
    try   { $self->schema->txn_do( $coderef ) }
-   catch {
-      $self->application->debug and throw $_; $self->log->error( $_ );
-      throw 'Failed to create [_1]', [ $person->name ];
-   };
+   catch { $self->rethrow_exception( $_, 'create', 'person', $person->name ) };
 
    $self->config->no_user_email
       or $self->$_create_person_email( $req, $person, $password );
@@ -531,10 +528,7 @@ sub update_person_action : Role(person_manager) {
    $self->$_update_person_from_request( $req, $self->schema, $person );
 
    try   { $person->update }
-   catch {
-      $self->application->debug and throw $_; $self->log->error( $_ );
-      throw 'Failed to update [_1]', [ $label ];
-   };
+   catch { $self->rethrow_exception( $_, 'update', 'person', $label ) };
 
    my $location = uri_for_action $req, $self->moniker.'/people';
    my $message  = [ '[_1] updated by [_2]', $label, $req->username ];

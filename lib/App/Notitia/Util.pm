@@ -3,12 +3,12 @@ package App::Notitia::Util;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use App::Notitia::Constants    qw( FALSE HASH_CHAR NUL SPC TILDE TRUE
-                                   VARCHAR_MAX_SIZE );
+use App::Notitia::Constants    qw( EXCEPTION_CLASS FALSE HASH_CHAR NUL SPC
+                                   TILDE TRUE VARCHAR_MAX_SIZE );
 use Class::Usul::Crypt::Util   qw( decrypt_from_config encrypt_for_config );
 use Class::Usul::File;
 use Class::Usul::Functions     qw( class2appdir create_token
-                                   ensure_class_loaded find_apphome
+                                   ensure_class_loaded exception find_apphome
                                    first_char fold get_cfgfiles io is_arrayref
                                    is_hashref is_member throw );
 use Class::Usul::Time          qw( str2date_time str2time time2str );
@@ -18,6 +18,7 @@ use HTTP::Status               qw( HTTP_OK );
 use JSON::MaybeXS;
 use Scalar::Util               qw( blessed weaken );
 use Try::Tiny;
+use Unexpected::Functions      qw( ValidationErrors );
 use YAML::Tiny;
 
 our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
@@ -171,8 +172,9 @@ sub assert_unique ($$$$) {
    is_arrayref $fields->{ $k }->{unique} and return;
 
    my $v = ($rs->search( { $k => $columns->{ $k } } )->all)[ 0 ];
+   my $e = exception 'Parameter [_1] is not unique', [ $k ];
 
-   defined $v and throw 'Parameter [_1] is not unique', [ $k ];
+   defined $v and throw ValidationErrors, [ $e ], level => 2;
 
    return;
 }

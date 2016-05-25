@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Week rota displays requests and assignments
+            Currently does not scale, 13 vehicles results in 196 queries
           - Implements #46. Simplified duplication error
             for certifications and endorsements
           - Implements #47. Change password caches person label

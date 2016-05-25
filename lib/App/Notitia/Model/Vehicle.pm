@@ -522,11 +522,8 @@ sub create_vehicle_action : Role(rota_manager) {
 
    $self->$_update_vehicle_from_request( $req, $vehicle );
 
-   try { $vehicle->insert }
-   catch {
-      $self->application->debug and throw $_; $self->log->error( $_ );
-      throw 'Vehicle [_1] failed to create', [ $vehicle->vrn ];
-   };
+   try   { $vehicle->insert }
+   catch { $self->rethrow_exception( $_, 'create', 'vehicle', $vehicle->vrn ) };
 
    my $vrn      = $vehicle->vrn;
    my $message  = [ 'Vehicle [_1] created by [_2]', $vrn, $req->username ];
@@ -618,10 +615,7 @@ sub update_vehicle_action : Role(rota_manager) {
    $self->$_update_vehicle_from_request( $req, $vehicle );
 
    try   { $vehicle->update }
-   catch {
-      $self->application->debug and throw $_; $self->log->error( $_ );
-      throw 'Vehicle [_1] failed to update', [ $vehicle->vrn ];
-   };
+   catch { $self->rethrow_exception( $_, 'delete', 'vehicle', $vehicle->vrn ) };
 
    my $message = [ 'Vehicle [_1] updated by [_2]', $vrn, $req->username ];
 

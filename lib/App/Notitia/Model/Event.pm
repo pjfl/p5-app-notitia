@@ -1,7 +1,7 @@
 package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 create_link delete_button loc
                                 management_link register_action_paths
@@ -285,10 +285,8 @@ my $_create_event = sub {
 
    try   { $event->insert }
    catch {
-      $self->application->debug and throw $_; $self->log->error( $_ );
-      $_ =~ m{ duplicate }imx and throw 'Duplicate entry [_1] on [_2]',
-                                  [ $event->name, $start_date->dmy( '/' ) ];
-      throw 'Failed to create the [_1] event', [ $event->name ];
+      $self->rethrow_exception
+         ( $_, 'create', 'event', $event->name.SPC.$start_date->dmy( '/' ) );
    };
 
    return $event;
@@ -304,10 +302,7 @@ my $_delete_event = sub {
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
 
    try   { $event->delete }
-   catch {
-      $self->application->debug and throw $_; $self->log->error( $_ );
-      throw 'Failed to delete the [_1] event', [ $event->name ];
-   };
+   catch { $self->rethrow_exception( $_, 'delete', 'event', $event->name ) };
 
    return $event;
 };
@@ -320,10 +315,7 @@ my $_update_event = sub {
    $self->$_update_event_from_request( $req, $event );
 
    try   { $event->update }
-   catch {
-      $self->application->debug and throw $_; $self->log->error( $_ );
-      throw 'Failed to update the [_1] event', [ $event->name ];
-   };
+   catch { $self->rethrow_exception( $_, 'update', 'event', $event->name ) };
 
    return $event;
 };

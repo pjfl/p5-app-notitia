@@ -36,6 +36,18 @@ my $_auth_redirect = sub {
    return;
 };
 
+my $_parse_error = sub {
+   my $e = shift; my ($leader, $message, $summary);
+
+   if ($e =~ m{ : }mx) {
+      ($leader, $message) = split m{ : }mx, "${e}", 2;
+      $summary = substr $message, 0, 500;
+   }
+   else { $leader = NUL; $summary = $message = "${e}" }
+
+   return $leader, $message, $summary;
+};
+
 # Public methods
 sub dialog_stash {
    my ($self, $req, $layout) = @_; my $stash = $self->initialise_stash( $req );
@@ -50,13 +62,9 @@ sub dialog_stash {
 }
 
 sub exception_handler {
-   my ($self, $req, $e) = @_; my ($leader, $message, $summary);
+   my ($self, $req, $e) = @_;
 
-   if ($e =~ m{ : }mx) {
-      ($leader, $message) = split m{ : }mx, "${e}", 2;
-      $summary = substr $message, 0, 500;
-   }
-   else { $leader = NUL; $summary = $message = "${e}" }
+   my ($leader, $message, $summary) = $_parse_error->( $e );
 
    my $redirect = $_auth_redirect->( $req, $e, $summary );
       $redirect and return $redirect;
@@ -71,7 +79,8 @@ sub exception_handler {
                 template => [ 'contents', 'exception' ],
                 title    => $req->loc( 'Exception Handler', $opts ), };
 
-   $e->class eq ValidationErrors->() and $page->{validation_error} = $e->args;
+   $e->class eq ValidationErrors->() and $page->{validation_error}
+      = [ map { my $v = ($_parse_error->( $_ ))[ 1 ] } @{ $e->args } ];
 
    my $stash = $self->get_stash( $req, $page );
 
@@ -114,6 +123,17 @@ sub not_found : Role(anon) {
    my $e    = exception 'URI [_1] not found', [ $want ], rv => HTTP_NOT_FOUND;
 
    return $self->exception_handler( $req, $e );
+}
+
+sub rethrow_exception {
+   my ($self, $e, $verb, $noun, $label) = @_;
+
+   $self->application->debug and throw $e; $self->log->error( $e );
+   $e->can( 'class' ) and $e->class eq ValidationErrors->() and throw $e;
+   $e =~ m{ duplicate }imx and throw 'Duplicate [_1] [_2]', [ $noun, $label ],
+                                     no_quote_bind_values => TRUE;
+   throw 'Failed to [_1] [_2] [_3]', [ $verb, $noun, $label ],
+         no_quote_bind_values => TRUE;
 }
 
 1;

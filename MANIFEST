@@ -65,6 +65,7 @@ lib/App/Notitia/Schema/Schedule/ResultSet/Slot.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Transport.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Type.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Vehicle.pm
+lib/App/Notitia/Schema/Schedule/ResultSet/VehicleRequest.pm
 lib/App/Notitia/Server.pm
 lib/App/Notitia/Util.pm
 lib/App/Notitia/View/HTML.pm

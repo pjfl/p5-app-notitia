@@ -10,6 +10,7 @@ use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
 use Try::Tiny;
+use Unexpected::Functions   qw( ValidationErrors );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -143,10 +144,8 @@ sub create_endorsement_action : Role(person_manager) {
 
    try   { $blot->insert }
    catch {
-      $self->application->debug and throw $_; $self->log->error( $_ );
-      $_ =~ m{ duplicate }imx
-         and throw 'Duplicate endorsement [_1]', [ $blot->label( $req ) ];
-      throw 'Failed to create endorsement [_1]', [ $blot->label( $req ) ];
+      $self->rethrow_exception
+         ( $_, 'create', 'endorsement', $blot->label( $req ) );
    };
 
    my $action   = $self->moniker.'/endorsements';
