@@ -63,6 +63,29 @@ my $_add_js_dialog = sub {
    return;
 };
 
+my $_async_slot_tip = sub {
+   my ($req, $page, $moniker, $id) = @_;
+
+   my $name    = $page->{rota}->{name};
+   my $actionp = "${moniker}/assign_summary";
+   my $href    = uri_for_action $req, $actionp, [ "${name}_${id}" ];
+
+   push @{ $page->{literal_js} }, js_anchor_config
+      $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
+   return;
+};
+
+my $_async_vreq_tip = sub {
+   my ($req, $page, $event) = @_;
+
+   my $actionp = 'asset/request_info';
+   my $href    = uri_for_action $req, $actionp, [ $event->uri ];
+
+   push @{ $page->{literal_js} }, js_anchor_config
+      $event->uri, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
+   return;
+};
+
 my $_confirm_slot_button = sub {
    return button $_[ 0 ],
       { class =>  'right-last', label => 'confirm', value => $_[ 1 ].'_slot' };
@@ -108,10 +131,14 @@ my $_date_picker = sub {
             type        => 'form', };
 };
 
+my $_local_date = sub {
+   return $_[ 0 ]->clone->set_time_zone( 'local' );
+};
+
 my $_first_day_of_month = sub {
    my ($req, $date) = @_;
 
-   $date = $date->clone->set_time_zone( 'local' )->set( day => 1 );
+   $date = $_local_date->( $date )->set( day => 1 );
    $req->session->rota_date( $date->ymd );
 
    while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
@@ -120,9 +147,7 @@ my $_first_day_of_month = sub {
 };
 
 my $_first_day_of_week = sub {
-   my ($req, $date) = @_;
-
-   $date = $date->clone->set_time_zone( 'local' );
+   my ($req, $date) = @_; $date = $_local_date->( $date );
 
    while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
 
@@ -134,7 +159,7 @@ my $_first_day_of_week = sub {
 my $_is_this_month = sub {
    my ($rno, $date) = @_; $rno > 0 and return TRUE;
 
-   return $date->clone->set_time_zone( 'local' )->day < 15 ? TRUE : FALSE;
+   return $_local_date->( $date )->day < 15 ? TRUE : FALSE;
 };
 
 my $_month_label = sub {
@@ -158,9 +183,7 @@ my $_month_rota_max_slots = sub {
 };
 
 my $_month_rota_title = sub {
-   my ($req, $rota_name, $date) = @_;
-
-   $date = $date->clone->set_time_zone( 'local' );
+   my ($req, $rota_name, $date) = @_; $date = $_local_date->( $date );
 
    my $title = ucfirst( loc( $req, $rota_name ) ).SPC
              . loc( $req, 'rota for' ).SPC.$date->month_name.SPC
@@ -172,8 +195,8 @@ my $_month_rota_title = sub {
 my $_next_month = sub {
    my ($req, $actionp, $rota_name, $date) = @_;
 
-   $date = $date->clone->set_time_zone( 'local' )->truncate( to => 'day' )
-                ->set( day => 1 )->add( months => 1 );
+   $date = $_local_date->( $date )->truncate( to => 'day' )
+                                  ->set( day => 1 )->add( months => 1 );
 
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
 };
@@ -206,8 +229,8 @@ my $_operators_vehicle = sub {
 my $_prev_month = sub {
    my ($req, $actionp, $rota_name, $date) = @_;
 
-   $date = $date->clone->set_time_zone( 'local' )->truncate( to => 'day' )
-                ->set( day => 1 )->subtract( months => 1 );
+   $date = $_local_date->( $date )->truncate( to => 'day' )
+                                  ->set( day => 1 )->subtract( months => 1 );
 
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
 };
@@ -233,11 +256,6 @@ my $_summary_link = sub {
 
    return { class => $class, colspan => $span, name => $id,
             title => $title, value   => $value };
-};
-
-my $_week_label = sub {
-   return { class => 'day-of-week',
-            value => loc( $_[ 0 ], 'month_rota_heading_'.$_[ 1 ] ) };
 };
 
 my $_event_link = sub {
@@ -291,37 +309,6 @@ my $_slot_link = sub {
    return { colspan => 2, value => table_link( $req, $k, $value, $tip ) };
 };
 
-my $_summary_cells = sub {
-   my ($self, $req, $page, $date, $shift_types, $slot_types, $data, $rno) = @_;
-
-   my $actionp = $self->moniker.'/assign_summary';
-   my $limits  = $self->config->slot_limits;
-   my $name    = $page->{rota}->{name};
-   my $span    = $page->{rota}->{lcm } / $page->{rota}->{max_slots}->[ $rno ];
-   my $cells   = [];
-
-   for my $shift_type (@{ $shift_types }) {
-      for my $slot_type (@{ $slot_types }) {
-         my $i = slot_limit_index $shift_type, $slot_type;
-
-         for my $slotno (0 .. $limits->[ $i ] - 1) {
-            my $key  = "${shift_type}_${slot_type}_${slotno}";
-            my $id   = $date->ymd."_${key}";
-            my $href = uri_for_action $req, $actionp, [ "${name}_${id}" ];
-            my $slot = $data->{ $key };
-
-            push @{ $cells },
-               $_summary_link->( $req, $slot_type, $span, $id, $slot );
-
-            $slot and push @{ $page->{literal_js} }, js_anchor_config
-               $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
-         }
-      }
-   }
-
-   return $cells;
-};
-
 my $_vreq_state = sub {
    my ($n_assigned, $vreqs) = @_;
 
@@ -352,15 +339,25 @@ my $_vehicle_request_link = sub {
    return $link;
 };
 
+my $_week_label = sub {
+   my ($req, $date, $cno) = @_;
+
+   my $local_dt = $_local_date->( $date )->add( days => $cno );
+   my $opts = { params => [ $local_dt->day ], no_quote_bind_values => TRUE };
+   my $v    = loc $req, "week_rota_heading_${cno}", $opts;
+
+   return { class => 'day-of-week', value => $v };
+};
+
 my $_week_rota_headers = sub {
+   my ($req, $date) = @_;
+
    return [     { class => '', value => 'vehicle', },
-            map {  $_week_label->( $_[ 0 ], $_ ) } 0 .. 6 ];
+            map {  $_week_label->( $req, $date, $_ ) } 0 .. 6 ];
 };
 
 my $_week_rota_title = sub {
-   my ($req, $rota_name, $date) = @_;
-
-   my $local_dt = $date->clone->set_time_zone( 'local' );
+   my ($req, $rota_name, $date) = @_; my $local_dt = $_local_date->( $date );
 
    return ucfirst( loc( $req, $rota_name ) ).SPC
         . loc( $req, 'rota commencing' ).SPC
@@ -492,6 +489,37 @@ my $_prev_week = sub {
    my $actionp =  $self->moniker.'/week_rota';
 };
 
+my $_summary_cells = sub {
+   my ($self, $req, $page, $date, $shift_types, $slot_types, $data, $rno) = @_;
+
+   my $actionp = $self->moniker.'/assign_summary';
+   my $limits  = $self->config->slot_limits;
+   my $name    = $page->{rota}->{name};
+   my $span    = $page->{rota}->{lcm } / $page->{rota}->{max_slots}->[ $rno ];
+   my $cells   = [];
+
+   for my $shift_type (@{ $shift_types }) {
+      for my $slot_type (@{ $slot_types }) {
+         my $i = slot_limit_index $shift_type, $slot_type;
+
+         for my $slotno (0 .. $limits->[ $i ] - 1) {
+            my $key  = "${shift_type}_${slot_type}_${slotno}";
+            my $id   = $date->ymd."_${key}";
+            my $href = uri_for_action $req, $actionp, [ "${name}_${id}" ];
+            my $slot = $data->{ $key };
+
+            push @{ $cells },
+               $_summary_link->( $req, $slot_type, $span, $id, $slot );
+
+            $slot and push @{ $page->{literal_js} }, js_anchor_config
+               $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
+         }
+      }
+   }
+
+   return $cells;
+};
+
 my $_summary_table = sub {
    my ($self, $req, $page, $date, $has_event, $data) = @_;
 
@@ -542,7 +570,7 @@ my $_rota_summary = sub {
    my $events    = $event_rs->count_events_for( $type_id, $date );
    my $has_event = $events > 0 ? loc( $req, 'Events' ) : NUL;
    my $data      = $self->$_slot_assignments( $type_id, $date );
-   my $local_dt  = $date->clone->set_time_zone( 'local' );
+   my $local_dt  = $_local_date->( $date );
    my $value     =
       $self->$_summary_table( $req, $page, $local_dt, $has_event, $data );
    my $actionp   = $self->moniker.'/day_rota';
@@ -559,7 +587,7 @@ my $_get_page = sub {
 
    my $schema   =  $self->schema;
    my $limits   =  $self->config->slot_limits;
-   my $local_dt =  $rota_dt->clone->set_time_zone( 'local' );
+   my $local_dt =  $_local_date->( $rota_dt );
    my $title    =  ucfirst( loc( $req, $name ) ).SPC.loc( $req, 'rota for' ).SPC
                 .  $local_dt->month_name.SPC.$local_dt->day.SPC.$local_dt->year;
    my $actionp  =  $self->moniker.'/day_rota';
@@ -693,7 +721,7 @@ sub month_rota : Role(any) {
          my $date = $first->clone->add( days => 7 * $rno + $cno );
          my $cell = { class => 'month-rota', value => NUL };
 
-         $dayno = $date->clone->set_time_zone( 'local' )->day;
+         $dayno = $_local_date->( $date )->day;
          $rno > 3 and $dayno == 1 and last;
          $_is_this_month->( $rno, $date )
             and $cell = $self->$_rota_summary( $req, $page, $date );
@@ -772,7 +800,7 @@ sub week_rota : Role(any) {
    my $first      =  $_first_day_of_week->( $req, $rota_dt );
    my $page       =  {
       fields      => { nav     => { next => $next, prev => $prev }, },
-      rota        => { headers => $_week_rota_headers->( $req ),
+      rota        => { headers => $_week_rota_headers->( $req, $first ),
                        name    => $rota_name,
                        rows    => [] },
       template    => [ 'contents', 'rota', 'week-table' ],
@@ -792,6 +820,8 @@ sub week_rota : Role(any) {
    my @v_events   =  $event_rs->search_for_vehicle_events( $opts )->all;
    my $rows       =  $page->{rota}->{rows};
    my $row        =  [ { class => 'narrow', value => 'Requests' } ];
+   my $class      =  'narrow windows tips';
+   my $moniker    =  $self->moniker;
    my $slot_cache =  [];
 
    for my $cno (0 .. 6) {
@@ -799,13 +829,22 @@ sub week_rota : Role(any) {
       my $table = { class => 'month-rota', rows => [], type => 'table' };
 
       push @{ $table->{rows} },
-         map  { [ { class => 'narrow', value => loc( $req, $_->key ) } ] }
+         map  { [ { class => $class,
+                    name  => $_->[ 0 ],
+                    title => loc( $req, 'Rider Assignment' ),
+                    value => loc( $req, $_->[ 1 ]->key ) } ] }
+         map  { my $id = $_local_date->( $date )->ymd.'_'.$_->key;
+                $_async_slot_tip->( $req, $page, $moniker, $id ); [ $id, $_ ] }
          grep { $_->bike_requested and not $_->vehicle }
          map  { push @{ $slot_cache->[ $cno ] }, $_; $_ }
          grep { $_->date eq $date } @slots;
 
       push @{ $table->{rows} },
-         map  { [ { class => 'narrow', value => $_->name } ] }
+         map  { [ { class => $class,
+                    name  => $_->[ 0 ],
+                    title => loc( $req, 'Vehicle Request' ),
+                    value => $_->[ 1 ]->name } ] }
+         map  { $_async_vreq_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
          grep { $_->start_date eq $date } @uv_events;
 
       push @{ $row }, { class => 'narrow', value => $table };
@@ -821,7 +860,13 @@ sub week_rota : Role(any) {
          my $table = { class => 'month-rota', rows => [], type => 'table' };
 
          push @{ $table->{rows} },
-            map  { [ { class => 'narrow', value => loc( $req, $_->key ) } ] }
+            map  { [ { class => $class,
+                       name  => $_->[ 0 ],
+                       title => loc( $req, 'Rider Assignment' ),
+                       value => loc( $req, $_->[ 1 ]->key ) } ] }
+            map  {
+               my $id = $_local_date->( $date )->ymd.'_'.$_->key;
+               $_async_slot_tip->( $req, $page, $moniker, $id ); [ $id, $_ ] }
             grep { $_->vehicle->name eq $tuple->[ 1 ]->name }
             grep { $_->bike_requested and $_->vehicle }
                 @{ $slot_cache->[ $cno ] };

@@ -31,6 +31,27 @@ sub search_for_events_with_unassigned_vreqs {
    return map { $_->[ 1 ] } @tuples;
 }
 
+sub search_for_request_info {
+   my ($self, $opts) = @_; my @tuples; $opts = { %{ $opts } };
+
+   my $where    = { 'event.id' => $opts->{event_id},
+                    'quantity' => { '>' => 0 } };
+   my $prefetch = [ 'event', 'type' ];
+   my $tport_rs = $self->result_source->schema->resultset( 'Transport' );
+
+   for my $vreq ($self->search( $where, { prefetch => $prefetch } )->all) {
+      my $where    = { 'event.id'        => $vreq->event_id,
+                       'vehicle.type_id' => $vreq->type_id };
+      my $prefetch = [ 'event', 'vehicle' ];
+      my $count    = $tport_rs->count( $where, { prefetch => $prefetch } );
+
+      $vreq->quantity > $count
+         and push @tuples, [ $vreq, $vreq->quantity - $count ];
+   }
+
+   return @tuples;
+}
+
 1;
 
 __END__

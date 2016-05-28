@@ -26,6 +26,7 @@ has '+moniker' => default => 'asset';
 
 register_action_paths
    'asset/assign'          => 'vehicle-assign',
+   'asset/request_info'    => 'vehicle-request-info',
    'asset/request_vehicle' => 'vehicle-request',
    'asset/unassign'        => 'vehicle-assign',
    'asset/vehicle'         => 'vehicle',
@@ -546,6 +547,25 @@ sub delete_vehicle_action : Role(rota_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub request_info : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $uri      = $req->uri_params->( 0 );
+   my $event    = $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $stash    = $self->dialog_stash( $req, 'vehicle-request-info' );
+   my $vreq_rs  = $self->schema->resultset( 'VehicleRequest' );
+   my $requests = $stash->{page}->{fields}->{requests} //= [];
+   my $id       = $event->id;
+
+   for my $tuple ($vreq_rs->search_for_request_info( { event_id => $id } )) {
+      push @{ $requests }, {
+         value => $tuple->[ 1 ].' x '.loc( $req, $tuple->[ 0 ]->type )
+      };
+   }
+
+   return $stash;
+}
+
 sub request_vehicle : Role(rota_manager) Role(event_manager) {
    my ($self, $req) = @_;
 
@@ -569,7 +589,7 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    $fields->{vehicles} = { class   => 'smaller-table',
                            headers => $_vehicle_request_headers->( $req ) };
 
-   for my $vehicle_type ($type_rs->list_types( 'vehicle' )->all) {
+   for my $vehicle_type ($type_rs->list_vehicle_types->all) {
       my $row = $_vreq_row->( $schema, $req, $page, $event, $vehicle_type );
 
       push @{ $fields->{vehicles}->{rows} }, $row;

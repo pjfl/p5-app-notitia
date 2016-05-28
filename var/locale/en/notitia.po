@@ -947,6 +947,27 @@ msgstr "Displays 'vehicle' records"
 msgid "vrn"
 msgstr "Registration"
 
+msgid "week_rota_heading_0"
+msgstr "Mon [_1]"
+
+msgid "week_rota_heading_1"
+msgstr "Tue [_1]"
+
+msgid "week_rota_heading_2"
+msgstr "Wed [_1]"
+
+msgid "week_rota_heading_3"
+msgstr "Thu [_1]"
+
+msgid "week_rota_heading_4"
+msgstr "Fri [_1]"
+
+msgid "week_rota_heading_5"
+msgstr "Sat [_1]"
+
+msgid "week_rota_heading_6"
+msgstr "Sun [_1]"
+
 msgid "year_management_heading"
 msgstr "Select Year"
 
