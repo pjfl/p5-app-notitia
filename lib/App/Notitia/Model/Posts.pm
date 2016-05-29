@@ -99,9 +99,9 @@ sub localised_tree {
 }
 
 sub make_draft {
-   my ($self, @pathname) = @_; my $posts = shift @pathname;
+   my ($self, @pathname) = @_; my $conf = $self->config; shift @pathname;
 
-   return $posts, $self->config->drafts, @pathname;
+   return $conf->posts, $conf->drafts, @pathname;
 }
 
 sub nav_label {

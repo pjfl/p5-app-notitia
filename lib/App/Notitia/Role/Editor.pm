@@ -124,9 +124,10 @@ my $_new_node = sub {
 
    my @pathname = $_prepare_path->( $_append_suffix->( $pathname ) );
 
-   $draft and @pathname = $self->make_draft( @pathname );
+   $draft and @pathname = ($self->config->drafts, @pathname);
 
-   my $path     = $conf->docs_root->catfile( $locale, @pathname )->utf8;
+   my $path     = $conf->docs_root->catfile
+      ( $locale, $draft ? $self->make_draft( @pathname ) : @pathname )->utf8;
    my @filepath = map { make_id_from( $_ )->[ 0 ] } @pathname;
    my $url      = join '/', @filepath;
    my $id       = pop @filepath;

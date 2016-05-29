@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixed posts draft mode
           - Fixed certs and endorsements lists
           - Fixed efficiency problems with month rota
           - Implements #30. Added day shifting to week rota

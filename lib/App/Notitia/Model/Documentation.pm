@@ -126,7 +126,7 @@ sub localised_tree {
 }
 
 sub make_draft {
-   my ($self, @pathname) = @_; return $self->config->drafts, @pathname;
+   my ($self, @pathname) = @_; return @pathname;
 }
 
 sub nav_label {
