@@ -2311,7 +2311,7 @@ var SubmitUtils = new Class( {
    Implements: [ Options ],
 
    options       : {
-      config_attr: 'anchors',
+      config_attr: 'submit',
       formName   : null,
       selector   : '.submit',
       wildCards  : [ '%', '*' ]
@@ -2392,6 +2392,10 @@ var SubmitUtils = new Class( {
 
    historyBack: function() {
       window.history.back(); return false;
+   },
+
+   location: function( href ) {
+      window.location = href;
    },
 
    postData: function( url, data ) {
@@ -2743,7 +2747,7 @@ this.Tips = new Class( {
 var Togglers = new Class( {
    Implements: [ Options ],
 
-   options: { config_attr: 'anchors', selector: '.togglers' },
+   options: { config_attr: 'togglers', selector: '.togglers' },
 
    initialize: function( options ) {
       this.aroundSetOptions( options ); this.build();
@@ -2792,7 +2796,7 @@ var WindowUtils = new Class( {
    Implements: [ Options, LoadMore ],
 
    options       : {
-      config_attr: 'anchors',
+      config_attr: 'window',
       customLogFn: false,
       height     : 600,
       maskOpts   : {},
@@ -2837,10 +2841,6 @@ var WindowUtils = new Class( {
    asyncTips: function( url, id, val ) {
       this.request( url, id, val, function () {
          $( id ).setStyle( 'display', '' ) } );
-   },
-
-   location: function( href ) {
-      window.location = href;
    },
 
    logger: function( message ) {

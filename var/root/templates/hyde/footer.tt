@@ -29,7 +29,7 @@
          message     : "[% page.status_message %]"
       } );
 [% IF page.authenticated -%]
-      behaviour.config.anchors[ 'toggle-edit' ] = {
+      behaviour.config.togglers[ 'toggle-edit' ] = {
          method    : 'toggleSwapText',
          args      : [ 'toggle-edit', 'edit-panel',
                        '<i class="edit-panel-icon true"></i>',

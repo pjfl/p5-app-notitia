@@ -26,12 +26,14 @@ has '+moniker' => default => 'event';
 
 register_action_paths
    'event/event'         => 'event',
+   'event/event_info'    => 'event-info',
    'event/event_summary' => 'event-summary',
    'event/events'        => 'events',
    'event/message'       => 'message-participents',
    'event/participate'   => 'participate',
    'event/participents'  => 'participents',
-   'event/vehicle_event' => 'vehicle-event';
+   'event/vehicle_event' => 'vehicle-event',
+   'event/vehicle_info'  => 'vehicle-event-info';
 
 # Construction
 around 'get_stash' => sub {
@@ -411,6 +413,28 @@ sub event : Role(event_manager) {
    return $self->get_stash( $req, $page );
 }
 
+sub event_info : Role(any) {
+   my ($self, $req) = @_;
+
+   my $uri = $req->uri_params->( 0 );
+   my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $stash = $self->dialog_stash( $req, 'event-info' );
+   my $fields = $stash->{page}->{fields};
+   my ($start, $end) = $event->duration;
+
+   $start = $start->set_time_zone( 'local' );
+   $end = $end->set_time_zone( 'local' );
+   $fields->{owner} = $event->owner->label;
+   $event->owner->postcode
+      and $fields->{owner} .= ' ('.$event->owner->outer_postcode.')';
+   $fields->{start} = loc( $req, 'Starts' ).SPC.$start->dmy( '/' ).SPC
+                    . $start->hour.':'.$start->minute;
+   $fields->{end} = loc( $req, 'Ends' ).SPC.$end->dmy( '/' ).SPC
+                    . $end->hour.':'.$end->minute;
+
+   return $stash;
+}
+
 sub event_summary : Role(any) {
    my ($self, $req) = @_;
 
@@ -604,6 +628,22 @@ sub vehicle_event : Role(rota_manager) {
                              { disabled => TRUE };
 
    return $self->get_stash( $req, $page );
+}
+
+sub vehicle_info : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $uri = $req->uri_params->( 0 );
+   my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $stash = $self->dialog_stash( $req, 'vehicle-event-info' );
+   my $fields = $stash->{page}->{fields};
+
+   $fields->{owner} = $event->owner->label;
+   $event->owner->postcode
+      and $fields->{owner} .= ' ('.$event->owner->outer_postcode.')';
+   $fields->{description} = $event->description;
+
+   return $stash;
 }
 
 1;

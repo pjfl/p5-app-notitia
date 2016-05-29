@@ -3,11 +3,13 @@
 var Behaviour = new Class( {
    Implements: [ Events, Options ],
 
-   config     : {
-      anchors : {},
-      inputs  : {},
-      sidebars: {},
-      server  : {}
+   config      : {
+      inputs   : {},
+      sidebars : {},
+      server   : {},
+      submit   : {},
+      togglers : {},
+      window   : {}
    },
 
    options           : {

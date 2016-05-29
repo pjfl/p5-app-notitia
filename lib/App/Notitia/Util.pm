@@ -27,16 +27,17 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      date_data_type delete_button dialog_anchor encrypted_attr
                      enhance enumerated_data_type field_options
                      foreign_key_data_type get_hashed_pw get_salt is_draft
-                     is_encrypted iterator js_anchor_config lcm_for
-                     load_file_data loc localise_tree mail_domain make_id_from
-                     make_name_from make_tip management_link mtime new_salt
+                     is_encrypted iterator js_submit_config js_togglers_config
+                     js_window_config lcm_for load_file_data loc localise_tree
+                     mail_domain make_id_from make_name_from make_tip
+                     management_link mtime new_salt
                      nullable_foreign_key_data_type nullable_varchar_data_type
                      numerical_id_data_type register_action_paths save_button
                      serial_data_type set_element_focus
-                     set_on_create_datetime_data_type set_rota_date slot_claimed
-                     slot_identifier slot_limit_index show_node stash_functions
-                     table_link time2int to_dt uri_for_action varchar_data_type
-                     );
+                     set_on_create_datetime_data_type set_rota_date
+                     slot_claimed slot_identifier slot_limit_index show_node
+                     stash_functions table_link time2int to_dt uri_for_action
+                     varchar_data_type );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -425,7 +426,7 @@ sub delete_button ($$;$) {
 sub dialog_anchor ($$$) {
    my ($k, $href, $opts) = @_;
 
-   return js_anchor_config( $k, 'click', 'modalDialog', [ "${href}", $opts ] );
+   return js_window_config( $k, 'click', 'modalDialog', [ "${href}", $opts ] );
 }
 
 sub encrypted_attr ($$$$) {
@@ -544,10 +545,28 @@ sub iterator ($) {
    };
 }
 
-sub js_anchor_config ($$$$) {
+sub js_submit_config ($$$$) {
    my ($k, $event, $method, $args) = @_; $args = $json_coder->encode( $args );
 
-   return "   behaviour.config.anchors[ '${k}' ] = {",
+   return "   behaviour.config.submit[ '${k}' ] = {",
+          "      event     : '${event}',",
+          "      method    : '${method}',",
+          "      args      : ${args} };";
+}
+
+sub js_togglers_config ($$$$) {
+   my ($k, $event, $method, $args) = @_; $args = $json_coder->encode( $args );
+
+   return "   behaviour.config.togglers[ '${k}' ] = {",
+          "      event     : '${event}',",
+          "      method    : '${method}',",
+          "      args      : ${args} };";
+}
+
+sub js_window_config ($$$$) {
+   my ($k, $event, $method, $args) = @_; $args = $json_coder->encode( $args );
+
+   return "   behaviour.config.window[ '${k}' ] = {",
           "      event     : '${event}',",
           "      method    : '${method}',",
           "      args      : ${args} };";
@@ -913,7 +932,11 @@ Greatest common factor
 
 =item C<iterator>
 
-=item C<js_anchor_config>
+=item C<js_submit_config>
+
+=item C<js_togglers_config>
+
+=item C<js_window_config>
 
 =item C<lcm>
 

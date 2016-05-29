@@ -1,0 +1,5 @@
+[% PROCESS 'hyde/macros.tt' -%]
+<!-- Event Info -->
+<p class="label-column">[% page.fields.owner %]</p>
+<p class="label-column">[% page.fields.start  %]</p>
+<p class="label-column">[% page.fields.end  %]</p>

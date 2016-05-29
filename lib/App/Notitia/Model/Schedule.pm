@@ -4,7 +4,7 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SHIFT_TYPE_ENUM
                                 SPC TRUE );
 use App::Notitia::Util      qw( assign_link bind button dialog_anchor
-                                js_anchor_config lcm_for loc
+                                js_submit_config js_window_config lcm_for loc
                                 register_action_paths set_element_focus
                                 slot_claimed slot_identifier
                                 slot_limit_index table_link to_dt
@@ -63,6 +63,17 @@ my $_add_js_dialog = sub {
    return;
 };
 
+my $_async_event_tip = sub {
+   my ($req, $page, $tport) = @_;
+
+   my $uri  = $tport->event->uri;
+   my $href = uri_for_action $req, 'event/event_info', [ $uri ];
+
+   push @{ $page->{literal_js} }, js_window_config
+      $uri, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
+   return;
+};
+
 my $_async_slot_tip = sub {
    my ($req, $page, $moniker, $id) = @_;
 
@@ -70,8 +81,18 @@ my $_async_slot_tip = sub {
    my $actionp = "${moniker}/assign_summary";
    my $href    = uri_for_action $req, $actionp, [ "${name}_${id}" ];
 
-   push @{ $page->{literal_js} }, js_anchor_config
+   push @{ $page->{literal_js} }, js_window_config
       $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
+   return;
+};
+
+my $_async_v_event_tip = sub {
+   my ($req, $page, $event) = @_;
+
+   my $href = uri_for_action $req, 'event/vehicle_info', [ $event->uri ];
+
+   push @{ $page->{literal_js} }, js_window_config
+      $event->uri, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    return;
 };
 
@@ -81,7 +102,7 @@ my $_async_vreq_tip = sub {
    my $actionp = 'asset/request_info';
    my $href    = uri_for_action $req, $actionp, [ $event->uri ];
 
-   push @{ $page->{literal_js} }, js_anchor_config
+   push @{ $page->{literal_js} }, js_window_config
       $event->uri, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    return;
 };
@@ -202,14 +223,17 @@ my $_next_month = sub {
 };
 
 my $_onchange_submit = sub {
-   return js_anchor_config 'rota_date', 'change', 'submitForm',
+   return js_submit_config 'rota_date', 'change', 'submitForm',
                          [ 'rota_redirect', 'day-rota' ];
 };
 
 my $_onclick_relocate = sub {
-   my ($k, $href) = @_;
+   my ($page, $k, $href) = @_;
 
-   return js_anchor_config $k, 'click', 'location', [ "${href}" ];
+   push @{ $page->{literal_js} },
+      js_submit_config $k, 'click', 'location', [ "${href}" ];
+
+   return;
 };
 
 my $_operators_vehicle = sub {
@@ -263,11 +287,11 @@ my $_event_link = sub {
 
    unless ($event) {
       my $name  = 'create-event';
-      my $class = 'blank-event windows';
+      my $class = 'blank-event submit';
       my $href  =
          uri_for_action $req, 'event/event', [], { date => $local_dt->ymd };
 
-      push @{ $page->{literal_js} }, $_onclick_relocate->( $name, $href );
+      $_onclick_relocate->( $page, $name, $href );
 
       return { class => $class, colspan => $_max_rota_cols, name => $name, };
    }
@@ -511,7 +535,7 @@ my $_summary_cells = sub {
             push @{ $cells },
                $_summary_link->( $req, $slot_type, $span, $id, $slot );
 
-            $slot and push @{ $page->{literal_js} }, js_anchor_config
+            $slot and push @{ $page->{literal_js} }, js_window_config
                $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
          }
       }
@@ -577,9 +601,9 @@ my $_rota_summary = sub {
    my $href      = uri_for_action $req, $actionp, [ $name, $local_dt->ymd ];
    my $id        = "${name}_".$local_dt->ymd;
 
-   push @{ $page->{literal_js} }, $_onclick_relocate->( $id, $href );
+   $_onclick_relocate->( $page, $id, $href );
 
-   return { class => 'month-rota windows', name => $id, value => $value };
+   return { class => 'month-rota submit', name => $id, value => $value };
 };
 
 my $_get_page = sub {
@@ -820,19 +844,22 @@ sub week_rota : Role(any) {
    my @v_events   =  $event_rs->search_for_vehicle_events( $opts )->all;
    my $rows       =  $page->{rota}->{rows};
    my $row        =  [ { class => 'narrow', value => 'Requests' } ];
-   my $class      =  'narrow windows tips';
+   my $class      =  'narrow week-rota submit tips windows';
    my $moniker    =  $self->moniker;
    my $slot_cache =  [];
 
    for my $cno (0 .. 6) {
       my $date  = $first->clone->add( days => $cno );
-      my $table = { class => 'month-rota', rows => [], type => 'table' };
+      my $table = { class => 'week-rota', rows => [], type => 'table' };
 
       push @{ $table->{rows} },
          map  { [ { class => $class,
                     name  => $_->[ 0 ],
                     title => loc( $req, 'Rider Assignment' ),
                     value => loc( $req, $_->[ 1 ]->key ) } ] }
+         map  { my $href = uri_for_action $req, "${moniker}/day_rota",
+                           [ $rota_name, $_local_date->( $date )->ymd ];
+                $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
          map  { my $id = $_local_date->( $date )->ymd.'_'.$_->key;
                 $_async_slot_tip->( $req, $page, $moniker, $id ); [ $id, $_ ] }
          grep { $_->bike_requested and not $_->vehicle }
@@ -844,10 +871,13 @@ sub week_rota : Role(any) {
                     name  => $_->[ 0 ],
                     title => loc( $req, 'Vehicle Request' ),
                     value => $_->[ 1 ]->name } ] }
+         map  { my $href = uri_for_action $req, 'asset/request_vehicle',
+                           [ $_->[ 0 ] ];
+                $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
          map  { $_async_vreq_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
          grep { $_->start_date eq $date } @uv_events;
 
-      push @{ $row }, { class => 'narrow', value => $table };
+      push @{ $row }, { class => 'narrow embeded', value => $table };
    }
 
    push @{ $rows }, $row;
@@ -857,13 +887,16 @@ sub week_rota : Role(any) {
 
       for my $cno (0 .. 6) {
          my $date  = $first->clone->add( days => $cno );
-         my $table = { class => 'month-rota', rows => [], type => 'table' };
+         my $table = { class => 'week-rota', rows => [], type => 'table' };
 
          push @{ $table->{rows} },
             map  { [ { class => $class,
                        name  => $_->[ 0 ],
                        title => loc( $req, 'Rider Assignment' ),
                        value => loc( $req, $_->[ 1 ]->key ) } ] }
+            map  { my $href = uri_for_action $req, "${moniker}/day_rota",
+                              [ $rota_name, $_local_date->( $date )->ymd ];
+                   $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
             map  {
                my $id = $_local_date->( $date )->ymd.'_'.$_->key;
                $_async_slot_tip->( $req, $page, $moniker, $id ); [ $id, $_ ] }
@@ -872,16 +905,31 @@ sub week_rota : Role(any) {
                 @{ $slot_cache->[ $cno ] };
 
          push @{ $table->{rows} },
-            map  { [ { class => 'narrow', value => $_->event->name } ] }
+            map  { [ { class => $class,
+                       name  => $_->[ 0 ],
+                       title => loc( $req, 'Event Information' ),
+                       value => $_->[ 1 ]->event->name } ] }
+            map  { my $href = uri_for_action $req, 'asset/request_vehicle',
+                              [ $_->[ 0 ] ];
+                   $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
+            map  { $_async_event_tip->( $req, $page, $_ );
+                   [ $_->event->uri, $_ ] }
             grep { $_->vehicle->vrn eq $tuple->[ 1 ]->vrn }
             grep { $_->event->start_date eq $date } @tports;
 
          push @{ $table->{rows} },
-            map  { [ { class => 'narrow', value => $_->name } ] }
+            map  { [ { class => $class,
+                       name  => $_->[ 0 ],
+                       title => loc( $req, 'Vechicle Event' ),
+                       value => $_->[ 1 ]->name } ] }
+            map  { my $href = uri_for_action $req, 'event/vehicle_event',
+                              [ $_->[ 1 ]->vehicle->vrn, $_->[ 0 ] ];
+                   $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
+            map  { $_async_v_event_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
             grep { $_->vehicle->vrn eq $tuple->[ 1 ]->vrn }
             grep { $_->start_date eq $date } @v_events;
 
-         push @{ $row }, { class => 'narrow', value => $table };
+         push @{ $row }, { class => 'narrow embeded', value => $table };
       }
 
       push @{ $rows }, $row;

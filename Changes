@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added onclick handling to week rota
           - Added vehicle request tips to week rota
           - Optimised week rota
           - Week rota displays requests and assignments

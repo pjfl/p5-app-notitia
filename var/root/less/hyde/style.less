@@ -538,8 +538,10 @@ article h2:first-child, { margin-top: 0; }
 }
 .rota-date-form { display: inline-block; }
 table.month-rota { font-size: 0.625em; width: 100%; }
+td.embeded { padding: 0 !important; }
 td.month-rota { padding: 0 !important; }
-td.month-rota.windows, td.blank-event.windows { cursor: pointer; }
+td.month-rota.windows, td.week-rota.windows,
+td.blank-event.windows { cursor: pointer; }
 td.rota-date { padding: 0 !important; width: 1%; }
 td.rota-header {
    color: @subtle; font-size: 12px; white-space: nowrap; width: 1%;
@@ -547,6 +549,7 @@ td.rota-header {
 td.narrow { width: 1%; }
 td.single-digit-select { text-align: center; }
 td.small-slot { width: 56px; }
+td.week-rota { color: @contrast; font-size: 0.625em; }
 th.day-of-week { text-align: center; }
 th.rota-header { white-space: nowrap; }
 /* Code Highlighting */
