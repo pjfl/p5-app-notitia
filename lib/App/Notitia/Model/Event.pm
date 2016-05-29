@@ -4,8 +4,9 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 create_link delete_button loc
-                                management_link register_action_paths
-                                save_button to_dt uri_for_action );
+                                management_link operation_links
+                                register_action_paths save_button
+                                to_dt uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -88,12 +89,7 @@ my $_event_operation_links = sub {
                             { container_class => 'add-link' };
    my $vreq   = management_link $req, 'asset/request_vehicle', $uri;
 
-   return { class        => 'right-last',
-            content      => {
-               list      => [ $vreq, $add_ev ],
-               separator => '|',
-               type      => 'list', },
-            type         => 'container', };
+   return operation_links [ $vreq, $add_ev ];
 };
 
 my $_participate_button = sub {
@@ -217,12 +213,7 @@ my $_participent_ops_links = sub {
    my $actionp      = $self->moniker.'/message';
    my $message_link = $self->message_link( $req, $page, $actionp, $params );
 
-   return { class        => 'operation-links right-last',
-            content      => {
-               list      => [ $message_link ],
-               separator => '|',
-               type      => 'list', },
-            type         => 'container', };
+   return operation_links [ $message_link ];
 };
 
 my $_update_event_from_request = sub {
@@ -478,7 +469,7 @@ sub events : Role(any) {
    my $page      =  {
       fields     => {
          headers => $_events_headers->( $req ),
-         links   => create_link( $req, $actionp, 'event' ),
+         links   => operation_links [ create_link( $req, $actionp, 'event' ) ],
          rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => loc( $req, $title ), };

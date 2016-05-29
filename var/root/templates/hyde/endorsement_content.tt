@@ -11,7 +11,7 @@
 [% TextField( page.fields.points ) %]
 [% TextArea( page.fields.notes ) -%]
 [% Button( page.fields.save ) -%]
-[% IF page.fields.code.value; Button( page.fields.delete ); END -%]
+[% IF page.fields.delete; Button( page.fields.delete ); END -%]
       </form>
    </article>
 </div>

@@ -307,7 +307,7 @@ msgid "endorsements_management_heading"
 msgstr "Endorsements"
 
 msgid "endorsements_management_link"
-msgstr "Offences"
+msgstr "Endorsements"
 
 msgid "endorsements_management_tip"
 msgstr "Administer endorsement records for [_1]"
@@ -353,6 +353,9 @@ msgstr "View"
 
 msgid "event_summary_management_tip"
 msgstr "View the summary for the [_1] event and participte"
+
+msgid "event_type_create_link"
+msgstr "Add Event Type"
 
 msgid "events_heading_0"
 msgstr "Event"
@@ -589,7 +592,7 @@ msgid "people_heading_3"
 msgstr "Certs"
 
 msgid "people_heading_4"
-msgstr "Offences"
+msgstr "Endorsements"
 
 msgid "person_create_heading"
 msgstr "Add Person"
@@ -924,7 +927,7 @@ msgid "vehicles_heading_0"
 msgstr "Vehicle"
 
 msgid "vehicles_heading_1"
-msgstr "Keeper"
+msgstr "Edit"
 
 msgid "vehicles_heading_2"
 msgstr "Add Event"
@@ -933,7 +936,7 @@ msgid "vehicles_heading_3"
 msgstr "Events"
 
 msgid "vehicles_heading_4"
-msgstr "Edit"
+msgstr "Keeper"
 
 msgid "vehicles_management_heading"
 msgstr "Vehicles"

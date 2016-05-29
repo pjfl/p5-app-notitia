@@ -4,8 +4,8 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( bind bind_fields check_field_js
                                 delete_button field_options loc management_link
-                                register_action_paths save_button to_dt
-                                uri_for_action );
+                                operation_links register_action_paths
+                                save_button to_dt uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -43,16 +43,17 @@ around 'get_stash' => sub {
 my $_blots_links_cache = {};
 
 # Private functions
-my $_add_endorsement_button = sub {
+my $_add_endorsement_links = sub {
    my ($req, $action, $name) = @_;
 
-   return { class => 'fade',
-            hint  => loc( $req, 'Hint' ),
-            href  => uri_for_action( $req, $action, [ $name ] ),
-            name  => 'add_blot',
-            tip   => loc( $req, 'add_blot_tip', [ 'endorsement', $name ] ),
-            type  => 'link',
-            value => loc( $req, 'add_blot' ) };
+   return operation_links [ {
+      class => 'fade',
+      hint  => loc( $req, 'Hint' ),
+      href  => uri_for_action( $req, $action, [ $name ] ),
+      name  => 'add_blot',
+      tip   => loc( $req, 'add_blot_tip', [ 'endorsement', $name ] ),
+      type  => 'link',
+      value => loc( $req, 'add_blot' ) } ];
 };
 
 my $_endorsements_headers = sub {
@@ -209,24 +210,28 @@ sub endorsement : Role(person_manager) {
 sub endorsements : Role(person_manager) {
    my ($self, $req) = @_;
 
-   my $name    =  $req->uri_params->( 0 );
+   my $scode   =  $req->uri_params->( 0 );
+   my $schema  =  $self->schema;
+   my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );
    my $page    =  {
-      fields   => { headers  => $_endorsements_headers->( $req ),
-                    rows     => [],
-                    username => { name => $name }, },
-      template => [ 'contents', 'table' ],
+      fields   => {
+         blots => { headers  => $_endorsements_headers->( $req ),
+                    rows     => [], },
+         name  => { disabled => TRUE, label => loc( $req, 'Username' ),
+                    name => 'username', value => $person->label }, },
+      template => [ 'contents', 'endorsements' ],
       title    => loc( $req, 'endorsements_management_heading' ), };
    my $blot_rs =  $self->schema->resultset( 'Endorsement' );
    my $actionp =  $self->moniker.'/endorsement';
    my $fields  =  $page->{fields};
-   my $rows    =  $fields->{rows};
+   my $rows    =  $fields->{blots}->{rows};
 
-   $fields->{links} = $_add_endorsement_button->( $req, $actionp, $name );
+   $fields->{links} = $_add_endorsement_links->( $req, $actionp, $scode );
 
-   for my $blot (@{ $blot_rs->list_endorsements_for( $req, $name ) }) {
+   for my $blot ($blot_rs->list_endorsements_for( $scode )->all) {
       push @{ $rows },
-         [ { value => $blot->[ 0 ] },
-           $self->$_endorsement_links( $req, $name, $blot->[ 1 ]->uri ) ];
+         [ { value => $blot->label( $req ) },
+           $self->$_endorsement_links( $req, $scode, $blot->uri ) ];
    }
 
    return $self->get_stash( $req, $page );

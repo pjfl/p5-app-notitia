@@ -77,14 +77,14 @@ sub find_event_by {
 sub has_events_for {
    my ($self, $opts) = @_; my $has_event = {}; $opts = { %{ $opts } };
 
-   my $where  = { 'event_type.name'    => $opts->{event_type} // 'person',
-                  'start_rota.type_id' => $opts->{rota_type}, };
-   my $parser = $self->result_source->schema->datetime_parser;
-   my $join   = [ 'start_rota', 'event_type' ];
+   my $where    = { 'event_type.name'    => $opts->{event_type} // 'person',
+                    'start_rota.type_id' => $opts->{rota_type}, };
+   my $parser   = $self->result_source->schema->datetime_parser;
+   my $prefetch = [ 'start_rota', 'event_type' ];
 
    set_rota_date $parser, $where, 'start_rota.date', $opts;
 
-   for my $event ($self->search( $where, { join => $join } )->all) {
+   for my $event ($self->search( $where, { prefetch => $prefetch } )->all) {
       $has_event->{ $event->start_date->set_time_zone( 'local' )->ymd } = TRUE;
    }
 

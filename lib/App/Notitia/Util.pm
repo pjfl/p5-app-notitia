@@ -32,12 +32,12 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      mail_domain make_id_from make_name_from make_tip
                      management_link mtime new_salt
                      nullable_foreign_key_data_type nullable_varchar_data_type
-                     numerical_id_data_type register_action_paths save_button
-                     serial_data_type set_element_focus
-                     set_on_create_datetime_data_type set_rota_date
-                     slot_claimed slot_identifier slot_limit_index show_node
-                     stash_functions table_link time2int to_dt uri_for_action
-                     varchar_data_type );
+                     numerical_id_data_type operation_links
+                     register_action_paths save_button serial_data_type
+                     set_element_focus set_on_create_datetime_data_type
+                     set_rota_date slot_claimed slot_identifier
+                     slot_limit_index show_node stash_functions table_link
+                     time2int to_dt uri_for_action varchar_data_type );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -702,6 +702,17 @@ sub numerical_id_data_type (;$) {
             is_numeric        => TRUE, };
 }
 
+sub operation_links ($) {
+   my $list = shift;
+
+   return { class        => 'operation-links align-right right-last',
+            content      => {
+               list      => $list,
+               separator => '|',
+               type      => 'list', },
+            type         => 'container', };
+}
+
 sub register_action_paths (;@) {
    my $args = (is_hashref $_[ 0 ]) ? $_[ 0 ] : { @_ };
 
@@ -969,6 +980,8 @@ LCM for a list of integers
 =item C<nullable_varchar_data_type>
 
 =item C<numerical_id_data_type>
+
+=item C<operation_links>
 
 =item C<register_action_paths>
 

@@ -118,6 +118,7 @@ var/root/templates/hyde/assign-summary.tt
 var/root/templates/hyde/assign-vehicle.tt
 var/root/templates/hyde/blank-page.tt
 var/root/templates/hyde/certification_content.tt
+var/root/templates/hyde/certifications_content.tt
 var/root/templates/hyde/change-password_content.tt
 var/root/templates/hyde/claim-slot.tt
 var/root/templates/hyde/contents.tt
@@ -128,6 +129,7 @@ var/root/templates/hyde/editing-links.tt
 var/root/templates/hyde/editor.tt
 var/root/templates/hyde/email_layout.tt
 var/root/templates/hyde/endorsement_content.tt
+var/root/templates/hyde/endorsements_content.tt
 var/root/templates/hyde/event-info.tt
 var/root/templates/hyde/event_content.tt
 var/root/templates/hyde/exception_content.tt

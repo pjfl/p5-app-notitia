@@ -4,7 +4,7 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( assign_link bind bind_fields button
                                 check_field_js create_link delete_button
-                                loc make_tip management_link
+                                loc make_tip management_link operation_links
                                 register_action_paths save_button
                                 set_element_focus slot_identifier time2int to_dt
                                 uri_for_action );
@@ -450,24 +450,23 @@ my $_vehicle_links = sub {
 
    my $vrn = $tuple->[ 1 ]->vrn; my $links = [ { value => $tuple->[ 0 ] } ];
 
+   push @{ $links },
+      { value => management_link( $req, "${moniker}/vehicle", $vrn ) };
+
    if ($service) {
       my $now = to_dt( time2str );
 
       push @{ $links },
-         { value => $self->$_find_last_keeper( $req, $tuple->[ 1 ], $now ) };
-
-      push @{ $links },
          { value => create_link
               ( $req, 'event/vehicle_event', 'event', { args => [ $vrn ] } ) };
-
       push @{ $links },
          { value => management_link
               ( $req, "${moniker}/vehicle_events", $vrn,
                 { params => { after => $now->subtract( days => 1 )->ymd } } ) };
-   }
+      push @{ $links },
+         { value => $self->$_find_last_keeper( $req, $tuple->[ 1 ], $now ) };
 
-   push @{ $links },
-      { value => management_link( $req, "${moniker}/vehicle", $vrn ) };
+   }
 
    return $links;
 };
@@ -710,7 +709,7 @@ sub vehicles : Role(rota_manager) {
    my $page      =  {
       fields     => {
          headers => $_vehicles_headers->( $req, $service ),
-         links   => create_link( $req, $actionp, 'vehicle' ),
+         links   => operation_links [ create_link( $req, $actionp, 'vehicle' )],
          rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => $_vehicle_title->( $req, $type, $private, $service ), };

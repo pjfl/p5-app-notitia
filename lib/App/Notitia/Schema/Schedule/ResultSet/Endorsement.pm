@@ -41,13 +41,11 @@ sub find_endorsement_by {
 };
 
 sub list_endorsements_for {
-   my ($self, $req, $scode) = @_;
+   my ($self, $scode) = @_;
 
-   my $blots = $self->search
+   return $self->search
       ( { 'recipient.shortcode' => $scode },
         { join => [ 'recipient' ], order_by => 'type_code' } );
-
-   return [ map { [ $_->label( $req ), $_ ] } $blots->all ];
 }
 
 1;

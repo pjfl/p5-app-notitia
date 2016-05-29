@@ -5,8 +5,9 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 create_link delete_button dialog_anchor
                                 field_options loc mail_domain make_tip
-                                management_link register_action_paths
-                                save_button table_link to_dt uri_for_action );
+                                management_link operation_links
+                                register_action_paths save_button table_link
+                                to_dt uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
 use Try::Tiny;
@@ -182,12 +183,7 @@ my $_person_ops_links = sub {
          title   => loc( $req, 'Mugshot Upload' ),
          useIcon => \1 } );
 
-   return { class        => 'right-last',
-            content      => {
-               list      => [ $mugshot, $add_person ],
-               separator => '|',
-               type      => 'list', },
-            type         => 'container', };
+   return operation_links [ $mugshot, $add_person ];
 };
 
 # Private methods
@@ -243,12 +239,7 @@ my $_people_ops_links = sub {
    my $opts     = { container_class => 'add-link' };
    my $add_user = create_link $req, "${moniker}/person", 'person', $opts;
 
-   return { class        => 'operation-links right-last',
-            content      => {
-               list      => [ $message, $add_user ],
-               separator => '|',
-               type      => 'list', },
-            type         => 'container', };
+   return operation_links [ $message, $add_user ];
 };
 
 my $_update_person_from_request = sub {

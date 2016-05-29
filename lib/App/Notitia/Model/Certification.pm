@@ -4,8 +4,8 @@ use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( bind bind_fields check_field_js
                                 delete_button loc management_link
-                                register_action_paths save_button to_dt
-                                uri_for_action );
+                                operation_links register_action_paths
+                                save_button to_dt uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -42,16 +42,17 @@ around 'get_stash' => sub {
 my $_cert_links_cache = {};
 
 # Private functions
-my $_add_cert_button = sub {
+my $_add_cert_links = sub {
    my ($req, $action, $name) = @_;
 
-   return { class => 'fade',
-            hint  => loc( $req, 'Hint' ),
-            href  => uri_for_action( $req, $action, [ $name ] ),
-            name  => 'add_cert',
-            tip   => loc( $req, 'add_cert_tip', [ 'certification', $name ] ),
-            type  => 'link',
-            value => loc( $req, 'add_cert' ) };
+   return operation_links [ {
+      class => 'fade',
+      hint  => loc( $req, 'Hint' ),
+      href  => uri_for_action( $req, $action, [ $name ] ),
+      name  => 'add_cert',
+      tip   => loc( $req, 'add_cert_tip', [ 'certification', $name ] ),
+      type  => 'link',
+      value => loc( $req, 'add_cert' ) } ];
 };
 
 my $_certs_headers = sub {
@@ -168,23 +169,27 @@ sub certification : Role(person_manager) {
 sub certifications : Role(person_manager) {
    my ($self, $req) = @_;
 
-   my $name    =  $req->uri_params->( 0 );
+   my $scode   =  $req->uri_params->( 0 );
+   my $schema  =  $self->schema;
+   my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );
    my $page    =  {
-      fields   => { headers  => $_certs_headers->( $req ),
-                    rows     => [],
-                    username => { name => $name }, },
-      template => [ 'contents', 'table' ],
+      fields   => {
+         certs => {
+            headers => $_certs_headers->( $req ), rows => [] },
+         name  => { disabled => TRUE, label => loc( $req, 'Username' ),
+                    name => 'username', value => $person->label }, },
+      template => [ 'contents', 'certifications' ],
       title    => loc( $req, 'certificates_management_heading' ), };
    my $cert_rs =  $self->schema->resultset( 'Certification' );
    my $actionp =  $self->moniker.'/certification';
-   my $rows    =  $page->{fields}->{rows};
+   my $rows    =  $page->{fields}->{certs}->{rows};
 
-   $page->{fields}->{links} = $_add_cert_button->( $req, $actionp, $name );
+   $page->{fields}->{links} = $_add_cert_links->( $req, $actionp, $scode );
 
-   for my $cert (@{ $cert_rs->list_certification_for( $req, $name ) }) {
+   for my $cert ($cert_rs->list_certification_for( $scode )->all) {
       push @{ $rows },
-         [ { value => $cert->[ 0 ] },
-           $self->$_cert_links( $req, $name, $cert->[ 1 ]->type ) ];
+         [ { value => $cert->label( $req ) },
+           $self->$_cert_links( $req, $scode, $cert->type ) ];
    }
 
    return $self->get_stash( $req, $page );

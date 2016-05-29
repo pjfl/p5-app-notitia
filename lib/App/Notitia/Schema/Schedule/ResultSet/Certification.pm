@@ -50,14 +50,12 @@ sub find_cert_by {
 };
 
 sub list_certification_for {
-   my ($self, $req, $scode) = @_;
+   my ($self, $scode) = @_;
 
-   my $certs = $self->search
+   return $self->search
       ( { 'recipient.shortcode' => $scode },
         { join     => [ 'recipient', 'type' ], order_by => 'type_class',
           prefetch => [ 'type' ] } );
-
-   return [ map { [ $_->label( $req ), $_ ] } $certs->all ];
 };
 
 1;
