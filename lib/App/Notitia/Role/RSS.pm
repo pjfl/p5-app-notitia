@@ -53,6 +53,20 @@ my $_filter_content = sub {
    }
 };
 
+my $_author_cache = {};
+
+my $_author_lookup = sub {
+   my ($self, $author) = @_;
+
+   exists $_author_cache->{ $author } and return $_author_cache->{ $author };
+
+   my $person = $self->components->{person}->find_by_shortcode( $author );
+   my $email  = $person ? $person->email_address : "${author}\@example.com";
+   my $label  = $person ? $person->label : $author;
+
+   return $_author_cache->{ $author } = "${email} (${label})";
+};
+
 my $_format_page = sub {
    my ($self, $req, $page) = @_;
 
@@ -63,13 +77,8 @@ my $_format_page = sub {
    $formatter and $page->{filter} = $_filter_content->( $self )
               and $content = $formatter->serialize( $req, $page );
 
-   my $author = $page->{author} // 'admin';
-   my $person = $self->components->{person}->find_by_shortcode( $author );
-   my $email  = $person ? $person->email_address : "${author}\@example.com";
-   my $label  = $person ? $person->label : $author;
-
    return {
-      author     => "${email} (${label})",
+      author     => $self->$_author_lookup( $page->{author} // 'admin' ),
       categories => $page->{categories} // [],
       content    => $content,
       created    => time2str( '%Y-%m-%dT%XZ', $page->{created} ),

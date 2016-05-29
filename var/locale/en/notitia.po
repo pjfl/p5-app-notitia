@@ -950,25 +950,25 @@ msgstr "Registration"
 msgid "week_management_heading"
 msgstr "Select Week"
 
-msgid "week_rota_heading_0"
+msgid "week_rota_heading_mon"
 msgstr "Mon [_1]"
 
-msgid "week_rota_heading_1"
+msgid "week_rota_heading_tue"
 msgstr "Tue [_1]"
 
-msgid "week_rota_heading_2"
+msgid "week_rota_heading_wed"
 msgstr "Wed [_1]"
 
-msgid "week_rota_heading_3"
+msgid "week_rota_heading_thu"
 msgstr "Thu [_1]"
 
-msgid "week_rota_heading_4"
+msgid "week_rota_heading_fri"
 msgstr "Fri [_1]"
 
-msgid "week_rota_heading_5"
+msgid "week_rota_heading_sat"
 msgstr "Sat [_1]"
 
-msgid "week_rota_heading_6"
+msgid "week_rota_heading_sun"
 msgstr "Sun [_1]"
 
 msgid "year_management_heading"

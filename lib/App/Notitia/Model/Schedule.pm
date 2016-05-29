@@ -168,9 +168,9 @@ my $_first_day_of_month = sub {
 };
 
 my $_is_this_month = sub {
-   my ($rno, $date) = @_; $rno > 0 and return TRUE;
+   my ($rno, $local_dt) = @_; $rno > 0 and return TRUE;
 
-   return $_local_date->( $date )->day < 15 ? TRUE : FALSE;
+   return $local_dt->day < 15 ? TRUE : FALSE;
 };
 
 my $_month_label = sub {
@@ -358,7 +358,7 @@ my $_week_label = sub {
 
    my $local_dt = $_local_date->( $date )->add( days => $cno );
    my $opts = { params => [ $local_dt->day ], no_quote_bind_values => TRUE };
-   my $v    = loc $req, "week_rota_heading_${cno}", $opts;
+   my $v    = loc $req, 'week_rota_heading_'.(lc $local_dt->day_abbr), $opts;
 
    return { class => 'day-of-week', value => $v };
 };
@@ -552,7 +552,7 @@ my $_summary_cells = sub {
             my $key  = "${shift_type}_${slot_type}_${slotno}";
             my $id   = $date->ymd."_${key}";
             my $href = uri_for_action $req, $actionp, [ "${name}_${id}" ];
-            my $slot = $data->{ $key };
+            my $slot = $data->{ $id };
 
             push @{ $cells },
                $_summary_link->( $req, $slot_type, $span, $id, $slot );
@@ -566,66 +566,51 @@ my $_summary_cells = sub {
    return $cells;
 };
 
-my $_summary_table = sub {
-   my ($self, $req, $page, $date, $has_event, $data) = @_;
-
-   my $table = { class => 'month-rota', rows => [], type => 'table' };
-   my $lcm   = $page->{rota}->{lcm};
-
-   push @{ $table->{rows} },
-      [ { colspan =>     $lcm / 4, value => $date->day },
-        { colspan => 3 * $lcm / 4, value => $has_event } ];
-
-   push @{ $table->{rows} }, $self->$_summary_cells
-      ( $req, $page, $date, [ 'day', 'night' ], [ 'controller' ], $data, 0 );
-
-   push @{ $table->{rows} }, $self->$_summary_cells
-      ( $req, $page, $date, [ 'day' ], [ 'rider', 'driver' ], $data, 1 );
-
-   push @{ $table->{rows} }, $self->$_summary_cells
-      ( $req, $page, $date, [ 'night' ], [ 'rider', 'driver' ], $data, 2 );
-
-   return $table;
-};
-
 my $_slot_assignments = sub {
-   my ($self, $type_id, $date) = @_;
+   my ($self, $opts) = @_; $opts = { %{ $opts } }; delete $opts->{event_type};
 
-   my $slot_rs = $self->schema->resultset( 'Slot' );
-   my $opts    = { rota_type => $type_id, on => $date };
-   my $data    = {};
+   my $slot_rs = $self->schema->resultset( 'Slot' ); my $data = {};
 
    for my $slot ($slot_rs->list_slots_for( $opts )->all) {
-      my $key  = $slot->key;
+      my $k = $_local_date->( $slot->start_date )->ymd.'_'.$slot->key;
 
-      $data->{ $key } = { name        => $key,
-                          operator    => $slot->operator,
-                          vehicle     => $slot->vehicle,
-                          vehicle_req => $slot->bike_requested };
+      $data->{ $k } = { name        => $slot->key,
+                        operator    => $slot->operator,
+                        vehicle     => $slot->vehicle,
+                        vehicle_req => $slot->bike_requested };
    }
 
    return $data;
 };
 
 my $_rota_summary = sub {
-   my ($self, $req, $page, $date) = @_;
+   my ($self, $req, $page, $local_dt, $has_event, $data) = @_;
 
-   my $name      = $page->{rota}->{name};
-   my $type_id   = $self->$_find_rota_type_id( $name );
-   my $event_rs  = $self->schema->resultset( 'Event' );
-   my $events    = $event_rs->count_events_for( $type_id, $date );
-   my $has_event = $events > 0 ? loc( $req, 'Events' ) : NUL;
-   my $data      = $self->$_slot_assignments( $type_id, $date );
-   my $local_dt  = $_local_date->( $date );
-   my $value     =
-      $self->$_summary_table( $req, $page, $local_dt, $has_event, $data );
-   my $actionp   = $self->moniker.'/day_rota';
-   my $href      = uri_for_action $req, $actionp, [ $name, $local_dt->ymd ];
-   my $id        = "${name}_".$local_dt->ymd;
+   my $lcm   = $page->{rota}->{lcm};
+   my $name  = $page->{rota}->{name};
+   my $table = { class => 'month-rota', rows => [], type => 'table' };
+   my $value = $has_event->{ $local_dt->ymd } ? loc( $req, 'Events' ) : NUL;
+
+   push @{ $table->{rows} },
+      [ { colspan =>     $lcm / 4, value => $local_dt->day },
+        { colspan => 3 * $lcm / 4, value => $value } ];
+
+   push @{ $table->{rows} }, $self->$_summary_cells
+      ( $req, $page, $local_dt, [ 'day', 'night' ], [ 'controller' ], $data, 0);
+
+   push @{ $table->{rows} }, $self->$_summary_cells
+      ( $req, $page, $local_dt, [ 'day' ], [ 'rider', 'driver' ], $data, 1 );
+
+   push @{ $table->{rows} }, $self->$_summary_cells
+      ( $req, $page, $local_dt, [ 'night' ], [ 'rider', 'driver' ], $data, 2 );
+
+   my $actionp = $self->moniker.'/day_rota';
+   my $href    = uri_for_action $req, $actionp, [ $name, $local_dt->ymd ];
+   my $id      = "${name}_".$local_dt->ymd;
 
    $_onclick_relocate->( $page, $id, $href );
 
-   return { class => 'month-rota submit', name => $id, value => $value };
+   return { class => 'month-rota submit', name => $id, value => $table };
 };
 
 my $_get_page = sub {
@@ -762,15 +747,17 @@ my $_week_rota_requests = sub {
 sub assign_summary : Role(any) {
    my ($self, $req) = @_;
 
-   my ($rota_name, $date, $shift_type, $slot_type, $subslot)
-                = split m{ _ }mx, $req->uri_params->( 0 ), 5;
-   my $key      = "${shift_type}_${slot_type}_${subslot}";
-   my $type_id  = $self->$_find_rota_type_id( $rota_name );
-   my $data     = $self->$_slot_assignments( $type_id, to_dt $date );
-   my $stash    = $self->dialog_stash( $req, 'assign-summary' );
-   my $fields   = $stash->{page}->{fields};
-   my $slot     = $data->{ $key };
-   my $operator = $slot->{operator};
+   my ($rota_name, $rota_date, $shift_type, $slot_type, $subslot)
+                =  split m{ _ }mx, $req->uri_params->( 0 ), 5;
+   my $key      =  "${shift_type}_${slot_type}_${subslot}";
+   my $rota_dt  =  to_dt $rota_date;
+   my $data     =  $self->$_slot_assignments( {
+      rota_type => $self->$_find_rota_type_id( $rota_name ),
+      on        => $rota_dt } );
+   my $stash    =  $self->dialog_stash( $req, 'assign-summary' );
+   my $fields   =  $stash->{page}->{fields};
+   my $slot     =  $data->{ $_local_date->( $rota_dt)->ymd.'_'.$key };
+   my $operator =  $slot->{operator};
 
    $fields->{operator} = $operator->label;
    $operator->postcode
@@ -847,10 +834,10 @@ sub month_rota : Role(any) {
    my $rota_dt   =  to_dt $rota_date;
    my $max_slots =  $_month_rota_max_slots->( $self->config->slot_limits );
    my $actionp   =  $self->moniker.'/month_rota';
-   my $prev      =  $_prev_month->( $req, $actionp, $rota_name, $rota_dt );
-   my $next      =  $_next_month->( $req, $actionp, $rota_name, $rota_dt );
    my $page      =  {
-      fields     => { nav       => { next => $next, prev => $prev }, },
+      fields     => { nav => {
+         next    => $_next_month->( $req, $actionp, $rota_name, $rota_dt ),
+         prev    => $_prev_month->( $req, $actionp, $rota_name, $rota_dt ) }, },
       rota       => { headers   => $_month_rota_headers->( $req ),
                       lcm       => lcm_for( 4, @{ $max_slots } ),
                       max_slots => $max_slots,
@@ -859,18 +846,24 @@ sub month_rota : Role(any) {
       template   => [ 'contents', 'rota', 'month-table' ],
       title      => $_month_rota_title->( $req, $rota_name, $rota_dt ), };
    my $first     =  $_first_day_of_month->( $req, $rota_dt );
+   my $opts      =  {
+      after      => $rota_dt->clone->subtract( days => 1 ),
+      before     => $rota_dt->clone->add( days => 31 ),
+      rota_type  => $self->$_find_rota_type_id( $rota_name ) };
+   my $has_event =  $self->schema->resultset( 'Event' )->has_events_for( $opts);
+   my $assigned  =  $self->$_slot_assignments( $opts );
 
    for my $rno (0 .. 5) {
       my $row = []; my $dayno;
 
       for my $cno (0 .. 6) {
-         my $date = $first->clone->add( days => 7 * $rno + $cno );
-         my $cell = { class => 'month-rota', value => NUL };
+         my $date     = $first->clone->add( days => 7 * $rno + $cno );
+         my $cell     = { class => 'month-rota', value => NUL };
+         my $local_dt = $_local_date->( $date );
 
-         $dayno = $_local_date->( $date )->day;
-         $rno > 3 and $dayno == 1 and last;
-         $_is_this_month->( $rno, $date )
-            and $cell = $self->$_rota_summary( $req, $page, $date );
+         $dayno = $local_dt->day; $rno > 3 and $dayno == 1 and last;
+         $_is_this_month->( $rno, $local_dt ) and $cell = $self->$_rota_summary
+            ( $req, $page, $local_dt, $has_event, $assigned );
          push @{ $row }, $cell;
       }
 
