@@ -1,5 +1,7 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Vehicle Request Info -->
+<p class="label-column">[% page.fields.start  %]</p>
+<p class="label-column">[% page.fields.end  %]</p>
 [% FOR request IN page.fields.requests -%]
 <p class="label-column">[% request.value %]</p>
 [% END -%]

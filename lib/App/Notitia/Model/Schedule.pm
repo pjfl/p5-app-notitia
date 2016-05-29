@@ -4,7 +4,8 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SHIFT_TYPE_ENUM
                                 SPC TRUE );
 use App::Notitia::Util      qw( assign_link bind button dialog_anchor
-                                js_submit_config js_window_config lcm_for loc
+                                display_duration js_submit_config
+                                js_window_config lcm_for loc
                                 register_action_paths set_element_focus
                                 slot_claimed slot_identifier
                                 slot_limit_index table_link to_dt
@@ -101,9 +102,10 @@ my $_async_vreq_tip = sub {
 
    my $actionp = 'asset/request_info';
    my $href    = uri_for_action $req, $actionp, [ $event->uri ];
+   my $id      = 'request-'.$event->uri;
 
    push @{ $page->{literal_js} }, js_window_config
-      $event->uri, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
+      $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    return;
 };
 
@@ -574,6 +576,7 @@ my $_slot_assignments = sub {
 
       $data->{ $k } = { name        => $slot->key,
                         operator    => $slot->operator,
+                        slot        => $slot,
                         vehicle     => $slot->vehicle,
                         vehicle_req => $slot->bike_requested };
    }
@@ -726,12 +729,12 @@ my $_week_rota_requests = sub {
 
       push @{ $table->{rows} },
          map  { [ { class => $class,
-                    name  => $_->[ 0 ],
+                    name  => 'request-'.$_->[ 0 ],
                     title => loc( $req, 'Vehicle Request' ),
                     value => $_->[ 1 ]->name } ] }
          map  { my $href = uri_for_action $req, 'asset/request_vehicle',
                            [ $_->[ 0 ] ];
-                $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
+                $_onclick_relocate->( $page, 'request-'.$_->[ 0 ], $href ); $_ }
          map  { $_async_vreq_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
          grep { $_->start_date eq $date } @{ $events };
 
@@ -751,16 +754,16 @@ sub assign_summary : Role(any) {
    my $rota_dt  =  to_dt $rota_date;
    my $data     =  $self->$_slot_assignments( {
       rota_type => $self->$_find_rota_type_id( $rota_name ),
-      on        => $rota_dt } );
+      on        => $rota_dt } )->{ $_local_dt->( $rota_dt)->ymd.'_'.$key };
    my $stash    =  $self->dialog_stash( $req, 'assign-summary' );
    my $fields   =  $stash->{page}->{fields};
-   my $slot     =  $data->{ $_local_dt->( $rota_dt)->ymd.'_'.$key };
-   my $operator =  $slot->{operator};
+   my $operator =  $data->{operator};
 
    $fields->{operator} = $operator->label;
    $operator->postcode
       and $fields->{operator} .= ' ('.$operator->outer_postcode.')';
-   $slot->{vehicle} and $fields->{vehicle} = $slot->{vehicle}->label;
+   $data->{vehicle} and $fields->{vehicle} = $data->{vehicle}->label;
+   ($fields->{start}, $fields->{end}) = display_duration $req, $data->{slot};
 
    return $stash;
 }
@@ -981,7 +984,7 @@ sub yield_slot_action : Role(rota_manager) Role(bike_rider) Role(controller)
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
 
-   $person->yield_slot( $rota_name, $rota_date, $shift_type,
+   $person->yield_slot( $rota_name, to_dt( $rota_date ), $shift_type,
                         $slot_type, $subslot );
 
    my $args     = [ $rota_name, $rota_date ];

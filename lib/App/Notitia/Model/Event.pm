@@ -3,7 +3,7 @@ package App::Notitia::Model::Event;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( bind bind_fields button check_field_js
-                                create_link delete_button loc
+                                create_link delete_button display_duration loc
                                 management_link operation_links
                                 register_action_paths save_button
                                 to_dt uri_for_action );
@@ -141,10 +141,6 @@ my $_bind_event_fields = sub {
    return bind_fields $self->schema, $event, $map, 'Event';
 };
 
-my $_find_rota = sub {
-   return $_[ 0 ]->schema->resultset( 'Rota' )->find_rota( $_[ 1 ], $_[ 2 ] );
-};
-
 my $_format_as_markdown = sub {
    my ($self, $req, $event) = @_;
 
@@ -266,7 +262,7 @@ my $_create_event = sub {
    my ($self, $req, $start_date, $event_type, $owner, $vrn) = @_;
 
    my $attr  = { rota       => 'main', # TODO: Naughty
-                 start_date => $start_date->ymd,
+                 start_date => $start_date,
                  event_type => $event_type,
                  owner      => $owner, };
 
@@ -317,7 +313,7 @@ my $_update_event = sub {
 sub create_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $date  = to_dt $req->body_params->( 'event_date' ), 'GMT';
+   my $date  = to_dt $req->body_params->( 'event_date' );
    my $event = $self->$_create_event( $req, $date, 'person', $req->username );
 
    $self->$_create_event_post( $req, $event->post_filename, $event );
@@ -334,7 +330,7 @@ sub create_vehicle_event_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $vrn      = $req->uri_params->( 0 );
-   my $date     = to_dt $req->body_params->( 'event_date' ), 'GMT';
+   my $date     = to_dt $req->body_params->( 'event_date' );
    my $event    = $self->$_create_event
                 ( $req, $date, 'vehicle', $req->username, $vrn );
    my $location = $_vehicle_events_uri->( $req, $vrn );
@@ -411,17 +407,11 @@ sub event_info : Role(any) {
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
    my $stash = $self->dialog_stash( $req, 'event-info' );
    my $fields = $stash->{page}->{fields};
-   my ($start, $end) = $event->duration;
 
-   $start = $start->set_time_zone( 'local' );
-   $end = $end->set_time_zone( 'local' );
    $fields->{owner} = $event->owner->label;
    $event->owner->postcode
       and $fields->{owner} .= ' ('.$event->owner->outer_postcode.')';
-   $fields->{start} = loc( $req, 'Starts' ).SPC.$start->dmy( '/' ).SPC
-                    . $start->hour.':'.$start->minute;
-   $fields->{end} = loc( $req, 'Ends' ).SPC.$end->dmy( '/' ).SPC
-                    . $end->hour.':'.$end->minute;
+   ($fields->{start}, $fields->{end}) = display_duration $req, $event;
 
    return $stash;
 }
@@ -632,7 +622,7 @@ sub vehicle_info : Role(rota_manager) {
    $fields->{owner} = $event->owner->label;
    $event->owner->postcode
       and $fields->{owner} .= ' ('.$event->owner->outer_postcode.')';
-   $fields->{description} = $event->description;
+   ($fields->{start}, $fields->{end}) = display_duration $req, $event;
 
    return $stash;
 }

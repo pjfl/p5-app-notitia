@@ -1,4 +1,5 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Vehicle Event Info -->
 <p class="label-column">[% page.fields.owner %]</p>
-<p class="label-column">[% page.fields.description  %]</p>
+<p class="label-column">[% page.fields.start  %]</p>
+<p class="label-column">[% page.fields.end  %]</p>

@@ -24,20 +24,21 @@ use YAML::Tiny;
 our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      bind_fields bool_data_type build_navigation build_tree
                      button check_field_js check_form_field clone create_link
-                     date_data_type delete_button dialog_anchor encrypted_attr
-                     enhance enumerated_data_type field_options
-                     foreign_key_data_type get_hashed_pw get_salt is_draft
-                     is_encrypted iterator js_submit_config js_togglers_config
-                     js_window_config lcm_for load_file_data loc localise_tree
-                     mail_domain make_id_from make_name_from make_tip
-                     management_link mtime new_salt
-                     nullable_foreign_key_data_type nullable_varchar_data_type
-                     numerical_id_data_type operation_links
-                     register_action_paths save_button serial_data_type
-                     set_element_focus set_on_create_datetime_data_type
-                     set_rota_date slot_claimed slot_identifier
-                     slot_limit_index show_node stash_functions table_link
-                     time2int to_dt uri_for_action varchar_data_type );
+                     date_data_type delete_button dialog_anchor
+                     display_duration encrypted_attr enhance
+                     enumerated_data_type field_options foreign_key_data_type
+                     get_hashed_pw get_salt is_draft is_encrypted iterator
+                     js_submit_config js_togglers_config js_window_config
+                     lcm_for load_file_data loc localise_tree mail_domain
+                     make_id_from make_name_from make_tip management_link mtime
+                     new_salt nullable_foreign_key_data_type
+                     nullable_varchar_data_type numerical_id_data_type
+                     operation_links register_action_paths save_button
+                     serial_data_type set_element_focus
+                     set_on_create_datetime_data_type set_rota_date
+                     slot_claimed slot_identifier slot_limit_index show_node
+                     stash_functions table_link time2int to_dt uri_for_action
+                     varchar_data_type );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -259,7 +260,7 @@ sub bool_data_type (;$) {
 }
 
 sub build_navigation ($$) {
-   my ($req, $opts) = @_; my @nav = ();
+   my ($req, $opts) = @_; my $count = 0; my @nav = ();
 
    my $ids = $req->uri_params->() // []; my $iter = iterator( $opts->{node} );
 
@@ -270,8 +271,8 @@ sub build_navigation ($$) {
          my $keepit = FALSE; $node->{fcount} < 1 and next;
 
          for my $n (grep { not m{ \A _ }mx } keys %{ $node->{tree} }) {
-            $_can_see_link->( $req, $node->{tree}->{ $n } ) and $keepit = TRUE
-               and last;
+            $_can_see_link->( $req, $node->{tree}->{ $n } )
+               and $keepit = TRUE and last;
          }
 
          $keepit or next;
@@ -291,6 +292,8 @@ sub build_navigation ($$) {
       }
 
       push @nav, $link;
+      $opts->{limit} and $node->{type} eq 'file'
+         and ++$count >= $opts->{limit} and last;
    }
 
    return \@nav;
@@ -427,6 +430,17 @@ sub dialog_anchor ($$$) {
    my ($k, $href, $opts) = @_;
 
    return js_window_config( $k, 'click', 'modalDialog', [ "${href}", $opts ] );
+}
+
+sub display_duration ($$) {
+   my ($req, $event) = @_; my ($start, $end) = $event->duration;
+
+   $start = $start->set_time_zone( 'local' );
+   $end = $end->set_time_zone( 'local' );
+
+   return
+   loc( $req, 'Starts' ).SPC.$start->dmy( '/' ).SPC.$start->strftime( '%H:%M' ),
+   loc( $req, 'Ends' ).SPC.$end->dmy( '/' ).SPC.$end->strftime( '%H:%M' );
 }
 
 sub encrypted_attr ($$$$) {
@@ -918,6 +932,8 @@ Defines no attributes
 =item C<delete_button>
 
 =item C<dialog_anchor>
+
+=item C<display_duration>
 
 =item C<encrypted_attr>
 

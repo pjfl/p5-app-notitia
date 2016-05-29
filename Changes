@@ -1,5 +1,8 @@
 Revision history for App::Notitia
 
+          - Added times to week rota info
+          - Removed last of the to_dt calls from Result
+            and ResultSet classes
           - Fixed posts draft mode
           - Fixed certs and endorsements lists
           - Fixed efficiency problems with month rota

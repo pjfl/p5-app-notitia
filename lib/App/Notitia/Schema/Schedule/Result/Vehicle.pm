@@ -8,7 +8,7 @@ use parent   'App::Notitia::Schema::Base';
 use App::Notitia::Constants qw( VARCHAR_MAX_SIZE SPC TRUE );
 use App::Notitia::Util      qw( date_data_type foreign_key_data_type
                                 nullable_foreign_key_data_type
-                                serial_data_type to_dt varchar_data_type );
+                                serial_data_type varchar_data_type );
 use Class::Usul::Functions  qw( throw );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -59,7 +59,7 @@ my $_assert_not_assigned_to_event = sub {
 
    my ($shift_start, $shift_end) = $self->shift_times( $date, $shift_type );
    my $tport_rs = $self->result_source->schema->resultset( 'Transport' );
-   my $opts     = { on => to_dt( $date ), vehicle => $self->vrn };
+   my $opts     = { on => $date, vehicle => $self->vrn };
 
    for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
       my ($event_start, $event_end) = $tport->event->duration;
@@ -78,7 +78,7 @@ my $_assert_not_assigned_to_vehicle_event = sub {
 
    my ($shift_start, $shift_end) = $self->shift_times( $date, $shift_type );
    my $event_rs = $self->result_source->schema->resultset( 'Event' );
-   my $opts     = { on => to_dt( $date ), vehicle => $self->vrn, };
+   my $opts     = { on => $date, vehicle => $self->vrn, };
 
    for my $event ($event_rs->search_for_vehicle_events( $opts )->all) {
       my ($event_start, $event_end) = $event->duration;
@@ -120,7 +120,7 @@ my $_assert_not_assigned_to_slot = sub {
 
    my $type_id  = $self->$_find_rota_type_id_for( $rota_name );
    my $slots_rs = $self->result_source->schema->resultset( 'Slot' );
-   my $slots    = $slots_rs->assignment_slots( $type_id, to_dt $date );
+   my $slots    = $slots_rs->assignment_slots( $type_id, $date );
 
    for my $slot (grep { $_->type_name->is_rider } $slots->all) {
       $slot->get_column( 'shift_type' ) eq $shift_type

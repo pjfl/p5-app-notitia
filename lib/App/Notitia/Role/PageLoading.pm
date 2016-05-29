@@ -143,7 +143,8 @@ sub navigation {
 
    if (not $tuple or mtime $node > $tuple->{mtime}) {
       my $opts = { config => $conf, label => $self->nav_label,
-                   node   => $node, path  => $self->moniker.'/page' };
+                   limit  => 100,   node  => $node,
+                   path   => $self->moniker.'/page' };
 
       $tuple  =  $_nav_cache->{ $key } = {
          list => build_navigation( $req, $opts ), mtime => mtime( $node ), };

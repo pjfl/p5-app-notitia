@@ -51,7 +51,7 @@ sub date {
 sub duration {
    my $self = shift;
 
-   return $self->shift_times( $self->start_date->ymd, $self->shift->type_name );
+   return $self->shift_times( $self->start_date, $self->shift->type_name );
 }
 
 sub end_time {

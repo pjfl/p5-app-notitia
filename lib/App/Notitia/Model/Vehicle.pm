@@ -1,13 +1,13 @@
 package App::Notitia::Model::Vehicle;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( assign_link bind bind_fields button
                                 check_field_js create_link delete_button
-                                loc make_tip management_link operation_links
-                                register_action_paths save_button
-                                set_element_focus slot_identifier time2int to_dt
-                                uri_for_action );
+                                display_duration loc make_tip management_link
+                                operation_links register_action_paths
+                                save_button set_element_focus slot_identifier
+                                time2int to_dt uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -341,7 +341,7 @@ my $_toggle_assignment = sub {
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
 
-   $vehicle->$method( $rota_name, $rota_date, $shift_type,
+   $vehicle->$method( $rota_name, to_dt( $rota_date ), $shift_type,
                       $slot_type, $subslot, $req->username );
 
    my $label     = slot_identifier
@@ -553,8 +553,11 @@ sub request_info : Role(rota_manager) {
    my $event    = $self->schema->resultset( 'Event' )->find_event_by( $uri );
    my $stash    = $self->dialog_stash( $req, 'vehicle-request-info' );
    my $vreq_rs  = $self->schema->resultset( 'VehicleRequest' );
-   my $requests = $stash->{page}->{fields}->{requests} //= [];
+   my $fields   = $stash->{page}->{fields};
+   my $requests = $fields->{requests} //= [];
    my $id       = $event->id;
+
+   ($fields->{start}, $fields->{end}) = display_duration $req, $event;
 
    for my $tuple ($vreq_rs->search_for_request_info( { event_id => $id } )) {
       push @{ $requests }, {

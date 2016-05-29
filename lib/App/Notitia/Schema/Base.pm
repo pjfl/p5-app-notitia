@@ -96,8 +96,9 @@ sub shift_times {
    my $shift_times = $self->result_source->schema->config->shift_times;
    my $start_time  = $shift_times->{ "${shift_type}_start" };
    my $end_time    = $shift_times->{ "${shift_type}_end" };
-   my $shift_start = to_dt "${date} ${start_time}";
-   my $shift_end   = to_dt "${date} ${end_time}";
+   my $local_dt    = $date->clone->set_time_zone( 'local' );
+   my $shift_start = to_dt $local_dt->ymd." ${start_time}";
+   my $shift_end   = to_dt $local_dt->ymd." ${end_time}";
 
    $shift_end < $shift_start and $shift_end->add( days => 1 );
 
