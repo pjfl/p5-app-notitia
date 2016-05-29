@@ -1,2 +1,8 @@
 <!-- Week Table -->
+   <div class="left align-right">
+[%    Link( page.fields.nav.lshift, 'left-shift', loc( 'Prev Day' ) ) -%]
+   </div>
+   <div class="right align-left">
+[%    Link( page.fields.nav.rshift, 'right-shift', loc( 'Next Day' ) ) -%]
+   </div>
 [% Table( page.rota ) -%]

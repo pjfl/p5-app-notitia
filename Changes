@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #30. Added day shifting to week rota
           - Added onclick handling to week rota
           - Added vehicle request tips to week rota
           - Optimised week rota

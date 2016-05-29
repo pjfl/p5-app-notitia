@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 100 $ of **App::Notitia**
+This documents version v0.3.$Rev: 104 $ of **App::Notitia**
 
 # Description
 
@@ -218,6 +218,8 @@ TODO: Remove rota and shift from schema!
 
 TODO: Endorsements should be unique on recipient, type\_code, and endorsed
       Schema change required
+
+TODO: Req->username should be $req->shortcode
 
 # Dependencies
 

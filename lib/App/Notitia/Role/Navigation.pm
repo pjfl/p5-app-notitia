@@ -160,15 +160,21 @@ sub rota_navigation_links {
    $date = $local_dt->clone->add( years => 1 );
    push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
 
-   my $now  = to_dt( time2str( '%Y-%m-%d' ), 'local' );
+   $date = to_dt( time2str( '%Y-%m-%d' ), 'local' );
+
+   while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
 
    $actionp = "sched/week_rota";
    push @{ $nav }, $nav_folder->( $req, 'week' );
-   $date = $now->clone->subtract( weeks => 1 );
+   push @{ $nav }, $_week_link->( $req, $actionp, $name,
+                                  $date->clone->subtract( weeks => 2 ) );
+   push @{ $nav }, $_week_link->( $req, $actionp, $name,
+                                  $date->clone->subtract( weeks => 1 ) );
    push @{ $nav }, $_week_link->( $req, $actionp, $name, $date );
-   push @{ $nav }, $_week_link->( $req, $actionp, $name, $now  );
-   $date = $now->clone->add( weeks => 1 );
-   push @{ $nav }, $_week_link->( $req, $actionp, $name, $date );
+   push @{ $nav }, $_week_link->( $req, $actionp, $name,
+                                  $date->clone->add( weeks => 1 ) );
+   push @{ $nav }, $_week_link->( $req, $actionp, $name,
+                                  $date->clone->add( weeks => 2 ) );
 
    return $nav;
 }
