@@ -3,7 +3,7 @@ package App::Notitia::Role::Navigation;
 use attributes ();
 use namespace::autoclean;
 
-use App::Notitia::Constants qw( FALSE TRUE );
+use App::Notitia::Constants qw( FALSE SPC TRUE );
 use App::Notitia::Util      qw( loc to_dt uri_for_action );
 use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
@@ -26,12 +26,12 @@ my $nav_folder = sub {
 my $nav_linkto = sub {
    my ($req, $opts, $actionp, @args) = @_; my $name = $opts->{name};
 
-   my $depth      = $opts->{depth} // 1;
-   my $label_opts = { params => $opts->{label_args} // [],
-                      no_quote_bind_values => TRUE, };
-   my $label      = loc $req, $opts->{label} // "${name}_link", $label_opts;
-   my $tip        = loc $req, $opts->{tip} // "${name}_tip";
-   my $uri        = uri_for_action $req, $actionp, @args;
+   my $depth = $opts->{depth} // 1;
+   my $label = loc $req, $opts->{label} // "${name}_link",
+      { no_quote_bind_values => TRUE, params => $opts->{label_args} // [], };
+   my $tip   = loc $req, $opts->{tip} // "${name}_tip",
+      { no_quote_bind_values => TRUE, params => $opts->{tip_args} // [], };
+   my $uri   = uri_for_action $req, $actionp, @args;
 
    return { depth => $depth, label => $label,
             tip   => $tip,   type  => 'link', uri => $uri, };
@@ -40,10 +40,10 @@ my $nav_linkto = sub {
 my $_week_link = sub {
    my ($req, $actionp, $name, $date) = @_;
 
-   my $tip    = 'Navigate to this week';
-   my $label  = 'Week '.$date->week_number;
-   my $opts   = { label => $label, name => 'wk'.$date->week_number,
-                  tip   => $tip };
+   my $tip    = 'Navigate to [_1]';
+   my $label  = loc( $req, 'Week' ).SPC.$date->week_number;
+   my $opts   = { label => $label,   name => 'wk'.$date->week_number,
+                  tip   => $tip, tip_args => [ $date->dmy( '/' ) ] };
    my $args   = [ $name, $date->ymd ];
    my $params = { rota_date => $date->ymd };
 
@@ -53,8 +53,9 @@ my $_week_link = sub {
 my $_year_link = sub {
    my ($req, $actionp, $name, $date) = @_;
 
-   my $tip    = 'Navigate to this year';
-   my $opts   = { label => $date->year, name => $date->year, tip => $tip };
+   my $tip    = 'Navigate to [_1]';
+   my $opts   = { label => $date->year, name => $date->year,
+                  tip   => $tip,    tip_args => [ $date->year ], };
    my $args   = [ $name, $date->ymd ];
    my $params = { rota_date => $date->ymd };
 
@@ -137,46 +138,54 @@ sub rota_navigation_links {
 
    my $actionp  = "sched/${period}_rota";
    my $date     = $req->session->rota_date // time2str '%Y-%m-01';
-   my $local_dt = to_dt( $date )->set_time_zone( 'local' )->set( day => 1 );
-   my $nav      = [ $nav_folder->( $req, 'months' ) ];
+   my $local_dt = to_dt( $date )->set_time_zone( 'local' );
+   my $f_dom    = $local_dt->clone->set( day => 1 );
+   my $nav      = [ $nav_folder->( $req, 'year' ) ];
 
    $req->session->rota_date or $req->session->rota_date( $local_dt->ymd );
 
+   $date = $f_dom->clone->subtract( years => 1 );
+   push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
+   $date = $f_dom->clone->add( years => 1 );
+   push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
+   push @{ $nav }, $nav_folder->( $req, 'months' );
+
    for my $mno (0 .. 11) {
       my $offset = $mno - 5;
-      my $date   = $offset > 0 ? $local_dt->clone->add( months => $offset )
-                 : $offset < 0 ? $local_dt->clone->subtract( months => -$offset)
-                 :               $local_dt->clone;
+      my $date   = $offset > 0 ? $f_dom->clone->add( months => $offset )
+                 : $offset < 0 ? $f_dom->clone->subtract( months => -$offset )
+                 :               $f_dom->clone;
       my $opts   = { label_args => [ $date->year ],
-                     name       => lc 'month_'.$date->month_abbr };
+                     name       => lc 'month_'.$date->month_abbr,
+                     tip_args   => [ $date->month_name ], };
       my $args   = [ $name, $date->ymd ];
 
       push @{ $nav }, $nav_linkto->( $req, $opts, $actionp, $args );
    }
 
-   push @{ $nav }, $nav_folder->( $req, 'year' );
-   $date = $local_dt->clone->subtract( years => 1 );
-   push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
-   $date = $local_dt->clone->add( years => 1 );
-   push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
+   my $sow = $local_dt->clone;
 
-   $date = to_dt( time2str( '%Y-%m-%d' ), 'local' );
-
-   while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
+   while ($sow->day_of_week > 1) { $sow = $sow->subtract( days => 1 ) }
 
    $actionp = "sched/week_rota";
    push @{ $nav }, $nav_folder->( $req, 'week' );
    push @{ $nav }, $_week_link->( $req, $actionp, $name,
-                                  $date->clone->subtract( weeks => 2 ) );
+                                  $sow->clone->subtract( weeks => 1 ) );
+   push @{ $nav }, $_week_link->( $req, $actionp, $name, $sow );
    push @{ $nav }, $_week_link->( $req, $actionp, $name,
-                                  $date->clone->subtract( weeks => 1 ) );
-   push @{ $nav }, $_week_link->( $req, $actionp, $name, $date );
+                                  $sow->clone->add( weeks => 1 ) );
    push @{ $nav }, $_week_link->( $req, $actionp, $name,
-                                  $date->clone->add( weeks => 1 ) );
+                                  $sow->clone->add( weeks => 2 ) );
    push @{ $nav }, $_week_link->( $req, $actionp, $name,
-                                  $date->clone->add( weeks => 2 ) );
+                                  $sow->clone->add( weeks => 3 ) );
+   push @{ $nav }, $_week_link->( $req, $actionp, $name,
+                                  $sow->clone->add( weeks => 4 ) );
 
    return $nav;
+}
+
+sub update_navigation_date {
+   my ($self, $req, $date) = @_; return $req->session->rota_date( $date->ymd );
 }
 
 1;

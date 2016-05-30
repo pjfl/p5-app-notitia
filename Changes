@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Made rota week navigation rolling
           - Added paged queries. Schema changed
           - Added times to week rota info
           - Removed last of the to_dt calls from Result

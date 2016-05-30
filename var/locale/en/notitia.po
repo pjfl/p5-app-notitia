@@ -367,7 +367,7 @@ msgid "events_heading_1"
 msgstr "Edit"
 
 msgid "events_heading_2"
-msgstr "Participents"
+msgstr "Participants"
 
 msgid "events_heading_3"
 msgstr "Vehicles"
@@ -447,38 +447,74 @@ msgstr "Mobile Phone"
 msgid "month_jan_link"
 msgstr "January [_1]"
 
+msgid "month_jan_tip"
+msgstr "Navigate to [_1]"
+
 msgid "month_feb_link"
 msgstr "February [_1]"
+
+msgid "month_feb_tip"
+msgstr "Navigate to [_1]"
 
 msgid "month_mar_link"
 msgstr "March [_1]"
 
+msgid "month_mar_tip"
+msgstr "Navigate to [_1]"
+
 msgid "month_apr_link"
 msgstr "April [_1]"
+
+msgid "month_apr_tip"
+msgstr "Navigate to [_1]"
 
 msgid "month_may_link"
 msgstr "May [_1]"
 
+msgid "month_may_tip"
+msgstr "Navigate to [_1]"
+
 msgid "month_jun_link"
 msgstr "June [_1]"
+
+msgid "month_jun_tip"
+msgstr "Navigate to [_1]"
 
 msgid "month_jul_link"
 msgstr "July [_1]"
 
+msgid "month_jul_tip"
+msgstr "Navigate to [_1]"
+
 msgid "month_aug_link"
 msgstr "August [_1]"
+
+msgid "month_aug_tip"
+msgstr "Navigate to [_1]"
 
 msgid "month_sep_link"
 msgstr "September [_1]"
 
+msgid "month_sep_tip"
+msgstr "Navigate to [_1]"
+
 msgid "month_oct_link"
 msgstr "October [_1]"
+
+msgid "month_oct_tip"
+msgstr "Navigate to [_1]"
 
 msgid "month_nov_link"
 msgstr "November [_1]"
 
+msgid "month_nov_tip"
+msgstr "Navigate to [_1]"
+
 msgid "month_dec_link"
 msgstr "December [_1]"
+
+msgid "month_dec_tip"
+msgstr "Navigate to [_1]"
 
 msgid "month_rota_heading_0"
 msgstr "Mon"
@@ -565,16 +601,16 @@ msgid "participents_heading_2"
 msgstr "Unparticipate"
 
 msgid "participents_management_heading"
-msgstr "[_1] Participents"
+msgstr "[_1] Participants"
 
 msgid "participents_management_link"
-msgstr "Participents"
+msgstr "Participants"
 
 msgid "participents_management_tip"
-msgstr "View the participents in the [_1] event"
+msgstr "View the participants in the [_1] event"
 
 msgid "participents_view_link"
-msgstr "Click to view the [_1] event participents"
+msgstr "Click to view the [_1] event participants"
 
 msgid "password"
 msgstr "Password"

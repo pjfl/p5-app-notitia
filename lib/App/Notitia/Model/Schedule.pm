@@ -158,17 +158,6 @@ my $_local_dt = sub {
    return $_[ 0 ]->clone->set_time_zone( 'local' );
 };
 
-my $_first_day_of_month = sub {
-   my ($req, $date) = @_;
-
-   $date = $_local_dt->( $date )->set( day => 1 );
-   $req->session->rota_date( $date->ymd );
-
-   while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
-
-   return $date->set_time_zone( 'GMT' );
-};
-
 my $_is_this_month = sub {
    my ($rno, $local_dt) = @_; $rno > 0 and return TRUE;
 
@@ -491,6 +480,18 @@ my $_riders_n_drivers = sub {
 # Private methods
 my $_find_rota_type_id = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] )->id;
+};
+
+my $_first_day_of_month = sub {
+   my ($self, $req, $date) = @_;
+
+   $date = $_local_dt->( $date )->set( day => 1 );
+
+   $self->update_navigation_date( $req, $date );
+
+   while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
+
+   return $date->set_time_zone( 'GMT' );
 };
 
 my $_left_shift = sub {
@@ -846,7 +847,7 @@ sub month_rota : Role(any) {
                       rows      => [] },
       template   => [ 'contents', 'rota', 'month-table' ],
       title      => $_month_rota_title->( $req, $rota_name, $rota_dt ), };
-   my $first     =  $_first_day_of_month->( $req, $rota_dt );
+   my $first     =  $self->$_first_day_of_month( $req, $rota_dt );
    my $opts      =  {
       after      => $rota_dt->clone->subtract( days => 1 ),
       before     => $rota_dt->clone->add( days => 31 ),
@@ -959,6 +960,8 @@ sub week_rota : Role(any) {
    my @v_events   =  $event_rs->search_for_vehicle_events( $opts )->all;
    my $rows       =  $page->{rota}->{rows};
    my $slot_cache =  [];
+
+   $self->update_navigation_date( $req, $_local_dt->( $rota_dt ) );
 
    push @{ $rows }, $self->$_week_rota_requests
       ( $req, $page, $rota_dt, $slot_cache, \@slots, \@uv_events );
