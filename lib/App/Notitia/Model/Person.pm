@@ -5,7 +5,7 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 create_link delete_button dialog_anchor
                                 field_options loc mail_domain make_tip
-                                management_link operation_links
+                                management_link operation_links page_link_set
                                 register_action_paths save_button table_link
                                 to_dt uri_for_action );
 use Class::Null;
@@ -121,12 +121,12 @@ my $_people_headers = sub {
 };
 
 my $_people_links = sub {
-   my ($req, $tuple, $params) = @_; my $role = $params->{role};
+   my ($req, $person, $params) = @_; my $role = $params->{role};
 
    $params->{type} and $params->{type} eq 'contacts'
-                   and return $_contact_links->( $req, $tuple->[ 1 ] );
+                   and return $_contact_links->( $req, $person );
 
-   my $scode = $tuple->[ 1 ]->shortcode;
+   my $scode = $person->shortcode;
    my $k     = $role ? "${role}_${scode}" : $scode;
    my $links = $_people_links_cache->{ $k }; $links and return @{ $links };
    my @paths = ( 'person/person', 'role/role', 'certs/certifications' );
@@ -229,17 +229,21 @@ my $_list_all_roles = sub {
 };
 
 my $_people_ops_links = sub {
-   my ($self, $req, $page, $params) = @_;
+   my ($self, $req, $page, $params, $opts, $pager) = @_;
 
    $params->{name} = 'message_people';
 
-   my $moniker  = $self->moniker;
-   my $actionp  = "${moniker}/message";
-   my $message  = $self->message_link( $req, $page, $actionp, $params );
-   my $opts     = { container_class => 'add-link' };
-   my $add_user = create_link $req, "${moniker}/person", 'person', $opts;
+   my $moniker    = $self->moniker;
+   my $message    = $self->message_link
+      ( $req, $page, "${moniker}/message", $params );
+   my $add_user   = create_link $req, "${moniker}/person",
+                                'person', { container_class => 'add-link' };
+   my $page_links = page_link_set $req, "${moniker}/people", [], $opts, $pager;
+   my $links      = [ $message, $add_user ];
 
-   return operation_links [ $message, $add_user ];
+   $page_links and unshift @{ $links }, $page_links;
+
+   return operation_links $links;
 };
 
 my $_update_person_from_request = sub {
@@ -474,9 +478,17 @@ sub people : Role(any) {
    my $params    =  $req->query_params->( { optional => TRUE } );
    my $role      =  $params->{role  } // NUL;
    my $status    =  $params->{status} // NUL;
+   my $opts      =  { page => delete $params->{page} // 1,
+                      rows => $req->session->rows_per_page };
 
    $type //= NUL; delete $params->{type}; $type and $params->{type} = $type;
+   $status eq 'current'  and $opts->{current } = TRUE;
+   $type   eq 'contacts' and $opts->{prefetch} = [ 'next_of_kin' ]
+      and $opts->{columns} = [ 'home_phone', 'mobile_phone' ];
+   $role and $opts->{role} = $role;
 
+   my $person_rs =  $self->schema->resultset( 'Person' );
+   my $people    =  $person_rs->search_for_people( $opts );
    my $title_key =  $role   ? "${role}_list_link"
                  :  $type   ? "${type}_list_heading"
                  :  $status ? "${status}_people_list_link"
@@ -487,22 +499,15 @@ sub people : Role(any) {
          rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => loc( $req, $title_key ), };
-   my $person_rs =  $self->schema->resultset( 'Person' );
    my $fields    =  $page->{fields};
    my $rows      =  $fields->{rows};
-   my $opts      =  {};
 
-   $fields->{links} = $self->$_people_ops_links( $req, $page, $params );
-   $status eq 'current'  and $opts->{current } = TRUE;
-   $type   eq 'contacts' and $opts->{prefetch} = [ 'next_of_kin' ]
-      and $opts->{columns} = [ 'home_phone', 'mobile_phone' ]
-      and $page->{fields}->{class} = 'smaller-table';
+   $fields->{links} =
+      $self->$_people_ops_links( $req, $page, $params, $opts, $people->pager );
+   $type eq 'contacts' and $fields->{class} = 'smaller-table';
 
-   my $people = $role ? $person_rs->list_people( $role, $opts )
-                      : $person_rs->list_all_people( $opts );
-
-   for my $person (@{ $people }) {
-      push @{ $rows }, [ { value => $person->[ 0 ]  },
+   for my $person ($people->all) {
+      push @{ $rows }, [ { value => $person->label  },
                          $_people_links->( $req, $person, $params ) ];
    }
 

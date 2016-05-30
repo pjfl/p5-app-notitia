@@ -11,6 +11,7 @@ use App::Notitia::Constants    qw( EXCEPTION_CLASS SPC TRUE
 use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
                                    is_encrypted new_salt
                                    nullable_foreign_key_data_type
+                                   numerical_id_data_type
                                    serial_data_type slot_limit_index
                                    varchar_data_type );
 use Class::Usul::Functions     qw( throw );
@@ -34,6 +35,7 @@ $class->add_columns
      joined           => date_data_type,
      resigned         => date_data_type,
      subscription     => date_data_type,
+     rows_per_page    => numerical_id_data_type( 20 ),
      shortcode        => varchar_data_type(   6 ),
      name             => varchar_data_type(  64 ),
      password         => varchar_data_type( 128 ),

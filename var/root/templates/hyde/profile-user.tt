@@ -9,5 +9,6 @@
 [% TextField( page.fields.email_address ) -%]
 [% TextField( page.fields.mobile_phone ) -%]
 [% TextField( page.fields.home_phone ) -%]
+[% RadioButtons( page.fields.rows_per_page ) -%]
 [%    Button( page.fields.update ) -%]
 </form>

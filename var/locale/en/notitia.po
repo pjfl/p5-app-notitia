@@ -210,6 +210,9 @@ msgstr "Create"
 msgid "create_tip"
 msgstr "Create a new [_1] record"
 
+msgid "current_page_link"
+msgstr "[_1]"
+
 msgid "current_people_list_link"
 msgstr "Active People"
 
@@ -387,6 +390,9 @@ msgstr "I'm sorry [_1], I can't do that"
 msgid "first_name"
 msgstr "First Name"
 
+msgid "first_page_link"
+msgstr "A"
+
 msgid "fund_raiser"
 msgstr "Fund Raiser"
 
@@ -407,6 +413,9 @@ msgstr "Home Phone"
 
 msgid "joined"
 msgstr "Joined"
+
+msgid "last_page_link"
+msgstr "Z"
 
 msgid "last_name"
 msgstr "Last Name"
@@ -506,6 +515,9 @@ msgstr "New Password"
 
 msgid "next_of_kin"
 msgstr "Next of Kin"
+
+msgid "next_page_link"
+msgstr ">"
 
 msgid "night_controller_0"
 msgstr "Ctrl. Night"
@@ -641,6 +653,9 @@ msgstr "Previous"
 
 msgid "previous_events_tip"
 msgstr "List previous events"
+
+msgid "prev_page_link"
+msgstr "<"
 
 msgid "primary_role"
 msgstr "Primary Role"

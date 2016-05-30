@@ -57,23 +57,29 @@ sub find_vehicle_by {
 }
 
 sub list_vehicles {
-   my ($self, $params, $opts) = @_;
+   my ($self, $opts) = @_;
+
+   my $vehicles = $self->search_for_vehicles( $opts );
+
+   return [ map { $_field_tuple->( $_, $opts->{fields} ) } $vehicles->all ];
+}
+
+sub search_for_vehicles {
+   my ($self, $opts) = @_;
 
    $opts = { columns  => [ 'id', 'name', 'vrn' ], order_by => 'vrn',
-             prefetch => [ 'type', 'owner' ], %{ $opts // {} } };
+             prefetch => [ 'type', 'owner' ], %{ $opts } };
+   delete $opts->{fields};
 
-   my $fields = delete $opts->{fields} // {};
-   my $where  = $params->{type} ? { 'type.name' => $params->{type} } : {};
+   my $type  = delete $opts->{type};
+   my $where = $type ? { 'type.name' => $type } : {};
 
-   $params->{private} and $where->{owner_id} = { '!=' => undef };
-   $params->{service} and $where->{owner_id} = { '='  => undef };
-
-   ($params->{private} or $params->{service})
+   ($opts->{private} or $opts->{service})
       and $where->{disposed} = { '=' => undef };
+   delete $opts->{private} and $where->{owner_id} = { '!=' => undef };
+   delete $opts->{service} and $where->{owner_id} = { '='  => undef };
 
-   my $vehicles = $self->search( $where, $opts );
-
-   return [ map { $_field_tuple->( $_, $fields ) } $vehicles->all ];
+   return $self->search( $where, $opts );
 }
 
 1;

@@ -5,8 +5,9 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( assign_link bind bind_fields button
                                 check_field_js create_link delete_button
                                 display_duration loc make_tip management_link
-                                operation_links register_action_paths
-                                save_button set_element_focus slot_identifier
+                                operation_links page_link_set
+                                register_action_paths save_button
+                                set_element_focus slot_identifier
                                 time2int to_dt uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
@@ -274,6 +275,18 @@ my $_vehicle_type_list = sub {
    return bind 'type', $values, $opts;
 };
 
+my $_vehicles_op_links = sub {
+   my ($req, $moniker, $params, $pager) = @_;
+
+   my $page_links
+      = page_link_set $req, "${moniker}/vehicles", [], $params, $pager;
+   my $links = [ create_link $req, "${moniker}/vehicle", 'vehicle' ];
+
+   $page_links and unshift @{ $links }, $page_links;
+
+   return operation_links $links;
+};
+
 my $_vreq_row = sub {
    my ($schema, $req, $page, $event, $vehicle_type) = @_;
 
@@ -446,9 +459,9 @@ my $_find_last_keeper = sub {
 };
 
 my $_vehicle_links = sub {
-   my ($self, $moniker, $req, $service, $tuple) = @_;
+   my ($self, $moniker, $req, $service, $vehicle) = @_;
 
-   my $vrn = $tuple->[ 1 ]->vrn; my $links = [ { value => $tuple->[ 0 ] } ];
+   my $vrn = $vehicle->vrn; my $links = [ { value => $vehicle->label } ];
 
    push @{ $links },
       { value => management_link( $req, "${moniker}/vehicle", $vrn ) };
@@ -464,7 +477,7 @@ my $_vehicle_links = sub {
               ( $req, "${moniker}/vehicle_events", $vrn,
                 { params => { after => $now->subtract( days => 1 )->ymd } } ) };
       push @{ $links },
-         { value => $self->$_find_last_keeper( $req, $tuple->[ 1 ], $now ) };
+         { value => $self->$_find_last_keeper( $req, $vehicle, $now ) };
 
    }
 
@@ -704,25 +717,31 @@ sub vehicle_events : Role(rota_manager) {
 sub vehicles : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $params    =  $req->query_params;
-   my $type      =  $params->( 'type',    { optional => TRUE } );
-   my $private   =  $params->( 'private', { optional => TRUE } ) || FALSE;
-   my $service   =  $params->( 'service', { optional => TRUE } ) || FALSE;
-   my $actionp   =  $self->moniker.'/vehicle';
+   my $moniker   =  $self->moniker;
+   my $params    =  $req->query_params->( { optional => TRUE } );
+   my $type      =  $params->{type};
+   my $private   =  $params->{private} || FALSE;
+   my $service   =  $params->{service} || FALSE;
+   my $opts      =  { page    => $params->{page} // 1,
+                      private => $private,
+                      rows    => $req->session->rows_per_page,
+                      service => $service,
+                      type    => $type };
+   my $rs        =  $self->schema->resultset( 'Vehicle' );
+   my $vehicles  =  $rs->search_for_vehicles( $opts );
    my $page      =  {
       fields     => {
          headers => $_vehicles_headers->( $req, $service ),
-         links   => operation_links [ create_link( $req, $actionp, 'vehicle' )],
+         links   => $_vehicles_op_links->
+            ( $req, $moniker, $opts, $vehicles->pager ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => $_vehicle_title->( $req, $type, $private, $service ), };
-   my $opts      =  { private => $private, service => $service, type => $type };
-   my $rs        =  $self->schema->resultset( 'Vehicle' );
    my $rows      =  $page->{fields}->{rows};
 
-   for my $tuple (@{ $rs->list_vehicles( $opts ) }) {
+   for my $vehicle ($vehicles->all) {
       push @{ $rows },
-         $self->$_vehicle_links( $self->moniker, $req, $service, $tuple );
+         $self->$_vehicle_links( $self->moniker, $req, $service, $vehicle );
    }
 
    return $self->get_stash( $req, $page );

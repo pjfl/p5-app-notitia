@@ -21,7 +21,8 @@ with    q(Web::Components::Role::Email);
 has '+moniker' => default => 'user';
 
 has 'profile_keys' => is => 'ro', isa => ArrayRef, builder => sub {
-   [ qw( address postcode email_address mobile_phone home_phone ) ] };
+   [ qw( address postcode email_address
+         mobile_phone home_phone rows_per_page ) ] };
 
 register_action_paths
    'user/change_password' => 'user/password',
@@ -33,6 +34,13 @@ register_action_paths
    'user/request_reset'   => 'user/reset';
 
 # Private functions
+my $_rows_per_page = sub {
+   my $selected = $_[ 0 ]->rows_per_page;
+
+   return [ map { [ $_, $_, ($_ == $selected) ? { selected => TRUE } : {} ] }
+            10, 20, 50, 100 ];
+};
+
 my $_update_session = sub {
    my ($session, $person) = @_;
 
@@ -41,6 +49,7 @@ my $_update_session = sub {
    $session->username( $person->shortcode );
    $session->first_name( $person->first_name );
    $session->user_label( $person->label );
+   $session->rows_per_page( $person->rows_per_page );
    return;
 };
 
@@ -207,16 +216,19 @@ sub profile : Role(any) {
    my $page      = $stash->{page};
    my $fields    = $page->{fields};
 
+   $page->{literal_js     } = set_element_focus 'profile-user', 'address';
    $fields->{address      } = bind 'address',       $person->address;
    $fields->{email_address} = bind 'email_address', $person->email_address;
    $fields->{home_phone   } = bind 'home_phone',    $person->home_phone;
    $fields->{mobile_phone } = bind 'mobile_phone',  $person->mobile_phone;
    $fields->{postcode     } = bind 'postcode',      $person->postcode;
+   $fields->{rows_per_page} = bind 'rows_per_page',
+                                    $_rows_per_page->( $person ),
+                                    { label => 'Rows Per Page' };
    $fields->{update       } = bind 'update', 'update_profile',
                                     { class => 'right-last' };
    $fields->{username     } = bind 'username',      $person->label,
                                     { disabled => TRUE };
-   $page->{literal_js     } = set_element_focus 'profile-user', 'address';
 
    return $stash;
 }
@@ -287,7 +299,9 @@ sub update_profile_action : Role(any) {
 
    $person->$_( $params->( $_, $opts ) ) for (@{ $self->profile_keys });
 
-   $person->update; my $message = [ '[_1] profile updated', $person->label ];
+   $person->update; $req->session->rows_per_page( $person->rows_per_page );
+
+   my $message = [ '[_1] profile updated', $person->label ];
 
    return { redirect => { location => $req->base, message => $message } };
 }

@@ -51,7 +51,7 @@ sub is_person {
    my ($self, $shortcode, $cache) = @_;
 
    unless ($cache->{people}) {
-      for my $person (map { $_->[ 1 ] } @{ $self->list_all_people }) {
+      for my $person ($self->search_for_people->all) {
          $cache->{people}->{ $person->shortcode } = TRUE;
       }
    }
@@ -60,20 +60,11 @@ sub is_person {
 }
 
 sub list_all_people {
-   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
+   my ($self, $opts) = @_;
 
-   my $where   = delete $opts->{current}
-               ? { $self->me( 'resigned' ) => { '=' => undef } } : {};
-   my $fields  = delete $opts->{fields} // {};
-   my $columns = [ 'first_name', 'id', 'last_name', 'name', 'shortcode' ];
+   my $people = $self->search_for_people( $opts );
 
-   $opts->{columns} and push @{ $columns }, @{ delete $opts->{columns} };
-
-   my $people  = $self->search
-      ( $where, { columns  => $columns, order_by => [ $self->me( 'name' ) ],
-               %{ $opts } } );
-
-   return [ map { $_person_tuple->( $_, $fields ) } $people->all ];
+   return [ map { $_person_tuple->( $_, $opts->{fields} ) } $people->all ];
 }
 
 sub list_participents {
@@ -102,6 +93,26 @@ sub list_people {
    my $type   = $self->$_find_role_type( $role );
 
    return [ grep { $_->[ 1 ]->is_member_of( $role, $type ) } @{ $people } ];
+}
+
+sub search_for_people {
+   my ($self, $opts) = @_; $opts = { %{ $opts } }; delete $opts->{fields};
+
+   my $where = delete $opts->{current}
+             ? { $self->me( 'resigned' ) => { '=' => undef } } : {};
+
+   if (my $role = delete $opts->{role}) {
+      $opts->{prefetch} //= []; push @{ $opts->{prefetch} }, 'roles';
+      $where->{ 'roles.type_id' } = $self->$_find_role_type( $role )->id;
+   }
+
+   my $columns = [ 'first_name', 'id', 'last_name', 'name', 'shortcode' ];
+
+   $opts->{columns} and push @{ $columns }, @{ delete $opts->{columns} };
+
+   return $self->search
+      ( $where, { columns  => $columns, order_by => [ $self->me( 'name' ) ],
+               %{ $opts } } );
 }
 
 sub me {

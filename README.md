@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 106 $ of **App::Notitia**
+This documents version v0.3.$Rev: 109 $ of **App::Notitia**
 
 # Description
 
@@ -197,8 +197,6 @@ to emit the SQL it generates to `stderr`. On the production server
 
 # Project To Do List
 
-TODO: Limit list lengths when number of users increases
-
 TODO: Add media query to reduce form size on mobiles
 
 TODO: Schema version numbers. DDL files ignored by git
@@ -209,15 +207,10 @@ TODO: Undo nav template accordian changes
 
 TODO: Work a plan for row life
 
-TODO: Month rota pull all 321 rows by date and loop through
-
 TODO: Review caches; people\_links\_cache, (event)\_links\_cache, cert\_links\_cache,
       blot\_links\_cache
 
 TODO: Remove rota and shift from schema!
-
-TODO: Endorsements should be unique on recipient, type\_code, and endorsed
-      Schema change required
 
 TODO: Req->username should be $req->shortcode
 

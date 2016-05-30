@@ -4,7 +4,7 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 create_link delete_button display_duration loc
-                                management_link operation_links
+                                management_link operation_links page_link_set
                                 register_action_paths save_button
                                 to_dt uri_for_action );
 use Class::Null;
@@ -111,6 +111,18 @@ my $_vehicle_events_uri = sub {
 
    return uri_for_action $req, 'asset/vehicle_events', [ $vrn ],
                          after => $after, service => TRUE;
+};
+
+my $_events_op_links = sub {
+   my ($req, $moniker, $params, $pager) = @_;
+
+   my $actionp    = "${moniker}/events";
+   my $page_links = page_link_set $req, $actionp, [], $params, $pager;
+   my $links      = [ create_link $req, "${moniker}/event", 'event' ];
+
+   $page_links and unshift @{ $links }, $page_links;
+
+   return operation_links $links;
 };
 
 # Private methods
@@ -446,27 +458,31 @@ sub event_summary : Role(any) {
 sub events : Role(any) {
    my ($self, $req) = @_;
 
-   my $actionp   =  $self->moniker.'/event';
-   my $params    =  $req->query_params;
-   my $after     =  $params->( 'after',  { optional => TRUE } );
-   my $before    =  $params->( 'before', { optional => TRUE } );
-   my $opts      =  { after      => $after  ? to_dt( $after  ) : FALSE,
-                      before     => $before ? to_dt( $before ) : FALSE,
-                      event_type => 'person' };
+   my $moniker   =  $self->moniker;
+   my $params    =  $req->query_params->( { optional => TRUE } );
+   my $after     =  $params->{after} ? to_dt( $params->{after} ) : FALSE;
+   my $before    =  $params->{before} ? to_dt( $params->{before} ) : FALSE;
+   my $opts      =  { after      => $after,
+                      before     => $before,
+                      event_type => 'person',
+                      page       => $params->{page} // 1,
+                      rows       => $req->session->rows_per_page };
+   my $event_rs  =  $self->schema->resultset( 'Event' );
+   my $events    =  $event_rs->search_for_events( $opts );
+   my $pager     =  $events->pager;
    my $title     =  $after  ? 'current_events_heading'
                  :  $before ? 'previous_events_heading'
                  :            'events_management_heading';
    my $page      =  {
       fields     => {
          headers => $_events_headers->( $req ),
-         links   => operation_links [ create_link( $req, $actionp, 'event' ) ],
+         links   => $_events_op_links->( $req, $moniker, $params, $pager ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => loc( $req, $title ), };
-   my $event_rs  =  $self->schema->resultset( 'Event' );
    my $rows      =  $page->{fields}->{rows};
 
-   for my $event ($event_rs->search_for_events( $opts )->all) {
+   for my $event ($events->all) {
       push @{ $rows },
          [  { value => $event->label }, $self->$_event_links( $req, $event ) ];
    }

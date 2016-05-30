@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 108 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 109 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -38,7 +38,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 108 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 109 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -234,8 +234,6 @@ C<stderr> is redirected to F<var/tmp/daemon.err>
 
 =head1 Project To Do List
 
-TODO: Limit list lengths when number of users increases
-
 TODO: Add media query to reduce form size on mobiles
 
 TODO: Schema version numbers. DDL files ignored by git
@@ -250,9 +248,6 @@ TODO: Review caches; people_links_cache, (event)_links_cache, cert_links_cache,
       blot_links_cache
 
 TODO: Remove rota and shift from schema!
-
-TODO: Endorsements should be unique on recipient, type_code, and endorsed
-      Schema change required
 
 TODO: Req->username should be $req->shortcode
 

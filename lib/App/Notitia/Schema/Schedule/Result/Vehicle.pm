@@ -209,7 +209,7 @@ sub insert {
 
 sub label {
    return $_[ 0 ]->name  ? $_[ 0 ]->vrn.' ('.$_[ 0 ]->name.')'
-        : $_[ 0 ]->owner ? $_[ 0 ]->vrn.' ('.$_[ 0 ]->owner.')'
+        : $_[ 0 ]->owner ? $_[ 0 ]->vrn.' ('.$_[ 0 ]->owner->label.')'
                          : $_[ 0 ]->vrn;
 }
 

@@ -1,5 +1,6 @@
 package App::Notitia::Util;
 
+use utf8;
 use strictures;
 use parent 'Exporter::Tiny';
 
@@ -32,13 +33,13 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      lcm_for load_file_data loc localise_tree mail_domain
                      make_id_from make_name_from make_tip management_link mtime
                      new_salt nullable_foreign_key_data_type
-                     nullable_varchar_data_type numerical_id_data_type
-                     operation_links register_action_paths save_button
-                     serial_data_type set_element_focus
-                     set_on_create_datetime_data_type set_rota_date
-                     slot_claimed slot_identifier slot_limit_index show_node
-                     stash_functions table_link time2int to_dt uri_for_action
-                     varchar_data_type );
+                     nullable_numerical_id_data_type nullable_varchar_data_type
+                     numerical_id_data_type operation_links page_link_set
+                     register_action_paths save_button serial_data_type
+                     set_element_focus set_on_create_datetime_data_type
+                     set_rota_date slot_claimed slot_identifier
+                     slot_limit_index show_node stash_functions table_link
+                     time2int to_dt uri_for_action varchar_data_type );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -121,6 +122,22 @@ my $get_tip_text = sub {
 
 my $load_file_data = sub {
    load_file_data( $_[ 0 ] ); return TRUE;
+};
+
+my $_page_link = sub {
+   my ($req, $name, $actionp, $args, $params, $page) = @_;
+
+   $params = { %{ $params } }; $params->{page} = $page;
+
+   my $opts = { params => [ $page ], no_quote_bind_values => TRUE };
+
+   return { class => 'table-link',
+            hint  => loc( $req, 'Hint' ),
+            href  => uri_for_action( $req, $actionp, $args, $params ),
+            name  => $name,
+            tip   => loc( $req, "${name}_tip" ),
+            type  => 'link',
+            value => loc( $req, "${name}_link", $opts ), };
 };
 
 my $sorted_keys = sub {
@@ -702,6 +719,13 @@ sub nullable_foreign_key_data_type () {
             is_numeric        => TRUE, };
 }
 
+sub nullable_numerical_id_data_type () {
+   return { data_type         => 'smallint',
+            default_value     => undef,
+            is_nullable       => TRUE,
+            is_numeric        => TRUE, };
+}
+
 sub nullable_varchar_data_type (;$$) {
    return { data_type         => 'varchar',
             default_value     => $_[ 1 ],
@@ -723,6 +747,39 @@ sub operation_links ($) {
             content      => {
                list      => $list,
                separator => '|',
+               type      => 'list', },
+            type         => 'container', };
+}
+
+sub page_link_set ($$$$$) {
+   my ($req, $actionp, $args, $params, $pager) = @_;
+
+   $pager->last_page > $pager->first_page or return;
+
+   my $list = [ $_page_link->( $req, 'first_page', $actionp,
+                               $args, $params, $pager->first_page ) ];
+
+   $pager->previous_page and $pager->previous_page > $pager->first_page
+      and push @{ $list }, $_page_link->( $req, 'prev_page', $actionp, $args,
+                                          $params, $pager->previous_page );
+
+   $pager->current_page > $pager->first_page
+      and $pager->current_page < $pager->last_page
+      and push @{ $list }, $_page_link->( $req, 'current_page', $actionp, $args,
+                                          $params, $pager->current_page );
+
+
+   $pager->next_page and $pager->next_page < $pager->last_page
+      and push @{ $list }, $_page_link->( $req, 'next_page', $actionp, $args,
+                                          $params, $pager->next_page );
+
+   push @{ $list }, $_page_link->( $req, 'last_page', $actionp, $args,
+                                   $params, $pager->last_page );
+
+   return { class        => 'link-group',
+            content      => {
+               list      => $list,
+               separator => '…',
                type      => 'list', },
             type         => 'container', };
 }
@@ -993,11 +1050,15 @@ LCM for a list of integers
 
 =item C<nullable_foreign_key_data_type>
 
+=item C<nullable_numerical_id_data_type>
+
 =item C<nullable_varchar_data_type>
 
 =item C<numerical_id_data_type>
 
 =item C<operation_links>
+
+=item C<page_link_set>
 
 =item C<register_action_paths>
 

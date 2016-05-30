@@ -7,6 +7,7 @@ use parent   'App::Notitia::Schema::Base';
 use App::Notitia::Constants qw( VARCHAR_MAX_SIZE TRUE );
 use App::Notitia::Util      qw( foreign_key_data_type
                                 nullable_foreign_key_data_type
+                                nullable_numerical_id_data_type
                                 serial_data_type varchar_data_type );
 use Class::Usul::Functions  qw( create_token throw );
 
@@ -17,18 +18,19 @@ my $left_join = { join_type => 'left' };
 $class->table( 'event' );
 
 $class->add_columns
-   ( id            => serial_data_type,
-     event_type_id => foreign_key_data_type,
-     owner_id      => foreign_key_data_type,
-     start_rota_id => foreign_key_data_type,
-     end_rota_id   => nullable_foreign_key_data_type,
-     vehicle_id    => nullable_foreign_key_data_type,
-     start_time    => varchar_data_type(   5 ),
-     end_time      => varchar_data_type(   5 ),
-     name          => varchar_data_type(  57 ),
-     uri           => varchar_data_type(  64 ),
-     description   => varchar_data_type( 128 ),
-     notes         => varchar_data_type, );
+   ( id               => serial_data_type,
+     event_type_id    => foreign_key_data_type,
+     owner_id         => foreign_key_data_type,
+     start_rota_id    => foreign_key_data_type,
+     end_rota_id      => nullable_foreign_key_data_type,
+     vehicle_id       => nullable_foreign_key_data_type,
+     max_participents => nullable_numerical_id_data_type,
+     start_time       => varchar_data_type(   5 ),
+     end_time         => varchar_data_type(   5 ),
+     name             => varchar_data_type(  57 ),
+     uri              => varchar_data_type(  64 ),
+     description      => varchar_data_type( 128 ),
+     notes            => varchar_data_type, );
 
 $class->set_primary_key( 'id' );
 
