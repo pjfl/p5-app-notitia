@@ -34,6 +34,7 @@
 [%    IF f.label -%]</label>[% END -%]
 [% END -%]
 [% MACRO Dispatch( f ) BLOCK -%]
+[%    IF f.type == 'button'; Button( f ); END -%]
 [%    IF f.type == 'container'; Container( f ); END -%]
 [%    IF f.type == 'date'; DateField( f ); END -%]
 [%    IF f.type == 'form'; Form( f ); END -%]
@@ -55,6 +56,7 @@
 [%       END -%]
 [%    END -%]
 [%    IF f.type == 'select'; Select( f ); END -%]
+[%    IF f.type == 'text'; Text( f ); END -%]
 [%    IF f.type == 'textfield'; TextField( f ); END -%]
 [%    IF f.type == 'table'; Table( f ); END -%]
 [% END -%]
@@ -190,6 +192,11 @@
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>
    </label>
+[% END -%]
+[% MACRO Text( f ) BLOCK -%]
+[%    IF f.label -%]<label class="label">
+      <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
+      <span class="field-text [% f.class %]">[% f.value %]</span>
 [% END -%]
 [% MACRO TextField( f ) BLOCK -%]
 [%    IF f.label -%]<label class="label">

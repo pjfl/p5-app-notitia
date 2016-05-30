@@ -364,7 +364,8 @@ sub button ($$;$$$) {
    my $conk   = $action && $name ? 'container_class' : 'class';
    my $label  = $opts->{label} // "${action}_${name}";
    my $value  = $opts->{value} // "${action}_${name}";
-   my $button = { $conk => $class, label => $label, value => $value };
+   my $button = { $conk => $class,   label => $label,
+                  type  => 'button', value => $value };
 
    $action and $name
       and $button->{tip} = make_tip( $req, "${action}_${name}_tip", $args );

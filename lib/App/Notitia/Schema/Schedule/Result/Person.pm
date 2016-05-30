@@ -234,9 +234,14 @@ sub add_participent_for {
    my $event_rs = $self->result_source->schema->resultset( 'Event' );
    my $event    = $event_rs->find_event_by( $event_uri );
 
-   $self->is_participent_of( $event_uri, $event )
+   $self->is_participating_in( $event_uri, $event )
       and throw 'Person [_1] already participating in [_2]',
                 [ $self->label, $event ];
+
+   if ($event->max_participents) {
+      $event->max_participents > $event->count_of_participents
+         or throw 'Maximum number of paticipants reached';
+   }
 
    return $self->create_related( 'participents', { event_id => $event->id } );
 }
@@ -275,7 +280,7 @@ sub assert_member_of {
    return $role;
 }
 
-sub assert_participent_for {
+sub assert_participating_in {
    my ($self, $event_uri) = @_;
 
    my $event_rs    = $self->result_source->schema->resultset( 'Event' );
@@ -330,7 +335,7 @@ sub delete_member_from {
 }
 
 sub delete_participent_for {
-   return $_[ 0 ]->assert_participent_for( $_[ 1 ] )->delete;
+   return $_[ 0 ]->assert_participating_in( $_[ 1 ] )->delete;
 }
 
 sub insert {
@@ -373,7 +378,7 @@ sub is_member_of {
    return $type && $self->roles->find( $self->id, $type->id ) ? TRUE : FALSE;
 }
 
-sub is_participent_of {
+sub is_participating_in {
    my ($self, $event_uri, $event) = @_;
 
    $event //= $self->result_source->schema->resultset( 'Event' )

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #45. Limited event particpation
           - Made rota week navigation rolling
           - Added paged queries. Schema changed
           - Added times to week rota info

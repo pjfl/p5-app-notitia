@@ -15,8 +15,9 @@
 [% TextArea( page.fields.description ) -%]
 [% TimeField( page.fields.start_time ) -%]
 [% TimeField( page.fields.end_time ) -%]
+[% IF page.fields.max_participents; TextField( page.fields.max_participents ); END -%]
 [% IF page.fields.notes; TextArea( page.fields.notes ); END -%]
-[% IF page.fields.participate; Button( page.fields.participate ); END %]
+[% IF page.fields.update; Dispatch( page.fields.update ); END %]
 [% IF page.fields.save; Button( page.fields.save ); END -%]
 [% IF page.fields.delete; Button( page.fields.delete ); END -%]
       </form>

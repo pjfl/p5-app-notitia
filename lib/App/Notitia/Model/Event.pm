@@ -93,12 +93,19 @@ my $_event_operation_links = sub {
 };
 
 my $_participate_button = sub {
-   my ($req, $name, $opts) = @_; $opts //= {};
+   my ($req, $uri, $event, $person) = @_;
 
    my $class  = 'save-button right-last';
-   my $action = $opts->{cancel} ? 'unparticipate' : 'participate';
+   my $action = $person->is_participating_in( $uri, $event )
+              ? 'unparticipate' : 'participate';
 
-   return button $req, { class => $class }, $action, 'event', [ $name ];
+   if ($action eq 'participate' and $event->max_participents) {
+      $event->max_participents > $event->count_of_participents or return
+         { class => 'right-last', type => 'text',
+           value => loc( $req ,'Maximum number of paticipants reached' ) };
+   }
+
+   return button $req, { class => $class }, $action, 'event', [ $uri ];
 };
 
 my $_participent_headers = sub {
@@ -139,15 +146,18 @@ my $_bind_event_fields = sub {
    my $disabled = $opts->{disabled} // FALSE;
    my $editing  = $disabled ? $disabled : $event->uri ? TRUE : FALSE;
    my $map      = {
-      description => { class    => 'standard-field autosize server',
-                       disabled => $disabled },
-      end_time    => { class    => 'standard-field', disabled => $disabled },
-      name        => { class    => 'standard-field server',
-                       disabled => $editing,
-                       label    => 'event_name' },
-      notes       => { class    => 'standard-field autosize',
-                       disabled => $disabled },
-      start_time  => { class    => 'standard-field', disabled => $disabled },
+      description      => { class    => 'standard-field autosize server',
+                            disabled => $disabled },
+      end_time         => { class    => 'standard-field',
+                            disabled => $disabled },
+      name             => { class    => 'standard-field server',
+                            disabled => $editing, label => 'event_name' },
+      notes            => { class    => 'standard-field autosize',
+                            disabled => $disabled },
+      max_participents => { class    => 'standard-field',
+                            disabled => $disabled },
+      start_time       => { class    => 'standard-field',
+                            disabled => $disabled },
    };
 
    return bind_fields $self->schema, $event, $map, 'Event';
@@ -229,7 +239,8 @@ my $_update_event_from_request = sub {
 
    my $opts = { optional => TRUE };
 
-   for my $attr (qw( description end_time name notes start_time )) {
+   for my $attr (qw( description end_time max_participents
+                     name notes start_time )) {
       if (is_member $attr, [ 'description', 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 
@@ -444,13 +455,12 @@ sub event_summary : Role(any) {
    my $fields  =  $page->{fields};
    my $actionp =  $self->moniker.'/event';
 
-   $fields->{date } = $_bind_event_date->( $event->start_date, TRUE );
-   $fields->{href } = uri_for_action $req, $actionp, [ $uri ];
-   $fields->{links} = $_event_operation_links->( $req, $actionp, $uri );
-   $fields->{owner} = $self->$_owner_list( $event, TRUE );
-   $opts = $person->is_participent_of( $uri ) ? { cancel => TRUE } : {};
-   $fields->{participate} = $_participate_button->( $req, $uri, $opts );
-   delete $fields->{notes};
+   $fields->{date  } = $_bind_event_date->( $event->start_date, TRUE );
+   $fields->{href  } = uri_for_action $req, $actionp, [ $uri ];
+   $fields->{links } = $_event_operation_links->( $req, $actionp, $uri );
+   $fields->{owner } = $self->$_owner_list( $event, TRUE );
+   $fields->{update} = $_participate_button->( $req, $uri, $event, $person );
+   delete $fields->{max_participents}; delete $fields->{notes};
 
    return $self->get_stash( $req, $page );
 }

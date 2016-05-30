@@ -92,6 +92,13 @@ my $_assert_event_allowed = sub {
 };
 
 # Public methods
+sub count_of_participents {
+   my $self = shift;
+   my $rs   = $self->result_source->schema->resultset( 'Participent' );
+
+   return $rs->count( { event_id => $self->id } );
+}
+
 sub duration {
    my $self  = shift;
    my ($hours, $mins) = split m{ : }mx, $self->start_time, 2;

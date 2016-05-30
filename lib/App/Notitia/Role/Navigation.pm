@@ -40,7 +40,7 @@ my $nav_linkto = sub {
 my $_week_link = sub {
    my ($req, $actionp, $name, $date) = @_;
 
-   my $tip    = 'Navigate to [_1]';
+   my $tip    = 'Navigate to week commencing [_1]';
    my $label  = loc( $req, 'Week' ).SPC.$date->week_number;
    my $opts   = { label => $label,   name => 'wk'.$date->week_number,
                   tip   => $tip, tip_args => [ $date->dmy( '/' ) ] };

@@ -441,6 +441,9 @@ msgstr "Send Message"
 msgid "main_index_title"
 msgstr "Welcome to [_1]"
 
+msgid "max_participents"
+msgstr "Max. Participants"
+
 msgid "mobile_phone"
 msgstr "Mobile Phone"
 
