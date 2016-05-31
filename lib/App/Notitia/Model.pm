@@ -2,7 +2,7 @@ package App::Notitia::Model;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( uri_for_action );
+use App::Notitia::Util      qw( loc to_msg uri_for_action );
 use Class::Usul::Functions  qw( exception throw );
 use Class::Usul::Types      qw( Plinth );
 use HTTP::Status            qw( HTTP_NOT_FOUND HTTP_OK );
@@ -70,14 +70,14 @@ sub exception_handler {
       $redirect and return $redirect;
 
    my $name = $req->session->first_name || $req->username || 'unknown';
-   my $opts = { params   => [ $name ], no_quote_bind_values => TRUE };
-   my $page = { debug    => $self->application->debug,
-                error    => $e,
-                leader   => $leader,
-                message  => $message,
-                summary  => $summary,
-                template => [ 'contents', 'exception' ],
-                title    => $req->loc( 'Exception Handler', $opts ), };
+   my $page = {
+      debug    => $self->application->debug,
+      error    => $e,
+      leader   => $leader,
+      message  => $message,
+      summary  => $summary,
+      template => [ 'contents', 'exception' ],
+      title    => loc( $req, 'Exception Handler', to_msg $name ), };
 
    $e->class eq ValidationErrors->() and $page->{validation_error}
       = [ map { my $v = ($_parse_error->( $_ ))[ 1 ] } @{ $e->args } ];

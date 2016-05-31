@@ -424,7 +424,7 @@ msgid "login"
 msgstr "Login"
 
 msgid "login_title"
-msgstr "Please login"
+msgstr "Please Login"
 
 msgid "m_advanced"
 msgstr "Advanced Motorcycle"

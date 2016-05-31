@@ -4,7 +4,7 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SLOT_TYPE_ENUM TRUE TYPE_CLASS_ENUM );
 use App::Notitia::Util      qw( bind bind_fields button create_link loc
                                 management_link operation_links
-                                register_action_paths uri_for_action );
+                                register_action_paths to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Moo;
@@ -284,9 +284,8 @@ sub type : Role(administrator) {
       fields      => $_bind_type_fields->( $self->schema, $type, $opts ),
       first_field => 'name',
       template    => [ 'contents', 'type' ],
-      title       => loc( $req, 'type_management_heading',
-                          { params => [ ucfirst $type_class ],
-                            no_quote_bind_values => TRUE, } ), };
+      title       =>
+         loc( $req, 'type_management_heading', to_msg ucfirst $type_class ), };
    my $fields     =  $page->{fields};
    my $actionp    =  $self->moniker.'/type';
    my $args       =  [ $type_class ]; $name and push @{ $args }, $name;

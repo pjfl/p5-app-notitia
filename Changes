@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Rationalised no_quote_bind_values in loc calls
           - Implements #45. Limited event particpation
           - Made rota week navigation rolling
           - Added paged queries. Schema changed

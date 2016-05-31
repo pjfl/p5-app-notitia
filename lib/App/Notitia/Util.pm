@@ -39,7 +39,7 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      set_element_focus set_on_create_datetime_data_type
                      set_rota_date slot_claimed slot_identifier
                      slot_limit_index show_node stash_functions table_link
-                     time2int to_dt uri_for_action varchar_data_type );
+                     time2int to_dt to_msg uri_for_action varchar_data_type );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -129,15 +129,13 @@ my $_page_link = sub {
 
    $params = { %{ $params } }; $params->{page} = $page;
 
-   my $opts = { params => [ $page ], no_quote_bind_values => TRUE };
-
    return { class => 'table-link',
             hint  => loc( $req, 'Hint' ),
             href  => uri_for_action( $req, $actionp, $args, $params ),
             name  => $name,
             tip   => loc( $req, "${name}_tip" ),
             type  => 'link',
-            value => loc( $req, "${name}_link", $opts ), };
+            value => loc( $req, "${name}_link", to_msg( $page ) ), };
 };
 
 my $sorted_keys = sub {
@@ -914,6 +912,10 @@ sub to_dt ($;$) {
    return $dt;
 }
 
+sub to_msg (@) {
+   return { no_quote_bind_values => TRUE, params => [ @_ ] };
+}
+
 sub uri_for_action ($$;@) {
    my ($req, $action, @args) = @_;
 
@@ -1093,6 +1095,8 @@ prior to calling L<uri_for|Web::ComposableRequest::Base/uri_for>
 =item C<time2int>
 
 =item C<to_dt>
+
+=item C<to_msg>
 
 =item C<uri_for_action>
 

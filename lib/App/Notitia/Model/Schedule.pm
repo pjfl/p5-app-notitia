@@ -8,7 +8,7 @@ use App::Notitia::Util      qw( assign_link bind button dialog_anchor
                                 js_window_config lcm_for loc
                                 register_action_paths set_element_focus
                                 slot_claimed slot_identifier
-                                slot_limit_index table_link to_dt
+                                slot_limit_index table_link to_dt to_msg
                                 uri_for_action );
 use Class::Usul::Functions  qw( is_member sum throw );
 use Class::Usul::Time       qw( time2str );
@@ -348,8 +348,8 @@ my $_week_label = sub {
    my ($req, $date, $cno) = @_;
 
    my $local_dt = $_local_dt->( $date )->add( days => $cno );
-   my $opts = { params => [ $local_dt->day ], no_quote_bind_values => TRUE };
-   my $v    = loc $req, 'week_rota_heading_'.(lc $local_dt->day_abbr), $opts;
+   my $key      = 'week_rota_heading_'.(lc $local_dt->day_abbr);
+   my $v        = loc $req, $key, to_msg $local_dt->day;
 
    return { class => 'day-of-week', value => $v };
 };

@@ -6,7 +6,7 @@ use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 create_link delete_button display_duration loc
                                 management_link operation_links page_link_set
                                 register_action_paths save_button
-                                to_dt uri_for_action );
+                                to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -172,14 +172,11 @@ my $_format_as_markdown = sub {
    my $yaml    = "---\nauthor: ".$event->owner."\n"
                . "created: ${created}\nrole: anon\ntitle: ${name}\n---\n";
    my $desc    = $event->description."\n\n";
-   my $opts    = { params => [ $date->dmy( '/' ),
-                               $event->start_time, $event->end_time ],
-                   no_quote_bind_values => TRUE };
+   my $opts    = to_msg $date->dmy( '/' ), $event->start_time, $event->end_time;
    my $when    = loc( $req, 'event_blog_when', $opts )."\n\n";
    my $actionp = $self->moniker.'/event_summary';
    my $href    = uri_for_action $req, $actionp, [ $event->uri ];
-      $opts    = { params => [ $href ], no_quote_bind_values => TRUE };
-   my $link    = loc( $req, 'event_blog_link', $opts )."\n\n";
+   my $link    = loc( $req, 'event_blog_link', to_msg $href )."\n\n";
 
    return $yaml.$desc.$when.$link;
 };
@@ -539,8 +536,7 @@ sub participents : Role(any) {
          rows    => [], },
       template   => [ 'contents', 'table' ],
       title      => loc( $req, 'participents_management_heading',
-                         { params => [ $event->name ],
-                           no_quote_bind_values => TRUE } ) };
+                         to_msg $event->name ) };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $opts      =  { event => $uri };
    my $fields    =  $page->{fields};

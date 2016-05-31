@@ -4,7 +4,7 @@ use attributes ();
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE SPC TRUE );
-use App::Notitia::Util      qw( loc to_dt uri_for_action );
+use App::Notitia::Util      qw( loc to_dt to_msg uri_for_action );
 use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
 use DateTime                qw( );
@@ -28,9 +28,9 @@ my $nav_linkto = sub {
 
    my $depth = $opts->{depth} // 1;
    my $label = loc $req, $opts->{label} // "${name}_link",
-      { no_quote_bind_values => TRUE, params => $opts->{label_args} // [], };
+                   to_msg @{ $opts->{label_args} // [] };
    my $tip   = loc $req, $opts->{tip} // "${name}_tip",
-      { no_quote_bind_values => TRUE, params => $opts->{tip_args} // [], };
+                   to_msg @{ $opts->{tip_args} // [] };
    my $uri   = uri_for_action $req, $actionp, @args;
 
    return { depth => $depth, label => $label,

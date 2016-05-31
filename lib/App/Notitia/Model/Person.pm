@@ -7,7 +7,7 @@ use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 field_options loc mail_domain make_tip
                                 management_link operation_links page_link_set
                                 register_action_paths save_button table_link
-                                to_dt uri_for_action );
+                                to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
 use Try::Tiny;
@@ -192,8 +192,7 @@ my $_create_person_email = sub {
 
    my $conf    = $self->config;
    my $key     = substr create_token, 0, 32;
-   my $opts    = { params => [ $conf->title ], no_quote_bind_values => TRUE };
-   my $subject = loc $req, 'Account activation for [_1]', $opts;
+   my $subject = loc $req, 'Account activation for [_1]', to_msg $conf->title;
    my $href    = uri_for_action $req, $self->moniker.'/activate', [ $key ];
    my $post    = {
       attributes      => {

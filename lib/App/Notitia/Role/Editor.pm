@@ -290,10 +290,11 @@ sub save_file {
    my $path     =  $node->{path}; $path->println( $content ); $path->close;
    my $rel_path =  $path->abs2rel( $self->config->docs_root );
    my $message  =  [ 'File [_1] updated by [_2]', $rel_path, $req->username ];
+   my $location =  $self->base_uri( $req, [ $node->{url} ] );
 
    $self->invalidate_docs_cache( $path->stat->{mtime} );
 
-   return { redirect => { location => $req->uri, message => $message } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub search_files {
@@ -331,7 +332,8 @@ sub upload_file {
    io( $upload->path )->copy( $dest );
 
    my $rel_path = $dest->abs2rel( $conf->assetdir );
-   my $message  = [ 'File [_1] uploaded by [_2]', $rel_path, $req->username ];
+   my $message  = [ 'File [_1] uploaded by [_2]',
+                    $rel_path, $req->session->user_label ];
    my $location = $self->base_uri( $req );
 
    return { redirect => { location => $location, message => $message } };
