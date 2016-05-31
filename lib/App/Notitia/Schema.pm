@@ -8,11 +8,15 @@ use App::Notitia::Constants qw( AS_PASSWORD EXCEPTION_CLASS FALSE NUL
 use App::Notitia::SMS;
 use App::Notitia::Util      qw( encrypted_attr load_file_data mail_domain );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
-use Class::Usul::Functions  qw( ensure_class_loaded io throw );
+use Class::Usul::Functions  qw( create_token ensure_class_loaded
+                                io squeeze throw trim );
 use Class::Usul::Types      qw( NonEmptySimpleStr );
+use Data::Validation;
 use DateTime                qw( );
+use Scalar::Util            qw( blessed );
+use Text::CSV;
 use Try::Tiny;
-use Unexpected::Functions   qw( PathNotFound Unspecified );
+use Unexpected::Functions   qw( PathNotFound Unspecified ValidationErrors );
 use Moo;
 
 extends q(Class::Usul::Schema);
@@ -58,7 +62,42 @@ around 'deploy_file' => sub {
    return $orig->( $self, @args );
 };
 
+# Private package variables
+my $_fmap = { address => 'address', email_address => 'email',
+              first_name => 'first_name', home_phone => 'telephone',
+              joined => 'date_of_joining', last_name => 'surname',
+              mobile_phone => 'mobile', notes => 'comments',
+              password => 'password', postcode => 'postcode',
+              subscription => 'subscription_notice' };
+
+# Private functions
+my $_make_id_from = sub {
+   my $x = shift; my $y = lc squeeze trim $x; $y =~ s{ [ \-] }{_}gmx; return $y;
+};
+
 # Private methods
+my $_enhance_columns = sub {
+   my ($self, $dv, $cmap, $lno, $columns) = @_;
+
+   my $address    = $columns->[ $cmap->{ 'address' } ];
+   my ($postcode) = $address =~ m{ ([a-zA-Z0-9]+ \s? [a-zA-Z0-9]+) \z }mx;
+
+   try {
+      $dv->check_field( 'postcode', $postcode );
+      $address =~ s{ ([a-zA-Z0-9]+ \s? [a-zA-Z0-9]+) \z }{}mx;
+      $columns->[ $cmap->{ 'address'  } ] = $address;
+      $columns->[ $cmap->{ 'postcode' } ] = $postcode;
+   }
+   catch {
+      $self->warning( 'Bad postcode line [_1]: [_2]',
+         { args => [ $lno, $postcode ], no_quote_bind_values => TRUE } );
+      $columns->[ $cmap->{ 'address' } ] = $address;
+   };
+
+   $columns->[ $cmap->{ 'password' } ] = substr create_token, 0, 12;
+   return;
+};
+
 my $_list_participents = sub {
    my $self      = shift;
    my $uri       = $self->options->{event};
@@ -148,6 +187,41 @@ my $_send_sms = sub {
    return;
 };
 
+my $_create_person = sub {
+   my ($self, $csv, $ncols, $dv, $cmap, $lno, $line) = @_;
+
+   my $status = $csv->parse( $line ); my @columns = $csv->fields(); $lno++;
+
+   $columns[ $cmap->{ 'first_name' } ] or return $lno;
+
+   my $columns = [ splice @columns, 0, $ncols ]; my $person = {};
+
+   $self->$_enhance_columns( $dv, $cmap, $lno, $columns );
+   $self->debug and $self->dumper( $columns );
+
+   for my $col (keys %{ $_fmap }) {
+      $person->{ $col }
+         = squeeze trim $columns->[ $cmap->{ $_fmap->{ $col } } ];
+   }
+
+   $self->debug and $self->dumper( $person );
+
+   try   {
+      $person = $self->schema->resultset( 'Person' )->create( $person );
+      $self->info( 'Created [_1]([_2])',
+                   { args => [ $person->label, $person->shortcode ],
+                     no_quote_bind_values => TRUE }  );
+   }
+   catch {
+      if ($_->class eq ValidationErrors->()) {
+         $self->warning( $_ ) for (@{ $_->args });
+      }
+      else { $self->warning( $_ ) }
+   };
+
+   return $lno;
+};
+
 # Public methods
 sub backup_data : method {
    my $self = shift;
@@ -214,7 +288,35 @@ sub deploy_and_populate : method {
    }
 
    return $rv;
-};
+}
+
+sub import_people : method {
+   my $self   = shift;
+   my $file   = $self->next_argv or throw Unspecified, [ 'file name' ];
+   my $io     = io $file;
+   my $csv    = Text::CSV->new ( { binary => 1 } )
+                or throw Text::CSV->error_diag();
+   my $status = $csv->parse( $io->getline );
+   my $f      = FALSE;
+   my $cno    = 0;
+   my $cmap   = { map { $_make_id_from->( $_->[ 0 ] ) => $_->[ 1 ] }
+                  map { [ $_ ? $_ : "col${cno}", $cno++ ] }
+                  reverse grep { $_ and $f = TRUE; $f }
+                  reverse $csv->fields() };
+   my $ncols  = keys %{ $cmap };
+
+   $cmap->{postcode} = $ncols; $cmap->{password} = $ncols + 1;
+   ensure_class_loaded my $class = (blessed $self->schema).'::Result::Person';
+
+   my $dv  = Data::Validation->new( $class->validation_attributes );
+   my $lno = 1; $self->debug and $self->dumper( $cmap );
+
+   while (defined (my $line = $io->getline)) {
+      $lno = $self->$_create_person( $csv, $ncols, $dv, $cmap, $lno, $line );
+   }
+
+   return OK;
+}
 
 sub send_message : method {
    my $self       = shift;
@@ -330,6 +432,8 @@ Defines the following attributes;
 =head2 C<dump_connect_attr> - Displays database connection information
 
 =head2 C<deploy_and_populate> - Create tables and populates them with initial data
+
+=head2 C<import_people> - Import person objects from a CSV file
 
 =head2 C<send_message> - Send email or SMS to people
 
