@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Added remaining to_msg calls
+          - Renamed remaining list rs methods to search_for
           - Rationalised no_quote_bind_values in loc calls
           - Implements #45. Limited event particpation
           - Made rota week navigation rolling

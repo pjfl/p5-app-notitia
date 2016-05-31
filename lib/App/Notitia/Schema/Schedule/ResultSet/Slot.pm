@@ -29,7 +29,7 @@ sub find_slot_by {
                          subslot  => $subslot } );
 }
 
-sub list_slots_for {
+sub search_for_slots {
    my ($self, $opts) = @_; $opts = { %{ $opts } };
 
    my $attr   = [ 'operator.first_name', 'operator.id', 'operator.last_name',

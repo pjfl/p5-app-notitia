@@ -8,7 +8,7 @@ use App::Notitia::Util      qw( assign_link bind bind_fields button
                                 operation_links page_link_set
                                 register_action_paths save_button
                                 set_element_focus slot_identifier
-                                time2int to_dt uri_for_action );
+                                time2int to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -251,7 +251,7 @@ my $_list_vehicle_types = sub {
    my $type_rs = $schema->resultset( 'Type' );
 
    return [ map { $_vehicle_type_tuple->( $_, $fields ) }
-            $type_rs->list_vehicle_types( $opts )->all ];
+            $type_rs->search_for_vehicle_types( $opts )->all ];
 };
 
 my $_req_quantity = sub {
@@ -328,9 +328,9 @@ my $_toggle_event_assignment = sub {
    $vehicle->$method( $uri, $req->username );
 
    my $actionp  = $self->moniker.'/request_vehicle';
-   my $message  = [ "Vehicle [_1] ${action}ed to [_2] by [_3]",
-                    $vrn, $uri, $req->username ];
    my $location = uri_for_action( $req, $actionp, [ $uri ] );
+   my $message  = [ to_msg "Vehicle [_1] ${action}ed to [_2] by [_3]",
+                    $vrn, $uri, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 };
@@ -359,8 +359,8 @@ my $_toggle_assignment = sub {
 
    my $label     = slot_identifier
       ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
-   my $message   = [ "Vehicle [_1] ${action}ed to [_2] by [_3]",
-                     $vrn, $label, $req->username ];
+   my $message   = [ to_msg "Vehicle [_1] ${action}ed to [_2] by [_3]",
+                     $vrn, $label, $req->session->user_label ];
    my $location  = uri_for_action
       ( $req, 'sched/day_rota', [ $rota_name, $rota_date, $slot_name ] );
 
@@ -539,7 +539,8 @@ sub create_vehicle_action : Role(rota_manager) {
    catch { $self->rethrow_exception( $_, 'create', 'vehicle', $vehicle->vrn ) };
 
    my $vrn      = $vehicle->vrn;
-   my $message  = [ 'Vehicle [_1] created by [_2]', $vrn, $req->username ];
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg 'Vehicle [_1] created by [_2]', $vrn, $who ];
    my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];
 
    return { redirect => { location => $location, message => $message } };
@@ -553,7 +554,8 @@ sub delete_vehicle_action : Role(rota_manager) {
 
    $vehicle->delete;
 
-   my $message  = [ 'Vehicle [_1] deleted by [_2]', $vrn, $req->username ];
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg 'Vehicle [_1] deleted by [_2]', $vrn, $who ];
    my $location = uri_for_action $req, $self->moniker.'/vehicles';
 
    return { redirect => { location => $location, message => $message } };
@@ -604,7 +606,7 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    $fields->{vehicles} = { class   => 'smaller-table',
                            headers => $_vehicle_request_headers->( $req ) };
 
-   for my $vehicle_type ($type_rs->list_vehicle_types->all) {
+   for my $vehicle_type ($type_rs->search_for_vehicle_types->all) {
       my $row = $_vreq_row->( $schema, $req, $page, $event, $vehicle_type );
 
       push @{ $fields->{vehicles}->{rows} }, $row;
@@ -621,7 +623,7 @@ sub request_vehicle_action : Role(event_manager) {
    my $event   = $schema->resultset( 'Event' )->find_event_by( $uri );
    my $type_rs = $schema->resultset( 'Type' );
 
-   for my $vehicle_type ($type_rs->list_types( 'vehicle' )->all) {
+   for my $vehicle_type ($type_rs->search_for_types( 'vehicle' )->all) {
       my $vreq = $_find_or_create_vreq->( $schema, $event, $vehicle_type );
 
       $_update_vehicle_req_from_request->( $req, $vreq, $vehicle_type );
@@ -631,8 +633,8 @@ sub request_vehicle_action : Role(event_manager) {
 
    my $actionp  = $self->moniker.'/request_vehicle';
    my $location = uri_for_action $req, $actionp, [ $uri ];
-   my $message  = [ 'Vehicle request for event [_1] updated by [_2]',
-                    $event, $req->username ];
+   my $message  = [ to_msg 'Vehicle request for event [_1] updated by [_2]',
+                    $event->label, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -652,7 +654,8 @@ sub update_vehicle_action : Role(rota_manager) {
    try   { $vehicle->update }
    catch { $self->rethrow_exception( $_, 'delete', 'vehicle', $vehicle->vrn ) };
 
-   my $message = [ 'Vehicle [_1] updated by [_2]', $vrn, $req->username ];
+   my $who     = $req->session->user_label;
+   my $message = [ to_msg 'Vehicle [_1] updated by [_2]', $vrn, $who];
 
    return { redirect => { location => $req->uri, message => $message } };
 }

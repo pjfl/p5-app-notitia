@@ -49,7 +49,7 @@ sub find_cert_by {
    return $cert;
 };
 
-sub list_certification_for {
+sub search_for_certifications {
    my ($self, $scode) = @_;
 
    return $self->search

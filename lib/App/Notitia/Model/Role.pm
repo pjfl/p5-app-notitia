@@ -2,7 +2,7 @@ package App::Notitia::Model::Role;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( bind button loc register_action_paths
+use App::Notitia::Util      qw( bind button loc register_action_paths to_msg
                                 uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Moo;
@@ -49,7 +49,7 @@ my $_subtract = sub {
 my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
-   return [ $type_rs->list_role_types->all ];
+   return [ $type_rs->search_for_role_types->all ];
 };
 
 # Public methods
@@ -65,8 +65,8 @@ sub add_role_action : Role(administrator) Role(person_manager) {
    $self->config->roles_mtime->touch;
 
    my $location = uri_for_action $req, $self->moniker.'/role', [ $name ];
-   my $message  =
-      [ '[_1] role(s) added by [_2]', $person->label, $req->username ];
+   my $message  = [ to_msg '[_1] role(s) added by [_2]',
+                    $person->label, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -83,8 +83,8 @@ sub remove_role_action : Role(administrator) Role(person_manager) {
    $self->config->roles_mtime->touch;
 
    my $location = uri_for_action $req, $self->moniker.'/role', [ $name ];
-   my $message  =
-      [ '[_1] role(s) removed by [_2]', $person->label, $req->username ];
+   my $message  = [ to_msg '[_1] role(s) removed by [_2]',
+                    $person->label, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }

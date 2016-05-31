@@ -135,7 +135,7 @@ my $_page_link = sub {
             name  => $name,
             tip   => loc( $req, "${name}_tip" ),
             type  => 'link',
-            value => loc( $req, "${name}_link", to_msg( $page ) ), };
+            value => loc( $req, to_msg( "${name}_link", $page ) ), };
 };
 
 my $sorted_keys = sub {
@@ -624,8 +624,8 @@ sub load_file_data {
    return $body;
 }
 
-sub loc ($$;@) {
-   my ($req, $k, @args) = @_;
+sub loc ($@) {
+   my ($req, @args) = @_; my $k = shift @args;
 
    $translations->{ my $locale = $req->locale } //= {};
 
@@ -913,7 +913,7 @@ sub to_dt ($;$) {
 }
 
 sub to_msg (@) {
-   return { no_quote_bind_values => TRUE, params => [ @_ ] };
+   my $k = shift; return $k, { no_quote_bind_values => TRUE, params => [ @_ ] };
 }
 
 sub uri_for_action ($$;@) {

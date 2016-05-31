@@ -2,8 +2,8 @@ package App::Notitia::Role::PageLoading;
 
 use namespace::autoclean;
 
-use App::Notitia::Util     qw( build_navigation clone mtime );
-use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Util     qw( build_navigation clone loc mtime );
+use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::File;
 use Class::Usul::Functions qw( is_arrayref is_member throw );
 use Class::Usul::Types     qw( HashRef );
@@ -64,6 +64,8 @@ around 'load_page' => sub {
          and return $orig->( $self, $req, @args );
 
    my $cancel_edit = $page->{cancel_edit} ? TRUE : FALSE;
+   my $who         = $req->session->user_label
+                  || loc( $req, 'Person' ).SPC.$req->username;
 
    for my $locale ($req->locale, @{ $req->locales }, $self->config->locale) {
       $seen{ $locale } and next; $seen{ $locale } = TRUE;
@@ -71,7 +73,7 @@ around 'load_page' => sub {
       my $node = $self->find_node( $locale, $req->uri_params->() ) or next;
 
       $self->$_is_user_authorised( $req, $node )
-         or throw 'Person [_1] permission denied', [ $req->username ];
+         or throw '[_1] permission denied', [ $who ];
 
       my $page = $self->initialise_page( $req, $node, $locale );
 

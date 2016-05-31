@@ -60,7 +60,7 @@ my $_create_reset_email = sub {
    my $conf    = $self->config;
    my $key     = substr create_token, 0, 32;
    my $subject = loc $req,
-      'Password reset for [_2]@[_1]', to_msg $conf->title, $person->name;
+      to_msg 'Password reset for [_2]@[_1]', $conf->title, $person->name;
    my $href    = uri_for_action $req, $self->moniker.'/reset', [ $key ];
    my $post    = {
       attributes      => {
@@ -138,7 +138,7 @@ sub change_password_action : Role(anon) {
    $person->set_password( $oldpass, $password );
    $_update_session->( $session, $person );
 
-   my $message  = [ '[_1] password changed', to_msg $person->label ];
+   my $message  = [ to_msg '[_1] password changed', $person->label ];
 
    return { redirect => { location => $req->base, message => $message } };
 }
@@ -157,7 +157,7 @@ sub login : Role(anon) {
       first_field => 'username',
       location    => 'home',
       template    => [ 'contents', 'login' ],
-      title       => loc( $req, 'login_title', to_msg $self->config->title ), };
+      title       => loc( $req, to_msg 'login_title', $self->config->title ), };
    my $fields     =  $page->{fields};
 
    $fields->{password} = bind 'password', NUL;
@@ -180,7 +180,7 @@ sub login_action : Role(anon) {
 
    $person->authenticate( $password ); $_update_session->( $session, $person );
 
-   my $message   = [ '[_1] logged in', to_msg $person->label ];
+   my $message   = [ to_msg '[_1] logged in', $person->label ];
    my $wanted    = $session->wanted; $req->session->wanted( NUL );
 
    $wanted and $wanted =~ m{ check_field }mx and $wanted = NUL;
@@ -195,7 +195,7 @@ sub logout_action : Role(any) {
    my ($self, $req) = @_; my $message;
 
    if ($req->authenticated) {
-      $message = [ '[_1] logged out', to_msg $req->session->user_label ];
+      $message = [ to_msg '[_1] logged out', $req->session->user_label ];
       $req->session->authenticated( FALSE );
       $req->session->roles( [] );
    }
@@ -255,7 +255,7 @@ sub request_reset_action : Role(anon) {
    $self->config->no_user_email
       or $self->$_create_reset_email( $req, $person, $password );
 
-   my $message  = [ '[_1] password reset requested', to_msg $person->label ];
+   my $message  = [ to_msg '[_1] password reset requested', $person->label ];
 
    return { redirect => { location => $req->base, message => $message } };
 }
@@ -275,7 +275,7 @@ sub reset_password : Role(anon) {
       $person->password( $password ); $person->password_expired( TRUE );
       $person->update;
       $location = uri_for_action $req, 'user/change_password', [ $scode ];
-      $message  = [ '[_1] password reset', to_msg $person->label ];
+      $message  = [ to_msg '[_1] password reset', $person->label ];
    }
    else {
       $location = $req->base;
@@ -298,7 +298,7 @@ sub update_profile_action : Role(any) {
 
    $person->update; $req->session->rows_per_page( $person->rows_per_page );
 
-   my $message = [ '[_1] profile updated', to_msg $person->label ];
+   my $message = [ to_msg '[_1] profile updated', $person->label ];
 
    return { redirect => { location => $req->base, message => $message } };
 }

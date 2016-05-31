@@ -49,7 +49,7 @@ sub find_vehicle_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'vehicle' );
 }
 
-sub list_all_types {
+sub search_for_all_types {
    my ($self, $opts) = @_; $opts //= {};
 
    $opts->{order_by} //= [ 'type_class', 'name' ];
@@ -58,35 +58,35 @@ sub list_all_types {
       ( {}, { columns => [ 'name', 'type_class' ], %{ $opts } } );
 }
 
-sub list_certification_types {
+sub search_for_certification_types {
    my ($self, $opts) = @_; $opts //= {};
 
    return $self->search( { type_class => 'certification' },
                          { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
-sub list_event_types {
+sub search_for_event_types {
    my ($self, $opts) = @_; $opts //= {};
 
    return $self->search( { type_class => 'event' },
                          { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
-sub list_role_types {
+sub search_for_role_types {
    my ($self, $opts) = @_; $opts //= {};
 
    return $self->search( { type_class => 'role' },
                          { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
-sub list_rota_types {
+sub search_for_rota_types {
    my ($self, $opts) = @_; $opts //= {};
 
    return $self->search( { type_class => 'rota' },
                          { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
-sub list_types {
+sub search_for_types {
    my ($self, $type_class, $opts) = @_; $opts //= {};
 
    $opts->{order_by} //= [ 'type_class', 'name' ];
@@ -96,7 +96,7 @@ sub list_types {
         { columns    => [ 'id', 'name', 'type_class' ], %{ $opts } } );
 }
 
-sub list_vehicle_types {
+sub search_for_vehicle_types {
    my ($self, $opts) = @_; $opts //= {};
 
    return $self->search( { type_class => 'vehicle' },

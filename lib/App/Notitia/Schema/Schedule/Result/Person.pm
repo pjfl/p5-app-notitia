@@ -178,7 +178,7 @@ my $_assert_no_slot_collision = sub {
    my $type_id = $self->$_find_rota_type( $rota_name )->id;
    my $opts    = { rota_type => $type_id, on => $date };
 
-   for my $slot ($rs->list_slots_for( $opts )->all) {
+   for my $slot ($rs->search_for_slots( $opts )->all) {
       $slot->shift eq $shift_type and $self->id == $slot->operator->id
          and throw 'Person already assigned to slot [_1]', [ $slot ];
    }

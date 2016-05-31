@@ -27,10 +27,10 @@ my $nav_linkto = sub {
    my ($req, $opts, $actionp, @args) = @_; my $name = $opts->{name};
 
    my $depth = $opts->{depth} // 1;
-   my $label = loc $req, $opts->{label} // "${name}_link",
-                   to_msg @{ $opts->{label_args} // [] };
-   my $tip   = loc $req, $opts->{tip} // "${name}_tip",
-                   to_msg @{ $opts->{tip_args} // [] };
+   my $label = loc $req, to_msg $opts->{label} // "${name}_link",
+                   @{ $opts->{label_args} // [] };
+   my $tip   = loc $req, to_msg $opts->{tip} // "${name}_tip",
+                   @{ $opts->{tip_args} // [] };
    my $uri   = uri_for_action $req, $actionp, @args;
 
    return { depth => $depth, label => $label,

@@ -150,7 +150,7 @@ my $_types_links = sub {
 my $_list_all_certs = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
-   return [ $type_rs->list_certification_types->all ];
+   return [ $type_rs->search_for_certification_types->all ];
 };
 
 # Public methods
@@ -167,8 +167,8 @@ sub add_certification_action : Role(administrator) {
       $cert_type->add_cert_type_to( $slot_type );
    }
 
-   my $message  = [ '[_1] slot role cert(s). added by [_2]',
-                    $slot_type, $req->username ];
+   my $message  = [ to_msg '[_1] slot role cert(s). added by [_2]',
+                    $slot_type, $req->session->user_label ];
    my $location = uri_for_action $req, $self->moniker.'/slot_roles';
 
    return { redirect => { location => $location, message => $message } };
@@ -183,7 +183,8 @@ sub add_type_action : Role(administrator) {
    my $name     =  $req->body_params->( 'name' );
    my $person   =  $self->schema->resultset( 'Type' )->create( {
       name      => $name, type_class => $type_class } );
-   my $message  =  [ 'Type [_1] class [_2] created', $name, $type_class ];
+   my $message  =  [ to_msg 'Type [_1] class [_2] created by [_3]',
+                     $name, $type_class, $req->session->user_label ];
    my $location =  uri_for_action $req, $self->moniker.'/types';
 
    return { redirect => { location => $location, message => $message } };
@@ -202,8 +203,8 @@ sub remove_certification_action : Role(administrator) {
       $cert_type->delete_cert_type_from( $slot_type );
    }
 
-   my $message  = [ '[_1] slot role cert(s). deleted by [_2]',
-                    $slot_type, $req->username ];
+   my $message  = [ to_msg '[_1] slot role cert(s). deleted by [_2]',
+                    $slot_type, $req->session->user_label ];
    my $location = uri_for_action $req, $self->moniker.'/slot_roles';
 
    return { redirect => { location => $location, message => $message } };
@@ -218,7 +219,8 @@ sub remove_type_action : Role(administrator) {
    my $name     = $req->uri_params->( 1 );
    my $type_rs  = $self->schema->resultset( 'Type' );
    my $type     = $type_rs->find_type_by( $name, $type_class ); $type->delete;
-   my $message  = [ 'Type [_1] class [_2] deleted', $name, $type_class ];
+   my $message  = [ to_msg 'Type [_1] class [_2] deleted by [_3]',
+                    $name, $type_class, $req->session->user_label ];
    my $location =  uri_for_action $req, $self->moniker.'/types';
 
    return { redirect => { location => $location, message => $message } };
@@ -285,7 +287,7 @@ sub type : Role(administrator) {
       first_field => 'name',
       template    => [ 'contents', 'type' ],
       title       =>
-         loc( $req, 'type_management_heading', to_msg ucfirst $type_class ), };
+         loc( $req, to_msg 'type_management_heading', ucfirst $type_class ), };
    my $fields     =  $page->{fields};
    my $actionp    =  $self->moniker.'/type';
    my $args       =  [ $type_class ]; $name and push @{ $args }, $name;
@@ -312,8 +314,8 @@ sub types : Role(administrator) {
       title       => loc( $req, $type_class ? "${type_class}_list_link"
                                             : 'types_management_heading' ), };
    my $type_rs    =  $self->schema->resultset( 'Type' );
-   my $types      =  $type_class ? $type_rs->list_types( $type_class )
-                                 : $type_rs->list_all_types;
+   my $types      =  $type_class ? $type_rs->search_for_types( $type_class )
+                                 : $type_rs->search_for_all_types;
    my $rows       =  $page->{fields}->{rows};
 
    for my $type ($types->all) {

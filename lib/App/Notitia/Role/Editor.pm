@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Util     qw( bind dialog_anchor loc make_id_from
                                make_name_from mtime set_element_focus
-                               stash_functions uri_for_action );
+                               stash_functions to_msg uri_for_action );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions qw( io is_member throw trim untaint_path );
 use Class::Usul::IPC;
@@ -206,7 +206,8 @@ sub create_file {
    $self->invalidate_docs_cache( $path->stat->{mtime} );
 
    my $rel_path = $path->abs2rel( $conf->docs_root );
-   my $message  = [ 'File [_1] created by [_2]', $rel_path, $req->username ];
+   my $message  = [ to_msg 'File [_1] created by [_2]',
+                    $rel_path, $req->session->user_label ];
    my $location = $self->base_uri( $req, [ $new_node->{url} ] );
 
    return { redirect => { location => $location, message => $message } };
@@ -224,7 +225,8 @@ sub delete_file {
 
    my $location = $self->base_uri( $req );
    my $rel_path = $path->abs2rel( $self->config->docs_root );
-   my $message  = [ 'File [_1] deleted by [_2]', $rel_path, $req->username ];
+   my $message  = [ to_msg 'File [_1] deleted by [_2]',
+                    $rel_path, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -274,7 +276,8 @@ sub rename_file {
    $self->invalidate_docs_cache;
 
    my $rel_path = $node->{path}->abs2rel( $conf->docs_root );
-   my $message  = [ 'File [_1] renamed by [_2]', $rel_path, $req->username ];
+   my $message  = [ to_msg 'File [_1] renamed by [_2]',
+                    $rel_path, $req->session->user_label ];
    my $location = $self->base_uri( $req, [ $new_node->{url} ] );
 
    return { redirect => { location => $location, message => $message } };
@@ -289,7 +292,8 @@ sub save_file {
       $content  =~ s{ \r\n }{\n}gmx; $content =~ s{ \s+ \z }{}mx;
    my $path     =  $node->{path}; $path->println( $content ); $path->close;
    my $rel_path =  $path->abs2rel( $self->config->docs_root );
-   my $message  =  [ 'File [_1] updated by [_2]', $rel_path, $req->username ];
+   my $message  =  [ to_msg 'File [_1] updated by [_2]',
+                     $rel_path, $req->session->user_label ];
    my $location =  $self->base_uri( $req, [ $node->{url} ] );
 
    $self->invalidate_docs_cache( $path->stat->{mtime} );
@@ -332,7 +336,7 @@ sub upload_file {
    io( $upload->path )->copy( $dest );
 
    my $rel_path = $dest->abs2rel( $conf->assetdir );
-   my $message  = [ 'File [_1] uploaded by [_2]',
+   my $message  = [ to_msg 'File [_1] uploaded by [_2]',
                     $rel_path, $req->session->user_label ];
    my $location = $self->base_uri( $req );
 

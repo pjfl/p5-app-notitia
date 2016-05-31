@@ -5,7 +5,7 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( bind bind_fields check_field_js
                                 delete_button loc management_link
                                 operation_links register_action_paths
-                                save_button to_dt uri_for_action );
+                                save_button to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -100,7 +100,7 @@ my $_cert_links = sub {
 my $_list_all_certs = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
-   return [ [ NUL, NUL ], $type_rs->list_certification_types->all ];
+   return [ [ NUL, NUL ], $type_rs->search_for_certification_types->all ];
 };
 
 my $_maybe_find_cert = sub {
@@ -186,7 +186,7 @@ sub certifications : Role(person_manager) {
 
    $page->{fields}->{links} = $_add_cert_links->( $req, $actionp, $scode );
 
-   for my $cert ($cert_rs->list_certification_for( $scode )->all) {
+   for my $cert ($cert_rs->search_for_certifications( $scode )->all) {
       push @{ $rows },
          [ { value => $cert->label( $req ) },
            $self->$_cert_links( $req, $scode, $cert->type ) ];
@@ -213,8 +213,9 @@ sub create_certification_action : Role(person_manager) {
 
    my $action   = $self->moniker.'/certifications';
    my $location = uri_for_action( $req, $action, [ $name ] );
+   my $who      = $req->session->user_label;
    my $message  =
-      [ 'Cert. [_1] for [_2] added by [_3]', $type, $name, $req->username ];
+      [ to_msg 'Cert. [_1] for [_2] added by [_3]', $type, $name, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -227,8 +228,9 @@ sub delete_certification_action : Role(person_manager) {
    my $cert     = $self->find_cert_by( $name, $type ); $cert->delete;
    my $action   = $self->moniker.'/certifications';
    my $location = uri_for_action( $req, $action, [ $name ] );
-   my $message  = [ 'Cert. [_1] for [_2] deleted by [_3]',
-                    $type, $name, $req->username ];
+   my $who      = $req->session->user_label;
+   my $message  =
+      [ to_msg 'Cert. [_1] for [_2] deleted by [_3]', $type, $name, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -248,8 +250,9 @@ sub update_certification_action : Role(person_manager) {
 
    $self->$_update_cert_from_request( $req, $cert ); $cert->update;
 
-   my $message = [ 'Cert. [_1] for [_2] updated by [_3]',
-                   $type, $name, $req->username ];
+   my $who     = $req->session->user_label;
+   my $message =
+      [ to_msg 'Cert. [_1] for [_2] updated by [_3]', $type, $name, $who ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }

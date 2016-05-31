@@ -192,7 +192,7 @@ my $_create_person_email = sub {
 
    my $conf    = $self->config;
    my $key     = substr create_token, 0, 32;
-   my $subject = loc $req, 'Account activation for [_1]', to_msg $conf->title;
+   my $subject = loc $req, to_msg 'Account activation for [_1]', $conf->title;
    my $href    = uri_for_action $req, $self->moniker.'/activate', [ $key ];
    my $post    = {
       attributes      => {
@@ -224,7 +224,7 @@ my $_create_person_email = sub {
 my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
-   return [ [ NUL, NUL ], $type_rs->list_role_types->all ];
+   return [ [ NUL, NUL ], $type_rs->search_for_role_types->all ];
 };
 
 my $_people_ops_links = sub {
@@ -334,7 +334,7 @@ sub activate : Role(anon) {
       my $person = $self->find_by_shortcode( $name ); $person->activate;
 
       $location = uri_for_action $req, 'user/change_password', [ $name ];
-      $message  = [ 'Person [_1] account activated', $person->label ];
+      $message  = [ to_msg '[_1] account activated', $person->label ];
    }
    else {
       $location = $req->base;
@@ -370,8 +370,9 @@ sub create_person_action : Role(person_manager) {
    $self->config->no_user_email
       or $self->$_create_person_email( $req, $person, $password );
 
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg '[_1] created by [_2]', $person->label, $who ];
    my $location = uri_for_action $req, $self->moniker.'/people';
-   my $message  = [ '[_1] created by [_2]', $person->label, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -382,8 +383,9 @@ sub delete_person_action : Role(person_manager) {
    my $name     = $req->uri_params->( 0 );
    my $person   = $self->find_by_shortcode( $name );
    my $label    = $person->label; $person->delete;
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg '[_1] deleted by [_2]', $label, $who ];
    my $location = uri_for_action $req, $self->moniker.'/people';
-   my $message  = [ 'Person [_1] deleted by [_2]', $label, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -413,7 +415,7 @@ sub mugshot : Role(person_manager) {
    my $page   = $stash->{page};
 
    $page->{fields}->{href} = uri_for_action $req, 'docs/upload', [], $params;
-   $stash->{page}->{literal_js} = $_copy_element_value->();
+   $page->{literal_js} = $_copy_element_value->();
 
    return $stash;
 }
@@ -525,8 +527,9 @@ sub update_person_action : Role(person_manager) {
    try   { $person->update }
    catch { $self->rethrow_exception( $_, 'update', 'person', $label ) };
 
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg '[_1] updated by [_2]', $label, $who ];
    my $location = uri_for_action $req, $self->moniker.'/people';
-   my $message  = [ '[_1] updated by [_2]', $label, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }

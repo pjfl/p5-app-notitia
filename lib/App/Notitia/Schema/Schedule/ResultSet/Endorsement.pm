@@ -40,7 +40,7 @@ sub find_endorsement_by {
    return $endorsement;
 };
 
-sub list_endorsements_for {
+sub search_for_endorsements {
    my ($self, $scode) = @_;
 
    return $self->search

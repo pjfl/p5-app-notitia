@@ -172,11 +172,11 @@ my $_format_as_markdown = sub {
    my $yaml    = "---\nauthor: ".$event->owner."\n"
                . "created: ${created}\nrole: anon\ntitle: ${name}\n---\n";
    my $desc    = $event->description."\n\n";
-   my $opts    = to_msg $date->dmy( '/' ), $event->start_time, $event->end_time;
-   my $when    = loc( $req, 'event_blog_when', $opts )."\n\n";
+   my @opts    = ($date->dmy( '/' ), $event->start_time, $event->end_time);
+   my $when    = loc( $req, to_msg 'event_blog_when', @opts )."\n\n";
    my $actionp = $self->moniker.'/event_summary';
    my $href    = uri_for_action $req, $actionp, [ $event->uri ];
-   my $link    = loc( $req, 'event_blog_link', to_msg $href )."\n\n";
+   my $link    = loc( $req, to_msg 'event_blog_link', $href )."\n\n";
 
    return $yaml.$desc.$when.$link;
 };
@@ -340,8 +340,8 @@ sub create_event_action : Role(event_manager) {
 
    my $actionp  = $self->moniker.'/event';
    my $location = uri_for_action $req, $actionp, [ $event->uri ];
-   my $message  =
-      [ 'Event [_1] created by [_2]', $event->name, $req->username ];
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg 'Event [_1] created by [_2]', $event->label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -354,8 +354,9 @@ sub create_vehicle_event_action : Role(rota_manager) {
    my $event    = $self->$_create_event
                 ( $req, $date, 'vehicle', $req->username, $vrn );
    my $location = $_vehicle_events_uri->( $req, $vrn );
+   my $who      = $req->session->user_label;
    my $message  =
-      [ 'Vehicle event [_1] created by [_2]', $event->name, $req->username ];
+      [ to_msg 'Vehicle event [_1] created by [_2]', $event->label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -365,11 +366,13 @@ sub delete_event_action : Role(event_manager) {
 
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->$_delete_event( $uri );
+   my $label = $event->label;
 
    $self->$_delete_event_post( $req, $event->post_filename );
 
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg 'Event [_1] deleted by [_2]', $label, $who ];
    my $location = uri_for_action $req, $self->moniker.'/events';
-   my $message  = [ 'Event [_1] deleted by [_2]', $uri, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -380,9 +383,10 @@ sub delete_vehicle_event_action : Role(rota_manager) {
    my $vrn      = $req->uri_params->( 0 );
    my $uri      = $req->uri_params->( 1 );
    my $event    = $self->$_delete_event( $uri );
+   my $label    = $event->label;
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg 'Vehicle event [_1] deleted by [_2]', $label, $who ];
    my $location = $_vehicle_events_uri->( $req, $vrn );
-   my $message  =
-      [ 'Vehicle event [_1] deleted by [_2]', $event->name, $req->username ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -520,7 +524,7 @@ sub participate_event_action : Role(any) {
 
    my $actionp   = $self->moniker.'/event_summary';
    my $location  = uri_for_action $req, $actionp, [ $uri ];
-   my $message   = [ 'Event [_1] attendee [_2]', $uri, $person->label ];
+   my $message   = [ to_msg 'Event [_1] attendee [_2]', $uri, $person->label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -535,8 +539,8 @@ sub participents : Role(any) {
          headers => $_participent_headers->( $req ),
          rows    => [], },
       template   => [ 'contents', 'table' ],
-      title      => loc( $req, 'participents_management_heading',
-                         to_msg $event->name ) };
+      title      =>
+         loc( $req, to_msg 'participents_management_heading', $event->name ) };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $opts      =  { event => $uri };
    my $fields    =  $page->{fields};
@@ -565,7 +569,7 @@ sub unparticipate_event_action : Role(any) {
 
    my $actionp   = $self->moniker.'/event_summary';
    my $location  = uri_for_action $req, $actionp, [ $uri ];
-   my $message   = [ 'Event [_1] attendence cancelled for [_2]',
+   my $message   = [ to_msg 'Event [_1] attendence cancelled for [_2]',
                      $uri, $person->label ];
 
    return { redirect => { location => $location, message => $message } };
@@ -581,7 +585,8 @@ sub update_event_action : Role(event_manager) {
 
    my $actionp  = $self->moniker.'/event';
    my $location = uri_for_action $req, $actionp, [ $uri ];
-   my $message  = [ 'Event [_1] updated by [_2]', $uri, $req->username ];
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg 'Event [_1] updated by [_2]', $event->label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -593,8 +598,9 @@ sub update_vehicle_event_action : Role(rota_manager) {
    my $uri      = $req->uri_params->( 1 );
    my $event    = $self->$_update_event( $req, $uri );
    my $location = $_vehicle_events_uri->( $req, $vrn );
+   my $who      = $req->session->user_label;
    my $message  =
-      [ 'Vehicle event [_1] updated by [_2]', $event->name, $req->username ];
+      [ to_msg 'Vehicle event [_1] updated by [_2]', $event->label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 };

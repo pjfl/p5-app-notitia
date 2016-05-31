@@ -77,7 +77,7 @@ sub exception_handler {
       message  => $message,
       summary  => $summary,
       template => [ 'contents', 'exception' ],
-      title    => loc( $req, 'Exception Handler', to_msg $name ), };
+      title    => loc( $req, to_msg 'Exception Handler', $name ), };
 
    $e->class eq ValidationErrors->() and $page->{validation_error}
       = [ map { my $v = ($_parse_error->( $_ ))[ 1 ] } @{ $e->args } ];

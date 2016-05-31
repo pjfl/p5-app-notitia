@@ -195,6 +195,9 @@ msgstr "Contacts List"
 msgid "contacts_list_link"
 msgstr "Contacts List"
 
+msgid "contacts_list_tip"
+msgstr "List contact information for current members"
+
 msgid "controller"
 msgstr "Controller"
 
@@ -210,12 +213,6 @@ msgstr "Create"
 msgid "create_tip"
 msgstr "Create a new [_1] record"
 
-msgid "current_page_link"
-msgstr "[_1]"
-
-msgid "current_people_list_link"
-msgstr "Active People"
-
 msgid "current_events_heading"
 msgstr "Current Events"
 
@@ -224,6 +221,15 @@ msgstr "Current"
 
 msgid "current_events_tip"
 msgstr "List current and future events"
+
+msgid "current_page_link"
+msgstr "[_1]"
+
+msgid "current_people_list_link"
+msgstr "Active People"
+
+msgid "current_people_list_tip"
+msgstr "List currently active members"
 
 msgid "day_controller_0"
 msgstr "Ctrl. AM"
@@ -625,7 +631,7 @@ msgid "people_list_link"
 msgstr "All People"
 
 msgid "people_list_tip"
-msgstr "Display 'people' records"
+msgstr "List all members past and present"
 
 msgid "people_management_heading"
 msgstr "People"
@@ -784,7 +790,7 @@ msgid "service_vehicles_link"
 msgstr "Service Vehicles"
 
 msgid "service_vehicles_tip"
-msgstr "List the service vehicle"
+msgstr "List the service vehicles"
 
 msgid "Site Description"
 msgstr "People and resource scheduling"
@@ -854,6 +860,9 @@ msgstr "Remove"
 
 msgid "types_list_link"
 msgstr "All Types"
+
+msgid "types_list_tip"
+msgstr "Manage the list of resource types"
 
 msgid "types_management_heading"
 msgstr "Types"
@@ -999,7 +1008,7 @@ msgid "vehicles_list_link"
 msgstr "All Vehicles"
 
 msgid "vehicles_list_tip"
-msgstr "Displays 'vehicle' records"
+msgstr "List all the vehicles"
 
 msgid "vrn"
 msgstr "Registration"

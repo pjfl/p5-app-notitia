@@ -349,7 +349,7 @@ my $_week_label = sub {
 
    my $local_dt = $_local_dt->( $date )->add( days => $cno );
    my $key      = 'week_rota_heading_'.(lc $local_dt->day_abbr);
-   my $v        = loc $req, $key, to_msg $local_dt->day;
+   my $v        = loc $req, to_msg $key, $local_dt->day;
 
    return { class => 'day-of-week', value => $v };
 };
@@ -572,7 +572,7 @@ my $_slot_assignments = sub {
 
    my $slot_rs = $self->schema->resultset( 'Slot' ); my $data = {};
 
-   for my $slot ($slot_rs->list_slots_for( $opts )->all) {
+   for my $slot ($slot_rs->search_for_slots( $opts )->all) {
       my $k = $_local_dt->( $slot->start_date )->ymd.'_'.$slot->key;
 
       $data->{ $k } = { name        => $slot->key,
@@ -793,7 +793,7 @@ sub claim_slot_action : Role(rota_manager) Role(bike_rider) Role(controller)
    my $location = uri_for_action $req, 'sched/day_rota', $args;
    my $label    = slot_identifier
                      $rota_name, $rota_date, $shift_type, $slot_type, $subslot;
-   my $message  = [ 'User [_1] claimed slot [_2]', $person->label, $label ];
+   my $message  = [ to_msg '[_1] claimed slot [_2]', $person->label, $label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -807,13 +807,13 @@ sub day_rota : Role(any) {
    my $rota_date = $params->( 1, { optional => TRUE } ) // $today;
    my $rota_dt   = to_dt $rota_date;
    my $type_id   = $self->$_find_rota_type_id( $name );
-   my $opts      = { rota_type => $type_id, on => $rota_dt };
-   my $slots     = $self->schema->resultset( 'Slot' )->list_slots_for( $opts );
+   my $slot_rs   = $self->schema->resultset( 'Slot' );;
    my $event_rs  = $self->schema->resultset( 'Event' );
    my $events    = $event_rs->search_for_a_days_events( $type_id, $rota_dt );
+   my $opts      = { rota_type => $type_id, on => $rota_dt };
    my $slot_data = {};
 
-   for my $slot ($slots->all) {
+   for my $slot ($slot_rs->search_for_slots( $opts )->all) {
       $slot_data->{ $slot->key } =
          { name        => $slot->key,
            operator    => $slot->operator,
@@ -954,7 +954,7 @@ sub week_rota : Role(any) {
    my $tport_rs   =  $self->schema->resultset( 'Transport' );
    my $vehicle_rs =  $self->schema->resultset( 'Vehicle' );
    my $vreq_rs    =  $self->schema->resultset( 'VehicleRequest' );
-   my @slots      =  $slot_rs->list_slots_for( $opts )->all;
+   my @slots      =  $slot_rs->search_for_slots( $opts )->all;
    my @uv_events  =  $vreq_rs->search_for_events_with_unassigned_vreqs( $opts );
    my @tports     =  $tport_rs->search_for_assigned_vehicles( $opts )->all;
    my @v_events   =  $event_rs->search_for_vehicle_events( $opts )->all;
@@ -994,7 +994,7 @@ sub yield_slot_action : Role(rota_manager) Role(bike_rider) Role(controller)
    my $location = uri_for_action( $req, 'sched/day_rota', $args );
    my $label    = slot_identifier( $rota_name, $rota_date,
                                    $shift_type, $slot_type, $subslot );
-   my $message  = [ 'User [_1] yielded slot [_2]', $person->label, $label ];
+   my $message  = [ to_msg '[_1] yielded slot [_2]', $person->label, $label ];
 
    return { redirect => { location => $location, message => $message } };
 }
