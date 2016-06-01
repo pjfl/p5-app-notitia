@@ -48,6 +48,7 @@ my $prereqs  = {
     'Plack::Middleware::FixMissingBodyInRedirect' => '0.12',
     'Plack::Middleware::LogErrors' => '0.001',
     'Plack::Middleware::Session' => '0.21',
+    'Text::CSV' => '1.33',
     'Text::MultiMarkdown' => '1.000035',
     'Try::Tiny' => '0.22',
     'Type::Tiny' => '1.000005',

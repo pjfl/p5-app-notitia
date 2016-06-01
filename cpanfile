@@ -26,6 +26,7 @@ requires "Plack::Middleware::Deflater" => "0.08";
 requires "Plack::Middleware::FixMissingBodyInRedirect" => "0.12";
 requires "Plack::Middleware::LogErrors" => "0.001";
 requires "Plack::Middleware::Session" => "0.21";
+requires "Text::CSV" => "1.33";
 requires "Text::MultiMarkdown" => "1.000035";
 requires "Try::Tiny" => "0.22";
 requires "Type::Tiny" => "1.000005";
