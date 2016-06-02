@@ -486,7 +486,7 @@ sub people : Role(any) {
    my $opts      =  { page => delete $params->{page} // 1,
                       rows => $req->session->rows_per_page };
 
-   $type and $params->{type} = $type; $type = $params->{type};
+   $type and $params->{type} = $type; $type = $params->{type} || NUL;
    $status eq 'current'  and $opts->{current } = TRUE;
    $type   eq 'contacts' and $opts->{prefetch} = [ 'next_of_kin' ]
       and $opts->{columns} = [ 'home_phone', 'mobile_phone' ];
