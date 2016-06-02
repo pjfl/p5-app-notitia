@@ -119,6 +119,8 @@ has 'extensions'      => is => 'ro',   isa => HashRef[ArrayRef],
 has 'images'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'img';
 
+has 'import_people'   => is => 'ro',   isa => HashRef, builder => sub { {} };
+
 has 'js'              => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'js';
 
@@ -431,6 +433,32 @@ render
 
 A non empty simple string that defaults to F<img>. Relative URI that
 locates the static image files
+
+=item C<import_people>
+
+A hash reference the default value for which is supplied by the
+configuration file. Contains the following keys;
+
+=over 3
+
+=item C<extra2csv_map>
+
+Maps the extra attributes used in the CSV file import onto the import
+file column headings
+
+=item C<pcode2blot_map>
+
+Maps the CSV import file points codes to endorsement types
+
+=item C<person2csv_map>
+
+Maps the person class attribute names onto the CSV import file column headings
+
+=item C<rcode2role_map>
+
+Maps the CSV import file duty code to role names
+
+=back
 
 =item C<js>
 

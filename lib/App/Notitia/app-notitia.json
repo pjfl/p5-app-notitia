@@ -7,6 +7,39 @@
       }
    },
    "description": "People and resource scheduling",
+   "import_people": {
+      "extra2csv_map": {
+         "blots": "points",
+         "m_advanced": "advance_qualification_date",
+         "next_of_kin": "next_of_kin",
+         "roles": "duties_authorised"
+      },
+      "pcode2blot_map": {
+         "SP30": "Speeding 30"
+      },
+      "person2csv_map": {
+         "active": "active",
+         "address": "address",
+         "badge_id": "id",
+         "email_address": "email",
+         "first_name": "first_name",
+         "home_phone": "telephone",
+         "joined": "date_of_joining",
+         "last_name": "surname",
+         "mobile_phone": "mobile",
+         "name": "name",
+         "notes": "comments",
+         "password": "password",
+         "postcode": "postcode",
+         "subscription": "subscription_notice"
+      },
+      "rcode2role_map": {
+         "C": "controller",
+         "D": "driver",
+         "F": "fund_raiser",
+         "R": "bike_rider"
+      }
+   },
    "jslibs": [
       [ "moocore", "mootools/1.4.5/mootools-core-full-nocompat.min.js" ],
       [ "moomore", "mootools-more/1.4.0.1/mootools-more-yui-compressed.min.js" ]

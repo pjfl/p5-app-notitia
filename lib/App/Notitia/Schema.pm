@@ -64,27 +64,21 @@ around 'deploy_file' => sub {
    return $orig->( $self, @args );
 };
 
-# Private package variables
-my $_fmap = { active => 'active', address => 'address',
-              badge_id => 'id', email_address => 'email',
-              first_name => 'first_name', home_phone => 'telephone',
-              joined => 'date_of_joining', last_name => 'surname',
-              mobile_phone => 'mobile', name => 'name', notes => 'comments',
-              password => 'password', postcode => 'postcode',
-              roles => 'duties_authorised',
-              subscription => 'subscription_notice' };
-
 # Private functions
 my $_extend_column_map = sub {
    my ($cmap, $ncols) = @_; my $count = 0;
 
-   for my $k (qw( active endorsements name postcode password roles nok_active
-                  nok_first_name nok_surname nok_name nok_postcode
-                  nok_email nok_password )) {
+   for my $k (qw( active certifications endorsements name postcode password
+                  roles nok_active nok_first_name nok_surname nok_name
+                  nok_postcode nok_email nok_password )) {
       $cmap->{ $k } = $ncols + $count++;
    }
 
    return;
+};
+
+my $_make_key_from = sub {
+   my $x = shift; my $k = lc squeeze trim $x; $k =~ s{ [ \-] }{_}gmx; return $k;
 };
 
 my $_natatime = sub {
@@ -93,32 +87,35 @@ my $_natatime = sub {
    return sub { return $_[ 0 ] ? unshift @list, @_ : splice @list, 0, $n };
 };
 
-my $_make_key_from = sub {
-   my $x = shift; my $k = lc squeeze trim $x; $k =~ s{ [ \-] }{_}gmx; return $k;
+my $_word_iter = sub {
+   my ($n, $field) = @_; $field =~ s{[\(\)]}{\"}gmx;
+
+   my $splitter = Data::Record->new( { split => SPC, unless => QUOTED_RE } );
+
+   return $_natatime->( $n, $splitter->records( $field ) );
 };
 
 # Private methods
-my $_enhance_points = sub {
+my $_enhance_blots = sub {
    my ($self, $dv, $cmap, $lno, $cols) = @_;
 
-   my $points   = $cols->[ $cmap->{points} ]; $points =~ s{[\(\)]}{\"}gmx;
-   my $splitter = Data::Record->new( { split => SPC, unless => QUOTED_RE } );
-   my $iter     = $_natatime->( 3, $splitter->records( $points ) );
+   my $tc_map = $self->config->import_people->{pcode2blot_map};
+   my $x_map  = $self->config->import_people->{extra2csv_map};
+   my $iter   = $_word_iter->( 3, $cols->[ $cmap->{ $x_map->{blots} } ] );
 
    while (my @vals = $iter->()) {
       my $endorsed; try { $endorsed = to_dt $vals[ 2 ] } catch {};
 
       if ($vals[ 0 ] =~ m{ \A \d+ \z }mx and $endorsed) {
-         my $type_code = { SP30 => 'Speeding 30' }->{ uc $vals[ 1 ] };
          my $endorsement = {
-            endorsed => $endorsed,
-            points => $vals[ 0 ],
-            type_code => $type_code // $vals[ 1 ] };
+            endorsed  => $endorsed,
+            points    => $vals[ 0 ],
+            type_code => $tc_map->{ uc $vals[ 1 ] } // $vals[ 1 ] };
          my @peek = $iter->(); my $notes;
 
          if ($peek[ 0 ]) {
             $peek[ 0 ] !~ m{ \A \d+ \z }mx and $notes = shift @peek;
-            $iter->( @peek );
+            $peek[ 0 ] and $iter->( @peek );
          }
 
          $notes and $notes =~ s{ [\'\"] }{}gmx;
@@ -131,22 +128,45 @@ my $_enhance_points = sub {
    return;
 };
 
+my $_enhance_certs = sub {
+   my ($self, $dv, $cmap, $lno, $cols) = @_;
+
+   my $x_map = $self->config->import_people->{extra2csv_map};
+   my $iter  = $_word_iter->( 2, $cols->[ $cmap->{ $x_map->{m_advanced} } ] );
+
+   while (my @vals = $iter->()) {
+      my $completed; try { $completed = to_dt $vals[ 1 ] } catch {};
+
+      if ($completed) {
+         my $certification = { completed => $completed, type => 'm_advanced' };
+         my $notes = $vals[ 0 ]; $notes and $notes =~ s{ [\'\"] }{}gmx;
+
+         $notes and $certification->{notes} = $notes;
+         push @{ $cols->[ $cmap->{certifications} ] }, $certification;
+      }
+      else { shift @vals; $vals[ 0 ] and $iter->( @vals ) }
+   }
+
+   return;
+};
+
 my $_enhance_postcode = sub {
    my ($self, $dv, $cmap, $lno, $cols, $prefix) = @_; $prefix //= NUL;
 
-   my $address    = $cols->[ $cmap->{ $prefix.$_fmap->{address} } ];
+   my $p2cmap     = $self->config->import_people->{person2csv_map};
+   my $address    = $cols->[ $cmap->{ $prefix.$p2cmap->{address} } ];
    my ($postcode) = $address =~ m{ ([a-zA-Z0-9]+ \s? [a-zA-Z0-9]+) \z }mx;
 
    try {
       $dv->check_field( 'postcode', $postcode );
       $address =~ s{ ([a-zA-Z0-9]+ \s? [a-zA-Z0-9]+) \z }{}mx;
-      $cols->[ $cmap->{ $prefix.$_fmap->{address } } ] = $address;
-      $cols->[ $cmap->{ $prefix.$_fmap->{postcode} } ] = $postcode;
+      $cols->[ $cmap->{ $prefix.$p2cmap->{address } } ] = $address;
+      $cols->[ $cmap->{ $prefix.$p2cmap->{postcode} } ] = $postcode;
    }
    catch {
       $self->warning( 'Bad postcode line [_1]: [_2]',
          { args => [ $lno, $postcode ], no_quote_bind_values => TRUE } );
-      $cols->[ $cmap->{ $prefix.$_fmap->{address } } ] = $address;
+      $cols->[ $cmap->{ $prefix.$p2cmap->{address } } ] = $address;
    };
 
    return;
@@ -155,26 +175,28 @@ my $_enhance_postcode = sub {
 my $_enhance_nok_columns = sub {
    my ($self, $dv, $cmap, $lno, $cols, $nok) = @_;
 
-   $cols->[ $cmap->{ 'nok_'.$_fmap->{active} } ] = TRUE;
+   my $p2cmap = $self->config->import_people->{person2csv_map};
 
-   ($cols->[ $cmap->{ 'nok_'.$_fmap->{first_name} } ],
-    $cols->[ $cmap->{ 'nok_'.$_fmap->{last_name } } ])
+   $cols->[ $cmap->{ 'nok_'.$p2cmap->{active} } ] = TRUE;
+
+   ($cols->[ $cmap->{ 'nok_'.$p2cmap->{first_name} } ],
+    $cols->[ $cmap->{ 'nok_'.$p2cmap->{last_name } } ])
       = split SPC, (squeeze trim $nok), 2;
 
-   $cols->[ $cmap->{ 'nok_'.$_fmap->{name} } ]
-      = lc $cols->[ $cmap->{ 'nok_'.$_fmap->{first_name} } ].'.'
-      .    $cols->[ $cmap->{ 'nok_'.$_fmap->{last_name } } ];
+   $cols->[ $cmap->{ 'nok_'.$p2cmap->{name} } ]
+      = lc $cols->[ $cmap->{ 'nok_'.$p2cmap->{first_name} } ].'.'
+      .    $cols->[ $cmap->{ 'nok_'.$p2cmap->{last_name } } ];
 
-   $cols->[ $cmap->{ 'nok_'.$_fmap->{email_address} } ]
-      = lc $cols->[ $cmap->{ 'nok_'.$_fmap->{name} } ].'@example.com';
+   $cols->[ $cmap->{ 'nok_'.$p2cmap->{email_address} } ]
+      = lc $cols->[ $cmap->{ 'nok_'.$p2cmap->{name} } ].'@example.com';
 
-   $cols->[ $cmap->{ 'nok_'.$_fmap->{password} } ]
+   $cols->[ $cmap->{ 'nok_'.$p2cmap->{password} } ]
       = substr create_token, 0, 12;
 
-   $cols->[ $cmap->{ 'nok_'.$_fmap->{address} } ] or
-      $cols->[ $cmap->{ 'nok_'.$_fmap->{address} } ]
-         = $cols->[ $cmap->{ $_fmap->{address } } ].SPC
-         . $cols->[ $cmap->{ $_fmap->{postcode} } ];
+   $cols->[ $cmap->{ 'nok_'.$p2cmap->{address} } ] or
+      $cols->[ $cmap->{ 'nok_'.$p2cmap->{address} } ]
+         = $cols->[ $cmap->{ $p2cmap->{address } } ].SPC
+         . $cols->[ $cmap->{ $p2cmap->{postcode} } ];
 
    $self->$_enhance_postcode( $dv, $cmap, $lno, $cols, 'nok_' );
    return;
@@ -183,32 +205,36 @@ my $_enhance_nok_columns = sub {
 my $_enhance_person_columns = sub {
    my ($self, $dv, $cmap, $lno, $cols) = @_;
 
-   $cols->[ $cmap->{ $_fmap->{active} } ] = TRUE;
+   my $p2cmap = $self->config->import_people->{person2csv_map};
+   my $x_map  = $self->config->import_people->{extra2csv_map};
 
-   $cols->[ $cmap->{ $_fmap->{name} } ]
-      = lc $cols->[ $cmap->{ $_fmap->{first_name} } ].'.'
-      .    $cols->[ $cmap->{ $_fmap->{last_name } } ];
+   $cols->[ $cmap->{ $p2cmap->{active} } ] = TRUE;
 
-   $cols->[ $cmap->{ $_fmap->{email_address} } ]
-      or $cols->[ $cmap->{ $_fmap->{email_address} } ]
-            = $cols->[ $cmap->{ $_fmap->{name} } ].'@example.com';
+   $cols->[ $cmap->{ $p2cmap->{name} } ]
+      = lc $cols->[ $cmap->{ $p2cmap->{first_name} } ].'.'
+      .    $cols->[ $cmap->{ $p2cmap->{last_name } } ];
 
-   $cols->[ $cmap->{ $_fmap->{password} } ] = substr create_token, 0, 12;
+   $cols->[ $cmap->{ $p2cmap->{email_address} } ]
+      or $cols->[ $cmap->{ $p2cmap->{email_address} } ]
+            = $cols->[ $cmap->{ $p2cmap->{name} } ].'@example.com';
 
-   $self->$_enhance_points( $dv, $cmap, $lno, $cols );
+   $cols->[ $cmap->{ $p2cmap->{password} } ] = substr create_token, 0, 12;
+
+   $self->$_enhance_blots( $dv, $cmap, $lno, $cols );
+   $self->$_enhance_certs( $dv, $cmap, $lno, $cols );
    $self->$_enhance_postcode( $dv, $cmap, $lno, $cols );
 
    for my $col (qw( joined subscription )) {
-      my $i = $cmap->{ $_fmap->{ $col } }; defined $cols->[ $i ]
+      my $i = $cmap->{ $p2cmap->{ $col } }; defined $cols->[ $i ]
          and $cols->[ $i ] = to_dt $cols->[ $i ];
    }
 
-   if (my $duties = $cols->[ $cmap->{ $_fmap->{roles} } ]) {
-      for my $duty (split m{}mx, $duties) {
-         my $role = { C => 'controller',  D => 'driver',
-                      F => 'fund_raiser', R => 'bike_rider', }->{ uc $duty };
+   if (my $duties = $cols->[ $cmap->{ $x_map->{roles} } ]) {
+      my $map = $self->config->import_people->{rcode2role_map};
 
-         $role and push @{ $cols->[ $cmap->{roles} ] }, $role;
+      for my $duty (map { uc } split m{}mx, $duties) {
+         $map->{ $duty }
+            and push @{ $cols->[ $cmap->{roles} ] }, $map->{ $duty };
       }
    }
 
@@ -307,9 +333,11 @@ my $_send_sms = sub {
 };
 
 my $_update_person = sub {
-   my ($person, $person_attr) = @_;
+   my ($self, $person, $person_attr) = @_;
 
-   for my $col (grep { $_ ne 'roles' } keys %{ $_fmap }) {
+   my $p2cmap = $self->config->import_people->{person2csv_map};
+
+   for my $col (grep { $_ ne 'roles' } keys %{ $p2cmap }) {
       exists $person_attr->{ $col } and defined $person_attr->{ $col }
          and $person->$col( $person_attr->{ $col } );
    }
@@ -318,10 +346,11 @@ my $_update_person = sub {
 };
 
 my $_update_or_new_person = sub {
-   my ($self, $person_attr, $roles, $blots, $nok_attr) = @_;
+   my ($self, $nok_attr, $person_attr, $roles, $certs, $blots) = @_;
 
    my $has_nok   = $nok_attr->{email_address} ? TRUE : FALSE;
    my $person_rs = $self->schema->resultset( 'Person' );
+   my $cert_rs   = $self->schema->resultset( 'Certification' );
    my $blot_rs   = $self->schema->resultset( 'Endorsement' );
    my $dry_run   = $self->dry_run;
 
@@ -337,9 +366,14 @@ my $_update_or_new_person = sub {
          $has_nok and $person->next_of_kin_id( $nok->id );
 
          if (not $person->in_storage) { $person->insert }
-         else { $_update_person->( $person, $person_attr ) }
+         else { $self->$_update_person( $person, $person_attr ) }
 
          for my $role (@{ $roles }) { $person->add_member_to( $role ) }
+
+         for my $cert_attr (@{ $certs }) {
+            $cert_attr->{recipient_id} = $person->id;
+            $cert_rs->create( $cert_attr );
+         }
 
          for my $blot_attr (@{ $blots }) {
             $blot_attr->{recipient_id} = $person->id;
@@ -365,13 +399,17 @@ my $_create_person = sub {
 
    my $status = $csv->parse( $line ); my @columns = $csv->fields();
 
-   $columns[ $cmap->{ $_fmap->{first_name} } ] or return $lno;
+   my $p2cmap = $self->config->import_people->{person2csv_map};
+
+   $columns[ $cmap->{ $p2cmap->{first_name} } ] or return $lno;
 
    my $columns = [ splice @columns, 0, $ncols ];
 
    $self->$_enhance_person_columns( $dv, $cmap, $lno, $columns );
 
-   if (my $nok = $columns->[ $cmap->{next_of_kin} ]) {
+   my $x_map = $self->config->import_people->{extra2csv_map};
+
+   if (my $nok = $columns->[ $cmap->{ $x_map->{next_of_kin} } ]) {
       $self->$_enhance_nok_columns( $dv, $cmap, $lno, $columns, $nok );
    }
 
@@ -379,20 +417,22 @@ my $_create_person = sub {
 
    my $nok_attr = {}; my $person_attr = {};
 
-   for my $col (grep { $_ ne 'roles' } keys %{ $_fmap }) {
-      my $i = $cmap->{ 'nok_'.$_fmap->{ $col } };
+   for my $col (grep { $_ ne 'roles' } keys %{ $p2cmap }) {
+      my $i = $cmap->{ 'nok_'.$p2cmap->{ $col } };
       my $v; defined $i and $v = $columns->[ $i ]
          and $nok_attr->{ $col } = squeeze trim $v;
 
       $person_attr->{ $col }
-         = squeeze trim $columns->[ $cmap->{ $_fmap->{ $col } } ];
+         = squeeze trim $columns->[ $cmap->{ $p2cmap->{ $col } } ];
    }
 
    my $roles = $columns->[ $cmap->{roles} ];
    my $blots = $columns->[ $cmap->{endorsements} ];
+   my $certs = $columns->[ $cmap->{certifications} ];
 
-   $self->debug and $self->dumper( $person_attr, $roles, $blots, $nok_attr );
-   $self->$_update_or_new_person( $person_attr, $roles, $blots, $nok_attr );
+   $self->debug and $self->dumper( $nok_attr, $person_attr );
+   $self->$_update_or_new_person
+      ( $nok_attr, $person_attr, $roles, $certs, $blots );
 
    return $lno;
 };

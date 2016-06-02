@@ -38,9 +38,6 @@ around 'get_stash' => sub {
    return $stash;
 };
 
-# Private class attributes
-my $_cert_links_cache = {};
-
 # Private functions
 my $_add_cert_links = sub {
    my ($req, $action, $name) = @_;
@@ -83,16 +80,12 @@ my $_bind_cert_fields = sub {
 my $_cert_links = sub {
    my ($self, $req, $name, $type) = @_;
 
-   my $links = $_cert_links_cache->{ $type }; $links and return @{ $links };
-
-   my $opts = { args => [ $name, $type ] }; $links = [];
+   my $links = [];my $opts = { args => [ $name, $type ] };
 
    for my $actionp (map { $self->moniker."/${_}" } 'certification' ) {
       push @{ $links }, {
          value => management_link( $req, $actionp, $name, $opts ) };
    }
-
-   $_cert_links_cache->{ $type } = $links;
 
    return @{ $links };
 };

@@ -39,9 +39,6 @@ around 'get_stash' => sub {
    return $stash;
 };
 
-# Private class attributes
-my $_blots_links_cache = {};
-
 # Private functions
 my $_add_endorsement_links = sub {
    my ($req, $action, $name) = @_;
@@ -87,16 +84,12 @@ my $_bind_endorsement_fields = sub {
 my $_endorsement_links = sub {
    my ($self, $req, $name, $uri) = @_;
 
-   my $links = $_blots_links_cache->{ $uri }; $links and return @{ $links };
-
-   my $opts = { args => [ $name, $uri ] }; $links = [];
+   my $opts = { args => [ $name, $uri ] }; my $links = [];
 
    for my $actionp (map { $self->moniker."/${_}" } 'endorsement' ) {
       push @{ $links }, {
          value => management_link( $req, $actionp, $name, $opts ) };
    }
-
-   $_blots_links_cache->{ $uri } = $links;
 
    return @{ $links };
 };

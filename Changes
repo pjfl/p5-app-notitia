@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - CSV import creates certifications
           - CSV import creates endorsements
             Schema changed, additional dependencies added
           - Added badge_id. Schema changed
