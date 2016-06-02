@@ -10,7 +10,7 @@ use App::Notitia::Util      qw( encrypted_attr load_file_data
                                 mail_domain to_dt );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
-                                io squeeze throw trim );
+                                io is_member squeeze throw trim );
 use Class::Usul::Types      qw( NonEmptySimpleStr );
 use Data::Record;
 use Data::Validation;
@@ -145,6 +145,30 @@ my $_enhance_certs = sub {
          push @{ $cols->[ $cmap->{certifications} ] }, $certification;
       }
       else { shift @vals; $vals[ 0 ] and $iter->( @vals ) }
+   }
+
+   return;
+};
+
+my $_enhance_certs_from_roles = sub {
+   my ($self, $roles, $certs) = @_;
+
+   $roles and $roles->[ 0 ] or return; my $conf = $self->config;
+
+   my $date = to_dt( '1/1/1970' )->set_time_zone( 'local' );
+
+   (is_member 'bike_rider', $roles
+    or is_member 'm_advanced', [ map { $_->{type} } @{ $certs } ])
+      and push @{ $certs }, { completed => $date, type => 'catagory_a' };
+   is_member 'controller', $roles
+      and push @{ $certs }, { completed => $date, type => 'controller' };
+   is_member 'driver', $roles
+      and push @{ $certs }, { completed => $date, type => 'catagory_b' };
+
+   for my $role (values %{ $conf->import_people->{rcode2role_map} }) {
+      is_member $role, $roles
+         and push @{ $certs }, { completed => $date, type => 'gmp' }
+         and last;
    }
 
    return;
@@ -437,9 +461,10 @@ my $_create_person = sub {
 
    my $roles = $columns->[ $cmap->{roles} ];
    my $blots = $columns->[ $cmap->{endorsements} ];
-   my $certs = $columns->[ $cmap->{certifications} ];
+   my $certs = $columns->[ $cmap->{certifications} ] //= [];
 
-   $self->debug and $self->dumper( $nok_attr, $person_attr );
+   $self->$_enhance_certs_from_roles( $roles, $certs );
+   $self->debug and $self->dumper( $nok_attr, $person_attr, $certs );
    $self->$_update_or_new_person
       ( $nok_attr, $person_attr, $roles, $certs, $blots );
 
