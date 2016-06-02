@@ -15,10 +15,12 @@ CREATE TABLE "person" (
   "next_of_kin_id" integer,
   "active" boolean NOT NULL DEFAULT 0,
   "password_expired" boolean NOT NULL DEFAULT 1,
-  "dob" datetime DEFAULT '0000-00-00',
-  "joined" datetime DEFAULT '0000-00-00',
-  "resigned" datetime DEFAULT '0000-00-00',
-  "subscription" datetime DEFAULT '0000-00-00',
+  "badge_expires" datetime,
+  "dob" datetime,
+  "joined" datetime,
+  "resigned" datetime,
+  "subscription" datetime,
+  "badge_id" smallint,
   "rows_per_page" smallint NOT NULL DEFAULT 20,
   "shortcode" varchar(6) NOT NULL DEFAULT '',
   "name" varchar(64) NOT NULL DEFAULT '',
@@ -35,6 +37,8 @@ CREATE TABLE "person" (
 );
 
 CREATE INDEX "person_idx_next_of_kin_id" ON "person" ("next_of_kin_id");
+
+CREATE UNIQUE INDEX "person_badge_id" ON "person" ("badge_id");
 
 CREATE UNIQUE INDEX "person_email_address" ON "person" ("email_address");
 
@@ -57,7 +61,7 @@ DROP TABLE "endorsement";
 CREATE TABLE "endorsement" (
   "recipient_id" integer NOT NULL,
   "points" smallint NOT NULL,
-  "endorsed" datetime DEFAULT '0000-00-00',
+  "endorsed" datetime,
   "type_code" varchar(25) NOT NULL DEFAULT '',
   "uri" varchar(32) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
@@ -74,11 +78,13 @@ DROP TABLE "rota";
 CREATE TABLE "rota" (
   "id" INTEGER PRIMARY KEY NOT NULL,
   "type_id" integer NOT NULL,
-  "date" datetime DEFAULT '0000-00-00',
+  "date" datetime,
   FOREIGN KEY ("type_id") REFERENCES "type"("id")
 );
 
 CREATE INDEX "rota_idx_type_id" ON "rota" ("type_id");
+
+CREATE INDEX "rota_idx_date" ON "rota" ("date");
 
 CREATE UNIQUE INDEX "rota_type_id_date" ON "rota" ("type_id", "date");
 
@@ -98,7 +104,7 @@ DROP TABLE "certification";
 CREATE TABLE "certification" (
   "recipient_id" integer NOT NULL,
   "type_id" integer NOT NULL,
-  "completed" datetime DEFAULT '0000-00-00',
+  "completed" datetime,
   "notes" varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY ("recipient_id", "type_id"),
   FOREIGN KEY ("recipient_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE,
@@ -140,8 +146,8 @@ CREATE TABLE "vehicle" (
   "id" INTEGER PRIMARY KEY NOT NULL,
   "type_id" integer NOT NULL,
   "owner_id" integer,
-  "aquired" datetime DEFAULT '0000-00-00',
-  "disposed" datetime DEFAULT '0000-00-00',
+  "aquired" datetime,
+  "disposed" datetime,
   "vrn" varchar(16) NOT NULL DEFAULT '',
   "name" varchar(64) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',

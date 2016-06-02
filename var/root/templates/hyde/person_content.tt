@@ -22,6 +22,8 @@
 [% DateField( page.fields.joined ) -%]
 [% DateField( page.fields.resigned ) -%]
 [% DateField( page.fields.subscription ) -%]
+[% TextField( page.fields.badge_id ) -%]
+[% DateField( page.fields.badge_expires ) -%]
 [% IF page.fields.notes; TextArea( page.fields.notes ); END -%]
 [% TextField( page.fields.username ) -%]
 [% IF page.fields.save && page.fields.username.value -%]

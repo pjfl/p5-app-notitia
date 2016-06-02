@@ -75,6 +75,12 @@ msgstr "Assign To"
 msgid "aquired"
 msgstr "Aquired"
 
+msgid "badge_expires"
+msgstr "Badge Expires"
+
+msgid "badge_id"
+msgstr "Badge Id."
+
 msgid "bike"
 msgstr "Bike"
 

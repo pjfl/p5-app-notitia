@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 115 $ of **App::Notitia**
+This documents version v0.3.$Rev: 116 $ of **App::Notitia**
 
 # Description
 
@@ -200,10 +200,6 @@ to emit the SQL it generates to `stderr`. On the production server
 TODO: Add media query to reduce form size on mobiles
 
 TODO: Schema version numbers. DDL files ignored by git
-
-TODO: Event\_type needs an index
-
-TODO: Undo nav template accordian changes
 
 TODO: Work a plan for row life
 

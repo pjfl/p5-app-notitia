@@ -11,6 +11,7 @@ use App::Notitia::Constants    qw( EXCEPTION_CLASS SPC TRUE
 use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
                                    is_encrypted new_salt
                                    nullable_foreign_key_data_type
+                                   nullable_numerical_id_data_type
                                    numerical_id_data_type
                                    serial_data_type slot_limit_index
                                    varchar_data_type );
@@ -31,10 +32,12 @@ $class->add_columns
      next_of_kin_id   => nullable_foreign_key_data_type,
      active           => bool_data_type,
      password_expired => bool_data_type( TRUE ),
+     badge_expires    => date_data_type,
      dob              => date_data_type,
      joined           => date_data_type,
      resigned         => date_data_type,
      subscription     => date_data_type,
+     badge_id         => nullable_numerical_id_data_type,
      rows_per_page    => numerical_id_data_type( 20 ),
      shortcode        => varchar_data_type(   6 ),
      name             => varchar_data_type(  64 ),
@@ -50,6 +53,7 @@ $class->add_columns
 
 $class->set_primary_key( 'id' );
 
+$class->add_unique_constraint( [ 'badge_id' ] );
 $class->add_unique_constraint( [ 'name' ] );
 $class->add_unique_constraint( [ 'email_address' ] );
 $class->add_unique_constraint( [ 'shortcode' ] );
@@ -447,6 +451,10 @@ sub validation_attributes {
       },
       fields           => {
          address       => { validate => 'isValidLength isValidText' },
+         badge_expires => { validate => 'isValidDate' },
+         badge_id      => {
+            unique     => TRUE,
+            validate   => 'isValidInteger' },
          dob           => { validate => 'isValidDate' },
          email_address => {
             unique     => TRUE,

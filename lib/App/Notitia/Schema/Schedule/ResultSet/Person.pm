@@ -23,6 +23,18 @@ my $_find_role_type = sub {
    return $schema->resultset( 'Type' )->find_role_by( $name );
 };
 
+my $_load_cache = sub {
+   my ($self, $cache) = @_; my $opts = { columns => [ 'badge_id' ] };
+
+   for my $person ($self->search_for_people( $opts )->all) {
+      defined $person->badge_id
+          and $cache->{badge_id}->{ $person->badge_id } = TRUE;
+      $cache->{shortcode}->{ $person->shortcode } = TRUE;
+   }
+
+   return;
+};
+
 # Public methods
 sub find_person {
    my ($self, $key) = @_; my $person;
@@ -47,16 +59,20 @@ sub find_by_shortcode {
    return $person;
 }
 
+sub is_badge_free {
+   my ($self, $badge_id, $cache) = @_; $cache //= {};
+
+   exists $cache->{badge_id} or $self->$_load_cache( $cache );
+
+   return exists $cache->{badge_id}->{ $badge_id } ? FALSE : TRUE;
+}
+
 sub is_person {
-   my ($self, $shortcode, $cache) = @_;
+   my ($self, $shortcode, $cache) = @_; $cache //= {};
 
-   unless ($cache->{people}) {
-      for my $person ($self->search_for_people->all) {
-         $cache->{people}->{ $person->shortcode } = TRUE;
-      }
-   }
+   exists $cache->{shortcode} or $self->$_load_cache( $cache );
 
-   return exists $cache->{people}->{ $shortcode } ? TRUE : FALSE;
+   return exists $cache->{shortcode}->{ $shortcode } ? TRUE : FALSE;
 }
 
 sub list_all_people {

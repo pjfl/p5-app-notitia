@@ -139,6 +139,15 @@ sub post_filename {
    return $_[ 0 ]->start_date->set_time_zone( 'local' )->ymd.'_'.$_[ 0 ]->uri;
 }
 
+sub sqlt_deploy_hook {
+   my ($self, $sql) = @_;
+
+   $sql->add_index( name => 'event_idx_event_type_id',
+                    fields => [ 'event_type_id' ] );
+
+   return;
+}
+
 sub start_date {
    return $_[ 0 ]->start_rota->date->clone;
 }

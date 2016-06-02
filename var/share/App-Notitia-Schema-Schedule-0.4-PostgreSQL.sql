@@ -12,10 +12,12 @@ CREATE TABLE "person" (
   "next_of_kin_id" integer,
   "active" boolean DEFAULT '0' NOT NULL,
   "password_expired" boolean DEFAULT '1' NOT NULL,
-  "dob" timestamp DEFAULT '0000-00-00',
-  "joined" timestamp DEFAULT '0000-00-00',
-  "resigned" timestamp DEFAULT '0000-00-00',
-  "subscription" timestamp DEFAULT '0000-00-00',
+  "badge_expires" timestamp,
+  "dob" timestamp,
+  "joined" timestamp,
+  "resigned" timestamp,
+  "subscription" timestamp,
+  "badge_id" smallint,
   "rows_per_page" smallint DEFAULT 20 NOT NULL,
   "shortcode" character varying(6) DEFAULT '' NOT NULL,
   "name" character varying(64) DEFAULT '' NOT NULL,
@@ -29,6 +31,7 @@ CREATE TABLE "person" (
   "home_phone" character varying(32) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("id"),
+  CONSTRAINT "person_badge_id" UNIQUE ("badge_id"),
   CONSTRAINT "person_email_address" UNIQUE ("email_address"),
   CONSTRAINT "person_name" UNIQUE ("name"),
   CONSTRAINT "person_shortcode" UNIQUE ("shortcode")
@@ -48,7 +51,7 @@ DROP TABLE "endorsement" CASCADE;
 CREATE TABLE "endorsement" (
   "recipient_id" integer NOT NULL,
   "points" smallint NOT NULL,
-  "endorsed" timestamp DEFAULT '0000-00-00',
+  "endorsed" timestamp,
   "type_code" character varying(25) DEFAULT '' NOT NULL,
   "uri" character varying(32) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,
@@ -61,11 +64,12 @@ DROP TABLE "rota" CASCADE;
 CREATE TABLE "rota" (
   "id" serial NOT NULL,
   "type_id" integer NOT NULL,
-  "date" timestamp DEFAULT '0000-00-00',
+  "date" timestamp,
   PRIMARY KEY ("id"),
   CONSTRAINT "rota_type_id_date" UNIQUE ("type_id", "date")
 );
 CREATE INDEX "rota_idx_type_id" on "rota" ("type_id");
+CREATE INDEX "rota_idx_date" on "rota" ("date");
 
 DROP TABLE "slot_criteria" CASCADE;
 CREATE TABLE "slot_criteria" (
@@ -79,7 +83,7 @@ DROP TABLE "certification" CASCADE;
 CREATE TABLE "certification" (
   "recipient_id" integer NOT NULL,
   "type_id" integer NOT NULL,
-  "completed" timestamp DEFAULT '0000-00-00',
+  "completed" timestamp,
   "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("recipient_id", "type_id")
 );
@@ -109,8 +113,8 @@ CREATE TABLE "vehicle" (
   "id" serial NOT NULL,
   "type_id" integer NOT NULL,
   "owner_id" integer,
-  "aquired" timestamp DEFAULT '0000-00-00',
-  "disposed" timestamp DEFAULT '0000-00-00',
+  "aquired" timestamp,
+  "disposed" timestamp,
   "vrn" character varying(16) DEFAULT '' NOT NULL,
   "name" character varying(64) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,

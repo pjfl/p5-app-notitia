@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added badge_id. Schema changed
           - Creates nok relationships in CSV import
           - Adding CSV import
           - Added remaining to_msg calls

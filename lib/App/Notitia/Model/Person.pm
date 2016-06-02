@@ -250,9 +250,9 @@ my $_update_person_from_request = sub {
 
    my $opts = { optional => TRUE };
 
-   for my $attr (qw( active address dob email_address first_name home_phone
-                     joined last_name mobile_phone notes password_expired
-                     postcode resigned subscription )) {
+   for my $attr (qw( active address badge_expires badge_id dob email_address
+                     first_name home_phone joined last_name mobile_phone notes
+                     password_expired postcode resigned subscription )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 
@@ -263,7 +263,8 @@ my $_update_person_from_request = sub {
 
       defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
-      length $v and is_member $attr, [ qw( dob joined resigned subscription ) ]
+      length $v and is_member $attr,
+         [ qw( badge_expires dob joined resigned subscription ) ]
          and $v = to_dt $v;
 
       $person->$attr( $v );
@@ -285,6 +286,8 @@ my $_bind_person_fields = sub {
       active           => { checked  => $person->active,
                             disabled => $disabled },
       address          => { disabled => $disabled },
+      badge_expires    => { disabled => $disabled },
+      badge_id         => { disabled => $disabled },
       dob              => { disabled => $disabled },
       email_address    => { class    => 'standard-field server',
                             disabled => $disabled },

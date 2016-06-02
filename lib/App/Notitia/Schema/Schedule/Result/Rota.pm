@@ -19,7 +19,7 @@ $class->add_columns
 $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'type_id', 'date' ] );
-# TODO: Add index for date
+
 $class->belongs_to( type   => "${result}::Type",  'type_id' );
 $class->has_many  ( events => "${result}::Event", 'start_rota_id' );
 $class->has_many  ( shifts => "${result}::Shift", 'rota_id' );
@@ -27,6 +27,14 @@ $class->has_many  ( shifts => "${result}::Shift", 'rota_id' );
 # Private methods
 sub _as_string {
    return $_[ 0 ]->date;
+}
+
+sub sqlt_deploy_hook {
+   my ($self, $sql) = @_;
+
+   $sql->add_index( name => 'rota_idx_date', fields => [ 'date' ] );
+
+   return;
 }
 
 1;

@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 115 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 116 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -38,7 +38,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 115 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 116 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -237,10 +237,6 @@ C<stderr> is redirected to F<var/tmp/daemon.err>
 TODO: Add media query to reduce form size on mobiles
 
 TODO: Schema version numbers. DDL files ignored by git
-
-TODO: Event_type needs an index
-
-TODO: Undo nav template accordian changes
 
 TODO: Work a plan for row life
 

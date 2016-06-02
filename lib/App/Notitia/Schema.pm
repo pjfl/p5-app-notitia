@@ -64,7 +64,8 @@ around 'deploy_file' => sub {
 };
 
 # Private package variables
-my $_fmap = { address => 'address', email_address => 'email',
+my $_fmap = { active => 'active', address => 'address',
+              badge_id => 'id', email_address => 'email',
               first_name => 'first_name', home_phone => 'telephone',
               joined => 'date_of_joining', last_name => 'surname',
               mobile_phone => 'mobile', name => 'name', notes => 'comments',
@@ -74,18 +75,14 @@ my $_fmap = { address => 'address', email_address => 'email',
 
 # Private functions
 my $_extend_column_map = sub {
-   my ($cmap, $ncols) = @_;
+   my ($cmap, $ncols) = @_; my $count = 0;
 
-   $cmap->{name    } = $ncols;
-   $cmap->{postcode} = $ncols + 1;
-   $cmap->{password} = $ncols + 2;
-   $cmap->{roles   } = $ncols + 3;
-   $cmap->{nok_first_name} = $ncols + 4;
-   $cmap->{nok_surname} = $ncols + 5;
-   $cmap->{nok_name} = $ncols + 6;
-   $cmap->{nok_postcode} = $ncols + 7;
-   $cmap->{nok_email} = $ncols + 8;
-   $cmap->{nok_password} = $ncols + 9;
+   for my $k (qw( active name postcode password roles nok_active
+                  nok_first_name nok_surname nok_name nok_postcode
+                  nok_email nok_password )) {
+      $cmap->{ $k } = $ncols + $count++;
+   }
+
    return;
 };
 
@@ -118,6 +115,8 @@ my $_postcode_check = sub {
 my $_enhance_nok_columns = sub {
    my ($self, $dv, $cmap, $lno, $columns, $nok) = @_;
 
+   $columns->[ $cmap->{ 'nok_'.$_fmap->{ 'active' } } ] = TRUE;
+
    ($columns->[ $cmap->{ 'nok_'.$_fmap->{ 'first_name' } } ],
     $columns->[ $cmap->{ 'nok_'.$_fmap->{ 'last_name' } } ])
       = split SPC, (squeeze trim $nok), 2;
@@ -144,9 +143,19 @@ my $_enhance_nok_columns = sub {
 my $_enhance_person_columns = sub {
    my ($self, $dv, $cmap, $lno, $columns) = @_;
 
-   $self->$_postcode_check( $dv, $cmap, $lno, $columns );
+   $columns->[ $cmap->{ $_fmap->{ 'active' } } ] = TRUE;
+
+   $columns->[ $cmap->{ $_fmap->{ 'name' } } ]
+      = lc $columns->[ $cmap->{ $_fmap->{ 'first_name' } } ].'.'
+      .    $columns->[ $cmap->{ $_fmap->{ 'last_name'  } } ];
 
    $columns->[ $cmap->{ $_fmap->{ 'password' } } ] = substr create_token, 0, 12;
+
+   $self->$_postcode_check( $dv, $cmap, $lno, $columns );
+
+   $columns->[ $cmap->{ $_fmap->{ 'email_address' } } ]
+      or $columns->[ $cmap->{ $_fmap->{ 'email_address' } } ]
+            = $columns->[ $cmap->{ $_fmap->{ 'name' } } ].'@example.com';
 
    for my $col (qw( joined subscription )) {
       my $i = $cmap->{ $_fmap->{ $col } }; defined $columns->[ $i ]
@@ -161,14 +170,6 @@ my $_enhance_person_columns = sub {
          $role and push @{ $columns->[ $cmap->{ 'roles' } ] }, $role;
       }
    }
-
-   $columns->[ $cmap->{ $_fmap->{ 'name' } } ]
-      = lc $columns->[ $cmap->{ $_fmap->{ 'first_name' } } ].'.'
-      .    $columns->[ $cmap->{ $_fmap->{ 'last_name'  } } ];
-
-   $columns->[ $cmap->{ $_fmap->{ 'email_address' } } ]
-      or $columns->[ $cmap->{ $_fmap->{ 'email_address' } } ]
-            = $columns->[ $cmap->{ $_fmap->{ 'name' } } ].'@example.com';
 
    return;
 };

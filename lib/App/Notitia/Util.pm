@@ -424,7 +424,6 @@ sub create_link ($$$;$) {
 
 sub date_data_type () {
    return { data_type     => 'datetime',
-            default_value => '0000-00-00',
             is_nullable   => TRUE,
             datetime_undef_if_invalid => TRUE,
             timezone      => 'GMT', }
