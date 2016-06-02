@@ -39,7 +39,7 @@ around 'execute' => sub {
          and return $orig->( $self, $method, $req );
    }
 
-   throw '[_1] permission denied', [ $name ];
+   throw '[_1] permission denied', [ $req->session->user_label || $name ];
 };
 
 sub list_roles {

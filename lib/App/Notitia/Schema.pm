@@ -183,9 +183,11 @@ my $_enhance_nok_columns = sub {
     $cols->[ $cmap->{ 'nok_'.$p2cmap->{last_name } } ])
       = split SPC, (squeeze trim $nok), 2;
 
-   $cols->[ $cmap->{ 'nok_'.$p2cmap->{name} } ]
-      = lc $cols->[ $cmap->{ 'nok_'.$p2cmap->{first_name} } ].'.'
-      .    $cols->[ $cmap->{ 'nok_'.$p2cmap->{last_name } } ];
+   my $name = lc $cols->[ $cmap->{ 'nok_'.$p2cmap->{first_name} } ].'.'
+            .    $cols->[ $cmap->{ 'nok_'.$p2cmap->{last_name } } ];
+
+   $name =~ s{[ \'\-\+]}{}gmx;
+   $cols->[ $cmap->{ 'nok_'.$p2cmap->{name} } ] = $name;
 
    $cols->[ $cmap->{ 'nok_'.$p2cmap->{email_address} } ]
       = lc $cols->[ $cmap->{ 'nok_'.$p2cmap->{name} } ].'@example.com';
@@ -210,9 +212,10 @@ my $_enhance_person_columns = sub {
 
    $cols->[ $cmap->{ $p2cmap->{active} } ] = TRUE;
 
-   $cols->[ $cmap->{ $p2cmap->{name} } ]
-      = lc $cols->[ $cmap->{ $p2cmap->{first_name} } ].'.'
-      .    $cols->[ $cmap->{ $p2cmap->{last_name } } ];
+   my $name = lc $cols->[ $cmap->{ $p2cmap->{first_name} } ].'.'
+            .    $cols->[ $cmap->{ $p2cmap->{last_name } } ];
+
+   $name =~ s{[ \'\-\+]}{}gmx; $cols->[ $cmap->{ $p2cmap->{name} } ] = $name;
 
    $cols->[ $cmap->{ $p2cmap->{email_address} } ]
       or $cols->[ $cmap->{ $p2cmap->{email_address} } ]

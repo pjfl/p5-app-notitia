@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fix apostraphies in username in CSV import
           - Fix apostraphies in username
           - Create next of kin as inactive
           - Allow for duplicate certs in CSV import
