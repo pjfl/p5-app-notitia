@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Less irritating page controls
           - Adds certs based in roles in CSV import
           - Fix apostraphies in username in CSV import
           - Fix apostraphies in username

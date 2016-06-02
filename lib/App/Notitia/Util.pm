@@ -762,9 +762,8 @@ sub page_link_set ($$$$$) {
    my $list = [ $_page_link->( $req, 'first_page', $actionp,
                                $args, $params, $pager->first_page ) ];
 
-   $pager->previous_page and $pager->previous_page > $pager->first_page
-      and push @{ $list }, $_page_link->( $req, 'prev_page', $actionp, $args,
-                                          $params, $pager->previous_page );
+   push @{ $list }, $_page_link->( $req, 'prev_page', $actionp, $args,
+                                   $params, $pager->previous_page );
 
    $pager->current_page > $pager->first_page
       and $pager->current_page < $pager->last_page
@@ -772,9 +771,8 @@ sub page_link_set ($$$$$) {
                                           $params, $pager->current_page );
 
 
-   $pager->next_page and $pager->next_page < $pager->last_page
-      and push @{ $list }, $_page_link->( $req, 'next_page', $actionp, $args,
-                                          $params, $pager->next_page );
+   push @{ $list }, $_page_link->( $req, 'next_page', $actionp, $args,
+                                   $params, $pager->next_page );
 
    push @{ $list }, $_page_link->( $req, 'last_page', $actionp, $args,
                                    $params, $pager->last_page );
