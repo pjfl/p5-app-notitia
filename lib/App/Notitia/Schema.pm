@@ -372,12 +372,18 @@ my $_update_or_new_person = sub {
 
          for my $cert_attr (@{ $certs }) {
             $cert_attr->{recipient_id} = $person->id;
-            $cert_rs->create( $cert_attr );
+            try { $cert_rs->create( $cert_attr ) } catch {
+               $self->warning( 'Cert. creation faied: [_1]',
+                  { args => [ $_ ], no_quote_bind_values => TRUE } );
+            };
          }
 
          for my $blot_attr (@{ $blots }) {
             $blot_attr->{recipient_id} = $person->id;
-            $blot_rs->create( $blot_attr );
+            try { $blot_rs->create( $blot_attr ) } catch {
+               $self->warning( 'Endorsement creation faied: [_1]',
+                  { args => [ $_ ], no_quote_bind_values => TRUE } );
+            };
          }
       } );
       $self->info( 'Created [_1]([_2])',

@@ -74,7 +74,13 @@ my $_can_see_link = sub {
              :              $node->{role}   ? [ $node->{role} ]
                                             : [];
 
-   return is_member( 'anon', $roles ) ? TRUE : FALSE;
+   is_member( 'anon', $roles ) and return TRUE;
+
+   for my $prole (@{ $req->session->roles }) {
+      is_member( $prole, $roles ) and return TRUE;
+   }
+
+   return FALSE;
 };
 
 my $_check_field = sub {
@@ -285,8 +291,8 @@ sub build_navigation ($$) {
       if ($node->{type} eq 'folder') {
          my $keepit = FALSE; $node->{fcount} < 1 and next;
 
-         for my $n (grep { not m{ \A _ }mx } keys %{ $node->{tree} }) {
-            $_can_see_link->( $req, $node->{tree}->{ $n } )
+         for my $id (grep { not m{ \A _ }mx } keys %{ $node->{tree} }) {
+            $_can_see_link->( $req, $node->{tree}->{ $id } )
                and $keepit = TRUE and last;
          }
 

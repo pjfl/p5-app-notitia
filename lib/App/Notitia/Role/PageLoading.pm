@@ -139,20 +139,11 @@ sub navigation {
    my $locale   = $conf->locale; # Always index config default language
    my $node     = $self->localised_tree( $locale )
       or  throw 'Default locale [_1] has no document tree', [ $locale ];
-   my $location = $stash->{page}->{location};
-   my $key      = $req->authenticated ? "${location}_auth" : "${location}_anon";
-   my $tuple    = $_nav_cache->{ $key };
+   my $opts     = { config => $conf, label => $self->nav_label,
+                    limit  => 100,   node  => $node,
+                    path   => $self->moniker.'/page' };
 
-   if (not $tuple or mtime $node > $tuple->{mtime}) {
-      my $opts = { config => $conf, label => $self->nav_label,
-                   limit  => 100,   node  => $node,
-                   path   => $self->moniker.'/page' };
-
-      $tuple  =  $_nav_cache->{ $key } = {
-         list => build_navigation( $req, $opts ), mtime => mtime( $node ), };
-   }
-
-   return $tuple->{list};
+   return build_navigation( $req, $opts );
 }
 
 1;
