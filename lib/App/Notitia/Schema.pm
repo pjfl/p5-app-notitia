@@ -177,7 +177,7 @@ my $_enhance_nok_columns = sub {
 
    my $p2cmap = $self->config->import_people->{person2csv_map};
 
-   $cols->[ $cmap->{ 'nok_'.$p2cmap->{active} } ] = TRUE;
+   $cols->[ $cmap->{ 'nok_'.$p2cmap->{active} } ] = FALSE;
 
    ($cols->[ $cmap->{ 'nok_'.$p2cmap->{first_name} } ],
     $cols->[ $cmap->{ 'nok_'.$p2cmap->{last_name } } ])

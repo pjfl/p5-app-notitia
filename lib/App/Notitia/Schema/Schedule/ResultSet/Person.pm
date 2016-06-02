@@ -115,7 +115,8 @@ sub search_for_people {
    my ($self, $opts) = @_; $opts = { %{ $opts // {} } }; delete $opts->{fields};
 
    my $where = delete $opts->{current}
-             ? { $self->me( 'resigned' ) => { '=' => undef } } : {};
+             ? { $self->me( 'resigned' ) => { '=' => undef },
+                 $self->me( 'active'   ) => TRUE, } : {};
 
    if (my $role = delete $opts->{role}) {
       $opts->{prefetch} //= []; push @{ $opts->{prefetch} }, 'roles';
