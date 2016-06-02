@@ -426,7 +426,7 @@ sub date_data_type () {
    return { data_type     => 'datetime',
             is_nullable   => TRUE,
             datetime_undef_if_invalid => TRUE,
-            timezone      => 'GMT', }
+            timezone      => 'GMT', };
 }
 
 sub delete_button ($$;$) {

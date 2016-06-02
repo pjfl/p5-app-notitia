@@ -61,11 +61,11 @@ DROP TABLE "endorsement";
 CREATE TABLE "endorsement" (
   "recipient_id" integer NOT NULL,
   "points" smallint NOT NULL,
-  "endorsed" datetime,
+  "endorsed" datetime NOT NULL,
   "type_code" varchar(25) NOT NULL DEFAULT '',
   "uri" varchar(32) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
-  PRIMARY KEY ("recipient_id", "type_code"),
+  PRIMARY KEY ("recipient_id", "type_code", "endorsed"),
   FOREIGN KEY ("recipient_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 

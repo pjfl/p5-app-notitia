@@ -58,12 +58,12 @@ DROP TABLE IF EXISTS `endorsement`;
 CREATE TABLE `endorsement` (
   `recipient_id` integer unsigned NOT NULL,
   `points` smallint NOT NULL,
-  `endorsed` datetime NULL,
+  `endorsed` datetime NOT NULL,
   `type_code` varchar(25) NOT NULL DEFAULT '',
   `uri` varchar(32) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',
   INDEX `endorsement_idx_recipient_id` (`recipient_id`),
-  PRIMARY KEY (`recipient_id`, `type_code`),
+  PRIMARY KEY (`recipient_id`, `type_code`, `endorsed`),
   UNIQUE `endorsement_uri` (`uri`),
   CONSTRAINT `endorsement_fk_recipient_id` FOREIGN KEY (`recipient_id`) REFERENCES `person` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;

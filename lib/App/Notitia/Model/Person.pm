@@ -237,7 +237,8 @@ my $_people_ops_links = sub {
       ( $req, $page, "${moniker}/message", $params );
    my $add_user   = create_link $req, "${moniker}/person",
                                 'person', { container_class => 'add-link' };
-   my $page_links = page_link_set $req, "${moniker}/people", [], $opts, $pager;
+   my $page_links = page_link_set $req, "${moniker}/people", [],
+                                  $params, $pager;
    my $links      = [ $message, $add_user ];
 
    $page_links and unshift @{ $links }, $page_links;
@@ -485,7 +486,7 @@ sub people : Role(any) {
    my $opts      =  { page => delete $params->{page} // 1,
                       rows => $req->session->rows_per_page };
 
-   $type //= NUL; delete $params->{type}; $type and $params->{type} = $type;
+   $type and $params->{type} = $type; $type = $params->{type};
    $status eq 'current'  and $opts->{current } = TRUE;
    $type   eq 'contacts' and $opts->{prefetch} = [ 'next_of_kin' ]
       and $opts->{columns} = [ 'home_phone', 'mobile_phone' ];

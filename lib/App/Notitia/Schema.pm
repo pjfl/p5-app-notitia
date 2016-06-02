@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia;
 use App::Notitia::Constants qw( AS_PASSWORD EXCEPTION_CLASS FALSE NUL
-                                OK SLOT_TYPE_ENUM SPC TRUE );
+                                OK QUOTED_RE SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::SMS;
 use App::Notitia::Util      qw( encrypted_attr load_file_data
                                 mail_domain to_dt );
@@ -12,6 +12,7 @@ use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
                                 io squeeze throw trim );
 use Class::Usul::Types      qw( NonEmptySimpleStr );
+use Data::Record;
 use Data::Validation;
 use DateTime                qw( );
 use Scalar::Util            qw( blessed );
@@ -77,7 +78,7 @@ my $_fmap = { active => 'active', address => 'address',
 my $_extend_column_map = sub {
    my ($cmap, $ncols) = @_; my $count = 0;
 
-   for my $k (qw( active name postcode password roles nok_active
+   for my $k (qw( active endorsements name postcode password roles nok_active
                   nok_first_name nok_surname nok_name nok_postcode
                   nok_email nok_password )) {
       $cmap->{ $k } = $ncols + $count++;
@@ -86,88 +87,128 @@ my $_extend_column_map = sub {
    return;
 };
 
-my $_make_id_from = sub {
-   my $x = shift; my $y = lc squeeze trim $x; $y =~ s{ [ \-] }{_}gmx; return $y;
+my $_natatime = sub {
+   my $n = shift; my @list = @_;
+
+   return sub { return $_[ 0 ] ? unshift @list, @_ : splice @list, 0, $n };
+};
+
+my $_make_key_from = sub {
+   my $x = shift; my $k = lc squeeze trim $x; $k =~ s{ [ \-] }{_}gmx; return $k;
 };
 
 # Private methods
-my $_postcode_check = sub {
-   my ($self, $dv, $cmap, $lno, $columns, $prefix) = @_; $prefix //= NUL;
+my $_enhance_points = sub {
+   my ($self, $dv, $cmap, $lno, $cols) = @_;
 
-   my $address    = $columns->[ $cmap->{ $prefix.$_fmap->{ 'address' } } ];
+   my $points   = $cols->[ $cmap->{points} ]; $points =~ s{[\(\)]}{\"}gmx;
+   my $splitter = Data::Record->new( { split => SPC, unless => QUOTED_RE } );
+   my $iter     = $_natatime->( 3, $splitter->records( $points ) );
+
+   while (my @vals = $iter->()) {
+      my $endorsed; try { $endorsed = to_dt $vals[ 2 ] } catch {};
+
+      if ($vals[ 0 ] =~ m{ \A \d+ \z }mx and $endorsed) {
+         my $type_code = { SP30 => 'Speeding 30' }->{ uc $vals[ 1 ] };
+         my $endorsement = {
+            endorsed => $endorsed,
+            points => $vals[ 0 ],
+            type_code => $type_code // $vals[ 1 ] };
+         my @peek = $iter->(); my $notes;
+
+         if ($peek[ 0 ]) {
+            $peek[ 0 ] !~ m{ \A \d+ \z }mx and $notes = shift @peek;
+            $iter->( @peek );
+         }
+
+         $notes and $notes =~ s{ [\'\"] }{}gmx;
+         $notes and $endorsement->{notes} = ucfirst $notes;
+         push @{ $cols->[ $cmap->{endorsements} ] }, $endorsement;
+      }
+      else { shift @vals; $vals[ 0 ] and $iter->( @vals ) }
+   }
+
+   return;
+};
+
+my $_enhance_postcode = sub {
+   my ($self, $dv, $cmap, $lno, $cols, $prefix) = @_; $prefix //= NUL;
+
+   my $address    = $cols->[ $cmap->{ $prefix.$_fmap->{address} } ];
    my ($postcode) = $address =~ m{ ([a-zA-Z0-9]+ \s? [a-zA-Z0-9]+) \z }mx;
 
    try {
       $dv->check_field( 'postcode', $postcode );
       $address =~ s{ ([a-zA-Z0-9]+ \s? [a-zA-Z0-9]+) \z }{}mx;
-      $columns->[ $cmap->{ $prefix.$_fmap->{ 'address'  } } ] = $address;
-      $columns->[ $cmap->{ $prefix.$_fmap->{ 'postcode' } } ] = $postcode;
+      $cols->[ $cmap->{ $prefix.$_fmap->{address } } ] = $address;
+      $cols->[ $cmap->{ $prefix.$_fmap->{postcode} } ] = $postcode;
    }
    catch {
       $self->warning( 'Bad postcode line [_1]: [_2]',
          { args => [ $lno, $postcode ], no_quote_bind_values => TRUE } );
-      $columns->[ $cmap->{ $prefix.$_fmap->{ 'address'  } } ] = $address;
+      $cols->[ $cmap->{ $prefix.$_fmap->{address } } ] = $address;
    };
 
    return;
 };
 
 my $_enhance_nok_columns = sub {
-   my ($self, $dv, $cmap, $lno, $columns, $nok) = @_;
+   my ($self, $dv, $cmap, $lno, $cols, $nok) = @_;
 
-   $columns->[ $cmap->{ 'nok_'.$_fmap->{ 'active' } } ] = TRUE;
+   $cols->[ $cmap->{ 'nok_'.$_fmap->{active} } ] = TRUE;
 
-   ($columns->[ $cmap->{ 'nok_'.$_fmap->{ 'first_name' } } ],
-    $columns->[ $cmap->{ 'nok_'.$_fmap->{ 'last_name' } } ])
+   ($cols->[ $cmap->{ 'nok_'.$_fmap->{first_name} } ],
+    $cols->[ $cmap->{ 'nok_'.$_fmap->{last_name } } ])
       = split SPC, (squeeze trim $nok), 2;
 
-   $columns->[ $cmap->{ 'nok_'.$_fmap->{ 'name' } } ]
-      = lc $columns->[ $cmap->{ 'nok_'.$_fmap->{ 'first_name' } } ].'.'
-      .    $columns->[ $cmap->{ 'nok_'.$_fmap->{ 'last_name'  } } ];
+   $cols->[ $cmap->{ 'nok_'.$_fmap->{name} } ]
+      = lc $cols->[ $cmap->{ 'nok_'.$_fmap->{first_name} } ].'.'
+      .    $cols->[ $cmap->{ 'nok_'.$_fmap->{last_name } } ];
 
-   $columns->[ $cmap->{ 'nok_'.$_fmap->{ 'email_address' } } ]
-      = lc $columns->[ $cmap->{ 'nok_'.$_fmap->{ 'name' } } ].'@example.com';
+   $cols->[ $cmap->{ 'nok_'.$_fmap->{email_address} } ]
+      = lc $cols->[ $cmap->{ 'nok_'.$_fmap->{name} } ].'@example.com';
 
-   $columns->[ $cmap->{ 'nok_'.$_fmap->{ 'password' } } ]
+   $cols->[ $cmap->{ 'nok_'.$_fmap->{password} } ]
       = substr create_token, 0, 12;
 
-   $columns->[ $cmap->{ 'nok_'.$_fmap->{ 'address' } } ] or
-      $columns->[ $cmap->{ 'nok_'.$_fmap->{ 'address' } } ]
-         = $columns->[ $cmap->{ $_fmap->{ 'address' } } ].SPC
-         . $columns->[ $cmap->{ $_fmap->{ 'postcode' } } ];
+   $cols->[ $cmap->{ 'nok_'.$_fmap->{address} } ] or
+      $cols->[ $cmap->{ 'nok_'.$_fmap->{address} } ]
+         = $cols->[ $cmap->{ $_fmap->{address } } ].SPC
+         . $cols->[ $cmap->{ $_fmap->{postcode} } ];
 
-   $self->$_postcode_check( $dv, $cmap, $lno, $columns, 'nok_' );
+   $self->$_enhance_postcode( $dv, $cmap, $lno, $cols, 'nok_' );
    return;
 };
 
 my $_enhance_person_columns = sub {
-   my ($self, $dv, $cmap, $lno, $columns) = @_;
+   my ($self, $dv, $cmap, $lno, $cols) = @_;
 
-   $columns->[ $cmap->{ $_fmap->{ 'active' } } ] = TRUE;
+   $cols->[ $cmap->{ $_fmap->{active} } ] = TRUE;
 
-   $columns->[ $cmap->{ $_fmap->{ 'name' } } ]
-      = lc $columns->[ $cmap->{ $_fmap->{ 'first_name' } } ].'.'
-      .    $columns->[ $cmap->{ $_fmap->{ 'last_name'  } } ];
+   $cols->[ $cmap->{ $_fmap->{name} } ]
+      = lc $cols->[ $cmap->{ $_fmap->{first_name} } ].'.'
+      .    $cols->[ $cmap->{ $_fmap->{last_name } } ];
 
-   $columns->[ $cmap->{ $_fmap->{ 'password' } } ] = substr create_token, 0, 12;
+   $cols->[ $cmap->{ $_fmap->{email_address} } ]
+      or $cols->[ $cmap->{ $_fmap->{email_address} } ]
+            = $cols->[ $cmap->{ $_fmap->{name} } ].'@example.com';
 
-   $self->$_postcode_check( $dv, $cmap, $lno, $columns );
+   $cols->[ $cmap->{ $_fmap->{password} } ] = substr create_token, 0, 12;
 
-   $columns->[ $cmap->{ $_fmap->{ 'email_address' } } ]
-      or $columns->[ $cmap->{ $_fmap->{ 'email_address' } } ]
-            = $columns->[ $cmap->{ $_fmap->{ 'name' } } ].'@example.com';
+   $self->$_enhance_points( $dv, $cmap, $lno, $cols );
+   $self->$_enhance_postcode( $dv, $cmap, $lno, $cols );
 
    for my $col (qw( joined subscription )) {
-      my $i = $cmap->{ $_fmap->{ $col } }; defined $columns->[ $i ]
-         and $columns->[ $i ] = to_dt $columns->[ $i ];
+      my $i = $cmap->{ $_fmap->{ $col } }; defined $cols->[ $i ]
+         and $cols->[ $i ] = to_dt $cols->[ $i ];
    }
 
-   if (my $duties = $columns->[ $cmap->{ $_fmap->{ 'roles' } } ]) {
+   if (my $duties = $cols->[ $cmap->{ $_fmap->{roles} } ]) {
       for my $duty (split m{}mx, $duties) {
          my $role = { C => 'controller',  D => 'driver',
                       F => 'fund_raiser', R => 'bike_rider', }->{ uc $duty };
 
-         $role and push @{ $columns->[ $cmap->{ 'roles' } ] }, $role;
+         $role and push @{ $cols->[ $cmap->{roles} ] }, $role;
       }
    }
 
@@ -212,6 +253,8 @@ my $_qualify_assets = sub {
 
 my $_send_email = sub {
    my ($self, $template, $person, $stash, $attaches) = @_;
+
+   $person->email_address =~ m{ \@ example\.com \z }imx and return;
 
    $template = "[% WRAPPER 'hyde/email_layout.tt' %]${template}[% END %]";
 
@@ -274,40 +317,13 @@ my $_update_person = sub {
    return $person->update;
 };
 
-my $_create_person = sub {
-   my ($self, $csv, $ncols, $dv, $cmap, $lno, $line) = @_; $lno++;
+my $_update_or_new_person = sub {
+   my ($self, $person_attr, $roles, $blots, $nok_attr) = @_;
 
-   my $status = $csv->parse( $line ); my @columns = $csv->fields();
-
-   $columns[ $cmap->{ $_fmap->{ 'first_name' } } ] or return $lno;
-
-   my $columns = [ splice @columns, 0, $ncols ];
-
-   $self->$_enhance_person_columns( $dv, $cmap, $lno, $columns );
-
-   if (my $nok = $columns->[ $cmap->{ 'next_of_kin' } ]) {
-      $self->$_enhance_nok_columns( $dv, $cmap, $lno, $columns, $nok );
-   }
-
-   $self->debug and $self->dumper( $columns );
-
-   my $nok_attr = {}; my $person_attr = {};
-
-   for my $col (grep { $_ ne 'roles' } keys %{ $_fmap }) {
-      my $i = $cmap->{ 'nok_'.$_fmap->{ $col } };
-      my $v; defined $i and $v = $columns->[ $i ]
-         and $nok_attr->{ $col } = squeeze trim $v;
-
-      $person_attr->{ $col }
-         = squeeze trim $columns->[ $cmap->{ $_fmap->{ $col } } ];
-   }
-
-   my $roles     = $columns->[ $cmap->{ 'roles' } ];
    my $has_nok   = $nok_attr->{email_address} ? TRUE : FALSE;
    my $person_rs = $self->schema->resultset( 'Person' );
+   my $blot_rs   = $self->schema->resultset( 'Endorsement' );
    my $dry_run   = $self->dry_run;
-
-   $self->debug and $self->dumper( $person_attr, $roles, $nok_attr );
 
    try   {
       my $nok; $has_nok and $nok
@@ -324,6 +340,11 @@ my $_create_person = sub {
          else { $_update_person->( $person, $person_attr ) }
 
          for my $role (@{ $roles }) { $person->add_member_to( $role ) }
+
+         for my $blot_attr (@{ $blots }) {
+            $blot_attr->{recipient_id} = $person->id;
+            $blot_rs->create( $blot_attr );
+         }
       } );
       $self->info( 'Created [_1]([_2])',
                    { args => [ $person->label, $person->shortcode ],
@@ -335,6 +356,43 @@ my $_create_person = sub {
       }
       else { $self->warning( $_ ) }
    };
+
+   return;
+};
+
+my $_create_person = sub {
+   my ($self, $csv, $ncols, $dv, $cmap, $lno, $line) = @_; $lno++;
+
+   my $status = $csv->parse( $line ); my @columns = $csv->fields();
+
+   $columns[ $cmap->{ $_fmap->{first_name} } ] or return $lno;
+
+   my $columns = [ splice @columns, 0, $ncols ];
+
+   $self->$_enhance_person_columns( $dv, $cmap, $lno, $columns );
+
+   if (my $nok = $columns->[ $cmap->{next_of_kin} ]) {
+      $self->$_enhance_nok_columns( $dv, $cmap, $lno, $columns, $nok );
+   }
+
+   $self->debug and $self->dumper( $columns );
+
+   my $nok_attr = {}; my $person_attr = {};
+
+   for my $col (grep { $_ ne 'roles' } keys %{ $_fmap }) {
+      my $i = $cmap->{ 'nok_'.$_fmap->{ $col } };
+      my $v; defined $i and $v = $columns->[ $i ]
+         and $nok_attr->{ $col } = squeeze trim $v;
+
+      $person_attr->{ $col }
+         = squeeze trim $columns->[ $cmap->{ $_fmap->{ $col } } ];
+   }
+
+   my $roles = $columns->[ $cmap->{roles} ];
+   my $blots = $columns->[ $cmap->{endorsements} ];
+
+   $self->debug and $self->dumper( $person_attr, $roles, $blots, $nok_attr );
+   $self->$_update_or_new_person( $person_attr, $roles, $blots, $nok_attr );
 
    return $lno;
 };
@@ -416,18 +474,17 @@ sub import_people : method {
    my $status = $csv->parse( $io->getline );
    my $f      = FALSE;
    my $cno    = 0;
-   my $cmap   = { map { $_make_id_from->( $_->[ 0 ] ) => $_->[ 1 ] }
+   my $cmap   = { map { $_make_key_from->( $_->[ 0 ] ) => $_->[ 1 ] }
                   map { [ $_ ? $_ : "col${cno}", $cno++ ] }
                   reverse grep { $_ and $f = TRUE; $f }
                   reverse $csv->fields() };
-   my $ncols  = keys %{ $cmap };
+   my $ncols  = keys %{ $cmap }; $_extend_column_map->( $cmap, $ncols );
 
-   $_extend_column_map->( $cmap, $ncols );
+   $self->debug and $self->dumper( $cmap );
 
    ensure_class_loaded my $class = (blessed $self->schema).'::Result::Person';
 
-   my $dv  = Data::Validation->new( $class->validation_attributes );
-   my $lno = 1; $self->debug and $self->dumper( $cmap );
+   my $dv = Data::Validation->new( $class->validation_attributes ); my $lno = 1;
 
    while (defined (my $line = $io->getline)) {
       $lno = $self->$_create_person( $csv, $ncols, $dv, $cmap, $lno, $line );

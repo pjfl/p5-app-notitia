@@ -4,8 +4,8 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( VARCHAR_MAX_SIZE );
-use App::Notitia::Util      qw( date_data_type foreign_key_data_type loc
+use App::Notitia::Constants qw( TRUE VARCHAR_MAX_SIZE );
+use App::Notitia::Util      qw( foreign_key_data_type loc
                                 numerical_id_data_type varchar_data_type );
 use Class::Usul::Functions  qw( create_token );
 
@@ -14,14 +14,16 @@ my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 $class->table( 'endorsement' );
 
 $class->add_columns
-   ( recipient_id => foreign_key_data_type,
-     points       => numerical_id_data_type,
-     endorsed     => date_data_type,
-     type_code    => varchar_data_type( 25 ),
-     uri          => varchar_data_type( 32 ),
-     notes        => varchar_data_type, );
+   ( recipient_id   => foreign_key_data_type,
+     points         => numerical_id_data_type,
+     endorsed       => {
+        data_type   => 'datetime', datetime_undef_if_invalid => TRUE,
+        timezone    => 'GMT', },
+     type_code      => varchar_data_type( 25 ),
+     uri            => varchar_data_type( 32 ),
+     notes          => varchar_data_type, );
 
-$class->set_primary_key( 'recipient_id', 'type_code' );
+$class->set_primary_key( 'recipient_id', 'type_code', 'endorsed' );
 
 $class->add_unique_constraint( [ 'uri' ] );
 
@@ -36,8 +38,9 @@ my $_set_uri = sub {
    my $self     = shift;
    my $columns  = { $self->get_inflated_columns };
    my $recip_id = $columns->{recipient_id};
-   my $tcode    = lc $columns->{type_code}; $tcode =~ s{ [ ] }{-}gmx;
-   my $token    = lc substr create_token( $tcode.$recip_id ), 0, 6;
+   my $tcode    = lc $columns->{type_code}; $tcode =~ s{ [ \-] }{_}gmx;
+   my $endorsed = $columns->{endorsed}->clone->set_time_zone( 'local' )->ymd;
+   my $token    = lc substr create_token( $tcode.$recip_id.$endorsed ), 0, 6;
 
    $columns->{uri} = "${tcode}-${token}";
    $self->set_inflated_columns( $columns );

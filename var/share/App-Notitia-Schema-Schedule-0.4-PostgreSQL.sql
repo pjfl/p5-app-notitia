@@ -51,11 +51,11 @@ DROP TABLE "endorsement" CASCADE;
 CREATE TABLE "endorsement" (
   "recipient_id" integer NOT NULL,
   "points" smallint NOT NULL,
-  "endorsed" timestamp,
+  "endorsed" timestamp NOT NULL,
   "type_code" character varying(25) DEFAULT '' NOT NULL,
   "uri" character varying(32) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,
-  PRIMARY KEY ("recipient_id", "type_code"),
+  PRIMARY KEY ("recipient_id", "type_code", "endorsed"),
   CONSTRAINT "endorsement_uri" UNIQUE ("uri")
 );
 CREATE INDEX "endorsement_idx_recipient_id" on "endorsement" ("recipient_id");
