@@ -39,7 +39,9 @@ around 'get_stash' => sub {
 };
 
 my $_is_user_authorised = sub {
-   my ($self, $req, $node) = @_; my $nroles = $node->{role};
+   my ($self, $req, $node) = @_;
+
+   my $nroles = $node->{role} // $node->{roles};
 
    $nroles = is_arrayref( $nroles ) ? $nroles : $nroles ? [ $nroles ] : [];
 
@@ -47,8 +49,7 @@ my $_is_user_authorised = sub {
    $req->authenticated or return FALSE;
    is_member 'any',  $nroles and return TRUE;
 
-   my $person = $self->components->{person}->find_by_shortcode( $req->username);
-   my $proles = $person->list_roles;
+   my $proles = $req->session->roles;
 
    is_member 'editor', $proles and return TRUE;
 

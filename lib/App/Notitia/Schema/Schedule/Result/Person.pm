@@ -349,7 +349,11 @@ sub insert {
    my $last     = $columns->{last_name};
    my $password = $columns->{password};
 
-   $columns->{name} or $columns->{name} = lc "${first}.${last}";
+   unless ($columns->{name}) {
+      $columns->{name} = lc "${first}.${last}";
+      $columns->{name} =~ s{[\'\-\+]}{}gmx;
+   }
+
    $columns->{shortcode} or $columns->{shortcode}
       = $self->$_new_shortcode( $first, $last );
    $password and not is_encrypted( $password ) and $columns->{password}

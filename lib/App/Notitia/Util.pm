@@ -66,13 +66,12 @@ my $bind_option = sub {
 };
 
 my $_can_see_link = sub {
-   my ($req, $node) = @_;
+   my ($req, $node) = @_; $node->{type} eq 'folder' and return TRUE;
 
-   ($node->{type} eq 'folder' or $req->authenticated) and return TRUE;
-
-   my $roles = is_arrayref( $node->{role} ) ?   $node->{role}
-             :              $node->{role}   ? [ $node->{role} ]
-                                            : [];
+   my $nroles = $node->{role} // $node->{roles};
+   my $roles  = is_arrayref( $nroles ) ?   $nroles
+              :              $nroles   ? [ $nroles ]
+                                       : [];
 
    is_member( 'anon', $roles ) and return TRUE;
 
