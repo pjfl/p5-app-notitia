@@ -96,7 +96,7 @@ my $_word_iter = sub {
 };
 
 # Private methods
-my $_enhance_blots = sub {
+my $_populate_blots = sub {
    my ($self, $dv, $cmap, $lno, $cols) = @_;
 
    my $tc_map = $self->config->import_people->{pcode2blot_map};
@@ -128,7 +128,7 @@ my $_enhance_blots = sub {
    return;
 };
 
-my $_enhance_certs = sub {
+my $_populate_certs = sub {
    my ($self, $dv, $cmap, $lno, $cols) = @_;
 
    my $x_map = $self->config->import_people->{extra2csv_map};
@@ -150,7 +150,7 @@ my $_enhance_certs = sub {
    return;
 };
 
-my $_enhance_certs_from_roles = sub {
+my $_populate_certs_from_roles = sub {
    my ($self, $cmap, $cols) = @_;
 
    my $roles = $cols->[ $cmap->{roles} ] //= [];
@@ -177,7 +177,7 @@ my $_enhance_certs_from_roles = sub {
    return;
 };
 
-my $_enhance_postcode = sub {
+my $_populate_postcode = sub {
    my ($self, $dv, $cmap, $lno, $cols, $prefix) = @_; $prefix //= NUL;
 
    my $p2cmap     = $self->config->import_people->{person2csv_map};
@@ -199,7 +199,7 @@ my $_enhance_postcode = sub {
    return;
 };
 
-my $_enhance_nok_columns = sub {
+my $_populate_nok_columns = sub {
    my ($self, $dv, $cmap, $lno, $cols, $nok) = @_;
 
    my $p2cmap = $self->config->import_people->{person2csv_map};
@@ -227,11 +227,11 @@ my $_enhance_nok_columns = sub {
          = $cols->[ $cmap->{ $p2cmap->{address } } ].SPC
          . $cols->[ $cmap->{ $p2cmap->{postcode} } ];
 
-   $self->$_enhance_postcode( $dv, $cmap, $lno, $cols, 'nok_' );
+   $self->$_populate_postcode( $dv, $cmap, $lno, $cols, 'nok_' );
    return;
 };
 
-my $_enhance_person_columns = sub {
+my $_populate_member_columns = sub {
    my ($self, $dv, $cmap, $lno, $cols) = @_;
 
    my $p2cmap = $self->config->import_people->{person2csv_map};
@@ -250,9 +250,9 @@ my $_enhance_person_columns = sub {
 
    $cols->[ $cmap->{ $p2cmap->{password} } ] = substr create_token, 0, 12;
 
-   $self->$_enhance_blots( $dv, $cmap, $lno, $cols );
-   $self->$_enhance_certs( $dv, $cmap, $lno, $cols );
-   $self->$_enhance_postcode( $dv, $cmap, $lno, $cols );
+   $self->$_populate_blots( $dv, $cmap, $lno, $cols );
+   $self->$_populate_certs( $dv, $cmap, $lno, $cols );
+   $self->$_populate_postcode( $dv, $cmap, $lno, $cols );
 
    for my $col (qw( joined subscription )) {
       my $i = $cmap->{ $p2cmap->{ $col } }; defined $cols->[ $i ]
@@ -271,7 +271,7 @@ my $_enhance_person_columns = sub {
    return;
 };
 
-my $_enhance_vehicles = sub {
+my $_populate_vehicles = sub {
    my ($self, $cmap, $cols) = @_;
 
    my $x_map    = $self->config->import_people->{extra2csv_map};
@@ -381,9 +381,9 @@ my $_send_sms = sub {
 };
 
 my $_update_person = sub {
-   my ($self, $person, $person_attr) = @_;
+   my ($conf, $person, $person_attr) = @_;
 
-   my $p2cmap = $self->config->import_people->{person2csv_map};
+   my $p2cmap = $conf->import_people->{person2csv_map};
 
    for my $col (grep { $_ ne 'roles' } keys %{ $p2cmap }) {
       exists $person_attr->{ $col } and defined $person_attr->{ $col }
@@ -393,15 +393,58 @@ my $_update_person = sub {
    return $person->update;
 };
 
+my $_import_code = sub {
+   my ($self, $cmap, $cols, $nok, $person, $person_attr) = @_;
+
+   my $cert_rs    = $self->schema->resultset( 'Certification' );
+   my $blot_rs    = $self->schema->resultset( 'Endorsement' );
+   my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
+
+   return sub {
+      $self->dry_run and return;
+      $nok and not $nok->in_storage and $nok->insert;
+      $nok and $person->next_of_kin_id( $nok->id );
+
+      if (not $person->in_storage) { $person->insert }
+      else { $_update_person->( $self->config, $person, $person_attr ) }
+
+      for my $role (@{ $cols->[ $cmap->{roles} ] }) {
+         $person->add_member_to( $role );
+      }
+
+      for my $cert_attr (@{ $cols->[ $cmap->{certifications} ] }) {
+         $cert_attr->{recipient_id} = $person->id;
+         try { $cert_rs->create( $cert_attr ) } catch {
+            $self->warning( 'Cert. creation failed: [_1]',
+                            { args => [ $_ ], no_quote_bind_values => TRUE } );
+         };
+      }
+
+      for my $blot_attr (@{ $cols->[ $cmap->{endorsements} ] }) {
+         $blot_attr->{recipient_id} = $person->id;
+         try { $blot_rs->create( $blot_attr ) } catch {
+            $self->warning( 'Endorsement creation failed: [_1]',
+                            { args => [ $_ ], no_quote_bind_values => TRUE } );
+         };
+      }
+
+      for my $vehicle_attr (@{ $cols->[ $cmap->{vehicles} ] }) {
+         $vehicle_attr->{owner_id} = $person->id;
+         try { $vehicle_rs->create( $vehicle_attr ) } catch {
+            $self->warning( 'Vehicle creation failed: [_1]',
+                            { args => [ $_ ], no_quote_bind_values => TRUE } )
+         };
+      }
+
+      return;
+   };
+};
+
 my $_update_or_new_person = sub {
    my ($self, $cmap, $cols, $nok_attr, $person_attr) = @_;
 
-   my $has_nok    = $nok_attr->{email_address} ? TRUE : FALSE;
-   my $cert_rs    = $self->schema->resultset( 'Certification' );
-   my $blot_rs    = $self->schema->resultset( 'Endorsement' );
-   my $person_rs  = $self->schema->resultset( 'Person' );
-   my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
-   my $dry_run    = $self->dry_run;
+   my $has_nok   = $nok_attr->{email_address} ? TRUE : FALSE;
+   my $person_rs = $self->schema->resultset( 'Person' );
 
    try   {
       my $nok; $has_nok and $nok
@@ -409,42 +452,9 @@ my $_update_or_new_person = sub {
       my $person = $person_rs->find_or_new
          ( $person_attr, { key => 'person_name' } );
 
-      $self->schema->txn_do( sub {
-         $dry_run and return;
-         $has_nok and not $nok->in_storage and $nok->insert;
-         $has_nok and $person->next_of_kin_id( $nok->id );
+      $self->schema->txn_do
+         ( $self->$_import_code( $cmap, $cols, $nok, $person, $person_attr ) );
 
-         if (not $person->in_storage) { $person->insert }
-         else { $self->$_update_person( $person, $person_attr ) }
-
-         for my $role (@{ $cols->[ $cmap->{roles} ] }) {
-            $person->add_member_to( $role );
-         }
-
-         for my $cert_attr (@{ $cols->[ $cmap->{certifications} ] }) {
-            $cert_attr->{recipient_id} = $person->id;
-            try { $cert_rs->create( $cert_attr ) } catch {
-               $self->warning( 'Cert. creation faied: [_1]',
-                  { args => [ $_ ], no_quote_bind_values => TRUE } );
-            };
-         }
-
-         for my $blot_attr (@{ $cols->[ $cmap->{endorsements} ] }) {
-            $blot_attr->{recipient_id} = $person->id;
-            try { $blot_rs->create( $blot_attr ) } catch {
-               $self->warning( 'Endorsement creation faied: [_1]',
-                  { args => [ $_ ], no_quote_bind_values => TRUE } );
-            };
-         }
-
-         for my $vehicle_attr (@{ $cols->[ $cmap->{vehicles} ] }) {
-            $vehicle_attr->{owner_id} = $person->id;
-            try { $vehicle_rs->create( $vehicle_attr ) } catch {
-               $self->warning( 'Vehicle creation faied: [_1]',
-                  { args => [ $_ ], no_quote_bind_values => TRUE } )
-            };
-         }
-      } );
       $self->info( 'Created [_1]([_2])',
                    { args => [ $person->label, $person->shortcode ],
                      no_quote_bind_values => TRUE }  );
@@ -469,17 +479,16 @@ my $_create_person = sub {
    $columns[ $cmap->{ $p2cmap->{first_name} } ] or return $lno;
 
    my $columns = [ splice @columns, 0, $ncols ];
+   my $x_map   = $self->config->import_people->{extra2csv_map};
 
-   $self->$_enhance_person_columns( $dv, $cmap, $lno, $columns );
-
-   my $x_map = $self->config->import_people->{extra2csv_map};
+   $self->$_populate_member_columns( $dv, $cmap, $lno, $columns );
 
    if (my $nok = $columns->[ $cmap->{ $x_map->{next_of_kin} } ]) {
-      $self->$_enhance_nok_columns( $dv, $cmap, $lno, $columns, $nok );
+      $self->$_populate_nok_columns( $dv, $cmap, $lno, $columns, $nok );
    }
 
-   $self->$_enhance_certs_from_roles( $cmap, $columns );
-   $self->$_enhance_vehicles( $cmap, $columns );
+   $self->$_populate_certs_from_roles( $cmap, $columns );
+   $self->$_populate_vehicles( $cmap, $columns );
 
    my $nok_attr = {}; my $person_attr = {};
 
@@ -569,10 +578,10 @@ sub deploy_and_populate : method {
 sub import_people : method {
    my $self   = shift;
    my $file   = $self->next_argv or throw Unspecified, [ 'file name' ];
-   my $io     = io $file;
+   my $f_io   = io $file;
    my $csv    = Text::CSV->new ( { binary => 1 } )
                 or throw Text::CSV->error_diag();
-   my $status = $csv->parse( $io->getline );
+   my $status = $csv->parse( $f_io->getline );
    my $f      = FALSE;
    my $cno    = 0;
    my $cmap   = { map { $_make_key_from->( $_->[ 0 ] ) => $_->[ 1 ] }
@@ -587,7 +596,7 @@ sub import_people : method {
 
    my $dv = Data::Validation->new( $class->validation_attributes ); my $lno = 1;
 
-   while (defined (my $line = $io->getline)) {
+   while (defined (my $line = $f_io->getline)) {
       $lno = $self->$_create_person( $csv, $ncols, $dv, $cmap, $lno, $line );
    }
 

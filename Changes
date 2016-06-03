@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Refactored CSV import code
           - Fixed missing private vehicle in day rota
           - Added smarter links to paged query navigation
           - Can email/sms from draft docs
