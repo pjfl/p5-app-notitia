@@ -218,17 +218,19 @@ my $_onclick_relocate = sub {
 };
 
 my $_operators_vehicle = sub {
-   my ($slot, $cache) = @_; $slot->operator->id or return NUL;
+   my ($slot, $cache) = @_; $slot->operator->id or return NUL; my $label;
 
    exists $cache->{ $slot->operator->id }
       and return $cache->{ $slot->operator->id };
 
-   my $pv      = ($slot->operator_vehicles->all)[ 0 ];
-   my $pv_type = $pv ? $pv->type : NUL;
-   my $label   = $pv_type eq '4x4' ? $pv_type
-               : $pv_type eq 'car' ? ucfirst( $pv_type ) : undef;
+   for my $pv ($slot->operator_vehicles->all) {
+      $label = $pv->type eq '4x4' ? $pv->type
+             : $pv->type eq 'car' ? ucfirst( $pv->type ) : undef;
 
-   return $cache->{ $slot->operator->id } = $label;
+      $label and last;
+   }
+
+   return $cache->{ $slot->operator->id } = $label // NUL;
 };
 
 my $_prev_month = sub {
