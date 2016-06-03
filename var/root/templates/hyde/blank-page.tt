@@ -1,5 +1,7 @@
 ---
 author: [% page.author %]
 created: [% page.created %]
+roles:
+   - editor
 ---
 Page intentionally created blank

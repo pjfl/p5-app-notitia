@@ -24,14 +24,16 @@ my $_flatten = sub {
 };
 
 my $_plate_label = sub {
-   my $v = ucfirst $_[ 0 ]->basename( '.tt' ); $v =~ s{[_\-]}{ }gmx; return $v;
+   my $v = ucfirst $_[ 0 ]->basename( '.md' ); $v =~ s{[_\-]}{ }gmx; return $v;
 };
 
 # Private methods
 my $_list_message_templates = sub {
-   my $self   = shift;
-   my $dir    = $self->config->assetdir->clone;
-   my $plates = $dir->filter( sub { m{ \.tt \z }mx } );
+   my ($self, $req) = @_;
+
+   my $conf   = $self->config;
+   my $dir    = $conf->docs_root->catdir( $req->locale, $conf->drafts );
+   my $plates = $dir->filter( sub { m{ \.md \z }mx } );
 
    return [ map { [ $_plate_label->( $_ ), "${_}" ] } $plates->all_files ];
 };
@@ -81,7 +83,7 @@ sub message_stash {
    my $params    = $req->query_params->( { optional => TRUE } ) // {};
    my $stash     = $self->dialog_stash( $req, $opts->{layout} );
    my $actionp   = $self->moniker.'/'.$opts->{action};
-   my $templates = $self->$_list_message_templates;
+   my $templates = $self->$_list_message_templates( $req );
    my $fields    = $stash->{page}->{fields};
    my $values    = [ [ 'Email', 'email', { selected => TRUE } ],
                      [ 'SMS',   'sms' ] ];

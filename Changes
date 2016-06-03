@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Can email/sms from draft docs
           - Added next badge id to create person
           - Added vehicle creation in CSV import
           - Less irritating page controls

@@ -76,6 +76,7 @@ my $_can_see_link = sub {
    is_member( 'anon', $roles ) and return TRUE;
 
    for my $prole (@{ $req->session->roles }) {
+      $prole eq 'editor' and return TRUE;
       is_member( $prole, $roles ) and return TRUE;
    }
 
