@@ -3,7 +3,7 @@ package App::Notitia::Schema;
 use namespace::autoclean;
 
 use App::Notitia;
-use App::Notitia::Constants qw( AS_PASSWORD EXCEPTION_CLASS FALSE NUL
+use App::Notitia::Constants qw( AS_PASSWORD COMMA EXCEPTION_CLASS FALSE NUL
                                 OK QUOTED_RE SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::SMS;
 use App::Notitia::Util      qw( encrypted_attr load_file_data
@@ -70,7 +70,7 @@ my $_extend_column_map = sub {
 
    for my $k (qw( active certifications endorsements name postcode password
                   roles nok_active nok_first_name nok_surname nok_name
-                  nok_postcode nok_email nok_password )) {
+                  nok_postcode nok_email nok_password vehicles )) {
       $cmap->{ $k } = $ncols + $count++;
    }
 
@@ -151,9 +151,12 @@ my $_enhance_certs = sub {
 };
 
 my $_enhance_certs_from_roles = sub {
-   my ($self, $roles, $certs) = @_;
+   my ($self, $cmap, $cols) = @_;
 
-   $roles and $roles->[ 0 ] or return; my $conf = $self->config;
+   my $roles = $cols->[ $cmap->{roles} ] //= [];
+   my $certs = $cols->[ $cmap->{certifications} ] //= [];
+
+   $roles->[ 0 ] or return; my $conf = $self->config;
 
    my $date = to_dt( '1/1/1970' )->set_time_zone( 'local' );
 
@@ -268,6 +271,24 @@ my $_enhance_person_columns = sub {
    return;
 };
 
+my $_enhance_vehicles = sub {
+   my ($self, $cmap, $cols) = @_;
+
+   my $x_map    = $self->config->import_people->{extra2csv_map};
+   my $splitter = Data::Record->new( { split => COMMA, unless => QUOTED_RE } );
+   my $vehicles = squeeze trim $cols->[ $cmap->{ $x_map->{vehicles} } ];
+   my @vehicles = $splitter->records( $vehicles );
+
+   for my $vehicle (map { s{[:]}{}mx; $_ } @vehicles) {
+      my ($type, $vrn, $desc) = split SPC, $vehicle, 3;
+
+      push @{ $cols->[ $cmap->{vehicles} ] },
+            { notes => $desc, type => lc $type, vrn => uc $vrn };
+   }
+
+   return;
+};
+
 my $_list_participents = sub {
    my $self      = shift;
    my $uri       = $self->options->{event};
@@ -373,13 +394,14 @@ my $_update_person = sub {
 };
 
 my $_update_or_new_person = sub {
-   my ($self, $nok_attr, $person_attr, $roles, $certs, $blots) = @_;
+   my ($self, $cmap, $cols, $nok_attr, $person_attr) = @_;
 
-   my $has_nok   = $nok_attr->{email_address} ? TRUE : FALSE;
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $cert_rs   = $self->schema->resultset( 'Certification' );
-   my $blot_rs   = $self->schema->resultset( 'Endorsement' );
-   my $dry_run   = $self->dry_run;
+   my $has_nok    = $nok_attr->{email_address} ? TRUE : FALSE;
+   my $cert_rs    = $self->schema->resultset( 'Certification' );
+   my $blot_rs    = $self->schema->resultset( 'Endorsement' );
+   my $person_rs  = $self->schema->resultset( 'Person' );
+   my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
+   my $dry_run    = $self->dry_run;
 
    try   {
       my $nok; $has_nok and $nok
@@ -395,9 +417,11 @@ my $_update_or_new_person = sub {
          if (not $person->in_storage) { $person->insert }
          else { $self->$_update_person( $person, $person_attr ) }
 
-         for my $role (@{ $roles }) { $person->add_member_to( $role ) }
+         for my $role (@{ $cols->[ $cmap->{roles} ] }) {
+            $person->add_member_to( $role );
+         }
 
-         for my $cert_attr (@{ $certs }) {
+         for my $cert_attr (@{ $cols->[ $cmap->{certifications} ] }) {
             $cert_attr->{recipient_id} = $person->id;
             try { $cert_rs->create( $cert_attr ) } catch {
                $self->warning( 'Cert. creation faied: [_1]',
@@ -405,11 +429,19 @@ my $_update_or_new_person = sub {
             };
          }
 
-         for my $blot_attr (@{ $blots }) {
+         for my $blot_attr (@{ $cols->[ $cmap->{endorsements} ] }) {
             $blot_attr->{recipient_id} = $person->id;
             try { $blot_rs->create( $blot_attr ) } catch {
                $self->warning( 'Endorsement creation faied: [_1]',
                   { args => [ $_ ], no_quote_bind_values => TRUE } );
+            };
+         }
+
+         for my $vehicle_attr (@{ $cols->[ $cmap->{vehicles} ] }) {
+            $vehicle_attr->{owner_id} = $person->id;
+            try { $vehicle_rs->create( $vehicle_attr ) } catch {
+               $self->warning( 'Vehicle creation faied: [_1]',
+                  { args => [ $_ ], no_quote_bind_values => TRUE } )
             };
          }
       } );
@@ -446,7 +478,8 @@ my $_create_person = sub {
       $self->$_enhance_nok_columns( $dv, $cmap, $lno, $columns, $nok );
    }
 
-   $self->debug and $self->dumper( $columns );
+   $self->$_enhance_certs_from_roles( $cmap, $columns );
+   $self->$_enhance_vehicles( $cmap, $columns );
 
    my $nok_attr = {}; my $person_attr = {};
 
@@ -459,14 +492,8 @@ my $_create_person = sub {
          = squeeze trim $columns->[ $cmap->{ $p2cmap->{ $col } } ];
    }
 
-   my $roles = $columns->[ $cmap->{roles} ];
-   my $blots = $columns->[ $cmap->{endorsements} ];
-   my $certs = $columns->[ $cmap->{certifications} ] //= [];
-
-   $self->$_enhance_certs_from_roles( $roles, $certs );
-   $self->debug and $self->dumper( $nok_attr, $person_attr, $certs );
-   $self->$_update_or_new_person
-      ( $nok_attr, $person_attr, $roles, $certs, $blots );
+   $self->debug and $self->dumper( $columns, $nok_attr, $person_attr );
+   $self->$_update_or_new_person( $cmap, $columns, $nok_attr, $person_attr );
 
    return $lno;
 };
@@ -563,6 +590,8 @@ sub import_people : method {
    while (defined (my $line = $io->getline)) {
       $lno = $self->$_create_person( $csv, $ncols, $dv, $cmap, $lno, $line );
    }
+
+   $self->config->badge_mtime->touch;
 
    return OK;
 }

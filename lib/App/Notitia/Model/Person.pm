@@ -10,6 +10,7 @@ use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
+use Class::Usul::Types      qw( ArrayRef );
 use Try::Tiny;
 use Moo;
 
@@ -24,6 +25,8 @@ with    q(App::Notitia::Role::Messaging);
 
 # Public attributes
 has '+moniker' => default => 'person';
+
+has 'max_badge_id' => is => 'ro', isa => ArrayRef, builder => sub { [ 0, 0 ] };
 
 register_action_paths
    'person/activate'       => 'person-activate',
@@ -227,6 +230,20 @@ my $_list_all_roles = sub {
    return [ [ NUL, NUL ], $type_rs->search_for_role_types->all ];
 };
 
+my $_next_badge_id = sub {
+   my $self    = shift;
+   my $file    = $self->config->badge_mtime; not $file->exists and $file->touch;
+   my $f_mtime = $file->stat->{mtime};
+
+   if ($f_mtime > $self->max_badge_id->[ 0 ]) {
+      $self->max_badge_id->[ 0 ] = $f_mtime;
+      $self->max_badge_id->[ 1 ]
+         = $self->schema->resultset( 'Person' )->max_badge_id;
+   }
+
+   return ++$self->max_badge_id->[ 1 ];
+};
+
 my $_people_ops_links = sub {
    my ($self, $req, $page, $params, $opts, $pager) = @_;
 
@@ -275,7 +292,8 @@ my $_update_person_from_request = sub {
    $person->name( $params->( 'username', $opts ) );
    $person->next_of_kin_id
       ( $_assert_not_self->( $person, $params->( 'next_of_kin', $opts ) ) );
-
+   $person->badge_id and $person->badge_id eq 'n'
+      and $person->badge_id( $self->$_next_badge_id );
    return;
 };
 
@@ -364,11 +382,11 @@ sub create_person_action : Role(person_manager) {
    $person->password( my $password = substr create_token, 0, 12 );
    $person->password_expired( TRUE );
 
-   my $coderef = sub {
+   my $create = sub {
       $person->insert; $role and $person->add_member_to( $role );
    };
 
-   try   { $self->schema->txn_do( $coderef ) }
+   try   { $self->schema->txn_do( $create ) }
    catch { $self->rethrow_exception( $_, 'create', 'person', $person->name ) };
 
    $self->config->no_user_email

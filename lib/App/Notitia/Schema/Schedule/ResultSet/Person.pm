@@ -111,6 +111,15 @@ sub list_people {
    return [ grep { $_->[ 1 ]->is_member_of( $role, $type ) } @{ $people } ];
 }
 
+sub max_badge_id {
+   my $self = shift;
+
+   my $rs        = $self->search( { 'badge_id' => { '!=' => undef } } );
+   my $rs_column = $rs->get_column( 'badge_id' );
+
+   return $rs_column->max;
+}
+
 sub search_for_people {
    my ($self, $opts) = @_; $opts = { %{ $opts // {} } }; delete $opts->{fields};
 

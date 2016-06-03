@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Added next badge id to create person
+          - Added vehicle creation in CSV import
           - Less irritating page controls
           - Adds certs based in roles in CSV import
           - Fix apostraphies in username in CSV import
