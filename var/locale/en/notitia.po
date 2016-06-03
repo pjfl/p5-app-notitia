@@ -234,6 +234,9 @@ msgstr "List current and future events"
 msgid "current_page_link"
 msgstr "[_1]"
 
+msgid "current_page_tip"
+msgstr "Stay on this page"
+
 msgid "current_people_list_link"
 msgstr "Active People"
 
@@ -299,6 +302,12 @@ msgstr "Drivers"
 
 msgid "driver_list_tip"
 msgstr "List drivers"
+
+msgid "earlier_page_link"
+msgstr "[_1]"
+
+msgid "earlier_page_tip"
+msgstr "Go to this page"
 
 msgid "editor"
 msgstr "Editor"
@@ -406,7 +415,10 @@ msgid "first_name"
 msgstr "First Name"
 
 msgid "first_page_link"
-msgstr "A"
+msgstr "Α"
+
+msgid "first_page_tip"
+msgstr "Goto page 1"
 
 msgid "fund_raiser"
 msgstr "Fund Raiser"
@@ -430,10 +442,19 @@ msgid "joined"
 msgstr "Joined"
 
 msgid "last_page_link"
-msgstr "Z"
+msgstr "Ω"
+
+msgid "last_page_tip"
+msgstr "Goto page [_1]"
 
 msgid "last_name"
 msgstr "Last Name"
+
+msgid "later_page_link"
+msgstr "[_1]"
+
+msgid "later_page_tip"
+msgstr "Goto this page"
 
 msgid "login"
 msgstr "Login"
@@ -571,7 +592,10 @@ msgid "next_of_kin"
 msgstr "Next of Kin"
 
 msgid "next_page_link"
-msgstr ">"
+msgstr "»"
+
+msgid "next_page_tip"
+msgstr "Goto page [_1]"
 
 msgid "night_controller_0"
 msgstr "Ctrl. Night"
@@ -709,7 +733,10 @@ msgid "previous_events_tip"
 msgstr "List previous events"
 
 msgid "prev_page_link"
-msgstr "<"
+msgstr "«"
+
+msgid "prev_page_tip"
+msgstr "Goto page [_1]"
 
 msgid "primary_role"
 msgstr "Primary Role"

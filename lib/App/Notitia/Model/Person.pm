@@ -247,15 +247,16 @@ my $_next_badge_id = sub {
 my $_people_ops_links = sub {
    my ($self, $req, $page, $params, $opts, $pager) = @_;
 
-   $params->{name} = 'message_people';
-
    my $moniker    = $self->moniker;
-   my $message    = $self->message_link
-      ( $req, $page, "${moniker}/message", $params );
    my $add_user   = create_link $req, "${moniker}/person",
                                 'person', { container_class => 'add-link' };
    my $page_links = page_link_set $req, "${moniker}/people", [],
                                   $params, $pager;
+
+   $params->{name} = 'message_people';
+
+   my $message    = $self->message_link
+      ( $req, $page, "${moniker}/message", $params );
    my $links      = [ $message, $add_user ];
 
    $page_links and unshift @{ $links }, $page_links;

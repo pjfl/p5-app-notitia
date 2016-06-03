@@ -47,14 +47,7 @@
 [%       LinkWithTips( f.href, f.class, f.value, f.hint,
                        f.tip, f.name, f.container_class ) -%]
 [%    END -%]
-[%    IF f.type == 'list' -%]
-[%       FOR field IN f.list; -%]
-[%          IF !loop.first && f.separator; -%]
-               &nbsp;[% f.separator %]&nbsp;
-[%          END -%]
-[%          Dispatch( field ) -%]
-[%       END -%]
-[%    END -%]
+[%    IF f.type == 'list'; List( f ); END -%]
 [%    IF f.type == 'select'; Select( f ); END -%]
 [%    IF f.type == 'text'; Text( f ); END -%]
 [%    IF f.type == 'textfield'; TextField( f ); END -%]
@@ -87,6 +80,14 @@
 [% MACRO Link( href, class, content, id ) BLOCK -%]
    <a class="[% class %]" href="[% href %]"[% IF id -%]
          id="[% id %]"[% END %]>[% content %]</a>
+[% END -%]
+[% MACRO List( f ) BLOCK -%]
+[%    FOR field IN f.list; -%]
+[%       IF !loop.first && f.separator; -%]
+            [% f.separator %]
+[%       END -%]
+[%       Dispatch( field ) -%]
+[%    END -%]
 [% END -%]
 [% MACRO LinkWithTips( href, class, text, title, tip, id, con_class ) BLOCK -%]
    <span class="link-help [% con_class %] tips"

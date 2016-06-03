@@ -139,7 +139,7 @@ my $_page_link = sub {
             hint  => loc( $req, 'Hint' ),
             href  => uri_for_action( $req, $actionp, $args, $params ),
             name  => $name,
-            tip   => loc( $req, "${name}_tip" ),
+            tip   => loc( $req, to_msg( "${name}_tip", $page ) ),
             type  => 'link',
             value => loc( $req, to_msg( "${name}_link", $page ) ), };
 };
@@ -750,7 +750,7 @@ sub operation_links ($) {
    return { class        => 'operation-links align-right right-last',
             content      => {
                list      => $list,
-               separator => '|',
+               separator => '&nbsp;|&nbsp;',
                type      => 'list', },
             type         => 'container', };
 }
@@ -762,18 +762,31 @@ sub page_link_set ($$$$$) {
 
    my $list = [ $_page_link->( $req, 'first_page', $actionp,
                                $args, $params, $pager->first_page ) ];
+   my $prev = $pager->previous_page || $pager->first_page;
+   my $next = $pager->next_page     || $pager->last_page;
+
+   if ((my $step = int( $pager->current_page / 2 )) > 3) {
+      my $page = $pager->current_page - $step;
+
+      $page > 1 and $page < $prev and push @{ $list },
+         $_page_link->( $req, 'earlier_page', $actionp, $args, $params, $page );
+   }
 
    push @{ $list }, $_page_link->( $req, 'prev_page', $actionp, $args,
-                                   $params, $pager->previous_page );
+                                   $params, $prev );
 
-   $pager->current_page > $pager->first_page
-      and $pager->current_page < $pager->last_page
-      and push @{ $list }, $_page_link->( $req, 'current_page', $actionp, $args,
-                                          $params, $pager->current_page );
-
+   push @{ $list }, $_page_link->( $req, 'current_page', $actionp, $args,
+                                   $params, $pager->current_page );
 
    push @{ $list }, $_page_link->( $req, 'next_page', $actionp, $args,
-                                   $params, $pager->next_page );
+                                   $params, $next );
+
+   if ((my $step = int( ($pager->last_page - $pager->current_page) / 2 )) > 3) {
+      my $page = $pager->current_page + $step;
+
+      $page > $next and $page < $pager->last_page and push @{ $list },
+         $_page_link->( $req, 'later_page', $actionp, $args, $params, $page );
+   }
 
    push @{ $list }, $_page_link->( $req, 'last_page', $actionp, $args,
                                    $params, $pager->last_page );
