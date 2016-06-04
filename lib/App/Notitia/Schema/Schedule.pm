@@ -6,9 +6,23 @@ use parent 'DBIx::Class::Schema';
 use File::Spec::Functions qw( catfile );
 use Scalar::Util          qw( blessed );
 
+use App::Notitia; our $VERSION = App::Notitia->schema_version;
+
 __PACKAGE__->load_namespaces;
 
+__PACKAGE__->load_components( qw( Schema::Versioned ) );
+
 my ($context, $config);
+
+sub deploy {
+   my ($self, @args) = @_;
+
+   eval {
+      $self->storage->_get_dbh->do( 'DROP TABLE dbix_class_schema_versions' );
+   };
+
+   return $self->next::method( @args );
+}
 
 sub accept_context {
    return defined $_[ 1 ] ? $context = $_[ 1 ] : $context;

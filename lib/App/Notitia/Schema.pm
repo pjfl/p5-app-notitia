@@ -6,8 +6,8 @@ use App::Notitia;
 use App::Notitia::Constants qw( AS_PASSWORD COMMA EXCEPTION_CLASS FALSE NUL
                                 OK QUOTED_RE SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::SMS;
-use App::Notitia::Util      qw( encrypted_attr load_file_data
-                                mail_domain to_dt );
+use App::Notitia::Util      qw( build_schema_version encrypted_attr
+                                load_file_data mail_domain to_dt );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
                                 io is_member squeeze throw trim );
@@ -36,13 +36,6 @@ my $_build_admin_password = sub {
              'admin_password', sub { $self->get_line( $prompt, AS_PASSWORD ) };
 };
 
-my $_build_schema_version = sub {
-   my ($major, $minor) = $VERSION =~ m{ (\d+) \. (\d+) }mx;
-
-   # TODO: This will break when major number bumps
-   return $major.'.'.($minor + 1);
-};
-
 # Public attributes (override defaults in base class)
 has 'admin_password'  => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => $_build_admin_password;
@@ -53,7 +46,7 @@ has '+database'       => default => sub { $_[ 0 ]->config->database };
 
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
-has '+schema_version' => default => $_build_schema_version;
+has '+schema_version' => default => sub { build_schema_version $VERSION };
 
 # Construction
 around 'deploy_file' => sub {
@@ -558,7 +551,7 @@ sub dump_connect_attr : method {
 }
 
 sub deploy_and_populate : method {
-   my $self    = shift;
+   my $self    = shift; $self->db_attr->{ignore_version} = TRUE;
    my $rv      = $self->SUPER::deploy_and_populate;
    my $type_rs = $self->schema->resultset( 'Type' );
    my $sc_rs   = $self->schema->resultset( 'SlotCriteria' );
@@ -685,6 +678,14 @@ sub runqueue : method {
    return OK;
 }
 
+sub upgrade_schema : method {
+   my $self = shift;
+
+   $self->schema->upgrade_directory( $self->config->sharedir);
+   $self->schema->upgrade;
+   return OK;
+}
+
 1;
 
 __END__
@@ -727,6 +728,8 @@ Defines the following attributes;
 =head2 C<restore_data> - Restore a backup of the database and documents
 
 =head2 C<runqueue> - Process the queue of background tasks
+
+=head2 C<upgrade_schema> - Upgrade the database schema
 
 =head1 Diagnostics
 
