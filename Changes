@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds TOTP verification
           - Fixes document viewing permission
           - Adds TOTP auth. Schema changed
           - Fixes nok creation on refactored CSV import

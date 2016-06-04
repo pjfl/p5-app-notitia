@@ -873,8 +873,17 @@ msgstr "Submarine"
 msgid "subscription"
 msgstr "Subscription"
 
+msgid "totp_auth"
+msgstr "Authentication URI"
+
+msgid "totp_qr_code"
+msgstr "QR Code"
+
 msgid "totp_secret"
-msgstr "TOTP Secret"
+msgstr "TOTP"
+
+msgid "totp_secret_title"
+msgstr "TOTP Account Information"
 
 msgid "template"
 msgstr "Template"

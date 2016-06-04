@@ -8,7 +8,7 @@ use App::Notitia::Util      qw( bind check_form_field loc mail_domain
 use Auth::GoogleAuth;
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef );
-use Unexpected::Functions   qw( Unspecified );
+use Unexpected::Functions   qw( IncorrectAuthCode Unspecified );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -187,7 +187,20 @@ sub login_action : Role(anon) {
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_person( $name );
 
-   $person->authenticate( $password ); $_update_session->( $session, $person );
+   $person->authenticate( $password );
+
+   if (my $totp_secret = $person->totp_secret) {
+      my $auth = Auth::GoogleAuth->new( {
+         issuer => $self->config->title,
+         key_id => $person->email_address,
+         secret => $totp_secret,
+      } );
+
+      $auth->verify( $params->( 'auth_code' ) )
+         or throw IncorrectAuthCode, [ $person ];
+   }
+
+   $_update_session->( $session, $person );
 
    my $message   = [ to_msg '[_1] logged in', $person->label ];
    my $wanted    = $session->wanted; $req->session->wanted( NUL );
@@ -312,15 +325,25 @@ sub totp_secret : Role(anon) {
       title        => loc( $req, to_msg 'totp_secret_title', $title ), };
    my $fields      =  $page->{fields};
 
-   if ($totp_secret eq $person->totp_secret) {
+   $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
+
+   if ($totp_secret and $totp_secret eq $person->totp_secret) {
       my $auth = Auth::GoogleAuth->new( {
          issuer => $title,
          key_id => $person->email_address,
          secret => $totp_secret,
       } );
+      my $label = loc( $req, 'totp_qr_code' );
 
-      $fields->{qr_code} = bind 'qr_code', $auth->qr_code;
-      $fields->{otpauth} = bind 'otpauth', $auth->otpauth;
+      $fields->{qr_code} = {
+         content  => {
+            href  => $auth->qr_code,
+            title => $label,
+            type  => 'image' },
+         label    => $label,
+         type     => 'label' };
+      $fields->{otpauth} = bind 'totp_auth', $auth->otpauth,
+                                { class => 'limited-width' };
    }
 
    return $self->get_stash( $req, $page );

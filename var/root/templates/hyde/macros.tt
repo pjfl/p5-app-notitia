@@ -43,6 +43,8 @@
                          f.form_name, f.tip, f.name, f.action ) -%]
 [%    END -%]
 [%    IF f.type == 'hidden'; HiddenField( f ); END -%]
+[%    IF f.type == 'image'; Image( f ); END -%]
+[%    IF f.type == 'label'; Label( f ); END -%]
 [%    IF f.type == 'link' -%]
 [%       LinkWithTips( f.href, f.class, f.value, f.hint,
                        f.tip, f.name, f.container_class ) -%]
@@ -75,7 +77,12 @@
    <input name="[% f.name %]" type="hidden" value="[% f.value %]">
 [% END -%]
 [% MACRO Image( f ) BLOCK -%]
-   <img alt="[% f.title %]" class=[% f.class %] src="[% f.href %]">
+   <img alt="[% f.title %]" class="[% f.class %]" src="[% f.href %]">
+[% END -%]
+[% MACRO Label( f ) BLOCK -%]
+   <label class="label">
+      <span class="field-label">[% loc( f.label ) %]</span>
+   [% Dispatch( f.content ) %]</label>
 [% END -%]
 [% MACRO Link( href, class, content, id ) BLOCK -%]
    <a class="[% class %]" href="[% href %]"[% IF id -%]
