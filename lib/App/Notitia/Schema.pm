@@ -387,7 +387,7 @@ my $_update_person = sub {
 };
 
 my $_import_code = sub {
-   my ($self, $cmap, $cols, $nok, $person, $person_attr) = @_;
+   my ($self, $cmap, $cols, $has_nok, $nok, $person, $person_attr) = @_;
 
    my $cert_rs    = $self->schema->resultset( 'Certification' );
    my $blot_rs    = $self->schema->resultset( 'Endorsement' );
@@ -395,8 +395,8 @@ my $_import_code = sub {
 
    return sub {
       $self->dry_run and return;
-      $nok and not $nok->in_storage and $nok->insert;
-      $nok and $person->next_of_kin_id( $nok->id );
+      $has_nok and not $nok->in_storage and $nok->insert;
+      $has_nok and $person->next_of_kin_id( $nok->id );
 
       if (not $person->in_storage) { $person->insert }
       else { $_update_person->( $self->config, $person, $person_attr ) }
@@ -445,8 +445,8 @@ my $_update_or_new_person = sub {
       my $person = $person_rs->find_or_new
          ( $person_attr, { key => 'person_name' } );
 
-      $self->schema->txn_do
-         ( $self->$_import_code( $cmap, $cols, $nok, $person, $person_attr ) );
+      $self->schema->txn_do( $self->$_import_code
+         ( $cmap, $cols, $has_nok, $nok, $person, $person_attr ) );
 
       $self->info( 'Created [_1]([_2])',
                    { args => [ $person->label, $person->shortcode ],
