@@ -29,6 +29,7 @@ CREATE TABLE "person" (
   "email_address" character varying(64) DEFAULT '' NOT NULL,
   "mobile_phone" character varying(32) DEFAULT '' NOT NULL,
   "home_phone" character varying(32) DEFAULT '' NOT NULL,
+  "totp_secret" character varying(16) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "person_badge_id" UNIQUE ("badge_id"),

@@ -33,6 +33,7 @@ CREATE TABLE `person` (
   `email_address` varchar(64) NOT NULL DEFAULT '',
   `mobile_phone` varchar(32) NOT NULL DEFAULT '',
   `home_phone` varchar(32) NOT NULL DEFAULT '',
+  `totp_secret` varchar(16) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',
   INDEX `person_idx_next_of_kin_id` (`next_of_kin_id`),
   PRIMARY KEY (`id`),

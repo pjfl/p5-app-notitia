@@ -21,6 +21,7 @@ my $prereqs  = {
   },
   'requires' => {
     'App::Ack' => '2.12',
+    'Auth::GoogleAuth' => '1.01',
     'Class::Null' => '2.110730',
     'Class::Usul' => 'v0.74.0',
     'Cpanel::JSON::XS' => '3.0115',

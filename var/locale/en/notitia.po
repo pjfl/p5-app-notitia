@@ -63,6 +63,9 @@ msgstr "Administrator"
 msgid "again"
 msgstr "Again"
 
+msgid "aquired"
+msgstr "Aquired"
+
 msgid "assessment"
 msgstr "Assessment"
 
@@ -72,8 +75,8 @@ msgstr "Assign a vehicle to this slot"
 msgid "assignee"
 msgstr "Assign To"
 
-msgid "aquired"
-msgstr "Aquired"
+msgid "auth_code"
+msgstr "Auth. Code"
 
 msgid "badge_expires"
 msgstr "Badge Expires"
@@ -314,6 +317,9 @@ msgstr "Editor"
 
 msgid "email_address"
 msgstr "Email Address"
+
+msgid "enable_2fa"
+msgstr "Enable 2FA."
 
 msgid "end_time"
 msgstr "End Time"
@@ -866,6 +872,9 @@ msgstr "Submarine"
 
 msgid "subscription"
 msgstr "Subscription"
+
+msgid "totp_secret"
+msgstr "TOTP Secret"
 
 msgid "template"
 msgstr "Template"

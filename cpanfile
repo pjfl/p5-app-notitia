@@ -1,4 +1,5 @@
 requires "App::Ack" => "2.12";
+requires "Auth::GoogleAuth" => "1.01";
 requires "Class::Null" => "2.110730";
 requires "Class::Usul" => "v0.74.0";
 requires "Cpanel::JSON::XS" => "3.0115";

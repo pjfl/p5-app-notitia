@@ -2,7 +2,8 @@ package App::Notitia::Role::PageLoading;
 
 use namespace::autoclean;
 
-use App::Notitia::Util     qw( build_navigation clone loc mtime );
+use App::Notitia::Util     qw( build_navigation clone is_access_authorised
+                               loc mtime );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::File;
 use Class::Usul::Functions qw( is_arrayref is_member throw );
@@ -38,26 +39,6 @@ around 'get_stash' => sub {
    return $stash;
 };
 
-my $_is_user_authorised = sub {
-   my ($self, $req, $node) = @_;
-
-   my $nroles = $node->{role} // $node->{roles};
-
-   $nroles = is_arrayref( $nroles ) ? $nroles : $nroles ? [ $nroles ] : [];
-
-   is_member 'anon', $nroles and return TRUE;
-   $req->authenticated or return FALSE;
-   is_member 'any',  $nroles and return TRUE;
-
-   my $proles = $req->session->roles;
-
-   is_member 'editor', $proles and return TRUE;
-
-   for my $role (@{ $nroles }) { is_member $role, $proles and return TRUE }
-
-   return FALSE;
-};
-
 around 'load_page' => sub {
    my ($orig, $self, $req, @args) = @_; my $page = $args[ 0 ]; my %seen = ();
 
@@ -73,7 +54,7 @@ around 'load_page' => sub {
 
       my $node = $self->find_node( $locale, $req->uri_params->() ) or next;
 
-      $self->$_is_user_authorised( $req, $node )
+      is_access_authorised( $req, $node )
          or throw '[_1] permission denied', [ $who ];
 
       my $page = $self->initialise_page( $req, $node, $locale );

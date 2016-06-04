@@ -204,6 +204,7 @@ has 'server'          => is => 'ro',   isa => NonEmptySimpleStr,
 
 has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
    builder            => sub { {
+      enable_2fa      => [ Bool, FALSE                      ],
       first_name      => [ SimpleStr | Undef                ],
       query           => [ SimpleStr | Undef                ],
       roles           => [ ArrayRef, sub { [] }             ],

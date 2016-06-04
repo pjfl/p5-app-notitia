@@ -28,12 +28,12 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      check_form_field clone create_link date_data_type
                      delete_button dialog_anchor display_duration
                      encrypted_attr enhance enumerated_data_type field_options
-                     foreign_key_data_type get_hashed_pw get_salt is_draft
-                     is_encrypted iterator js_submit_config js_togglers_config
-                     js_window_config lcm_for load_file_data loc localise_tree
-                     mail_domain make_id_from make_name_from make_tip
-                     management_link mtime new_salt
-                     nullable_foreign_key_data_type
+                     foreign_key_data_type get_hashed_pw get_salt
+                     is_access_authorised is_draft is_encrypted iterator
+                     js_submit_config js_togglers_config js_window_config
+                     lcm_for load_file_data loc localise_tree mail_domain
+                     make_id_from make_name_from make_tip management_link mtime
+                     new_salt nullable_foreign_key_data_type
                      nullable_numerical_id_data_type nullable_varchar_data_type
                      numerical_id_data_type operation_links page_link_set
                      register_action_paths save_button serial_data_type
@@ -64,24 +64,6 @@ my $bind_option = sub {
                                         : undef),
             %{ $v->[ 2 ] // {} } }
         : { label => "${v}", value => ($numify ? 0 + $v : $prefix.$v) };
-};
-
-my $_can_see_link = sub {
-   my ($req, $node) = @_; $node->{type} eq 'folder' and return TRUE;
-
-   my $nroles = $node->{role} // $node->{roles};
-   my $roles  = is_arrayref( $nroles ) ?   $nroles
-              :              $nroles   ? [ $nroles ]
-                                       : [];
-
-   is_member( 'anon', $roles ) and return TRUE;
-
-   for my $prole (@{ $req->session->roles }) {
-      $prole eq 'editor' and return TRUE;
-      is_member( $prole, $roles ) and return TRUE;
-   }
-
-   return FALSE;
 };
 
 my $_check_field = sub {
@@ -287,13 +269,14 @@ sub build_navigation ($$) {
    my $ids = $req->uri_params->() // []; my $iter = iterator( $opts->{node} );
 
    while (defined (my $node = $iter->())) {
-      $node->{id} eq 'index' and next; $_can_see_link->( $req, $node ) or next;
+      $node->{id} eq 'index' and next;
+      is_access_authorised( $req, $node ) or next;
 
       if ($node->{type} eq 'folder') {
          my $keepit = FALSE; $node->{fcount} < 1 and next;
 
          for my $id (grep { not m{ \A _ }mx } keys %{ $node->{tree} }) {
-            $_can_see_link->( $req, $node->{tree}->{ $id } )
+            is_access_authorised( $req, $node->{tree}->{ $id } )
                and $keepit = TRUE and last;
          }
 
@@ -553,6 +536,26 @@ sub get_salt ($) {
    $parts[ -1 ] = substr $parts[ -1 ], 0, 22;
 
    return join '$', @parts;
+}
+
+sub is_access_authorised ($$) {
+   my ($req, $node) = @_; $node->{type} eq 'folder' and return TRUE;
+
+   my $nroles = $node->{role} // $node->{roles};
+
+   $nroles = is_arrayref( $nroles ) ? $nroles : $nroles ? [ $nroles ] : [];
+
+   is_member( 'anon', $nroles ) and return TRUE;
+   $req->authenticated or return FALSE;
+   is_member( 'any',  $nroles ) and return TRUE;
+
+   my $proles = $req->session->roles;
+
+   is_member 'editor', $proles and return TRUE;
+
+   for my $role (@{ $nroles }) { is_member $role, $proles and return TRUE }
+
+   return FALSE;
 }
 
 sub is_draft ($$) {
@@ -1039,6 +1042,8 @@ Greatest common factor
 =item C<get_hashed_pw>
 
 =item C<get_salt>
+
+=item C<is_access_authorised>
 
 =item C<is_draft>
 

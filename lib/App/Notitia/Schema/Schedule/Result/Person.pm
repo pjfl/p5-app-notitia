@@ -15,7 +15,7 @@ use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
                                    numerical_id_data_type
                                    serial_data_type slot_limit_index
                                    varchar_data_type );
-use Class::Usul::Functions     qw( throw );
+use Class::Usul::Functions     qw( digest throw urandom );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use Try::Tiny;
 use Unexpected::Functions      qw( AccountInactive IncorrectPassword
@@ -49,6 +49,7 @@ $class->add_columns
      email_address    => varchar_data_type(  64 ),
      mobile_phone     => varchar_data_type(  32 ),
      home_phone       => varchar_data_type(  32 ),
+     totp_secret      => varchar_data_type(  16 ),
      notes            => varchar_data_type, );
 
 $class->set_primary_key( 'id' );
@@ -421,6 +422,18 @@ sub set_password {
    $self->password_expired( FALSE );
 
    return $self->update;
+}
+
+sub set_totp_secret {
+   my ($self, $enable) = @_;
+
+   my $current = $self->totp_secret ? TRUE : FALSE;
+
+   $enable  and not $current and return
+      $self->totp_secret( substr( digest( urandom )->b64digest, 0, 16 ) );
+   $current and not $enable  and return $self->totp_secret( NUL );
+
+   return $self->totp_secret;
 }
 
 sub update {

@@ -289,6 +289,7 @@ my $_update_person_from_request = sub {
       $person->$attr( $v );
    }
 
+   $person->set_totp_secret( $params->( 'enable_2fa', $opts ) ? TRUE : FALSE );
    $person->resigned and $person->active( FALSE );
    $person->name( $params->( 'username', $opts ) );
    $person->next_of_kin_id
@@ -311,6 +312,8 @@ my $_bind_person_fields = sub {
                             tip      => make_tip( $req, 'badge_id_field_tip' )},
       dob              => { disabled => $disabled },
       email_address    => { class    => 'standard-field server',
+                            disabled => $disabled },
+      enable_2fa       => { checked  => $person->totp_secret ? TRUE : FALSE,
                             disabled => $disabled },
       first_name       => { class    => 'narrow-field server',
                             disabled => $disabled },

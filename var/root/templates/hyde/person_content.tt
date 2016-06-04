@@ -29,6 +29,7 @@
 [% IF page.fields.save && page.fields.username.value -%]
 [%    CheckBox( page.fields.active ) -%]
 [%    CheckBox( page.fields.password_expired ) -%]
+[%    CheckBox( page.fields.enable_2fa ) -%]
 [% END -%]
 [% IF page.fields.save; Button( page.fields.save ); END -%]
 [% IF page.fields.delete; Button( page.fields.delete ) -%]

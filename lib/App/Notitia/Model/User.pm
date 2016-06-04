@@ -5,6 +5,7 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( bind check_form_field loc mail_domain
                                 register_action_paths set_element_focus
                                 to_msg uri_for_action );
+use Auth::GoogleAuth;
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef );
 use Unexpected::Functions   qw( Unspecified );
@@ -31,7 +32,8 @@ register_action_paths
    'user/login_action'    => 'user/login',
    'user/logout_action'   => 'user/logout',
    'user/profile'         => 'user/profile',
-   'user/request_reset'   => 'user/reset';
+   'user/request_reset'   => 'user/reset',
+   'user/totp_secret'     => 'user/totp-secret';
 
 # Private functions
 my $_rows_per_page = sub {
@@ -45,11 +47,12 @@ my $_update_session = sub {
    my ($session, $person) = @_;
 
    $session->authenticated( TRUE );
-   $session->roles( [] );
-   $session->username( $person->shortcode );
+   $session->enable_2fa( $person->totp_secret ? TRUE : FALSE );
    $session->first_name( $person->first_name );
-   $session->user_label( $person->label );
+   $session->roles( [] );
    $session->rows_per_page( $person->rows_per_page );
+   $session->user_label( $person->label );
+   $session->username( $person->shortcode );
    return;
 };
 
@@ -163,7 +166,13 @@ sub login : Role(anon) {
    $fields->{password} = bind 'password', NUL;
    $fields->{username} = bind 'username', NUL;
    $fields->{login   } = bind 'login', 'login',
-                            { class => 'save-button right-last' };
+                            { class => 'save-button right' };
+
+   if ($req->session->enable_2fa) {
+      $fields->{auth_code  } = bind 'auth_code', NUL;
+      $fields->{totp_secret} = bind 'totp_secret', 'totp_secret',
+                               { class => 'save-button right' };
+   }
 
    return $self->get_stash( $req, $page );
 }
@@ -184,6 +193,7 @@ sub login_action : Role(anon) {
    my $wanted    = $session->wanted; $req->session->wanted( NUL );
 
    $wanted and $wanted =~ m{ check_field }mx and $wanted = NUL;
+   $wanted and $wanted =~ m{ totp_secret }mx and $wanted = NUL;
 
    my $location  = $wanted ? $req->uri_for( $wanted )
                            : uri_for_action $req, 'sched/month_rota';
@@ -216,6 +226,8 @@ sub profile : Role(any) {
    $page->{literal_js     } = set_element_focus 'profile-user', 'address';
    $fields->{address      } = bind 'address',       $person->address;
    $fields->{email_address} = bind 'email_address', $person->email_address;
+   $fields->{enable_2fa   } = bind 'enable_2fa',    TRUE,
+            { checked => $person->totp_secret ? TRUE : FALSE };
    $fields->{home_phone   } = bind 'home_phone',    $person->home_phone;
    $fields->{mobile_phone } = bind 'mobile_phone',  $person->mobile_phone;
    $fields->{postcode     } = bind 'postcode',      $person->postcode;
@@ -285,6 +297,54 @@ sub reset_password : Role(anon) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub totp_secret : Role(anon) {
+   my ($self, $req) = @_;
+
+   my $scode       =  $req->uri_params->( 0 );
+   my $person_rs   =  $self->schema->resultset( 'Person' );
+   my $person      =  $person_rs->find_by_shortcode( $scode );
+   my $totp_secret =  $req->session->collect_status_message( $req );
+   my $title       =  $self->config->title;
+   my $page        =  {
+      fields       => {},
+      location     => 'home',
+      template     => [ 'contents', 'totp-secret' ],
+      title        => loc( $req, to_msg 'totp_secret_title', $title ), };
+   my $fields      =  $page->{fields};
+
+   if ($totp_secret eq $person->totp_secret) {
+      my $auth = Auth::GoogleAuth->new( {
+         issuer => $title,
+         key_id => $person->email_address,
+         secret => $totp_secret,
+      } );
+
+      $fields->{qr_code} = bind 'qr_code', $auth->qr_code;
+      $fields->{otpauth} = bind 'otpauth', $auth->otpauth;
+   }
+
+   return $self->get_stash( $req, $page );
+}
+
+sub totp_secret_action : Role(anon) {
+   my ($self, $req) = @_;
+
+   my $session   = $req->session;
+   my $params    = $req->body_params;
+   my $name      = $params->( 'username' );
+   my $password  = $params->( 'password', { raw => TRUE } );
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person    = $person_rs->find_person( $name );
+
+   $person->authenticate( $password );
+
+   my $message   = [ to_msg '[_1]', $person->totp_secret ];
+   my $actionp   = $self->moniker.'/totp_secret';
+   my $location  = uri_for_action $req, $actionp, [ $person->shortcode ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub update_profile_action : Role(any) {
    my ($self, $req) = @_;
 
@@ -295,6 +355,10 @@ sub update_profile_action : Role(any) {
    my $params = $req->body_params;
 
    $person->$_( $params->( $_, $opts ) ) for (@{ $self->profile_keys });
+
+   $person->set_totp_secret( $params->( 'enable_2fa', $opts ) ? TRUE : FALSE );
+
+   $req->session->enable_2fa( $person->totp_secret ? TRUE : FALSE );
 
    $person->update; $req->session->rows_per_page( $person->rows_per_page );
 

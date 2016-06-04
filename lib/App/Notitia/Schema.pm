@@ -386,7 +386,7 @@ my $_update_person = sub {
    return $person->update;
 };
 
-my $_import_code = sub {
+my $_import_function = sub {
    my ($self, $cmap, $cols, $has_nok, $nok, $person, $person_attr) = @_;
 
    my $cert_rs    = $self->schema->resultset( 'Certification' );
@@ -445,7 +445,7 @@ my $_update_or_new_person = sub {
       my $person = $person_rs->find_or_new
          ( $person_attr, { key => 'person_name' } );
 
-      $self->schema->txn_do( $self->$_import_code
+      $self->schema->txn_do( $self->$_import_function
          ( $cmap, $cols, $has_nok, $nok, $person, $person_attr ) );
 
       $self->info( 'Created [_1]([_2])',

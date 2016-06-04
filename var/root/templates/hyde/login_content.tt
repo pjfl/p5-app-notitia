@@ -8,7 +8,9 @@
             method="post" name="login-user">
 [%    TextField( page.fields.username ) -%]
 [%    PasswordField( page.fields.password ) -%]
+[% IF page.fields.auth_code; TextField( page.fields.auth_code ); END -%]
 [%    Button( page.fields.login ) -%]
+[% IF page.fields.totp_secret; Button( page.fields.totp_secret ); END -%]
       </form>
 [% END -%]
    </article>

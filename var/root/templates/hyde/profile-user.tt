@@ -10,5 +10,6 @@
 [% TextField( page.fields.mobile_phone ) -%]
 [% TextField( page.fields.home_phone ) -%]
 [% RadioButtons( page.fields.rows_per_page ) -%]
-[%    Button( page.fields.update ) -%]
+[% CheckBox( page.fields.enable_2fa ) -%]
+[% Button( page.fields.update ) -%]
 </form>

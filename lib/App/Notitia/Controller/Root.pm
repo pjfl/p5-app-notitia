@@ -7,22 +7,23 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'root';
 
 sub dispatch_request {
-   sub (GET  + /check_field     + ?*) { [ 'user/check_field',     @_ ] },
-   sub (POST + /user/login      + ?*) { [ 'user/login_action',    @_ ] },
-   sub (GET  + /user/login      + ?*) { [ 'user/login',           @_ ] },
-   sub (POST + /user/logout     + ?*) { [ 'user/logout_action',   @_ ] },
-   sub (GET  + /user/password/* + ?*) { [ 'user/change_password', @_ ] },
-   sub (POST + /user/password   + ?*) { [ 'user/from_request',    @_ ] },
-   sub (GET  + /user/password   + ?*) { [ 'user/change_password', @_ ] },
-   sub (POST + /user/profile    + ?*) { [ 'user/from_request',    @_ ] },
-   sub (GET  + /user/profile    + ?*) { [ 'user/profile',         @_ ] },
-   sub (GET  + /user/reset/*    + ?*) { [ 'user/reset_password',  @_ ] },
-   sub (POST + /user/reset      + ?*) { [ 'user/from_request',    @_ ] },
-   sub (GET  + /user/reset      + ?*) { [ 'user/request_reset',   @_ ] },
-   sub (GET  + /index | /       + ?*) { [ 'docs/index',           @_ ] },
-   sub (GET  + /**              + ?*) { [ 'docs/not_found',       @_ ] },
-   sub (POST                    + ?*) { [ 'docs/not_found',       @_ ] },
-   sub (GET                     + ?*) { [ 'docs/index',           @_ ] };
+   sub (GET  + /check_field        + ?*) { [ 'user/check_field',     @_ ] },
+   sub (POST + /user/login         + ?*) { [ 'user/from_request',    @_ ] },
+   sub (GET  + /user/login         + ?*) { [ 'user/login',           @_ ] },
+   sub (POST + /user/logout        + ?*) { [ 'user/logout_action',   @_ ] },
+   sub (GET  + /user/password/*    + ?*) { [ 'user/change_password', @_ ] },
+   sub (POST + /user/password      + ?*) { [ 'user/from_request',    @_ ] },
+   sub (GET  + /user/password      + ?*) { [ 'user/change_password', @_ ] },
+   sub (POST + /user/profile       + ?*) { [ 'user/from_request',    @_ ] },
+   sub (GET  + /user/profile       + ?*) { [ 'user/profile',         @_ ] },
+   sub (GET  + /user/reset/*       + ?*) { [ 'user/reset_password',  @_ ] },
+   sub (POST + /user/reset         + ?*) { [ 'user/from_request',    @_ ] },
+   sub (GET  + /user/reset         + ?*) { [ 'user/request_reset',   @_ ] },
+   sub (GET  + /user/totp-secret/* + ?*) { [ 'user/totp_secret',     @_ ] },
+   sub (GET  + /index | /          + ?*) { [ 'docs/index',           @_ ] },
+   sub (GET  + /**                 + ?*) { [ 'docs/not_found',       @_ ] },
+   sub (POST                       + ?*) { [ 'docs/not_found',       @_ ] },
+   sub (GET                        + ?*) { [ 'docs/index',           @_ ] };
 }
 
 1;
