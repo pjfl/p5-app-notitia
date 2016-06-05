@@ -15,11 +15,13 @@ use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
                                    numerical_id_data_type
                                    serial_data_type slot_limit_index
                                    varchar_data_type );
+use Auth::GoogleAuth;
 use Class::Usul::Functions     qw( digest throw urandom );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use Try::Tiny;
-use Unexpected::Functions      qw( AccountInactive IncorrectPassword
-                                   PasswordExpired SlotFree SlotTaken );
+use Unexpected::Functions      qw( AccountInactive IncorrectAuthCode
+                                   IncorrectPassword PasswordExpired
+                                   SlotFree SlotTaken );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -314,6 +316,15 @@ sub authenticate {
    return;
 }
 
+sub authenticate_optional_2fa {
+   my ($self, $passwd, $auth_code) = @_; $self->authenticate( $passwd );
+
+   $auth_code and ($self->totp_authenticator->verify( $auth_code )
+                   or throw IncorrectAuthCode, [ $self ]);
+
+   return;
+}
+
 sub claim_slot {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $bike) = @_;
 
@@ -434,6 +445,16 @@ sub set_totp_secret {
    $current and not $enable  and return $self->totp_secret( NUL );
 
    return $self->totp_secret;
+}
+
+sub totp_authenticator {
+   my $self = shift;
+
+   return Auth::GoogleAuth->new( {
+      issuer => $self->result_source->schema->config->title,
+      key_id => $self->email_address,
+      secret => $self->totp_secret,
+   } );
 }
 
 sub update {

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Refactored TOTP in Person class
           - Adds TOTP verification
           - Fixes document viewing permission
           - Adds TOTP auth. Schema changed

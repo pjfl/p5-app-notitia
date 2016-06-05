@@ -5,10 +5,9 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( bind check_form_field loc mail_domain
                                 register_action_paths set_element_focus
                                 to_msg uri_for_action );
-use Auth::GoogleAuth;
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef );
-use Unexpected::Functions   qw( IncorrectAuthCode Unspecified );
+use Unexpected::Functions   qw( Unspecified );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -186,20 +185,10 @@ sub login_action : Role(anon) {
    my $password  = $params->( 'password', { raw => TRUE } );
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_person( $name );
+   my $opts      = { optional => $person->totp_secret ? FALSE : TRUE };
+   my $auth_code = $params->( 'auth_code', $opts );
 
-   $person->authenticate( $password );
-
-   if (my $totp_secret = $person->totp_secret) {
-      my $auth = Auth::GoogleAuth->new( {
-         issuer => $self->config->title,
-         key_id => $person->email_address,
-         secret => $totp_secret,
-      } );
-
-      $auth->verify( $params->( 'auth_code' ) )
-         or throw IncorrectAuthCode, [ $person ];
-   }
-
+   $person->authenticate_optional_2fa( $password, $auth_code );
    $_update_session->( $session, $person );
 
    my $message   = [ to_msg '[_1] logged in', $person->label ];
@@ -328,11 +317,7 @@ sub totp_secret : Role(anon) {
    $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
 
    if ($totp_secret and $totp_secret eq $person->totp_secret) {
-      my $auth = Auth::GoogleAuth->new( {
-         issuer => $title,
-         key_id => $person->email_address,
-         secret => $totp_secret,
-      } );
+      my $auth  = $person->totp_authenticator;
       my $label = loc( $req, 'totp_qr_code' );
 
       $fields->{qr_code} = {
