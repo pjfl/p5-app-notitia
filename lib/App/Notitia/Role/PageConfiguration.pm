@@ -72,6 +72,12 @@ around 'load_page' => sub {
 
       push @{ $js }, dialog_anchor( 'request-reset', $href, {
          name => 'request-reset', title => $title, useIcon => \1 } );
+
+      $href  = uri_for_action $req, 'user/totp_request';
+      $title = loc $req, 'TOTP Information Request';
+
+      push @{ $js }, dialog_anchor( 'totp-request', $href, {
+         name => 'totp-request', title => $title, useIcon => \1 } );
    }
 
    return $page;

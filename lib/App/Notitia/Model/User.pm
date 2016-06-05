@@ -32,6 +32,7 @@ register_action_paths
    'user/logout_action'   => 'user/logout',
    'user/profile'         => 'user/profile',
    'user/request_reset'   => 'user/reset',
+   'user/totp_request'    => 'user/totp-request',
    'user/totp_secret'     => 'user/totp-secret';
 
 # Private functions
@@ -88,6 +89,55 @@ my $_create_reset_email = sub {
    $self->log->info( loc( $req, 'Reset password email sent - [_1]', [ $id ] ) );
 
    return;
+};
+
+my $_create_totp_request_email = sub {
+   my ($self, $req, $person ) = @_;
+
+   my $conf    = $self->config;
+   my $key     = substr create_token, 0, 32;
+   my $subject = loc $req,
+      to_msg 'TOTP Request for [_2]@[_1]', $conf->title, $person->name;
+   my $href    = uri_for_action $req, $self->moniker.'/totp_secret', [ $key ];
+   my $post    = {
+      attributes      => {
+         charset      => $conf->encoding,
+         content_type => 'text/html', },
+      from            => $conf->title.'@'.mail_domain(),
+      stash           => {
+         app_name     => $conf->title,
+         first_name   => $person->first_name,
+         link         => $href,
+         title        => $subject,
+         username     => $person->name, },
+      subject         => $subject,
+      template        => 'totp_request_email',
+      to              => $person->email_address, };
+
+   $conf->sessdir->catfile( $key )->println( $person->shortcode );
+
+   my $r = $self->send_email( $post );
+   my ($id) = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
+
+   $self->log->info( loc( $req, 'TOTP request email sent - [_1]', [ $id ] ) );
+
+   return;
+};
+
+my $_fetch_shortcode = sub {
+   my ($self, $req) = @_; my $scode = 'unknown';
+
+   if (my $file = $req->uri_params->( 0, { optional => TRUE } )) {
+      my $path = $self->config->sessdir->catfile( $file );
+
+      if ($path->exists and $path->is_file) {
+         $scode = $path->chomp->getline; $path->unlink;
+      }
+   }
+
+   $scode eq 'unknown' and $req->authenticated and $scode = $req->username;
+
+   return $scode;
 };
 
 # Public methods
@@ -162,16 +212,11 @@ sub login : Role(anon) {
       title       => loc( $req, to_msg 'login_title', $self->config->title ), };
    my $fields     =  $page->{fields};
 
+   $req->session->enable_2fa and $fields->{auth_code} = bind 'auth_code', NUL;
+
+   $fields->{login   } = bind 'login', 'login', { class => 'save-button right'};
    $fields->{password} = bind 'password', NUL;
    $fields->{username} = bind 'username', NUL;
-   $fields->{login   } = bind 'login', 'login',
-                            { class => 'save-button right' };
-
-   if ($req->session->enable_2fa) {
-      $fields->{auth_code  } = bind 'auth_code', NUL;
-      $fields->{totp_secret} = bind 'totp_secret', 'totp_secret',
-                               { class => 'save-button right' };
-   }
 
    return $self->get_stash( $req, $page );
 }
@@ -299,58 +344,74 @@ sub reset_password : Role(anon) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub totp_secret : Role(anon) {
+sub totp_request : Role(anon) {
    my ($self, $req) = @_;
 
-   my $scode       =  $req->uri_params->( 0 );
-   my $person_rs   =  $self->schema->resultset( 'Person' );
-   my $person      =  $person_rs->find_by_shortcode( $scode );
-   my $totp_secret =  $req->session->collect_status_message( $req );
-   my $title       =  $self->config->title;
-   my $page        =  {
-      fields       => {},
-      location     => 'home',
-      template     => [ 'contents', 'totp-secret' ],
-      title        => loc( $req, to_msg 'totp_secret_title', $title ), };
-   my $fields      =  $page->{fields};
+   my $stash  = $self->dialog_stash( $req, 'totp-request' );
+   my $page   = $stash->{page};
+   my $fields = $page->{fields};
+   my $opts   = { class => 'right' };
 
-   $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
+   $page->{literal_js} = set_element_focus 'totp-request', 'username';
+   $fields->{mobile  } = bind 'mobile_phone', NUL;
+   $fields->{password} = bind 'password', NUL;
+   $fields->{postcode} = bind 'postcode', NUL;
+   $fields->{request } = bind 'totp_request', 'totp_request', $opts;
+   $fields->{username} = bind 'username', NUL;
 
-   if ($totp_secret and $totp_secret eq $person->totp_secret) {
-      my $auth  = $person->totp_authenticator;
-      my $label = loc( $req, 'totp_qr_code' );
-
-      $fields->{qr_code} = {
-         content  => {
-            href  => $auth->qr_code,
-            title => $label,
-            type  => 'image' },
-         label    => $label,
-         type     => 'label' };
-      $fields->{otpauth} = bind 'totp_auth', $auth->otpauth,
-                                { class => 'limited-width' };
-   }
-
-   return $self->get_stash( $req, $page );
+   return $stash;
 }
 
-sub totp_secret_action : Role(anon) {
+sub totp_request_action : Role(anon) {
    my ($self, $req) = @_;
 
    my $session   = $req->session;
    my $params    = $req->body_params;
    my $name      = $params->( 'username' );
    my $password  = $params->( 'password', { raw => TRUE } );
+   my $mobile    = $params->( 'mobile_phone' );
+   my $postcode  = $params->( 'postcode' );
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_person( $name );
 
    $person->authenticate( $password );
+   $person->security_check( { mobile_phone => $mobile, postcode => $postcode });
+   $self->$_create_totp_request_email( $req, $person );
 
-   my $message   = [ to_msg '[_1]', $person->totp_secret ];
-   my $actionp   = $self->moniker.'/totp_secret';
-   my $location  = uri_for_action $req, $actionp, [ $person->shortcode ];
+   my $message   = [ to_msg '[_1] TOTP request send', $person->label ];
 
-   return { redirect => { location => $location, message => $message } };
+   return { redirect => { location => $req->base, message => $message } };
+}
+
+sub totp_secret : Role(anon) {
+   my ($self, $req) = @_;
+
+   my $scode     =  $self->$_fetch_shortcode( $req );
+   my $title     =  $self->config->title;
+   my $page      =  {
+      fields     => {},
+      location   => 'home',
+      template   => [ 'contents', 'totp-secret' ],
+      title      => loc( $req, to_msg 'totp_secret_title', $title ), };
+   my $person_rs =  $self->schema->resultset( 'Person' );
+   my $person    =  $person_rs->find_by_shortcode( $scode );
+   my $fields    =  $page->{fields};
+
+   $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
+
+   if ($person->totp_secret) {
+      my $auth  = $person->totp_authenticator;
+      my $label = loc $req, 'totp_qr_code';
+
+      $fields->{qr_code} = {
+         content => { href => $auth->qr_code, title => $label, type => 'image'},
+         label   => $label,
+         type    => 'label' };
+      $fields->{otpauth}
+         = bind 'totp_auth', $auth->otpauth, { class => 'info-field' };
+   }
+
+   return $self->get_stash( $req, $page );
 }
 
 sub update_profile_action : Role(any) {

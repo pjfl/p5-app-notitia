@@ -19,9 +19,9 @@ use Auth::GoogleAuth;
 use Class::Usul::Functions     qw( digest throw urandom );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use Try::Tiny;
-use Unexpected::Functions      qw( AccountInactive IncorrectAuthCode
-                                   IncorrectPassword PasswordExpired
-                                   SlotFree SlotTaken );
+use Unexpected::Functions      qw( AccountInactive FailedSecurityCheck
+                                   IncorrectAuthCode IncorrectPassword
+                                   PasswordExpired SlotFree SlotTaken );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -423,6 +423,16 @@ sub outer_postcode {
    my ($outer) = split SPC, ($self->postcode // NUL); $outer //= NUL;
 
    return $outer;
+}
+
+sub security_check {
+   my ($self, $opts) = @_;
+
+   for my $k (keys %{ $opts }) {
+      $opts->{ $k } eq $self->$k() or throw FailedSecurityCheck, [ $self ];
+   }
+
+   return;
 }
 
 sub set_password {

@@ -156,7 +156,9 @@ var/root/templates/hyde/section_nav.tt
 var/root/templates/hyde/slot-certs_content.tt
 var/root/templates/hyde/standard.tt
 var/root/templates/hyde/table_content.tt
+var/root/templates/hyde/totp-request.tt
 var/root/templates/hyde/totp-secret_content.tt
+var/root/templates/hyde/totp_request_email.tt
 var/root/templates/hyde/type_content.tt
 var/root/templates/hyde/unassign-vehicle.tt
 var/root/templates/hyde/upload-file.tt

@@ -879,6 +879,9 @@ msgstr "Authentication URI"
 msgid "totp_qr_code"
 msgstr "QR Code"
 
+msgid "totp_request"
+msgstr "Request TOTP Info"
+
 msgid "totp_secret"
 msgstr "TOTP"
 

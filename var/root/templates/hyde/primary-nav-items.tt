@@ -21,4 +21,13 @@
    <li>
 [%    LinkWithTips( href, class, text, page.hint, tip ) -%]
    </li>
+[% IF page.authenticated -%]
+[%    text = loc( 'Admin' ) -%]
+[%    tip  = loc( 'admin_index_title' ) -%]
+[%    href = uri_for_action( 'person/people' ) -%]
+[%    class = ''; IF page.location == 'admin'; class = 'current'; END -%]
+   <li>
+[%    LinkWithTips( href, class, text, page.hint, tip ) -%]
+   </li>
+[% END -%]
 </ul>
