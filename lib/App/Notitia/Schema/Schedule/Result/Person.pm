@@ -462,7 +462,7 @@ sub totp_authenticator {
 
    return Auth::GoogleAuth->new( {
       issuer => $self->result_source->schema->config->title,
-      key_id => $self->email_address,
+      key_id => $self->name,
       secret => $self->totp_secret,
    } );
 }

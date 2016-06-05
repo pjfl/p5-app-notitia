@@ -207,7 +207,7 @@ sub login : Role(anon) {
    my $page       =  {
       fields      => {},
       first_field => 'username',
-      location    => 'home',
+      location    => 'login',
       template    => [ 'contents', 'login' ],
       title       => loc( $req, to_msg 'login_title', $self->config->title ), };
    my $fields     =  $page->{fields};

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes missing drafts directory in messaging
           - Adds TOTP security check and email
           - Refactored TOTP in Person class
           - Adds TOTP verification

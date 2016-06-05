@@ -35,6 +35,8 @@ my $_list_message_templates = sub {
    my $dir    = $conf->docs_root->catdir( $req->locale, $conf->drafts );
    my $plates = $dir->filter( sub { m{ \.md \z }mx } );
 
+   $dir->exists or return [ [ NUL, NUL ] ];
+
    return [ map { [ $_plate_label->( $_ ), "${_}" ] } $plates->all_files ];
 };
 
