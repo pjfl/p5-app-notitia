@@ -221,6 +221,21 @@ sub post_install : method {
    return OK;
 }
 
+sub set_sasl_password : method {
+   my $self     = shift;
+   my $conf     = $self->config;
+   my $password = $self->get_line( '+Enter SASL password', AS_PASSWORD );
+   my $file     = $conf->ctlfile;
+   my $data     = {};
+
+   $file->exists
+      and $data = Class::Usul::File->data_load( paths => [ $file ] ) // {};
+   $data->{sasl_password} = encrypt_for_config $conf, $password;
+   Class::Usul::File->data_dump( { path => $file->assert, data => $data } );
+
+   return OK;
+}
+
 sub set_sms_password : method {
    my $self     = shift;
    my $conf     = $self->config;
@@ -300,6 +315,12 @@ F<hyde> skin
 
 Performs a sequence of tasks after installation of the applications files
 is complete
+
+=head2 C<set_sasl_password> - Set the SASL password
+
+   bin/notitia-cli set-sasl-password
+
+Set the SASL password used to send emails
 
 =head2 C<set_sms_password> - Set the SMS password
 

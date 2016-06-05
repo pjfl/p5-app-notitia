@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Fixes encrypting sasl_password
+            Config file format changes
           - Adds sms_attributes to config
           - Bumped version Web::Component::Role::TT
           - Fixes missing drafts directory in messaging

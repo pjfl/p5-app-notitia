@@ -51,8 +51,23 @@ my $_build_secret = sub {
    encrypted_attr $_[ 0 ], $_[ 0 ]->ctlfile, 'secret', \&create_token;
 };
 
-my $_build_sms_password = sub {
-   encrypted_attr $_[ 0 ], $_[ 0 ]->ctlfile, 'sms_password', \&create_token;
+my $_build_sms_attributes = sub {
+   my $self = shift; my $attr = $self->_sms_attributes;
+
+   $attr->{password} or $attr->{password}
+      = encrypted_attr $self, $self->ctlfile, 'sms_password', \&create_token;
+
+   return $attr;
+};
+
+my $_build_transport_attr = sub {
+   my $self = shift; my $attr = $self->_transport_attr;
+
+   exists $attr->{sasl_username} and not exists $attr->{sasl_password}
+      and $attr->{sasl_password} = encrypted_attr $self, $self->ctlfile,
+             'sasl_password', \&create_token;
+
+   return $attr;
 };
 
 my $_build_user_home = sub {
@@ -233,13 +248,8 @@ has 'slot_certs'      => is => 'ro',   isa => HashRef[ArrayRef],
 has 'slot_limits'     => is => 'ro',   isa => ArrayRef[PositiveInt],
    builder            => sub { [ 2, 1, 3, 3, 1, 1 ] };
 
-has 'sms_attributes'  => is => 'ro',   isa => HashRef, builder => sub { {} };
-
-has 'sms_password'    => is => 'ro',   isa => NonEmptySimpleStr,
-   builder            => $_build_sms_password;
-
-has 'sms_username'    => is => 'ro',   isa => NonEmptySimpleStr,
-   default            => 'unknown';
+has 'sms_attributes'  => is => 'ro',   isa => HashRef,
+   builder            => $_build_sms_attributes, init_arg => undef;
 
 has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
    builder            => sub { {
@@ -254,7 +264,8 @@ has 'time_zone'       => is => 'ro',   isa => NonEmptySimpleStr,
 has 'title'           => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'Notitia';
 
-has 'transport_attr'  => is => 'ro',   isa => HashRef, default => sub { {} };
+has 'transport_attr'  => is => 'lazy', isa => HashRef,
+   builder            => $_build_transport_attr, init_arg => undef;
 
 has 'user'            => is => 'ro',   isa => SimpleStr, default => NUL;
 
@@ -269,6 +280,12 @@ has '_components'     => is => 'ro',   isa => HashRef,
 
 has '_links'          => is => 'ro',   isa => HashRef,
    builder            => sub { {} }, init_arg => 'links';
+
+has '_sms_attributes' => is => 'ro', isa => HashRef, builder => sub { {} },
+   init_arg           => 'sms_attributes';
+
+has '_transport_attr' => is => 'ro', isa => HashRef, builder => sub { {} },
+   init_arg           => 'transport_attr';
 
 # Attribute constructors
 sub _build_ctlfile {
@@ -656,19 +673,11 @@ skin used to theme the appearance of the application
 =item C<sms_attributes>
 
 By default an empty hash reference. Should be set as required from
-F<lib/App/Notitia/app-notitia_local.json>
-
-=item C<sms_password>
-
-A non empty simple string that defaults to C<NUL>. The password used to send
-SMS text messages. This should be set using
+F<lib/App/Notitia/app-notitia_local.json>. Should contain the C<sms_username>
+attribute which defaults to C<unknown> if left unset. The password used to send
+SMS text messages should be set using
 
    notitia-cli set-sms-password
-
-=item C<sms_username>
-
-A non empty simple string that defaults to C<unknown>. The username used to
-send SMS text messages. This should be set in the local configuation file
 
 =item C<slot_certs>
 
@@ -728,7 +737,10 @@ title as displayed in the title bar of all pages
 =item C<transport_attr>
 
 A hash reference. Set in the configuration file it is passed to the transport
-in the email role
+in the email role. The password used to send emails via TLS should be set
+using
+
+   notitia-cli set-sasl-password
 
 =item C<user>
 

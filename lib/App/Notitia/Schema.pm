@@ -352,14 +352,14 @@ my $_send_email = sub {
 my $_send_sms = sub {
    my ($self, $template, $tuples, $stash) = @_; my @recipients;
 
-   my $conf = $self->config;
-   my $attr = { %{ $conf->sms_attributes }, %{ $stash->{sms_attributes} } };
+   my $conf     = $self->config;
+   my $attr     = { %{ $conf->sms_attributes }, %{ $stash->{sms_attributes} } };
 
    $stash->{template}->{layout} = \$template;
 
    $attr->{log     } //= $self->log;
-   $attr->{password} //= $conf->sms_password;
-   $attr->{username} //= $conf->sms_username;
+   $attr->{password} //= 'unknown';
+   $attr->{username} //= 'unknown';
 
    my $sender  = App::Notitia::SMS->new( $attr );
    my $message = $self->render_template( $stash );
