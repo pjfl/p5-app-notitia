@@ -352,8 +352,8 @@ my $_send_email = sub {
 my $_send_sms = sub {
    my ($self, $template, $tuples, $stash) = @_; my @recipients;
 
-   my $conf     = $self->config;
-   my $attr     = { %{ $conf->sms_attributes }, %{ $stash->{sms_attributes} } };
+   my $conf = $self->config;
+   my $attr = { %{ $conf->sms_attributes }, %{ $stash->{sms_attributes} } };
 
    $stash->{template}->{layout} = \$template;
 
@@ -683,7 +683,7 @@ sub runqueue : method {
 sub upgrade_schema : method {
    my $self = shift;
 
-   $self->schema->upgrade_directory( $self->config->sharedir);
+   $self->schema->upgrade_directory( $self->config->sharedir );
    $self->schema->upgrade;
    return OK;
 }

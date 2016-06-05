@@ -30,10 +30,11 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      encrypted_attr enhance enumerated_data_type field_options
                      foreign_key_data_type get_hashed_pw get_salt
                      is_access_authorised is_draft is_encrypted iterator
-                     js_submit_config js_togglers_config js_window_config
-                     lcm_for load_file_data loc localise_tree mail_domain
-                     make_id_from make_name_from make_tip management_link mtime
-                     new_salt nullable_foreign_key_data_type
+                     js_server_config js_submit_config js_togglers_config
+                     js_window_config lcm_for load_file_data loc localise_tree
+                     mail_domain make_id_from make_name_from make_tip
+                     management_link mtime new_salt
+                     nullable_foreign_key_data_type
                      nullable_numerical_id_data_type nullable_varchar_data_type
                      numerical_id_data_type operation_links page_link_set
                      register_action_paths save_button serial_data_type
@@ -370,14 +371,9 @@ sub button ($$;$$$) {
 }
 
 sub check_field_js ($$) {
-   my ($k, $opts) = @_;
+   my ($k, $opts) = @_; my $args = [ $k, $opts->{form}, $opts->{domain} ];
 
-   my $args = $json_coder->encode( [ $k, $opts->{form}, $opts->{domain} ] );
-
-   return "   behaviour.config.server[ '${k}' ] = {",
-          "      method    : 'checkField',",
-          "      event     : 'blur',",
-          "      args      : ${args} };";
+   return js_server_config( $k, 'blur', 'checkField', $args );
 }
 
 sub check_form_field ($$;$) {
@@ -590,6 +586,15 @@ sub iterator ($) {
 
       return;
    };
+}
+
+sub js_server_config ($$$$) {
+   my ($k, $event, $method, $args) = @_; $args = $json_coder->encode( $args );
+
+   return "   behaviour.config.server[ '${k}' ] = {",
+          "      event     : '${event}',",
+          "      method    : '${method}',",
+          "      args      : ${args} };";
 }
 
 sub js_submit_config ($$$$) {
@@ -1050,6 +1055,8 @@ Greatest common factor
 =item C<is_encrypted>
 
 =item C<iterator>
+
+=item C<js_server_config>
 
 =item C<js_submit_config>
 

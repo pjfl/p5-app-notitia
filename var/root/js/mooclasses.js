@@ -745,7 +745,7 @@ var LoadMore = new Class( {
    },
 
    _response: function( resp ) {
-      $( resp.id ).set( 'html', resp.html );
+      if (resp.id) $( resp.id ).set( 'html', resp.html );
 
       if (resp.script) Browser.exec( resp.script );
 
@@ -2293,12 +2293,19 @@ var ServerUtils = new Class( {
    },
 
    checkField: function( id, form, domain ) {
-      var url = 'check_field';
+      var action = 'check-field';
 
-      if (form && domain) url += '?domain=' + domain + '&form=' + form;
+      if (form && domain) action += '?domain=' + domain + '&form=' + form;
 
-      this.request( url, id, $( id ).value, function( resp ) {
+      this.request( action, id, $( id ).value, function( resp ) {
          $( resp.id ).className = resp.class_name ? resp.class_name : 'hidden';
+      }.bind( this ) );
+   },
+
+   displayIfNeeded: function( action, id, target ) {
+      this.request( action, id, $( id ).value, function( resp ) {
+         if (resp.needed) { $( target ).removeClass( 'hidden' ) }
+         else { $( target ).addClass( 'hidden' ) }
       }.bind( this ) );
    },
 

@@ -207,7 +207,8 @@
       <span class="field-text [% f.class %]">[% f.value %]</span>
 [% END -%]
 [% MACRO TextField( f ) BLOCK -%]
-[%    IF f.label -%]<label class="label">
+[%    IF f.label -%]
+   <label class="label [% f.label_class %]" [% IF f.label_id %]id="[% f.label_id %]"[% END %]>
       <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
 [%    IF f.tip -%]
       <span class="field-help tips [% f.container_class %]"

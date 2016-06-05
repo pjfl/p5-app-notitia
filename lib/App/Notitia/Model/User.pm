@@ -2,11 +2,13 @@ package App::Notitia::Model::User;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Util      qw( bind check_form_field loc mail_domain
-                                register_action_paths set_element_focus
-                                to_msg uri_for_action );
+use App::Notitia::Util      qw( bind check_form_field js_server_config
+                                loc mail_domain register_action_paths
+                                set_element_focus to_msg uri_for_action );
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef );
+use HTTP::Status            qw( HTTP_OK );
+use Try::Tiny;
 use Unexpected::Functions   qw( Unspecified );
 use Moo;
 
@@ -25,15 +27,16 @@ has 'profile_keys' => is => 'ro', isa => ArrayRef, builder => sub {
          mobile_phone home_phone rows_per_page ) ] };
 
 register_action_paths
-   'user/change_password' => 'user/password',
-   'user/check_field'     => 'check_field',
-   'user/login'           => 'user/login',
-   'user/login_action'    => 'user/login',
-   'user/logout_action'   => 'user/logout',
-   'user/profile'         => 'user/profile',
-   'user/request_reset'   => 'user/reset',
-   'user/totp_request'    => 'user/totp-request',
-   'user/totp_secret'     => 'user/totp-secret';
+   'user/change_password'   => 'user/password',
+   'user/check_field'       => 'check-field',
+   'user/display_if_needed' => 'display-if-needed',
+   'user/login'             => 'user/login',
+   'user/login_action'      => 'user/login',
+   'user/logout_action'     => 'user/logout',
+   'user/profile'           => 'user/profile',
+   'user/request_reset'     => 'user/reset',
+   'user/totp_request'      => 'user/totp-request',
+   'user/totp_secret'       => 'user/totp-secret';
 
 # Private functions
 my $_rows_per_page = sub {
@@ -201,6 +204,26 @@ sub check_field : Role(any) {
    return check_form_field $self->schema, $req, $self->log;
 }
 
+sub display_if_needed : Role(anon) {
+   my ($self, $req) = @_; my $meta = { needed => TRUE };
+
+   my $class  = $req->query_params->( 'class' );
+   my $method = $req->query_params->( 'method' );
+   my $test   = $req->query_params->( 'test' );
+   my $v      = $req->query_params->( 'val', { raw => TRUE } );
+
+   try {
+      my $r = $self->schema->resultset( $class )->$method( $v );
+
+      $r->$test() or delete $meta->{needed};
+   }
+   catch { $self->log->error( $_ ) };
+
+   return { code => HTTP_OK,
+            page => { content => {}, meta => $meta },
+            view => 'json' };
+}
+
 sub login : Role(anon) {
    my ($self, $req) = @_;
 
@@ -210,12 +233,22 @@ sub login : Role(anon) {
       location    => 'login',
       template    => [ 'contents', 'login' ],
       title       => loc( $req, to_msg 'login_title', $self->config->title ), };
+   my $actionp    =  $self->moniker.'/display_if_needed';
+   my $uri        =  uri_for_action $req, $actionp, [],
+      { class => 'Person', method => 'find_person', test => 'totp_secret', };
    my $fields     =  $page->{fields};
 
-   $fields->{auth_code} = bind 'auth_code', NUL;
-   $fields->{login   } = bind 'login', 'login', { class => 'save-button right'};
-   $fields->{password} = bind 'password', NUL;
-   $fields->{username} = bind 'username', NUL;
+   push @{ $page->{literal_js} }, js_server_config 'username', 'blur',
+      'displayIfNeeded', [ "${uri}", 'username', 'auth_code_label' ];
+
+   $fields->{auth_code} = bind 'auth_code', NUL,
+                               { label_class => 'hidden',
+                                 label_id    => 'auth_code_label', };
+   $fields->{login    } = bind 'login', 'login',
+                               { class => 'save-button right' };
+   $fields->{password } = bind 'password', NUL;
+   $fields->{username } = bind 'username', NUL,
+                               { class => 'standard-field server' };
 
    return $self->get_stash( $req, $page );
 }
