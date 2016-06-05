@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Will always show TOTP link when not logged in
           - Will always show auth_code on login page
           - Fixes encrypting sasl_password
             Config file format changes

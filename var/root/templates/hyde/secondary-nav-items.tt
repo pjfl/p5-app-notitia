@@ -39,13 +39,11 @@
                      'logout-user', 'logout') -%]
    </li>
 [% ELSE -%]
-[%    IF prefs.enable_2fa -%]
 [%    text = loc( 'TOTP' ) -%]
 [%    tip  = loc( 'Request viewing of the TOTP account information' ) -%]
    <li>
 [%    LinkWithTips( '#', 'windows', text, page.hint, tip, 'totp-request' ) -%]
    </li>
-[%    END -%]
 [%    text = loc( 'Forgot Password?' ) -%]
 [%    tip  = loc( 'Follow the link to reset your password' ) -%]
    <li>
