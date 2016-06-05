@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Bumped version Web::Component::Role::TT
           - Fixes missing drafts directory in messaging
           - Adds TOTP security check and email
           - Refactored TOTP in Person class
