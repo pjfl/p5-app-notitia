@@ -233,6 +233,8 @@ has 'slot_certs'      => is => 'ro',   isa => HashRef[ArrayRef],
 has 'slot_limits'     => is => 'ro',   isa => ArrayRef[PositiveInt],
    builder            => sub { [ 2, 1, 3, 3, 1, 1 ] };
 
+has 'sms_attributes'  => is => 'ro',   isa => HashRef, builder => sub { {} };
+
 has 'sms_password'    => is => 'ro',   isa => NonEmptySimpleStr,
    builder            => $_build_sms_password;
 
@@ -650,6 +652,11 @@ shifts
 
 A non empty simple string that defaults to C<hyde>. The name of the default
 skin used to theme the appearance of the application
+
+=item C<sms_attributes>
+
+By default an empty hash reference. Should be set as required from
+F<lib/App/Notitia/app-notitia_local.json>
 
 =item C<sms_password>
 

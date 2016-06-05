@@ -352,7 +352,8 @@ my $_send_email = sub {
 my $_send_sms = sub {
    my ($self, $template, $tuples, $stash) = @_; my @recipients;
 
-   my $conf = $self->config; my $attr = $stash->{sms_attributes} // {};
+   my $conf = $self->config;
+   my $attr = { %{ $conf->sms_attributes }, %{ $stash->{sms_attributes} } };
 
    $stash->{template}->{layout} = \$template;
 
@@ -364,7 +365,8 @@ my $_send_sms = sub {
    my $message = $self->render_template( $stash );
 
    for my $person (map { $_->[ 1 ] } @{ $tuples }) {
-      $person->mobile_phone and push @recipients, $person->mobile_phone;
+      $person->mobile_phone and push @recipients,
+         map { s{ \A 07 }{447}mx; $_ } $person->mobile_phone;
    }
 
    my $rv = $sender->send_sms( $message, @recipients );
