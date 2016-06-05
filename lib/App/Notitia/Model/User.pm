@@ -212,8 +212,7 @@ sub login : Role(anon) {
       title       => loc( $req, to_msg 'login_title', $self->config->title ), };
    my $fields     =  $page->{fields};
 
-   $req->session->enable_2fa and $fields->{auth_code} = bind 'auth_code', NUL;
-
+   $fields->{auth_code} = bind 'auth_code', NUL;
    $fields->{login   } = bind 'login', 'login', { class => 'save-button right'};
    $fields->{password} = bind 'password', NUL;
    $fields->{username} = bind 'username', NUL;
