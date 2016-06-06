@@ -421,7 +421,7 @@ sub find_by_shortcode {
    return shift->schema->resultset( 'Person' )->find_by_shortcode( @_ );
 }
 
-sub message : Role(person_manager) {
+sub message : Role(event_manager) Role(person_manager) {
    my ($self, $req) = @_;
 
    my $opts = { action => 'message-people', layout => 'message-people'};
@@ -429,7 +429,7 @@ sub message : Role(person_manager) {
    return $self->message_stash( $req, $opts );
 }
 
-sub message_create_action : Role(person_manager) {
+sub message_create_action : Role(event_manager) Role(person_manager) {
    return $_[ 0 ]->message_create( $_[ 1 ], { action => 'people' } );
 }
 

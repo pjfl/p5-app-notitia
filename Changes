@@ -1,5 +1,8 @@
 Revision history for App::Notitia
 
+          - Message drafts moved to posts
+          - Allows person and event managers to create messages
+          - Post authors can edit their own creations
           - Fixes roles on login and toggle edit panel
           - Only shows auth_code on login page if needed
           - Will always show TOTP link when not logged in

@@ -549,6 +549,8 @@ sub is_access_authorised ($$) {
 
    is_member 'editor', $proles and return TRUE;
 
+   $node->{author} and $req->username eq $node->{author} and return TRUE;
+
    for my $role (@{ $nroles }) { is_member $role, $proles and return TRUE }
 
    return FALSE;

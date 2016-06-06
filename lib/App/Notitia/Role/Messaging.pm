@@ -32,7 +32,8 @@ my $_list_message_templates = sub {
    my ($self, $req) = @_;
 
    my $conf   = $self->config;
-   my $dir    = $conf->docs_root->catdir( $req->locale, $conf->drafts );
+   my $dir    = $conf->docs_root->catdir
+      ( $req->locale, $conf->posts, $conf->drafts );
    my $plates = $dir->filter( sub { m{ \.md \z }mx } );
 
    $dir->exists or return [ [ NUL, NUL ] ];

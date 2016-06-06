@@ -178,7 +178,7 @@ sub tree_root {
    return $_docs_tree_cache;
 }
 
-sub upload : Role(editor) Role(person_manager) {
+sub upload : Role(editor) Role(event_manager) Role(person_manager) {
    my ($self, $req) = @_; my $res = $self->upload_file( $req );
 
    $res->{redirect}->{location} = $self->docs_url( $req );
