@@ -6,7 +6,7 @@ use parent 'DBIx::Class::Schema';
 use File::Spec::Functions qw( catfile );
 use Scalar::Util          qw( blessed );
 
-use App::Notitia; our $VERSION = $App::Notitia::VERSION;
+use App::Notitia; our $VERSION = App::Notitia->schema_version;
 
 __PACKAGE__->load_namespaces;
 

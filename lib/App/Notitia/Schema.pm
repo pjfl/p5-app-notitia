@@ -45,7 +45,7 @@ has '+database'       => default => sub { $_[ 0 ]->config->database };
 
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
-has '+schema_version' => default => sub { "${VERSION}" };
+has '+schema_version' => default => sub { App::Notitia->schema_version.NUL };
 
 # Construction
 around 'deploy_file' => sub {
@@ -547,6 +547,12 @@ sub backup_data : method {
    return OK;
 }
 
+sub create_ddl : method {
+   my $self = shift; $self->db_attr->{ignore_version} = TRUE;
+
+   return $self->SUPER::create_ddl;
+}
+
 sub dump_connect_attr : method {
    my $self = shift; $self->dumper( $self->connect_info ); return OK;
 }
@@ -717,6 +723,10 @@ Defines the following attributes;
 =head1 Subroutines/Methods
 
 =head2 C<backup_data> - Creates a backup of the database and documents
+
+=head2 C<create_ddl> - Dump the database schema definition
+
+Creates the DDL for multiple RDBMs
 
 =head2 C<dump_connect_attr> - Displays database connection information
 

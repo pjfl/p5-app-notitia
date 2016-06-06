@@ -2,12 +2,16 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 147 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 148 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
 sub env_var {
    return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
+}
+
+sub schema_version {
+   (my $v = $VERSION) =~ s{ \. \d+ \z }{}mx; return qv( "${v}.148" );
 }
 
 1;
@@ -38,7 +42,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 147 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 148 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -214,6 +218,10 @@ The production server options are detailed by running
 Looks up the environment variable and returns it's value. Also acts as a
 mutator if provided with an optional new value. Uppercases and prefixes
 the environment variable key
+
+=head2 C<schema_version>
+
+Returns the current schema version
 
 =head1 Diagnostics
 
