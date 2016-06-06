@@ -52,7 +52,7 @@ my $_update_session = sub {
    $session->authenticated( TRUE );
    $session->enable_2fa( $person->totp_secret ? TRUE : FALSE );
    $session->first_name( $person->first_name );
-   $session->roles( [] );
+   $session->roles( $person->list_roles );
    $session->rows_per_page( $person->rows_per_page );
    $session->user_label( $person->label );
    $session->username( $person->shortcode );
@@ -422,7 +422,7 @@ sub totp_secret : Role(anon) {
    my $title     =  $self->config->title;
    my $page      =  {
       fields     => {},
-      location   => 'home',
+      location   => 'totp_secret',
       template   => [ 'contents', 'totp-secret' ],
       title      => loc( $req, to_msg 'totp_secret_title', $title ), };
    my $person_rs =  $self->schema->resultset( 'Person' );

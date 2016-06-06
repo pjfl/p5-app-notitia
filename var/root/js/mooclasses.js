@@ -2304,8 +2304,8 @@ var ServerUtils = new Class( {
 
    displayIfNeeded: function( action, id, target ) {
       this.request( action, id, $( id ).value, function( resp ) {
-         if (resp.needed) { $( target ).removeClass( 'hidden' ) }
-         else { $( target ).addClass( 'hidden' ) }
+         if (resp.needed) { $( target ).show() }
+         else { $( target ).hide() }
       }.bind( this ) );
    },
 
