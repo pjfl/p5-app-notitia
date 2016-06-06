@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes config of month and week rota titles
           - Manual control of schema version
           - Switches to three part schema versions
           - Message drafts moved to posts

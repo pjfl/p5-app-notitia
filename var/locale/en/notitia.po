@@ -471,6 +471,9 @@ msgstr "Please Login"
 msgid "m_advanced"
 msgstr "Advanced Motorcycle"
 
+msgid "main"
+msgstr "Main"
+
 msgid "message_management_link"
 msgstr "Send Message"
 
@@ -581,6 +584,9 @@ msgstr "Sat"
 
 msgid "month_rota_heading_6"
 msgstr "Sun"
+
+msgid "month_rota_title"
+msgstr "[_1] rota for [_2]"
 
 msgid "months_management_heading"
 msgstr "Select Month"
@@ -1071,7 +1077,7 @@ msgid "vrn"
 msgstr "Registration"
 
 msgid "week_management_heading"
-msgstr "Select Week"
+msgstr "Vehicle Allocations"
 
 msgid "week_rota_heading_mon"
 msgstr "Mon [_1]"
@@ -1093,6 +1099,9 @@ msgstr "Sat [_1]"
 
 msgid "week_rota_heading_sun"
 msgstr "Sun [_1]"
+
+msgid "week_rota_title"
+msgstr "[_1] allocations starting [_2]"
 
 msgid "year_management_heading"
 msgstr "Select Year"

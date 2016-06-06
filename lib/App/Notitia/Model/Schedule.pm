@@ -185,13 +185,11 @@ my $_month_rota_max_slots = sub {
 };
 
 my $_month_rota_title = sub {
-   my ($req, $rota_name, $date) = @_; $date = $_local_dt->( $date );
+   my ($req, $rota_name, $date) = @_; my $local_dt = $_local_dt->( $date );
 
-   my $title = ucfirst( loc( $req, $rota_name ) ).SPC
-             . loc( $req, 'rota for' ).SPC.$date->month_name.SPC
-             . $date->year;
+   $date = $local_dt->month_name.SPC.$local_dt->year;
 
-   return $title;
+   return loc( $req, to_msg 'month_rota_title', loc( $req, $rota_name ), $date);
 };
 
 my $_next_month = sub {
@@ -366,9 +364,9 @@ my $_week_rota_headers = sub {
 my $_week_rota_title = sub {
    my ($req, $rota_name, $date) = @_; my $local_dt = $_local_dt->( $date );
 
-   return ucfirst( loc( $req, $rota_name ) ).SPC
-        . loc( $req, 'rota commencing' ).SPC
-        . $local_dt->day.SPC.$local_dt->month_name.SPC.$local_dt->year;
+   $date = $local_dt->day.SPC.$local_dt->month_name.SPC.$local_dt->year;
+
+   return loc( $req, to_msg 'week_rota_title', loc( $req, $rota_name ), $date );
 };
 
 my $_controllers = sub {
