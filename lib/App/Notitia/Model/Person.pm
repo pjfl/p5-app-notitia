@@ -232,16 +232,16 @@ my $_list_all_roles = sub {
 
 my $_next_badge_id = sub {
    my $self    = shift;
+   my $rs      = $self->schema->resultset( 'Person' );
    my $file    = $self->config->badge_mtime; not $file->exists and $file->touch;
    my $f_mtime = $file->stat->{mtime};
 
    if ($f_mtime > $self->max_badge_id->[ 0 ]) {
       $self->max_badge_id->[ 0 ] = $f_mtime;
-      $self->max_badge_id->[ 1 ]
-         = $self->schema->resultset( 'Person' )->max_badge_id;
+      $self->max_badge_id->[ 1 ] = $rs->max_badge_id;
    }
 
-   return ++$self->max_badge_id->[ 1 ];
+   return $rs->max_badge_id( ++$self->max_badge_id->[ 1 ] );
 };
 
 my $_people_ops_links = sub {
@@ -280,6 +280,8 @@ my $_update_person_from_request = sub {
       not defined $v and is_member $attr, [ qw( active password_expired ) ]
           and $v = FALSE;
 
+      $attr eq 'badge_id' and defined $v and not length $v and undef $v;
+
       defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
       length $v and is_member $attr,
@@ -294,7 +296,7 @@ my $_update_person_from_request = sub {
    $person->name( $params->( 'username', $opts ) );
    $person->next_of_kin_id
       ( $_assert_not_self->( $person, $params->( 'next_of_kin', $opts ) ) );
-   $person->badge_id and $person->badge_id eq 'n'
+   $person->badge_id and $person->badge_id eq 'next'
       and $person->badge_id( $self->$_next_badge_id );
    return;
 };
@@ -308,7 +310,7 @@ my $_bind_person_fields = sub {
                             disabled => $disabled },
       address          => { disabled => $disabled },
       badge_expires    => { disabled => $disabled },
-      badge_id         => { disabled => $disabled,
+      badge_id         => { disabled => $person->badge_id ? TRUE : $disabled,
                             tip      => make_tip( $req, 'badge_id_field_tip' )},
       dob              => { disabled => $disabled },
       email_address    => { class    => 'standard-field server',
@@ -473,6 +475,7 @@ sub person : Role(person_manager) {
       $fields->{delete} = delete_button $req, $name, { type => 'person' };
       $fields->{links} = $_person_ops_links->( $req, $page, $actionp, $name );
    }
+   else { $fields->{badge_id}->{value} = 'next' }
 
    $fields->{save} = save_button $req, $name, { type => 'person' };
 

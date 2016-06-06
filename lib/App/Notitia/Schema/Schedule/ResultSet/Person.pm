@@ -23,6 +23,14 @@ my $_find_role_type = sub {
    return $schema->resultset( 'Type' )->find_role_by( $name );
 };
 
+my $_get_max_badge_id = sub {
+   my $self = shift; my $dir = $self->result_source->schema->config->ctrldir;
+
+   my $path = $dir->catfile( 'max_badge_id' ); $path->exists or return;
+
+   return $path->lock->chomp->getline;
+};
+
 my $_load_cache = sub {
    my ($self, $cache) = @_; my $opts = { columns => [ 'badge_id' ] };
 
@@ -33,6 +41,14 @@ my $_load_cache = sub {
    }
 
    return;
+};
+
+my $_set_max_badge_id = sub {
+   my ($self, $v) = @_; my $dir = $self->result_source->schema->config->ctrldir;
+
+   $dir->catfile( 'max_badge_id' )->lock->println( $v );
+
+   return $v;
 };
 
 # Public methods
@@ -112,12 +128,13 @@ sub list_people {
 }
 
 sub max_badge_id {
-   my $self = shift;
+   my ($self, $v) = @_; defined $v and return $self->$_set_max_badge_id( $v );
 
-   my $rs        = $self->search( { 'badge_id' => { '!=' => undef } } );
-   my $rs_column = $rs->get_column( 'badge_id' );
+   my $id  = $self->$_get_max_badge_id; defined $id and return $id;
+   my $rs  = $self->search( { 'badge_id' => { '!=' => undef } } );
+   my $max = $rs->get_column( 'badge_id' )->max;
 
-   return $rs_column->max;
+   return $max ? $self->$_set_max_badge_id( $max ) : $max;
 }
 
 sub search_for_people {

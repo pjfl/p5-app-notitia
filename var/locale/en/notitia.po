@@ -85,7 +85,7 @@ msgid "badge_id"
 msgstr "Badge Id."
 
 msgid "badge_id_field_tip"
-msgstr "Set this to 'n' and the next available badge id wil be automatically selected"
+msgstr "Set this to 'next' and the next available badge id wil be automatically selected"
 
 msgid "bike"
 msgstr "Bike"

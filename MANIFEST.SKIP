@@ -62,6 +62,7 @@ Thumbs.db
 \blib/App/Notitia/app-notitia_local.json
 \bvar/backups
 \bvar/etc/app-notitia.json
+\bvar/etc/max_badge_id
 \bvar/etc/profile
 \bvar/logs
 \bvar/docs/.mtime

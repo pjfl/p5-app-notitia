@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 139 $ of **App::Notitia**
+This documents version v0.3.$Rev: 150 $ of **App::Notitia**
 
 # Description
 
@@ -177,6 +177,10 @@ The production server options are detailed by running
 Looks up the environment variable and returns it's value. Also acts as a
 mutator if provided with an optional new value. Uppercases and prefixes
 the environment variable key
+
+## `schema_version`
+
+Returns the current schema version
 
 # Diagnostics
 
