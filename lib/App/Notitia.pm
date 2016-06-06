@@ -2,17 +2,12 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 146 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 147 $ =~ /\d+/gmx );
 
-use App::Notitia::Util      qw( build_schema_version );
 use Class::Usul::Functions  qw( ns_environment );
 
 sub env_var {
    return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
-}
-
-sub schema_version {
-   return build_schema_version $VERSION;
 }
 
 1;
@@ -43,7 +38,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 146 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 147 $ of B<App::Notitia>
 
 =head1 Description
 

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Switches to three part schema versions
           - Message drafts moved to posts
           - Allows person and event managers to create messages
           - Post authors can edit their own creations

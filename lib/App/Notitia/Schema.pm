@@ -2,12 +2,11 @@ package App::Notitia::Schema;
 
 use namespace::autoclean;
 
-use App::Notitia;
 use App::Notitia::Constants qw( AS_PASSWORD COMMA EXCEPTION_CLASS FALSE NUL
                                 OK QUOTED_RE SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::SMS;
-use App::Notitia::Util      qw( build_schema_version encrypted_attr
-                                load_file_data mail_domain to_dt );
+use App::Notitia::Util      qw( encrypted_attr load_file_data
+                                mail_domain to_dt );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
                                 io is_member squeeze throw trim );
@@ -26,7 +25,7 @@ with    q(App::Notitia::Role::Schema);
 with    q(Web::Components::Role::Email);
 with    q(Web::Components::Role::TT);
 
-our $VERSION = $App::Notitia::VERSION;
+use App::Notitia; our $VERSION = $App::Notitia::VERSION;
 
 # Attribute constructors
 my $_build_admin_password = sub {
@@ -46,7 +45,7 @@ has '+database'       => default => sub { $_[ 0 ]->config->database };
 
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
-has '+schema_version' => default => sub { build_schema_version $VERSION };
+has '+schema_version' => default => sub { "${VERSION}" };
 
 # Construction
 around 'deploy_file' => sub {
