@@ -193,13 +193,19 @@ msgid "contacts_heading_2"
 msgstr "Mobile Phone"
 
 msgid "contacts_heading_3"
-msgstr "Next of Kin"
+msgstr "S"
 
 msgid "contacts_heading_4"
-msgstr "Home Phone"
+msgstr "Next of Kin"
 
 msgid "contacts_heading_5"
+msgstr "Home Phone"
+
+msgid "contacts_heading_6"
 msgstr "Mobile Phone"
+
+msgid "contacts_heading_7"
+msgstr "S"
 
 msgid "contacts_list_heading"
 msgstr "Contacts List"

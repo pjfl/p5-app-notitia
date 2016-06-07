@@ -78,16 +78,23 @@ my $_confirm_mugshot_button = sub {
 };
 
 my $_contact_links = sub {
-   my ($req, $person) = @_; my @links;
+   my ($req, $person) = @_; my @links; my $nok = $person->next_of_kin;
 
-   push @links, { value => $person->home_phone };
-   push @links, { value => $person->mobile_phone };
-   push @links, { value => $person->next_of_kin
-                         ? $person->next_of_kin->label : NUL };
-   push @links, { value => $person->next_of_kin
-                         ? $person->next_of_kin->home_phone : NUL };
-   push @links, { value => $person->next_of_kin
-                         ? $person->next_of_kin->mobile_phone : NUL };
+   push @links, { class => 'align-right', value => $person->home_phone };
+   push @links, { class => 'align-right', value => $person->mobile_phone };
+   push @links, { class => 'align-center',
+                  value => { name  => 'selected',
+                             type  => 'checkbox',
+                             value => $person->shortcode } };
+   push @links, { value => $nok ? $nok->label : NUL };
+   push @links, { class => 'align-right',
+                  value => $nok ? $nok->home_phone : NUL };
+   push @links, { class => 'align-right',
+                  value => $nok ? $nok->mobile_phone : NUL };
+   push @links, { class => 'align-center',
+                  value => $nok ? { name  => 'selected',
+                                    type  => 'checkbox',
+                                    value => $nok->shortcode } : NUL };
 
    return @links;
 };
@@ -114,7 +121,7 @@ my $_people_headers = sub {
 
    my $role = $params->{role} // NUL; my $type = $params->{type} // NUL;
 
-   if ($type eq 'contacts') { $header = 'contacts_heading'; $max = 5 }
+   if ($type eq 'contacts') { $header = 'contacts_heading'; $max = 7 }
    else {
       $header = 'people_heading';
       $max    = ($role eq 'bike_rider' || $role eq 'driver') ? 4 : 3;

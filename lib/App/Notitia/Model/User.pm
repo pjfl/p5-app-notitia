@@ -41,8 +41,10 @@ register_action_paths
 # Private functions
 my $_rows_per_page = sub {
    my $selected = $_[ 0 ]->rows_per_page;
+   my $opts_t   = { container_class => 'radio-group', selected => TRUE };
+   my $opts_f   = { container_class => 'radio-group', };
 
-   return [ map { [ $_, $_, ($_ == $selected) ? { selected => TRUE } : {} ] }
+   return [ map { [ $_, $_, ($_ == $selected) ? $opts_t : $opts_f ] }
             10, 20, 50, 100 ];
 };
 

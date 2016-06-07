@@ -7,11 +7,11 @@
 [%    IF f.tip %]</span>[% END -%]
 [% END -%]
 [% MACRO CheckBox( f ) BLOCK -%]
-   <label class="label [% f.container_class %]">
-      <span class="field-label">[% loc( f.label ) %]</span>
+[%    IF f.label -%]<label class="label [% f.container_class %]">
+      <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
       <input [% IF f.checked %]checked="checked"[% END %]
          name="[% f.name %]" type="checkbox" value="[% f.value %]">
-   </label>
+[%    IF f.label -%]</label>[% END -%]
 [% END -%]
 [% MACRO Container( f ) BLOCK -%]
    <div class="[% f.class %]">[% Dispatch( f.content ) %]</div>
@@ -35,6 +35,7 @@
 [% END -%]
 [% MACRO Dispatch( f ) BLOCK -%]
 [%    IF f.type == 'button'; Button( f ); END -%]
+[%    IF f.type == 'checkbox'; CheckBox( f ); END -%]
 [%    IF f.type == 'container'; Container( f ); END -%]
 [%    IF f.type == 'date'; DateField( f ); END -%]
 [%    IF f.type == 'form'; Form( f ); END -%]
@@ -117,17 +118,17 @@
    </label>
 [% END -%]
 [% MACRO RadioButtons( f ) BLOCK -%]
-   <label class="label [% f.container_class %]">
-      <span class="field-label">[% loc( f.label ) %]</span>
+[%    IF f.label -%]<label class="label [% f.container_class %]">
+      <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
 [%    FOR option IN f.value -%]
-      <label class="label [% option.container_class %]">
+      <label class="[% option.container_class %]">
          <input [% IF option.selected %]checked="checked"[% END %]
             class="[% option.class %]" name="[% f.name %]"
              type="radio" value="[% option.value %]">
          <span class="option-label">[% loc( option.label ) %]</span>
       </label>
 [%    END -%]
-   </label>
+[%    IF f.label -%]</label>[% END -%]
 [% END -%]
 [% MACRO Select( f ) BLOCK -%]
 [%    IF f.label -%]<label class="label">
