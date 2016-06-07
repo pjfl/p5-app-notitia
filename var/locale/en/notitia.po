@@ -193,7 +193,7 @@ msgid "contacts_heading_2"
 msgstr "Mobile Phone"
 
 msgid "contacts_heading_3"
-msgstr "S"
+msgstr "択"
 
 msgid "contacts_heading_4"
 msgstr "Next of Kin"
@@ -205,7 +205,7 @@ msgid "contacts_heading_6"
 msgstr "Mobile Phone"
 
 msgid "contacts_heading_7"
-msgstr "S"
+msgstr "択"
 
 msgid "contacts_list_heading"
 msgstr "Contacts List"
@@ -284,6 +284,9 @@ msgstr "C4"
 
 msgid "day_rota_management_link"
 msgstr "Edit"
+
+msgid "day_rota_title"
+msgstr "[_1] rota for [_2]"
 
 msgid "delete"
 msgstr "Delete"

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds individual user messages
           - Adds individual selection on contacts list
           - Adds permanent storage for max_badge_id
           - Fixes config of month and week rota titles

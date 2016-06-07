@@ -27,16 +27,16 @@ has 'profile_keys' => is => 'ro', isa => ArrayRef, builder => sub {
          mobile_phone home_phone rows_per_page ) ] };
 
 register_action_paths
-   'user/change_password'   => 'user/password',
-   'user/check_field'       => 'check-field',
-   'user/display_if_needed' => 'display-if-needed',
-   'user/login'             => 'user/login',
-   'user/login_action'      => 'user/login',
-   'user/logout_action'     => 'user/logout',
-   'user/profile'           => 'user/profile',
-   'user/request_reset'     => 'user/reset',
-   'user/totp_request'      => 'user/totp-request',
-   'user/totp_secret'       => 'user/totp-secret';
+   'user/change_password' => 'user/password',
+   'user/check_field'     => 'check-field',
+   'user/show_if_needed'  => 'show-if-needed',
+   'user/login'           => 'user/login',
+   'user/login_action'    => 'user/login',
+   'user/logout_action'   => 'user/logout',
+   'user/profile'         => 'user/profile',
+   'user/request_reset'   => 'user/reset',
+   'user/totp_request'    => 'user/totp-request',
+   'user/totp_secret'     => 'user/totp-secret';
 
 # Private functions
 my $_rows_per_page = sub {
@@ -201,29 +201,7 @@ sub change_password_action : Role(anon) {
 }
 
 sub check_field : Role(any) {
-   my ($self, $req) = @_;
-
-   return check_form_field $self->schema, $req, $self->log;
-}
-
-sub display_if_needed : Role(anon) {
-   my ($self, $req) = @_; my $meta = { needed => TRUE };
-
-   my $class  = $req->query_params->( 'class' );
-   my $method = $req->query_params->( 'method' );
-   my $test   = $req->query_params->( 'test' );
-   my $v      = $req->query_params->( 'val', { raw => TRUE } );
-
-   try {
-      my $r = $self->schema->resultset( $class )->$method( $v );
-
-      $r->$test() or delete $meta->{needed};
-   }
-   catch { $self->log->error( $_ ) };
-
-   return { code => HTTP_OK,
-            page => { content => {}, meta => $meta },
-            view => 'json' };
+   return check_form_field $_[ 0 ]->schema, $_[ 1 ], $_[ 0 ]->log;
 }
 
 sub login : Role(anon) {
@@ -235,13 +213,13 @@ sub login : Role(anon) {
       location    => 'login',
       template    => [ 'contents', 'login' ],
       title       => loc( $req, to_msg 'login_title', $self->config->title ), };
-   my $actionp    =  $self->moniker.'/display_if_needed';
+   my $actionp    =  $self->moniker.'/show_if_needed';
    my $uri        =  uri_for_action $req, $actionp, [],
       { class => 'Person', method => 'find_person', test => 'totp_secret', };
    my $fields     =  $page->{fields};
 
    push @{ $page->{literal_js} }, js_server_config 'username', 'blur',
-      'displayIfNeeded', [ "${uri}", 'username', 'auth_code_label' ];
+      'showIfNeeded', [ "${uri}", 'username', 'auth_code_label' ];
 
    $fields->{auth_code} = bind 'auth_code', NUL,
                                { label_class => 'hidden',
@@ -376,6 +354,26 @@ sub reset_password : Role(anon) {
    }
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub show_if_needed : Role(anon) {
+   my ($self, $req) = @_; my $meta = { needed => TRUE };
+
+   my $class  = $req->query_params->( 'class' );
+   my $method = $req->query_params->( 'method' );
+   my $test   = $req->query_params->( 'test' );
+   my $v      = $req->query_params->( 'val', { raw => TRUE } );
+
+   try {
+      my $r = $self->schema->resultset( $class )->$method( $v );
+
+      $r->$test() or delete $meta->{needed};
+   }
+   catch { $self->log->error( $_ ) };
+
+   return { code => HTTP_OK,
+            page => { content => {}, meta => $meta },
+            view => 'json' };
 }
 
 sub totp_request : Role(anon) {

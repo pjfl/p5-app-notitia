@@ -3,8 +3,10 @@ package App::Notitia::Role::Messaging;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( NUL SPC TRUE );
-use App::Notitia::Util      qw( bind button dialog_anchor loc
-                                table_link uri_for_action );
+use App::Notitia::Util      qw( bind button js_window_config loc
+                                table_link to_msg uri_for_action );
+use Class::Usul::File;
+use Class::Usul::Functions  qw( create_token );
 use Moo::Role;
 
 requires qw( config dialog_stash moniker );
@@ -15,19 +17,34 @@ my $_confirm_message_button = sub {
       { class => 'right-last', label => 'confirm', value => 'message_create' };
 };
 
-my $_flatten = sub {
-   my $params = shift; my $r = NUL;
-
-   for my $k (keys %{ $params }) { $r .= "-o ${k}=".$params->{ $k }.' ' }
-
-   return $r;
-};
-
 my $_plate_label = sub {
    my $v = ucfirst $_[ 0 ]->basename( '.md' ); $v =~ s{[_\-]}{ }gmx; return $v;
 };
 
 # Private methods
+my $_flatten = sub {
+   my ($self, $req) = @_;
+
+   my $selected = $req->body_params->( 'selected', { multiple => TRUE } );
+   my $params   = $req->query_params->( { optional => TRUE } ) // {};
+   my $r        = NUL; delete $params->{mid};
+
+   if (defined $selected->[ 0 ]) {
+      my $data = { selected => $selected };
+      my $key  = substr create_token, 0, 32;
+      my $path = $self->config->sessdir->catfile( $key );
+      my $opts = { path => $path->assert,
+                   data => $data, storage_class => 'JSON' };
+
+      Class::Usul::File->data_dump( $opts ); $r = "-o recipients=${path} ";
+   }
+   else {
+      for my $k (keys %{ $params }) { $r .= "-o ${k}=".$params->{ $k }.' ' }
+   }
+
+   return $r;
+};
+
 my $_list_message_templates = sub {
    my ($self, $req) = @_;
 
@@ -45,36 +62,30 @@ my $_list_message_templates = sub {
 sub message_create {
    my ($self, $req, $opts) = @_;
 
-   my $params   = $req->query_params->( { optional => TRUE } ) // {};
-
-   delete $params->{mid};
-
    my $conf     = $self->config;
-   my $template = $req->body_params->( 'template' );
    my $sink     = $req->body_params->( 'sink' );
-   my $job_rs   = $self->schema->resultset( 'Job' );
+   my $template = $req->body_params->( 'template' );
    my $cmd      = $conf->binsdir->catfile( 'notitia-schema' ).SPC
-                . $_flatten->( $params )."send_message ${template} ${sink}";
+                . $self->$_flatten( $req )."send_message ${sink} ${template}";
+   my $job_rs   = $self->schema->resultset( 'Job' );
    my $job      = $job_rs->create( { command => $cmd, name => 'send_message' });
-   my $message  = [ 'Job send-message-[_1] created', $job->id ];
+   my $message  = [ to_msg 'Job send-message-[_1] created', $job->id ];
    my $location = uri_for_action $req, $self->moniker.'/'.$opts->{action};
 
    return { redirect => { location => $location, message => $message } };
 }
 
 sub message_link {
-   my ($self, $req, $page, $actionp, $params) = @_;
+   my ($self, $req, $page, $href, $name) = @_;
 
-   $params = { %{ $params // {} } };
-
-   my $name = delete $params->{name};
-   my $href = uri_for_action $req, $actionp, [], $params;
-
-   push @{ $page->{literal_js} //= [] },
-      dialog_anchor( 'message', $href, {
+   my $opts = {
          name    => $name,
+         target  => 'people',
          title   => loc( $req, 'message_title' ),
-         useIcon => \1 } );
+         useIcon => \1 };
+
+   push @{ $page->{literal_js} //= [] }, js_window_config
+      'message', 'click', 'inlineDialog', [ "${href}", $opts ];
 
    return table_link $req, 'message', loc( $req, 'message_management_link' ),
                                       loc( $req, 'message_management_tip' );

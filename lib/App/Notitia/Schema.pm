@@ -10,6 +10,7 @@ use App::Notitia::Util      qw( encrypted_attr load_file_data
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
                                 io is_member squeeze throw trim );
+use Class::Usul::File;
 use Class::Usul::Types      qw( NonEmptySimpleStr );
 use Data::Record;
 use Data::Validation;
@@ -282,25 +283,39 @@ my $_populate_vehicles = sub {
 };
 
 my $_list_participents = sub {
-   my $self      = shift;
-   my $uri       = $self->options->{event};
-   my $event     = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $opts      = { columns => [ 'email_address', 'mobile_phone' ] };
-   my $person_rs = $self->schema->resultset( 'Person' );
+   my $self  = shift;
+   my $uri   = $self->options->{event};
+   my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $opts  = { columns => [ 'email_address', 'mobile_phone' ] };
+   my $rs    = $self->schema->resultset( 'Person' );
 
-   return $person_rs->list_participents( $event, $opts );
+   return $rs->list_participents( $event, $opts );
 };
 
 my $_list_people = sub {
-   my $self      = shift;
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $opts      = { columns => [ 'email_address', 'mobile_phone' ] };
-   my $role      = $self->options->{role};
+   my $self = shift;
+   my $rs   = $self->schema->resultset( 'Person' );
+   my $opts = { columns => [ 'email_address', 'mobile_phone' ] };
+   my $role = $self->options->{role};
 
-   not defined $self->options->{current} and $opts->{current} = TRUE;
+   $self->options->{status} and $opts->{status} = $self->options->{status};
 
-   return $role ? $person_rs->list_people( $role, $opts )
-                : $person_rs->list_all_people( $opts );
+   return $role ? $rs->list_people( $role, $opts )
+                : $rs->list_all_people( $opts );
+};
+
+my $_list_recipients = sub {
+   my $self = shift; my $path = io $self->options->{recipients};
+
+   ($path->exists and $path->is_file) or throw PathNotFound, [ $path ];
+
+   my $data = Class::Usul::File->data_load
+      ( paths => [ $path ], storage_class => 'JSON' ) // {}; $path->unlink;
+   my $rs   = $self->schema->resultset( 'Person' );
+
+   return [ map { [ $_->label, $_ ] }
+            map { $rs->find_by_shortcode( $_ ) }
+               @{ $data->{selected} // [] } ];
 };
 
 my $_qualify_assets = sub {
@@ -319,6 +334,9 @@ my $_qualify_assets = sub {
 
 my $_send_email = sub {
    my ($self, $template, $person, $stash, $attaches) = @_;
+
+   $self->config->no_user_email and $self->info
+      ( 'Would email [_1]', { args => [ $person->shortcode ] } ) and return;
 
    $person->email_address =~ m{ \@ example\.com \z }imx and return;
 
@@ -606,18 +624,20 @@ sub import_people : method {
 }
 
 sub send_message : method {
-   my $self       = shift;
-   my $conf       = $self->config;
-   my $plate_name = $self->next_argv or throw Unspecified, [ 'template name' ];
-   my $sink       = $self->next_argv // 'email';
-   my $quote      = $self->next_argv ? TRUE : FALSE;
-   my $stash      = { app_name       => $conf->title,
-                      path           => io( $plate_name ),
-                      sms_attributes => { quote => $quote }, };
-   my $template   = load_file_data( $stash );
-   my $attaches   = $self->$_qualify_assets( delete $stash->{attachments} );
-   my $tuples     = $self->options->{event} ? $self->$_list_participents
-                                            : $self->$_list_people;
+   my $self     = shift;
+   my $conf     = $self->config;
+   my $sink     = $self->next_argv or throw Unspecified, [ 'message sink' ];
+   my $template = $self->next_argv or throw Unspecified, [ 'template name' ];
+   my $quote    = $self->next_argv ? TRUE : FALSE;
+   my $stash    = { app_name       => $conf->title,
+                    path           => io( $template ),
+                    sms_attributes => { quote => $quote }, };
+   my $template = load_file_data( $stash );
+   my $attaches = $self->$_qualify_assets( delete $stash->{attachments} );
+   my $opts     = $self->options;
+   my $tuples   = $opts->{event}      ? $self->$_list_participents
+                : $opts->{recipients} ? $self->$_list_recipients
+                                      : $self->$_list_people;
 
    if ($sink eq 'sms') { $self->$_send_sms( $template, $tuples, $stash ) }
    else {

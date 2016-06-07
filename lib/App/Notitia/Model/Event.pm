@@ -223,10 +223,10 @@ my $_participent_links = sub {
 my $_participent_ops_links = sub {
    my ($self, $req, $page, $params) = @_;
 
-   $params->{name} = 'message_participents';
-
+   my $name         = 'message_participents';
    my $actionp      = $self->moniker.'/message';
-   my $message_link = $self->message_link( $req, $page, $actionp, $params );
+   my $href         = uri_for_action $req, $actionp, [], $params;
+   my $message_link = $self->message_link( $req, $page, $href, $name );
 
    return operation_links [ $message_link ];
 };

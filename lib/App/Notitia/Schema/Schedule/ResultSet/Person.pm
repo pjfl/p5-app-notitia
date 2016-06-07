@@ -138,20 +138,29 @@ sub max_badge_id {
 }
 
 sub search_for_people {
-   my ($self, $opts) = @_; $opts = { %{ $opts // {} } }; delete $opts->{fields};
+   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
 
-   my $where = delete $opts->{current}
-             ? { $self->me( 'resigned' ) => { '=' => undef },
-                 $self->me( 'active'   ) => TRUE, } : {};
+   delete $opts->{fields}; $opts->{prefetch} //= [];
 
-   if (my $role = delete $opts->{role}) {
-      $opts->{prefetch} //= []; push @{ $opts->{prefetch} }, 'roles';
-      $where->{ 'roles.type_id' } = $self->$_find_role_type( $role )->id;
-   }
-
+   my $status  = delete $opts->{status} // NUL;
+   my $where   = $status eq 'current'
+               ? { $self->me( 'resigned' ) => { '=' => undef },
+                   $self->me( 'active'   ) => TRUE, } : {};
    my $columns = [ 'first_name', 'id', 'last_name', 'name', 'shortcode' ];
 
    $opts->{columns} and push @{ $columns }, @{ delete $opts->{columns} };
+
+   if (my $type = delete $opts->{type}) {
+      if ($type eq 'contacts') {
+         push @{ $opts->{prefetch} }, 'next_of_kin';
+         push @{ $columns }, 'home_phone', 'mobile_phone';
+      }
+   }
+
+   if (my $role = delete $opts->{role}) {
+      push @{ $opts->{prefetch} }, 'roles';
+      $where->{ 'roles.type_id' } = $self->$_find_role_type( $role )->id;
+   }
 
    return $self->search
       ( $where, { columns  => $columns, order_by => [ $self->me( 'name' ) ],

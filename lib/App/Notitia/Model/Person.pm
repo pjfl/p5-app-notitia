@@ -155,6 +155,17 @@ my $_people_links = sub {
    return @{ $links };
 };
 
+my $_people_title = sub {
+   my ($req, $role, $status, $type) = @_;
+
+   my $k = $role   ? "${role}_list_link"
+         : $type   ? "${type}_list_heading"
+         : $status ? "${status}_people_list_link"
+         :           'people_management_heading';
+
+   return loc( $req, $k );
+};
+
 my $_person_mugshot = sub {
    my ($conf, $req, $person) = @_;
 
@@ -252,19 +263,17 @@ my $_next_badge_id = sub {
 };
 
 my $_people_ops_links = sub {
-   my ($self, $req, $page, $params, $opts, $pager) = @_;
+   my ($self, $req, $page, $params, $pager) = @_;
 
    my $moniker    = $self->moniker;
    my $add_user   = create_link $req, "${moniker}/person",
                                 'person', { container_class => 'add-link' };
-   my $page_links = page_link_set $req, "${moniker}/people", [],
-                                  $params, $pager;
-
-   $params->{name} = 'message_people';
-
-   my $message    = $self->message_link
-      ( $req, $page, "${moniker}/message", $params );
+   my $name       = 'message_people';
+   my $href       = uri_for_action $req, "${moniker}/message", [], $params;
+   my $message    = $self->message_link( $req, $page, $href, $name );
    my $links      = [ $message, $add_user ];
+   my $actionp    = "${moniker}/people";
+   my $page_links = page_link_set $req, $actionp, [], $params, $pager;
 
    $page_links and unshift @{ $links }, $page_links;
 
@@ -514,34 +523,33 @@ sub people : Role(any) {
    my ($self, $req, $type) = @_;
 
    my $params    =  $req->query_params->( { optional => TRUE } );
-   my $role      =  $params->{role  } // NUL;
-   my $status    =  $params->{status} // NUL;
-   my $opts      =  { page => delete $params->{page} // 1,
-                      rows => $req->session->rows_per_page };
+   my $role      =  $params->{role  };
+   my $status    =  $params->{status};
 
    $type and $params->{type} = $type; $type = $params->{type} || NUL;
-   $status eq 'current'  and $opts->{current } = TRUE;
-   $type   eq 'contacts' and $opts->{prefetch} = [ 'next_of_kin' ]
-      and $opts->{columns} = [ 'home_phone', 'mobile_phone' ];
-   $role and $opts->{role} = $role;
 
+   my $opts      =  { page   => delete $params->{page} // 1,
+                      role   => $role,
+                      rows   => $req->session->rows_per_page,
+                      status => $status,
+                      type   => $type, };
+   my $actionp   =  $self->moniker.'/people';
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $people    =  $person_rs->search_for_people( $opts );
-   my $title_key =  $role   ? "${role}_list_link"
-                 :  $type   ? "${type}_list_heading"
-                 :  $status ? "${status}_people_list_link"
-                 :            'people_management_heading';
    my $page      =  {
       fields     => {
          headers => $_people_headers->( $req, $params ),
          rows    => [], },
+      form       => {
+         name    => 'people',
+         href    => uri_for_action( $req, $actionp, [], $params ) },
       template   => [ 'contents', 'table' ],
-      title      => loc( $req, $title_key ), };
+      title      => $_people_title->( $req, $role, $status, $type ), };
    my $fields    =  $page->{fields};
    my $rows      =  $fields->{rows};
 
-   $fields->{links} =
-      $self->$_people_ops_links( $req, $page, $params, $opts, $people->pager );
+   $fields->{links}
+      = $self->$_people_ops_links( $req, $page, $params, $people->pager );
    $type eq 'contacts' and $fields->{class} = 'smaller-table';
 
    for my $person ($people->all) {

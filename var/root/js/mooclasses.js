@@ -2292,6 +2292,10 @@ var ServerUtils = new Class( {
       this.aroundSetOptions( options ); this.build();
    },
 
+   asyncTips: function( action, id, val ) {
+      this.request( action, id, val, function () { $( id ).show() } );
+   },
+
    checkField: function( id, form, domain ) {
       var action = 'check-field';
 
@@ -2302,15 +2306,15 @@ var ServerUtils = new Class( {
       }.bind( this ) );
    },
 
-   displayIfNeeded: function( action, id, target ) {
+   requestIfVisible: function( action, id, val, on_complete ) {
+      if ($( id ).isVisible()) this.request( action, id, val, on_complete );
+   },
+
+   showIfNeeded: function( action, id, target ) {
       this.request( action, id, $( id ).value, function( resp ) {
          if (resp.needed) { $( target ).show() }
          else { $( target ).hide() }
       }.bind( this ) );
-   },
-
-   requestIfVisible: function( action, id, val, on_complete ) {
-      if ($( id ).isVisible()) this.request( action, id, val, on_complete );
    }
 } );
 
@@ -2321,6 +2325,7 @@ var SubmitUtils = new Class( {
       config_attr: 'submit',
       formName   : null,
       selector   : '.submit',
+      target     : null,
       wildCards  : [ '%', '*' ]
    },
 
@@ -2328,6 +2333,9 @@ var SubmitUtils = new Class( {
       this.aroundSetOptions( options );
       this.form = document.forms ? document.forms[ this.options.formName ]
                                  : function() {};
+
+      if (this.options.target == 'top') this.placeOnTop();
+
       this.build();
    },
 
@@ -2403,6 +2411,13 @@ var SubmitUtils = new Class( {
 
    location: function( href ) {
       window.location = href;
+   },
+
+   placeOnTop: function() {
+      if (self != top) {
+         if (document.images) top.location.replace( window.location.href );
+         else top.location.href = window.location.href;
+      }
    },
 
    postData: function( url, data ) {
@@ -2809,7 +2824,6 @@ var WindowUtils = new Class( {
       maskOpts   : {},
       quiet      : false,
       selector   : '.windows',
-      target     : null,
       url        : null,
       width      : 800
    },
@@ -2839,15 +2853,27 @@ var WindowUtils = new Class( {
          };
       } );
 
-      if (opt.target == 'top') this.placeOnTop();
-
       this.dialogs = [];
       this.build();
    },
 
-   asyncTips: function( url, id, val ) {
-      this.request( url, id, val, function () {
-         $( id ).setStyle( 'display', '' ) } );
+   inlineDialog: function( href, options ) {
+      var opt = this.mergeOptions( options ), id = opt.name + '_dialog', dialog;
+
+      if (! (dialog = this.dialogs[ opt.name ])) {
+         var content = new Element( 'div', {
+            'id': id } ).appendText( 'Loading...' );
+         var el      = $( opt.target );
+
+         opt.maskOpts.id     = 'mask-' + opt.name;
+         opt.maskOpts.inject = { 'target': null, 'where': 'inside' };
+         dialog = this.dialogs[ opt.name ] = new Dialog( el, content, opt );
+      }
+
+      this.request( href, id, opt.value || '', opt.onComplete || function() {
+         this.rebuild(); dialog.show() } );
+
+      return dialog;
    },
 
    logger: function( message ) {
@@ -2882,12 +2908,5 @@ var WindowUtils = new Class( {
 
    openWindow: function( href, options ) {
       return new Browser.Popup( href, this.mergeOptions( options ) );
-   },
-
-   placeOnTop: function() {
-      if (self != top) {
-         if (document.images) top.location.replace( window.location.href );
-         else top.location.href = window.location.href;
-      }
    }
 } );
