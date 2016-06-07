@@ -6,7 +6,7 @@ use App::Notitia::Constants qw( NUL SPC TRUE );
 use App::Notitia::Util      qw( bind button js_window_config loc
                                 table_link to_msg uri_for_action );
 use Class::Usul::File;
-use Class::Usul::Functions  qw( create_token );
+use Class::Usul::Functions  qw( create_token throw );
 use Moo::Role;
 
 requires qw( config dialog_stash moniker );
@@ -25,7 +25,8 @@ my $_plate_label = sub {
 my $_flatten = sub {
    my ($self, $req) = @_;
 
-   my $selected = $req->body_params->( 'selected', { multiple => TRUE } );
+   my $selected = $req->body_params->( 'selected',
+                                       { optional => TRUE, multiple => TRUE } );
    my $params   = $req->query_params->( { optional => TRUE } ) // {};
    my $r        = NUL; delete $params->{mid};
 
@@ -39,6 +40,9 @@ my $_flatten = sub {
       Class::Usul::File->data_dump( $opts ); $r = "-o recipients=${path} ";
    }
    else {
+      exists $params->{type} and $params->{type} eq 'contacts'
+         and throw 'Messaging all contacts is not allowed';
+
       for my $k (keys %{ $params }) { $r .= "-o ${k}=".$params->{ $k }.' ' }
    }
 
@@ -80,7 +84,7 @@ sub message_link {
 
    my $opts = {
          name    => $name,
-         target  => 'people',
+         target  => $page->{form}->{name},
          title   => loc( $req, 'message_title' ),
          useIcon => \1 };
 
@@ -96,7 +100,6 @@ sub message_stash {
 
    my $params    = $req->query_params->( { optional => TRUE } ) // {};
    my $stash     = $self->dialog_stash( $req, $opts->{layout} );
-   my $actionp   = $self->moniker.'/'.$opts->{action};
    my $templates = $self->$_list_message_templates( $req );
    my $fields    = $stash->{page}->{fields};
    my $values    = [ [ 'Email', 'email', { selected => TRUE } ],
@@ -104,9 +107,14 @@ sub message_stash {
 
    delete $params->{id}; delete $params->{val};
    $fields->{confirm } = $_confirm_message_button->( $req );
-   $fields->{href    } = uri_for_action $req, $actionp, [], $params;
    $fields->{sink    } = bind 'sink', $values, { label => 'Message sink' };
    $fields->{template} = bind 'template', [ [ NUL, NUL ], @{ $templates } ];
+
+   if ($opts->{action}) {
+      my $actionp = $self->moniker.'/'.$opts->{action};
+
+      $fields->{href} = uri_for_action $req, $actionp, [], $params;
+   }
 
    return $stash;
 }

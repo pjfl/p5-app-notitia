@@ -1,7 +1,7 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Message People -->
 <div class="standard-form">
-[% Select( page.fields.template ) -%]
 [% RadioButtons( page.fields.sink ) -%]
+[% Select( page.fields.template ) -%]
 [% Button( page.fields.confirm ) -%]
 </div>

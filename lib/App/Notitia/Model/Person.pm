@@ -442,9 +442,7 @@ sub find_by_shortcode {
 sub message : Role(person_manager) {
    my ($self, $req) = @_;
 
-   my $opts = { action => 'message-people', layout => 'message-people'};
-
-   return $self->message_stash( $req, $opts );
+   return $self->message_stash( $req, { layout => 'message-people'} );
 }
 
 sub message_create_action : Role(person_manager) {

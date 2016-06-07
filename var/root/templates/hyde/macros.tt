@@ -67,12 +67,13 @@
    </form>
 [% END -%]
 [% MACRO FormWithButton( href, class, content, form, tip, id, value ) BLOCK -%]
-   <form action="[% href %]" enctype="application/x-www-form-urlencoded"
-         method="post" name="[% form %]">
+[%    IF href && form; %]<form action="[% href %]"
+        enctype="application/x-www-form-urlencoded"
+         method="post" name="[% form %]">[% END -%]
       <span class="button-help tips" title="[% page.hint _ ' ~ ' _ tip %]">
          <button class="[% class %]" id="[% id %]" name="_method"
             type="submit" value="[% value %]">[% content %]</button></span>
-   </form>
+[%    IF href && form; %]</form>[% END -%]
 [% END -%]
 [% MACRO HiddenField( f ) BLOCK -%]
    <input name="[% f.name %]" type="hidden" value="[% f.value %]">
