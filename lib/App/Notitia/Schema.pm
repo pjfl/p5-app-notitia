@@ -381,7 +381,7 @@ my $_send_sms = sub {
    my $sender  = App::Notitia::SMS->new( $attr );
    my $message = $self->render_template( $stash );
 
-   $self->info( 'SMS message: '.$message )
+   $self->info( 'SMS message: '.$message );
 
    for my $person (map { $_->[ 1 ] } @{ $tuples }) {
       $person->mobile_phone and push @recipients,
@@ -389,7 +389,7 @@ my $_send_sms = sub {
       $self->log->debug( 'SMS recipient '.$person->shortcode );
    }
 
-   $self->config->no_user_email and and return;
+   $self->config->no_user_email and return;
 
    my $rv = $sender->send_sms( $message, @recipients );
 
