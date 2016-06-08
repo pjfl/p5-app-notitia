@@ -94,18 +94,10 @@ my $_make_template = sub {
    return $path;
 };
 
-my $_template_dir = sub {
-   my $self = shift; my $conf = $self->config; my $dir;
-
-   $conf->can( 'vardir' ) and $dir = $conf->vardir->catdir( 'templates' );
-
-   return ($dir && $dir->exists) ? $dir : $conf->root->catdir( 'templates' );
-};
-
 my $_template_path = sub {
-   my ($self, $name) = @_; my $dir = $self->$_template_dir;
+   my ($self, $name) = @_; my $conf = $self->config;
 
-   return $dir->catfile( $self->config->skin."/${name}.tt" );
+   return $conf->template_dir->catfile( $conf->skin."/${name}.tt" );
 };
 
 # Public methods
@@ -181,7 +173,7 @@ sub message_create {
                 . $self->$_flatten( $req )."send_message ${sink} ${template}";
    my $job_rs   = $self->schema->resultset( 'Job' );
    my $job      = $job_rs->create( { command => $cmd, name => 'send_message' });
-      $message  = [ to_msg 'Job send-message-[_1] created', $job->id ];
+      $message  = [ to_msg 'Job send_message-[_1] created', $job->id ];
    my $location = uri_for_action $req, $self->moniker.'/'.$params->{action};
 
    return { redirect => { location => $location, message => $message } };

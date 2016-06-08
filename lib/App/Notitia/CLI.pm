@@ -176,11 +176,7 @@ sub make_skin : method {
       $arc->add_files( $path->abs2rel( $conf->appldir ) );
    }
 
-   my $dir = $conf->vardir->catdir( 'templates' );
-
-   $dir->exists or $dir = $conf->root->catdir( 'templates' );
-
-   for my $path ($dir->catdir( $skin )->all_files) {
+   for my $path ($conf->template_dir->catdir( $skin )->all_files) {
       $arc->add_files( $path->abs2rel( $conf->appldir ) );
    }
 

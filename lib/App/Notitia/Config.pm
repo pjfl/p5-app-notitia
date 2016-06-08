@@ -258,6 +258,9 @@ has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
       request         => [ qw( authenticated host language locale username ) ],
       session         => [ sort keys %{ $_[ 0 ]->session_attr } ], } };
 
+has 'template_dir'    => is => 'ro',   isa => Directory, coerce => TRUE,
+   builder            => sub { $_[ 0 ]->root->catdir( 'templates' ) };
+
 has 'time_zone'       => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'Europe/London';
 
@@ -652,7 +655,8 @@ Default search string
 =item C<skin>
 
 Name of the default skin. Defaults to C<hyde> which is derived from
-Jekyll
+Jekyll. Contains all of the templates used by the skin to render the
+HTML in the application
 
 =item C<theme>
 
@@ -724,6 +728,11 @@ reference. List of attributes that can be specified as query parameters in
 URIs. Their values are persisted between requests stored in the session store
 
 =back
+
+=item C<template_dir>
+
+A directory that contains the L</skin> used by the application. Defaults to
+F<var/templates>
 
 =item C<time_zone>
 

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds config template_dir. Preparing to move templates
           - Refactored messaging role
           - Renamed no_user_email to no_message_send
           - Aded interactive SMS messages
