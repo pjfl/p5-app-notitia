@@ -180,7 +180,7 @@ has 'no_index'        => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    builder            => sub {
       [ qw( \.git$ \.htpasswd$ \.json$ \.mtime$ \.svn$ assets$ posts$ ) ] };
 
-has 'no_user_email'   => is => 'ro',   isa => Bool, default => FALSE;
+has 'no_message_send' => is => 'ro',   isa => Bool, default => FALSE;
 
 has 'owner'           => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => sub { $_[ 0 ]->prefix };
@@ -568,9 +568,10 @@ which the application is mounted
 An array reference that defaults to C<[ .git .svn cgi-bin  ]>.
 List of files and directories under the document root to ignore
 
-=item C<no_user_email>
+=item C<no_message_send>
 
-Suppress the sending of user activation emails. Used in development only
+Suppress the sending of user activation emails and using SMS. Used in
+development only
 
 =item C<owner>
 

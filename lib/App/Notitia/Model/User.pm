@@ -3,8 +3,8 @@ package App::Notitia::Model::User;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( bind check_form_field js_server_config
-                                loc mail_domain register_action_paths
-                                set_element_focus to_msg uri_for_action );
+                                loc register_action_paths set_element_focus
+                                to_msg uri_for_action );
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef );
 use HTTP::Status            qw( HTTP_OK );
@@ -17,7 +17,7 @@ with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
-with    q(Web::Components::Role::Email);
+with    q(App::Notitia::Role::Messaging);
 
 # Public attributes
 has '+moniker' => default => 'user';
@@ -62,73 +62,6 @@ my $_update_session = sub {
 };
 
 # Private methods
-my $_create_reset_email = sub {
-   my ($self, $req, $person, $password) = @_;
-
-   my $conf    = $self->config;
-   my $key     = substr create_token, 0, 32;
-   my $subject = loc $req,
-      to_msg 'Password reset for [_2]@[_1]', $conf->title, $person->name;
-   my $href    = uri_for_action $req, $self->moniker.'/reset', [ $key ];
-   my $post    = {
-      attributes      => {
-         charset      => $conf->encoding,
-         content_type => 'text/html', },
-      from            => $conf->title.'@'.mail_domain(),
-      stash           => {
-         app_name     => $conf->title,
-         first_name   => $person->first_name,
-         link         => $href,
-         password     => $password,
-         title        => $subject,
-         username     => $person->name, },
-      subject         => $subject,
-      template        => 'password_email',
-      to              => $person->email_address, };
-
-   $conf->sessdir->catfile( $key )->println( $person->shortcode."/${password}");
-
-   my $r = $self->send_email( $post );
-   my ($id) = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
-
-   $self->log->info( loc( $req, 'Reset password email sent - [_1]', [ $id ] ) );
-
-   return;
-};
-
-my $_create_totp_request_email = sub {
-   my ($self, $req, $person ) = @_;
-
-   my $conf    = $self->config;
-   my $key     = substr create_token, 0, 32;
-   my $subject = loc $req,
-      to_msg 'TOTP Request for [_2]@[_1]', $conf->title, $person->name;
-   my $href    = uri_for_action $req, $self->moniker.'/totp_secret', [ $key ];
-   my $post    = {
-      attributes      => {
-         charset      => $conf->encoding,
-         content_type => 'text/html', },
-      from            => $conf->title.'@'.mail_domain(),
-      stash           => {
-         app_name     => $conf->title,
-         first_name   => $person->first_name,
-         link         => $href,
-         title        => $subject,
-         username     => $person->name, },
-      subject         => $subject,
-      template        => 'totp_request_email',
-      to              => $person->email_address, };
-
-   $conf->sessdir->catfile( $key )->println( $person->shortcode );
-
-   my $r = $self->send_email( $post );
-   my ($id) = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
-
-   $self->log->info( loc( $req, 'TOTP request email sent - [_1]', [ $id ] ) );
-
-   return;
-};
-
 my $_fetch_shortcode = sub {
    my ($self, $req) = @_; my $scode = 'unknown';
 
@@ -322,11 +255,9 @@ sub request_reset_action : Role(anon) {
    my $name     = $req->body_params->( 'username' );
    my $person   = $self->schema->resultset( 'Person' )->find_person( $name );
    my $password = substr create_token, 0, 12;
-
-   $self->config->no_user_email
-      or $self->$_create_reset_email( $req, $person, $password );
-
-   my $message  = [ to_msg '[_1] password reset requested', $person->label ];
+   my $key      = '[_1] password reset requested ref. [_2]';
+   my $job_id   = $self->create_reset_email( $req, $person, $password );
+   my $message  = [ to_msg $key, $person->label, "send_message-${job_id}" ];
 
    return { redirect => { location => $req->base, message => $message } };
 }
@@ -397,20 +328,20 @@ sub totp_request : Role(anon) {
 sub totp_request_action : Role(anon) {
    my ($self, $req) = @_;
 
-   my $session   = $req->session;
-   my $params    = $req->body_params;
-   my $name      = $params->( 'username' );
-   my $password  = $params->( 'password', { raw => TRUE } );
-   my $mobile    = $params->( 'mobile_phone' );
-   my $postcode  = $params->( 'postcode' );
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_person( $name );
+   my $session  = $req->session;
+   my $params   = $req->body_params;
+   my $name     = $params->( 'username' );
+   my $password = $params->( 'password', { raw => TRUE } );
+   my $mobile   = $params->( 'mobile_phone' );
+   my $postcode = $params->( 'postcode' );
+   my $person   = $self->schema->resultset( 'Person' )->find_person( $name );
 
    $person->authenticate( $password );
    $person->security_check( { mobile_phone => $mobile, postcode => $postcode });
-   $self->$_create_totp_request_email( $req, $person );
 
-   my $message   = [ to_msg '[_1] TOTP request send', $person->label ];
+   my $key      = '[_1] TOTP request sent ref. [_2]';
+   my $job_id   = $self->create_totp_request_email( $req, $person );
+   my $message  = [ to_msg $key, $person->label, "send_message-${job_id}" ];
 
    return { redirect => { location => $req->base, message => $message } };
 }

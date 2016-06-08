@@ -3,7 +3,7 @@ package App::Notitia::Role::Messaging;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( NUL SPC TRUE );
-use App::Notitia::Util      qw( bind button js_config loc
+use App::Notitia::Util      qw( bind button js_config loc mail_domain
                                 table_link to_msg uri_for_action );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token throw );
@@ -24,6 +24,26 @@ my $_plate_label = sub {
 # Private methods
 my $_session_file = sub {
    return $_[ 0 ]->config->sessdir->catfile( substr create_token, 0, 32 );
+};
+
+my $_flatten_stash = sub {
+   my ($self, $v) = @_; my $path = $self->$_session_file;
+
+   my $params = { data => $v, path => $path->assert, storage_class => 'JSON' };
+
+   Class::Usul::File->data_dump( $params );
+
+   return "-o stash=${path} ";
+};
+
+my $_create_send_email_job = sub {
+   my ($self, $stash, $template) = @_; my $conf = $self->config;
+
+   my $cmd = $conf->binsdir->catfile( 'notitia-schema' ).SPC
+           . $self->$_flatten_stash( $stash )."send_message email ${template}";
+   my $rs  = $self->schema->resultset( 'Job' );
+
+   return $rs->create( { command => $cmd, name => 'send_message' } );
 };
 
 my $_flatten = sub {
@@ -74,7 +94,77 @@ my $_make_template = sub {
    return $path;
 };
 
+my $_template_dir = sub {
+   my $self = shift; my $conf = $self->config; my $dir;
+
+   $conf->can( 'vardir' ) and $dir = $conf->vardir->catdir( 'templates' );
+
+   return ($dir && $dir->exists) ? $dir : $conf->root->catdir( 'templates' );
+};
+
+my $_template_path = sub {
+   my ($self, $name) = @_; my $dir = $self->$_template_dir;
+
+   return $dir->catfile( $self->config->skin."/${name}.tt" );
+};
+
 # Public methods
+sub create_person_email {
+   my ($self, $req, $person, $password) = @_;
+
+   my $conf     = $self->config;
+   my $scode    = $person->shortcode;
+   my $token    = substr create_token, 0, 32;
+   my $key      = 'Account activation for [_2]@[_1]';
+   my $template = $self->$_template_path( 'user_email' );
+   my $subject  = loc $req, to_msg $key, $conf->title, $person->name;
+   my $link     = uri_for_action $req, $self->moniker.'/activate', [ $token ];
+   my $stash    = { app_name => $conf->title, link      => $link,
+                    password => $password,    shortcode => $scode,
+                    subject  => $subject, };
+
+   $conf->sessdir->catfile( $token )->println( $scode );
+
+   return $self->$_create_send_email_job( $stash, $template )->id;
+}
+
+sub create_reset_email {
+   my ($self, $req, $person, $password) = @_;
+
+   my $conf     = $self->config;
+   my $scode    = $person->shortcode;
+   my $token    = substr create_token, 0, 32;
+   my $key      = 'Password reset for [_2]@[_1]';
+   my $template = $self->$_template_path( 'password_email' );
+   my $subject  = loc $req, to_msg $key, $conf->title, $person->name;
+   my $link     = uri_for_action $req, $self->moniker.'/reset', [ $token ];
+   my $stash    = { app_name => $conf->title, link      => $link,
+                    password => $password,    shortcode => $scode,
+                    subject  => $subject, };
+
+   $conf->sessdir->catfile( $token )->println( "${scode}/${password}" );
+
+   return $self->$_create_send_email_job( $stash, $template )->id;
+}
+
+sub create_totp_request_email {
+   my ($self, $req, $person) = @_;
+
+   my $conf     = $self->config;
+   my $scode    = $person->shortcode;
+   my $token    = substr create_token, 0, 32;
+   my $key      = 'TOTP Request for [_2]@[_1]';
+   my $template = $self->$_template_path( 'totp_request_email' );
+   my $subject  = loc $req, to_msg $key, $conf->title, $person->name;
+   my $link     = uri_for_action $req, $self->moniker.'/totp_secret', [ $token];
+   my $stash    = { app_name  => $conf->title, link    => $link,
+                    shortcode => $scode,       subject => $subject, };
+
+   $conf->sessdir->catfile( $token )->println( $scode );
+
+   return $self->$_create_send_email_job( $stash, $template )->id;
+}
+
 sub message_create {
    my ($self, $req, $params) = @_;
 

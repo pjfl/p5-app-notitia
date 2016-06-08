@@ -318,6 +318,40 @@ my $_list_recipients = sub {
                @{ $data->{selected} // [] } ];
 };
 
+my $_load_from_stash = sub {
+   my ($self, $stash) = @_;
+
+   my $rs     = $self->schema->resultset( 'Person' );
+   my $person = $rs->find_by_shortcode( $stash->{shortcode} );
+
+   return [ [ $person->label, $person ] ];
+};
+
+my $_load_stash = sub {
+   my ($self, $plate_name, $quote) = @_; my $path = io $self->options->{stash};
+
+   ($path->exists and $path->is_file) or throw PathNotFound, [ $path ];
+
+   my $stash = Class::Usul::File->data_load
+      ( paths => [ $path ], storage_class => 'JSON' ) // {};
+   my $template = io( $plate_name )->all;
+
+   $stash->{quote} = $quote;
+   $path->unlink;
+
+   return $stash, $template;
+};
+
+my $_load_template = sub {
+   my ($self, $plate_name, $quote) = @_;
+
+   my $stash    = { app_name => $self->config->title, path => io( $plate_name ),
+                    sms_attributes => { quote => $quote }, };
+   my $template = load_file_data( $stash );
+
+   return $stash, $template;
+};
+
 my $_qualify_assets = sub {
    my ($self, $files) = @_; $files or return FALSE; my $assets = {};
 
@@ -335,7 +369,7 @@ my $_qualify_assets = sub {
 my $_send_email = sub {
    my ($self, $template, $person, $stash, $attaches) = @_;
 
-   $self->config->no_user_email and $self->info
+   $self->config->no_message_send and $self->info
       ( 'Would email [_1]', { args => [ $person->shortcode ] } ) and return;
 
    $person->email_address =~ m{ \@ example\.com \z }imx and return;
@@ -343,6 +377,7 @@ my $_send_email = sub {
    $template = "[% WRAPPER 'hyde/email_layout.tt' %]${template}[% END %]";
 
    $stash->{first_name} = $person->first_name;
+   $stash->{label     } = $person->label;
    $stash->{last_name } = $person->last_name;
    $stash->{username  } = $person->name;
 
@@ -386,10 +421,10 @@ my $_send_sms = sub {
    for my $person (map { $_->[ 1 ] } @{ $tuples }) {
       $person->mobile_phone and push @recipients,
          map { s{ \A 07 }{447}mx; $_ } $person->mobile_phone;
-      $self->log->debug( 'SMS recipient '.$person->shortcode );
+      $self->log->debug( 'SMS recipient: '.$person->shortcode );
    }
 
-   $self->config->no_user_email and return;
+   $self->config->no_message_send and return;
 
    my $rv = $sender->send_sms( $message, @recipients );
 
@@ -631,25 +666,27 @@ sub import_people : method {
 sub send_message : method {
    my $self       = shift;
    my $conf       = $self->config;
+   my $opts       = $self->options;
    my $sink       = $self->next_argv or throw Unspecified, [ 'message sink' ];
    my $plate_name = $self->next_argv or throw Unspecified, [ 'template name' ];
-   my $quote      = $self->next_argv ? TRUE : FALSE;
-   my $stash      = { app_name       => $conf->title,
-                      path           => io( $plate_name ),
-                      sms_attributes => { quote => $quote }, };
-   my $template   = load_file_data( $stash );
-   my $attaches   = $self->$_qualify_assets( delete $stash->{attachments} );
-   my $opts       = $self->options;
-   my $tuples     = $opts->{event}      ? $self->$_list_participents
-                  : $opts->{recipients} ? $self->$_list_recipients
-                                        : $self->$_list_people;
+   my $quote      = $self->next_argv ? TRUE : $opts->{quote} ? TRUE : FALSE;
 
-   if ($sink eq 'sms') { $self->$_send_sms( $template, $tuples, $stash ) }
-   else {
+   my ($stash, $template) = $opts->{stash}
+                          ? $self->$_load_stash( $plate_name, $quote )
+                          : $self->$_load_template( $plate_name, $quote );
+
+   my $attaches = $self->$_qualify_assets( delete $stash->{attachments} );
+   my $tuples   = $opts->{stash}      ? $self->$_load_from_stash( $stash )
+                : $opts->{event}      ? $self->$_list_participents
+                : $opts->{recipients} ? $self->$_list_recipients
+                                      : $self->$_list_people;
+
+   if ($sink eq 'email') {
       for my $person (map { $_->[ 1 ] } @{ $tuples }) {
          $self->$_send_email( $template, $person, $stash, $attaches );
       }
    }
+   else { $self->$_send_sms( $template, $tuples, $stash ) }
 
    $conf->sessdir eq substr $plate_name, 0, length $conf->sessdir
       and unlink $plate_name;

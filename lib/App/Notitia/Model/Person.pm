@@ -4,7 +4,7 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( bind bind_fields button check_field_js
                                 create_link delete_button dialog_anchor
-                                field_options loc mail_domain make_tip
+                                field_options loc make_tip
                                 management_link operation_links page_link_set
                                 register_action_paths save_button table_link
                                 to_dt to_msg uri_for_action );
@@ -20,7 +20,6 @@ with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
-with    q(Web::Components::Role::Email);
 with    q(App::Notitia::Role::Messaging);
 
 # Public attributes
@@ -208,40 +207,6 @@ my $_person_ops_links = sub {
 };
 
 # Private methods
-my $_create_person_email = sub {
-   my ($self, $req, $person, $password) = @_;
-
-   my $conf    = $self->config;
-   my $key     = substr create_token, 0, 32;
-   my $subject = loc $req, to_msg 'Account activation for [_1]', $conf->title;
-   my $href    = uri_for_action $req, $self->moniker.'/activate', [ $key ];
-   my $post    = {
-      attributes      => {
-         charset      => $conf->encoding,
-         content_type => 'text/html', },
-      from            => $conf->title.'@'.mail_domain(),
-      stash           => {
-         app_name     => $conf->title,
-         first_name   => $person->first_name,
-         last_name    => $person->last_name,
-         link         => $href,
-         password     => $password,
-         title        => $subject,
-         username     => $person->name, },
-      subject         => $subject,
-      template        => 'user_email',
-      to              => $person->email_address, };
-
-   $conf->sessdir->catfile( $key )->println( $person->shortcode );
-
-   my $r = $self->send_email( $post );
-   my ($id) = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
-
-   $self->log->info( loc( $req, 'New user email sent - [_1]', [ $id ] ) );
-
-   return;
-};
-
 my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
@@ -402,11 +367,10 @@ sub create_person_action : Role(person_manager) {
    try   { $self->schema->txn_do( $create ) }
    catch { $self->rethrow_exception( $_, 'create', 'person', $person->name ) };
 
-   $self->config->no_user_email
-      or $self->$_create_person_email( $req, $person, $password );
-
    my $who      = $req->session->user_label;
-   my $message  = [ to_msg '[_1] created by [_2]', $person->label, $who ];
+   my $key      = '[_1] created by [_2] ref. [_3]';
+   my $id       = $self->create_person_email( $req, $person, $password );
+   my $message  = [ to_msg $key, $person->label, $who, "send_message-${id}" ];
    my $location = uri_for_action $req, $self->moniker.'/people';
 
    return { redirect => { location => $location, message => $message } };
