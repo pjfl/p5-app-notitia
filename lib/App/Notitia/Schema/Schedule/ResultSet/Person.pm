@@ -6,6 +6,9 @@ use parent 'DBIx::Class::ResultSet';
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::Functions  qw( throw );
 
+# Private package variables
+my $_max_badge_id = [ 0, 0 ];
+
 # Private functions
 my $_person_tuple = sub {
    my ($person, $opts) = @_; $opts = { %{ $opts // {} } };
@@ -128,13 +131,30 @@ sub list_people {
 }
 
 sub max_badge_id {
-   my ($self, $v) = @_; defined $v and return $self->$_set_max_badge_id( $v );
+   my ($self, $v) = @_;
 
-   my $id  = $self->$_get_max_badge_id; defined $id and return $id;
-   my $rs  = $self->search( { 'badge_id' => { '!=' => undef } } );
-   my $max = $rs->get_column( 'badge_id' )->max;
+   defined $v and $v > $_max_badge_id->[ 1 ]
+       and return $self->$_set_max_badge_id( $_max_badge_id->[ 1 ] = $v );
 
-   return $max ? $self->$_set_max_badge_id( $max ) : $max;
+   my $conf    = $self->result_source->schema->config;
+   my $file    = $conf->badge_mtime; $file->exists or $file->touch;
+   my $f_mtime = $file->stat->{mtime};
+
+   $f_mtime <= $_max_badge_id->[ 0 ] and return $_max_badge_id->[ 1 ];
+
+   my $max_s = $self->$_get_max_badge_id;
+   my $rs    = $self->search( { 'badge_id' => { '!=' => undef } } );
+   my $max_c = $rs->get_column( 'badge_id' )->max;
+   my $max   = $_max_badge_id->[ 1 ]; $_max_badge_id->[ 0 ] = $f_mtime;
+
+   $max_s and $max_s > $max and $max = $max_s;
+   $max_c and $max_c > $max and $max = $max_c;
+
+   return $self->$_set_max_badge_id( $_max_badge_id->[ 1 ] = $max );
+}
+
+sub next_badge_id {
+   return $_[ 0 ]->max_badge_id( $_[ 0 ]->max_badge_id + 1 );
 }
 
 sub search_for_people {

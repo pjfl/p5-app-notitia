@@ -124,7 +124,7 @@
 [%    FOR option IN f.value -%]
       <label class="[% option.container_class %]">
          <input [% IF option.selected %]checked="checked"[% END %]
-            class="[% option.class %]" name="[% f.name %]"
+            class="[% option.class %]" id="[% option.id %]" name="[% f.name %]"
              type="radio" value="[% option.value %]">
          <span class="option-label">[% loc( option.label ) %]</span>
       </label>
@@ -132,7 +132,7 @@
 [%    IF f.label -%]</label>[% END -%]
 [% END -%]
 [% MACRO Select( f ) BLOCK -%]
-[%    IF f.label -%]<label class="label">
+[%    IF f.label -%]<label class="label" id="[% f.label_id %]">
       <span class="field-label">[% loc( f.label ) %]</span>[% END %]
 [%    IF f.tip -%]
       <span class="field-help tips [% f.container_class %]"
@@ -186,7 +186,7 @@
    </tr>
 [% END -%]
 [% MACRO TextArea( f ) BLOCK -%]
-   <label class="label">
+   <label class="label [% f.label_class %]" id="[% f.label_id %]">
       <span class="field-label">[% loc( f.label ) %]</span>
 [%    IF f.tip -%]
       <span class="field-help tips [% f.container_class %]"
@@ -210,7 +210,7 @@
 [% END -%]
 [% MACRO TextField( f ) BLOCK -%]
 [%    IF f.label -%]
-   <label class="label [% f.label_class %]" [% IF f.label_id %]id="[% f.label_id %]"[% END %]>
+   <label class="label [% f.label_class %]" id="[% f.label_id %]">
       <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
 [%    IF f.tip -%]
       <span class="field-help tips [% f.container_class %]"

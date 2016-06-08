@@ -249,17 +249,7 @@ my $_list_all_roles = sub {
 };
 
 my $_next_badge_id = sub {
-   my $self    = shift;
-   my $rs      = $self->schema->resultset( 'Person' );
-   my $file    = $self->config->badge_mtime; not $file->exists and $file->touch;
-   my $f_mtime = $file->stat->{mtime};
-
-   if ($f_mtime > $self->max_badge_id->[ 0 ]) {
-      $self->max_badge_id->[ 0 ] = $f_mtime;
-      $self->max_badge_id->[ 1 ] = $rs->max_badge_id;
-   }
-
-   return $rs->max_badge_id( ++$self->max_badge_id->[ 1 ] );
+   return $_[ 0 ]->schema->resultset( 'Person' )->next_badge_id;
 };
 
 my $_people_ops_links = sub {

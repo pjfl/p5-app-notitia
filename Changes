@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Aded interactive SMS messages
           - Fixes messaging event participants
           - Adds individual user messages
           - Adds individual selection on contacts list

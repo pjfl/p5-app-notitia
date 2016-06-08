@@ -879,6 +879,9 @@ msgstr "Manage the certificates required by the slot roles"
 msgid "slotname"
 msgstr "Slot Name"
 
+msgid "sms_message"
+msgstr "Message text"
+
 msgid "start_time"
 msgstr "Start Time"
 

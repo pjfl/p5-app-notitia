@@ -3,7 +3,7 @@ package App::Notitia::Role::Messaging;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( NUL SPC TRUE );
-use App::Notitia::Util      qw( bind button js_window_config loc
+use App::Notitia::Util      qw( bind button js_config loc
                                 table_link to_msg uri_for_action );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token throw );
@@ -22,6 +22,10 @@ my $_plate_label = sub {
 };
 
 # Private methods
+my $_session_file = sub {
+   return $_[ 0 ]->config->sessdir->catfile( substr create_token, 0, 32 );
+};
+
 my $_flatten = sub {
    my ($self, $req) = @_;
 
@@ -31,15 +35,15 @@ my $_flatten = sub {
    my $r        = NUL; delete $params->{mid};
 
    if (defined $selected->[ 0 ]) {
-      my $data = { selected => $selected };
-      my $key  = substr create_token, 0, 32;
-      my $path = $self->config->sessdir->catfile( $key );
-      my $opts = { path => $path->assert,
-                   data => $data, storage_class => 'JSON' };
+      my $path = $self->$_session_file;
+      my $opts = { data => { selected => $selected },
+                   path => $path->assert, storage_class => 'JSON' };
 
       Class::Usul::File->data_dump( $opts ); $r = "-o recipients=${path} ";
    }
    else {
+      scalar keys %{ $params } or throw 'Messaging all people is not allowed';
+
       exists $params->{type} and $params->{type} eq 'contacts'
          and throw 'Messaging all contacts is not allowed';
 
@@ -62,19 +66,33 @@ my $_list_message_templates = sub {
    return [ map { [ $_plate_label->( $_ ), "${_}" ] } $plates->all_files ];
 };
 
+my $_make_template = sub {
+   my ($self, $message) = @_;
+
+   my $path = $self->$_session_file; $path->print( $message );
+
+   return $path;
+};
+
 # Public methods
 sub message_create {
-   my ($self, $req, $opts) = @_;
+   my ($self, $req, $params) = @_;
 
    my $conf     = $self->config;
    my $sink     = $req->body_params->( 'sink' );
-   my $template = $req->body_params->( 'template' );
+   my $opts     = $sink eq 'sms' ? { optional => TRUE } : {};
+   my $template = $req->body_params->( 'template', $opts );
+      $opts     = $sink eq 'email' ? { optional => TRUE } : {};
+   my $message  = $req->body_params->( 'sms_message', $opts );
+
+   $sink eq 'sms' and $template = $self->$_make_template( $message );
+
    my $cmd      = $conf->binsdir->catfile( 'notitia-schema' ).SPC
                 . $self->$_flatten( $req )."send_message ${sink} ${template}";
    my $job_rs   = $self->schema->resultset( 'Job' );
    my $job      = $job_rs->create( { command => $cmd, name => 'send_message' });
-   my $message  = [ to_msg 'Job send-message-[_1] created', $job->id ];
-   my $location = uri_for_action $req, $self->moniker.'/'.$opts->{action};
+      $message  = [ to_msg 'Job send-message-[_1] created', $job->id ];
+   my $location = uri_for_action $req, $self->moniker.'/'.$params->{action};
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -82,14 +100,20 @@ sub message_create {
 sub message_link {
    my ($self, $req, $page, $href, $name) = @_;
 
-   my $opts = {
-         name    => $name,
-         target  => $page->{form}->{name},
-         title   => loc( $req, 'message_title' ),
-         useIcon => \1 };
+   my $opts   =  {
+      name    => $name,
+      target  => $page->{form}->{name},
+      title   => loc( $req, 'message_title' ),
+      useIcon => \1 };
+   my $args   =  [ "${href}", $opts ];
 
-   push @{ $page->{literal_js} //= [] }, js_window_config
-      'message', 'click', 'inlineDialog', [ "${href}", $opts ];
+   js_config $page, 'window', [ 'message', 'click', 'inlineDialog', $args ];
+   $args = [ 'email_sink', 'email_sink_label' ];
+   $opts = [ 'email_sink', 'checked', 'showSelected', $args ];
+   js_config $page, 'togglers', $opts;
+   $args = [ 'sms_sink', 'sms_sink_label' ];
+   $opts = [ 'sms_sink', 'checked', 'showSelected', $args ];
+   js_config $page, 'togglers', $opts;
 
    return table_link $req, 'message', loc( $req, 'message_management_link' ),
                                       loc( $req, 'message_management_tip' );
@@ -101,14 +125,22 @@ sub message_stash {
    my $params    = $req->query_params->( { optional => TRUE } ) // {};
    my $stash     = $self->dialog_stash( $req, $opts->{layout} );
    my $templates = $self->$_list_message_templates( $req );
-   my $fields    = $stash->{page}->{fields};
-   my $values    = [ [ 'Email', 'email', { selected => TRUE } ],
-                     [ 'SMS',   'sms' ] ];
+   my $page      = $stash->{page};
+   my $fields    = $page->{fields};
+   my $values    =
+      [ [ 'Email', 'email', { class    => 'togglers', id => 'email_sink',
+                              selected => TRUE } ],
+        [ 'SMS',   'sms',   { class    => 'togglers', id => 'sms_sink' } ] ];
 
    delete $params->{id}; delete $params->{val};
    $fields->{confirm } = $_confirm_message_button->( $req );
    $fields->{sink    } = bind 'sink', $values, { label => 'Message sink' };
-   $fields->{template} = bind 'template', [ [ NUL, NUL ], @{ $templates } ];
+   $fields->{message } = bind 'sms_message', NUL,
+                              { class       => 'standard-field autosize',
+                                label_class => 'hidden',
+                                label_id    => 'sms_sink_label' };
+   $fields->{template} = bind 'template', [ [ NUL, NUL ], @{ $templates } ],
+                              { label_id    => 'email_sink_label' };
 
    if ($opts->{action}) {
       my $actionp = $self->moniker.'/'.$opts->{action};

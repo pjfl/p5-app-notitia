@@ -2156,6 +2156,7 @@ var Replacements = new Class( {
    Implements: [ Options ],
 
    options              : {
+      replacement_class : 'checkbox',
       textarea_container: 'expanding_area',
       textarea_preformat: 'expanding_spacer',
       config_attr       : 'inputs',
@@ -2192,7 +2193,7 @@ var Replacements = new Class( {
          el.setStyles( { margin: 0, padding: 0,
                          position: 'absolute', left: '-9999px' } );
          new Element( 'span', {
-            'class': 'checkbox' + (el.checked ? ' checked' : ''),
+            'class': opt.replacement_class + (el.checked ? ' checked' : ''),
             id     : new_id,
             name   : el.name
          } ).inject( el, 'before' );
@@ -2265,7 +2266,7 @@ var Replacements = new Class( {
       replacement.toggleClass( 'checked' );
 
       if (replacement.hasClass( 'checked' )) {
-         el.setProperty( 'checked', 'checked' );
+         el.setProperty( 'checked', 'checked' ); el.fireEvent( 'checked' );
 
          if (el.type == 'radio') {
             this.collection.each( function( box_id ) {
@@ -2275,11 +2276,12 @@ var Replacements = new Class( {
                    && replacement.hasClass( 'checked' )) {
                   replacement.removeClass ( 'checked' );
                   box.removeProperty( 'checked' );
+                  box.fireEvent( 'checked' );
                }
             }, this );
          }
       }
-      else el.removeProperty( 'checked' );
+      else { el.removeProperty( 'checked' ); el.fireEvent( 'checked' ); }
    }
 } );
 
@@ -2781,32 +2783,31 @@ var Togglers = new Class( {
       var cfg; if (! (cfg = this.config[ el.id ])) return;
 
       el.addEvent( cfg.event || 'click', function( ev ) {
-         ev.stop(); this[ cfg.method ].apply( this, cfg.args ) }.bind( this ) );
+         this[ cfg.method ].apply( this, cfg.args ) }.bind( this ) );
    },
 
-   toggle: function( id, name ) {
-      var el = $( id ); if (! el) return;
+   showSelected: function( src_id, sink_id ) {
+      var src = $( src_id ), target = $( sink_id );
 
-      var toggler = el.retrieve( name ); if (! toggler) return;
+      if (! src || ! target) return;
 
-      toggler.toggle( this.context.cookies ); this.resize();
+      if (src.getProperty( 'checked' )) { target.show() }
+      else { target.hide() }
    },
 
    toggleSwapText: function( id, name, s1, s2 ) {
-      var el = $( id ); if (! el) return; var cookies = this.context.cookies;
+      var cookies = this.context.cookies, el; if (! name) return;
 
       if (cookies.get( name ) == 'true') {
          cookies.set( name, 'false' );
 
-         if (el) el.set( 'html', s2 );
-
+         if (el = $( id )) el.set( 'html', s2 );
          if (el = $( name + 'Disp' )) el.hide();
       }
       else {
          cookies.set( name, 'true' );
 
-         if (el) el.set( 'html', s1 );
-
+         if (el = $( id )) el.set( 'html', s1 );
          if (el = $( name + 'Disp' )) el.show();
       }
 

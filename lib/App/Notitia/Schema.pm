@@ -381,10 +381,15 @@ my $_send_sms = sub {
    my $sender  = App::Notitia::SMS->new( $attr );
    my $message = $self->render_template( $stash );
 
+   $self->info( 'SMS message: '.$message )
+
    for my $person (map { $_->[ 1 ] } @{ $tuples }) {
       $person->mobile_phone and push @recipients,
          map { s{ \A 07 }{447}mx; $_ } $person->mobile_phone;
+      $self->log->debug( 'SMS recipient '.$person->shortcode );
    }
+
+   $self->config->no_user_email and and return;
 
    my $rv = $sender->send_sms( $message, @recipients );
 
@@ -624,20 +629,20 @@ sub import_people : method {
 }
 
 sub send_message : method {
-   my $self     = shift;
-   my $conf     = $self->config;
-   my $sink     = $self->next_argv or throw Unspecified, [ 'message sink' ];
-   my $template = $self->next_argv or throw Unspecified, [ 'template name' ];
-   my $quote    = $self->next_argv ? TRUE : FALSE;
-   my $stash    = { app_name       => $conf->title,
-                    path           => io( $template ),
-                    sms_attributes => { quote => $quote }, };
-   my $template = load_file_data( $stash );
-   my $attaches = $self->$_qualify_assets( delete $stash->{attachments} );
-   my $opts     = $self->options;
-   my $tuples   = $opts->{event}      ? $self->$_list_participents
-                : $opts->{recipients} ? $self->$_list_recipients
-                                      : $self->$_list_people;
+   my $self       = shift;
+   my $conf       = $self->config;
+   my $sink       = $self->next_argv or throw Unspecified, [ 'message sink' ];
+   my $plate_name = $self->next_argv or throw Unspecified, [ 'template name' ];
+   my $quote      = $self->next_argv ? TRUE : FALSE;
+   my $stash      = { app_name       => $conf->title,
+                      path           => io( $plate_name ),
+                      sms_attributes => { quote => $quote }, };
+   my $template   = load_file_data( $stash );
+   my $attaches   = $self->$_qualify_assets( delete $stash->{attachments} );
+   my $opts       = $self->options;
+   my $tuples     = $opts->{event}      ? $self->$_list_participents
+                  : $opts->{recipients} ? $self->$_list_recipients
+                                        : $self->$_list_people;
 
    if ($sink eq 'sms') { $self->$_send_sms( $template, $tuples, $stash ) }
    else {
@@ -645,6 +650,9 @@ sub send_message : method {
          $self->$_send_email( $template, $person, $stash, $attaches );
       }
    }
+
+   $conf->sessdir eq substr $plate_name, 0, length $conf->sessdir
+      and unlink $plate_name;
 
    return OK;
 }
