@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Made upgrade-schema less whiney
           - Schema upgrade. Makes job command a text field
           - Adds config template_dir. Preparing to move templates
           - Refactored messaging role

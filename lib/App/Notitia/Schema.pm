@@ -89,6 +89,10 @@ my $_word_iter = sub {
 };
 
 # Private methods
+my $_connect_attr = sub {
+   return { %{ $_[ 0 ]->connect_info->[ 3 ] }, %{ $_[ 0 ]->db_attr } };
+};
+
 my $_populate_blots = sub {
    my ($self, $dv, $cmap, $lno, $cols) = @_;
 
@@ -751,10 +755,15 @@ sub runqueue : method {
 }
 
 sub upgrade_schema : method {
-   my $self = shift; $self->db_attr->{ignore_version} = TRUE;
+   my $self   = shift; $self->db_attr->{ignore_version} = TRUE;
+   my $passwd = $self->password;
+   my $class  = $self->schema_class;
+   my $attr   = $self->$_connect_attr;
+   my $schema = $class->connect( $self->dsn, $self->user, $passwd, $attr );
 
-   $self->schema->upgrade_directory( $self->config->sharedir );
-   $self->schema->upgrade;
+   $schema->storage->ensure_connected;
+   $schema->upgrade_directory( $self->config->sharedir );
+   $schema->upgrade;
    return OK;
 }
 
