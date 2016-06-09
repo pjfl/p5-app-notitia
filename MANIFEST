@@ -171,9 +171,9 @@ var/root/templates/hyde/vehicle_content.tt
 var/root/templates/hyde/week-table.tt
 var/root/templates/hyde/wrapper.tt
 var/root/templates/hyde/yield-slot.tt
-var/share/App-Notitia-Schema-Schedule-0.3.148-MySQL.sql
-var/share/App-Notitia-Schema-Schedule-0.3.148-PostgreSQL.sql
-var/share/App-Notitia-Schema-Schedule-0.3.148-SQLite.sql
+var/share/App-Notitia-Schema-Schedule-0.3.160-MySQL.sql
+var/share/App-Notitia-Schema-Schedule-0.3.160-PostgreSQL.sql
+var/share/App-Notitia-Schema-Schedule-0.3.160-SQLite.sql
 var/share/App-Notitia-Schema-Schedule-001-Type.json
 var/share/App-Notitia-Schema-Schedule-002-Person.json
 var/share/App-Notitia-Schema-Schedule-003-Role.json

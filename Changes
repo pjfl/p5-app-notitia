@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Schema upgrade. Makes job command a text field
           - Adds config template_dir. Preparing to move templates
           - Refactored messaging role
           - Renamed no_user_email to no_message_send

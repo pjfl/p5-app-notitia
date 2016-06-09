@@ -13,8 +13,8 @@ $class->table( 'job' );
 
 $class->add_columns
    ( id      => serial_data_type,
-     name    => varchar_data_type( 32 ),
-     command => varchar_data_type, );
+     name    => varchar_data_type(   32 ),
+     command => varchar_data_type( 1024 ), );
 
 $class->set_primary_key( 'id' );
 

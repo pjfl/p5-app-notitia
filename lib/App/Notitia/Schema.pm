@@ -751,7 +751,7 @@ sub runqueue : method {
 }
 
 sub upgrade_schema : method {
-   my $self = shift;
+   my $self = shift; $self->db_attr->{ignore_version} = TRUE;
 
    $self->schema->upgrade_directory( $self->config->sharedir );
    $self->schema->upgrade;

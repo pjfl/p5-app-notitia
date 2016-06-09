@@ -5,7 +5,7 @@ DROP TABLE "job";
 CREATE TABLE "job" (
   "id" INTEGER PRIMARY KEY NOT NULL,
   "name" varchar(32) NOT NULL DEFAULT '',
-  "command" varchar(255) NOT NULL DEFAULT ''
+  "command" varchar(1024) NOT NULL DEFAULT ''
 );
 
 DROP TABLE "person";
