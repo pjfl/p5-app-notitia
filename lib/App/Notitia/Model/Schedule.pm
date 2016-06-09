@@ -917,8 +917,8 @@ sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
          $fields->{assignee} = bind 'assignee', [ [ NUL, NUL ], @{ $people } ];
       }
 
-      $slot_type eq 'rider' and $fields->{request_bike}
-            = bind( 'request_bike', TRUE, { container_class => 'right-last' } );
+      $slot_type eq 'rider'
+         and $fields->{request_bike} = bind 'request_bike', TRUE;
    }
 
    $fields->{confirm  } = $_confirm_slot_button->( $req, $action );

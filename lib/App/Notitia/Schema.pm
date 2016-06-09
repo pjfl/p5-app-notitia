@@ -701,7 +701,7 @@ sub send_message : method {
 sub restore_data : method {
    my $self = shift; my $conf = $self->config;
 
-   my $path = $self->next_argv or throw Unspecified, [ 'pathname' ];
+   my $path = $self->next_argv or throw Unspecified, [ 'file name' ];
 
    $path = io $path; $path->exists or throw PathNotFound, [ $path ];
 
@@ -755,7 +755,11 @@ sub runqueue : method {
 }
 
 sub upgrade_schema : method {
-   my $self   = shift; $self->db_attr->{ignore_version} = TRUE;
+   my $self = shift;
+
+   $self->preversion or throw Unspecified, [ 'preversion' ];
+   $self->create_ddl;
+
    my $passwd = $self->password;
    my $class  = $self->schema_class;
    my $attr   = $self->$_connect_attr;

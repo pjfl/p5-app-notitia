@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Allows dispatching of stash.page.form
+          - Upgrade schema now calls create ddl
           - Made upgrade-schema less whiney
           - Schema upgrade. Makes job command a text field
           - Adds config template_dir. Preparing to move templates

@@ -1,70 +1,75 @@
 <!-- Macros -->
+[% MACRO Dispatch( f ) BLOCK -%]
+[%    SWITCH f.type -%]
+[%       CASE 'button'; Button( f ); -%]
+[%       CASE 'checkbox'; CheckBox( f ); -%]
+[%       CASE 'container'; Container( f ); -%]
+[%       CASE 'date'; DateField( f ); -%]
+[%       CASE 'form'; Form( f ); -%]
+[%       CASE 'form_button' -%]
+[%          FormWithButton( f.href, f.class, f.value,
+                            f.form_name, f.tip, f.name, f.action ) -%]
+[%       CASE 'hidden'; HiddenField( f ); -%]
+[%       CASE 'image'; Image( f ); -%]
+[%       CASE 'label'; Label( f ); -%]
+[%       CASE 'link' -%]
+[%          LinkWithTips( f.href, f.class, f.value, f.hint,
+                          f.tip, f.name, f.container_class ) -%]
+[%       CASE 'list'; List( f ); -%]
+[%       CASE 'password'; PasswordField( f ); -%]
+[%       CASE 'radio'; RadioButtons( f ); -%]
+[%       CASE 'select'; Select( f ); -%]
+[%       CASE 'table'; Table( f ); -%]
+[%       CASE 'text'; Text( f ); -%]
+[%       CASE 'textarea'; TextArea( f ); -%]
+[%       CASE 'textfield'; TextField( f ); -%]
+[%       CASE 'time'; TimeField( f ); -%]
+[%    END -%]
+[% END -%]
+[% BLOCK label %]
+[%    IF f.label -%]
+      <label class="label [% f.label_class %]" id="[% f.label_id %]">
+         <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
+[%       content -%]
+[%    IF f.label -%]</label>[% END -%]
+[% END -%]
 [% MACRO Button( f ) BLOCK -%]
-[%    IF f.tip %]<span class="button-help [% f.container_class %] tips"
-                           title="[% f.tip %]">[% END -%]
+[%    IF f.tip -%]
+     <span class="button-help [% f.container_class %] tips" title="[% f.tip %]">
+[%    END -%]
       <button class="button [% f.class %]" name="_method" type="submit"
               value="[% f.value %]">[% loc( f.label ) %]</button>
-[%    IF f.tip %]</span>[% END -%]
+[%    IF f.tip -%]</span>[% END -%]
 [% END -%]
-[% MACRO CheckBox( f ) BLOCK -%]
-[%    IF f.label -%]<label class="label [% f.container_class %]">
-      <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
+[% MACRO CheckBox( f ) WRAPPER label -%]
+[%    IF f.tip; FieldHelp( f ); END -%]
       <input [% IF f.checked %]checked="checked"[% END %]
          name="[% f.name %]" type="checkbox" value="[% f.value %]">
-[%    IF f.label -%]</label>[% END -%]
 [% END -%]
 [% MACRO Container( f ) BLOCK -%]
-   <div class="[% f.class %]">[% Dispatch( f.content ) %]</div>
+      <div class="[% f.class %]">[% Dispatch( f.content ) %]</div>
 [% END -%]
-[% MACRO DateField( f ) BLOCK -%]
-[%    IF f.label -%]<label class="label">
-      <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
-[%    IF f.tip -%]
-      <span class="field-help [% f.container_class %] tips"
-            title="[% f.tip %]">&dagger;</span>
-[%    END -%]
-      <input
-[%    IF f.disabled %]disabled="disabled"[% END -%]
-[%       IF f.class; class = f.class; -%]
-[%       ELSE; class = 'standard-field'; END -%]
-         class="[% class %] pick-date" id="[% f.name %]"
-          name="[% f.name %]" value="[% f.value %]">
+[% MACRO DateField( f ) WRAPPER label -%]
+[%    IF f.tip; FieldHelp( f ); END -%]
+[%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
+      <input [% IF f.disabled %]disabled="disabled"[% END -%]
+             class="[% class %] pick-date" id="[% f.name %]"
+             name="[% f.name %]" value="[% f.value %]">
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>
-[%    IF f.label -%]</label>[% END -%]
 [% END -%]
-[% MACRO Dispatch( f ) BLOCK -%]
-[%    IF f.type == 'button'; Button( f ); END -%]
-[%    IF f.type == 'checkbox'; CheckBox( f ); END -%]
-[%    IF f.type == 'container'; Container( f ); END -%]
-[%    IF f.type == 'date'; DateField( f ); END -%]
-[%    IF f.type == 'form'; Form( f ); END -%]
-[%    IF f.type == 'form_button' -%]
-[%       FormWithButton( f.href, f.class, f.value,
-                         f.form_name, f.tip, f.name, f.action ) -%]
-[%    END -%]
-[%    IF f.type == 'hidden'; HiddenField( f ); END -%]
-[%    IF f.type == 'image'; Image( f ); END -%]
-[%    IF f.type == 'label'; Label( f ); END -%]
-[%    IF f.type == 'link' -%]
-[%       LinkWithTips( f.href, f.class, f.value, f.hint,
-                       f.tip, f.name, f.container_class ) -%]
-[%    END -%]
-[%    IF f.type == 'list'; List( f ); END -%]
-[%    IF f.type == 'select'; Select( f ); END -%]
-[%    IF f.type == 'text'; Text( f ); END -%]
-[%    IF f.type == 'textfield'; TextField( f ); END -%]
-[%    IF f.type == 'table'; Table( f ); END -%]
+[% MACRO FieldHelp( f ) BLOCK %]
+      <span class="field-help [% f.container_class %] tips" title="[% f.tip %]">
+         &dagger;</span>
 [% END -%]
 [% MACRO Form( f ) BLOCK -%]
-[%    IF f.class; class = f.class; -%]
-[%    ELSE; class = 'standard-form'; END -%]
+[%    IF f.class; class = f.class; ELSE; class = 'standard-form'; END -%]
 [%    IF f.method; method = f.method; ELSE; method = 'post'; END -%]
-   <form action="[% f.href %]" class="[% class %]"
-        enctype="application/x-www-form-urlencoded"
-         method="[% method %]" name="[% f.form_name %]">
+      <form action="[% f.href %]" class="[% class %]"
+           enctype="application/x-www-form-urlencoded"
+            method="[% method %]" name="[% f.form_name %]">
 [%    Dispatch( f.content ) -%]
-   </form>
+      </form>
 [% END -%]
 [% MACRO FormWithButton( href, class, content, form, tip, id, value ) BLOCK -%]
 [%    IF href && form; %]<form action="[% href %]"
@@ -76,19 +81,22 @@
 [%    IF href && form; %]</form>[% END -%]
 [% END -%]
 [% MACRO HiddenField( f ) BLOCK -%]
-   <input name="[% f.name %]" type="hidden" value="[% f.value %]">
+      <input name="[% f.name %]" type="hidden" value="[% f.value %]">
 [% END -%]
 [% MACRO Image( f ) BLOCK -%]
-   <img alt="[% f.title %]" class="[% f.class %]" src="[% f.href %]">
+      <img alt="[% f.title %]" class="[% f.class %]" src="[% f.href %]">
 [% END -%]
-[% MACRO Label( f ) BLOCK -%]
-   <label class="label">
-      <span class="field-label">[% loc( f.label ) %]</span>
-   [% Dispatch( f.content ) %]</label>
+[% MACRO Label( f ) WRAPPER label -%]
+[%    Dispatch( f.content ) %]
 [% END -%]
 [% MACRO Link( href, class, content, id ) BLOCK -%]
-   <a class="[% class %]" href="[% href %]"[% IF id -%]
-         id="[% id %]"[% END %]>[% content %]</a>
+      <a class="[% class %]" href="[% href %]"[% IF id -%]
+            id="[% id %]"[% END %]>[% content %]</a>
+[% END -%]
+[% MACRO LinkWithTips( href, class, text, title, tip, id, con_class ) BLOCK -%]
+      <span class="link-help [% con_class %] tips"
+           title="[% title _ ' ~ ' _ tip %]">[% Link( href, class, text, id ) %]
+      </span>
 [% END -%]
 [% MACRO List( f ) BLOCK -%]
 [%    FOR field IN f.list; -%]
@@ -98,29 +106,15 @@
 [%       Dispatch( field ) -%]
 [%    END -%]
 [% END -%]
-[% MACRO LinkWithTips( href, class, text, title, tip, id, con_class ) BLOCK -%]
-   <span class="link-help [% con_class %] tips"
-         title="[% title _ ' ~ ' _ tip %]">[% Link( href, class, text, id ) %]
-   </span>
-[% END -%]
-[% MACRO PasswordField( f ) BLOCK -%]
-   <label class="label">
-      <span class="field-label">[% loc( f.label ) %]</span>
-[%    IF f.tip -%]
-      <span class="field-help tips [% f.container_class %]"
-            title="[% f.tip %]">&dagger;</span>
-[%    END -%]
-      <input
+[% MACRO PasswordField( f ) WRAPPER label -%]
+[%    IF f.tip; FieldHelp( f ); END -%]
+[%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
+      <input class="[% class %]" id="[% f.name %]" name="[% f.name %]"
 [%    IF f.autocomplete %]autocomplete="[% f.autocomplete %]"[% END -%]
-[%    IF f.class; class = f.class; -%]
-[%    ELSE; class = 'standard-field'; END -%]
-          class="[% class %]" id="[% f.name %]" name="[% f.name %]"
-           type="password">
-   </label>
+              type="password">
 [% END -%]
-[% MACRO RadioButtons( f ) BLOCK -%]
-[%    IF f.label -%]<label class="label [% f.container_class %]">
-      <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
+[% MACRO RadioButtons( f ) WRAPPER label -%]
+[%    IF f.tip; FieldHelp( f ); END -%]
 [%    FOR option IN f.value -%]
       <label class="[% option.container_class %]">
          <input [% IF option.selected %]checked="checked"[% END %]
@@ -129,17 +123,10 @@
          <span class="option-label">[% loc( option.label ) %]</span>
       </label>
 [%    END -%]
-[%    IF f.label -%]</label>[% END -%]
 [% END -%]
-[% MACRO Select( f ) BLOCK -%]
-[%    IF f.label -%]<label class="label" id="[% f.label_id %]">
-      <span class="field-label">[% loc( f.label ) %]</span>[% END %]
-[%    IF f.tip -%]
-      <span class="field-help tips [% f.container_class %]"
-            title="[% f.tip %]">&dagger;</span>
-[%    END -%]
-[%    IF f.class; class = f.class; -%]
-[%    ELSE; class = 'standard-field'; END -%]
+[% MACRO Select( f ) WRAPPER label -%]
+[%    IF f.tip; FieldHelp( f ); END -%]
+[%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
       <select class="[% class %]" name="[% f.name %]"
 [%    IF f.disabled %]disabled="disabled"[% END -%]
 [%    IF f.multiple %]multiple="multiple" size="[% f.size %]" [% END -%]
@@ -150,25 +137,23 @@
              value="[% option.value %]">[% loc( option.label ) %]</option>
 [%    END -%]
       </select>
-[%    IF f.label -%]</label>[% END -%]
 [% END -%]
-[% MACRO Table( table ) BLOCK -%]
-[%    IF table.class; class = table.class; -%]
-[%    ELSE; class = 'standard-table'; END -%]
+[% MACRO Table( f ) WRAPPER label -%]
+[%    IF f.class; class = f.class; ELSE; class = 'standard-table'; END -%]
    <table class="[% class %]">
-[%    IF table.caption %]<caption>[% table.caption %]</caption>[% END -%]
-[%    IF table.headers.0 -%]
+[%    IF f.caption %]<caption>[% f.caption %]</caption>[% END -%]
+[%    IF f.headers.0 -%]
       <thead>
          <tr>
-[%       FOR cell IN table.headers -%]
+[%       FOR cell IN f.headers -%]
            <th class="[% cell.class %]">[% cell.value %]</th>
 [%       END -%]
          </tr>
       </thead>
 [%    END -%]
-[%    IF table.rows.0 -%]
+[%    IF f.rows.0 -%]
       <tbody>
-[%       FOR row IN table.rows -%]
+[%       FOR row IN f.rows -%]
 [%       TableRow( row ) -%]
 [%       END -%]
       </tbody>
@@ -185,59 +170,34 @@
 [%    END -%]
    </tr>
 [% END -%]
-[% MACRO TextArea( f ) BLOCK -%]
-   <label class="label [% f.label_class %]" id="[% f.label_id %]">
-      <span class="field-label">[% loc( f.label ) %]</span>
-[%    IF f.tip -%]
-      <span class="field-help tips [% f.container_class %]"
-            title="[% f.tip %]">&dagger;</span>
-[%    END -%]
+[% MACRO Text( f ) WRAPPER label -%]
+[%    IF f.tip; FieldHelp( f ); END -%]
+      <span class="field-text [% f.class %]">[% f.value %]</span>
+[% END -%]
+[% MACRO TextArea( f ) WRAPPER label -%]
+[%    IF f.tip; FieldHelp( f ); END -%]
+[%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
       <div class="field-container">
          <textarea [% IF f.disabled %]disabled="disabled"[% END -%]
-[%    IF f.class; class = f.class; -%]
-[%    ELSE; class = 'standard-field'; END -%]
             class="[% class %]" id="[% f.name %]"
              name="[% f.name %]">[% f.value %]</textarea>
       </div>
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>
-   </label>
 [% END -%]
-[% MACRO Text( f ) BLOCK -%]
-[%    IF f.label -%]<label class="label">
-      <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
-      <span class="field-text [% f.class %]">[% f.value %]</span>
-[% END -%]
-[% MACRO TextField( f ) BLOCK -%]
-[%    IF f.label -%]
-   <label class="label [% f.label_class %]" id="[% f.label_id %]">
-      <span class="field-label">[% loc( f.label ) %]</span>[% END -%]
-[%    IF f.tip -%]
-      <span class="field-help tips [% f.container_class %]"
-            title="[% f.tip %]">&dagger;</span>
-[%    END -%]
-      <input
-[%    IF f.disabled %]disabled="disabled"[% END -%]
-[%    IF f.class; class = f.class; -%]
-[%    ELSE; class = 'standard-field'; END -%]
+[% MACRO TextField( f ) WRAPPER label -%]
+[%    IF f.tip; FieldHelp( f ); END -%]
+[%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
+      <input [% IF f.disabled %]disabled="disabled"[% END -%]
          class="[% class %]" id="[% f.name %]"
           name="[% f.name %]" type="textfield" value="[% f.value %]">
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>
-   </label>
 [% END -%]
-[% MACRO TimeField( f ) BLOCK -%]
-   <label class="label">
-      <span class="field-label">[% loc( f.label ) %]</span>
-[%    IF f.tip -%]
-      <span class="field-help tips [% f.container_class %]"
-            title="[% f.tip %]">&dagger;</span>
-[%    END -%]
-      <input
-[%    IF f.disabled %]disabled="disabled"[% END -%]
-[%    IF f.class; class = f.class; -%]
-[%    ELSE; class = 'standard-field'; END -%]
-         class="[% class %] pick-time"
-            id="[% f.name %]" name="[% f.name %]" value="[% f.value %]">
-   </label>
+[% MACRO TimeField( f ) WRAPPER label -%]
+[%    IF f.tip; FieldHelp( f ); END -%]
+[%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
+      <input [% IF f.disabled %]disabled="disabled"[% END -%]
+         class="[% class %] pick-time" id="[% f.name %]"
+          name="[% f.name %]" value="[% f.value %]">
 [% END -%]

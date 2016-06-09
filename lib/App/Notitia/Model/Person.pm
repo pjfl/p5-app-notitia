@@ -298,7 +298,7 @@ my $_bind_person_fields = sub {
       notes            => { class    => 'standard-field autosize',
                             disabled => $disabled },
       password_expired => { checked  => $person->password_expired,
-                            container_class => 'right-last',
+                            label_class => 'right-last',
                             disabled => $disabled },
       postcode         => { class    => 'standard-field server',
                             disabled => $disabled },
