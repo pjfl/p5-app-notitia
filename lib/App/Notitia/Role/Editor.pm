@@ -2,7 +2,10 @@ package App::Notitia::Role::Editor;
 
 use namespace::autoclean;
 
-use App::Notitia::Util     qw( bind dialog_anchor loc make_id_from
+use App::Notitia::Form     qw( blank_form f_list f_tag p_button p_checkbox
+                               p_container p_hidden p_radio
+                               p_text p_textfield );
+use App::Notitia::Util     qw( dialog_anchor loc make_id_from
                                make_name_from mtime set_element_focus
                                stash_functions to_msg uri_for_action );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
@@ -30,12 +33,11 @@ my @extensions = qw( .csv .doc .docx .gif .jpeg .jpg .png .xls .xlsx );
 my $_add_dialog_js = sub {
    my ($self, $req, $page, $name, $opts) = @_;
 
-   my $action  = $self->moniker.'/dialog';
-   my $href    = uri_for_action( $req, $action, [], { name => $name } );
-   my @jslines = dialog_anchor "${name}-file", $href,
-                               { name => "${name}-file", %{ $opts } };
+   my $action = $self->moniker.'/dialog';
+   my $href   = uri_for_action( $req, $action, [], { name => $name } );
 
-   push @{ $page->{literal_js} }, @jslines;
+   push @{ $page->{literal_js} }, dialog_anchor
+      "${name}-file", $href, { name => "${name}-file", %{ $opts } };
    return;
 };
 
@@ -236,25 +238,39 @@ sub get_dialog {
 
    my $params = $req->query_params;
    my $name   = $params->( 'name' );
+   my $val    = $params->( 'val', { optional => TRUE } );
    my $stash  = $self->dialog_stash( $req, "${name}-file" );
-   my $page   = $stash->{page};
    my $links  = $stash->{links};
+   my $href   = $name eq 'create' ? $links->{root_uri}
+              : $name eq 'rename' ? $self->base_uri( $req, [ $val ] )
+              : $name eq 'search' ? uri_for_action $req, 'docs/search'
+              : $name eq 'upload' ? uri_for_action $req, 'docs/upload'
+                                  : NUL;
+   my $form   = $stash->{page}->{forms}->[ 0 ]
+              = blank_form "${name}-file", $href;
+   my $page   = $stash->{page};
 
    if ($name eq 'create') {
-      $page->{literal_js } = set_element_focus "${name}-file", 'pathname';
+      p_textfield $form, 'pathname', NUL, { class => 'pathname', label => NUL };
+      p_radio     $form, 'draft', [ [ 'Draft', TRUE ] ], { label => NUL };
+      p_button    $form, 'Create', 'create_file', { class => 'right-last' };
+      $page->{literal_js} = set_element_focus "${name}-file", 'pathname';
    }
    elsif ($name eq 'rename') {
-      $page->{literal_js } = set_element_focus "${name}-file", 'pathname';
-      $page->{old_path   } = $params->( 'val' );
-      $links->{rename_uri} = $self->base_uri( $req, [ $page->{old_path} ] );
+      p_hidden    $form, 'old_path', $val;
+      p_textfield $form, 'pathname', NUL, { class => 'pathname', label => NUL };
+      p_text      $form, NUL, $val, { class => 'info-field' };
+      p_button    $form, 'Rename', 'rename_file', { class => 'right-last' };
+      $page->{literal_js} = set_element_focus "${name}-file", 'pathname';
    }
    elsif ($name eq 'search') {
-      $page->{literal_js } = set_element_focus "${name}-file", 'query';
+      $form->{method} = 'get';
+      p_textfield $form, 'query', $stash->{prefs}->{query}, { label => NUL };
+      p_button    $form, 'Search', NUL, { class => 'right-last' };
+      $page->{literal_js} = set_element_focus "${name}-file", 'query';
    }
    elsif ($name eq 'upload') {
-      $page->{fields}->{href  } = uri_for_action $req, 'docs/upload';
-      $page->{fields}->{public} = bind 'public_access', TRUE;
-      $page->{literal_js } = $_copy_element_value->();
+      $page->{offer_public} = TRUE; $self->upload_dialog( $req, $page );
    }
 
    return $stash;
@@ -305,6 +321,30 @@ sub search_files {
    my ($self, $req) = @_;
 
    return $self->get_stash( $req, $self->$_search_results( $req ) );
+}
+
+sub upload_dialog {
+   my ($self, $req, $page) = @_;
+
+   my $form    = $page->{forms}->[ 0 ];
+   my $content = f_list f_tag( 'br' ),
+      [ f_tag( 'span', loc( $req, 'Browse' ) ),
+        f_tag( 'input', NUL, { class => 'upload', id => 'upload-btn',
+                               name  => 'file', type => 'file' } ) ];
+
+   p_textfield $form, 'upload-path', NUL, {
+      class => 'pathname', disabled => TRUE,
+      label => NUL, placeholder => 'Choose File' };
+
+   $page->{offer_public} and p_checkbox $form, 'public_access', TRUE, {
+      label_class => 'align-right clear' };
+
+   p_container $form, $content, { class => 'upload-file button' };
+
+   p_button $form, 'Upload', 'upload_file', { class => 'right-last' };
+
+   $page->{literal_js} = $_copy_element_value->();
+   return;
 }
 
 sub upload_file {

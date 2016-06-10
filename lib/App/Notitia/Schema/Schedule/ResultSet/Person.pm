@@ -55,7 +55,7 @@ my $_set_max_badge_id = sub {
 };
 
 # Public methods
-sub find_person {
+sub find_by_key {
    my ($self, $key) = @_; my $person;
 
    defined( $person = $self->search( { name => $key } )->single )
@@ -66,6 +66,10 @@ sub find_person {
        and  return $person;
 
    throw 'Person [_1] unknown', [ $key ], level => 2;
+}
+
+sub find_person { # Deprecated
+   return $_[ 0 ]->find_by_key( $_[ 1 ] );
 }
 
 sub find_by_shortcode {

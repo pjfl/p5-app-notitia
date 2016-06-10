@@ -2,7 +2,7 @@ package App::Notitia::Model::User;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_image p_button p_checkbox p_label
+use App::Notitia::Form      qw( blank_form p_button p_checkbox p_image p_label
                                 p_password p_radio p_text p_textfield );
 use App::Notitia::Util      qw( check_form_field js_server_config
                                 locm register_action_paths set_element_focus
@@ -82,7 +82,7 @@ my $_add_login_js = sub {
    my ($self, $req, $page) = @_;
 
    my $uri = uri_for_action $req, $self->moniker.'/show_if_needed', [],
-      { class => 'Person', method => 'find_person', test => 'totp_secret', };
+      { class => 'Person', test => 'totp_secret', };
 
    push @{ $page->{literal_js} }, js_server_config 'username', 'blur',
       'showIfNeeded', [ "${uri}", 'username', 'auth_code_label' ];
@@ -119,7 +119,7 @@ sub change_password : Role(anon) {
    my $form       =  blank_form 'change-password', $href;
    my $page       =  {
       first_field => $username ? 'oldpass' : 'username',
-      form        => $form,
+      forms       => [ $form ],
       location    => 'change_password',
       template    => [ 'contents' ],
       title       => locm $req, 'change_password_title', $self->config->title };
@@ -169,7 +169,7 @@ sub login : Role(anon) {
    my $form       =  blank_form 'login-user', $href;
    my $page       =  {
       first_field => 'username',
-      form        => $form,
+      forms       => [ $form ],
       location    => 'login',
       template    => [ 'contents' ],
       title       => locm $req, 'login_title', $self->config->title };
@@ -232,7 +232,8 @@ sub profile : Role(any) {
    my $person    = $person_rs->find_by_shortcode( $req->username );
    my $stash     = $self->dialog_stash( $req, 'profile-user' );
    my $href      = uri_for_action $req, $self->moniker.'/profile';
-   my $form      = $stash->{page}->{form} = blank_form 'profile-user', $href;
+   my $form      = $stash->{page}->{forms}->[ 0 ]
+                 = blank_form 'profile-user', $href;
 
    $stash->{page}->{literal_js} = set_element_focus 'profile-user', 'address';
 
@@ -256,7 +257,8 @@ sub request_reset : Role(anon) {
 
    my $stash = $self->dialog_stash( $req, 'request-reset' );
    my $href  = uri_for_action $req, $self->moniker.'/reset';
-   my $form  = $stash->{page}->{form} = blank_form 'request-reset', $href;
+   my $form  = $stash->{page}->{forms}->[ 0 ]
+             = blank_form 'request-reset', $href;
 
    $stash->{page}->{literal_js} = set_element_focus 'request-reset', 'username';
 
@@ -307,15 +309,14 @@ sub reset_password : Role(anon) {
 sub show_if_needed : Role(anon) {
    my ($self, $req) = @_; my $meta = { needed => TRUE };
 
-   my $class  = $req->query_params->( 'class' );
-   my $method = $req->query_params->( 'method' );
-   my $test   = $req->query_params->( 'test' );
-   my $v      = $req->query_params->( 'val', { raw => TRUE } );
+   my $class = $req->query_params->( 'class' );
+   my $test  = $req->query_params->( 'test' );
+   my $v     = $req->query_params->( 'val', { raw => TRUE } );
 
    try {
-      my $r = $self->schema->resultset( $class )->$method( $v );
+      my $r = $self->schema->resultset( $class )->find_by_key( $v );
 
-      $r->$test() or delete $meta->{needed};
+      $r->execute( $test ) or delete $meta->{needed};
    }
    catch { $self->log->error( $_ ) };
 
@@ -329,7 +330,8 @@ sub totp_request : Role(anon) {
 
    my $stash = $self->dialog_stash( $req, 'totp-request' );
    my $href  = uri_for_action $req, $self->moniker.'/reset';
-   my $form  = $stash->{page}->{form} = blank_form 'totp-request', $href;
+   my $form  = $stash->{page}->{forms}->[ 0 ]
+             = blank_form 'totp-request', $href;
 
    $stash->{page}->{literal_js} = set_element_focus 'totp-request', 'username';
 
@@ -373,7 +375,7 @@ sub totp_secret : Role(anon) {
    my $href      =  uri_for_action $req, $self->moniker.'/totp_secret';
    my $form      =  blank_form 'totp-secret', $href;
    my $page      =  {
-      form       => $form,
+      forms      => [ $form ],
       location   => 'totp_secret',
       template   => [ 'contents' ],
       title      => locm $req, 'totp_secret_title', $conf->title };
@@ -384,7 +386,7 @@ sub totp_secret : Role(anon) {
       my $label = locm $req, 'totp_qr_code';
       my $auth  = $person->totp_authenticator;
 
-      p_label $form, $label,      f_image $label, $auth->qr_code;
+      p_image $form, $label,      $auth->qr_code, { label => $label };
       p_text  $form, 'totp_auth', $auth->otpauth, { class => 'info-field' };
    }
 

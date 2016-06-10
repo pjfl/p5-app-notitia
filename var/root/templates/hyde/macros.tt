@@ -20,6 +20,7 @@
 [%       CASE 'radio'; RadioButtons( f ); -%]
 [%       CASE 'select'; Select( f ); -%]
 [%       CASE 'table'; Table( f ); -%]
+[%       CASE 'tag'; Tag( f ); -%]
 [%       CASE 'text'; Text( f ); -%]
 [%       CASE 'textarea'; TextArea( f ); -%]
 [%       CASE 'textfield'; TextField( f ); -%]
@@ -83,7 +84,7 @@
 [% MACRO HiddenField( f ) BLOCK -%]
       <input name="[% f.name %]" type="hidden" value="[% f.value %]">
 [% END -%]
-[% MACRO Image( f ) BLOCK -%]
+[% MACRO Image( f ) WRAPPER label -%]
       <img alt="[% f.title %]" class="[% f.class %]" src="[% f.href %]">
 [% END -%]
 [% MACRO Label( f ) WRAPPER label -%]
@@ -99,10 +100,10 @@
       </span>
 [% END -%]
 [% MACRO List( f ) BLOCK -%]
+[%    IF reference( f.separator ) == 'HASH'; sep = Dispatch( f.separator ) %]
+[%    ELSE; sep = f.separator; END -%]
 [%    FOR field IN f.list; -%]
-[%       IF !loop.first && f.separator; -%]
-            [% f.separator %]
-[%       END -%]
+[%       IF !loop.first && f.separator; -%][% sep %][% END -%]
 [%       Dispatch( field ) -%]
 [%    END -%]
 [% END -%]
@@ -170,6 +171,11 @@
 [%    END -%]
    </tr>
 [% END -%]
+[% MACRO Tag( f ) BLOCK -%]
+      <[% f.tag %] class="[% f.class %]" id="[% f.id %]" name="[% f.name %]"
+                    type="[% f.orig_type %]">
+[%    IF f.content %][% f.content %]</[% f.tag %]>[% END -%]
+[% END -%]
 [% MACRO Text( f ) WRAPPER label -%]
 [%    IF f.tip; FieldHelp( f ); END -%]
       <span class="field-text [% f.class %]">[% f.value %]</span>
@@ -190,7 +196,8 @@
 [%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
       <input [% IF f.disabled %]disabled="disabled"[% END -%]
          class="[% class %]" id="[% f.name %]"
-          name="[% f.name %]" type="textfield" value="[% f.value %]">
+          name="[% f.name %]" placeholder="[% f.placeholder%]"
+          type="textfield" value="[% f.value %]">
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>
 [% END -%]

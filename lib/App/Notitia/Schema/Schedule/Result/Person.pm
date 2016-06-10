@@ -16,7 +16,7 @@ use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
                                    serial_data_type slot_limit_index
                                    varchar_data_type );
 use Auth::GoogleAuth;
-use Class::Usul::Functions     qw( digest throw urandom );
+use Class::Usul::Functions     qw( digest is_member throw urandom );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use Try::Tiny;
 use Unexpected::Functions      qw( AccountInactive FailedSecurityCheck
@@ -352,6 +352,14 @@ sub delete_member_from {
 
 sub delete_participent_for {
    return $_[ 0 ]->assert_participating_in( $_[ 1 ] )->delete;
+}
+
+sub execute {
+   my ($self, $method) = @_;
+
+   is_member $method, [ qw( totp_secret ) ] or return FALSE;
+
+   return $self->$method();
 }
 
 sub insert {

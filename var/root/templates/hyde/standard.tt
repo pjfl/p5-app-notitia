@@ -12,7 +12,7 @@
       <div class="unit four-fifths">
          <article>
          <h4>[% page.title %]</h4>
-[%          Dispatch( page.form ) -%]
+[%          Dispatch( page.forms.0 ) -%]
          </article>
       </div>
 [% END -%]

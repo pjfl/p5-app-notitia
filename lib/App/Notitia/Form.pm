@@ -3,12 +3,14 @@ package App::Notitia::Form;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use App::Notitia::Constants qw( FALSE NUL );
+use App::Notitia::Util      qw( field_options );
+use App::Notitia::Constants qw( FALSE NUL TRUE );
 use Class::Usul::Functions  qw( is_arrayref );
 use Scalar::Util            qw( blessed );
 
-our @EXPORT_OK = qw( blank_form f_image p_button p_checkbox p_label
-                     p_password p_radio p_text p_textfield );
+our @EXPORT_OK = qw( blank_form f_list f_tag p_button p_checkbox p_container
+                     p_fields p_hidden p_image p_label p_password p_radio
+                     p_text p_textfield );
 
 # Private functions functions
 my $_bind_option = sub {
@@ -42,10 +44,17 @@ my $_bind = sub {
    return $opts;
 };
 
+my $_natatime = sub {
+   my $n = shift; my @list = @_;
+
+   return sub { return $_[ 0 ] ? unshift @list, @_ : splice @list, 0, $n };
+};
+
 my $_push_field = sub {
    my ($form, $type, $opts) = @_; $opts = { %{ $opts } };
 
-   $opts->{type} = $type; $opts->{label} //= $opts->{name};
+   defined $opts->{name} and $opts->{label} //= $opts->{name};
+   $opts->{type} = $type;
 
    return push @{ $form->{content}->{list} }, $opts;
 };
@@ -58,8 +67,18 @@ sub blank_form ($$) {
             form_name => $name, type => 'form' },
 }
 
-sub f_image {
-   return { href => $_[ 1 ], title => $_[ 0 ], type => 'image' };
+sub f_list ($@) {
+   my ($sep, $list) = @_;
+
+   return { list => $list, separator => $sep, type => 'list' };
+}
+
+sub f_tag ($@) {
+   my ($tag, $content, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   $opts->{orig_type} = delete $opts->{type};
+
+   return { %{ $opts }, content => $content, tag => $tag, type => 'tag' };
 }
 
 sub p_button ($@) {
@@ -68,6 +87,53 @@ sub p_button ($@) {
 
 sub p_checkbox ($@) {
    my $f = shift; return $_push_field->( $f, 'checkbox', $_bind->( @_ ) );
+}
+
+sub p_container ($@) {
+   my ($f, $content, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   $opts->{content} = $content;
+
+   return $_push_field->( $f, 'container', $opts );
+}
+
+sub p_fields ($$$$$) {
+   my ($f, $schema, $result, $src, $map) = @_;
+
+   my $iter = $_natatime->( 2, @{ $map } );
+
+   while (my ($k, $opts) = $iter->()) {
+      $opts or next; my $type = $opts->{type} // 'textfield';
+
+      if    ($type eq 'checkbox') { $opts = $_bind->( $k, TRUE, $opts ) }
+      elsif ($type eq 'image') {}
+      elsif ($type eq 'select') {
+         $opts = field_options $schema, $result, $k, $opts;
+         $opts = $_bind->( $k, delete $opts->{value}, $opts );
+      }
+      else {
+         my $v = $opts->{value} ? delete $opts->{value} : $src->$k();
+
+         $opts = field_options $schema, $result, $k, $opts;
+         $opts = $_bind->( $k, $v, $opts );
+      }
+
+      $_push_field->( $f, $type, $opts );
+   }
+
+   return;
+}
+
+sub p_hidden ($@) {
+   my $f = shift; return $_push_field->( $f, 'hidden', $_bind->( @_ ) );
+}
+
+sub p_image ($@) {
+   my ($f, $title, $href, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   $opts->{href} = $href; $opts->{title} = $title,
+
+   return $_push_field->( $f, 'image', $opts );
 }
 
 sub p_label ($@) {

@@ -1,10 +1,3 @@
+[% PROCESS 'hyde/macros.tt' -%]
 <!-- Rename File -->
-<form action="[% links.rename_uri %]" class="standard-form"
-     enctype="application/x-www-form-urlencoded"
-      method="post" name="rename-file">
-   <input   name="old_path" type="hidden"  value="[% page.old_path %]">
-   <input  class="pathname" name="pathname" type="textfield">
-   <button class="button" name="_method" type="submit"
-           value="rename_file">[% loc( 'Rename' ) %]</button>
-</form>
-<p>[% page.old_path %]</p>
+[% Dispatch( page.forms.0 ) -%]
