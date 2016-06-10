@@ -16,6 +16,7 @@ lib/App/Notitia/Controller/Main.pm
 lib/App/Notitia/Controller/Root.pm
 lib/App/Notitia/Daemon.pm
 lib/App/Notitia/Exception.pm
+lib/App/Notitia/Form.pm
 lib/App/Notitia/Markdown.pm
 lib/App/Notitia/Model.pm
 lib/App/Notitia/Model/Admin.pm
@@ -119,7 +120,6 @@ var/root/templates/hyde/assign-vehicle.tt
 var/root/templates/hyde/blank-page.tt
 var/root/templates/hyde/certification_content.tt
 var/root/templates/hyde/certifications_content.tt
-var/root/templates/hyde/change-password_content.tt
 var/root/templates/hyde/claim-slot.tt
 var/root/templates/hyde/contents.tt
 var/root/templates/hyde/contents_mobile.tt
@@ -136,7 +136,6 @@ var/root/templates/hyde/exception_content.tt
 var/root/templates/hyde/footer.tt
 var/root/templates/hyde/header.tt
 var/root/templates/hyde/index.tt
-var/root/templates/hyde/login_content.tt
 var/root/templates/hyde/macros.tt
 var/root/templates/hyde/message-people.tt
 var/root/templates/hyde/month-table.tt
@@ -157,7 +156,6 @@ var/root/templates/hyde/slot-certs_content.tt
 var/root/templates/hyde/standard.tt
 var/root/templates/hyde/table_content.tt
 var/root/templates/hyde/totp-request.tt
-var/root/templates/hyde/totp-secret_content.tt
 var/root/templates/hyde/totp_request_email.tt
 var/root/templates/hyde/type_content.tt
 var/root/templates/hyde/unassign-vehicle.tt

@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - User model using stash.page.form
+          - Adds App::Notitia::Form
           - Allows dispatching of stash.page.form
           - Upgrade schema now calls create ddl
           - Made upgrade-schema less whiney

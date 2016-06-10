@@ -2,8 +2,10 @@ package App::Notitia::Model::User;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Util      qw( bind check_form_field js_server_config
-                                loc register_action_paths set_element_focus
+use App::Notitia::Form      qw( blank_form f_image p_button p_checkbox p_label
+                                p_password p_radio p_text p_textfield );
+use App::Notitia::Util      qw( check_form_field js_server_config
+                                locm register_action_paths set_element_focus
                                 to_msg uri_for_action );
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef );
@@ -62,6 +64,32 @@ my $_update_session = sub {
 };
 
 # Private methods
+my $_add_change_password_js = sub {
+   my ($self, $req, $page) = @_;
+
+   push @{ $page->{literal_js} },
+      "   behaviour.config.inputs[ 'again' ]",
+      "      = { event     : [ 'focus', 'blur' ],",
+      "          method    : [ 'show_password', 'hide_password' ] };",
+      "   behaviour.config.inputs[ 'password' ]",
+      "      = { event     : [ 'focus', 'blur' ],",
+      "          method    : [ 'show_password', 'hide_password' ] };";
+
+   return;
+};
+
+my $_add_login_js = sub {
+   my ($self, $req, $page) = @_;
+
+   my $uri = uri_for_action $req, $self->moniker.'/show_if_needed', [],
+      { class => 'Person', method => 'find_person', test => 'totp_secret', };
+
+   push @{ $page->{literal_js} }, js_server_config 'username', 'blur',
+      'showIfNeeded', [ "${uri}", 'username', 'auth_code_label' ];
+
+   return;
+};
+
 my $_fetch_shortcode = sub {
    my ($self, $req) = @_; my $scode = 'unknown';
 
@@ -84,31 +112,28 @@ sub change_password : Role(anon) {
 
    my $params     =  $req->uri_params;
    my $name       =  $params->( 0, { optional => TRUE } ) // $req->username;
-   my $person     =  $name
-                  ?  $self->schema->resultset( 'Person' )->find_person( $name )
-                  :  FALSE;
+   my $person_rs  =  $self->schema->resultset( 'Person' );
+   my $person     =  $name ? $person_rs->find_person( $name ) : FALSE;
    my $username   =  $person ? $person->name : $req->username;
+   my $href       =  uri_for_action $req, $self->moniker.'/change_password';
+   my $form       =  blank_form 'change-password', $href;
    my $page       =  {
-      fields      => {
-         again    => bind( 'again',    NUL, {
-            class => 'standard-field reveal' } ),
-         oldpass  => bind( 'oldpass',  NUL, { label => 'old_password' } ),
-         password => bind( 'password', NUL, { autocomplete => 'off',
-            class => 'standard-field reveal',
-            label => 'new_password' } ),
-         update   => bind( 'update', 'change_password', {
-            class => 'save-button right-last' } ),
-         username => bind( 'username', $username ), },
-      literal_js  =>
-         [ "   behaviour.config.inputs[ 'again' ]",
-           "      = { event     : [ 'focus', 'blur' ],",
-           "          method    : [ 'show_password', 'hide_password' ] };",
-           "   behaviour.config.inputs[ 'password' ]",
-           "      = { event     : [ 'focus', 'blur' ],",
-           "          method    : [ 'show_password', 'hide_password' ] };", ],
+      first_field => $username ? 'oldpass' : 'username',
+      form        => $form,
       location    => 'change_password',
-      template    => [ 'contents', 'change-password' ],
-      title       => loc( $req, 'change_password_title' ) };
+      template    => [ 'contents' ],
+      title       => locm $req, 'change_password_title', $self->config->title };
+
+   p_textfield $form, 'username', $username;
+   p_password  $form, 'oldpass',  NUL, { label => 'old_password' };
+   p_password  $form, 'password', NUL, { autocomplete => 'off',
+                                         class => 'standard-field reveal',
+                                         label => 'new_password' };
+   p_password  $form, 'again',    NUL, { class => 'standard-field reveal' };
+   p_button    $form, 'update', 'change_password',
+                                       { class => 'save-button right-last' };
+
+   $self->$_add_change_password_js( $req, $page );
 
    return $self->get_stash( $req, $page );
 }
@@ -140,28 +165,22 @@ sub check_field : Role(any) {
 sub login : Role(anon) {
    my ($self, $req) = @_;
 
+   my $href       =  uri_for_action $req, $self->moniker.'/login';
+   my $form       =  blank_form 'login-user', $href;
    my $page       =  {
-      fields      => {},
       first_field => 'username',
+      form        => $form,
       location    => 'login',
-      template    => [ 'contents', 'login' ],
-      title       => loc( $req, to_msg 'login_title', $self->config->title ), };
-   my $actionp    =  $self->moniker.'/show_if_needed';
-   my $uri        =  uri_for_action $req, $actionp, [],
-      { class => 'Person', method => 'find_person', test => 'totp_secret', };
-   my $fields     =  $page->{fields};
+      template    => [ 'contents' ],
+      title       => locm $req, 'login_title', $self->config->title };
 
-   push @{ $page->{literal_js} }, js_server_config 'username', 'blur',
-      'showIfNeeded', [ "${uri}", 'username', 'auth_code_label' ];
+   p_textfield $form, 'username',  NUL, { class => 'standard-field server' };
+   p_password  $form, 'password';
+   p_textfield $form, 'auth_code', NUL, { label_class => 'hidden',
+                                          label_id    => 'auth_code_label', };
+   p_button    $form, 'login', 'login', { class => 'save-button right-last' };
 
-   $fields->{auth_code} = bind 'auth_code', NUL,
-                               { label_class => 'hidden',
-                                 label_id    => 'auth_code_label', };
-   $fields->{login    } = bind 'login', 'login',
-                               { class => 'save-button right' };
-   $fields->{password } = bind 'password', NUL;
-   $fields->{username } = bind 'username', NUL,
-                               { class => 'standard-field server' };
+   $self->$_add_login_js( $req, $page );
 
    return $self->get_stash( $req, $page );
 }
@@ -212,24 +231,22 @@ sub profile : Role(any) {
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_by_shortcode( $req->username );
    my $stash     = $self->dialog_stash( $req, 'profile-user' );
-   my $page      = $stash->{page};
-   my $fields    = $page->{fields};
+   my $href      = uri_for_action $req, $self->moniker.'/profile';
+   my $form      = $stash->{page}->{form} = blank_form 'profile-user', $href;
 
-   $page->{literal_js     } = set_element_focus 'profile-user', 'address';
-   $fields->{address      } = bind 'address',       $person->address;
-   $fields->{email_address} = bind 'email_address', $person->email_address;
-   $fields->{enable_2fa   } = bind 'enable_2fa',    TRUE,
-            { checked => $person->totp_secret ? TRUE : FALSE };
-   $fields->{home_phone   } = bind 'home_phone',    $person->home_phone;
-   $fields->{mobile_phone } = bind 'mobile_phone',  $person->mobile_phone;
-   $fields->{postcode     } = bind 'postcode',      $person->postcode;
-   $fields->{rows_per_page} = bind 'rows_per_page',
-                                    $_rows_per_page->( $person ),
-                                    { label => 'Rows Per Page' };
-   $fields->{update       } = bind 'update', 'update_profile',
-                                    { class => 'right-last' };
-   $fields->{username     } = bind 'username',      $person->label,
-                                    { disabled => TRUE };
+   $stash->{page}->{literal_js} = set_element_focus 'profile-user', 'address';
+
+   p_textfield $form, 'username',      $person->label, { disabled => TRUE };
+   p_textfield $form, 'address',       $person->address;
+   p_textfield $form, 'postcode',      $person->postcode;
+   p_textfield $form, 'email_address', $person->email_address;
+   p_textfield $form, 'mobile_phone',  $person->mobile_phone;
+   p_textfield $form, 'home_phone',    $person->home_phone;
+   p_radio     $form, 'rows_per_page', $_rows_per_page->( $person ),
+               { label => 'Rows Per Page' };
+   p_checkbox  $form, 'enable_2fa',    TRUE,
+               { checked => $person->totp_secret ? TRUE : FALSE };
+   p_button    $form,  'update', 'update_profile', { class => 'right-last' };
 
    return $stash;
 }
@@ -237,14 +254,14 @@ sub profile : Role(any) {
 sub request_reset : Role(anon) {
    my ($self, $req) = @_;
 
-   my $stash  = $self->dialog_stash( $req, 'request-reset' );
-   my $page   = $stash->{page};
-   my $fields = $page->{fields};
-   my $opts   = { class => 'right' };
+   my $stash = $self->dialog_stash( $req, 'request-reset' );
+   my $href  = uri_for_action $req, $self->moniker.'/reset';
+   my $form  = $stash->{page}->{form} = blank_form 'request-reset', $href;
 
-   $fields->{username} = bind 'username', NUL;
-   $fields->{reset   } = bind 'request_reset', 'request_reset', $opts;
-   $page->{literal_js} = set_element_focus 'request-reset', 'username';
+   $stash->{page}->{literal_js} = set_element_focus 'request-reset', 'username';
+
+   p_textfield $form, 'username';
+   p_button    $form, 'request_reset', 'request_reset', { class => 'right' };
 
    return $stash;
 }
@@ -310,17 +327,17 @@ sub show_if_needed : Role(anon) {
 sub totp_request : Role(anon) {
    my ($self, $req) = @_;
 
-   my $stash  = $self->dialog_stash( $req, 'totp-request' );
-   my $page   = $stash->{page};
-   my $fields = $page->{fields};
-   my $opts   = { class => 'right' };
+   my $stash = $self->dialog_stash( $req, 'totp-request' );
+   my $href  = uri_for_action $req, $self->moniker.'/reset';
+   my $form  = $stash->{page}->{form} = blank_form 'totp-request', $href;
 
-   $page->{literal_js} = set_element_focus 'totp-request', 'username';
-   $fields->{mobile  } = bind 'mobile_phone', NUL;
-   $fields->{password} = bind 'password', NUL;
-   $fields->{postcode} = bind 'postcode', NUL;
-   $fields->{request } = bind 'totp_request', 'totp_request', $opts;
-   $fields->{username} = bind 'username', NUL;
+   $stash->{page}->{literal_js} = set_element_focus 'totp-request', 'username';
+
+   p_textfield $form, 'username';
+   p_password  $form, 'password';
+   p_textfield $form, 'mobile_phone';
+   p_textfield $form, 'postcode';
+   p_button    $form, 'totp_request', 'totp_request', { class => 'right-last' };
 
    return $stash;
 }
@@ -349,29 +366,26 @@ sub totp_request_action : Role(anon) {
 sub totp_secret : Role(anon) {
    my ($self, $req) = @_;
 
+   my $conf      =  $self->config;
    my $scode     =  $self->$_fetch_shortcode( $req );
-   my $title     =  $self->config->title;
-   my $page      =  {
-      fields     => {},
-      location   => 'totp_secret',
-      template   => [ 'contents', 'totp-secret' ],
-      title      => loc( $req, to_msg 'totp_secret_title', $title ), };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $scode );
-   my $fields    =  $page->{fields};
+   my $href      =  uri_for_action $req, $self->moniker.'/totp_secret';
+   my $form      =  blank_form 'totp-secret', $href;
+   my $page      =  {
+      form       => $form,
+      location   => 'totp_secret',
+      template   => [ 'contents' ],
+      title      => locm $req, 'totp_secret_title', $conf->title };
 
-   $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
+   p_textfield $form, 'username', $person->label, { disabled => TRUE };
 
    if ($person->totp_secret) {
+      my $label = locm $req, 'totp_qr_code';
       my $auth  = $person->totp_authenticator;
-      my $label = loc $req, 'totp_qr_code';
 
-      $fields->{qr_code} = {
-         content => { href => $auth->qr_code, title => $label, type => 'image'},
-         label   => $label,
-         type    => 'label' };
-      $fields->{otpauth}
-         = bind 'totp_auth', $auth->otpauth, { class => 'info-field' };
+      p_label $form, $label,      f_image $label, $auth->qr_code;
+      p_text  $form, 'totp_auth', $auth->otpauth, { class => 'info-field' };
    }
 
    return $self->get_stash( $req, $page );

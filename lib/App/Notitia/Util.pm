@@ -31,7 +31,7 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      get_hashed_pw get_salt is_access_authorised is_draft
                      is_encrypted iterator js_config js_server_config
                      js_submit_config js_togglers_config js_window_config
-                     lcm_for load_file_data loc localise_tree mail_domain
+                     lcm_for load_file_data loc localise_tree locm mail_domain
                      make_id_from make_name_from make_tip management_link mtime
                      new_salt nullable_foreign_key_data_type
                      nullable_numerical_id_data_type nullable_varchar_data_type
@@ -673,7 +673,11 @@ sub localise_tree ($$) {
    return FALSE;
 }
 
-sub mail_domain {
+sub locm ($@) {
+   my $req = shift; return loc $req, to_msg( @_ );
+}
+
+sub mail_domain () {
    my $mailname_path = io[ NUL, 'etc', 'mailname' ]; my $domain = 'example.com';
 
    $mailname_path->exists and $domain = $mailname_path->chomp->getline;
@@ -1085,6 +1089,8 @@ LCM for a list of integers
 =item C<loc>
 
 =item C<localise_tree>
+
+=item C<locm>
 
 =item C<make_id_from>
 

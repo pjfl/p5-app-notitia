@@ -1,15 +1,3 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Profile User -->
-<form action="[% uri_for_action( 'user/profile' ) %]" class="standard-form"
-     enctype="application/x-www-form-urlencoded"
-      method="post" name="profile-user">
-[% TextField( page.fields.username ) -%]
-[% TextField( page.fields.address ) -%]
-[% TextField( page.fields.postcode ) -%]
-[% TextField( page.fields.email_address ) -%]
-[% TextField( page.fields.mobile_phone ) -%]
-[% TextField( page.fields.home_phone ) -%]
-[% RadioButtons( page.fields.rows_per_page ) -%]
-[% CheckBox( page.fields.enable_2fa ) -%]
-[% Button( page.fields.update ) -%]
-</form>
+[% Dispatch( page.form ) -%]
