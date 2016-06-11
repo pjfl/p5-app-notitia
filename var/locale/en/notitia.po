@@ -469,7 +469,7 @@ msgid "later_page_link"
 msgstr "[_1]"
 
 msgid "later_page_tip"
-msgstr "Goto this page"
+msgstr "Go to page [_1]"
 
 msgid "login"
 msgstr "Login"
