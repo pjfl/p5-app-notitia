@@ -1,6 +1,7 @@
 Revision history for App::Notitia
 
-          - Person modeul using stash.page.form
+          - Vehicle model using stash.page.form
+          - Person model using stash.page.form
           - Editing dialogs using stash.page.form
           - User model using stash.page.form
           - Adds App::Notitia::Form

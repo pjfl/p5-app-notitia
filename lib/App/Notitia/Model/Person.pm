@@ -2,7 +2,8 @@ package App::Notitia::Model::Person;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Form      qw( blank_form p_button p_container p_fields );
+use App::Notitia::Form      qw( blank_form f_list p_button p_container
+                                p_fields );
 use App::Notitia::Util      qw( button check_field_js
                                 create_link dialog_anchor loc make_tip
                                 management_link operation_links page_link_set
@@ -200,7 +201,7 @@ my $_person_ops_links = sub {
          title   => loc( $req, 'Mugshot Upload' ),
          useIcon => \1 } );
 
-   return { separator => '&nbsp;|&nbsp;', list => $list, type => 'list' };
+   return f_list '&nbsp;|&nbsp;', $list;
 };
 
 # Private methods
@@ -392,9 +393,7 @@ sub find_by_shortcode {
 }
 
 sub message : Role(person_manager) {
-   my ($self, $req) = @_;
-
-   return $self->message_stash( $req, { layout => 'message-people'} );
+   my ($self, $req) = @_; return $self->message_stash( $req );
 }
 
 sub message_create_action : Role(person_manager) {

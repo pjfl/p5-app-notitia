@@ -502,11 +502,7 @@ sub events : Role(any) {
 }
 
 sub message : Role(event_manager) {
-   my ($self, $req) = @_;
-
-   my $opts = { action => 'participents', layout => 'message-people' };
-
-   return $self->message_stash( $req, $opts );
+   my ($self, $req) = @_; return $self->message_stash( $req );
 }
 
 sub message_create_action : Role(event_manager) {

@@ -140,7 +140,6 @@ var/root/templates/hyde/macros.tt
 var/root/templates/hyde/message-people.tt
 var/root/templates/hyde/month-table.tt
 var/root/templates/hyde/password_email.tt
-var/root/templates/hyde/person_content.tt
 var/root/templates/hyde/posts-index_content.tt
 var/root/templates/hyde/primary-nav-items.tt
 var/root/templates/hyde/profile-user.tt
@@ -162,10 +161,7 @@ var/root/templates/hyde/unassign-vehicle.tt
 var/root/templates/hyde/upload-file.tt
 var/root/templates/hyde/user_email.tt
 var/root/templates/hyde/vehicle-event-info.tt
-var/root/templates/hyde/vehicle-events_content.tt
 var/root/templates/hyde/vehicle-request-info.tt
-var/root/templates/hyde/vehicle-request_content.tt
-var/root/templates/hyde/vehicle_content.tt
 var/root/templates/hyde/week-table.tt
 var/root/templates/hyde/wrapper.tt
 var/root/templates/hyde/yield-slot.tt

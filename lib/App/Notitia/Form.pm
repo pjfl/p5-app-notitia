@@ -5,14 +5,18 @@ use parent 'Exporter::Tiny';
 
 use App::Notitia::Util      qw( field_options );
 use App::Notitia::Constants qw( FALSE NUL TRUE );
-use Class::Usul::Functions  qw( is_arrayref );
+use Class::Usul::Functions  qw( is_arrayref is_hashref throw );
 use Scalar::Util            qw( blessed );
 
-our @EXPORT_OK = qw( blank_form f_list f_tag p_button p_checkbox p_container
-                     p_fields p_hidden p_image p_label p_password p_radio
-                     p_text p_textfield );
+our @EXPORT_OK = qw( blank_form f_list f_tag p_button p_checkbox
+                     p_container p_date p_fields p_hidden p_image p_label
+                     p_password p_radio p_rows p_select p_table p_tag p_text
+                     p_textarea p_textfield );
 
-# Private functions functions
+# Private package variables
+my @ARG_NAMES = qw( name href opts );
+
+# Private functions
 my $_bind_option = sub {
    my ($v, $opts) = @_;
 
@@ -44,10 +48,26 @@ my $_bind = sub {
    return $opts;
 };
 
+my $_inline_args = sub {
+   my $n = shift; return (map { $ARG_NAMES[ $_ ] => $_[ $_ ] } 0 .. $n - 1);
+};
+
 my $_natatime = sub {
    my $n = shift; my @list = @_;
 
    return sub { return $_[ 0 ] ? unshift @list, @_ : splice @list, 0, $n };
+};
+
+my $_parse_args = sub {
+   my $n = 0; $n++ while (defined $_[ $n ]);
+
+   return           ( $n == 0 ) ? { opts => {} }
+        : is_hashref( $_[ 0 ] ) ? { %{ $_[ 0 ] } }
+        :           ( $n == 1 ) ? throw 'Insufficient number of args'
+        : is_hashref( $_[ 1 ] ) ? { content => $_[ 0 ], opts => $_[ 1 ] }
+        :           ( $n == 2 ) ? { $_inline_args->( 2, @_ ) }
+        :           ( $n == 3 ) ? { $_inline_args->( 3, @_ ) }
+                                : { @_ };
 };
 
 my $_push_field = sub {
@@ -56,27 +76,33 @@ my $_push_field = sub {
    defined $opts->{name} and $opts->{label} //= $opts->{name};
    $opts->{type} = $type;
 
-   return push @{ $form->{content}->{list} }, $opts;
+   push @{ $form->{content}->{list} }, $opts;
+   return $opts;
 };
 
 # Public functions
-sub blank_form ($$) {
-   my ($name, $href) = @_;
+sub blank_form (;$$$) {
+   my $attr = $_parse_args->( @_ ); my $opts = $attr->{opts} // {};
 
-   return { content   => { list => [], type => 'list' }, href => $href,
-            form_name => $name, type => 'form' },
+   $attr->{name} and $attr->{href} and return {
+      %{ $opts }, content => { list => [], type => 'list' },
+      href => $attr->{href}, form_name => $attr->{name}, type => 'form' };
+
+   my $content = $attr->{content} || { list => [], type => 'list' };
+
+   return { %{ $opts }, content => $content, type => 'container' };
 }
 
-sub f_list ($@) {
-   my ($sep, $list) = @_;
+sub f_list (;$$) {
+   my ($sep, $list) = @_; $sep //= NUL; $list //= [];
 
    return { list => $list, separator => $sep, type => 'list' };
 }
 
-sub f_tag ($@) {
+sub f_tag ($;$$) {
    my ($tag, $content, $opts) = @_; $opts = { %{ $opts // {} } };
 
-   $opts->{orig_type} = delete $opts->{type};
+   $opts->{orig_type} = delete $opts->{type}; $content //= NUL;
 
    return { %{ $opts }, content => $content, tag => $tag, type => 'tag' };
 }
@@ -95,6 +121,10 @@ sub p_container ($@) {
    $opts->{content} = $content;
 
    return $_push_field->( $f, 'container', $opts );
+}
+
+sub p_date ($@) {
+   my $f = shift; return $_push_field->( $f, 'date', $_bind->( @_ ) );
 }
 
 sub p_fields ($$$$$) {
@@ -152,8 +182,28 @@ sub p_radio ($@) {
    my $f = shift; return $_push_field->( $f, 'radio', $_bind->( @_ ) );
 }
 
+sub p_rows ($$) {
+   my ($table, $rows) = @_; return push @{ $table->{rows} //= [] }, @{ $rows };
+}
+
+sub p_select ($@) {
+   my $f = shift; return $_push_field->( $f, 'select', $_bind->( @_ ) );
+}
+
+sub p_table ($@) {
+   my $f = shift; return $_push_field->( $f, 'table', @_ );
+}
+
+sub p_tag ($@) {
+   my $f = shift; return $_push_field->( $f, 'tag', f_tag( @_ ) );
+}
+
 sub p_text ($@) {
    my $f = shift; return $_push_field->( $f, 'text', $_bind->( @_ ) );
+}
+
+sub p_textarea ($@) {
+   my $f = shift; return $_push_field->( $f, 'textarea', $_bind->( @_ ) );
 }
 
 sub p_textfield ($@) {

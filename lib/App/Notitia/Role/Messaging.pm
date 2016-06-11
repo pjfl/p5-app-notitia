@@ -2,8 +2,10 @@ package App::Notitia::Role::Messaging;
 
 use namespace::autoclean;
 
+use App::Notitia::Form      qw( blank_form p_button p_radio
+                                p_select p_textarea );
 use App::Notitia::Constants qw( NUL SPC TRUE );
-use App::Notitia::Util      qw( bind button js_config loc mail_domain
+use App::Notitia::Util      qw( js_config loc mail_domain
                                 table_link to_msg uri_for_action );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token throw );
@@ -12,11 +14,6 @@ use Moo::Role;
 requires qw( config dialog_stash moniker );
 
 # Private functions
-my $_confirm_message_button = sub {
-   return button $_[ 0 ],
-      { class => 'right-last', label => 'confirm', value => 'message_create' };
-};
-
 my $_plate_label = sub {
    my $v = ucfirst $_[ 0 ]->basename( '.md' ); $v =~ s{[_\-]}{ }gmx; return $v;
 };
@@ -205,30 +202,27 @@ sub message_stash {
    my ($self, $req, $opts) = @_;
 
    my $params    = $req->query_params->( { optional => TRUE } ) // {};
-   my $stash     = $self->dialog_stash( $req, $opts->{layout} );
+   my $stash     = $self->dialog_stash( $req, 'message-people' );
+   my $form      = $stash->{page}->{forms}->[ 0 ]
+                 = blank_form NUL, { class => 'standard-form' };
    my $templates = $self->$_list_message_templates( $req );
-   my $page      = $stash->{page};
-   my $fields    = $page->{fields};
    my $values    =
       [ [ 'Email', 'email', { class    => 'togglers', id => 'email_sink',
                               selected => TRUE } ],
         [ 'SMS',   'sms',   { class    => 'togglers', id => 'sms_sink' } ] ];
 
    delete $params->{id}; delete $params->{val};
-   $fields->{confirm } = $_confirm_message_button->( $req );
-   $fields->{sink    } = bind 'sink', $values, { label => 'Message sink' };
-   $fields->{message } = bind 'sms_message', NUL,
-                              { class       => 'standard-field autosize',
-                                label_class => 'hidden',
-                                label_id    => 'sms_sink_label' };
-   $fields->{template} = bind 'template', [ [ NUL, NUL ], @{ $templates } ],
-                              { label_id    => 'email_sink_label' };
 
-   if ($opts->{action}) {
-      my $actionp = $self->moniker.'/'.$opts->{action};
+   p_radio $form, 'sink', $values, { label => 'Message sink' };
 
-      $fields->{href} = uri_for_action $req, $actionp, [], $params;
-   }
+   p_select $form, 'template', [ [ NUL, NUL ], @{ $templates } ], {
+      label_id => 'email_sink_label' };
+
+   p_textarea $form, 'sms_message', NUL, {
+      class    => 'standard-field clear autosize', label_class => 'hidden',
+      label_id => 'sms_sink_label' };
+
+   p_button $form, 'confirm', 'message_create', { class => 'right-last' };
 
    return $stash;
 }

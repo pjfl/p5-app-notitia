@@ -38,7 +38,7 @@ sub assert_not_assigned_to_slot {
 
    my ($event_start, $event_end) = $event->duration;
    my $slots_rs = $self->result_source->schema->resultset( 'Slot' );
-   my $date     = $event->start_date->set_time_zone( 'local' )->ymd;
+   my $date     = $event->start_date;
 
    for my $slot ($slots_rs->search_for_assigned_slots( $opts )->all) {
       my $type_name = $slot->shift->type_name;
