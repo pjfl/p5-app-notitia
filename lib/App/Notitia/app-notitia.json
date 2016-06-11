@@ -13,7 +13,7 @@
          "m_advanced": "advance_qualification_date",
          "next_of_kin": "next_of_kin",
          "roles": "duties_authorised",
-         "vehicles": "col18"
+         "vehicles": "vehicles"
       },
       "pcode2blot_map": {
          "SP30": "Speeding 30"

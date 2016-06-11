@@ -178,7 +178,7 @@ sub assert_unique ($$$$) {
    is_arrayref $fields->{ $k }->{unique} and return;
 
    my $v = ($rs->search( { $k => $columns->{ $k } } )->all)[ 0 ];
-   my $e = exception 'Parameter [_1] is not unique', [ $k ];
+   my $e = exception "Parameter [_1] is not unique ($columns->{ $k })", [ $k ];
 
    defined $v and throw ValidationErrors, [ $e ], level => 2;
 
@@ -791,30 +791,31 @@ sub page_link_set ($$$$$) {
 
    my $list = [ $_page_link->( $req, 'first_page', $actionp,
                                $args, $params, $pager->first_page ) ];
+
    my $prev = $pager->previous_page || $pager->first_page;
    my $next = $pager->next_page     || $pager->last_page;
 
-   if ((my $step = int( $pager->current_page / 2 )) > 3) {
-      my $page = $pager->current_page - $step;
-
-      $page > 1 and $page < $prev and push @{ $list },
-         $_page_link->( $req, 'earlier_page', $actionp, $args, $params, $page );
+   # Max(current - 2, first + 1)
+   my $n_prev = 4; 
+   my $page   = ($pager->current_page - $n_prev, $pager->first_page )
+                [$pager->current_page - $n_prev < $pager->first_page];
+   while ( ++$page < $pager->current_page ) {  
+       push @{ $list }, 
+           $_page_link->( $req, 'earlier_page', $actionp, 
+                          $args, $params, $page ); 
    }
-
-   push @{ $list }, $_page_link->( $req, 'prev_page', $actionp, $args,
-                                   $params, $prev );
 
    push @{ $list }, $_page_link->( $req, 'current_page', $actionp, $args,
                                    $params, $pager->current_page );
 
-   push @{ $list }, $_page_link->( $req, 'next_page', $actionp, $args,
-                                   $params, $next );
-
-   if ((my $step = int( ($pager->last_page - $pager->current_page) / 2 )) > 3) {
-      my $page = $pager->current_page + $step;
-
-      $page > $next and $page < $pager->last_page and push @{ $list },
-         $_page_link->( $req, 'later_page', $actionp, $args, $params, $page );
+   # Min(current + 2, last)
+   my $n_next = 4; $n_next = ($pager->current_page + $n_next, $pager->last_page -1 )
+                             [$pager->current_page + $n_next > $pager->last_page -1];
+   $page = $pager->current_page + 1;
+   while ( $page <= $n_next ) {
+       push @{ $list }, 
+           $_page_link->( $req, 'later_page', $actionp, 
+                          $args, $params, $page++ );
    }
 
    push @{ $list }, $_page_link->( $req, 'last_page', $actionp, $args,
@@ -823,7 +824,7 @@ sub page_link_set ($$$$$) {
    return { class        => 'link-group',
             content      => {
                list      => $list,
-               separator => '…',
+               separator => ' ',
                type      => 'list', },
             type         => 'container', };
 }
