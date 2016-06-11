@@ -2156,6 +2156,7 @@ var Replacements = new Class( {
    Implements: [ Options ],
 
    options              : {
+      replacement_class : 'checkbox',
       textarea_container: 'expanding_area',
       textarea_preformat: 'expanding_spacer',
       config_attr       : 'inputs',
@@ -2192,7 +2193,7 @@ var Replacements = new Class( {
          el.setStyles( { margin: 0, padding: 0,
                          position: 'absolute', left: '-9999px' } );
          new Element( 'span', {
-            'class': 'checkbox' + (el.checked ? ' checked' : ''),
+            'class': opt.replacement_class + (el.checked ? ' checked' : ''),
             id     : new_id,
             name   : el.name
          } ).inject( el, 'before' );
@@ -2265,7 +2266,7 @@ var Replacements = new Class( {
       replacement.toggleClass( 'checked' );
 
       if (replacement.hasClass( 'checked' )) {
-         el.setProperty( 'checked', 'checked' );
+         el.setProperty( 'checked', 'checked' ); el.fireEvent( 'checked' );
 
          if (el.type == 'radio') {
             this.collection.each( function( box_id ) {
@@ -2275,11 +2276,12 @@ var Replacements = new Class( {
                    && replacement.hasClass( 'checked' )) {
                   replacement.removeClass ( 'checked' );
                   box.removeProperty( 'checked' );
+                  box.fireEvent( 'checked' );
                }
             }, this );
          }
       }
-      else el.removeProperty( 'checked' );
+      else { el.removeProperty( 'checked' ); el.fireEvent( 'checked' ); }
    }
 } );
 
@@ -2292,6 +2294,10 @@ var ServerUtils = new Class( {
       this.aroundSetOptions( options ); this.build();
    },
 
+   asyncTips: function( action, id, val ) {
+      this.request( action, id, val, function () { $( id ).show() } );
+   },
+
    checkField: function( id, form, domain ) {
       var action = 'check-field';
 
@@ -2302,15 +2308,15 @@ var ServerUtils = new Class( {
       }.bind( this ) );
    },
 
-   displayIfNeeded: function( action, id, target ) {
+   requestIfVisible: function( action, id, val, on_complete ) {
+      if ($( id ).isVisible()) this.request( action, id, val, on_complete );
+   },
+
+   showIfNeeded: function( action, id, target ) {
       this.request( action, id, $( id ).value, function( resp ) {
          if (resp.needed) { $( target ).show() }
          else { $( target ).hide() }
       }.bind( this ) );
-   },
-
-   requestIfVisible: function( action, id, val, on_complete ) {
-      if ($( id ).isVisible()) this.request( action, id, val, on_complete );
    }
 } );
 
@@ -2321,6 +2327,7 @@ var SubmitUtils = new Class( {
       config_attr: 'submit',
       formName   : null,
       selector   : '.submit',
+      target     : null,
       wildCards  : [ '%', '*' ]
    },
 
@@ -2328,6 +2335,9 @@ var SubmitUtils = new Class( {
       this.aroundSetOptions( options );
       this.form = document.forms ? document.forms[ this.options.formName ]
                                  : function() {};
+
+      if (this.options.target == 'top') this.placeOnTop();
+
       this.build();
    },
 
@@ -2403,6 +2413,13 @@ var SubmitUtils = new Class( {
 
    location: function( href ) {
       window.location = href;
+   },
+
+   placeOnTop: function() {
+      if (self != top) {
+         if (document.images) top.location.replace( window.location.href );
+         else top.location.href = window.location.href;
+      }
    },
 
    postData: function( url, data ) {
@@ -2766,32 +2783,31 @@ var Togglers = new Class( {
       var cfg; if (! (cfg = this.config[ el.id ])) return;
 
       el.addEvent( cfg.event || 'click', function( ev ) {
-         ev.stop(); this[ cfg.method ].apply( this, cfg.args ) }.bind( this ) );
+         this[ cfg.method ].apply( this, cfg.args ) }.bind( this ) );
    },
 
-   toggle: function( id, name ) {
-      var el = $( id ); if (! el) return;
+   showSelected: function( src_id, sink_id ) {
+      var src = $( src_id ), target = $( sink_id );
 
-      var toggler = el.retrieve( name ); if (! toggler) return;
+      if (! src || ! target) return;
 
-      toggler.toggle( this.context.cookies ); this.resize();
+      if (src.getProperty( 'checked' )) { target.show() }
+      else { target.hide() }
    },
 
    toggleSwapText: function( id, name, s1, s2 ) {
-      var el = $( id ); if (! el) return; var cookies = this.context.cookies;
+      var cookies = this.context.cookies, el; if (! name) return;
 
       if (cookies.get( name ) == 'true') {
          cookies.set( name, 'false' );
 
-         if (el) el.set( 'html', s2 );
-
+         if (el = $( id )) el.set( 'html', s2 );
          if (el = $( name + 'Disp' )) el.hide();
       }
       else {
          cookies.set( name, 'true' );
 
-         if (el) el.set( 'html', s1 );
-
+         if (el = $( id )) el.set( 'html', s1 );
          if (el = $( name + 'Disp' )) el.show();
       }
 
@@ -2809,7 +2825,6 @@ var WindowUtils = new Class( {
       maskOpts   : {},
       quiet      : false,
       selector   : '.windows',
-      target     : null,
       url        : null,
       width      : 800
    },
@@ -2839,15 +2854,27 @@ var WindowUtils = new Class( {
          };
       } );
 
-      if (opt.target == 'top') this.placeOnTop();
-
       this.dialogs = [];
       this.build();
    },
 
-   asyncTips: function( url, id, val ) {
-      this.request( url, id, val, function () {
-         $( id ).setStyle( 'display', '' ) } );
+   inlineDialog: function( href, options ) {
+      var opt = this.mergeOptions( options ), id = opt.name + '_dialog', dialog;
+
+      if (! (dialog = this.dialogs[ opt.name ])) {
+         var content = new Element( 'div', {
+            'id': id } ).appendText( 'Loading...' );
+         var el      = $( opt.target );
+
+         opt.maskOpts.id     = 'mask-' + opt.name;
+         opt.maskOpts.inject = { 'target': null, 'where': 'inside' };
+         dialog = this.dialogs[ opt.name ] = new Dialog( el, content, opt );
+      }
+
+      this.request( href, id, opt.value || '', opt.onComplete || function() {
+         this.rebuild(); dialog.show() } );
+
+      return dialog;
    },
 
    logger: function( message ) {
@@ -2882,12 +2909,5 @@ var WindowUtils = new Class( {
 
    openWindow: function( href, options ) {
       return new Browser.Popup( href, this.mergeOptions( options ) );
-   },
-
-   placeOnTop: function() {
-      if (self != top) {
-         if (document.images) top.location.replace( window.location.href );
-         else top.location.href = window.location.href;
-      }
    }
 } );

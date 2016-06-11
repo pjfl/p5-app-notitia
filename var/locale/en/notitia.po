@@ -85,7 +85,7 @@ msgid "badge_id"
 msgstr "Badge Id."
 
 msgid "badge_id_field_tip"
-msgstr "Set this to 'n' and the next available badge id wil be automatically selected"
+msgstr "Set this to 'next' and the next available badge id wil be automatically selected"
 
 msgid "bike"
 msgstr "Bike"
@@ -193,13 +193,19 @@ msgid "contacts_heading_2"
 msgstr "Mobile Phone"
 
 msgid "contacts_heading_3"
-msgstr "Next of Kin"
+msgstr "択"
 
 msgid "contacts_heading_4"
-msgstr "Home Phone"
+msgstr "Next of Kin"
 
 msgid "contacts_heading_5"
+msgstr "Home Phone"
+
+msgid "contacts_heading_6"
 msgstr "Mobile Phone"
+
+msgid "contacts_heading_7"
+msgstr "択"
 
 msgid "contacts_list_heading"
 msgstr "Contacts List"
@@ -278,6 +284,9 @@ msgstr "C4"
 
 msgid "day_rota_management_link"
 msgstr "Edit"
+
+msgid "day_rota_title"
+msgstr "[_1] rota for [_2]"
 
 msgid "delete"
 msgstr "Delete"
@@ -471,6 +480,9 @@ msgstr "Please Login"
 msgid "m_advanced"
 msgstr "Advanced Motorcycle"
 
+msgid "main"
+msgstr "Main"
+
 msgid "message_management_link"
 msgstr "Send Message"
 
@@ -581,6 +593,9 @@ msgstr "Sat"
 
 msgid "month_rota_heading_6"
 msgstr "Sun"
+
+msgid "month_rota_title"
+msgstr "[_1] rota for [_2]"
 
 msgid "months_management_heading"
 msgstr "Select Month"
@@ -864,6 +879,9 @@ msgstr "Manage the certificates required by the slot roles"
 msgid "slotname"
 msgstr "Slot Name"
 
+msgid "sms_message"
+msgstr "Message text"
+
 msgid "start_time"
 msgstr "Start Time"
 
@@ -1071,7 +1089,7 @@ msgid "vrn"
 msgstr "Registration"
 
 msgid "week_management_heading"
-msgstr "Select Week"
+msgstr "Vehicle Allocations"
 
 msgid "week_rota_heading_mon"
 msgstr "Mon [_1]"
@@ -1093,6 +1111,9 @@ msgstr "Sat [_1]"
 
 msgid "week_rota_heading_sun"
 msgstr "Sun [_1]"
+
+msgid "week_rota_title"
+msgstr "[_1] allocations starting [_2]"
 
 msgid "year_management_heading"
 msgstr "Select Year"

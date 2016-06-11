@@ -1,5 +1,25 @@
 Revision history for App::Notitia
 
+          - Vehicle model using stash.page.form
+          - Person model using stash.page.form
+          - Editing dialogs using stash.page.form
+          - User model using stash.page.form
+          - Adds App::Notitia::Form
+          - Allows dispatching of stash.page.form
+          - Upgrade schema now calls create ddl
+          - Made upgrade-schema less whiney
+          - Schema upgrade. Makes job command a text field
+          - Adds config template_dir. Preparing to move templates
+          - Refactored messaging role
+          - Renamed no_user_email to no_message_send
+          - Aded interactive SMS messages
+          - Fixes messaging event participants
+          - Adds individual user messages
+          - Adds individual selection on contacts list
+          - Adds permanent storage for max_badge_id
+          - Fixes config of month and week rota titles
+          - Manual control of schema version
+          - Switches to three part schema versions
           - Message drafts moved to posts
           - Allows person and event managers to create messages
           - Post authors can edit their own creations

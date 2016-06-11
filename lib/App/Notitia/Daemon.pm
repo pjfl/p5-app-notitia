@@ -120,7 +120,8 @@ my $_build_daemon_control = sub {
       fork         => 2,
    };
 
-   $conf->user and $args->{user} = $args->{group} = $conf->user;
+   $conf->user and get_user( $conf->user )
+      and $args->{user} = $args->{group} = $conf->user;
 
    return Daemon::Control->new( $args );
 };

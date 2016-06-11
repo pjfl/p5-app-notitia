@@ -2,14 +2,15 @@ package App::Notitia::Model::Person;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( bind bind_fields button check_field_js
-                                create_link delete_button dialog_anchor
-                                field_options loc mail_domain make_tip
+use App::Notitia::Form      qw( blank_form f_list p_button p_container
+                                p_fields );
+use App::Notitia::Util      qw( button check_field_js
+                                create_link dialog_anchor loc make_tip
                                 management_link operation_links page_link_set
-                                register_action_paths save_button table_link
+                                register_action_paths table_link
                                 to_dt to_msg uri_for_action );
 use Class::Null;
-use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
+use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Types      qw( ArrayRef );
 use Try::Tiny;
 use Moo;
@@ -20,13 +21,10 @@ with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
-with    q(Web::Components::Role::Email);
 with    q(App::Notitia::Role::Messaging);
 
 # Public attributes
 has '+moniker' => default => 'person';
-
-has 'max_badge_id' => is => 'ro', isa => ArrayRef, builder => sub { [ 0, 0 ] };
 
 register_action_paths
    'person/activate'       => 'person-activate',
@@ -54,13 +52,15 @@ my $_people_links_cache = {};
 
 # Private functions
 my $_add_person_js = sub {
-   my $name = shift;
+   my ($page, $name) = @_;
+
    my $opts = { domain => $name ? 'update' : 'insert', form => 'Person' };
 
-   return [ check_field_js( 'first_name',    $opts ),
-            check_field_js( 'last_name',     $opts ),
-            check_field_js( 'email_address', $opts ),
-            check_field_js( 'postcode',      $opts ), ];
+   push @{ $page->{literal_js} },
+      check_field_js( 'first_name',    $opts ),
+      check_field_js( 'last_name',     $opts ),
+      check_field_js( 'email_address', $opts ),
+      check_field_js( 'postcode',      $opts );
 };
 
 my $_assert_not_self = sub {
@@ -72,29 +72,26 @@ my $_assert_not_self = sub {
    return $nok;
 };
 
-my $_confirm_mugshot_button = sub {
-   return button $_[ 0 ],
-      { class => 'right-last', label => 'confirm', value => 'mugshot_create' };
-};
-
 my $_contact_links = sub {
-   my ($req, $person) = @_; my @links;
+   my ($req, $person) = @_; my @links; my $nok = $person->next_of_kin;
 
-   push @links, { value => $person->home_phone };
-   push @links, { value => $person->mobile_phone };
-   push @links, { value => $person->next_of_kin
-                         ? $person->next_of_kin->label : NUL };
-   push @links, { value => $person->next_of_kin
-                         ? $person->next_of_kin->home_phone : NUL };
-   push @links, { value => $person->next_of_kin
-                         ? $person->next_of_kin->mobile_phone : NUL };
+   push @links, { class => 'align-right', value => $person->home_phone };
+   push @links, { class => 'align-right', value => $person->mobile_phone };
+   push @links, { class => 'align-center',
+                  value => { name  => 'selected',
+                             type  => 'checkbox',
+                             value => $person->shortcode } };
+   push @links, { value => $nok ? $nok->label : NUL };
+   push @links, { class => 'align-right',
+                  value => $nok ? $nok->home_phone : NUL };
+   push @links, { class => 'align-right',
+                  value => $nok ? $nok->mobile_phone : NUL };
+   push @links, { class => 'align-center',
+                  value => $nok ? { name  => 'selected',
+                                    type  => 'checkbox',
+                                    value => $nok->shortcode } : NUL };
 
    return @links;
-};
-
-my $_copy_element_value = sub {
-   return [ "\$( 'upload-btn' ).addEvent( 'change', function( ev ) {",
-            "   ev.stop(); \$( 'upload-path' ).value = this.value } )", ];
 };
 
 my $_maybe_find_person = sub {
@@ -102,11 +99,16 @@ my $_maybe_find_person = sub {
 };
 
 my $_next_of_kin_list = sub {
-   my ($people, $disabled) = @_; my $opts = { numify => TRUE };
+   my ($self, $person, $disabled) = @_;
 
+   my $opts   = { fields => { selected => $person->next_of_kin } };
+   my $people = $self->schema->resultset( 'Person' )->list_all_people( $opts );
+
+   $opts = { numify => TRUE, type => 'select',
+             value  => [ [ NUL, NUL ], @{ $people } ] };
    $disabled and $opts->{disabled} = TRUE;
 
-   return bind 'next_of_kin', [ [ NUL, NUL ], @{ $people } ], $opts;
+   return $opts;
 };
 
 my $_people_headers = sub {
@@ -114,7 +116,7 @@ my $_people_headers = sub {
 
    my $role = $params->{role} // NUL; my $type = $params->{type} // NUL;
 
-   if ($type eq 'contacts') { $header = 'contacts_heading'; $max = 5 }
+   if ($type eq 'contacts') { $header = 'contacts_heading'; $max = 7 }
    else {
       $header = 'people_heading';
       $max    = ($role eq 'bike_rider' || $role eq 'driver') ? 4 : 3;
@@ -148,6 +150,17 @@ my $_people_links = sub {
    return @{ $links };
 };
 
+my $_people_title = sub {
+   my ($req, $role, $status, $type) = @_;
+
+   my $k = $role   ? "${role}_list_link"
+         : $type   ? "${type}_list_heading"
+         : $status ? "${status}_people_list_link"
+         :           'people_management_heading';
+
+   return loc( $req, $k );
+};
+
 my $_person_mugshot = sub {
    my ($conf, $req, $person) = @_;
 
@@ -167,7 +180,8 @@ my $_person_mugshot = sub {
 
    $href //= $req->uri_for( $uri.'nomugshot.png' );
 
-   return { class => 'mugshot', href => $href, title => loc( $req, 'mugshot' )};
+   return { class => 'mugshot', href => $href,
+            title => loc( $req, 'mugshot' ), type => 'image' };
 };
 
 my $_person_ops_links = sub {
@@ -179,6 +193,7 @@ my $_person_ops_links = sub {
                                 loc( $req, 'mugshot_upload_link' ),
                                 loc( $req, 'mugshot_upload_tip' );
    my $href       = uri_for_action $req, 'person/mugshot', [ $scode ];
+   my $list       = [ $mugshot, $add_person ];
 
    push @{ $page->{literal_js} //= [] },
       dialog_anchor( 'mugshot', $href, {
@@ -186,44 +201,10 @@ my $_person_ops_links = sub {
          title   => loc( $req, 'Mugshot Upload' ),
          useIcon => \1 } );
 
-   return operation_links [ $mugshot, $add_person ];
+   return f_list '&nbsp;|&nbsp;', $list;
 };
 
 # Private methods
-my $_create_person_email = sub {
-   my ($self, $req, $person, $password) = @_;
-
-   my $conf    = $self->config;
-   my $key     = substr create_token, 0, 32;
-   my $subject = loc $req, to_msg 'Account activation for [_1]', $conf->title;
-   my $href    = uri_for_action $req, $self->moniker.'/activate', [ $key ];
-   my $post    = {
-      attributes      => {
-         charset      => $conf->encoding,
-         content_type => 'text/html', },
-      from            => $conf->title.'@'.mail_domain(),
-      stash           => {
-         app_name     => $conf->title,
-         first_name   => $person->first_name,
-         last_name    => $person->last_name,
-         link         => $href,
-         password     => $password,
-         title        => $subject,
-         username     => $person->name, },
-      subject         => $subject,
-      template        => 'user_email',
-      to              => $person->email_address, };
-
-   $conf->sessdir->catfile( $key )->println( $person->shortcode );
-
-   my $r = $self->send_email( $post );
-   my ($id) = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
-
-   $self->log->info( loc( $req, 'New user email sent - [_1]', [ $id ] ) );
-
-   return;
-};
-
 my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
@@ -231,33 +212,21 @@ my $_list_all_roles = sub {
 };
 
 my $_next_badge_id = sub {
-   my $self    = shift;
-   my $file    = $self->config->badge_mtime; not $file->exists and $file->touch;
-   my $f_mtime = $file->stat->{mtime};
-
-   if ($f_mtime > $self->max_badge_id->[ 0 ]) {
-      $self->max_badge_id->[ 0 ] = $f_mtime;
-      $self->max_badge_id->[ 1 ]
-         = $self->schema->resultset( 'Person' )->max_badge_id;
-   }
-
-   return ++$self->max_badge_id->[ 1 ];
+   return $_[ 0 ]->schema->resultset( 'Person' )->next_badge_id;
 };
 
 my $_people_ops_links = sub {
-   my ($self, $req, $page, $params, $opts, $pager) = @_;
+   my ($self, $req, $page, $params, $pager) = @_;
 
    my $moniker    = $self->moniker;
    my $add_user   = create_link $req, "${moniker}/person",
                                 'person', { container_class => 'add-link' };
-   my $page_links = page_link_set $req, "${moniker}/people", [],
-                                  $params, $pager;
-
-   $params->{name} = 'message_people';
-
-   my $message    = $self->message_link
-      ( $req, $page, "${moniker}/message", $params );
+   my $name       = 'message_people';
+   my $href       = uri_for_action $req, "${moniker}/message", [], $params;
+   my $message    = $self->message_link( $req, $page, $href, $name );
    my $links      = [ $message, $add_user ];
+   my $actionp    = "${moniker}/people";
+   my $page_links = page_link_set $req, $actionp, [], $params, $pager;
 
    $page_links and unshift @{ $links }, $page_links;
 
@@ -270,8 +239,8 @@ my $_update_person_from_request = sub {
    my $opts = { optional => TRUE };
 
    for my $attr (qw( active address badge_expires badge_id dob email_address
-                     first_name home_phone joined last_name mobile_phone notes
-                     password_expired postcode resigned subscription )) {
+                     first_name home_phone joined last_name mobile_phone name
+                     notes password_expired postcode resigned subscription )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 
@@ -279,6 +248,8 @@ my $_update_person_from_request = sub {
 
       not defined $v and is_member $attr, [ qw( active password_expired ) ]
           and $v = FALSE;
+
+      $attr eq 'badge_id' and defined $v and not length $v and undef $v;
 
       defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
@@ -291,62 +262,63 @@ my $_update_person_from_request = sub {
 
    $person->set_totp_secret( $params->( 'enable_2fa', $opts ) ? TRUE : FALSE );
    $person->resigned and $person->active( FALSE );
-   $person->name( $params->( 'username', $opts ) );
    $person->next_of_kin_id
       ( $_assert_not_self->( $person, $params->( 'next_of_kin', $opts ) ) );
-   $person->badge_id and $person->badge_id eq 'n'
+   $person->badge_id and $person->badge_id eq 'next'
       and $person->badge_id( $self->$_next_badge_id );
    return;
 };
 
 my $_bind_person_fields = sub {
-   my ($self, $req, $person, $opts) = @_; $opts //= {};
+   my ($self, $req, $form, $person, $opts) = @_; $opts //= {};
 
-   my $disabled = $opts->{disabled} // FALSE;
-   my $map      = {
-      active           => { checked  => $person->active,
+   my $disabled  = $opts->{disabled} // FALSE;
+   my $is_create = $opts->{action} && $opts->{action} eq 'create'
+                 ? TRUE : FALSE;
+
+   return
+   [  first_name       => { class    => 'narrow-field server',
                             disabled => $disabled },
-      address          => { disabled => $disabled },
-      badge_expires    => { disabled => $disabled },
-      badge_id         => { disabled => $disabled,
-                            tip      => make_tip( $req, 'badge_id_field_tip' )},
-      dob              => { disabled => $disabled },
-      email_address    => { class    => 'standard-field server',
-                            disabled => $disabled },
-      enable_2fa       => { checked  => $person->totp_secret ? TRUE : FALSE,
-                            disabled => $disabled },
-      first_name       => { class    => 'narrow-field server',
-                            disabled => $disabled },
-      home_phone       => { disabled => $disabled },
-      joined           => { disabled => $disabled },
+      mugshot          => $_person_mugshot->( $self->config, $req, $person ),
       last_name        => { class    => 'narrow-field server',
                             disabled => $disabled },
-      mobile_phone     => { disabled => $disabled },
-      notes            => { class    => 'standard-field autosize',
+      primary_role     => { class    => 'narrow-field',
+                            disabled => $disabled,
+                            type     => 'select',
+                            value    => $person->shortcode
+                                     ? $person->list_roles
+                                     : $self->$_list_all_roles() },
+      email_address    => { class    => 'standard-field server',
                             disabled => $disabled },
-      password_expired => { checked  => $person->password_expired,
-                            container_class => 'right-last',
-                            disabled => $disabled },
+      address          => { disabled => $disabled },
       postcode         => { class    => 'standard-field server',
                             disabled => $disabled },
+      mobile_phone     => { disabled => $disabled },
+      home_phone       => { disabled => $disabled },
+      next_of_kin      => $self->$_next_of_kin_list( $person, $disabled ),
+      dob              => { disabled => $disabled, type => 'date' },
+      joined           => { disabled => $disabled, type => 'date' },
       resigned         => { class    => 'standard-field clearable',
-                            disabled => $disabled },
-      subscription     => { disabled => $disabled },
-   };
-
-   my $fields = bind_fields $self->schema, $person, $map, 'Person';
-
-   $opts = { class => 'narrow-field', disabled => $disabled };
-   $fields->{primary_role} = $person->shortcode
-      ? bind 'primary_role', $person->list_roles, $opts,
-      : bind 'primary_role', $self->$_list_all_roles(), $opts;
-   $opts = { fields => { selected => $person->next_of_kin } };
-
-   my $people = $self->schema->resultset( 'Person' )->list_all_people( $opts );
-
-   $fields->{next_of_kin} = $_next_of_kin_list->( $people, $disabled );
-   $fields->{mugshot} = $_person_mugshot->( $self->config, $req, $person );
-   return $fields;
+                            disabled => $disabled, type => 'date' },
+      subscription     => { disabled => $disabled, type => 'date' },
+      badge_id         => { disabled => $person->badge_id ? TRUE : $disabled,
+                            tip      => make_tip( $req, 'badge_id_field_tip'),
+                              value    => $is_create ? 'next' : undef },
+      badge_expires    => { disabled => $disabled, type => 'date' },
+      notes            => $disabled ? FALSE : {
+         class         => 'standard-field autosize', type => 'textarea' },
+      name             => { class    => 'standard-field',
+                            disabled => $disabled, label => 'username',
+                            tip => make_tip( $req, 'username_field_tip' ) },
+      active           => $disabled ? FALSE : {
+         checked       => $person->active, type => 'checkbox' },
+      password_expired => $disabled ? FALSE : {
+         checked       => $person->password_expired,
+         label_class   => 'right-last', type => 'checkbox' },
+      enable_2fa       => $disabled ? FALSE : {
+         checked       => $person->totp_secret ? TRUE : FALSE,
+         type          => 'checkbox' },
+      ];
 };
 
 # Public methods
@@ -394,11 +366,10 @@ sub create_person_action : Role(person_manager) {
    try   { $self->schema->txn_do( $create ) }
    catch { $self->rethrow_exception( $_, 'create', 'person', $person->name ) };
 
-   $self->config->no_user_email
-      or $self->$_create_person_email( $req, $person, $password );
-
    my $who      = $req->session->user_label;
-   my $message  = [ to_msg '[_1] created by [_2]', $person->label, $who ];
+   my $key      = '[_1] created by [_2] ref. [_3]';
+   my $id       = $self->create_person_email( $req, $person, $password );
+   my $message  = [ to_msg $key, $person->label, $who, "send_message-${id}" ];
    my $location = uri_for_action $req, $self->moniker.'/people';
 
    return { redirect => { location => $location, message => $message } };
@@ -421,15 +392,11 @@ sub find_by_shortcode {
    return shift->schema->resultset( 'Person' )->find_by_shortcode( @_ );
 }
 
-sub message : Role(event_manager) Role(person_manager) {
-   my ($self, $req) = @_;
-
-   my $opts = { action => 'message-people', layout => 'message-people'};
-
-   return $self->message_stash( $req, $opts );
+sub message : Role(person_manager) {
+   my ($self, $req) = @_; return $self->message_stash( $req );
 }
 
-sub message_create_action : Role(event_manager) Role(person_manager) {
+sub message_create_action : Role(person_manager) {
    return $_[ 0 ]->message_create( $_[ 1 ], { action => 'people' } );
 }
 
@@ -437,12 +404,12 @@ sub mugshot : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $scode  = $req->uri_params->( 0 );
-   my $stash  = $self->dialog_stash( $req, 'upload-file' );
    my $params = { name => $scode, type => 'mugshot' };
-   my $page   = $stash->{page};
+   my $href   = uri_for_action $req, 'docs/upload', [], $params;
+   my $stash  = $self->dialog_stash( $req, 'upload-file' );
 
-   $page->{fields}->{href} = uri_for_action $req, 'docs/upload', [], $params;
-   $page->{literal_js} = $_copy_element_value->();
+   $stash->{page}->{forms}->[ 0 ] = blank_form 'upload-file', $href;
+   $self->components->{docs}->upload_dialog( $req, $stash->{page} );
 
    return $stash;
 }
@@ -450,31 +417,36 @@ sub mugshot : Role(person_manager) {
 sub person : Role(person_manager) {
    my ($self, $req) = @_; my $people;
 
-   my $name       =  $req->uri_params->( 0, { optional => TRUE } );
-   my $person_rs  =  $self->schema->resultset( 'Person' );
-   my $person     =  $_maybe_find_person->( $person_rs, $name );
-   my $page       =  {
-      fields      => $self->$_bind_person_fields( $req, $person ),
-      first_field => 'first_name',
-      literal_js  => $_add_person_js->( $name ),
-      template    => [ 'contents', 'person' ],
-      title       => loc( $req, $name ? 'person_edit_heading'
-                                      : 'person_create_heading' ), };
-   my $fields     =  $page->{fields};
    my $actionp    =  $self->moniker.'/person';
-   my $opts       =  field_options $self->schema, 'Person', 'name',
-                        { class => 'standard-field',
-                          tip   => make_tip( $req, 'username_field_tip' ) };
+   my $person_rs  =  $self->schema->resultset( 'Person' );
+   my $name       =  $req->uri_params->( 0, { optional => TRUE } );
+   my $person     =  $_maybe_find_person->( $person_rs, $name );
+   my $href       =  uri_for_action $req, $actionp, [ $name ];
+   my $form       =  blank_form 'person-admin', $href;
+   my $action     =  $name ? 'update' : 'create';
+   my $opts       =  { action => $action };
+   my $fields     =  $self->$_bind_person_fields( $req, $form, $person, $opts );
+   my $title      =  $name ? 'person_edit_heading' : 'person_create_heading';
+   my $page       =  {
+      first_field => 'first_name',
+      forms       => [ $form ],
+      template    => [ 'contents' ],
+      title       => loc $req, $title };
 
-   $fields->{username} = bind 'username', $person->name, $opts;
+   p_container $form, $_person_ops_links->( $req, $page, $actionp, $name ), {
+      class => 'operation-links align-right right-last' };
 
-   if ($name) {
-      $fields->{user_href} = uri_for_action $req, $actionp, [ $name ];
-      $fields->{delete} = delete_button $req, $name, { type => 'person' };
-      $fields->{links} = $_person_ops_links->( $req, $page, $actionp, $name );
-   }
+   p_fields $form, $self->schema, 'Person', $person, $fields;
 
-   $fields->{save} = save_button $req, $name, { type => 'person' };
+   p_button $form, $action, "${action}_person", {
+      class => 'save-button', container_class => 'right-last',
+      tip   => make_tip( $req, "${action}_tip", [ 'person', $name ] ) };
+
+   $name and p_button $form, 'delete', 'delete_person', {
+      class => 'delete-button', container_class => 'right',
+      tip   => make_tip( $req, 'delete_tip', [ 'person', $name ] ) };
+
+   $_add_person_js->( $page, $name ),
 
    return $self->get_stash( $req, $page );
 }
@@ -485,17 +457,16 @@ sub person_summary : Role(person_manager) Role(address_viewer) {
    my $name       =  $req->uri_params->( 0 );
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $_maybe_find_person->( $person_rs, $name );
-   my $opts       =  { class => 'standard-field', disabled => TRUE };
+   my $form       =  blank_form 'person-admin', NUL;
+   my $opts       =  { disabled => TRUE };
+   my $fields     =  $self->$_bind_person_fields( $req, $form, $person, $opts );
    my $page       =  {
-      fields      => $self->$_bind_person_fields( $req, $person, $opts ),
       first_field => 'first_name',
-      template    => [ 'contents', 'person' ],
+      forms       => [ $form ],
+      template    => [ 'contents' ],
       title       => loc( $req, 'person_summary_heading' ), };
-   my $fields     =  $page->{fields};
 
-   $opts = field_options $self->schema, 'Person', 'name', $opts;
-   $fields->{username} = bind 'username', $person->name, $opts;
-   delete $fields->{notes};
+   p_fields $form, $self->schema, 'Person', $person, $fields;
 
    return $self->get_stash( $req, $page );
 }
@@ -504,34 +475,33 @@ sub people : Role(any) {
    my ($self, $req, $type) = @_;
 
    my $params    =  $req->query_params->( { optional => TRUE } );
-   my $role      =  $params->{role  } // NUL;
-   my $status    =  $params->{status} // NUL;
-   my $opts      =  { page => delete $params->{page} // 1,
-                      rows => $req->session->rows_per_page };
+   my $role      =  $params->{role  };
+   my $status    =  $params->{status};
 
    $type and $params->{type} = $type; $type = $params->{type} || NUL;
-   $status eq 'current'  and $opts->{current } = TRUE;
-   $type   eq 'contacts' and $opts->{prefetch} = [ 'next_of_kin' ]
-      and $opts->{columns} = [ 'home_phone', 'mobile_phone' ];
-   $role and $opts->{role} = $role;
 
+   my $opts      =  { page   => delete $params->{page} // 1,
+                      role   => $role,
+                      rows   => $req->session->rows_per_page,
+                      status => $status,
+                      type   => $type, };
+   my $actionp   =  $self->moniker.'/people';
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $people    =  $person_rs->search_for_people( $opts );
-   my $title_key =  $role   ? "${role}_list_link"
-                 :  $type   ? "${type}_list_heading"
-                 :  $status ? "${status}_people_list_link"
-                 :            'people_management_heading';
    my $page      =  {
       fields     => {
          headers => $_people_headers->( $req, $params ),
          rows    => [], },
+      form       => {
+         name    => 'people',
+         href    => uri_for_action( $req, $actionp, [], $params ) },
       template   => [ 'contents', 'table' ],
-      title      => loc( $req, $title_key ), };
+      title      => $_people_title->( $req, $role, $status, $type ), };
    my $fields    =  $page->{fields};
    my $rows      =  $fields->{rows};
 
-   $fields->{links} =
-      $self->$_people_ops_links( $req, $page, $params, $opts, $people->pager );
+   $fields->{links}
+      = $self->$_people_ops_links( $req, $page, $params, $people->pager );
    $type eq 'contacts' and $fields->{class} = 'smaller-table';
 
    for my $person ($people->all) {

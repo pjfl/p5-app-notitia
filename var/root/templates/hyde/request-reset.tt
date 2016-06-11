@@ -1,8 +1,3 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Request Reset -->
-<form action="[% uri_for_action( 'user/reset' ) %]" class="standard-form"
-     enctype="application/x-www-form-urlencoded"
-      method="post" name="request-reset">
-[% TextField( page.fields.username ) -%]
-[%    Button( page.fields.reset ) -%]
-</form>
+[% Dispatch( page.forms.0 ) %]

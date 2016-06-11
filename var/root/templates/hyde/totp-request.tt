@@ -1,11 +1,3 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- TOTP Request -->
-<form action="[% uri_for_action( 'user/reset' ) %]" class="standard-form"
-     enctype="application/x-www-form-urlencoded"
-      method="post" name="totp-request">
-[% TextField( page.fields.username ) -%]
-[% PasswordField( page.fields.password ) -%]
-[% TextField( page.fields.mobile ) -%]
-[% TextField( page.fields.postcode ) -%]
-[%    Button( page.fields.request ) -%]
-</form>
+[% Dispatch( page.forms.0 ) %]

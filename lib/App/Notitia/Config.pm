@@ -180,7 +180,7 @@ has 'no_index'        => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    builder            => sub {
       [ qw( \.git$ \.htpasswd$ \.json$ \.mtime$ \.svn$ assets$ posts$ ) ] };
 
-has 'no_user_email'   => is => 'ro',   isa => Bool, default => FALSE;
+has 'no_message_send' => is => 'ro',   isa => Bool, default => FALSE;
 
 has 'owner'           => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => sub { $_[ 0 ]->prefix };
@@ -257,6 +257,9 @@ has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
       links           => [ qw( assets css images js ) ],
       request         => [ qw( authenticated host language locale username ) ],
       session         => [ sort keys %{ $_[ 0 ]->session_attr } ], } };
+
+has 'template_dir'    => is => 'ro',   isa => Directory, coerce => TRUE,
+   builder            => sub { $_[ 0 ]->root->catdir( 'templates' ) };
 
 has 'time_zone'       => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'Europe/London';
@@ -568,9 +571,10 @@ which the application is mounted
 An array reference that defaults to C<[ .git .svn cgi-bin  ]>.
 List of files and directories under the document root to ignore
 
-=item C<no_user_email>
+=item C<no_message_send>
 
-Suppress the sending of user activation emails. Used in development only
+Suppress the sending of user activation emails and using SMS. Used in
+development only
 
 =item C<owner>
 
@@ -651,7 +655,8 @@ Default search string
 =item C<skin>
 
 Name of the default skin. Defaults to C<hyde> which is derived from
-Jekyll
+Jekyll. Contains all of the templates used by the skin to render the
+HTML in the application
 
 =item C<theme>
 
@@ -723,6 +728,11 @@ reference. List of attributes that can be specified as query parameters in
 URIs. Their values are persisted between requests stored in the session store
 
 =back
+
+=item C<template_dir>
+
+A directory that contains the L</skin> used by the application. Defaults to
+F<var/templates>
 
 =item C<time_zone>
 

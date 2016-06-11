@@ -23,7 +23,7 @@ nav {
    li { display: inline-block; }
 }
 .centre { text-align: center; }
-.clear { display: block; }
+.clear { display: block !important; }
 .clear:after {
    clear: both; content: " "; display: block; height: 0; visibility: hidden;
 }
@@ -117,13 +117,13 @@ footer {
 }
 /* Icons */
 .checkbox {
-   background: url(../img/icons.png) -90px -308px no-repeat;
-   border: 2px solid transparent; .box-sizing(content-box); cursor: pointer;
-   display: inline-block; height: 16px; margin: 0; padding: 3.25px 0;
-   width: 16px;
+   background: url(../img/icons.png) -90px -311px no-repeat;
+   .box-sizing(content-box);
+   display: inline-block; cursor: pointer; height: 16px; width: 16px;
+   margin: 6px;
 }
 .checked  {
-   background: url(../img/icons.png) -120px -308px no-repeat transparent;
+   background: url(../img/icons.png) -120px -311px no-repeat transparent;
 }
 .close-icon {
    background: url(../img/icons.png) no-repeat -180px -330px; cursor: pointer;
@@ -200,8 +200,7 @@ footer {
 }
 .narrow-field { min-width: 200px; }
 .option-label {
-   border: 2px solid transparent; .box-sizing; display: inline-block;
-   margin: 0; padding: 3.25px 0; vertical-align: top;
+   display: inline-block; padding: 0.325em 0; vertical-align: top;
 }
 .pathname, .narrow-field, .single-digit, .standard-field {
    background-color: #fff; border: 2px inset; .border-radius;
@@ -215,6 +214,9 @@ footer {
 .standard-field[type=date], .narrow-field[type=time],
 .standard-field[type=time] {
    padding-bottom: 0; padding-top: 0;
+}
+.radio-group {
+   .box-sizing; display: inline-block; vertical-align: top;
 }
 .required { border-right: 3px solid @divider; }
 .standard-form {
@@ -546,8 +548,8 @@ article h2:first-child, { margin-top: 0; }
 table.month-rota { font-size: 0.625em; width: 100%; }
 td.embeded { padding: 0 !important; }
 td.month-rota { padding: 0 !important; }
-td.month-rota.submit, td.month-rota.windows, td.week-rota.windows,
-td.blank-event.windows { cursor: pointer; }
+td.month-rota.submit, td.month-rota.server, td.week-rota.server,
+td.blank-event.submit { cursor: pointer; }
 td.rota-date { padding: 0 !important; width: 1%; }
 td.rota-header {
    color: @subtle; font-size: 12px; white-space: nowrap; width: 1%;
@@ -684,7 +686,11 @@ hr.subtle { display: none; }
    code.option, code.flag, code.filter, code.output { margin-bottom: 2px; }
 }
 .no-header-wrap th { white-space: nowrap; }
-.smaller-table { font-size: 0.85em; }
+.smaller-table {
+   font-size: 0.85em;
+   tbody td { padding: 2px 0.3725em; }
+   tbody td span.checkbox { margin: 4px 0 0 0; }
+}
 /* Note types */
 .info {
    background-color: #0389aa;

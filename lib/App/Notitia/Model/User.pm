@@ -2,9 +2,11 @@ package App::Notitia::Model::User;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Util      qw( bind check_form_field js_server_config
-                                loc mail_domain register_action_paths
-                                set_element_focus to_msg uri_for_action );
+use App::Notitia::Form      qw( blank_form p_button p_checkbox p_image p_label
+                                p_password p_radio p_text p_textfield );
+use App::Notitia::Util      qw( check_form_field js_server_config
+                                locm register_action_paths set_element_focus
+                                to_msg uri_for_action );
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef );
 use HTTP::Status            qw( HTTP_OK );
@@ -17,7 +19,7 @@ with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
-with    q(Web::Components::Role::Email);
+with    q(App::Notitia::Role::Messaging);
 
 # Public attributes
 has '+moniker' => default => 'user';
@@ -27,22 +29,24 @@ has 'profile_keys' => is => 'ro', isa => ArrayRef, builder => sub {
          mobile_phone home_phone rows_per_page ) ] };
 
 register_action_paths
-   'user/change_password'   => 'user/password',
-   'user/check_field'       => 'check-field',
-   'user/display_if_needed' => 'display-if-needed',
-   'user/login'             => 'user/login',
-   'user/login_action'      => 'user/login',
-   'user/logout_action'     => 'user/logout',
-   'user/profile'           => 'user/profile',
-   'user/request_reset'     => 'user/reset',
-   'user/totp_request'      => 'user/totp-request',
-   'user/totp_secret'       => 'user/totp-secret';
+   'user/change_password' => 'user/password',
+   'user/check_field'     => 'check-field',
+   'user/show_if_needed'  => 'show-if-needed',
+   'user/login'           => 'user/login',
+   'user/login_action'    => 'user/login',
+   'user/logout_action'   => 'user/logout',
+   'user/profile'         => 'user/profile',
+   'user/request_reset'   => 'user/reset',
+   'user/totp_request'    => 'user/totp-request',
+   'user/totp_secret'     => 'user/totp-secret';
 
 # Private functions
 my $_rows_per_page = sub {
    my $selected = $_[ 0 ]->rows_per_page;
+   my $opts_t   = { container_class => 'radio-group', selected => TRUE };
+   my $opts_f   = { container_class => 'radio-group', };
 
-   return [ map { [ $_, $_, ($_ == $selected) ? { selected => TRUE } : {} ] }
+   return [ map { [ $_, $_, ($_ == $selected) ? $opts_t : $opts_f ] }
             10, 20, 50, 100 ];
 };
 
@@ -60,69 +64,28 @@ my $_update_session = sub {
 };
 
 # Private methods
-my $_create_reset_email = sub {
-   my ($self, $req, $person, $password) = @_;
+my $_add_change_password_js = sub {
+   my ($self, $req, $page) = @_;
 
-   my $conf    = $self->config;
-   my $key     = substr create_token, 0, 32;
-   my $subject = loc $req,
-      to_msg 'Password reset for [_2]@[_1]', $conf->title, $person->name;
-   my $href    = uri_for_action $req, $self->moniker.'/reset', [ $key ];
-   my $post    = {
-      attributes      => {
-         charset      => $conf->encoding,
-         content_type => 'text/html', },
-      from            => $conf->title.'@'.mail_domain(),
-      stash           => {
-         app_name     => $conf->title,
-         first_name   => $person->first_name,
-         link         => $href,
-         password     => $password,
-         title        => $subject,
-         username     => $person->name, },
-      subject         => $subject,
-      template        => 'password_email',
-      to              => $person->email_address, };
-
-   $conf->sessdir->catfile( $key )->println( $person->shortcode."/${password}");
-
-   my $r = $self->send_email( $post );
-   my ($id) = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
-
-   $self->log->info( loc( $req, 'Reset password email sent - [_1]', [ $id ] ) );
+   push @{ $page->{literal_js} },
+      "   behaviour.config.inputs[ 'again' ]",
+      "      = { event     : [ 'focus', 'blur' ],",
+      "          method    : [ 'show_password', 'hide_password' ] };",
+      "   behaviour.config.inputs[ 'password' ]",
+      "      = { event     : [ 'focus', 'blur' ],",
+      "          method    : [ 'show_password', 'hide_password' ] };";
 
    return;
 };
 
-my $_create_totp_request_email = sub {
-   my ($self, $req, $person ) = @_;
+my $_add_login_js = sub {
+   my ($self, $req, $page) = @_;
 
-   my $conf    = $self->config;
-   my $key     = substr create_token, 0, 32;
-   my $subject = loc $req,
-      to_msg 'TOTP Request for [_2]@[_1]', $conf->title, $person->name;
-   my $href    = uri_for_action $req, $self->moniker.'/totp_secret', [ $key ];
-   my $post    = {
-      attributes      => {
-         charset      => $conf->encoding,
-         content_type => 'text/html', },
-      from            => $conf->title.'@'.mail_domain(),
-      stash           => {
-         app_name     => $conf->title,
-         first_name   => $person->first_name,
-         link         => $href,
-         title        => $subject,
-         username     => $person->name, },
-      subject         => $subject,
-      template        => 'totp_request_email',
-      to              => $person->email_address, };
+   my $uri = uri_for_action $req, $self->moniker.'/show_if_needed', [],
+      { class => 'Person', test => 'totp_secret', };
 
-   $conf->sessdir->catfile( $key )->println( $person->shortcode );
-
-   my $r = $self->send_email( $post );
-   my ($id) = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
-
-   $self->log->info( loc( $req, 'TOTP request email sent - [_1]', [ $id ] ) );
+   push @{ $page->{literal_js} }, js_server_config 'username', 'blur',
+      'showIfNeeded', [ "${uri}", 'username', 'auth_code_label' ];
 
    return;
 };
@@ -149,31 +112,28 @@ sub change_password : Role(anon) {
 
    my $params     =  $req->uri_params;
    my $name       =  $params->( 0, { optional => TRUE } ) // $req->username;
-   my $person     =  $name
-                  ?  $self->schema->resultset( 'Person' )->find_person( $name )
-                  :  FALSE;
+   my $person_rs  =  $self->schema->resultset( 'Person' );
+   my $person     =  $name ? $person_rs->find_person( $name ) : FALSE;
    my $username   =  $person ? $person->name : $req->username;
+   my $href       =  uri_for_action $req, $self->moniker.'/change_password';
+   my $form       =  blank_form 'change-password', $href;
    my $page       =  {
-      fields      => {
-         again    => bind( 'again',    NUL, {
-            class => 'standard-field reveal' } ),
-         oldpass  => bind( 'oldpass',  NUL, { label => 'old_password' } ),
-         password => bind( 'password', NUL, { autocomplete => 'off',
-            class => 'standard-field reveal',
-            label => 'new_password' } ),
-         update   => bind( 'update', 'change_password', {
-            class => 'save-button right-last' } ),
-         username => bind( 'username', $username ), },
-      literal_js  =>
-         [ "   behaviour.config.inputs[ 'again' ]",
-           "      = { event     : [ 'focus', 'blur' ],",
-           "          method    : [ 'show_password', 'hide_password' ] };",
-           "   behaviour.config.inputs[ 'password' ]",
-           "      = { event     : [ 'focus', 'blur' ],",
-           "          method    : [ 'show_password', 'hide_password' ] };", ],
+      first_field => $username ? 'oldpass' : 'username',
+      forms       => [ $form ],
       location    => 'change_password',
-      template    => [ 'contents', 'change-password' ],
-      title       => loc( $req, 'change_password_title' ) };
+      template    => [ 'contents' ],
+      title       => locm $req, 'change_password_title', $self->config->title };
+
+   p_textfield $form, 'username', $username;
+   p_password  $form, 'oldpass',  NUL, { label => 'old_password' };
+   p_password  $form, 'password', NUL, { autocomplete => 'off',
+                                         class => 'standard-field reveal',
+                                         label => 'new_password' };
+   p_password  $form, 'again',    NUL, { class => 'standard-field reveal' };
+   p_button    $form, 'update', 'change_password',
+                                       { class => 'save-button right-last' };
+
+   $self->$_add_change_password_js( $req, $page );
 
    return $self->get_stash( $req, $page );
 }
@@ -199,56 +159,28 @@ sub change_password_action : Role(anon) {
 }
 
 sub check_field : Role(any) {
-   my ($self, $req) = @_;
-
-   return check_form_field $self->schema, $req, $self->log;
-}
-
-sub display_if_needed : Role(anon) {
-   my ($self, $req) = @_; my $meta = { needed => TRUE };
-
-   my $class  = $req->query_params->( 'class' );
-   my $method = $req->query_params->( 'method' );
-   my $test   = $req->query_params->( 'test' );
-   my $v      = $req->query_params->( 'val', { raw => TRUE } );
-
-   try {
-      my $r = $self->schema->resultset( $class )->$method( $v );
-
-      $r->$test() or delete $meta->{needed};
-   }
-   catch { $self->log->error( $_ ) };
-
-   return { code => HTTP_OK,
-            page => { content => {}, meta => $meta },
-            view => 'json' };
+   return check_form_field $_[ 0 ]->schema, $_[ 1 ], $_[ 0 ]->log;
 }
 
 sub login : Role(anon) {
    my ($self, $req) = @_;
 
+   my $href       =  uri_for_action $req, $self->moniker.'/login';
+   my $form       =  blank_form 'login-user', $href;
    my $page       =  {
-      fields      => {},
       first_field => 'username',
+      forms       => [ $form ],
       location    => 'login',
-      template    => [ 'contents', 'login' ],
-      title       => loc( $req, to_msg 'login_title', $self->config->title ), };
-   my $actionp    =  $self->moniker.'/display_if_needed';
-   my $uri        =  uri_for_action $req, $actionp, [],
-      { class => 'Person', method => 'find_person', test => 'totp_secret', };
-   my $fields     =  $page->{fields};
+      template    => [ 'contents' ],
+      title       => locm $req, 'login_title', $self->config->title };
 
-   push @{ $page->{literal_js} }, js_server_config 'username', 'blur',
-      'displayIfNeeded', [ "${uri}", 'username', 'auth_code_label' ];
+   p_textfield $form, 'username',  NUL, { class => 'standard-field server' };
+   p_password  $form, 'password';
+   p_textfield $form, 'auth_code', NUL, { label_class => 'hidden',
+                                          label_id    => 'auth_code_label', };
+   p_button    $form, 'login', 'login', { class => 'save-button right-last' };
 
-   $fields->{auth_code} = bind 'auth_code', NUL,
-                               { label_class => 'hidden',
-                                 label_id    => 'auth_code_label', };
-   $fields->{login    } = bind 'login', 'login',
-                               { class => 'save-button right' };
-   $fields->{password } = bind 'password', NUL;
-   $fields->{username } = bind 'username', NUL,
-                               { class => 'standard-field server' };
+   $self->$_add_login_js( $req, $page );
 
    return $self->get_stash( $req, $page );
 }
@@ -299,24 +231,23 @@ sub profile : Role(any) {
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_by_shortcode( $req->username );
    my $stash     = $self->dialog_stash( $req, 'profile-user' );
-   my $page      = $stash->{page};
-   my $fields    = $page->{fields};
+   my $href      = uri_for_action $req, $self->moniker.'/profile';
+   my $form      = $stash->{page}->{forms}->[ 0 ]
+                 = blank_form 'profile-user', $href;
 
-   $page->{literal_js     } = set_element_focus 'profile-user', 'address';
-   $fields->{address      } = bind 'address',       $person->address;
-   $fields->{email_address} = bind 'email_address', $person->email_address;
-   $fields->{enable_2fa   } = bind 'enable_2fa',    TRUE,
-            { checked => $person->totp_secret ? TRUE : FALSE };
-   $fields->{home_phone   } = bind 'home_phone',    $person->home_phone;
-   $fields->{mobile_phone } = bind 'mobile_phone',  $person->mobile_phone;
-   $fields->{postcode     } = bind 'postcode',      $person->postcode;
-   $fields->{rows_per_page} = bind 'rows_per_page',
-                                    $_rows_per_page->( $person ),
-                                    { label => 'Rows Per Page' };
-   $fields->{update       } = bind 'update', 'update_profile',
-                                    { class => 'right-last' };
-   $fields->{username     } = bind 'username',      $person->label,
-                                    { disabled => TRUE };
+   $stash->{page}->{literal_js} = set_element_focus 'profile-user', 'address';
+
+   p_textfield $form, 'username',      $person->label, { disabled => TRUE };
+   p_textfield $form, 'address',       $person->address;
+   p_textfield $form, 'postcode',      $person->postcode;
+   p_textfield $form, 'email_address', $person->email_address;
+   p_textfield $form, 'mobile_phone',  $person->mobile_phone;
+   p_textfield $form, 'home_phone',    $person->home_phone;
+   p_radio     $form, 'rows_per_page', $_rows_per_page->( $person ),
+               { label => 'Rows Per Page' };
+   p_checkbox  $form, 'enable_2fa',    TRUE,
+               { checked => $person->totp_secret ? TRUE : FALSE };
+   p_button    $form,  'update', 'update_profile', { class => 'right-last' };
 
    return $stash;
 }
@@ -324,14 +255,15 @@ sub profile : Role(any) {
 sub request_reset : Role(anon) {
    my ($self, $req) = @_;
 
-   my $stash  = $self->dialog_stash( $req, 'request-reset' );
-   my $page   = $stash->{page};
-   my $fields = $page->{fields};
-   my $opts   = { class => 'right' };
+   my $stash = $self->dialog_stash( $req, 'request-reset' );
+   my $href  = uri_for_action $req, $self->moniker.'/reset';
+   my $form  = $stash->{page}->{forms}->[ 0 ]
+             = blank_form 'request-reset', $href;
 
-   $fields->{username} = bind 'username', NUL;
-   $fields->{reset   } = bind 'request_reset', 'request_reset', $opts;
-   $page->{literal_js} = set_element_focus 'request-reset', 'username';
+   $stash->{page}->{literal_js} = set_element_focus 'request-reset', 'username';
+
+   p_textfield $form, 'username';
+   p_button    $form, 'request_reset', 'request_reset', { class => 'right' };
 
    return $stash;
 }
@@ -342,11 +274,9 @@ sub request_reset_action : Role(anon) {
    my $name     = $req->body_params->( 'username' );
    my $person   = $self->schema->resultset( 'Person' )->find_person( $name );
    my $password = substr create_token, 0, 12;
-
-   $self->config->no_user_email
-      or $self->$_create_reset_email( $req, $person, $password );
-
-   my $message  = [ to_msg '[_1] password reset requested', $person->label ];
+   my $key      = '[_1] password reset requested ref. [_2]';
+   my $job_id   = $self->create_reset_email( $req, $person, $password );
+   my $message  = [ to_msg $key, $person->label, "send_message-${job_id}" ];
 
    return { redirect => { location => $req->base, message => $message } };
 }
@@ -376,20 +306,40 @@ sub reset_password : Role(anon) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub show_if_needed : Role(anon) {
+   my ($self, $req) = @_; my $meta = { needed => TRUE };
+
+   my $class = $req->query_params->( 'class' );
+   my $test  = $req->query_params->( 'test' );
+   my $v     = $req->query_params->( 'val', { raw => TRUE } );
+
+   try {
+      my $r = $self->schema->resultset( $class )->find_by_key( $v );
+
+      $r->execute( $test ) or delete $meta->{needed};
+   }
+   catch { $self->log->error( $_ ) };
+
+   return { code => HTTP_OK,
+            page => { content => {}, meta => $meta },
+            view => 'json' };
+}
+
 sub totp_request : Role(anon) {
    my ($self, $req) = @_;
 
-   my $stash  = $self->dialog_stash( $req, 'totp-request' );
-   my $page   = $stash->{page};
-   my $fields = $page->{fields};
-   my $opts   = { class => 'right' };
+   my $stash = $self->dialog_stash( $req, 'totp-request' );
+   my $href  = uri_for_action $req, $self->moniker.'/reset';
+   my $form  = $stash->{page}->{forms}->[ 0 ]
+             = blank_form 'totp-request', $href;
 
-   $page->{literal_js} = set_element_focus 'totp-request', 'username';
-   $fields->{mobile  } = bind 'mobile_phone', NUL;
-   $fields->{password} = bind 'password', NUL;
-   $fields->{postcode} = bind 'postcode', NUL;
-   $fields->{request } = bind 'totp_request', 'totp_request', $opts;
-   $fields->{username} = bind 'username', NUL;
+   $stash->{page}->{literal_js} = set_element_focus 'totp-request', 'username';
+
+   p_textfield $form, 'username';
+   p_password  $form, 'password';
+   p_textfield $form, 'mobile_phone';
+   p_textfield $form, 'postcode';
+   p_button    $form, 'totp_request', 'totp_request', { class => 'right-last' };
 
    return $stash;
 }
@@ -397,20 +347,20 @@ sub totp_request : Role(anon) {
 sub totp_request_action : Role(anon) {
    my ($self, $req) = @_;
 
-   my $session   = $req->session;
-   my $params    = $req->body_params;
-   my $name      = $params->( 'username' );
-   my $password  = $params->( 'password', { raw => TRUE } );
-   my $mobile    = $params->( 'mobile_phone' );
-   my $postcode  = $params->( 'postcode' );
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_person( $name );
+   my $session  = $req->session;
+   my $params   = $req->body_params;
+   my $name     = $params->( 'username' );
+   my $password = $params->( 'password', { raw => TRUE } );
+   my $mobile   = $params->( 'mobile_phone' );
+   my $postcode = $params->( 'postcode' );
+   my $person   = $self->schema->resultset( 'Person' )->find_person( $name );
 
    $person->authenticate( $password );
    $person->security_check( { mobile_phone => $mobile, postcode => $postcode });
-   $self->$_create_totp_request_email( $req, $person );
 
-   my $message   = [ to_msg '[_1] TOTP request send', $person->label ];
+   my $key      = '[_1] TOTP request sent ref. [_2]';
+   my $job_id   = $self->create_totp_request_email( $req, $person );
+   my $message  = [ to_msg $key, $person->label, "send_message-${job_id}" ];
 
    return { redirect => { location => $req->base, message => $message } };
 }
@@ -418,29 +368,26 @@ sub totp_request_action : Role(anon) {
 sub totp_secret : Role(anon) {
    my ($self, $req) = @_;
 
+   my $conf      =  $self->config;
    my $scode     =  $self->$_fetch_shortcode( $req );
-   my $title     =  $self->config->title;
-   my $page      =  {
-      fields     => {},
-      location   => 'totp_secret',
-      template   => [ 'contents', 'totp-secret' ],
-      title      => loc( $req, to_msg 'totp_secret_title', $title ), };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $scode );
-   my $fields    =  $page->{fields};
+   my $href      =  uri_for_action $req, $self->moniker.'/totp_secret';
+   my $form      =  blank_form 'totp-secret', $href;
+   my $page      =  {
+      forms      => [ $form ],
+      location   => 'totp_secret',
+      template   => [ 'contents' ],
+      title      => locm $req, 'totp_secret_title', $conf->title };
 
-   $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
+   p_textfield $form, 'username', $person->label, { disabled => TRUE };
 
    if ($person->totp_secret) {
+      my $label = locm $req, 'totp_qr_code';
       my $auth  = $person->totp_authenticator;
-      my $label = loc $req, 'totp_qr_code';
 
-      $fields->{qr_code} = {
-         content => { href => $auth->qr_code, title => $label, type => 'image'},
-         label   => $label,
-         type    => 'label' };
-      $fields->{otpauth}
-         = bind 'totp_auth', $auth->otpauth, { class => 'info-field' };
+      p_image $form, $label,      $auth->qr_code, { label => $label };
+      p_text  $form, 'totp_auth', $auth->otpauth, { class => 'info-field' };
    }
 
    return $self->get_stash( $req, $page );

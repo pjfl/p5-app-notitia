@@ -77,11 +77,11 @@ sub create_file_action : Role(editor) Role(event_manager) Role(person_manager) {
 }
 
 sub delete_file_action : Role(editor) Role(event_manager) Role(person_manager) {
-   my ($self, $req) = @_; my $res = $self->delete_file( $req );
+   my ($self, $req) = @_; my $stash = $self->delete_file( $req );
 
-   $res->{redirect}->{location} = uri_for_action( $req, 'posts/page' );
+   $stash->{redirect}->{location} = uri_for_action( $req, 'posts/page' );
 
-   return $res;
+   return $stash;
 }
 
 sub dialog : Role(any) {

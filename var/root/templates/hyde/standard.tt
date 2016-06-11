@@ -1,12 +1,22 @@
 [% WRAPPER 'hyde/wrapper.tt' -%]
 [%    PROCESS 'hyde/macros.tt' -%]
 [%    INCLUDE 'hyde/header.tt' -%]
-<!-- Layout [% page.layout %] Template [% page.template.1 %] -->
+[%    plate = 'Default'; IF page.template.1; plate = page.template.1; END -%]
+<!-- Layout [% page.layout %] Template [% plate %] -->
 <section class="standard-section">
    <div class="grid">
-[%    path = 'hyde/' _ page.template.0 _ '_mobile.tt';  INCLUDE $path -%]
-[%    path = 'hyde/' _ page.template.1 _ '_content.tt'; INCLUDE $path -%]
-[%    path = 'hyde/' _ page.template.0 _ '.tt';         INCLUDE $path -%]
+[%    path = 'hyde/' _ page.template.0 _ '_mobile.tt'; INCLUDE $path -%]
+[%    IF page.template.1 %]
+[%       path = 'hyde/' _ page.template.1 _ '_content.tt'; INCLUDE $path -%]
+[%    ELSE -%]
+      <div class="unit four-fifths">
+         <article>
+         <h4>[% page.title %]</h4>
+[%          Dispatch( page.forms.0 ) -%]
+         </article>
+      </div>
+[% END -%]
+[%    path = 'hyde/' _ page.template.0 _ '.tt'; INCLUDE $path -%]
       <div class="clear"></div>
    </div>
 </section>

@@ -6,6 +6,9 @@ use parent 'DBIx::Class::ResultSet';
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::Functions  qw( throw );
 
+# Private package variables
+my $_max_badge_id = [ 0, 0 ];
+
 # Private functions
 my $_person_tuple = sub {
    my ($person, $opts) = @_; $opts = { %{ $opts // {} } };
@@ -23,6 +26,14 @@ my $_find_role_type = sub {
    return $schema->resultset( 'Type' )->find_role_by( $name );
 };
 
+my $_get_max_badge_id = sub {
+   my $self = shift; my $dir = $self->result_source->schema->config->ctrldir;
+
+   my $path = $dir->catfile( 'max_badge_id' ); $path->exists or return;
+
+   return $path->lock->chomp->getline;
+};
+
 my $_load_cache = sub {
    my ($self, $cache) = @_; my $opts = { columns => [ 'badge_id' ] };
 
@@ -35,8 +46,16 @@ my $_load_cache = sub {
    return;
 };
 
+my $_set_max_badge_id = sub {
+   my ($self, $v) = @_; my $dir = $self->result_source->schema->config->ctrldir;
+
+   $dir->catfile( 'max_badge_id' )->lock->println( $v );
+
+   return $v;
+};
+
 # Public methods
-sub find_person {
+sub find_by_key {
    my ($self, $key) = @_; my $person;
 
    defined( $person = $self->search( { name => $key } )->single )
@@ -47,6 +66,10 @@ sub find_person {
        and  return $person;
 
    throw 'Person [_1] unknown', [ $key ], level => 2;
+}
+
+sub find_person { # Deprecated
+   return $_[ 0 ]->find_by_key( $_[ 1 ] );
 }
 
 sub find_by_shortcode {
@@ -112,29 +135,56 @@ sub list_people {
 }
 
 sub max_badge_id {
-   my $self = shift;
+   my ($self, $v) = @_;
 
-   my $rs        = $self->search( { 'badge_id' => { '!=' => undef } } );
-   my $rs_column = $rs->get_column( 'badge_id' );
+   defined $v and $v > $_max_badge_id->[ 1 ]
+       and return $self->$_set_max_badge_id( $_max_badge_id->[ 1 ] = $v );
 
-   return $rs_column->max;
+   my $conf    = $self->result_source->schema->config;
+   my $file    = $conf->badge_mtime; $file->exists or $file->touch;
+   my $f_mtime = $file->stat->{mtime};
+
+   $f_mtime <= $_max_badge_id->[ 0 ] and return $_max_badge_id->[ 1 ];
+
+   my $max_s = $self->$_get_max_badge_id;
+   my $rs    = $self->search( { 'badge_id' => { '!=' => undef } } );
+   my $max_c = $rs->get_column( 'badge_id' )->max;
+   my $max   = $_max_badge_id->[ 1 ]; $_max_badge_id->[ 0 ] = $f_mtime;
+
+   $max_s and $max_s > $max and $max = $max_s;
+   $max_c and $max_c > $max and $max = $max_c;
+
+   return $self->$_set_max_badge_id( $_max_badge_id->[ 1 ] = $max );
+}
+
+sub next_badge_id {
+   return $_[ 0 ]->max_badge_id( $_[ 0 ]->max_badge_id + 1 );
 }
 
 sub search_for_people {
-   my ($self, $opts) = @_; $opts = { %{ $opts // {} } }; delete $opts->{fields};
+   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
 
-   my $where = delete $opts->{current}
-             ? { $self->me( 'resigned' ) => { '=' => undef },
-                 $self->me( 'active'   ) => TRUE, } : {};
+   delete $opts->{fields}; $opts->{prefetch} //= [];
 
-   if (my $role = delete $opts->{role}) {
-      $opts->{prefetch} //= []; push @{ $opts->{prefetch} }, 'roles';
-      $where->{ 'roles.type_id' } = $self->$_find_role_type( $role )->id;
-   }
-
+   my $status  = delete $opts->{status} // NUL;
+   my $where   = $status eq 'current'
+               ? { $self->me( 'resigned' ) => { '=' => undef },
+                   $self->me( 'active'   ) => TRUE, } : {};
    my $columns = [ 'first_name', 'id', 'last_name', 'name', 'shortcode' ];
 
    $opts->{columns} and push @{ $columns }, @{ delete $opts->{columns} };
+
+   if (my $type = delete $opts->{type}) {
+      if ($type eq 'contacts') {
+         push @{ $opts->{prefetch} }, 'next_of_kin';
+         push @{ $columns }, 'home_phone', 'mobile_phone';
+      }
+   }
+
+   if (my $role = delete $opts->{role}) {
+      push @{ $opts->{prefetch} }, 'roles';
+      $where->{ 'roles.type_id' } = $self->$_find_role_type( $role )->id;
+   }
 
    return $self->search
       ( $where, { columns  => $columns, order_by => [ $self->me( 'name' ) ],

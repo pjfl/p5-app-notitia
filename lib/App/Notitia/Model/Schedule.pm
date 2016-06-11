@@ -4,8 +4,8 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SHIFT_TYPE_ENUM
                                 SPC TRUE );
 use App::Notitia::Util      qw( assign_link bind button dialog_anchor
-                                display_duration js_submit_config
-                                js_window_config lcm_for loc
+                                display_duration js_server_config
+                                js_submit_config lcm_for loc
                                 register_action_paths set_element_focus
                                 slot_claimed slot_identifier
                                 slot_limit_index table_link to_dt to_msg
@@ -70,7 +70,7 @@ my $_async_event_tip = sub {
    my $uri  = $tport->event->uri;
    my $href = uri_for_action $req, 'event/event_info', [ $uri ];
 
-   push @{ $page->{literal_js} }, js_window_config
+   push @{ $page->{literal_js} }, js_server_config
       $uri, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    return;
 };
@@ -82,7 +82,7 @@ my $_async_slot_tip = sub {
    my $actionp = "${moniker}/assign_summary";
    my $href    = uri_for_action $req, $actionp, [ "${name}_${id}" ];
 
-   push @{ $page->{literal_js} }, js_window_config
+   push @{ $page->{literal_js} }, js_server_config
       $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    return;
 };
@@ -92,7 +92,7 @@ my $_async_v_event_tip = sub {
 
    my $href = uri_for_action $req, 'event/vehicle_info', [ $event->uri ];
 
-   push @{ $page->{literal_js} }, js_window_config
+   push @{ $page->{literal_js} }, js_server_config
       $event->uri, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    return;
 };
@@ -104,7 +104,7 @@ my $_async_vreq_tip = sub {
    my $href    = uri_for_action $req, $actionp, [ $event->uri ];
    my $id      = 'request-'.$event->uri;
 
-   push @{ $page->{literal_js} }, js_window_config
+   push @{ $page->{literal_js} }, js_server_config
       $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    return;
 };
@@ -185,13 +185,11 @@ my $_month_rota_max_slots = sub {
 };
 
 my $_month_rota_title = sub {
-   my ($req, $rota_name, $date) = @_; $date = $_local_dt->( $date );
+   my ($req, $rota_name, $date) = @_; my $local_dt = $_local_dt->( $date );
 
-   my $title = ucfirst( loc( $req, $rota_name ) ).SPC
-             . loc( $req, 'rota for' ).SPC.$date->month_name.SPC
-             . $date->year;
+   $date = $local_dt->month_name.SPC.$local_dt->year;
 
-   return $title;
+   return loc( $req, to_msg 'month_rota_title', loc( $req, $rota_name ), $date);
 };
 
 my $_next_month = sub {
@@ -259,7 +257,7 @@ my $_summary_link = sub {
 
    my $title = loc $req, (ucfirst $type).' Assignment';
 
-   $class .= ' windows tips';
+   $class .= ' server tips';
 
    return { class => $class, colspan => $span, name => $id,
             title => $title, value   => $value };
@@ -366,9 +364,9 @@ my $_week_rota_headers = sub {
 my $_week_rota_title = sub {
    my ($req, $rota_name, $date) = @_; my $local_dt = $_local_dt->( $date );
 
-   return ucfirst( loc( $req, $rota_name ) ).SPC
-        . loc( $req, 'rota commencing' ).SPC
-        . $local_dt->day.SPC.$local_dt->month_name.SPC.$local_dt->year;
+   $date = $local_dt->day.SPC.$local_dt->month_name.SPC.$local_dt->year;
+
+   return loc( $req, to_msg 'week_rota_title', loc( $req, $rota_name ), $date );
 };
 
 my $_controllers = sub {
@@ -480,8 +478,8 @@ my $_riders_n_drivers = sub {
 };
 
 # Private methods
-my $_find_rota_type_id = sub {
-   return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] )->id;
+my $_find_rota_type = sub {
+   return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
 };
 
 my $_first_day_of_month = sub {
@@ -560,7 +558,7 @@ my $_summary_cells = sub {
             push @{ $cells },
                $_summary_link->( $req, $slot_type, $span, $id, $slot );
 
-            $slot and push @{ $page->{literal_js} }, js_window_config
+            $slot and push @{ $page->{literal_js} }, js_server_config
                $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
          }
       }
@@ -617,14 +615,14 @@ my $_rota_summary = sub {
    return { class => 'month-rota submit', name => $id, value => $table };
 };
 
-my $_get_page = sub {
+my $_day_page = sub {
    my ($self, $req, $name, $rota_dt, $todays_events, $data) = @_;
 
    my $schema   =  $self->schema;
    my $limits   =  $self->config->slot_limits;
    my $local_dt =  $_local_dt->( $rota_dt );
-   my $title    =  ucfirst( loc( $req, $name ) ).SPC.loc( $req, 'rota for' ).SPC
-                .  $local_dt->month_name.SPC.$local_dt->day.SPC.$local_dt->year;
+   my $date     =  $local_dt->month_name.SPC.$local_dt->day.SPC.$local_dt->year;
+   my $title    =  loc $req, to_msg 'day_rota_title', loc( $req, $name ), $date;
    my $actionp  =  $self->moniker.'/day_rota';
    my $next     =  uri_for_action $req, $actionp,
                    [ $name, $local_dt->clone->add( days => 1 )->ymd ];
@@ -652,7 +650,7 @@ my $_week_rota_assignments = sub {
 
    my $moniker   = $self->moniker;
    my $rota_name = $page->{rota}->{name};
-   my $class     = 'narrow week-rota submit tips windows';
+   my $class     = 'narrow week-rota submit server tips';
    my $row       = [ { class => 'narrow', value => $tuple->[ 0 ] } ];
 
    for my $cno (0 .. 6) {
@@ -709,7 +707,7 @@ my $_week_rota_requests = sub {
 
    my $moniker   = $self->moniker;
    my $rota_name = $page->{rota}->{name};
-   my $class     = 'narrow week-rota submit tips windows';
+   my $class     = 'narrow week-rota submit server tips';
    my $row       = [ { class => 'narrow', value => 'Requests' } ];
 
    for my $cno (0 .. 6) {
@@ -756,8 +754,8 @@ sub assign_summary : Role(any) {
    my $key      =  "${shift_type}_${slot_type}_${subslot}";
    my $rota_dt  =  to_dt $rota_date;
    my $data     =  $self->$_slot_assignments( {
-      rota_type => $self->$_find_rota_type_id( $rota_name ),
-      on        => $rota_dt } )->{ $_local_dt->( $rota_dt)->ymd.'_'.$key };
+      rota_type => $self->$_find_rota_type( $rota_name )->id,
+      on        => $rota_dt } )->{ $_local_dt->( $rota_dt )->ymd.'_'.$key };
    my $stash    =  $self->dialog_stash( $req, 'assign-summary' );
    my $fields   =  $stash->{page}->{fields};
    my $operator =  $data->{operator};
@@ -808,7 +806,7 @@ sub day_rota : Role(any) {
    my $name      = $params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date = $params->( 1, { optional => TRUE } ) // $today;
    my $rota_dt   = to_dt $rota_date;
-   my $type_id   = $self->$_find_rota_type_id( $name );
+   my $type_id   = $self->$_find_rota_type( $name )->id;
    my $slot_rs   = $self->schema->resultset( 'Slot' );;
    my $event_rs  = $self->schema->resultset( 'Event' );
    my $events    = $event_rs->search_for_a_days_events( $type_id, $rota_dt );
@@ -824,7 +822,7 @@ sub day_rota : Role(any) {
            vehicle_req => $slot->bike_requested };
    }
 
-   my $page = $self->$_get_page( $req, $name, $rota_dt, $events, $slot_data );
+   my $page = $self->$_day_page( $req, $name, $rota_dt, $events, $slot_data );
 
    return $self->get_stash( $req, $page );
 }
@@ -853,7 +851,7 @@ sub month_rota : Role(any) {
    my $opts      =  {
       after      => $rota_dt->clone->subtract( days => 1 ),
       before     => $rota_dt->clone->add( days => 31 ),
-      rota_type  => $self->$_find_rota_type_id( $rota_name ) };
+      rota_type  => $self->$_find_rota_type( $rota_name )->id };
    my $has_event =  $self->schema->resultset( 'Event' )->has_events_for( $opts);
    my $assigned  =  $self->$_slot_assignments( $opts );
 
@@ -919,8 +917,8 @@ sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
          $fields->{assignee} = bind 'assignee', [ [ NUL, NUL ], @{ $people } ];
       }
 
-      $slot_type eq 'rider' and $fields->{request_bike}
-            = bind( 'request_bike', TRUE, { container_class => 'right-last' } );
+      $slot_type eq 'rider'
+         and $fields->{request_bike} = bind 'request_bike', TRUE;
    }
 
    $fields->{confirm  } = $_confirm_slot_button->( $req, $action );
@@ -950,7 +948,7 @@ sub week_rota : Role(any) {
    my $opts       =  {
       after       => $rota_dt->clone->subtract( days => 1),
       before      => $rota_dt->clone->add( days => 7 ),
-      rota_type   => $self->$_find_rota_type_id( $rota_name ) };
+      rota_type   => $self->$_find_rota_type( $rota_name )->id };
    my $event_rs   =  $self->schema->resultset( 'Event' );
    my $slot_rs    =  $self->schema->resultset( 'Slot' );
    my $tport_rs   =  $self->schema->resultset( 'Transport' );

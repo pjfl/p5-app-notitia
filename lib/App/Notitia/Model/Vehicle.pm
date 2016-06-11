@@ -2,13 +2,14 @@ package App::Notitia::Model::Vehicle;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Util      qw( assign_link bind bind_fields button
-                                check_field_js create_link delete_button
+use App::Notitia::Form      qw( blank_form f_list f_tag p_button p_container
+                                p_date p_fields p_hidden p_rows p_select
+                                p_table p_tag p_textfield );
+use App::Notitia::Util      qw( assign_link bind check_field_js create_link
                                 display_duration loc make_tip management_link
-                                operation_links page_link_set
-                                register_action_paths save_button
-                                set_element_focus slot_identifier
-                                time2int to_dt to_msg uri_for_action );
+                                page_link_set register_action_paths
+                                set_element_focus slot_identifier time2int
+                                to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -54,37 +55,6 @@ my $_add_vehicle_js = sub {
    return [ check_field_js( 'vrn', $opts ) ];
 };
 
-my $_bind_request_fields = sub {
-   my ($schema, $req, $event, $opts) = @_; $opts //= {};
-
-   my $map =  {
-      name => { class => 'standard-field', disabled => TRUE,
-                label => 'event_name' },
-   };
-
-   return bind_fields $schema, $event, $map, 'Event';
-};
-
-my $_bind_vehicle_fields = sub {
-   my ($schema, $req, $vehicle, $opts) = @_; $opts //= {};
-
-   my $disabled =  $opts->{disabled} // FALSE;
-   my $map      =  {
-      aquired   => { disabled => $disabled },
-      disposed  => { class    => 'standard-field clearable',
-                     disabled => $disabled },
-      name      => { disabled => $disabled,
-                     label    => 'vehicle_name',
-                     tip      => make_tip( $req, 'vehicle_name_field_tip') },
-      notes     => { class    => 'standard-field autosize',
-                     disabled => $disabled },
-      vrn       => { class    => 'standard-field server',
-                     disabled => $disabled },
-   };
-
-   return bind_fields $schema, $vehicle, $map, 'Vehicle';
-};
-
 my $_compare_datetimes = sub {
    my ($x, $y) = @_;
 
@@ -95,11 +65,6 @@ my $_compare_datetimes = sub {
    $y = time2int $y->[ 1 ]->[ 2 ]->{value};
 
    $x < $y and return -1; $x > $y and return 1; return 0;
-};
-
-my $_confirm_vehicle_button = sub {
-   return button $_[ 0 ],
-     { class => 'right-last', label => 'confirm', value => $_[ 1 ].'_vehicle' };
 };
 
 my $_find_vreq_by = sub {
@@ -120,12 +85,16 @@ my $_maybe_find_vehicle = sub {
 };
 
 my $_owner_list = sub {
-   my ($schema, $vehicle) = @_;
+   my ($schema, $vehicle, $disabled) = @_;
 
    my $opts   = { fields => { selected => $vehicle->owner } };
    my $people = $schema->resultset( 'Person' )->list_all_people( $opts );
 
-   return bind 'owner_id', [ [ NUL, NUL ], @{ $people } ], { numify => TRUE };
+   $opts = { name  => 'owner_id', numify => TRUE,
+             type  => 'select',   value  => [ [ NUL, NUL ], @{ $people } ] };
+   $disabled and $opts->{disabled} = TRUE;
+
+   return $opts;
 };
 
 my $_quantity_list = sub {
@@ -193,11 +162,6 @@ my $_vehicle_slot_links = sub {
    return @links;
 };
 
-my $_vehicle_request_button = sub {
-   return button $_[ 0 ], { class => 'save-button right-last' },
-             'request', 'vehicle', [ $_[ 1 ] ];
-};
-
 my $_vehicle_request_headers = sub {
    my $req = shift;
 
@@ -263,36 +227,37 @@ my $_req_quantity = sub {
 };
 
 my $_vehicle_type_list = sub {
-   my ($schema, $vehicle) = @_;
+   my ($schema, $vehicle, $disabled) = @_;
 
    my $opts   = { fields => { selected => $vehicle->type } };
    my $values = [ [ NUL, NUL ], @{ $_list_vehicle_types->( $schema, $opts ) } ];
 
-   $opts = { class  => 'standard-field required',
-             label  => 'vehicle_type',
-             numify => TRUE };
+   $opts = { class => 'standard-field required', label  => 'vehicle_type',
+             name  => 'type',                    numify => TRUE,
+             type  => 'select',                  value  => $values };
+   $disabled and $opts->{disabled} = TRUE;
 
-   return bind 'type', $values, $opts;
+   return $opts;
 };
 
 my $_vehicles_op_links = sub {
    my ($req, $moniker, $params, $pager) = @_;
 
-   my $page_links
-      = page_link_set $req, "${moniker}/vehicles", [], $params, $pager;
-   my $links = [ create_link $req, "${moniker}/vehicle", 'vehicle' ];
+   my $actionp    = "${moniker}/vehicles";
+   my $page_links = page_link_set $req, $actionp, [], $params, $pager;
+   my $links      = [ create_link $req, "${moniker}/vehicle", 'vehicle' ];
 
    $page_links and unshift @{ $links }, $page_links;
 
-   return operation_links $links;
+   return $links;
 };
 
 my $_vreq_row = sub {
    my ($schema, $req, $page, $event, $vehicle_type) = @_;
 
    my $uri    = $page->{event_uri};
-   my $tports = $schema->resultset( 'Transport' )->search_for_vehicle_by_type
-      ( $event->id, $vehicle_type->id );
+   my $rs     = $schema->resultset( 'Transport' );
+   my $tports = $rs->search_for_vehicle_by_type( $event->id, $vehicle_type->id);
    my $quant  = $_req_quantity->( $schema, $event, $vehicle_type );
    my $row    = [ { value => loc( $req, $vehicle_type ) },
                   $_quantity_list->( $vehicle_type, $quant ) ];
@@ -312,6 +277,27 @@ my $_vreq_row = sub {
    }
 
    return $row;
+};
+
+my $_bind_vehicle_fields = sub {
+   my ($schema, $req, $vehicle, $opts) = @_; $opts //= {};
+
+   my $disabled = $opts->{disabled} // FALSE;
+
+   return
+   [  vrn      => { class    => 'standard-field server',
+                    disabled => $disabled },
+      type     => $_vehicle_type_list->( $schema, $vehicle, $disabled ),
+      name     => { disabled => $disabled,
+                    label    => 'vehicle_name',
+                    tip      => make_tip $req, 'vehicle_name_field_tip' },
+      owner    => $_owner_list->( $schema, $vehicle, $disabled ),
+      aquired  => { disabled => $disabled, type => 'date' },
+      disposed => { class    => 'standard-field clearable',
+                    disabled => $disabled, type => 'date' },
+      notes    => { class    => 'standard-field autosize',
+                    disabled => $disabled, type => 'textarea' },
+      ];
 };
 
 # Private methods
@@ -499,27 +485,23 @@ sub assign : Role(rota_manager) {
    my $action = $req->query_params->( 'action' );
    my $type   = $req->query_params->( 'type', { optional => TRUE } ) // 'bike';
    my $stash  = $self->dialog_stash( $req, "${action}-vehicle" );
+   my $href   = uri_for_action $req, $self->moniker.'/vehicle', $args;
+   my $form   = $stash->{page}->{forms}->[ 0 ]
+              = blank_form "${action}-vehicle", $href;
    my $page   = $stash->{page};
-   my $fields = $page->{fields};
 
    if ($action eq 'assign') {
       my $where  = { service => TRUE, type => $type };
       my $rs     = $self->schema->resultset( 'Vehicle' );
       my $values = [ [ NUL, NUL ], @{ $rs->list_vehicles( $where ) } ];
 
-      $fields->{vehicle}
-         = bind 'vehicle', $values, { class => 'right-last', label => NUL };
+      p_select $form, 'vehicle', $values, {
+         class => 'right-last', label => NUL };
       $page->{literal_js} = set_element_focus 'assign-vehicle', 'vehicle';
    }
-   else {
-      my $vrn = $req->query_params->( 'vehicle' );
+   else { p_hidden $form, 'vehicle', $req->query_params->( 'vehicle' ) }
 
-      $fields->{vehicle} = { name => 'vehicle', value => $vrn };
-   }
-
-   $fields->{href   } = uri_for_action $req, $self->moniker.'/vehicle', $args;
-   $fields->{confirm} = $_confirm_vehicle_button->( $req, $action );
-   $fields->{assign } = bind $action, $action, { class => 'right' };
+   p_button $form, 'confirm', "${action}_vehicle", { class => 'right-last' };
 
    return $stash;
 }
@@ -564,20 +546,19 @@ sub delete_vehicle_action : Role(rota_manager) {
 sub request_info : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $uri      = $req->uri_params->( 0 );
-   my $event    = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $stash    = $self->dialog_stash( $req, 'vehicle-request-info' );
-   my $vreq_rs  = $self->schema->resultset( 'VehicleRequest' );
-   my $fields   = $stash->{page}->{fields};
-   my $requests = $fields->{requests} //= [];
-   my $id       = $event->id;
+   my $uri     = $req->uri_params->( 0 );
+   my $event   = $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $stash   = $self->dialog_stash( $req, 'vehicle-request-info' );
+   my $vreq_rs = $self->schema->resultset( 'VehicleRequest' );
+   my $form    = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $id      = $event->id;
 
-   ($fields->{start}, $fields->{end}) = display_duration $req, $event;
+   my ($start, $end) = display_duration $req, $event;
+
+   p_tag $form, 'p', $start; p_tag $form, 'p', $end;
 
    for my $tuple ($vreq_rs->search_for_request_info( { event_id => $id } )) {
-      push @{ $requests }, {
-         value => $tuple->[ 1 ].' x '.loc( $req, $tuple->[ 0 ]->type )
-      };
+      p_tag $form, 'p', $tuple->[ 1 ].' x '.loc( $req, $tuple->[ 0 ]->type );
    }
 
    return $stash;
@@ -586,31 +567,33 @@ sub request_info : Role(rota_manager) {
 sub request_vehicle : Role(rota_manager) Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $schema    =  $self->schema;
-   my $uri       =  $req->uri_params->( 0 );
-   my $event     =  $schema->resultset( 'Event' )->find_event_by
-                    ( $uri, { prefetch => [ 'owner' ] } );
-   my $page      =  {
-      event_uri  => $uri,
-      fields     => $_bind_request_fields->( $schema, $req, $event ),
-      moniker    => $self->moniker,
-      template   => [ 'contents', 'vehicle-request' ],
-      title      => loc( $req, 'vehicle_request_heading' ), };
-   my $type_rs   =  $schema->resultset( 'Type' );
-   my $opts      =  { disabled => TRUE };
-   my $fields    =  $page->{fields};
+   my $schema   =  $self->schema;
+   my $uri      =  $req->uri_params->( 0 );
+   my $event    =  $schema->resultset( 'Event' )->find_event_by
+                   ( $uri, { prefetch => [ 'owner' ] } );
+   my $href     =  uri_for_action $req, $self->moniker.'/vehicle', [ $uri ];
+   my $form     =  blank_form 'vehicle-request', $href, {
+      class     => 'wide-form no-header-wrap' };
+   my $page     =  {
+      event_uri => $uri,
+      forms     => [ $form ],
+      moniker   => $self->moniker,
+      template  => [ 'contents' ],
+      title     => loc $req, 'vehicle_request_heading' };
+   my $type_rs  =  $schema->resultset( 'Type' );
 
-   $fields->{action  } = uri_for_action $req, 'asset/vehicle', [ $uri ];
-   $fields->{date    } = bind 'event_date', $event->start_date, $opts;
-   $fields->{request } = $_vehicle_request_button->( $req, $event );
-   $fields->{vehicles} = { class   => 'smaller-table',
-                           headers => $_vehicle_request_headers->( $req ) };
+   p_textfield $form, 'name', $event->name, {
+      disabled => TRUE, label => 'event_name' };
 
-   for my $vehicle_type ($type_rs->search_for_vehicle_types->all) {
-      my $row = $_vreq_row->( $schema, $req, $page, $event, $vehicle_type );
+   p_date $form, 'event_date', $event->start_date, { disabled => TRUE };
 
-      push @{ $fields->{vehicles}->{rows} }, $row;
-   }
+   my $table = p_table $form, { headers => $_vehicle_request_headers->( $req )};
+
+   p_rows $table, [ map { $_vreq_row->( $schema, $req, $page, $event, $_ ) }
+                    $type_rs->search_for_vehicle_types->all ];
+
+   p_button $form, 'request_vehicle', 'request_vehicle', {
+      class => 'save-button right-last' };
 
    return $self->get_stash( $req, $page );
 }
@@ -655,7 +638,7 @@ sub update_vehicle_action : Role(rota_manager) {
    catch { $self->rethrow_exception( $_, 'delete', 'vehicle', $vehicle->vrn ) };
 
    my $who     = $req->session->user_label;
-   my $message = [ to_msg 'Vehicle [_1] updated by [_2]', $vrn, $who];
+   my $message = [ to_msg 'Vehicle [_1] updated by [_2]', $vrn, $who ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
@@ -667,25 +650,32 @@ sub vehicle : Role(rota_manager) {
    my $actionp    =  $self->moniker.'/vehicle';
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
    my $vehicle    =  $_maybe_find_vehicle->( $schema, $vrn );
+   my $href       =  uri_for_action $req, $actionp, [ $vrn ];
+   my $form       =  blank_form 'vehicle-admin', $href;
+   my $title      =  $vrn ? 'vehicle_edit_heading' : 'vehicle_create_heading';
+   my $action     =  $vrn ? 'update' : 'create';
    my $page       =  {
-      fields      => $_bind_vehicle_fields->( $schema, $req, $vehicle ),
       first_field => 'vrn',
+      forms       => [ $form ],
       literal_js  => $_add_vehicle_js->( $vrn ),
-      template    => [ 'contents', 'vehicle' ],
-      title       => loc( $req, $vrn ? 'vehicle_edit_heading'
-                                     : 'vehicle_create_heading' ), };
-   my $fields     =  $page->{fields};
+      template    => [ 'contents' ],
+      title       => loc $req, $title };
+   my $fields     =  $_bind_vehicle_fields->( $schema, $req, $vehicle ),
+   my $link       =  create_link $req, $actionp, 'vehicle', {
+      container_class => 'add-link' };
 
-   if ($vrn) {
-      $fields->{delete} = delete_button $req, $vrn, { type => 'vehicle' };
-      $fields->{href  } = uri_for_action $req, $actionp, [ $vrn ];
-      $fields->{links } = create_link $req, $actionp, 'vehicle',
-                             { container_class => 'add-link right' };
-   }
+   $vrn and p_container $form, f_list( '&nbsp;|&nbsp;', [ $link ] ),
+      { class => 'operation-links align-right right-last' };
 
-   $fields->{owner} = $_owner_list->( $schema, $vehicle );
-   $fields->{type } = $_vehicle_type_list->( $schema, $vehicle );
-   $fields->{save } = save_button $req, $vrn, { type => 'vehicle' };
+   p_fields $form, $self->schema, 'Vehicle', $vehicle, $fields;
+
+   p_button $form, $action, "${action}_vehicle", {
+      class => 'save-button ', container_class => 'right-last',
+      tip   => make_tip $req, "${action}_tip", [ 'vehicle', $vrn ] };
+
+   $vrn and p_button $form, 'delete', 'delete_vehicle', {
+      class => 'delete-button', container_class => 'right',
+      tip   => make_tip $req, 'delete_tip', [ 'vehicle', $vrn ] };
 
    return $self->get_stash( $req, $page );
 }
@@ -693,26 +683,32 @@ sub vehicle : Role(rota_manager) {
 sub vehicle_events : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $vrn          =  $req->uri_params->( 0 );
-   my $params       =  $req->query_params;
-   my $after        =  $params->( 'after',  { optional => TRUE } );
-   my $before       =  $params->( 'before', { optional => TRUE } );
-   my $opts         =  { after      => $after  ? to_dt( $after  ) : FALSE,
-                         before     => $before ? to_dt( $before ) : FALSE,
-                         event_type => 'vehicle',
-                         vehicle    => $vrn, };
-   my $page         =  {
-      fields        => {
-         events     => {
-            headers => $_vehicle_events_headers->( $req ),
-            rows    => [ map  { $_->[ 1 ] }
-                         @{ $self->$_vehicle_events( $req, $opts ) } ], },
-         links      => create_link
-            ( $req, 'event/vehicle_event', 'event',
-              { args => [ $vrn ], container_class => 'add-link right-last' } ),
-         name       => bind 'vehicle', $vrn, { disabled => TRUE }, },
-      template      => [ 'contents', 'vehicle-events' ],
-      title         => loc( $req, 'vehicle_events_management_heading' ), };
+   my $vrn     =  $req->uri_params->( 0 );
+   my $params  =  $req->query_params;
+   my $after   =  $params->( 'after',  { optional => TRUE } );
+   my $before  =  $params->( 'before', { optional => TRUE } );
+   my $opts    =  { after      => $after  ? to_dt( $after  ) : FALSE,
+                    before     => $before ? to_dt( $before ) : FALSE,
+                    event_type => 'vehicle',
+                    vehicle    => $vrn, };
+   my $form    =  blank_form NUL, { class => 'wide-form no-header-wrap' };
+   my $page    =  {
+      forms    => [ $form ],
+      template => [ 'contents' ],
+      title    => loc $req, 'vehicle_events_management_heading' };
+
+   p_textfield $form, 'vehicle', $vrn, { disabled => TRUE };
+
+   my $table  = p_table $form, { headers => $_vehicle_events_headers->( $req )};
+   my $events = $self->$_vehicle_events( $req, $opts );
+
+   p_rows $table, [ map { $_->[ 1 ] } @{ $events } ];
+
+   my $link = create_link $req, 'event/vehicle_event', 'event', {
+      args => [ $vrn ], container_class => 'add-link' };
+
+   p_container $form, f_list( '&nbsp;|&nbsp;', [ $link ] ),
+      { class => 'operation-links align-right right-last' };
 
    return $self->get_stash( $req, $page );
 }
@@ -732,20 +728,25 @@ sub vehicles : Role(rota_manager) {
                       type    => $type };
    my $rs        =  $self->schema->resultset( 'Vehicle' );
    my $vehicles  =  $rs->search_for_vehicles( $opts );
+   my $form      =  blank_form;
    my $page      =  {
-      fields     => {
-         headers => $_vehicles_headers->( $req, $service ),
-         links   => $_vehicles_op_links->
-            ( $req, $moniker, $opts, $vehicles->pager ),
-         rows    => [], },
-      template   => [ 'contents', 'table' ],
+      forms      => [ $form ],
+      template   => [ 'contents' ],
       title      => $_vehicle_title->( $req, $type, $private, $service ), };
-   my $rows      =  $page->{fields}->{rows};
+   my $list      =  f_list '&nbsp;|&nbsp;',
+      $_vehicles_op_links->( $req, $moniker, $opts, $vehicles->pager );
+   my $class     =  'operation-links align-right right-last';
 
-   for my $vehicle ($vehicles->all) {
-      push @{ $rows },
-         $self->$_vehicle_links( $self->moniker, $req, $service, $vehicle );
-   }
+   p_container $form, $list, { class => $class };
+
+   my $table = p_table $form, {
+      headers => $_vehicles_headers->( $req, $service ) };
+
+   p_rows $table,
+      [ map { $self->$_vehicle_links( $self->moniker, $req, $service, $_ ) }
+        $vehicles->all ];
+
+   p_container $form, $list, { class => $class };
 
    return $self->get_stash( $req, $page );
 }

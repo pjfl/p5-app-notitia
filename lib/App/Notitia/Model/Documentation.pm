@@ -86,11 +86,11 @@ sub create_file_action : Role(editor) {
 }
 
 sub delete_file_action : Role(editor) {
-   my ($self, $req) = @_; my $res = $self->delete_file( $req );
+   my ($self, $req) = @_; my $stash = $self->delete_file( $req );
 
-   $res->{redirect}->{location} = $self->docs_url( $req );
+   $stash->{redirect}->{location} = $self->docs_url( $req );
 
-   return $res;
+   return $stash;
 }
 
 sub docs_url {
@@ -106,15 +106,12 @@ sub dialog : Role(any) {
 sub index : Role(anon) {
    my ($self, $req) = @_;
 
-   my $location = $self->docs_url( $req );
+   my $stash   = { redirect => { location => $self->docs_url( $req ) } };
+   my $message = $req->session->collect_status_message( $req );
 
-   $location->query_form( navigation_reset => TRUE );
+   $message and $stash->{redirect}->{message} = [ $message ];
 
-   my $params   = { redirect => { location => $location } };
-   my $message  = $req->session->collect_status_message( $req );
-
-   $message and $params->{redirect}->{message} = [ $message ];
-   return $params;
+   return $stash;
 }
 
 sub locales {
@@ -134,15 +131,7 @@ sub nav_label {
 }
 
 sub page : Role(anon) {
-   my ($self, $req, $page) = @_;
-
-   my $reset = $req->query_params->( 'navigation_reset', { optional => TRUE } );
-   my $stash = $self->get_stash( $req, $page );
-
-   $reset and push @{ $stash->{page}->{literal_js} },
-      "   behaviour.config[ 'sidebars' ] = { 'navigation_reset': true };";
-
-   return $stash;
+   my ($self, $req, $page) = @_; return $self->get_stash( $req, $page );
 }
 
 sub rename_file_action : Role(editor) {
@@ -179,11 +168,11 @@ sub tree_root {
 }
 
 sub upload : Role(editor) Role(event_manager) Role(person_manager) {
-   my ($self, $req) = @_; my $res = $self->upload_file( $req );
+   my ($self, $req) = @_; my $stash = $self->upload_file( $req );
 
-   $res->{redirect}->{location} = $self->docs_url( $req );
+   $stash->{redirect}->{location} = $self->docs_url( $req );
 
-   return $res;
+   return $stash;
 }
 
 1;

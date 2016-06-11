@@ -44,7 +44,6 @@ sub ddl_filename {
     $DBIx::Class::VERSION < 0.08100 and ($dir, $version) = ($version, $dir);
 
    (my $filename = (blessed $self || $self)) =~ s{ :: }{-}gmx;
-    $version = join '.', (split m{ [.] }mx, $version)[ 0, 1 ];
     $preversion and $version = "${preversion}-${version}";
     return catfile( $dir, "${filename}-${version}-${type}.sql" );
 }

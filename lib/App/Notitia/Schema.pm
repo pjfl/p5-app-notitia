@@ -2,15 +2,15 @@ package App::Notitia::Schema;
 
 use namespace::autoclean;
 
-use App::Notitia;
 use App::Notitia::Constants qw( AS_PASSWORD COMMA EXCEPTION_CLASS FALSE NUL
                                 OK QUOTED_RE SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::SMS;
-use App::Notitia::Util      qw( build_schema_version encrypted_attr
-                                load_file_data mail_domain to_dt );
+use App::Notitia::Util      qw( encrypted_attr load_file_data
+                                mail_domain to_dt );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
                                 io is_member squeeze throw trim );
+use Class::Usul::File;
 use Class::Usul::Types      qw( NonEmptySimpleStr );
 use Data::Record;
 use Data::Validation;
@@ -26,7 +26,7 @@ with    q(App::Notitia::Role::Schema);
 with    q(Web::Components::Role::Email);
 with    q(Web::Components::Role::TT);
 
-our $VERSION = $App::Notitia::VERSION;
+use App::Notitia; our $VERSION = $App::Notitia::VERSION;
 
 # Attribute constructors
 my $_build_admin_password = sub {
@@ -46,7 +46,7 @@ has '+database'       => default => sub { $_[ 0 ]->config->database };
 
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
-has '+schema_version' => default => sub { build_schema_version $VERSION };
+has '+schema_version' => default => sub { App::Notitia->schema_version.NUL };
 
 # Construction
 around 'deploy_file' => sub {
@@ -89,6 +89,10 @@ my $_word_iter = sub {
 };
 
 # Private methods
+my $_connect_attr = sub {
+   return { %{ $_[ 0 ]->connect_info->[ 3 ] }, %{ $_[ 0 ]->db_attr } };
+};
+
 my $_populate_blots = sub {
    my ($self, $dv, $cmap, $lno, $cols) = @_;
 
@@ -283,25 +287,73 @@ my $_populate_vehicles = sub {
 };
 
 my $_list_participents = sub {
-   my $self      = shift;
-   my $uri       = $self->options->{event};
-   my $event     = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $opts      = { columns => [ 'email_address', 'mobile_phone' ] };
-   my $person_rs = $self->schema->resultset( 'Person' );
+   my $self  = shift;
+   my $uri   = $self->options->{event};
+   my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $opts  = { columns => [ 'email_address', 'mobile_phone' ] };
+   my $rs    = $self->schema->resultset( 'Person' );
 
-   return $person_rs->list_participents( $event, $opts );
+   return $rs->list_participents( $event, $opts );
 };
 
 my $_list_people = sub {
-   my $self      = shift;
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $opts      = { columns => [ 'email_address', 'mobile_phone' ] };
-   my $role      = $self->options->{role};
+   my $self = shift;
+   my $rs   = $self->schema->resultset( 'Person' );
+   my $opts = { columns => [ 'email_address', 'mobile_phone' ] };
+   my $role = $self->options->{role};
 
-   not defined $self->options->{current} and $opts->{current} = TRUE;
+   $self->options->{status} and $opts->{status} = $self->options->{status};
 
-   return $role ? $person_rs->list_people( $role, $opts )
-                : $person_rs->list_all_people( $opts );
+   return $role ? $rs->list_people( $role, $opts )
+                : $rs->list_all_people( $opts );
+};
+
+my $_list_recipients = sub {
+   my $self = shift; my $path = io $self->options->{recipients};
+
+   ($path->exists and $path->is_file) or throw PathNotFound, [ $path ];
+
+   my $data = Class::Usul::File->data_load
+      ( paths => [ $path ], storage_class => 'JSON' ) // {}; $path->unlink;
+   my $rs   = $self->schema->resultset( 'Person' );
+
+   return [ map { [ $_->label, $_ ] }
+            map { $rs->find_by_shortcode( $_ ) }
+               @{ $data->{selected} // [] } ];
+};
+
+my $_load_from_stash = sub {
+   my ($self, $stash) = @_;
+
+   my $rs     = $self->schema->resultset( 'Person' );
+   my $person = $rs->find_by_shortcode( $stash->{shortcode} );
+
+   return [ [ $person->label, $person ] ];
+};
+
+my $_load_stash = sub {
+   my ($self, $plate_name, $quote) = @_; my $path = io $self->options->{stash};
+
+   ($path->exists and $path->is_file) or throw PathNotFound, [ $path ];
+
+   my $stash = Class::Usul::File->data_load
+      ( paths => [ $path ], storage_class => 'JSON' ) // {};
+   my $template = io( $plate_name )->all;
+
+   $stash->{quote} = $quote;
+   $path->unlink;
+
+   return $stash, $template;
+};
+
+my $_load_template = sub {
+   my ($self, $plate_name, $quote) = @_;
+
+   my $stash    = { app_name => $self->config->title, path => io( $plate_name ),
+                    sms_attributes => { quote => $quote }, };
+   my $template = load_file_data( $stash );
+
+   return $stash, $template;
 };
 
 my $_qualify_assets = sub {
@@ -321,11 +373,15 @@ my $_qualify_assets = sub {
 my $_send_email = sub {
    my ($self, $template, $person, $stash, $attaches) = @_;
 
+   $self->config->no_message_send and $self->info
+      ( 'Would email [_1]', { args => [ $person->shortcode ] } ) and return;
+
    $person->email_address =~ m{ \@ example\.com \z }imx and return;
 
    $template = "[% WRAPPER 'hyde/email_layout.tt' %]${template}[% END %]";
 
    $stash->{first_name} = $person->first_name;
+   $stash->{label     } = $person->label;
    $stash->{last_name } = $person->last_name;
    $stash->{username  } = $person->name;
 
@@ -364,10 +420,15 @@ my $_send_sms = sub {
    my $sender  = App::Notitia::SMS->new( $attr );
    my $message = $self->render_template( $stash );
 
+   $self->info( 'SMS message: '.$message );
+
    for my $person (map { $_->[ 1 ] } @{ $tuples }) {
       $person->mobile_phone and push @recipients,
          map { s{ \A 07 }{447}mx; $_ } $person->mobile_phone;
+      $self->log->debug( 'SMS recipient: '.$person->shortcode );
    }
+
+   $self->config->no_message_send and return;
 
    my $rv = $sender->send_sms( $message, @recipients );
 
@@ -548,6 +609,12 @@ sub backup_data : method {
    return OK;
 }
 
+sub create_ddl : method {
+   my $self = shift; $self->db_attr->{ignore_version} = TRUE;
+
+   return $self->SUPER::create_ddl;
+}
+
 sub dump_connect_attr : method {
    my $self = shift; $self->dumper( $self->connect_info ); return OK;
 }
@@ -603,23 +670,30 @@ sub import_people : method {
 sub send_message : method {
    my $self       = shift;
    my $conf       = $self->config;
+   my $opts       = $self->options;
+   my $sink       = $self->next_argv or throw Unspecified, [ 'message sink' ];
    my $plate_name = $self->next_argv or throw Unspecified, [ 'template name' ];
-   my $sink       = $self->next_argv // 'email';
-   my $quote      = $self->next_argv ? TRUE : FALSE;
-   my $stash      = { app_name       => $conf->title,
-                      path           => io( $plate_name ),
-                      sms_attributes => { quote => $quote }, };
-   my $template   = load_file_data( $stash );
-   my $attaches   = $self->$_qualify_assets( delete $stash->{attachments} );
-   my $tuples     = $self->options->{event} ? $self->$_list_participents
-                                            : $self->$_list_people;
+   my $quote      = $self->next_argv ? TRUE : $opts->{quote} ? TRUE : FALSE;
 
-   if ($sink eq 'sms') { $self->$_send_sms( $template, $tuples, $stash ) }
-   else {
+   my ($stash, $template) = $opts->{stash}
+                          ? $self->$_load_stash( $plate_name, $quote )
+                          : $self->$_load_template( $plate_name, $quote );
+
+   my $attaches = $self->$_qualify_assets( delete $stash->{attachments} );
+   my $tuples   = $opts->{stash}      ? $self->$_load_from_stash( $stash )
+                : $opts->{event}      ? $self->$_list_participents
+                : $opts->{recipients} ? $self->$_list_recipients
+                                      : $self->$_list_people;
+
+   if ($sink eq 'email') {
       for my $person (map { $_->[ 1 ] } @{ $tuples }) {
          $self->$_send_email( $template, $person, $stash, $attaches );
       }
    }
+   else { $self->$_send_sms( $template, $tuples, $stash ) }
+
+   $conf->sessdir eq substr $plate_name, 0, length $conf->sessdir
+      and unlink $plate_name;
 
    return OK;
 }
@@ -627,7 +701,7 @@ sub send_message : method {
 sub restore_data : method {
    my $self = shift; my $conf = $self->config;
 
-   my $path = $self->next_argv or throw Unspecified, [ 'pathname' ];
+   my $path = $self->next_argv or throw Unspecified, [ 'file name' ];
 
    $path = io $path; $path->exists or throw PathNotFound, [ $path ];
 
@@ -683,8 +757,17 @@ sub runqueue : method {
 sub upgrade_schema : method {
    my $self = shift;
 
-   $self->schema->upgrade_directory( $self->config->sharedir );
-   $self->schema->upgrade;
+   $self->preversion or throw Unspecified, [ 'preversion' ];
+   $self->create_ddl;
+
+   my $passwd = $self->password;
+   my $class  = $self->schema_class;
+   my $attr   = $self->$_connect_attr;
+   my $schema = $class->connect( $self->dsn, $self->user, $passwd, $attr );
+
+   $schema->storage->ensure_connected;
+   $schema->upgrade_directory( $self->config->sharedir );
+   $schema->upgrade;
    return OK;
 }
 
@@ -718,6 +801,10 @@ Defines the following attributes;
 =head1 Subroutines/Methods
 
 =head2 C<backup_data> - Creates a backup of the database and documents
+
+=head2 C<create_ddl> - Dump the database schema definition
+
+Creates the DDL for multiple RDBMs
 
 =head2 C<dump_connect_attr> - Displays database connection information
 

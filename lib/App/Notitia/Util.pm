@@ -23,18 +23,17 @@ use Unexpected::Functions      qw( ValidationErrors );
 use YAML::Tiny;
 
 our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
-                     bind_fields bool_data_type build_navigation
-                     build_schema_version build_tree button check_field_js
-                     check_form_field clone create_link date_data_type
-                     delete_button dialog_anchor display_duration
-                     encrypted_attr enhance enumerated_data_type field_options
-                     foreign_key_data_type get_hashed_pw get_salt
-                     is_access_authorised is_draft is_encrypted iterator
-                     js_server_config js_submit_config js_togglers_config
-                     js_window_config lcm_for load_file_data loc localise_tree
-                     mail_domain make_id_from make_name_from make_tip
-                     management_link mtime new_salt
-                     nullable_foreign_key_data_type
+                     bind_fields bool_data_type build_navigation build_tree
+                     button check_field_js check_form_field clone create_link
+                     date_data_type delete_button dialog_anchor
+                     display_duration encrypted_attr enhance
+                     enumerated_data_type field_options foreign_key_data_type
+                     get_hashed_pw get_salt is_access_authorised is_draft
+                     is_encrypted iterator js_config js_server_config
+                     js_submit_config js_togglers_config js_window_config
+                     lcm_for load_file_data loc localise_tree locm mail_domain
+                     make_id_from make_name_from make_tip management_link mtime
+                     new_salt nullable_foreign_key_data_type
                      nullable_numerical_id_data_type nullable_varchar_data_type
                      numerical_id_data_type operation_links page_link_set
                      register_action_paths save_button serial_data_type
@@ -303,14 +302,6 @@ sub build_navigation ($$) {
    }
 
    return \@nav;
-}
-
-sub build_schema_version ($) {
-   my $version = shift; my ($major, $minor) = $version =~ m{ (\d+) \. (\d+) }mx;
-
-   # TODO: This will break when major number bumps
-
-   return $major.'.'.($minor + 1);
 }
 
 sub build_tree {
@@ -590,6 +581,21 @@ sub iterator ($) {
    };
 }
 
+sub js_config ($$$) {
+   my ($page, $name, $params) = @_;
+
+   my $k      = $params->[ 0 ];
+   my $event  = $params->[ 1 ];
+   my $method = $params->[ 2 ];
+   my $args   = $json_coder->encode( $params->[ 3 ] );
+
+   return push @{ $page->{literal_js} //= [] },
+        "   behaviour.config.${name}[ '${k}' ] = {",
+        "      event     : '${event}',",
+        "      method    : '${method}',",
+        "      args      : ${args} };";
+}
+
 sub js_server_config ($$$$) {
    my ($k, $event, $method, $args) = @_; $args = $json_coder->encode( $args );
 
@@ -667,7 +673,11 @@ sub localise_tree ($$) {
    return FALSE;
 }
 
-sub mail_domain {
+sub locm ($@) {
+   my $req = shift; return loc $req, to_msg( @_ );
+}
+
+sub mail_domain () {
    my $mailname_path = io[ NUL, 'etc', 'mailname' ]; my $domain = 'example.com';
 
    $mailname_path->exists and $domain = $mailname_path->chomp->getline;
@@ -1010,8 +1020,6 @@ Defines no attributes
 
 =item C<build_navigation>
 
-=item C<build_schema_version>
-
 =item C<build_tree>
 
 =item C<button>
@@ -1058,6 +1066,8 @@ Greatest common factor
 
 =item C<iterator>
 
+=item C<js_config>
+
 =item C<js_server_config>
 
 =item C<js_submit_config>
@@ -1079,6 +1089,8 @@ LCM for a list of integers
 =item C<loc>
 
 =item C<localise_tree>
+
+=item C<locm>
 
 =item C<make_id_from>
 

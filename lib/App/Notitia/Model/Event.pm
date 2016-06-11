@@ -223,10 +223,10 @@ my $_participent_links = sub {
 my $_participent_ops_links = sub {
    my ($self, $req, $page, $params) = @_;
 
-   $params->{name} = 'message_participents';
-
+   my $name         = 'message_participents';
    my $actionp      = $self->moniker.'/message';
-   my $message_link = $self->message_link( $req, $page, $actionp, $params );
+   my $href         = uri_for_action $req, $actionp, [], $params;
+   my $message_link = $self->message_link( $req, $page, $href, $name );
 
    return operation_links [ $message_link ];
 };
@@ -502,15 +502,13 @@ sub events : Role(any) {
 }
 
 sub message : Role(event_manager) {
-   my ($self, $req) = @_;
-
-   my $opts = { action => 'message-participents', layout => 'message-people' };
-
-   return $self->message_stash( $req, $opts );
+   my ($self, $req) = @_; return $self->message_stash( $req );
 }
 
 sub message_create_action : Role(event_manager) {
-   return $_[ 0 ]->message_create( $_[ 1 ], { action => 'events' } );
+   my ($self, $req) = @_;
+
+   return $self->message_create( $req, { action => 'events' } );
 }
 
 sub participate_event_action : Role(any) {
@@ -534,19 +532,23 @@ sub participents : Role(any) {
 
    my $uri       =  $req->uri_params->( 0 );
    my $event     =  $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $actionp   =  $self->moniker.'/participents';
+   my $params    =  { event => $uri };
    my $page      =  {
       fields     => {
          headers => $_participent_headers->( $req ),
          rows    => [], },
+      form       => {
+         name    => 'message-participents',
+         href    => uri_for_action $req, $actionp, [ $uri ], $params },
       template   => [ 'contents', 'table' ],
       title      =>
          loc( $req, to_msg 'participents_management_heading', $event->name ) };
    my $person_rs =  $self->schema->resultset( 'Person' );
-   my $opts      =  { event => $uri };
    my $fields    =  $page->{fields};
    my $rows      =  $fields->{rows};
 
-   $fields->{links} = $self->$_participent_ops_links( $req, $page, $opts );
+   $fields->{links} = $self->$_participent_ops_links( $req, $page, $params );
 
    for my $tuple (@{ $person_rs->list_participents( $event ) }) {
       push @{ $rows },
