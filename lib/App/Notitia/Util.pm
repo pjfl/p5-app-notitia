@@ -122,9 +122,9 @@ my $_page_link = sub {
             hint  => loc( $req, 'Hint' ),
             href  => uri_for_action( $req, $actionp, $args, $params ),
             name  => $name,
-            tip   => loc( $req, to_msg( "${name}_tip", $page ) ),
+            tip   => locm( $req, "${name}_tip", $page ),
             type  => 'link',
-            value => loc( $req, to_msg( "${name}_link", $page ) ), };
+            value => locm( $req, "${name}_link", $page ), };
 };
 
 my $sorted_keys = sub {
@@ -402,7 +402,7 @@ sub create_link ($$$;$) {
             hint  => loc( $req, 'Hint' ),
             href  => uri_for_action( $req, $actionp, $opts->{args} // [] ),
             name  => "create_${k}",
-            tip   => loc( $req, "${k}_create_tip", [ $k ] ),
+            tip   => locm( $req, "${k}_create_tip", $k ),
             type  => 'link',
             value => loc( $req, "${k}_create_link" ) };
 }
@@ -702,9 +702,11 @@ sub make_name_from ($) {
 }
 
 sub make_tip ($$;$) {
-   my ($req, $k, $args) = @_; $args //= [];
+   my ($req, $k, $args) = @_;
 
-   return loc( $req, 'Hint' ).SPC.TILDE.SPC.loc( $req, $k, $args );
+   $args = [ map { s{_}{ }gmx; $_ } grep { defined } @{ $args // [] } ];
+
+   return loc( $req, 'Hint' ).SPC.TILDE.SPC.locm( $req, $k, @{ $args } );
 }
 
 sub management_link ($$$;$) {
@@ -719,14 +721,14 @@ sub management_link ($$$;$) {
                   hint  => loc( $req, 'Hint' ),
                   href  => $href,
                   name  => "${name}-${action}",
-                  tip   => loc( $req, "${action}_management_tip", @{ $args } ),
+                  tip   => locm( $req, "${action}_management_tip", @{ $args } ),
                   type  => $type,
                   value => loc( $req, "${action}_management_link" ), };
 
    if ($type eq 'form_button') {
       $button->{action   } = "${name}_${action}";
       $button->{form_name} = "${name}-${action}";
-      $button->{tip      } = loc( $req, "${name}_${action}_tip", @{ $args } );
+      $button->{tip      } = locm( $req, "${name}_${action}_tip", @{ $args } );
       $button->{value    } = loc( $req, "${name}_${action}_link" );
    }
 

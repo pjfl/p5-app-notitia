@@ -3,12 +3,12 @@ package App::Notitia::Form;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use App::Notitia::Util      qw( field_options );
+use App::Notitia::Util      qw( field_options make_tip );
 use App::Notitia::Constants qw( FALSE NUL TRUE );
 use Class::Usul::Functions  qw( is_arrayref is_hashref throw );
 use Scalar::Util            qw( blessed );
 
-our @EXPORT_OK = qw( blank_form f_list f_tag p_button p_checkbox
+our @EXPORT_OK = qw( blank_form f_list f_tag p_action p_button p_checkbox
                      p_container p_date p_fields p_hidden p_image p_label
                      p_password p_radio p_rows p_select p_table p_tag p_text
                      p_textarea p_textfield );
@@ -106,6 +106,26 @@ sub f_tag (@) {
    $opts->{orig_type} = delete $opts->{type}; $content //= NUL;
 
    return { %{ $opts }, content => $content, tag => $tag, type => 'tag' };
+}
+
+sub p_action ($@) {
+   my ($f, $action, $args, $opts) = @_; $opts //= {};
+
+   my $type   = $args->[ 0 ];
+   my $prefix = $action eq 'create' ? 'save-'
+              : $action eq 'delete' ? 'delete-'
+              : $action eq 'update' ? 'save-'
+              : NUL;
+   my $conk   = $action eq 'create' ? 'right-last'
+              : $action eq 'delete' ? 'right'
+              : $action eq 'update' ? 'right-last'
+              : NUL;
+   my $req    = delete $opts->{request};
+   my $tip    = $req ? make_tip $req, "${action}_tip", $args : NUL;
+
+   return p_button( $f, $action, "${action}_${type}", {
+      class => "${prefix}button", container_class => $conk,
+      tip   => $tip, %{ $opts } } );
 }
 
 sub p_button ($@) {

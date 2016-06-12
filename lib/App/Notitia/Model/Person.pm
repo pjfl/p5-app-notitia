@@ -2,7 +2,7 @@ package App::Notitia::Model::Person;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Form      qw( blank_form f_list p_button p_container
+use App::Notitia::Form      qw( blank_form f_list p_action p_button p_container
                                 p_fields p_rows p_table );
 use App::Notitia::Util      qw( check_field_js create_link dialog_anchor loc
                                 make_tip management_link page_link_set
@@ -45,9 +45,6 @@ around 'get_stash' => sub {
 
    return $stash;
 };
-
-# Private class attributes
-my $_people_links_cache = {};
 
 # Private functions
 my $_add_person_js = sub {
@@ -113,7 +110,7 @@ my $_contact_links = sub {
                                     type  => 'checkbox',
                                     value => $nok->shortcode } : NUL };
 
-   return @links;
+   return [ { value => $person->label }, @links ];
 };
 
 my $_maybe_find_person = sub {
@@ -135,28 +132,24 @@ my $_people_headers = sub {
 };
 
 my $_people_links = sub {
-   my ($req, $person, $params) = @_; my $role = $params->{role};
+   my ($req, $params, $person) = @_; my $role = $params->{role};
 
    $params->{type} and $params->{type} eq 'contacts'
                    and return $_contact_links->( $req, $person );
 
-   my $scode = $person->shortcode;
-   my $k     = $role ? "${role}_${scode}" : $scode;
-   my $links = $_people_links_cache->{ $k }; $links and return @{ $links };
+   my @links; my $scode = $person->shortcode;
+
    my @paths = ( 'person/person', 'role/role', 'certs/certifications' );
 
    $role and ($role eq 'bike_rider' or $role eq 'driver')
          and push @paths, 'blots/endorsements';
 
-   $links = [];
 
    for my $actionp ( @paths ) {
-      push @{ $links }, { value => management_link( $req, $actionp, $scode ) };
+      push @links, { value => management_link( $req, $actionp, $scode ) };
    }
 
-   $_people_links_cache->{ $k } = $links;
-
-   return @{ $links };
+   return [ { value => $person->label }, @links ];
 };
 
 my $_people_title = sub {
@@ -301,19 +294,19 @@ my $_bind_person_fields = sub {
       subscription     => { disabled => $disabled, type => 'date' },
       badge_id         => { disabled => $person->badge_id ? TRUE : $disabled,
                             tip      => make_tip( $req, 'badge_id_field_tip'),
-                              value    => $is_create ? 'next' : undef },
+                            value    => $is_create ? 'next' : undef },
       badge_expires    => { disabled => $disabled, type => 'date' },
       notes            => $disabled ? FALSE : {
          class         => 'standard-field autosize', type => 'textarea' },
       name             => { class    => 'standard-field',
                             disabled => $disabled, label => 'username',
                             tip => make_tip( $req, 'username_field_tip' ) },
-      active           => $disabled ? FALSE : {
+      active           => $is_create || $disabled ? FALSE : {
          checked       => $person->active, type => 'checkbox' },
-      password_expired => $disabled ? FALSE : {
+      password_expired => $is_create || $disabled ? FALSE : {
          checked       => $person->password_expired,
          label_class   => 'right-last', type => 'checkbox' },
-      enable_2fa       => $disabled ? FALSE : {
+      enable_2fa       => $is_create || $disabled ? FALSE : {
          checked       => $person->totp_secret ? TRUE : FALSE,
          type          => 'checkbox' },
       ];
@@ -416,33 +409,29 @@ sub person : Role(person_manager) {
    my ($self, $req) = @_; my $people;
 
    my $actionp    =  $self->moniker.'/person';
-   my $person_rs  =  $self->schema->resultset( 'Person' );
    my $name       =  $req->uri_params->( 0, { optional => TRUE } );
-   my $person     =  $_maybe_find_person->( $person_rs, $name );
    my $href       =  uri_for_action $req, $actionp, [ $name ];
    my $form       =  blank_form 'person-admin', $href;
    my $action     =  $name ? 'update' : 'create';
-   my $opts       =  { action => $action };
-   my $fields     =  $self->$_bind_person_fields( $req, $form, $person, $opts );
-   my $title      =  $name ? 'person_edit_heading' : 'person_create_heading';
    my $page       =  {
       first_field => 'first_name',
       forms       => [ $form ],
       template    => [ 'contents' ],
-      title       => loc $req, $title };
+      title       => loc $req,  "person_${action}_heading" };
+   my $person_rs  =  $self->schema->resultset( 'Person' );
+   my $person     =  $_maybe_find_person->( $person_rs, $name );
+   my $opts       =  { action => $action };
+   my $fields     =  $self->$_bind_person_fields( $req, $form, $person, $opts );
+   my $args       =  [ 'person', $person->label ];
 
    p_container $form, $_person_ops_links->( $req, $page, $actionp, $name ), {
       class => 'operation-links align-right right-last' };
 
    p_fields $form, $self->schema, 'Person', $person, $fields;
 
-   p_button $form, $action, "${action}_person", {
-      class => 'save-button', container_class => 'right-last',
-      tip   => make_tip( $req, "${action}_tip", [ 'person', $name ] ) };
+   p_action $form, $action, $args, { request => $req };
 
-   $name and p_button $form, 'delete', 'delete_person', {
-      class => 'delete-button', container_class => 'right',
-      tip   => make_tip( $req, 'delete_tip', [ 'person', $name ] ) };
+   $name and p_action $form, 'delete', $args, { request => $req };
 
    $_add_person_js->( $page, $name ),
 
@@ -472,6 +461,7 @@ sub person_summary : Role(person_manager) Role(address_viewer) {
 sub people : Role(any) {
    my ($self, $req, $type) = @_;
 
+   my $actionp   =  $self->moniker.'/people';
    my $params    =  $req->query_params->( { optional => TRUE } );
    my $role      =  $params->{role  };
    my $status    =  $params->{status};
@@ -483,16 +473,15 @@ sub people : Role(any) {
                       rows   => $req->session->rows_per_page,
                       status => $status,
                       type   => $type, };
-   my $person_rs =  $self->schema->resultset( 'Person' );
-   my $people    =  $person_rs->search_for_people( $opts );
-   my $moniker   =  $self->moniker;
-   my $href      =  uri_for_action $req, "${moniker}/people", [], $params;
+   my $href      =  uri_for_action $req, $actionp, [], $params;
    my $form      =  blank_form 'people', $href, {
       class      => 'wider-table', id => 'people' };
    my $page      =  {
       forms      => [ $form ],
       template   => [ 'contents' ],
       title      => $_people_title->( $req, $role, $status, $type ), };
+   my $person_rs =  $self->schema->resultset( 'Person' );
+   my $people    =  $person_rs->search_for_people( $opts );
    my $list      =  f_list '&nbsp;|&nbsp;',
       $self->$_people_ops_links( $req, $page, $params, $people->pager );
    my $class     =  'operation-links align-right right-last';
@@ -503,9 +492,8 @@ sub people : Role(any) {
 
    $type eq 'contacts' and $table->{class} = 'smaller-table';
 
-   p_rows $table,
-      [ map { [ { value => $_->label }, $_people_links->( $req, $_, $params ) ]}
-        $people->all ];
+   p_rows $table, [ map { $_people_links->( $req, $params, $_ ) }
+                    $people->all ];
 
    p_container $form, $list, { class => $class };
 

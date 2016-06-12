@@ -2,10 +2,11 @@ package App::Notitia::Model::Certification;
 
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( bind bind_fields check_field_js
-                                delete_button loc management_link
-                                operation_links register_action_paths
-                                save_button to_dt to_msg uri_for_action );
+use App::Notitia::Form      qw( blank_form f_list p_action p_container
+                                p_fields p_rows p_table p_textfield );
+use App::Notitia::Util      qw( check_field_js loc locm management_link
+                                register_action_paths to_dt to_msg
+                                uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -39,23 +40,23 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_add_cert_links = sub {
-   my ($req, $action, $name) = @_;
-
-   return operation_links [ {
-      class => 'fade',
-      hint  => loc( $req, 'Hint' ),
-      href  => uri_for_action( $req, $action, [ $name ] ),
-      name  => 'add_cert',
-      tip   => loc( $req, 'add_cert_tip', [ 'certification', $name ] ),
-      type  => 'link',
-      value => loc( $req, 'add_cert' ) } ];
-};
-
 my $_certs_headers = sub {
    my $req = shift;
 
    return [ map { { value => loc( $req, "certs_heading_${_}" ) } } 0 .. 1 ];
+};
+
+my $_certs_ops_links = sub {
+   my ($req, $action, $person) = @_;
+
+   return f_list '&nbsp;|&nbsp;', [ {
+      class => 'fade',
+      hint  => loc( $req, 'Hint' ),
+      href  => uri_for_action( $req, $action, [ $person->shortcode ] ),
+      name  => 'add_cert',
+      tip   => locm( $req, 'add_cert_tip', 'certification', $person->label ),
+      type  => 'link',
+      value => loc( $req, 'add_cert' ) } ];
 };
 
 # Private methods
@@ -66,28 +67,16 @@ my $_add_certification_js = sub {
    return [ check_field_js( 'completed', $opts ), ];
 };
 
-my $_bind_cert_fields = sub {
-   my ($self, $cert) = @_;
-
-   my $map      =  {
-      completed => { class => 'standard-field server' },
-      notes     => { class => 'standard-field autosize' },
-   };
-
-   return bind_fields $self->schema, $cert, $map, 'Certification';
-};
-
 my $_cert_links = sub {
-   my ($self, $req, $name, $type) = @_;
+   my ($self, $req, $name, $cert) = @_;
 
-   my $links = [];my $opts = { args => [ $name, $type ] };
+   my @links; my $opts = { args => [ $name, $cert->type ] };
 
    for my $actionp (map { $self->moniker."/${_}" } 'certification' ) {
-      push @{ $links }, {
-         value => management_link( $req, $actionp, $name, $opts ) };
+      push @links, { value => management_link( $req, $actionp, $name, $opts ) };
    }
 
-   return @{ $links };
+   return [ { value => $cert->label( $req ) }, @links ];
 };
 
 my $_list_all_certs = sub {
@@ -123,38 +112,51 @@ my $_update_cert_from_request = sub {
    return;
 };
 
+my $_bind_cert_fields = sub {
+   my ($self, $cert, $opts) = @_;
+
+   my $updating  = $opts->{action} eq 'update' ? TRUE : FALSE;
+   my $completed = $updating ? $cert->completed : to_dt time2str '%Y-%m-%d';
+
+   return
+   [  cert_type   => !$updating ? FALSE : {
+         disabled => TRUE, value => loc $opts->{request}, $cert->type },
+      cert_types  => $updating ? FALSE : {
+         type     => 'select', value => $self->$_list_all_certs() },
+      completed   => { class => 'standard-field server', type => 'date',
+                       value => $completed },
+      notes       => { class => 'standard-field autosize', type => 'textarea' },
+      ];
+};
+
 # Public functions
 sub certification : Role(person_manager) {
    my ($self, $req) = @_;
 
+   my $actionp   =  $self->moniker.'/certification';
    my $name      =  $req->uri_params->( 0 );
    my $type      =  $req->uri_params->( 1, { optional => TRUE } );
-   my $cert      =  $self->$_maybe_find_cert( $name, $type );
+   my $href      =  uri_for_action $req, $actionp, [ $name, $type ];
+   my $action    =  $type ? 'update' : 'create';
+   my $form      =  blank_form 'certification-admin', $href;
    my $page      =  {
-      fields     => $self->$_bind_cert_fields( $cert ),
+      forms      => [ $form ],
       literal_js => $self->$_add_certification_js(),
-      template   => [ 'contents', 'certification' ],
-      title      => loc( $req, $type ? 'certification_edit_heading'
-                                     : 'certification_create_heading' ), };
+      template   => [ 'contents' ],
+      title      => loc $req, "certification_${action}_heading" };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $name );
-   my $fields    =  $page->{fields};
-   my $args      =  [ $name ];
+   my $cert      =  $self->$_maybe_find_cert( $name, $type );
+   my $args      =  [ 'certification', $person->label ];
 
-   if ($type) {
-      my $opts = { disabled => TRUE }; $args = [ $name, $type ];
+   p_textfield $form, 'username', $person->label, { disabled => TRUE };
 
-      $fields->{cert_type} = bind 'cert_type', loc( $req, $type ), $opts;
-      $fields->{delete} = delete_button $req, $type, { type => 'certification'};
-   }
-   else {
-      $fields->{completed } = bind 'completed', time2str '%d/%m/%Y';
-      $fields->{cert_types} = bind 'cert_types', $self->$_list_all_certs();
-   }
+   p_fields $form, $self->schema, 'Certification', $cert,
+      $self->$_bind_cert_fields( $cert, { action => $action, request => $req });
 
-   $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
-   $fields->{save} = save_button $req, $type, { type => 'certification' };
-   $fields->{href} = uri_for_action $req, 'certs/certification', $args;
+   p_action $form, $action, $args, { request => $req };
+
+   $type and p_action $form, 'delete', $args, { request => $req };
 
    return $self->get_stash( $req, $page );
 }
@@ -162,28 +164,26 @@ sub certification : Role(person_manager) {
 sub certifications : Role(person_manager) {
    my ($self, $req) = @_;
 
+   my $actionp =  $self->moniker.'/certification';
    my $scode   =  $req->uri_params->( 0 );
+   my $form    =  blank_form;
+   my $page    =  {
+      forms    => [ $form ],
+      template => [ 'contents' ],
+      title    => loc $req, 'certificates_management_heading' };
    my $schema  =  $self->schema;
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );
-   my $page    =  {
-      fields   => {
-         certs => {
-            headers => $_certs_headers->( $req ), rows => [] },
-         name  => { disabled => TRUE, label => loc( $req, 'Username' ),
-                    name => 'username', value => $person->label }, },
-      template => [ 'contents', 'certifications' ],
-      title    => loc( $req, 'certificates_management_heading' ), };
-   my $cert_rs =  $self->schema->resultset( 'Certification' );
-   my $actionp =  $self->moniker.'/certification';
-   my $rows    =  $page->{fields}->{certs}->{rows};
+   my $cert_rs =  $schema->resultset( 'Certification' );
 
-   $page->{fields}->{links} = $_add_cert_links->( $req, $actionp, $scode );
+   p_textfield $form, 'username', $person->label, { disabled => TRUE };
 
-   for my $cert ($cert_rs->search_for_certifications( $scode )->all) {
-      push @{ $rows },
-         [ { value => $cert->label( $req ) },
-           $self->$_cert_links( $req, $scode, $cert->type ) ];
-   }
+   my $table = p_table $form, { headers => $_certs_headers->( $req ) };
+
+   p_rows $table, [ map { $self->$_cert_links( $req, $scode, $_ ) }
+                    $cert_rs->search_for_certifications( $scode )->all ];
+
+   p_container $form, $_certs_ops_links->( $req, $actionp, $person ), {
+      class => 'operation-links align-right right-last' };
 
    return $self->get_stash( $req, $page );
 }

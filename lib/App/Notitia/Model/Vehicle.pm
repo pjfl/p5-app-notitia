@@ -2,9 +2,9 @@ package App::Notitia::Model::Vehicle;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_list f_tag p_button p_container
-                                p_date p_fields p_hidden p_rows p_select
-                                p_table p_tag p_textfield );
+use App::Notitia::Form      qw( blank_form f_list f_tag p_action p_button
+                                p_container p_date p_fields p_hidden p_rows
+                                p_select p_table p_tag p_textfield );
 use App::Notitia::Util      qw( assign_link bind check_field_js create_link
                                 display_duration loc make_tip management_link
                                 page_link_set register_action_paths
@@ -646,36 +646,32 @@ sub update_vehicle_action : Role(rota_manager) {
 sub vehicle : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $schema     =  $self->schema;
    my $actionp    =  $self->moniker.'/vehicle';
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
-   my $vehicle    =  $_maybe_find_vehicle->( $schema, $vrn );
    my $href       =  uri_for_action $req, $actionp, [ $vrn ];
    my $form       =  blank_form 'vehicle-admin', $href;
-   my $title      =  $vrn ? 'vehicle_edit_heading' : 'vehicle_create_heading';
    my $action     =  $vrn ? 'update' : 'create';
    my $page       =  {
       first_field => 'vrn',
       forms       => [ $form ],
       literal_js  => $_add_vehicle_js->( $vrn ),
       template    => [ 'contents' ],
-      title       => loc $req, $title };
+      title       => loc $req, "vehicle_${action}_heading" };
+   my $schema     =  $self->schema;
+   my $vehicle    =  $_maybe_find_vehicle->( $schema, $vrn );
    my $fields     =  $_bind_vehicle_fields->( $schema, $req, $vehicle ),
    my $link       =  create_link $req, $actionp, 'vehicle', {
       container_class => 'add-link' };
+   my $args       =  [ 'vehicle',  $vehicle->label ];
 
    $vrn and p_container $form, f_list( '&nbsp;|&nbsp;', [ $link ] ),
       { class => 'operation-links align-right right-last' };
 
    p_fields $form, $self->schema, 'Vehicle', $vehicle, $fields;
 
-   p_button $form, $action, "${action}_vehicle", {
-      class => 'save-button ', container_class => 'right-last',
-      tip   => make_tip $req, "${action}_tip", [ 'vehicle', $vrn ] };
+   p_action $form, $action, $args, { request => $req };
 
-   $vrn and p_button $form, 'delete', 'delete_vehicle', {
-      class => 'delete-button', container_class => 'right',
-      tip   => make_tip $req, 'delete_tip', [ 'vehicle', $vrn ] };
+   $vrn and p_action $form, 'delete', $args, { request => $req };
 
    return $self->get_stash( $req, $page );
 }
@@ -691,7 +687,7 @@ sub vehicle_events : Role(rota_manager) {
                     before     => $before ? to_dt( $before ) : FALSE,
                     event_type => 'vehicle',
                     vehicle    => $vrn, };
-   my $form    =  blank_form NUL, { class => 'wide-form no-header-wrap' };
+   my $form    =  blank_form { class => 'wide-form no-header-wrap' };
    my $page    =  {
       forms    => [ $form ],
       template => [ 'contents' ],

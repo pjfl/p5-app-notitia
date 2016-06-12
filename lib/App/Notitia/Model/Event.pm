@@ -2,8 +2,9 @@ package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_list p_button p_container p_fields
-                                p_rows p_table p_tag p_text p_textfield );
+use App::Notitia::Form      qw( blank_form f_list p_action p_button p_container
+                                p_fields p_rows p_table p_tag p_text
+                                p_textfield );
 use App::Notitia::Util      qw( check_field_js create_link display_duration loc
                                 locm make_tip management_link page_link_set
                                 register_action_paths to_dt to_msg
@@ -399,17 +400,16 @@ sub event : Role(event_manager) {
    my $actionp    =  $self->moniker.'/event';
    my $uri        =  $req->uri_params->( 0, { optional => TRUE } );
    my $date       =  $req->query_params->( 'date', { optional => TRUE } );
-   my $event      =  $self->$_maybe_find_event( $uri );
-   my $title      =  $uri ? 'event_edit_heading' : 'event_create_heading';
-   my $action     =  $uri ? 'update' : 'create';
    my $href       =  uri_for_action $req, $actionp, [ $uri ];
    my $form       =  blank_form 'event-admin', $href;
+   my $action     =  $uri ? 'update' : 'create';
    my $page       =  {
       first_field => 'name',
       forms       => [ $form ],
       literal_js  => $self->$_add_event_js(),
       template    => [ 'contents' ],
-      title       => loc $req, $title };
+      title       => loc $req, "event_${action}_heading" };
+   my $event      =  $self->$_maybe_find_event( $uri );
 
    $uri and p_container $form, $_event_ops_links->( $req, $actionp, $uri ), {
       class => 'operation-links align-right right-last' };
@@ -417,13 +417,9 @@ sub event : Role(event_manager) {
    p_fields $form, $self->schema, 'Event', $event,
       $self->$_bind_event_fields( $event, { date => $date } );
 
-   p_button $form, $action, "${action}_event", {
-      class => 'save-button', container_class => 'right-last',
-      tip   => make_tip( $req, "${action}_tip", [ 'event', $uri ] ) };
+   p_action $form, $action, [ 'event', $uri ], { request => $req };
 
-   $uri and p_button $form, 'delete', 'delete_event', {
-      class => 'delete-button', container_class => 'right',
-      tip   => make_tip( $req, 'delete_tip', [ 'event', $uri ] ) };
+   $uri and p_action $form, 'delete', [ 'event', $uri ], { request => $req };
 
    return $self->get_stash( $req, $page );
 }
@@ -624,32 +620,27 @@ sub vehicle_event : Role(rota_manager) {
    my $actionp    =  $self->moniker.'/vehicle_event';
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
    my $uri        =  $req->uri_params->( 1, { optional => TRUE } );
-   my $event      =  $self->$_maybe_find_event( $uri );
-   my $action     =  $uri ? 'update' : 'create';
-   my $title      =  $uri ? 'vehicle_event_edit_heading'
-                          : 'vehicle_event_create_heading';
-   my $label      =  $uri ? $event->vehicle->label : $vrn;
    my $href       =  uri_for_action $req, $actionp, [ $vrn, $uri ];
    my $form       =  blank_form 'vehicle-event-admin', $href;
+   my $action     =  $uri ? 'update' : 'create';
    my $page       =  {
       first_field => 'name',
       forms       => [ $form ],
       literal_js  => $self->$_add_event_js(),
       template    => [ 'contents' ],
-      title       => loc $req, $title };
+      title       => loc $req, "vehicle_event_${action}_heading" };
+   my $event      =  $self->$_maybe_find_event( $uri );
+   my $label      =  $uri ? $event->vehicle->label : $vrn;
+   my $args       =  [ 'vehicle event', $label ];
 
    p_textfield $form, 'vehicle', $label, { disabled => TRUE };
 
    p_fields $form, $self->schema, 'Event', $event,
       $self->$_bind_event_fields( $event, { vehicle_event => TRUE } );
 
-   p_button $form, $action, "${action}_vehicle_event", {
-      class => 'save-button', container_class => 'right-last',
-      tip   => make_tip( $req, "${action}_tip", [ 'vehicle event', $uri ] ) };
+   p_action $form, $action, $args, { request => $req };
 
-   $uri and p_button $form, 'delete', 'delete_vehicle_event', {
-      class => 'delete-button', container_class => 'right',
-      tip   => make_tip( $req, 'delete_tip', [ 'vehicle event', $uri ] ) };
+   $uri and p_action $form, 'delete', $args, { request => $req };
 
    return $self->get_stash( $req, $page );
 }

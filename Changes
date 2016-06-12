@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Certs. and Blots. using stash.page.forms
           - Admin model using stash.page.forms
           - Event model using stash.page.forms
           - Vehicle model using stash.page.forms
