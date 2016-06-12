@@ -2,8 +2,10 @@ package App::Notitia::Model::Role;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( bind button loc register_action_paths to_msg
-                                uri_for_action );
+use App::Notitia::Form      qw( blank_form f_tag p_button p_container
+                                p_select p_textfield );
+use App::Notitia::Util      qw( loc make_tip register_action_paths
+                                to_msg uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Moo;
 
@@ -31,16 +33,6 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_add_role_button = sub {
-   return button $_[ 0 ], { class => 'right-last' }, 'add', 'role',
-                 [ 'role', $_[ 1 ] ];
-};
-
-my $_remove_role_button = sub {
-   return button $_[ 0 ], { class => 'right-last' }, 'remove', 'role',
-                 [ 'role', $_[ 1 ] ];
-};
-
 my $_subtract = sub {
    return [ grep { is_arrayref $_ or not is_member $_, $_[ 1 ] } @{ $_[ 0 ] } ];
 };
@@ -96,22 +88,31 @@ sub role : Role(administrator) Role(person_manager) {
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $name );
    my $href      =  uri_for_action $req, $self->moniker.'/role', [ $name ];
+   my $form      =  blank_form 'role-admin', $href;
    my $page      =  {
-      fields     => { href => $href },
-      template   => [ 'contents', 'role' ],
-      title      => loc( $req, 'role_management_heading' ), };
-   my $fields    =  $page->{fields};
+      forms      => [ $form ],
+      template   => [ 'contents' ],
+      title      => loc $req, 'role_management_heading' };
 
    my $person_roles = $person->list_roles;
    my $available    = $_subtract->( $self->$_list_all_roles, $person_roles );
 
-   $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
-   $fields->{roles}
-      = bind 'roles', $available, { multiple => TRUE, size => 10 };
-   $fields->{person_roles}
-      = bind 'person_roles', $person_roles, { multiple => TRUE, size => 5 };
-   $fields->{add   } = $_add_role_button->( $req, $name );
-   $fields->{remove} = $_remove_role_button->( $req, $name );
+   p_textfield $form, 'username', $person->label, { disabled => TRUE };
+
+   p_select $form, 'person_roles', $person_roles, {
+      multiple => TRUE, size => 5 };
+
+   p_button $form, 'remove_role', 'remove_role', {
+      class => 'delete-button', container_class => 'right-last',
+      tip   => make_tip( $req, 'remove_role_tip', [ 'role', $name ] ) };
+
+   p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
+
+   p_select $form, 'roles', $available, { multiple => TRUE, size => 5 };
+
+   p_button $form, 'add_role', 'add_role', {
+      class => 'save-button', container_class => 'right-last',
+      tip   => make_tip( $req, 'add_role_tip', [ 'role', $name ] ) };
 
    return $self->get_stash( $req, $page );
 }
