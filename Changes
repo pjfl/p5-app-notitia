@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Defaulted and renamed the menu template
           - Removed unused templates
           - Certs. and Blots. using stash.page.forms
           - Admin model using stash.page.forms

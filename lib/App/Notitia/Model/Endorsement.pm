@@ -180,7 +180,6 @@ sub endorsement : Role(person_manager) {
       first_field => $uri ? 'endorsed' : 'type_code',
       forms       => [ $form ],
       literal_js  => $self->$_add_endorsement_js(),
-      template    => [ 'contents' ],
       title       => loc $req, "endorsement_${action}_heading" };
    my $blot       =  $self->$_maybe_find_endorsement( $name, $uri );
    my $person_rs  =  $self->schema->resultset( 'Person' );
@@ -207,7 +206,6 @@ sub endorsements : Role(person_manager) {
    my $form    =  blank_form;
    my $page    =  {
       forms    => [ $form ],
-      template => [ 'contents' ],
       title    => loc $req, 'endorsements_management_heading' };
    my $schema  =  $self->schema;
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );

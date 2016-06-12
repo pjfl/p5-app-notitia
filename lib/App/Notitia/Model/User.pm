@@ -121,7 +121,6 @@ sub change_password : Role(anon) {
       first_field => $username ? 'oldpass' : 'username',
       forms       => [ $form ],
       location    => 'change_password',
-      template    => [ 'contents' ],
       title       => locm $req, 'change_password_title', $self->config->title };
 
    p_textfield $form, 'username', $username;
@@ -171,7 +170,6 @@ sub login : Role(anon) {
       first_field => 'username',
       forms       => [ $form ],
       location    => 'login',
-      template    => [ 'contents' ],
       title       => locm $req, 'login_title', $self->config->title };
 
    p_textfield $form, 'username',  NUL, { class => 'standard-field server' };
@@ -377,7 +375,6 @@ sub totp_secret : Role(anon) {
    my $page      =  {
       forms      => [ $form ],
       location   => 'totp_secret',
-      template   => [ 'contents' ],
       title      => locm $req, 'totp_secret_title', $conf->title };
 
    p_textfield $form, 'username', $person->label, { disabled => TRUE };

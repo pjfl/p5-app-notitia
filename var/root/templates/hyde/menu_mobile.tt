@@ -1,4 +1,4 @@
-<!-- Contents Mobile -->
+<!-- Menu Mobile -->
 <div class="docs-nav-mobile unit whole show-on-mobiles">
 [% depth = 0 -%]
    <select onchange="if (this.value) window.location.href=this.value">

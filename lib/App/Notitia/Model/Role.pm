@@ -91,7 +91,6 @@ sub role : Role(administrator) Role(person_manager) {
    my $form      =  blank_form 'role-admin', $href;
    my $page      =  {
       forms      => [ $form ],
-      template   => [ 'contents' ],
       title      => loc $req, 'role_management_heading' };
 
    my $person_roles = $person->list_roles;

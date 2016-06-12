@@ -76,7 +76,7 @@ sub exception_handler {
       leader   => $leader,
       message  => $message,
       summary  => $summary,
-      template => [ 'contents', 'exception' ],
+      template => [ 'menu', 'exception' ],
       title    => loc( $req, to_msg 'Exception Handler', $name ), };
 
    $e->class eq ValidationErrors->() and $page->{validation_error}

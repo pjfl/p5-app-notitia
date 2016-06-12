@@ -578,7 +578,6 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
       event_uri => $uri,
       forms     => [ $form ],
       moniker   => $self->moniker,
-      template  => [ 'contents' ],
       title     => loc $req, 'vehicle_request_heading' };
    my $type_rs  =  $schema->resultset( 'Type' );
 
@@ -655,7 +654,6 @@ sub vehicle : Role(rota_manager) {
       first_field => 'vrn',
       forms       => [ $form ],
       literal_js  => $_add_vehicle_js->( $vrn ),
-      template    => [ 'contents' ],
       title       => loc $req, "vehicle_${action}_heading" };
    my $schema     =  $self->schema;
    my $vehicle    =  $_maybe_find_vehicle->( $schema, $vrn );
@@ -690,7 +688,6 @@ sub vehicle_events : Role(rota_manager) {
    my $form    =  blank_form { class => 'wide-form no-header-wrap' };
    my $page    =  {
       forms    => [ $form ],
-      template => [ 'contents' ],
       title    => loc $req, 'vehicle_events_management_heading' };
 
    p_textfield $form, 'vehicle', $vrn, { disabled => TRUE };
@@ -727,7 +724,6 @@ sub vehicles : Role(rota_manager) {
    my $form      =  blank_form;
    my $page      =  {
       forms      => [ $form ],
-      template   => [ 'contents' ],
       title      => $_vehicle_title->( $req, $type, $private, $service ), };
    my $list      =  f_list '&nbsp;|&nbsp;',
       $_vehicles_op_links->( $req, $moniker, $opts, $vehicles->pager );

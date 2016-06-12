@@ -196,7 +196,6 @@ sub slot_certs : Role(administrator) {
    my $form       =  blank_form 'role-certs-admin', $href;
    my $page       =  {
       forms       => [ $form ],
-      template    => [ 'contents' ],
       title       => loc( $req, 'slot_certs_management_heading' ), };
    my $slot_certs =  $_list_slot_certs->( $self->schema, $slot_type );
    my $available  =  $_subtract->( $self->$_list_all_certs, $slot_certs );
@@ -228,7 +227,6 @@ sub slot_roles : Role(administrator) {
    my $form    =  blank_form;
    my $page    =  {
       forms    => [ $form ],
-      template => [ 'contents' ],
       title    => loc $req, 'slot_roles_list_link' };
    my $table   =  p_table $form, { headers => $_slot_roles_headers->( $req ) };
 
@@ -256,7 +254,6 @@ sub type : Role(administrator) {
    my $page       =  {
       first_field => 'name',
       forms       => [ $form ],
-      template    => [ 'contents' ],
       title       => locm $req, 'type_management_heading', $class_name };
 
    p_textfield $form, 'name', loc( $req, $type->name ), {
@@ -284,7 +281,6 @@ sub types : Role(administrator) {
    my $form       =  blank_form;
    my $page       =  {
       forms       => [ $form ],
-      template    => [ 'contents' ],
       title       => loc( $req, $type_class ? "${type_class}_list_link"
                                             : 'types_management_heading' ), };
    my $type_rs    =  $self->schema->resultset( 'Type' );

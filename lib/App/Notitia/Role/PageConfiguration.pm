@@ -53,8 +53,9 @@ around 'load_page' => sub {
    $page->{application_version} = $conf->appclass->VERSION;
    $page->{status_message     } = $req->session->collect_status_message( $req );
 
-   $page->{hint  } //= loc( $req, 'Hint' );
-   $page->{wanted} //=
+   $page->{template} //= [ 'menu' ];
+   $page->{hint    } //= loc( $req, 'Hint' );
+   $page->{wanted  } //=
       join '/', @{ $req->uri_params->( { optional => TRUE } ) // [] };
 
    my $js = $page->{literal_js} //= []; my ($href, $title);

@@ -117,8 +117,6 @@ var/root/less/hyde/yellow.less
 var/root/templates/hyde/assign-summary.tt
 var/root/templates/hyde/blank-page.tt
 var/root/templates/hyde/claim-slot.tt
-var/root/templates/hyde/contents.tt
-var/root/templates/hyde/contents_mobile.tt
 var/root/templates/hyde/day-table.tt
 var/root/templates/hyde/dialog.tt
 var/root/templates/hyde/docs_content.tt
@@ -130,12 +128,14 @@ var/root/templates/hyde/footer.tt
 var/root/templates/hyde/header.tt
 var/root/templates/hyde/index.tt
 var/root/templates/hyde/macros.tt
+var/root/templates/hyde/menu.tt
+var/root/templates/hyde/menu_mobile.tt
 var/root/templates/hyde/month-table.tt
 var/root/templates/hyde/password_email.tt
 var/root/templates/hyde/posts-index_content.tt
-var/root/templates/hyde/primary-nav-items.tt
+var/root/templates/hyde/primary-navigation.tt
 var/root/templates/hyde/rota_content.tt
-var/root/templates/hyde/secondary-nav-items.tt
+var/root/templates/hyde/secondary-navigation.tt
 var/root/templates/hyde/section_nav.tt
 var/root/templates/hyde/standard.tt
 var/root/templates/hyde/totp_request_email.tt

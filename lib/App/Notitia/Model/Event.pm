@@ -263,7 +263,7 @@ my $_bind_event_fields = sub {
    return
    [  name             => { class    => 'standard-field server',
                             disabled => $editing, label => 'event_name' },
-      date             => $_bind_event_date->( $event, $opts ),
+      event_date       => $_bind_event_date->( $event, $opts ),
       owner            => $self->$_bind_owner( $event, $disabled ),
       description      => { class    => 'standard-field autosize server',
                             disabled => $disabled, type => 'textarea' },
@@ -407,7 +407,6 @@ sub event : Role(event_manager) {
       first_field => 'name',
       forms       => [ $form ],
       literal_js  => $self->$_add_event_js(),
-      template    => [ 'contents' ],
       title       => loc $req, "event_${action}_heading" };
    my $event      =  $self->$_maybe_find_event( $uri );
 
@@ -456,7 +455,6 @@ sub event_summary : Role(any) {
    my $form    =  blank_form 'event-admin', $href;
    my $page    =  {
       forms    => [ $form ],
-      template => [ 'contents' ],
       title    => loc $req, 'event_summary_heading' };
 
    $uri and p_container $form, $_event_ops_links->( $req, $actionp, $uri ), {
@@ -491,7 +489,6 @@ sub events : Role(any) {
    my $form      =  blank_form;
    my $page      =  {
       forms      => [ $form ],
-      template   => [ 'contents' ],
       title      => loc $req, $title };
    my $links     =  $_events_ops_links->( $req, $moniker, $params, $pager );
 
@@ -547,7 +544,6 @@ sub participents : Role(any) {
       class      => 'wider-table', id => 'message-participents' };
    my $page      =  {
       forms      => [ $form ],
-      template   => [ 'contents' ],
       title      =>
          locm $req, 'participents_management_heading', $event->name };
    my $links     =  $self->$_participent_ops_links( $req, $page, $params );
@@ -627,7 +623,6 @@ sub vehicle_event : Role(rota_manager) {
       first_field => 'name',
       forms       => [ $form ],
       literal_js  => $self->$_add_event_js(),
-      template    => [ 'contents' ],
       title       => loc $req, "vehicle_event_${action}_heading" };
    my $event      =  $self->$_maybe_find_event( $uri );
    my $label      =  $uri ? $event->vehicle->label : $vrn;

@@ -142,7 +142,6 @@ sub certification : Role(person_manager) {
    my $page      =  {
       forms      => [ $form ],
       literal_js => $self->$_add_certification_js(),
-      template   => [ 'contents' ],
       title      => loc $req, "certification_${action}_heading" };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $name );
@@ -169,7 +168,6 @@ sub certifications : Role(person_manager) {
    my $form    =  blank_form;
    my $page    =  {
       forms    => [ $form ],
-      template => [ 'contents' ],
       title    => loc $req, 'certificates_management_heading' };
    my $schema  =  $self->schema;
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );

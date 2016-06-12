@@ -416,7 +416,6 @@ sub person : Role(person_manager) {
    my $page       =  {
       first_field => 'first_name',
       forms       => [ $form ],
-      template    => [ 'contents' ],
       title       => loc $req,  "person_${action}_heading" };
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $_maybe_find_person->( $person_rs, $name );
@@ -450,7 +449,6 @@ sub person_summary : Role(person_manager) Role(address_viewer) {
    my $page       =  {
       first_field => 'first_name',
       forms       => [ $form ],
-      template    => [ 'contents' ],
       title       => loc( $req, 'person_summary_heading' ), };
 
    p_fields $form, $self->schema, 'Person', $person, $fields;
@@ -478,7 +476,6 @@ sub people : Role(any) {
       class      => 'wider-table', id => 'people' };
    my $page      =  {
       forms      => [ $form ],
-      template   => [ 'contents' ],
       title      => $_people_title->( $req, $role, $status, $type ), };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $people    =  $person_rs->search_for_people( $opts );
