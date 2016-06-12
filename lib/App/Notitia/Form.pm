@@ -62,7 +62,7 @@ my $_parse_args = sub {
    my $n = 0; $n++ while (defined $_[ $n ]);
 
    return           ( $n == 0 ) ? { opts => {} }
-        : is_hashref( $_[ 0 ] ) ? { %{ $_[ 0 ] } }
+        : is_hashref( $_[ 0 ] ) ? { opts => $_[ 0 ] }
         :           ( $n == 1 ) ? throw 'Insufficient number of args'
         : is_hashref( $_[ 1 ] ) ? { content => $_[ 0 ], opts => $_[ 1 ] }
         :           ( $n == 2 ) ? { $_inline_args->( 2, @_ ) }
@@ -82,24 +82,25 @@ my $_push_field = sub {
 
 # Public functions
 sub blank_form (;$$$) {
-   my $attr = $_parse_args->( @_ ); my $opts = $attr->{opts} // {};
+   my $attr = $_parse_args->( @_ ); my $opts = { %{ $attr->{opts} // {} } };
 
    $attr->{name} and $attr->{href} and return {
       %{ $opts }, content => { list => [], type => 'list' },
       href => $attr->{href}, form_name => $attr->{name}, type => 'form' };
 
-   my $content = $attr->{content} || { list => [], type => 'list' };
+   $opts->{content} ||= { list => [], type => 'list' };
+   $opts->{type} //= 'container';
 
-   return { %{ $opts }, content => $content, type => 'container' };
+   return $opts;
 }
 
-sub f_list (;$$) {
+sub f_list (@) {
    my ($sep, $list) = @_; $sep //= NUL; $list //= [];
 
    return { list => $list, separator => $sep, type => 'list' };
 }
 
-sub f_tag ($;$$) {
+sub f_tag (@) {
    my ($tag, $content, $opts) = @_; $opts = { %{ $opts // {} } };
 
    $opts->{orig_type} = delete $opts->{type}; $content //= NUL;

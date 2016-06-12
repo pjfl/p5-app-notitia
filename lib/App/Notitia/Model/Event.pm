@@ -2,11 +2,12 @@ package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Util      qw( bind bind_fields button check_field_js
-                                create_link delete_button display_duration loc
-                                management_link operation_links page_link_set
-                                register_action_paths save_button
-                                to_dt to_msg uri_for_action );
+use App::Notitia::Form      qw( blank_form f_list p_button p_container p_fields
+                                p_rows p_table p_tag p_text p_textfield );
+use App::Notitia::Util      qw( check_field_js create_link display_duration loc
+                                locm make_tip management_link page_link_set
+                                register_action_paths to_dt to_msg
+                                uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -48,15 +49,21 @@ around 'get_stash' => sub {
    return $stash;
 };
 
-# Private class attributes
-my $_links_cache = {};
-
 # Private functions
 my $_bind_event_date = sub {
-   my ($date, $disabled) = @_;
+   my ($event, $opts) = @_;
 
-   return bind 'event_date', $date, { class    => 'standard-field required',
-                                      disabled => $disabled };
+   my $disabled = $opts->{disabled} || $event->uri ? TRUE : FALSE;
+   my $date     = $event->uri ? $event->start_date
+                              : to_dt $opts->{date} ? $opts->{date}
+                                                    : time2str '%Y-%m-%d';
+
+   return { class => 'standard-field required',
+            disabled => $disabled,
+            label => 'event_date',
+            name => 'event_date',
+            type => 'date',
+            value =>  $date->set_time_zone( 'local' )->dmy( '/' ) };
 };
 
 my $_events_headers = sub {
@@ -64,48 +71,48 @@ my $_events_headers = sub {
 };
 
 my $_event_links = sub {
-   my ($self, $req, $event) = @_; my $uri = $event->uri;
-
-   my $links = $_links_cache->{ $uri }; $links and return @{ $links };
+   my ($self, $req, $event) = @_; my $links = []; my $uri = $event->uri;
 
    my @actions = qw( event/event event/participents
                      asset/request_vehicle event/event_summary );
-
-   $links = [];
 
    for my $actionp (@actions) {
       push @{ $links }, { value => management_link( $req, $actionp, $uri ) };
    }
 
-   $_links_cache->{ $uri } = $links;
-
-   return @{ $links };
+   return [ { value => $event->label }, @{ $links } ];
 };
 
-my $_event_operation_links = sub {
+my $_event_ops_links = sub {
    my ($req, $actionp, $uri) = @_;
 
    my $add_ev = create_link $req, $actionp, 'event',
                             { container_class => 'add-link' };
    my $vreq   = management_link $req, 'asset/request_vehicle', $uri;
 
-   return operation_links [ $vreq, $add_ev ];
+   return f_list '&nbsp;|&nbsp;', [ $vreq, $add_ev ];
 };
 
-my $_participate_button = sub {
-   my ($req, $uri, $event, $person) = @_;
+my $_add_participate_button = sub {
+   my ($req, $form, $event, $person) = @_;
 
+   my $uri    = $event->uri;
    my $class  = 'save-button right-last';
    my $action = $person->is_participating_in( $uri, $event )
               ? 'unparticipate' : 'participate';
 
-   if ($action eq 'participate' and $event->max_participents) {
-      $event->max_participents > $event->count_of_participents or return
-         { class => 'right-last', type => 'text',
-           value => loc( $req ,'Maximum number of paticipants reached' ) };
-   }
+   my $text; $action eq 'participate'
+      and $event->max_participents
+      and $event->count_of_participents >= $event->max_participents
+      and $text = loc( $req, 'Maximum number of paticipants reached' )
+      and p_text $form, 'info', $text, { class => 'right-last', label => NUL }
+      and return;
 
-   return button $req, { class => $class }, $action, 'event', [ $uri ];
+   p_button $form, "${action}_event", "${action}_event", {
+      container_class => $class,
+      tip => make_tip( $req, "${action}_event_tip", [ $uri ] ) };
+
+   return;
 };
 
 my $_participent_headers = sub {
@@ -120,7 +127,7 @@ my $_vehicle_events_uri = sub {
                          after => $after, service => TRUE;
 };
 
-my $_events_op_links = sub {
+my $_events_ops_links = sub {
    my ($req, $moniker, $params, $pager) = @_;
 
    my $actionp    = "${moniker}/events";
@@ -129,7 +136,7 @@ my $_events_op_links = sub {
 
    $page_links and unshift @{ $links }, $page_links;
 
-   return operation_links $links;
+   return f_list '&nbsp;|&nbsp;', $links;
 };
 
 # Private methods
@@ -140,27 +147,18 @@ my $_add_event_js = sub {
             check_field_js( 'name', $opts ) ];
 };
 
-my $_bind_event_fields = sub {
-   my ($self, $event, $opts) = @_; $opts //= {};
+my $_bind_owner = sub {
+   my ($self, $event, $disabled) = @_; $event->uri or return FALSE;
 
-   my $disabled = $opts->{disabled} // FALSE;
-   my $editing  = $disabled ? $disabled : $event->uri ? TRUE : FALSE;
-   my $map      = {
-      description      => { class    => 'standard-field autosize server',
-                            disabled => $disabled },
-      end_time         => { class    => 'standard-field',
-                            disabled => $disabled },
-      name             => { class    => 'standard-field server',
-                            disabled => $editing, label => 'event_name' },
-      notes            => { class    => 'standard-field autosize',
-                            disabled => $disabled },
-      max_participents => { class    => 'standard-field',
-                            disabled => $disabled },
-      start_time       => { class    => 'standard-field',
-                            disabled => $disabled },
-   };
+   my $schema = $self->schema;
+   my $opts   = { fields => { selected => $event->owner } };
+   my $people = $schema->resultset( 'Person' )->list_all_people( $opts );
 
-   return bind_fields $self->schema, $event, $map, 'Event';
+   $opts = { class => 'standard-field required', numify => TRUE,
+             type  => 'select', value => [ [ NUL, NUL ], @{ $people } ] };
+   $disabled and $opts->{disabled} = TRUE;
+
+   return $opts;
 };
 
 my $_format_as_markdown = sub {
@@ -173,10 +171,10 @@ my $_format_as_markdown = sub {
                . "created: ${created}\nrole: anon\ntitle: ${name}\n---\n";
    my $desc    = $event->description."\n\n";
    my @opts    = ($date->dmy( '/' ), $event->start_time, $event->end_time);
-   my $when    = loc( $req, to_msg 'event_blog_when', @opts )."\n\n";
+   my $when    = locm( $req, 'event_blog_when', @opts )."\n\n";
    my $actionp = $self->moniker.'/event_summary';
    my $href    = uri_for_action $req, $actionp, [ $event->uri ];
-   my $link    = loc( $req, to_msg 'event_blog_link', $href )."\n\n";
+   my $link    = locm( $req, 'event_blog_link', $href )."\n\n";
 
    return $yaml.$desc.$when.$link;
 };
@@ -189,35 +187,15 @@ my $_maybe_find_event = sub {
    return $schema->resultset( 'Event' )->find_event_by( $uri, $opts );
 };
 
-my $_owner_list = sub {
-   my ($self, $event, $disabled) = @_; my $schema = $self->schema;
-
-   my $opts   = { fields => { selected => $event->owner } };
-   my $people = $schema->resultset( 'Person' )->list_all_people( $opts );
-
-   $opts = { class => 'standard-field required', numify => TRUE };
-
-   $disabled and $opts->{disabled} = TRUE;
-
-   return bind( 'owner', [ [ NUL, NUL ], @{ $people } ], $opts );
-};
-
 my $_participent_links = sub {
-   my ($self, $req, $tuple, $event) = @_; my $name = $tuple->[ 1 ]->shortcode;
+   my ($self, $req, $event, $tuple) = @_; my $name = $tuple->[ 1 ]->shortcode;
 
-   my $links = $_links_cache->{ $name }; $links and return @{ $links };
-
-   $links = [];
-
-   push @{ $links },
-         { value => management_link( $req, 'person/person_summary', $name ) };
-   push @{ $links },
-         { value => management_link( $req, 'event/event', 'unparticipate',
-                       { args => [ $event->uri ], type => 'form_button' } ) };
-
-   $_links_cache->{ $name } = $links;
-
-   return @{ $links };
+   return
+   [ { value => $tuple->[ 0 ] },
+     { value => management_link( $req, 'person/person_summary', $name ) },
+     { value => management_link( $req, 'event/event', 'unparticipate',
+                { args => [ $event->uri ], type => 'form_button' } ) }
+     ];
 };
 
 my $_participent_ops_links = sub {
@@ -228,7 +206,7 @@ my $_participent_ops_links = sub {
    my $href         = uri_for_action $req, $actionp, [], $params;
    my $message_link = $self->message_link( $req, $page, $href, $name );
 
-   return operation_links [ $message_link ];
+   return f_list '&nbsp;|&nbsp;', [ $message_link ];
 };
 
 my $_update_event_from_request = sub {
@@ -272,6 +250,30 @@ my $_update_event_post = sub {
    }
 
    return;
+};
+
+my $_bind_event_fields = sub {
+   my ($self, $event, $opts) = @_; $opts //= {};
+
+   my $disabled = $opts->{disabled} // FALSE;
+   my $editing  = $disabled ? $disabled : $event->uri ? TRUE : FALSE;
+   my $no_maxp  = $disabled || $opts->{vehicle_event} ? TRUE : FALSE;
+
+   return
+   [  name             => { class    => 'standard-field server',
+                            disabled => $editing, label => 'event_name' },
+      date             => $_bind_event_date->( $event, $opts ),
+      owner            => $self->$_bind_owner( $event, $disabled ),
+      description      => { class    => 'standard-field autosize server',
+                            disabled => $disabled, type => 'textarea' },
+      start_time       => { class    => 'standard-field',
+                            disabled => $disabled, type => 'time' },
+      end_time         => { class    => 'standard-field',
+                            disabled => $disabled, type => 'time' },
+      max_participents => $no_maxp  ? FALSE : { class => 'standard-field' },
+      notes            => $disabled ? FALSE : {
+         class         => 'standard-field autosize', type => 'textarea' },
+      ];
 };
 
 my $_create_event_post = sub {
@@ -394,32 +396,34 @@ sub delete_vehicle_event_action : Role(rota_manager) {
 sub event : Role(event_manager) {
    my ($self, $req) = @_;
 
+   my $actionp    =  $self->moniker.'/event';
    my $uri        =  $req->uri_params->( 0, { optional => TRUE } );
    my $date       =  $req->query_params->( 'date', { optional => TRUE } );
    my $event      =  $self->$_maybe_find_event( $uri );
+   my $title      =  $uri ? 'event_edit_heading' : 'event_create_heading';
+   my $action     =  $uri ? 'update' : 'create';
+   my $href       =  uri_for_action $req, $actionp, [ $uri ];
+   my $form       =  blank_form 'event-admin', $href;
    my $page       =  {
-      fields      => $self->$_bind_event_fields( $event ),
       first_field => 'name',
+      forms       => [ $form ],
       literal_js  => $self->$_add_event_js(),
-      template    => [ 'contents', 'event' ],
-      title       => loc( $req, $uri ? 'event_edit_heading'
-                                     : 'event_create_heading' ), };
-   my $fields     =  $page->{fields};
-   my $actionp    =  $self->moniker.'/event';
+      template    => [ 'contents' ],
+      title       => loc $req, $title };
 
-   if ($uri) {
-      $fields->{date  } = $_bind_event_date->( $event->start_date, TRUE );
-      $fields->{delete} = delete_button $req, $uri, { type => 'event' };
-      $fields->{href  } = uri_for_action $req, $actionp, [ $uri ];
-      $fields->{links } = $_event_operation_links->( $req, $actionp, $uri );
-      $fields->{owner } = $self->$_owner_list( $event );
-   }
-   else {
-      $date = $date ? to_dt( $date, 'GMT' )->dmy( '/' ) : time2str '%d/%m/%Y';
-      $fields->{date  } = $_bind_event_date->( $date );
-   }
+   $uri and p_container $form, $_event_ops_links->( $req, $actionp, $uri ), {
+      class => 'operation-links align-right right-last' };
 
-   $fields->{save} = save_button $req, $uri, { type => 'event' };
+   p_fields $form, $self->schema, 'Event', $event,
+      $self->$_bind_event_fields( $event, { date => $date } );
+
+   p_button $form, $action, "${action}_event", {
+      class => 'save-button', container_class => 'right-last',
+      tip   => make_tip( $req, "${action}_tip", [ 'event', $uri ] ) };
+
+   $uri and p_button $form, 'delete', 'delete_event', {
+      class => 'delete-button', container_class => 'right',
+      tip   => make_tip( $req, 'delete_tip', [ 'event', $uri ] ) };
 
    return $self->get_stash( $req, $page );
 }
@@ -427,15 +431,18 @@ sub event : Role(event_manager) {
 sub event_info : Role(any) {
    my ($self, $req) = @_;
 
-   my $uri = $req->uri_params->( 0 );
+   my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
    my $stash = $self->dialog_stash( $req, 'event-info' );
-   my $fields = $stash->{page}->{fields};
+   my $form  = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $label = $event->owner->label;
+   my ($start, $end) = display_duration $req, $event;
 
-   $fields->{owner} = $event->owner->label;
-   $event->owner->postcode
-      and $fields->{owner} .= ' ('.$event->owner->outer_postcode.')';
-   ($fields->{start}, $fields->{end}) = display_duration $req, $event;
+   $event->owner->postcode and $label .= ' ('.$event->owner->outer_postcode.')';
+
+   p_tag $form, 'p', $label, { class => 'label-column' };
+   p_tag $form, 'p', $start, { class => 'label-column' };;
+   p_tag $form, 'p', $end,   { class => 'label-column' };;
 
    return $stash;
 }
@@ -443,25 +450,26 @@ sub event_info : Role(any) {
 sub event_summary : Role(any) {
    my ($self, $req) = @_;
 
+   my $actionp =  $self->moniker.'/event';
    my $schema  =  $self->schema;
    my $user    =  $req->username;
    my $uri     =  $req->uri_params->( 0 );
    my $event   =  $schema->resultset( 'Event' )->find_event_by( $uri );
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $user );
-   my $opts    =  { disabled => TRUE };
+   my $href    =  uri_for_action $req, $actionp, [ $uri ];
+   my $form    =  blank_form 'event-admin', $href;
    my $page    =  {
-      fields   => $self->$_bind_event_fields( $event, $opts ),
-      template => [ 'contents', 'event' ],
-      title    => loc( $req, 'event_summary_heading' ), };
-   my $fields  =  $page->{fields};
-   my $actionp =  $self->moniker.'/event';
+      forms    => [ $form ],
+      template => [ 'contents' ],
+      title    => loc $req, 'event_summary_heading' };
 
-   $fields->{date  } = $_bind_event_date->( $event->start_date, TRUE );
-   $fields->{href  } = uri_for_action $req, $actionp, [ $uri ];
-   $fields->{links } = $_event_operation_links->( $req, $actionp, $uri );
-   $fields->{owner } = $self->$_owner_list( $event, TRUE );
-   $fields->{update} = $_participate_button->( $req, $uri, $event, $person );
-   delete $fields->{max_participents}; delete $fields->{notes};
+   $uri and p_container $form, $_event_ops_links->( $req, $actionp, $uri ), {
+      class => 'operation-links align-right right-last' };
+
+   p_fields $form, $self->schema, 'Event', $event,
+      $self->$_bind_event_fields( $event, { disabled => TRUE } );
+
+   $_add_participate_button->( $req, $form, $event, $person );
 
    return $self->get_stash( $req, $page );
 }
@@ -484,19 +492,22 @@ sub events : Role(any) {
    my $title     =  $after  ? 'current_events_heading'
                  :  $before ? 'previous_events_heading'
                  :            'events_management_heading';
+   my $form      =  blank_form;
    my $page      =  {
-      fields     => {
-         headers => $_events_headers->( $req ),
-         links   => $_events_op_links->( $req, $moniker, $params, $pager ),
-         rows    => [], },
-      template   => [ 'contents', 'table' ],
-      title      => loc( $req, $title ), };
-   my $rows      =  $page->{fields}->{rows};
+      forms      => [ $form ],
+      template   => [ 'contents' ],
+      title      => loc $req, $title };
+   my $links     =  $_events_ops_links->( $req, $moniker, $params, $pager );
 
-   for my $event ($events->all) {
-      push @{ $rows },
-         [  { value => $event->label }, $self->$_event_links( $req, $event ) ];
-   }
+   p_container $form, $links, {
+      class => 'operation-links align-right right-last' };
+
+   my $table = p_table $form, { headers => $_events_headers->( $req ) };
+
+   p_rows $table, [ map { $self->$_event_links( $req, $_ ) } $events->all ];
+
+   p_container $form, $links, {
+      class => 'operation-links align-right right-last' };
 
    return $self->get_stash( $req, $page );
 }
@@ -532,29 +543,29 @@ sub participents : Role(any) {
 
    my $uri       =  $req->uri_params->( 0 );
    my $event     =  $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $actionp   =  $self->moniker.'/participents';
-   my $params    =  { event => $uri };
-   my $page      =  {
-      fields     => {
-         headers => $_participent_headers->( $req ),
-         rows    => [], },
-      form       => {
-         name    => 'message-participents',
-         href    => uri_for_action $req, $actionp, [ $uri ], $params },
-      template   => [ 'contents', 'table' ],
-      title      =>
-         loc( $req, to_msg 'participents_management_heading', $event->name ) };
    my $person_rs =  $self->schema->resultset( 'Person' );
-   my $fields    =  $page->{fields};
-   my $rows      =  $fields->{rows};
+   my $params    =  { event => $uri };
+   my $actionp   =  $self->moniker.'/participents';
+   my $href      =  uri_for_action $req, $actionp, [ $uri ], $params;
+   my $form      =  blank_form 'message-participents', $href, {
+      class      => 'wider-table', id => 'message-participents' };
+   my $page      =  {
+      forms      => [ $form ],
+      template   => [ 'contents' ],
+      title      =>
+         locm $req, 'participents_management_heading', $event->name };
+   my $links     =  $self->$_participent_ops_links( $req, $page, $params );
 
-   $fields->{links} = $self->$_participent_ops_links( $req, $page, $params );
+   p_container $form, $links, {
+      class => 'operation-links align-right right-last' };
 
-   for my $tuple (@{ $person_rs->list_participents( $event ) }) {
-      push @{ $rows },
-         [ { value => $tuple->[ 0 ] },
-           $self->$_participent_links( $req, $tuple, $event ) ];
-   }
+   my $table = p_table $form, { headers => $_participent_headers->( $req ) };
+
+   p_rows $table, [ map { $self->$_participent_links( $req, $event, $_ ) }
+                       @{ $person_rs->list_participents( $event ) } ];
+
+   p_container $form, $links, {
+      class => 'operation-links align-right right-last' };
 
    return $self->get_stash( $req, $page );
 }
@@ -610,33 +621,35 @@ sub update_vehicle_event_action : Role(rota_manager) {
 sub vehicle_event : Role(rota_manager) {
    my ($self, $req) = @_;
 
+   my $actionp    =  $self->moniker.'/vehicle_event';
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
    my $uri        =  $req->uri_params->( 1, { optional => TRUE } );
    my $event      =  $self->$_maybe_find_event( $uri );
+   my $action     =  $uri ? 'update' : 'create';
+   my $title      =  $uri ? 'vehicle_event_edit_heading'
+                          : 'vehicle_event_create_heading';
+   my $label      =  $uri ? $event->vehicle->label : $vrn;
+   my $href       =  uri_for_action $req, $actionp, [ $vrn, $uri ];
+   my $form       =  blank_form 'vehicle-event-admin', $href;
    my $page       =  {
-      fields      => $self->$_bind_event_fields( $event ),
       first_field => 'name',
+      forms       => [ $form ],
       literal_js  => $self->$_add_event_js(),
-      template    => [ 'contents', 'event' ],
-      title       => loc( $req, $uri ? 'vehicle_event_edit_heading'
-                                     : 'vehicle_event_create_heading' ), };
-   my $actionp    =  $self->moniker.'/vehicle_event';
-   my $fields     =  $page->{fields};
+      template    => [ 'contents' ],
+      title       => loc $req, $title };
 
-   if ($uri) {
-      $fields->{date  } = $_bind_event_date->( $event->start_date, TRUE );
-      $fields->{delete} = delete_button $req, $uri, { type => 'vehicle_event' };
-      $fields->{href  } = uri_for_action $req, $actionp, [ $vrn, $uri ];
-   }
-   else {
-      $fields->{date} = $_bind_event_date->( time2str( '%d/%m/%Y' ) );
-      $fields->{href} = uri_for_action $req, $actionp, [ $vrn ];
-   }
+   p_textfield $form, 'vehicle', $label, { disabled => TRUE };
 
-   $fields->{owner  } = $self->$_owner_list( $event );
-   $fields->{save   } = save_button $req, $uri, { type => 'vehicle_event' };
-   $fields->{vehicle} = bind 'vehicle', $uri ? $event->vehicle->label : $vrn,
-                             { disabled => TRUE };
+   p_fields $form, $self->schema, 'Event', $event,
+      $self->$_bind_event_fields( $event, { vehicle_event => TRUE } );
+
+   p_button $form, $action, "${action}_vehicle_event", {
+      class => 'save-button', container_class => 'right-last',
+      tip   => make_tip( $req, "${action}_tip", [ 'vehicle event', $uri ] ) };
+
+   $uri and p_button $form, 'delete', 'delete_vehicle_event', {
+      class => 'delete-button', container_class => 'right',
+      tip   => make_tip( $req, 'delete_tip', [ 'vehicle event', $uri ] ) };
 
    return $self->get_stash( $req, $page );
 }
@@ -644,15 +657,18 @@ sub vehicle_event : Role(rota_manager) {
 sub vehicle_info : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $uri = $req->uri_params->( 0 );
+   my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
    my $stash = $self->dialog_stash( $req, 'vehicle-event-info' );
-   my $fields = $stash->{page}->{fields};
+   my $form  = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $label = $event->owner->label;
+   my ($start, $end) = display_duration $req, $event;
 
-   $fields->{owner} = $event->owner->label;
-   $event->owner->postcode
-      and $fields->{owner} .= ' ('.$event->owner->outer_postcode.')';
-   ($fields->{start}, $fields->{end}) = display_duration $req, $event;
+   $event->owner->postcode and $label .= ' ('.$event->owner->outer_postcode.')';
+
+   p_tag $form, 'p', $label, { class => 'label-column' };
+   p_tag $form, 'p', $start, { class => 'label-column' };;
+   p_tag $form, 'p', $end,   { class => 'label-column' };;
 
    return $stash;
 }

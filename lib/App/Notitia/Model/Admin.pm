@@ -2,8 +2,10 @@ package App::Notitia::Model::Admin;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SLOT_TYPE_ENUM TRUE TYPE_CLASS_ENUM );
-use App::Notitia::Util      qw( bind bind_fields button create_link loc
-                                management_link operation_links
+use App::Notitia::Form      qw( blank_form f_list f_tag p_button p_container
+                                p_select p_rows p_table p_textfield );
+use App::Notitia::Util      qw( bind bind_fields button create_link loc locm
+                                make_tip management_link operation_links
                                 register_action_paths to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
@@ -37,19 +39,7 @@ around 'get_stash' => sub {
    return $stash;
 };
 
-# Private class attributes
-my $_types_links_cache = {};
-
 # Private functions
-my $_add_cert_button = sub {
-   return button $_[ 0 ], { class => 'right-last' }, 'add', 'certification',
-                 [ 'certification', $_[ 1 ] ];
-};
-
-my $_add_type_button = sub {
-   return button $_[ 0 ], { class => 'right-last' }, 'add', 'type', $_[ 1 ];
-};
-
 my $_add_type_create_links = sub {
    my ($req, $moniker, $type_class) = @_;
 
@@ -68,17 +58,7 @@ my $_add_type_create_links = sub {
       }
    }
 
-   return operation_links $links;
-};
-
-my $_bind_type_fields = sub {
-   my ($schema, $type, $opts) = @_; $opts //= {};
-
-   my $disabled  =  $opts->{disabled} // FALSE;
-   my $map       =  {
-      name       => { disabled => $disabled, label => 'type_name' }, };
-
-   return bind_fields $schema, $type, $map, 'Type';
+   return f_list '&nbsp;|&nbsp;', $links;
 };
 
 my $_list_slot_certs = sub {
@@ -89,18 +69,9 @@ my $_list_slot_certs = sub {
                           { prefetch    => 'certification_type' } )->all ];
 };
 
-my $_remove_type_button = sub {
-   return button $_[ 0 ], { class => 'right-last' }, 'remove', 'type', $_[ 1 ];
-};
-
 my $_maybe_find_type = sub {
    return $_[ 2 ] ? $_[ 0 ]->find_type_by( $_[ 2 ], $_[ 1 ] )
                   : Class::Null->new;
-};
-
-my $_remove_cert_button = sub {
-   return button $_[ 0 ], { class => 'right-last' }, 'remove', 'certification',
-                 [ 'certification', $_[ 1 ] ];
 };
 
 my $_slot_roles_headers = sub {
@@ -111,14 +82,11 @@ my $_slot_roles_headers = sub {
 my $_slot_roles_links = sub {
    my ($req, $moniker, $slot_role) = @_;
 
-   my $links = []; my $opts = { args => [ $slot_role ] };
+   my $actionp = $moniker.'/slot_certs'; my $opts = { args => [ $slot_role ] };
 
-   my $actionp = $moniker.'/slot_certs';
+   my @links = { value => management_link( $req, $actionp, $slot_role, $opts )};
 
-   push @{ $links },
-         { value => management_link( $req, $actionp, $slot_role, $opts ) };
-
-   return @{ $links };
+   return [ { value => loc( $req, $slot_role ) }, @links ];
 };
 
 my $_subtract = sub {
@@ -132,18 +100,11 @@ my $_types_headers = sub {
 my $_types_links = sub {
    my ($req, $type) = @_; my $name = $type->name;
 
-   my $links = $_types_links_cache->{ $name }; $links and return @{ $links };
+   my $opts = { args => [ $type->type_class, $name ] };
 
-   $links = []; my $opts = { args => [ $type->type_class, $type->name ] };
-
-   for my $actionp ( qw( admin/type ) ) {
-      push @{ $links },
-            { value => management_link( $req, $actionp, $name, $opts ) };
-   }
-
-   $_types_links_cache->{ $name } = $links;
-
-   return @{ $links };
+   return [ { value => ucfirst $type->type_class },
+            { value => loc( $req, $type->name ) },
+            { value => management_link( $req, 'admin/type', $name, $opts ) } ];
 };
 
 # Private methods
@@ -229,24 +190,34 @@ sub remove_type_action : Role(administrator) {
 sub slot_certs : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $slot_type   =  $req->uri_params->( 0 );
-   my $actionp     =  $self->moniker.'/slot_certs';
-   my $href        =  uri_for_action $req, $actionp, [ $slot_type ];
-   my $page        =  {
-      fields       => { href => $href },
-      template     => [ 'contents', 'slot-certs' ],
-      title        => loc( $req, 'slot_certs_management_heading' ), };
-   my $slot_certs  =  $_list_slot_certs->( $self->schema, $slot_type );
-   my $available   =  $_subtract->( $self->$_list_all_certs, $slot_certs );
-   my $fields      =  $page->{fields};
+   my $slot_type  =  $req->uri_params->( 0 );
+   my $actionp    =  $self->moniker.'/slot_certs';
+   my $href       =  uri_for_action $req, $actionp, [ $slot_type ];
+   my $form       =  blank_form 'role-certs-admin', $href;
+   my $page       =  {
+      forms       => [ $form ],
+      template    => [ 'contents' ],
+      title       => loc( $req, 'slot_certs_management_heading' ), };
+   my $slot_certs =  $_list_slot_certs->( $self->schema, $slot_type );
+   my $available  =  $_subtract->( $self->$_list_all_certs, $slot_certs );
 
-   $fields->{certs }
-      = bind 'certs', $available, { multiple => TRUE, size => 10 };
-   $fields->{slot_certs}
-      = bind 'slot_certs', $slot_certs, { multiple => TRUE, size => 5 };
-   $fields->{slotname} = bind 'slotname', $slot_type, { disabled => TRUE };
-   $fields->{add   } = $_add_cert_button->( $req, $slot_type );
-   $fields->{remove} = $_remove_cert_button->( $req, $slot_type );
+   p_textfield $form, 'slotname', loc( $req, $slot_type ), { disabled => TRUE };
+
+   p_select $form, 'slot_certs', $slot_certs, { multiple => TRUE, size => 5 };
+
+   p_button $form, 'remove_certification', 'remove_certification', {
+      class => 'delete-button', container_class => 'right-last',
+      tip   => make_tip( $req, 'remove_certification_tip',
+                         [ 'certification', $slot_type ] ) };
+
+   p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
+
+   p_select $form, 'certs', $available, { multiple => TRUE, size => 10 };
+
+   p_button $form, 'add_certification', 'add_certification', {
+      class => 'save-button', container_class => 'right-last',
+      tip   => make_tip( $req, 'add_certification_tip',
+                         [ 'certification', $slot_type ] ) };
 
    return $self->get_stash( $req, $page );
 };
@@ -254,20 +225,15 @@ sub slot_certs : Role(administrator) {
 sub slot_roles : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $page       =  {
-      fields      => {
-         headers  => $_slot_roles_headers->( $req ),
-         rows     => [], },
-      template    => [ 'contents', 'table' ],
-      title       => loc( $req, 'slot_roles_list_link' ), };
-   my $type_rs    =  $self->schema->resultset( 'Type' );
-   my $rows       =  $page->{fields}->{rows};
+   my $form    =  blank_form;
+   my $page    =  {
+      forms    => [ $form ],
+      template => [ 'contents' ],
+      title    => loc $req, 'slot_roles_list_link' };
+   my $table   =  p_table $form, { headers => $_slot_roles_headers->( $req ) };
 
-   for my $slot_role (@{ SLOT_TYPE_ENUM() }) {
-      push @{ $rows },
-         [ { value => loc( $req, $slot_role ) },
-           $_slot_roles_links->( $req, $self->moniker, $slot_role ) ];
-   }
+   p_rows $table, [ map { $_slot_roles_links->( $req, $self->moniker, $_ ) }
+                       @{ SLOT_TYPE_ENUM() } ];
 
    return $self->get_stash( $req, $page );
 }
@@ -278,24 +244,34 @@ sub type : Role(administrator) {
    is_member $type_class, TYPE_CLASS_ENUM
       or throw 'Type class [_1] unknown', [ $type_class ];
 
+   my $actionp    =  $self->moniker.'/type';
    my $name       =  $req->uri_params->( 1, { optional => TRUE } );
    my $type_rs    =  $self->schema->resultset( 'Type' );
    my $type       =  $_maybe_find_type->( $type_rs, $type_class, $name );
-   my $opts       =  { disabled => $name ? TRUE : FALSE };
-   my $page       =  {
-      fields      => $_bind_type_fields->( $self->schema, $type, $opts ),
-      first_field => 'name',
-      template    => [ 'contents', 'type' ],
-      title       =>
-         loc( $req, to_msg 'type_management_heading', ucfirst $type_class ), };
-   my $fields     =  $page->{fields};
-   my $actionp    =  $self->moniker.'/type';
    my $args       =  [ $type_class ]; $name and push @{ $args }, $name;
+   my $href       =  uri_for_action $req, $actionp, $args;
+   my $form       =  blank_form 'type-admin', $href;
+   my $disabled   =  $name ? TRUE : FALSE;
+   my $class_name =  ucfirst $type_class;
+   my $page       =  {
+      first_field => 'name',
+      forms       => [ $form ],
+      template    => [ 'contents' ],
+      title       => locm $req, 'type_management_heading', $class_name };
 
-   $fields->{href} = uri_for_action $req, $actionp, $args;
+   p_textfield $form, 'name', loc( $req, $type->name ), {
+      disabled => $disabled, label => 'type_name' };
 
-   if ($name) { $fields->{remove} = $_remove_type_button->( $req, $args ) }
-   else { $fields->{add} = $_add_type_button->( $req, $args ) }
+   if ($name) {
+      p_button $form, 'remove_type', 'remove_type', {
+         class => 'delete-button', container_class => 'right-last',
+         tip   => make_tip( $req, 'remove_type_tip', $args ) };
+   }
+   else {
+      p_button $form, 'add_type', 'add_type', {
+         class => 'save-button', container_class => 'right-last',
+         tip   => make_tip( $req, 'add_type_tip', $args ) };
+   }
 
    return $self->get_stash( $req, $page );
 }
@@ -305,24 +281,26 @@ sub types : Role(administrator) {
 
    my $moniker    =  $self->moniker;
    my $type_class =  $req->query_params->( 'type_class', { optional => TRUE } );
+   my $form       =  blank_form;
    my $page       =  {
-      fields      => {
-         headers  => $_types_headers->( $req ),
-         links    => $_add_type_create_links->( $req, $moniker, $type_class ),
-         rows     => [], },
-      template    => [ 'contents', 'table' ],
+      forms       => [ $form ],
+      template    => [ 'contents' ],
       title       => loc( $req, $type_class ? "${type_class}_list_link"
                                             : 'types_management_heading' ), };
    my $type_rs    =  $self->schema->resultset( 'Type' );
    my $types      =  $type_class ? $type_rs->search_for_types( $type_class )
                                  : $type_rs->search_for_all_types;
-   my $rows       =  $page->{fields}->{rows};
+   my $links      =  $_add_type_create_links->( $req, $moniker, $type_class );
 
-   for my $type ($types->all) {
-      push @{ $rows }, [ { value => ucfirst $type->type_class },
-                         { value => loc( $req, $type->name ) },
-                         $_types_links->( $req, $type ) ];
-   }
+   p_container $form, $links, {
+      class => 'operation-links align-right right-last' };
+
+   my $table = p_table $form, { headers => $_types_headers->( $req ) };
+
+   p_rows $table, [ map { $_types_links->( $req, $_ ) } $types->all ];
+
+   p_container $form, $links, {
+      class => 'operation-links align-right right-last' };
 
    return $self->get_stash( $req, $page );
 }
