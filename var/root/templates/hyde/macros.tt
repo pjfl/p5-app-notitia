@@ -68,6 +68,7 @@
 [%    IF f.method; method = f.method; ELSE; method = 'post'; END -%]
       <form action="[% f.href %]" class="[% class %]"
            enctype="application/x-www-form-urlencoded"
+[%    IF f.id %]id="[% f.id %]"[% END -%]
             method="[% method %]" name="[% f.form_name %]">
 [%    Dispatch( f.content ) -%]
       </form>

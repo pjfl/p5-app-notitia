@@ -1,9 +1,10 @@
 Revision history for App::Notitia
 
-          - Vehicle model using stash.page.form
-          - Person model using stash.page.form
-          - Editing dialogs using stash.page.form
-          - User model using stash.page.form
+          - Event model using stash.page.forms
+          - Vehicle model using stash.page.forms
+          - Person model using stash.page.forms
+          - Editing dialogs using stash.page.forms
+          - User model using stash.page.forms
           - Adds App::Notitia::Form
           - Allows dispatching of stash.page.form
           - Upgrade schema now calls create ddl

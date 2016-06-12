@@ -3,12 +3,11 @@ package App::Notitia::Model::Person;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Form      qw( blank_form f_list p_button p_container
-                                p_fields );
-use App::Notitia::Util      qw( button check_field_js
-                                create_link dialog_anchor loc make_tip
-                                management_link operation_links page_link_set
-                                register_action_paths table_link
-                                to_dt to_msg uri_for_action );
+                                p_fields p_rows p_table );
+use App::Notitia::Util      qw( check_field_js create_link dialog_anchor loc
+                                make_tip management_link page_link_set
+                                register_action_paths table_link to_dt to_msg
+                                uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Types      qw( ArrayRef );
@@ -72,6 +71,29 @@ my $_assert_not_self = sub {
    return $nok;
 };
 
+my $_bind_mugshot = sub {
+   my ($conf, $req, $person) = @_;
+
+   my $uri = $conf->assets.'/mugshot/'; my $href;
+
+   if ($person->shortcode) {
+      my $assets = $conf->assetdir->catdir( 'mugshot' );
+
+      for my $extn (qw( .gif .jpeg .jpg .png )) {
+         my $path = $assets->catfile( $person->shortcode.$extn );
+
+         $path->exists
+            and $href = $req->uri_for( $uri.$person->shortcode.$extn )
+            and last;
+      }
+   }
+
+   $href //= $req->uri_for( $uri.'nomugshot.png' );
+
+   return { class => 'mugshot', href => $href,
+            title => loc( $req, 'mugshot' ), type => 'image' };
+};
+
 my $_contact_links = sub {
    my ($req, $person) = @_; my @links; my $nok = $person->next_of_kin;
 
@@ -96,19 +118,6 @@ my $_contact_links = sub {
 
 my $_maybe_find_person = sub {
    return $_[ 1 ] ? $_[ 0 ]->find_by_shortcode( $_[ 1 ] ) : Class::Null->new;
-};
-
-my $_next_of_kin_list = sub {
-   my ($self, $person, $disabled) = @_;
-
-   my $opts   = { fields => { selected => $person->next_of_kin } };
-   my $people = $self->schema->resultset( 'Person' )->list_all_people( $opts );
-
-   $opts = { numify => TRUE, type => 'select',
-             value  => [ [ NUL, NUL ], @{ $people } ] };
-   $disabled and $opts->{disabled} = TRUE;
-
-   return $opts;
 };
 
 my $_people_headers = sub {
@@ -161,29 +170,6 @@ my $_people_title = sub {
    return loc( $req, $k );
 };
 
-my $_person_mugshot = sub {
-   my ($conf, $req, $person) = @_;
-
-   my $uri = $conf->assets.'/mugshot/'; my $href;
-
-   if ($person->shortcode) {
-      my $assets = $conf->assetdir->catdir( 'mugshot' );
-
-      for my $extn (qw( .gif .jpeg .jpg .png )) {
-         my $path = $assets->catfile( $person->shortcode.$extn );
-
-         $path->exists
-            and $href = $req->uri_for( $uri.$person->shortcode.$extn )
-            and last;
-      }
-   }
-
-   $href //= $req->uri_for( $uri.'nomugshot.png' );
-
-   return { class => 'mugshot', href => $href,
-            title => loc( $req, 'mugshot' ), type => 'image' };
-};
-
 my $_person_ops_links = sub {
    my ($req, $page, $actionp, $scode) = @_;
 
@@ -193,7 +179,6 @@ my $_person_ops_links = sub {
                                 loc( $req, 'mugshot_upload_link' ),
                                 loc( $req, 'mugshot_upload_tip' );
    my $href       = uri_for_action $req, 'person/mugshot', [ $scode ];
-   my $list       = [ $mugshot, $add_person ];
 
    push @{ $page->{literal_js} //= [] },
       dialog_anchor( 'mugshot', $href, {
@@ -201,10 +186,23 @@ my $_person_ops_links = sub {
          title   => loc( $req, 'Mugshot Upload' ),
          useIcon => \1 } );
 
-   return f_list '&nbsp;|&nbsp;', $list;
+   return f_list '&nbsp;|&nbsp;', [ $mugshot, $add_person ];
 };
 
 # Private methods
+my $_bind_next_of_kin = sub {
+   my ($self, $person, $disabled) = @_;
+
+   my $opts   = { fields => { selected => $person->next_of_kin } };
+   my $people = $self->schema->resultset( 'Person' )->list_all_people( $opts );
+
+   $opts = { numify => TRUE, type => 'select',
+             value  => [ [ NUL, NUL ], @{ $people } ] };
+   $disabled and $opts->{disabled} = TRUE;
+
+   return $opts;
+};
+
 my $_list_all_roles = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
@@ -230,7 +228,7 @@ my $_people_ops_links = sub {
 
    $page_links and unshift @{ $links }, $page_links;
 
-   return operation_links $links;
+   return $links;
 };
 
 my $_update_person_from_request = sub {
@@ -279,7 +277,7 @@ my $_bind_person_fields = sub {
    return
    [  first_name       => { class    => 'narrow-field server',
                             disabled => $disabled },
-      mugshot          => $_person_mugshot->( $self->config, $req, $person ),
+      mugshot          => $_bind_mugshot->( $self->config, $req, $person ),
       last_name        => { class    => 'narrow-field server',
                             disabled => $disabled },
       primary_role     => { class    => 'narrow-field',
@@ -295,7 +293,7 @@ my $_bind_person_fields = sub {
                             disabled => $disabled },
       mobile_phone     => { disabled => $disabled },
       home_phone       => { disabled => $disabled },
-      next_of_kin      => $self->$_next_of_kin_list( $person, $disabled ),
+      next_of_kin      => $self->$_bind_next_of_kin( $person, $disabled ),
       dob              => { disabled => $disabled, type => 'date' },
       joined           => { disabled => $disabled, type => 'date' },
       resigned         => { class    => 'standard-field clearable',
@@ -457,7 +455,7 @@ sub person_summary : Role(person_manager) Role(address_viewer) {
    my $name       =  $req->uri_params->( 0 );
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $_maybe_find_person->( $person_rs, $name );
-   my $form       =  blank_form 'person-admin', NUL;
+   my $form       =  blank_form { class => 'standard-form' };
    my $opts       =  { disabled => TRUE };
    my $fields     =  $self->$_bind_person_fields( $req, $form, $person, $opts );
    my $page       =  {
@@ -485,29 +483,31 @@ sub people : Role(any) {
                       rows   => $req->session->rows_per_page,
                       status => $status,
                       type   => $type, };
-   my $actionp   =  $self->moniker.'/people';
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $people    =  $person_rs->search_for_people( $opts );
+   my $moniker   =  $self->moniker;
+   my $href      =  uri_for_action $req, "${moniker}/people", [], $params;
+   my $form      =  blank_form 'people', $href, {
+      class      => 'wider-table', id => 'people' };
    my $page      =  {
-      fields     => {
-         headers => $_people_headers->( $req, $params ),
-         rows    => [], },
-      form       => {
-         name    => 'people',
-         href    => uri_for_action( $req, $actionp, [], $params ) },
-      template   => [ 'contents', 'table' ],
+      forms      => [ $form ],
+      template   => [ 'contents' ],
       title      => $_people_title->( $req, $role, $status, $type ), };
-   my $fields    =  $page->{fields};
-   my $rows      =  $fields->{rows};
+   my $list      =  f_list '&nbsp;|&nbsp;',
+      $self->$_people_ops_links( $req, $page, $params, $people->pager );
+   my $class     =  'operation-links align-right right-last';
 
-   $fields->{links}
-      = $self->$_people_ops_links( $req, $page, $params, $people->pager );
-   $type eq 'contacts' and $fields->{class} = 'smaller-table';
+   p_container $form, $list, { class => $class };
 
-   for my $person ($people->all) {
-      push @{ $rows }, [ { value => $person->label  },
-                         $_people_links->( $req, $person, $params ) ];
-   }
+   my $table = p_table $form, { headers => $_people_headers->( $req, $params )};
+
+   $type eq 'contacts' and $table->{class} = 'smaller-table';
+
+   p_rows $table,
+      [ map { [ { value => $_->label }, $_people_links->( $req, $_, $params ) ]}
+        $people->all ];
+
+   p_container $form, $list, { class => $class };
 
    return $self->get_stash( $req, $page );
 }

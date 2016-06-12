@@ -181,7 +181,7 @@ sub message_link {
 
    my $opts   =  {
       name    => $name,
-      target  => $page->{form}->{name},
+      target  => $page->{forms}->[ 0 ]->{form_name} // $page->{form}->{name},
       title   => loc( $req, 'message_title' ),
       useIcon => \1 };
    my $args   =  [ "${href}", $opts ];
