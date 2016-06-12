@@ -429,7 +429,7 @@ sub event_info : Role(any) {
 
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $stash = $self->dialog_stash( $req, 'event-info' );
+   my $stash = $self->dialog_stash( $req );
    my $form  = $stash->{page}->{forms}->[ 0 ] = blank_form;
    my $label = $event->owner->label;
    my ($start, $end) = display_duration $req, $event;
@@ -650,7 +650,7 @@ sub vehicle_info : Role(rota_manager) {
 
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $stash = $self->dialog_stash( $req, 'vehicle-event-info' );
+   my $stash = $self->dialog_stash( $req );
    my $form  = $stash->{page}->{forms}->[ 0 ] = blank_form;
    my $label = $event->owner->label;
    my ($start, $end) = display_duration $req, $event;

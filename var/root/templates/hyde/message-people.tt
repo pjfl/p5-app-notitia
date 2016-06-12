@@ -1,3 +1,0 @@
-[% PROCESS 'hyde/macros.tt' -%]
-<!-- Message People -->
-[% Dispatch( page.forms.0 ) %]

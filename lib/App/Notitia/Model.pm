@@ -54,7 +54,7 @@ sub dialog_stash {
 
    $stash->{page} = $self->load_page( $req, {
       fields => {},
-      layout => $layout,
+      layout => $layout // 'dialog',
       meta   => { id => $req->query_params->( 'id' ), }, } );
    $stash->{view} = 'json';
 

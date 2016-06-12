@@ -1,3 +1,0 @@
-[% PROCESS 'hyde/macros.tt' -%]
-<!-- Profile User -->
-[% Dispatch( page.forms.0 ) -%]

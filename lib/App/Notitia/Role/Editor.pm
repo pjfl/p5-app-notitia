@@ -239,7 +239,7 @@ sub get_dialog {
    my $params = $req->query_params;
    my $name   = $params->( 'name' );
    my $val    = $params->( 'val', { optional => TRUE } );
-   my $stash  = $self->dialog_stash( $req, "${name}-file" );
+   my $stash  = $self->dialog_stash( $req );
    my $links  = $stash->{links};
    my $href   = $name eq 'create' ? $links->{root_uri}
               : $name eq 'rename' ? $self->base_uri( $req, [ $val ] )

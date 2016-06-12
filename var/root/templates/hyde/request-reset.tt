@@ -1,3 +1,0 @@
-[% PROCESS 'hyde/macros.tt' -%]
-<!-- Request Reset -->
-[% Dispatch( page.forms.0 ) %]

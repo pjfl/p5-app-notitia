@@ -484,7 +484,7 @@ sub assign : Role(rota_manager) {
 
    my $action = $req->query_params->( 'action' );
    my $type   = $req->query_params->( 'type', { optional => TRUE } ) // 'bike';
-   my $stash  = $self->dialog_stash( $req, "${action}-vehicle" );
+   my $stash  = $self->dialog_stash( $req );
    my $href   = uri_for_action $req, $self->moniker.'/vehicle', $args;
    my $form   = $stash->{page}->{forms}->[ 0 ]
               = blank_form "${action}-vehicle", $href;
@@ -548,7 +548,7 @@ sub request_info : Role(rota_manager) {
 
    my $uri     = $req->uri_params->( 0 );
    my $event   = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $stash   = $self->dialog_stash( $req, 'vehicle-request-info' );
+   my $stash   = $self->dialog_stash( $req );
    my $vreq_rs = $self->schema->resultset( 'VehicleRequest' );
    my $form    = $stash->{page}->{forms}->[ 0 ] = blank_form;
    my $id      = $event->id;

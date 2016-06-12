@@ -1,4 +1,4 @@
-<!-- Rota Table -->
+<!-- Day Table -->
 <table class="standard-table">
 [% FOR event IN page.rota.events -%]
 [%    TableRow( event ) -%]

@@ -230,7 +230,7 @@ sub profile : Role(any) {
 
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_by_shortcode( $req->username );
-   my $stash     = $self->dialog_stash( $req, 'profile-user' );
+   my $stash     = $self->dialog_stash( $req );
    my $href      = uri_for_action $req, $self->moniker.'/profile';
    my $form      = $stash->{page}->{forms}->[ 0 ]
                  = blank_form 'profile-user', $href;
@@ -255,7 +255,7 @@ sub profile : Role(any) {
 sub request_reset : Role(anon) {
    my ($self, $req) = @_;
 
-   my $stash = $self->dialog_stash( $req, 'request-reset' );
+   my $stash = $self->dialog_stash( $req );
    my $href  = uri_for_action $req, $self->moniker.'/reset';
    my $form  = $stash->{page}->{forms}->[ 0 ]
              = blank_form 'request-reset', $href;
@@ -328,7 +328,7 @@ sub show_if_needed : Role(anon) {
 sub totp_request : Role(anon) {
    my ($self, $req) = @_;
 
-   my $stash = $self->dialog_stash( $req, 'totp-request' );
+   my $stash = $self->dialog_stash( $req );
    my $href  = uri_for_action $req, $self->moniker.'/reset';
    my $form  = $stash->{page}->{forms}->[ 0 ]
              = blank_form 'totp-request', $href;

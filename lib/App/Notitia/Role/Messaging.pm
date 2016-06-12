@@ -202,7 +202,7 @@ sub message_stash {
    my ($self, $req, $opts) = @_;
 
    my $params    = $req->query_params->( { optional => TRUE } ) // {};
-   my $stash     = $self->dialog_stash( $req, 'message-people' );
+   my $stash     = $self->dialog_stash( $req );
    my $form      = $stash->{page}->{forms}->[ 0 ]
                  = blank_form NUL, { class => 'standard-form' };
    my $templates = $self->$_list_message_templates( $req );

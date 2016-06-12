@@ -395,9 +395,9 @@ sub mugshot : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $scode  = $req->uri_params->( 0 );
+   my $stash  = $self->dialog_stash( $req );
    my $params = { name => $scode, type => 'mugshot' };
    my $href   = uri_for_action $req, 'docs/upload', [], $params;
-   my $stash  = $self->dialog_stash( $req, 'upload-file' );
 
    $stash->{page}->{forms}->[ 0 ] = blank_form 'upload-file', $href;
    $self->components->{docs}->upload_dialog( $req, $stash->{page} );
