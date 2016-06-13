@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Commented on some recent code changes
           - Added p_list to Form
           - Defaulted and renamed the menu template
           - Removed unused templates

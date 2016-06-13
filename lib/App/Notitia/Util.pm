@@ -177,6 +177,9 @@ sub assert_unique ($$$$) {
    is_arrayref $fields->{ $k }->{unique} and return;
 
    my $v = ($rs->search( { $k => $columns->{ $k } } )->all)[ 0 ];
+   # TODO: Sticking a parameter in error message makes it untranslatable
+   # that's what the bind values are for [_2] and stick the value in the
+   # list that follows
    my $e = exception "Parameter [_1] is not unique ($columns->{ $k })", [ $k ];
 
    defined $v and throw ValidationErrors, [ $e ], level => 2;
@@ -742,6 +745,16 @@ sub page_link_set ($$$$$) {
    my $prev = $pager->previous_page || $pager->first_page;
    my $next = $pager->next_page     || $pager->last_page;
 
+   # TODO: Learn to use a fucking editor that does not leave whitespace
+   # on the ends of lines. The project code standard is 80 columns per line
+   # The first and last links look hideous, it's underlining the ellipses
+   # as well as the words first and last. The first and last links have
+   # nbsp's as well as elipses so extra wide then. With the first page selected
+   # I can see (1) 2 3 4 5. With the last page selected I can see
+   # 3 4 5 ( 6 ), what happened to page 2?. The links that these have
+   # replaced would take you half the distance to either the first or
+   # last pages, so that you could use them to do a binary chop
+   # Learning to use the change log would be a good move too
    # Max(current - 2, first + 1)
    my $n_prev = 4; 
    my $page   = ($pager->current_page - $n_prev, $pager->first_page )

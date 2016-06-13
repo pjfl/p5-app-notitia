@@ -78,6 +78,9 @@ around 'load_page' => sub {
    my $editing = $req->query_params->( 'edit', { optional => TRUE } )
                ? TRUE : FALSE;
 
+   # TODO: You cannot do this one every page load. It's only used if
+   # the request is authenticated so use can used the copy in the session
+   # The idiom used in the project is is_member not exits {map....
    my $roles = $self->components->{person}->find_by_shortcode( $req->username )->list_roles;
 
    $page->{is_editor} = (  exists {map { $_ => 1 } @{$roles}}->{'editor'}
