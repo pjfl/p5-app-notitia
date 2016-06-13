@@ -300,8 +300,10 @@ my $_create_event = sub {
 
    try   { $event->insert }
    catch {
-      $self->rethrow_exception
-         ( $_, 'create', 'event', $event->name.SPC.$start_date->dmy( '/' ) );
+      my $label = ($event->name || 'with no name on').SPC
+                . $start_date->clone->set_time_zone( 'local' )->dmy( '/' );
+
+      $self->rethrow_exception( $_, 'create', 'event', $label );
    };
 
    return $event;

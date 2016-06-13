@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Better errors when failing to create events
           - Fixes failing create vehicle_event
           - Use session roles for faster is_editor test
           - Removed remaing specific dialog templates

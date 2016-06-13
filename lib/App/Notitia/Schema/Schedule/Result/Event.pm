@@ -120,10 +120,10 @@ sub end_date {
 }
 
 sub insert {
-   my $self = shift; $self->$_assert_event_allowed;
+   my $self = shift;
 
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
-
+   $self->$_assert_event_allowed;
    $self->$_set_uri;
 
    return $self->next::method;
