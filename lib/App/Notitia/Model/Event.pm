@@ -2,9 +2,8 @@ package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC PIPE_SEP TRUE );
-use App::Notitia::Form      qw( blank_form f_list p_action p_button p_container
-                                p_fields p_rows p_table p_tag p_text
-                                p_textfield );
+use App::Notitia::Form      qw( blank_form p_action p_button p_list p_fields
+                                p_rows p_table p_tag p_text p_textfield );
 use App::Notitia::Util      qw( check_field_js create_link display_duration loc
                                 locm make_tip management_link page_link_set
                                 register_action_paths to_dt to_msg
@@ -91,7 +90,11 @@ my $_event_ops_links = sub {
                             { container_class => 'add-link' };
    my $vreq   = management_link $req, 'asset/request_vehicle', $uri;
 
-   return f_list PIPE_SEP, [ $vreq, $add_ev ];
+   return [ $vreq, $add_ev ];
+};
+
+my $_link_opts = sub {
+   return { class => 'operation-links align-right right-last' };
 };
 
 my $_add_participate_button = sub {
@@ -137,7 +140,7 @@ my $_events_ops_links = sub {
 
    $page_links and unshift @{ $links }, $page_links;
 
-   return f_list PIPE_SEP, $links;
+   return $links;
 };
 
 # Private methods
@@ -207,7 +210,7 @@ my $_participent_ops_links = sub {
    my $href         = uri_for_action $req, $actionp, [], $params;
    my $message_link = $self->message_link( $req, $page, $href, $name );
 
-   return f_list PIPE_SEP, [ $message_link ];
+   return [ $message_link ];
 };
 
 my $_update_event_from_request = sub {
@@ -409,9 +412,9 @@ sub event : Role(event_manager) {
       literal_js  => $self->$_add_event_js(),
       title       => loc $req, "event_${action}_heading" };
    my $event      =  $self->$_maybe_find_event( $uri );
+   my $links      =  $uri ? $_event_ops_links->( $req, $actionp, $uri ) : [];
 
-   $uri and p_container $form, $_event_ops_links->( $req, $actionp, $uri ), {
-      class => 'operation-links align-right right-last' };
+   $uri and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Event', $event,
       $self->$_bind_event_fields( $event, { date => $date } );
@@ -456,9 +459,9 @@ sub event_summary : Role(any) {
    my $page    =  {
       forms    => [ $form ],
       title    => loc $req, 'event_summary_heading' };
+   my $links   =  $_event_ops_links->( $req, $actionp, $uri );
 
-   $uri and p_container $form, $_event_ops_links->( $req, $actionp, $uri ), {
-      class => 'operation-links align-right right-last' };
+   $uri and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Event', $event,
       $self->$_bind_event_fields( $event, { disabled => TRUE } );
@@ -492,15 +495,13 @@ sub events : Role(any) {
       title      => loc $req, $title };
    my $links     =  $_events_ops_links->( $req, $moniker, $params, $pager );
 
-   p_container $form, $links, {
-      class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $table = p_table $form, { headers => $_events_headers->( $req ) };
 
    p_rows $table, [ map { $self->$_event_links( $req, $_ ) } $events->all ];
 
-   p_container $form, $links, {
-      class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
@@ -548,16 +549,14 @@ sub participents : Role(any) {
          locm $req, 'participents_management_heading', $event->name };
    my $links     =  $self->$_participent_ops_links( $req, $page, $params );
 
-   p_container $form, $links, {
-      class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $table = p_table $form, { headers => $_participent_headers->( $req ) };
 
    p_rows $table, [ map { $self->$_participent_links( $req, $event, $_ ) }
                        @{ $person_rs->list_participents( $event ) } ];
 
-   p_container $form, $links, {
-      class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }

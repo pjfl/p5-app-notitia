@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Replaced f_list from Form with p_list
           - More subtle styling for help links
             Avoids underlining spaces in favour of a colour change
           - Commented on some recent code changes

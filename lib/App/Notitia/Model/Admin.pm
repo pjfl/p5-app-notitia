@@ -3,7 +3,7 @@ package App::Notitia::Model::Admin;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP
                                 SLOT_TYPE_ENUM TRUE TYPE_CLASS_ENUM );
-use App::Notitia::Form      qw( blank_form f_list f_tag p_button p_container
+use App::Notitia::Form      qw( blank_form f_tag p_button p_container p_list
                                 p_select p_rows p_table p_textfield );
 use App::Notitia::Util      qw( create_link loc locm make_tip management_link
                                 register_action_paths to_msg uri_for_action );
@@ -40,25 +40,8 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_add_type_create_links = sub {
-   my ($req, $moniker, $type_class) = @_;
-
-   my $actionp = "${moniker}/type"; my $links = [];
-
-   if ($type_class) {
-      my $k = "${type_class}_type"; my $opts = { args => [ $type_class ] };
-
-      push @{ $links }, create_link( $req, $actionp, $k, $opts );
-   }
-   else {
-      for my $type_class (@{ TYPE_CLASS_ENUM() }) {
-         my $k = "${type_class}_type"; my $opts = { args => [ $type_class ] };
-
-         push @{ $links }, create_link( $req, $actionp, $k, $opts );
-      }
-   }
-
-   return f_list PIPE_SEP, $links;
+my $_link_opts = sub {
+   return { class => 'operation-links align-right right-last' };
 };
 
 my $_list_slot_certs = sub {
@@ -91,6 +74,27 @@ my $_slot_roles_links = sub {
 
 my $_subtract = sub {
    return [ grep { is_arrayref $_ or not is_member $_, $_[ 1 ] } @{ $_[ 0 ] } ];
+};
+
+my $_type_create_links = sub {
+   my ($req, $moniker, $type_class) = @_;
+
+   my $actionp = "${moniker}/type"; my $links = [];
+
+   if ($type_class) {
+      my $k = "${type_class}_type"; my $opts = { args => [ $type_class ] };
+
+      push @{ $links }, create_link( $req, $actionp, $k, $opts );
+   }
+   else {
+      for my $type_class (@{ TYPE_CLASS_ENUM() }) {
+         my $k = "${type_class}_type"; my $opts = { args => [ $type_class ] };
+
+         push @{ $links }, create_link( $req, $actionp, $k, $opts );
+      }
+   }
+
+   return $links;
 };
 
 my $_types_headers = sub {
@@ -286,17 +290,15 @@ sub types : Role(administrator) {
    my $type_rs    =  $self->schema->resultset( 'Type' );
    my $types      =  $type_class ? $type_rs->search_for_types( $type_class )
                                  : $type_rs->search_for_all_types;
-   my $links      =  $_add_type_create_links->( $req, $moniker, $type_class );
+   my $links      =  $_type_create_links->( $req, $moniker, $type_class );
 
-   p_container $form, $links, {
-      class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $table = p_table $form, { headers => $_types_headers->( $req ) };
 
    p_rows $table, [ map { $_types_links->( $req, $_ ) } $types->all ];
 
-   p_container $form, $links, {
-      class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }

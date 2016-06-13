@@ -2,7 +2,7 @@ package App::Notitia::Model::Vehicle;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_list f_tag p_action p_button
+use App::Notitia::Form      qw( blank_form f_tag p_action p_button
                                 p_date p_fields p_hidden p_list
                                 p_rows p_select p_table p_tag p_textfield );
 use App::Notitia::Util      qw( assign_link bind check_field_js create_link
@@ -67,6 +67,10 @@ my $_find_vreq_by = sub {
 
    return $rs->search( { event_id => $event->id,
                          type_id  => $vehicle_type->id } )->single;
+};
+
+my $_link_opts = sub {
+   return { class => 'operation-links align-right right-last' };
 };
 
 my $_maybe_find_vehicle = sub {
@@ -238,18 +242,6 @@ my $_vehicle_type_list = sub {
    $disabled and $opts->{disabled} = TRUE;
 
    return $opts;
-};
-
-my $_vehicles_op_links = sub {
-   my ($req, $moniker, $params, $pager) = @_;
-
-   my $actionp    = "${moniker}/vehicles";
-   my $page_links = page_link_set $req, $actionp, [], $params, $pager;
-   my $links      = [ create_link $req, "${moniker}/vehicle", 'vehicle' ];
-
-   $page_links and unshift @{ $links }, $page_links;
-
-   return $links;
 };
 
 my $_vreq_row = sub {
@@ -445,7 +437,7 @@ my $_find_last_keeper = sub {
 };
 
 my $_vehicle_links = sub {
-   my ($self, $moniker, $req, $service, $vehicle) = @_;
+   my ($self, $req, $service, $vehicle) = @_; my $moniker = $self->moniker;
 
    my $vrn = $vehicle->vrn; my $links = [ { value => $vehicle->label } ];
 
@@ -466,6 +458,18 @@ my $_vehicle_links = sub {
          { value => $self->$_find_last_keeper( $req, $vehicle, $now ) };
 
    }
+
+   return $links;
+};
+
+my $_vehicles_ops_links = sub {
+   my ($self, $req, $params, $pager) = @_; my $moniker = $self->moniker;
+
+   my $actionp    = "${moniker}/vehicles";
+   my $page_links = page_link_set $req, $actionp, [], $params, $pager;
+   my $links      = [ create_link $req, "${moniker}/vehicle", 'vehicle' ];
+
+   $page_links and unshift @{ $links }, $page_links;
 
    return $links;
 };
@@ -661,7 +665,7 @@ sub vehicle : Role(rota_manager) {
    my $links      =  [ create_link $req, $actionp, 'vehicle' ];
    my $args       =  [ 'vehicle',  $vehicle->label ];
 
-   $vrn and p_list $form, PIPE_SEP, $links;
+   $vrn and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Vehicle', $vehicle, $fields;
 
@@ -698,7 +702,7 @@ sub vehicle_events : Role(rota_manager) {
    my $links  = [ create_link $req, 'event/vehicle_event', 'event', {
       args => [ $vrn ], container_class => 'add-link' } ];
 
-   p_list $form, PIPE_SEP, $links;
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
@@ -706,35 +710,33 @@ sub vehicle_events : Role(rota_manager) {
 sub vehicles : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $moniker   =  $self->moniker;
-   my $params    =  $req->query_params->( { optional => TRUE } );
-   my $type      =  $params->{type};
-   my $private   =  $params->{private} || FALSE;
-   my $service   =  $params->{service} || FALSE;
-   my $opts      =  { page    => $params->{page} // 1,
-                      private => $private,
-                      rows    => $req->session->rows_per_page,
-                      service => $service,
-                      type    => $type };
-   my $rs        =  $self->schema->resultset( 'Vehicle' );
-   my $vehicles  =  $rs->search_for_vehicles( $opts );
-   my $form      =  blank_form;
-   my $page      =  {
-      forms      => [ $form ],
-      title      => $_vehicle_title->( $req, $type, $private, $service ), };
-   my $links     =  $_vehicles_op_links->
-      ( $req, $moniker, $opts, $vehicles->pager );
+   my $moniker  =  $self->moniker;
+   my $params   =  $req->query_params->( { optional => TRUE } );
+   my $type     =  $params->{type};
+   my $private  =  $params->{private} || FALSE;
+   my $service  =  $params->{service} || FALSE;
+   my $opts     =  { page    => $params->{page} // 1,
+                     private => $private,
+                     rows    => $req->session->rows_per_page,
+                     service => $service,
+                     type    => $type };
+   my $rs       =  $self->schema->resultset( 'Vehicle' );
+   my $vehicles =  $rs->search_for_vehicles( $opts );
+   my $form     =  blank_form;
+   my $page     =  {
+      forms     => [ $form ],
+      title     => $_vehicle_title->( $req, $type, $private, $service ), };
+   my $links    =  $self->$_vehicles_ops_links( $req, $opts, $vehicles->pager );
 
-   p_list $form, PIPE_SEP, $links;
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $table = p_table $form, {
       headers => $_vehicles_headers->( $req, $service ) };
 
-   p_rows $table,
-      [ map { $self->$_vehicle_links( $self->moniker, $req, $service, $_ ) }
-        $vehicles->all ];
+   p_rows $table, [ map { $self->$_vehicle_links( $req, $service, $_ ) }
+                    $vehicles->all ];
 
-   p_list $form, PIPE_SEP, $links;
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }

@@ -2,8 +2,8 @@ package App::Notitia::Model::Person;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP TRUE );
-use App::Notitia::Form      qw( blank_form f_list p_action p_button p_container
-                                p_fields p_rows p_table );
+use App::Notitia::Form      qw( blank_form p_action p_button p_fields p_list
+                                p_rows p_table );
 use App::Notitia::Util      qw( check_field_js create_link dialog_anchor loc
                                 make_tip management_link page_link_set
                                 register_action_paths table_link to_dt to_msg
@@ -113,6 +113,10 @@ my $_contact_links = sub {
    return [ { value => $person->label }, @links ];
 };
 
+my $_link_opts = sub {
+   return { class => 'operation-links align-right right-last' };
+};
+
 my $_maybe_find_person = sub {
    return $_[ 1 ] ? $_[ 0 ]->find_by_shortcode( $_[ 1 ] ) : Class::Null->new;
 };
@@ -179,7 +183,7 @@ my $_person_ops_links = sub {
          title   => loc( $req, 'Mugshot Upload' ),
          useIcon => \1 } );
 
-   return f_list PIPE_SEP, [ $mugshot, $add_person ];
+   return [ $mugshot, $add_person ];
 };
 
 # Private methods
@@ -421,10 +425,10 @@ sub person : Role(person_manager) {
    my $person     =  $_maybe_find_person->( $person_rs, $name );
    my $opts       =  { action => $action };
    my $fields     =  $self->$_bind_person_fields( $req, $form, $person, $opts );
+   my $links      =  $_person_ops_links->( $req, $page, $actionp, $name );
    my $args       =  [ 'person', $person->label ];
 
-   p_container $form, $_person_ops_links->( $req, $page, $actionp, $name ), {
-      class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Person', $person, $fields;
 
@@ -459,31 +463,30 @@ sub person_summary : Role(person_manager) Role(address_viewer) {
 sub people : Role(any) {
    my ($self, $req, $type) = @_;
 
-   my $actionp   =  $self->moniker.'/people';
-   my $params    =  $req->query_params->( { optional => TRUE } );
-   my $role      =  $params->{role  };
-   my $status    =  $params->{status};
+   my $actionp =  $self->moniker.'/people';
+   my $params  =  $req->query_params->( { optional => TRUE } );
+   my $role    =  $params->{role  };
+   my $status  =  $params->{status};
 
    $type and $params->{type} = $type; $type = $params->{type} || NUL;
 
-   my $opts      =  { page   => delete $params->{page} // 1,
-                      role   => $role,
-                      rows   => $req->session->rows_per_page,
-                      status => $status,
-                      type   => $type, };
-   my $href      =  uri_for_action $req, $actionp, [], $params;
-   my $form      =  blank_form 'people', $href, {
-      class      => 'wider-table', id => 'people' };
-   my $page      =  {
-      forms      => [ $form ],
-      title      => $_people_title->( $req, $role, $status, $type ), };
-   my $person_rs =  $self->schema->resultset( 'Person' );
-   my $people    =  $person_rs->search_for_people( $opts );
-   my $list      =  f_list PIPE_SEP,
-      $self->$_people_ops_links( $req, $page, $params, $people->pager );
-   my $class     =  'operation-links align-right right-last';
+   my $opts    =  { page   => delete $params->{page} // 1,
+                    role   => $role,
+                    rows   => $req->session->rows_per_page,
+                    status => $status,
+                    type   => $type, };
+   my $href    =  uri_for_action $req, $actionp, [], $params;
+   my $form    =  blank_form 'people', $href, {
+      class    => 'wider-table', id => 'people' };
+   my $page    =  {
+      forms    => [ $form ],
+      title    => $_people_title->( $req, $role, $status, $type ), };
+   my $rs      =  $self->schema->resultset( 'Person' );
+   my $people  =  $rs->search_for_people( $opts );
+   my $links   =  $self->$_people_ops_links
+      ( $req, $page, $params, $people->pager );
 
-   p_container $form, $list, { class => $class };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $table = p_table $form, { headers => $_people_headers->( $req, $params )};
 
@@ -492,7 +495,7 @@ sub people : Role(any) {
    p_rows $table, [ map { $_people_links->( $req, $params, $_ ) }
                     $people->all ];
 
-   p_container $form, $list, { class => $class };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }

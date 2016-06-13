@@ -8,7 +8,7 @@ use App::Notitia::Constants qw( FALSE HASH_CHAR NUL TRUE );
 use Class::Usul::Functions  qw( is_arrayref is_hashref throw );
 use Scalar::Util            qw( blessed );
 
-our @EXPORT_OK = qw( blank_form f_link f_list f_tag p_action p_button
+our @EXPORT_OK = qw( blank_form f_link f_tag p_action p_button
                      p_checkbox p_container p_date p_fields p_hidden p_image
                      p_label p_list p_password p_radio p_rows p_select p_table
                      p_tag p_text p_textarea p_textfield );
@@ -48,6 +48,12 @@ my $_bind = sub {
    else { $opts->{value} = NUL }
 
    return $opts;
+};
+
+my $_f_list = sub {
+   my ($sep, $list) = @_; $sep //= NUL; $list //= [];
+
+   return { list => $list, separator => $sep, type => 'list' };
 };
 
 my $_field_options = sub {
@@ -135,12 +141,6 @@ sub f_link (@) {
    return { %{ $opts }, hint => $hint, href => $href // HASH_CHAR,
             name => "${action}${name}", tip => $tip,
             type => 'link', value => $value };
-}
-
-sub f_list (@) {
-   my ($sep, $list) = @_; $sep //= NUL; $list //= [];
-
-   return { list => $list, separator => $sep, type => 'list' };
 }
 
 sub f_tag (@) {
@@ -239,11 +239,9 @@ sub p_label ($@) {
 }
 
 sub p_list ($@) {
-   my ($f, $sep, $list, $opts) = @_; $opts = { %{ $opts // {} } };
+   my ($f, $sep, $list, $opts) = @_;
 
-   $opts->{class} //= 'operation-links align-right right-last';
-
-   return p_container $f, f_list( $sep, $list ), $opts;
+   return p_container $f, $_f_list->( $sep, $list ), $opts;
 }
 
 sub p_password ($@) {

@@ -2,8 +2,8 @@ package App::Notitia::Model::Certification;
 
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP TRUE );
-use App::Notitia::Form      qw( blank_form f_link f_list p_action p_container
-                                p_fields p_rows p_table p_textfield );
+use App::Notitia::Form      qw( blank_form f_link p_action p_list p_fields
+                                p_rows p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js loc locm register_action_paths
                                 to_dt to_msg uri_for_action );
 use Class::Null;
@@ -51,17 +51,14 @@ my $_certs_ops_links = sub {
    my $href = uri_for_action( $req, $actionp, [ $person->shortcode ] );
    my $opts = { action => 'add', args => [ $person->label ], request => $req };
 
-   return f_list PIPE_SEP, [ f_link 'certification', $href, $opts ];
+   return [ f_link 'certification', $href, $opts ];
+};
+
+my $_link_opts = sub {
+   return { class => 'operation-links align-right right-last' };
 };
 
 # Private methods
-my $_add_certification_js = sub {
-   my $self = shift;
-   my $opts = { domain => 'schedule', form => 'Certification' };
-
-   return [ check_field_js( 'completed', $opts ), ];
-};
-
 my $_cert_links = sub {
    my ($self, $req, $scode, $cert) = @_;
 
@@ -75,6 +72,13 @@ my $_cert_links = sub {
    }
 
    return [ { value => $cert->label( $req ) }, @links ];
+};
+
+my $_certification_js = sub {
+   my $self = shift;
+   my $opts = { domain => 'schedule', form => 'Certification' };
+
+   return [ check_field_js( 'completed', $opts ), ];
 };
 
 my $_list_all_certs = sub {
@@ -135,11 +139,11 @@ sub certification : Role(person_manager) {
    my $name      =  $req->uri_params->( 0 );
    my $type      =  $req->uri_params->( 1, { optional => TRUE } );
    my $href      =  uri_for_action $req, $actionp, [ $name, $type ];
-   my $action    =  $type ? 'update' : 'create';
    my $form      =  blank_form 'certification-admin', $href;
+   my $action    =  $type ? 'update' : 'create';
    my $page      =  {
       forms      => [ $form ],
-      literal_js => $self->$_add_certification_js(),
+      literal_js => $self->$_certification_js(),
       title      => loc $req, "certification_${action}_heading" };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $name );
@@ -170,6 +174,7 @@ sub certifications : Role(person_manager) {
    my $schema  =  $self->schema;
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );
    my $cert_rs =  $schema->resultset( 'Certification' );
+   my $links   =  $_certs_ops_links->( $req, $actionp, $person );
 
    p_textfield $form, 'username', $person->label, { disabled => TRUE };
 
@@ -178,8 +183,7 @@ sub certifications : Role(person_manager) {
    p_rows $table, [ map { $self->$_cert_links( $req, $scode, $_ ) }
                     $cert_rs->search_for_certifications( $scode )->all ];
 
-   p_container $form, $_certs_ops_links->( $req, $actionp, $person ), {
-      class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
