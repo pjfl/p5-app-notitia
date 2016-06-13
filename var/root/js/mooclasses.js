@@ -2314,7 +2314,7 @@ var ServerUtils = new Class( {
 
    showIfNeeded: function( action, id, target ) {
       this.request( action, id, $( id ).value, function( resp ) {
-         if (resp.needed) { $( target ).show() }
+         if (resp.needed) { $( target ).show( resp.display ) }
          else { $( target ).hide() }
       }.bind( this ) );
    }

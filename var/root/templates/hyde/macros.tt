@@ -65,10 +65,10 @@
 [% END -%]
 [% MACRO Form( f ) BLOCK -%]
 [%    IF f.class; class = f.class; ELSE; class = 'standard-form'; END -%]
+[%    IF f.enctype; enctype = f.enctype; ELSE; enctype = 'application/x-www-form-urlencoded'; END -%]
 [%    IF f.method; method = f.method; ELSE; method = 'post'; END -%]
       <form action="[% f.href %]" class="[% class %]"
-           enctype="application/x-www-form-urlencoded"
-[%    IF f.id %]id="[% f.id %]"[% END -%]
+           enctype="[% enctype %]" [% IF f.id %]id="[% f.id %]"[% END -%]
             method="[% method %]" name="[% f.form_name %]">
 [%    Dispatch( f.content ) -%]
       </form>

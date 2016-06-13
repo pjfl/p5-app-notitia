@@ -644,18 +644,20 @@ sub vehicle_event : Role(rota_manager) {
 sub vehicle_info : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $uri   = $req->uri_params->( 0 );
-   my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $stash = $self->dialog_stash( $req );
-   my $form  = $stash->{page}->{forms}->[ 0 ] = blank_form;
-   my $label = $event->owner->label;
+   my $uri     = $req->uri_params->( 0 );
+   my $event   = $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $stash   = $self->dialog_stash( $req );
+   my $form    = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $owner   = $event->owner->label;
+   my $vehicle = $event->vehicle->label;
    my ($start, $end) = display_duration $req, $event;
 
-   $event->owner->postcode and $label .= ' ('.$event->owner->outer_postcode.')';
+   $event->owner->postcode and $owner .= ' ('.$event->owner->outer_postcode.')';
 
-   p_tag $form, 'p', $label, { class => 'label-column' };
-   p_tag $form, 'p', $start, { class => 'label-column' };;
-   p_tag $form, 'p', $end,   { class => 'label-column' };;
+   p_tag $form, 'p', $owner,   { class => 'label-column' };
+   p_tag $form, 'p', $vehicle, { class => 'label-column' };
+   p_tag $form, 'p', $start,   { class => 'label-column' };
+   p_tag $form, 'p', $end,     { class => 'label-column' };
 
    return $stash;
 }

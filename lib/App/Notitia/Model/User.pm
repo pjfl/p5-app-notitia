@@ -174,9 +174,10 @@ sub login : Role(anon) {
 
    p_textfield $form, 'username',  NUL, { class => 'standard-field server' };
    p_password  $form, 'password';
-   p_textfield $form, 'auth_code', NUL, { label_class => 'hidden',
+   p_textfield $form, 'auth_code', NUL, { class => 'smallint-field',
+                                          label_class => 'hidden',
                                           label_id    => 'auth_code_label', };
-   p_button    $form, 'login', 'login', { class => 'save-button right-last' };
+   p_button    $form, 'login', 'login', { class => 'save-button right' };
 
    $self->$_add_login_js( $req, $page );
 
@@ -305,8 +306,9 @@ sub reset_password : Role(anon) {
 }
 
 sub show_if_needed : Role(anon) {
-   my ($self, $req) = @_; my $meta = { needed => TRUE };
+   my ($self, $req) = @_;
 
+   my $meta  = { display => 'inline-block', needed => TRUE };
    my $class = $req->query_params->( 'class' );
    my $test  = $req->query_params->( 'test' );
    my $v     = $req->query_params->( 'val', { raw => TRUE } );

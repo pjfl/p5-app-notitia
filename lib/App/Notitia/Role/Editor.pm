@@ -350,6 +350,7 @@ sub upload_dialog {
    p_button $form, 'Upload', 'upload_file', { class => 'right-last' };
 
    $page->{literal_js} = $_copy_element_value->();
+   $form->{enctype} = 'multipart/form-data';
    return;
 }
 

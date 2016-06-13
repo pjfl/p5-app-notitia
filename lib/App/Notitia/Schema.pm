@@ -741,8 +741,10 @@ sub runqueue : method {
                       { args => [ $job->name, $job->id, $r->rv ] } );
       }
       catch {
+         my ($summary) = split m{ \n }mx, "${_}";
+
          $self->error( 'Job [_1]-[_2] rv [_3]: [_4]',
-                       { args => [ $job->name, $job->id, $_->rv, "${_}" ],
+                       { args => [ $job->name, $job->id, $_->rv, $summary ],
                          no_quote_bind_values => TRUE } );
       };
 
