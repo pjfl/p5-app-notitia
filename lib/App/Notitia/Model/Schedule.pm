@@ -1,16 +1,16 @@
 package App::Notitia::Model::Schedule;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SHIFT_TYPE_ENUM
-                                SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_button p_checkbox
+use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
+                                NUL SHIFT_TYPE_ENUM SPC TRUE );
+use App::Notitia::Form      qw( blank_form f_link p_button p_checkbox
                                 p_select p_tag );
 use App::Notitia::Util      qw( assign_link bind button dialog_anchor
                                 display_duration js_server_config
                                 js_submit_config lcm_for loc locm make_tip
                                 register_action_paths set_element_focus
                                 slot_claimed slot_identifier
-                                slot_limit_index table_link to_dt to_msg
+                                slot_limit_index to_dt to_msg
                                 uri_for_action );
 use Class::Usul::Functions  qw( is_member sum throw );
 use Class::Usul::Time       qw( time2str );
@@ -303,12 +303,12 @@ my $_participents_link = sub {
 my $_slot_link = sub {
    my ($req, $page, $data, $k, $slot_type) = @_;
 
-   my $claimed = slot_claimed $data->{ $k };
-   my $value   = $_slot_label->( $req, $data->{ $k } );
-   my $tip     = loc( $req, ($claimed ? 'yield_slot_tip' : 'claim_slot_tip'),
-                      $slot_type );
+   my $action = slot_claimed $data->{ $k } ? 'yield' : 'claim';
+   my $value = $_slot_label->( $req, $data->{ $k } );
+   my $opts = { action => $action, args => [ $slot_type ],
+                name => $k, request => $req, value => $value };
 
-   return { colspan => 2, value => table_link( $req, $k, $value, $tip ) };
+   return { colspan => 2, value => f_link 'slot', C_DIALOG, $opts };
 };
 
 my $_vreq_state = sub {

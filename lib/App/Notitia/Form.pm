@@ -123,8 +123,11 @@ sub blank_form (;$$$) {
 }
 
 sub f_link (@) {
-   my ($name, $href, $opts) = @_; $opts = { %{ $opts // {} } };
+   my ($name, $x, $opts) = @_; $opts = { %{ $opts // {} } };
 
+   my $href   = !defined( $x )  ? HASH_CHAR
+              :  blessed( $x ) || !is_hashref( $x ) ? $x
+              : ($opts = { %{ $x }, %{ $opts } })   ? HASH_CHAR : undef;
    my $req    = delete $opts->{request};
    my $action = delete $opts->{action};
    my $args   = delete $opts->{args};
@@ -138,9 +141,9 @@ sub f_link (@) {
    my $value  = $req ? locm( $req, $vkey ) : $dvalue;
    my $hint   = $req ? locm( $req, 'Hint' ) : 'Hint';
 
-   return { %{ $opts }, hint => $hint, href => $href // HASH_CHAR,
+   return { hint => $hint, href => $href,
             name => "${action}${name}", tip => $tip,
-            type => 'link', value => $value };
+            type => 'link', value => $value, %{ $opts } };
 }
 
 sub f_tag (@) {
@@ -148,7 +151,7 @@ sub f_tag (@) {
 
    $opts->{orig_type} = delete $opts->{type}; $content //= NUL;
 
-   return { %{ $opts }, content => $content, tag => $tag, type => 'tag' };
+   return { content => $content, tag => $tag, type => 'tag', %{ $opts } };
 }
 
 sub p_action ($@) {

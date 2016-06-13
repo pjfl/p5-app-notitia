@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Replaces table_link calls with Form f_link
           - Fixes failing asset upload
           - Better errors when failing to create events
           - Fixes failing create vehicle_event

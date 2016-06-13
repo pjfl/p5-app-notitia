@@ -2,11 +2,11 @@ package App::Notitia::Role::Messaging;
 
 use namespace::autoclean;
 
-use App::Notitia::Form      qw( blank_form p_button p_radio
+use App::Notitia::Form      qw( blank_form f_link p_button p_radio
                                 p_select p_textarea );
-use App::Notitia::Constants qw( NUL SPC TRUE );
+use App::Notitia::Constants qw( C_DIALOG NUL SPC TRUE );
 use App::Notitia::Util      qw( js_config loc mail_domain
-                                table_link to_msg uri_for_action );
+                                to_msg uri_for_action );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token throw );
 use Moo::Role;
@@ -186,7 +186,8 @@ sub message_link {
       useIcon => \1 };
    my $args   =  [ "${href}", $opts ];
 
-   js_config $page, 'window', [ 'message', 'click', 'inlineDialog', $args ];
+   $opts = [ 'send_message', 'click', 'inlineDialog', $args ];
+   js_config $page, 'window', $opts;
    $args = [ 'email_sink', 'email_sink_label' ];
    $opts = [ 'email_sink', 'checked', 'showSelected', $args ];
    js_config $page, 'togglers', $opts;
@@ -194,8 +195,7 @@ sub message_link {
    $opts = [ 'sms_sink', 'checked', 'showSelected', $args ];
    js_config $page, 'togglers', $opts;
 
-   return table_link $req, 'message', loc( $req, 'message_management_link' ),
-                                      loc( $req, 'message_management_tip' );
+   return f_link 'message', C_DIALOG, { action => 'send', request => $req };
 }
 
 sub message_stash {

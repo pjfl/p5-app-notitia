@@ -165,9 +165,6 @@ msgstr "Edit"
 msgid "change_password_title"
 msgstr "Change Password"
 
-msgid "claim_slot_tip"
-msgstr "Claim this [_1] slot"
-
 msgid "completed"
 msgstr "Date Completed"
 
@@ -489,10 +486,10 @@ msgstr "Advanced Motorcycle"
 msgid "main"
 msgstr "Main"
 
-msgid "message_management_link"
+msgid "message_send_link"
 msgstr "Send Message"
 
-msgid "message_management_tip"
+msgid "message_send_tip"
 msgstr "Send email or SMS to people"
 
 msgid "message_title"
@@ -870,6 +867,9 @@ msgstr "Certificates"
 msgid "slot_certs_management_tip"
 msgstr "Manage the certificates required by the slot roles"
 
+msgid "slot_claim_tip"
+msgstr "Claim this [_1] slot"
+
 msgid "slot_roles_heading_0"
 msgstr "Slot Role"
 
@@ -881,6 +881,9 @@ msgstr "Slot Roles"
 
 msgid "slot_roles_list_tip"
 msgstr "Manage the certificates required by the slot roles"
+
+msgid "slot_yield_tip"
+msgstr "Yield this [_1] slot"
 
 msgid "slotname"
 msgstr "Slot Name"
@@ -1123,6 +1126,3 @@ msgstr "[_1] allocations starting [_2]"
 
 msgid "year_management_heading"
 msgstr "Select Year"
-
-msgid "yield_slot_tip"
-msgstr "Yield this [_1] slot"

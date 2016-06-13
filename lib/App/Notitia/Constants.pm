@@ -12,8 +12,8 @@ Class::Usul::Constants->Exception_Class( 'App::Notitia::Exception' );
 Data::Validation::Constants->Exception_Class( 'App::Notitia::Exception' );
 Web::ComposableRequest::Constants->Exception_Class( 'App::Notitia::Exception' );
 
-our @EXPORT = qw( DOTS HASH_CHAR PIPE_SEP SHIFT_TYPE_ENUM SLOT_TYPE_ENUM
-                  TILDE TYPE_CLASS_ENUM VARCHAR_MAX_SIZE );
+our @EXPORT = qw( C_DIALOG DOTS HASH_CHAR PIPE_SEP SHIFT_TYPE_ENUM
+                  SLOT_TYPE_ENUM TILDE TYPE_CLASS_ENUM VARCHAR_MAX_SIZE );
 
 sub import {
    my $class       = shift;
@@ -30,6 +30,7 @@ sub import {
    return;
 }
 
+sub C_DIALOG  () { { class => 'table-link windows' } }
 sub DOTS      () { "\x{2026}" }
 sub HASH_CHAR () { chr 35     }
 sub PIPE_SEP  () { '&nbsp;|&nbsp;' }

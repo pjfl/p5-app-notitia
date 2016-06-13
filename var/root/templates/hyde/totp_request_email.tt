@@ -7,7 +7,7 @@
       the adminstrators</p>
 
    <p>Click on this
-      <a class="link" href="[% link %]" target ="_blank" title="Reset Password">
+      <a class="link" href="[% link %]" target ="_blank" title="TOTP Info">
       link</a> to display the TOTP account information</p>
 [% END %]
 [%#

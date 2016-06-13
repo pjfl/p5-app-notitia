@@ -39,8 +39,8 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      serial_data_type set_element_focus
                      set_on_create_datetime_data_type set_rota_date
                      slot_claimed slot_identifier slot_limit_index show_node
-                     stash_functions table_link time2int to_dt to_msg
-                     uri_for_action varchar_data_type );
+                     stash_functions time2int to_dt to_msg uri_for_action
+                     varchar_data_type );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -1079,8 +1079,6 @@ prior to calling L<uri_for|Web::ComposableRequest::Base/uri_for>
 =item C<slot_limit_index>
 
 =item C<stash_functions>
-
-=item C<table_link>
 
 =item C<time2int>
 
