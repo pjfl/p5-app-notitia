@@ -31,7 +31,7 @@ around 'load_page' => sub {
    my $page = $orig->( $self, $req, @args );
 
    $page->{location} = 'documentation';
-   $page->{template} = [ 'menu', 'docs' ];
+   $page->{template} = [ 'menu', 'documentation' ];
 
    return $page;
 };

@@ -636,7 +636,7 @@ my $_day_page = sub {
                      events      => [],
                      headers     => $_day_rota_headers->( $req ),
                      shifts      => [], },
-      template  => [ 'menu', 'rota', 'day-table' ],
+      template  => [ 'menu', 'day-table' ],
       title     => $title };
 
    $_events->( $schema, $req, $page, $name, $local_dt, $todays_events );
@@ -851,7 +851,7 @@ sub month_rota : Role(any) {
                       max_slots => $max_slots,
                       name      => $rota_name,
                       rows      => [] },
-      template   => [ 'menu', 'rota', 'month-table' ],
+      template   => [ 'menu', 'month-table' ],
       title      => $_month_rota_title->( $req, $rota_name, $rota_dt ), };
    my $first     =  $self->$_first_day_of_month( $req, $rota_dt );
    my $opts      =  {
@@ -949,7 +949,7 @@ sub week_rota : Role(any) {
       rota        => { headers => $_week_rota_headers->( $req, $rota_dt ),
                        name    => $rota_name,
                        rows    => [] },
-      template    => [ 'menu', 'rota', 'week-table' ],
+      template    => [ 'menu', 'week-table' ],
       title       => $_week_rota_title->( $req, $rota_name, $rota_dt ), };
    my $opts       =  {
       after       => $rota_dt->clone->subtract( days => 1),

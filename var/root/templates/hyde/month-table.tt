@@ -1,2 +1,8 @@
 <!-- Month Table -->
+<div class="unit four-fifths">
+   <article>
+      <h4>[% page.title %]</h4>
 [% Table( page.rota ) -%]
+[% INCLUDE 'hyde/section-nav.tt' -%]
+   </article>
+</div>

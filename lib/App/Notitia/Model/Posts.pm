@@ -37,7 +37,7 @@ around 'load_page' => sub {
    my $page  = $orig->( $self, $req, @args );
    my @ids   = @{ $req->uri_params->() // [] };
    my $type  = $page->{type} // 'folder';
-   my $plate = $type eq 'folder' ? 'posts-index' : 'docs';
+   my $plate = $type eq 'folder' ? 'posts-index' : 'documentation';
 
    $ids[ 0 ] and $ids[ 0 ] eq 'index' and @ids = ();
    $page->{wanted_depth} = () = @ids;

@@ -7,7 +7,7 @@
 [%    INCLUDE 'hyde/editing-links.tt' -%]
       <h4>[% page.title %]</h4>
 [%    page.content | eval %]
-[%    INCLUDE 'hyde/section_nav.tt' -%]
+[%    INCLUDE 'hyde/section-nav.tt' -%]
 [% END -%]
    </article>
 </div>
