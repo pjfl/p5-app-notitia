@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Use session roles for faster is_editor test
           - Removed remaing specific dialog templates
           - Eliminated the last of the _content templates
           - Replaced f_list from Form with p_list

@@ -7,7 +7,7 @@ use App::Notitia::Form      qw( blank_form p_button p_checkbox
                                 p_select p_tag );
 use App::Notitia::Util      qw( assign_link bind button dialog_anchor
                                 display_duration js_server_config
-                                js_submit_config lcm_for loc make_tip
+                                js_submit_config lcm_for loc locm make_tip
                                 register_action_paths set_element_focus
                                 slot_claimed slot_identifier
                                 slot_limit_index table_link to_dt to_msg
@@ -619,7 +619,7 @@ my $_day_page = sub {
    my $limits   =  $self->config->slot_limits;
    my $local_dt =  $_local_dt->( $rota_dt );
    my $date     =  $local_dt->month_name.SPC.$local_dt->day.SPC.$local_dt->year;
-   my $title    =  loc $req, to_msg 'day_rota_title', loc( $req, $name ), $date;
+   my $title    =  locm $req, 'day_rota_title', loc( $req, $name ), $date;
    my $actionp  =  $self->moniker.'/day_rota';
    my $next     =  uri_for_action $req, $actionp,
                    [ $name, $local_dt->clone->add( days => 1 )->ymd ];

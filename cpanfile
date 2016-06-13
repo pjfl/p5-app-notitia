@@ -20,6 +20,7 @@ requires "File::DataClass" => "v0.68.0";
 requires "HTML::GenerateUtil" => "1.20";
 requires "HTTP::Message" => "6.06";
 requires "JSON::MaybeXS" => "1.003005";
+requires "List::Util" => "1.42";
 requires "MIME::Types" => "2.11";
 requires "Moo" => "2.000001";
 requires "Plack" => "1.0036";

@@ -12,6 +12,7 @@ use Class::Usul::Functions qw( io is_member throw trim untaint_path );
 use Class::Usul::IPC;
 use Class::Usul::Time      qw( time2str );
 use Class::Usul::Types     qw( ProcCommer );
+use List::Util             qw( first );
 use Scalar::Util           qw( blessed );
 use Unexpected::Functions  qw( Unspecified );
 use Moo::Role;
@@ -80,14 +81,14 @@ around 'load_page' => sub {
    $page->{editing} =  $page->{cancel_edit} ? FALSE : $editing;
    $page->{editing} or $self->$_add_editing_js( $req, $page );
 
-   $req->authenticated and 
-        $page->{user} = $self->components->{person}->find_by_shortcode( $req->username );
+   $req->authenticated and $page->{user}
+      = $self->components->{person}->find_by_shortcode( $req->username );
 
-   $page->{is_editor} = $page->{user} and (
-                           is_member 'editor', $page->{user}->list_roles         or
-                           is_member 'event_manager', $page->{user}->list_roles  or
-                           is_member 'people_manager', $page->{user}->list_roles );
-   
+   my $editors = qr{ \A (?: editor|event_manager|person_manager ) \z }mx;
+
+   $page->{is_editor} = ($req->authenticated && first { $_ =~ $editors }
+                        @{ $req->session->roles }) ? TRUE : FALSE;
+
    return $page;
 };
 

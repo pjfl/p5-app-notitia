@@ -42,6 +42,7 @@ my $prereqs  = {
     'HTML::GenerateUtil' => '1.20',
     'HTTP::Message' => '6.06',
     'JSON::MaybeXS' => '1.003005',
+    'List::Util' => '1.42',
     'MIME::Types' => '2.11',
     'Moo' => '2.000001',
     'Plack' => '1.0036',
