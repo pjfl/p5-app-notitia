@@ -114,7 +114,6 @@ var/root/less/hyde/normalise.less
 var/root/less/hyde/pygments.less
 var/root/less/hyde/style.less
 var/root/less/hyde/yellow.less
-var/root/templates/hyde/assign-summary.tt
 var/root/templates/hyde/blank-page.tt
 var/root/templates/hyde/claim-slot.tt
 var/root/templates/hyde/day-table.tt
@@ -132,7 +131,6 @@ var/root/templates/hyde/menu.tt
 var/root/templates/hyde/menu_mobile.tt
 var/root/templates/hyde/month-table.tt
 var/root/templates/hyde/password_email.tt
-var/root/templates/hyde/posts-index_content.tt
 var/root/templates/hyde/primary-navigation.tt
 var/root/templates/hyde/rota_content.tt
 var/root/templates/hyde/secondary-navigation.tt

@@ -1,12 +1,11 @@
 package App::Notitia::Model::Endorsement;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Form      qw( blank_form f_list p_action p_container
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP TRUE );
+use App::Notitia::Form      qw( blank_form f_link f_list p_action p_container
                                 p_fields p_rows p_table p_textfield );
-use App::Notitia::Util      qw( check_field_js loc locm management_link
-                                register_action_paths to_dt to_msg
-                                uri_for_action );
+use App::Notitia::Util      qw( check_field_js loc locm register_action_paths
+                                to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -48,16 +47,12 @@ my $_endorsements_headers = sub {
 };
 
 my $_endorsement_ops_links = sub {
-   my ($req, $action, $person) = @_;
+   my ($req, $actionp, $person) = @_;
 
-   return f_list '&nbsp;|&nbsp;', [ {
-      class => 'fade',
-      hint  => loc( $req, 'Hint' ),
-      href  => uri_for_action( $req, $action, [ $person->shortcode ] ),
-      name  => 'add_blot',
-      tip   => locm( $req, 'add_blot_tip', 'endorsement', $person->label ),
-      type  => 'link',
-      value => loc( $req, 'add_blot' ) } ];
+   my $href = uri_for_action $req, $actionp, [ $person->shortcode ];
+   my $opts = { action => 'add', args => [ $person->label ], request => $req };
+
+   return f_list PIPE_SEP, [ f_link 'endorsement', $href, $opts ];
 };
 
 # Private methods
@@ -86,12 +81,15 @@ my $_bind_endorsement_fields = sub {
 };
 
 my $_endorsement_links = sub {
-   my ($self, $req, $name, $blot) = @_;
+   my ($self, $req, $scode, $blot) = @_;
 
-   my @links; my $opts = { args => [ $name, $blot->uri ] };
+   my $args = [ $blot->recipient->label ]; my @links;
 
    for my $actionp (map { $self->moniker."/${_}" } 'endorsement' ) {
-      push @links, { value => management_link( $req, $actionp, $name, $opts ) };
+      my $href = uri_for_action $req, $actionp, [ $scode, $blot->uri ];
+      my $opts = { action => 'update', args => $args, request => $req };
+
+      push @links, { value => f_link 'endorsement', $href, $opts };
    }
 
    return [ { value => $blot->label( $req ) }, @links ];

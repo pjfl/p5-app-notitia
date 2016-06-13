@@ -1,10 +1,10 @@
 package App::Notitia::Model::Vehicle;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_list f_tag p_action p_button
-                                p_container p_date p_fields p_hidden p_rows
-                                p_select p_table p_tag p_textfield );
+                                p_date p_fields p_hidden p_list
+                                p_rows p_select p_table p_tag p_textfield );
 use App::Notitia::Util      qw( assign_link bind check_field_js create_link
                                 display_duration loc make_tip management_link
                                 page_link_set register_action_paths
@@ -48,13 +48,6 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_add_vehicle_js = sub {
-   my $vrn  = shift;
-   my $opts = { domain => $vrn ? 'update' : 'insert', form => 'Vehicle' };
-
-   return [ check_field_js( 'vrn', $opts ) ];
-};
-
 my $_compare_datetimes = sub {
    my ($x, $y) = @_;
 
@@ -147,6 +140,13 @@ my $_vehicle_event_links = sub {
          ( $req, 'event/vehicle_event', 'edit', { args => [ $vrn, $uri ] } ) };
 
    return @links;
+};
+
+my $_vehicle_js = sub {
+   my $vrn  = shift;
+   my $opts = { domain => $vrn ? 'update' : 'insert', form => 'Vehicle' };
+
+   return [ check_field_js( 'vrn', $opts ) ];
 };
 
 my $_vehicle_slot_links = sub {
@@ -653,17 +653,15 @@ sub vehicle : Role(rota_manager) {
    my $page       =  {
       first_field => 'vrn',
       forms       => [ $form ],
-      literal_js  => $_add_vehicle_js->( $vrn ),
+      literal_js  => $_vehicle_js->( $vrn ),
       title       => loc $req, "vehicle_${action}_heading" };
    my $schema     =  $self->schema;
    my $vehicle    =  $_maybe_find_vehicle->( $schema, $vrn );
    my $fields     =  $_bind_vehicle_fields->( $schema, $req, $vehicle ),
-   my $link       =  create_link $req, $actionp, 'vehicle', {
-      container_class => 'add-link' };
+   my $links      =  [ create_link $req, $actionp, 'vehicle' ];
    my $args       =  [ 'vehicle',  $vehicle->label ];
 
-   $vrn and p_container $form, f_list( '&nbsp;|&nbsp;', [ $link ] ),
-      { class => 'operation-links align-right right-last' };
+   $vrn and p_list $form, PIPE_SEP, $links;
 
    p_fields $form, $self->schema, 'Vehicle', $vehicle, $fields;
 
@@ -697,11 +695,10 @@ sub vehicle_events : Role(rota_manager) {
 
    p_rows $table, [ map { $_->[ 1 ] } @{ $events } ];
 
-   my $link = create_link $req, 'event/vehicle_event', 'event', {
-      args => [ $vrn ], container_class => 'add-link' };
+   my $links  = [ create_link $req, 'event/vehicle_event', 'event', {
+      args => [ $vrn ], container_class => 'add-link' } ];
 
-   p_container $form, f_list( '&nbsp;|&nbsp;', [ $link ] ),
-      { class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links;
 
    return $self->get_stash( $req, $page );
 }
@@ -725,11 +722,10 @@ sub vehicles : Role(rota_manager) {
    my $page      =  {
       forms      => [ $form ],
       title      => $_vehicle_title->( $req, $type, $private, $service ), };
-   my $list      =  f_list '&nbsp;|&nbsp;',
-      $_vehicles_op_links->( $req, $moniker, $opts, $vehicles->pager );
-   my $class     =  'operation-links align-right right-last';
+   my $links     =  $_vehicles_op_links->
+      ( $req, $moniker, $opts, $vehicles->pager );
 
-   p_container $form, $list, { class => $class };
+   p_list $form, PIPE_SEP, $links;
 
    my $table = p_table $form, {
       headers => $_vehicles_headers->( $req, $service ) };
@@ -738,7 +734,7 @@ sub vehicles : Role(rota_manager) {
       [ map { $self->$_vehicle_links( $self->moniker, $req, $service, $_ ) }
         $vehicles->all ];
 
-   p_container $form, $list, { class => $class };
+   p_list $form, PIPE_SEP, $links;
 
    return $self->get_stash( $req, $page );
 }

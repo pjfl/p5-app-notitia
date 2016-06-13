@@ -1,11 +1,11 @@
 package App::Notitia::Model::Admin;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( FALSE NUL SLOT_TYPE_ENUM TRUE TYPE_CLASS_ENUM );
+use App::Notitia::Constants qw( FALSE NUL PIPE_SEP
+                                SLOT_TYPE_ENUM TRUE TYPE_CLASS_ENUM );
 use App::Notitia::Form      qw( blank_form f_list f_tag p_button p_container
                                 p_select p_rows p_table p_textfield );
-use App::Notitia::Util      qw( bind bind_fields button create_link loc locm
-                                make_tip management_link operation_links
+use App::Notitia::Util      qw( create_link loc locm make_tip management_link
                                 register_action_paths to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
@@ -58,7 +58,7 @@ my $_add_type_create_links = sub {
       }
    }
 
-   return f_list '&nbsp;|&nbsp;', $links;
+   return f_list PIPE_SEP, $links;
 };
 
 my $_list_slot_certs = sub {

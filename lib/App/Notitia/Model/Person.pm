@@ -1,7 +1,7 @@
 package App::Notitia::Model::Person;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP TRUE );
 use App::Notitia::Form      qw( blank_form f_list p_action p_button p_container
                                 p_fields p_rows p_table );
 use App::Notitia::Util      qw( check_field_js create_link dialog_anchor loc
@@ -179,7 +179,7 @@ my $_person_ops_links = sub {
          title   => loc( $req, 'Mugshot Upload' ),
          useIcon => \1 } );
 
-   return f_list '&nbsp;|&nbsp;', [ $mugshot, $add_person ];
+   return f_list PIPE_SEP, [ $mugshot, $add_person ];
 };
 
 # Private methods
@@ -479,7 +479,7 @@ sub people : Role(any) {
       title      => $_people_title->( $req, $role, $status, $type ), };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $people    =  $person_rs->search_for_people( $opts );
-   my $list      =  f_list '&nbsp;|&nbsp;',
+   my $list      =  f_list PIPE_SEP,
       $self->$_people_ops_links( $req, $page, $params, $people->pager );
    my $class     =  'operation-links align-right right-last';
 

@@ -3,18 +3,20 @@ package App::Notitia::Form;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use App::Notitia::Util      qw( field_options make_tip );
-use App::Notitia::Constants qw( FALSE NUL TRUE );
+use App::Notitia::Util      qw( locm make_tip );
+use App::Notitia::Constants qw( FALSE HASH_CHAR NUL TRUE );
 use Class::Usul::Functions  qw( is_arrayref is_hashref throw );
 use Scalar::Util            qw( blessed );
 
-our @EXPORT_OK = qw( blank_form f_list f_tag p_action p_button p_checkbox
-                     p_container p_date p_fields p_hidden p_image p_label
-                     p_password p_radio p_rows p_select p_table p_tag p_text
-                     p_textarea p_textfield );
+our @EXPORT_OK = qw( blank_form f_link f_list f_tag p_action p_button
+                     p_checkbox p_container p_date p_fields p_hidden p_image
+                     p_label p_list p_password p_radio p_rows p_select p_table
+                     p_tag p_text p_textarea p_textfield );
 
 # Private package variables
 my @ARG_NAMES = qw( name href opts );
+
+my $field_option_cache = {};
 
 # Private functions
 my $_bind_option = sub {
@@ -44,6 +46,26 @@ my $_bind = sub {
    }
    elsif (defined $v) { $opts->{value} = $opts->{numify} ? 0 + $v : "${v}" }
    else { $opts->{value} = NUL }
+
+   return $opts;
+};
+
+my $_field_options = sub {
+   my ($schema, $result, $name, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   my $mandy;
+
+   unless (defined ($mandy = $field_option_cache->{ $result }->{ $name })) {
+      my $class       = blessed $schema->resultset( $result )->new_result( {} );
+      my $constraints = $class->validation_attributes->{fields}->{ $name };
+
+      $mandy = $field_option_cache->{ $result }->{ $name }
+             = exists $constraints->{validate}
+                   && $constraints->{validate} =~ m{ isMandatory }mx
+             ? ' required' : NUL;
+   }
+
+   $opts->{class} //= NUL; $opts->{class} .= $mandy;
 
    return $opts;
 };
@@ -92,6 +114,27 @@ sub blank_form (;$$$) {
    $opts->{type} //= 'container';
 
    return $opts;
+}
+
+sub f_link (@) {
+   my ($name, $href, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   my $req    = delete $opts->{request};
+   my $action = delete $opts->{action};
+   my $args   = delete $opts->{args};
+   my $dvalue = $action ? ucfirst "${action} ${name}" : ucfirst $name;
+
+   $action and $action .= '_';
+
+   my $tkey   = "${name}_${action}tip";
+   my $tip    = $req ? locm( $req, $tkey, @{ $args } ) : $tkey;
+   my $vkey   = "${name}_${action}link";
+   my $value  = $req ? locm( $req, $vkey ) : $dvalue;
+   my $hint   = $req ? locm( $req, 'Hint' ) : 'Hint';
+
+   return { %{ $opts }, hint => $hint, href => $href // HASH_CHAR,
+            name => "${action}${name}", tip => $tip,
+            type => 'link', value => $value };
 }
 
 sub f_list (@) {
@@ -159,13 +202,13 @@ sub p_fields ($$$$$) {
       if    ($type eq 'checkbox') { $opts = $_bind->( $k, TRUE, $opts ) }
       elsif ($type eq 'image') {}
       elsif ($type eq 'select') {
-         $opts = field_options $schema, $result, $k, $opts;
+         $opts = $_field_options->( $schema, $result, $k, $opts );
          $opts = $_bind->( $k, delete $opts->{value}, $opts );
       }
       else {
          my $v = $opts->{value} ? delete $opts->{value} : $src->$k();
 
-         $opts = field_options $schema, $result, $k, $opts;
+         $opts = $_field_options->( $schema, $result, $k, $opts );
          $opts = $_bind->( $k, $v, $opts );
       }
 
@@ -193,6 +236,14 @@ sub p_label ($@) {
    $opts->{content} = $content; $opts->{label} = $label;
 
    return $_push_field->( $f, 'label', $opts );
+}
+
+sub p_list ($@) {
+   my ($f, $sep, $list, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   $opts->{class} //= 'operation-links align-right right-last';
+
+   return p_container $f, f_list( $sep, $list ), $opts;
 }
 
 sub p_password ($@) {

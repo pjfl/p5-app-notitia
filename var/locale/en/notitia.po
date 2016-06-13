@@ -18,23 +18,11 @@ msgstr ""
 msgid "active"
 msgstr "Active"
 
-msgid "add_blot"
-msgstr "Add Endorsement"
-
-msgid "add_blot_tip"
-msgstr "Create a new [_1] record for [_2]"
-
-msgid "add_cert"
-msgstr "Add Certification"
-
 msgid "add_certification"
 msgstr "Add Certification"
 
 msgid "add_certification_tip"
 msgstr "Add these certificates to the required list for this slot role"
-
-msgid "add_cert_tip"
-msgstr "Create a new [_1] record for [_2]"
 
 msgid "add_role"
 msgstr "Add Role"
@@ -135,17 +123,26 @@ msgstr "Cert. Type"
 msgid "cert_types"
 msgstr "Cert. Types"
 
-msgid "certification_create_heading"
+msgid "certification_add_link"
 msgstr "Add Certification"
 
-msgid "certification_management_link"
-msgstr "Edit"
+msgid "certification_add_tip"
+msgstr "Create a new certification record for [_1]"
+
+msgid "certification_create_heading"
+msgstr "Add Certification"
 
 msgid "certification_type_create_link"
 msgstr "Add Cert. Type"
 
 msgid "certification_update_heading"
 msgstr "Edit Certification"
+
+msgid "certification_update_link"
+msgstr "Edit"
+
+msgid "certification_update_tip"
+msgstr "Edit the certification record for [_1]"
 
 msgid "certificates_management_heading"
 msgstr "Certifications"
@@ -336,11 +333,20 @@ msgstr "End Time"
 msgid "endorsed"
 msgstr "Endorsed"
 
+msgid "endorsement_add_link"
+msgstr "Add Endorsement"
+
+msgid "endorsement_add_tip"
+msgstr "Create a new endorsement record for [_1]"
+
 msgid "endorsement_create_heading"
 msgstr "Add Endorsement"
 
-msgid "endorsement_management_link"
+msgid "endorsement_update_link"
 msgstr "Edit"
+
+msgid "endorsement_update_tip"
+msgstr "Edit the endorsement record for [_1]"
 
 msgid "endorsement_update_heading"
 msgstr "Edit Endorsement"

@@ -1,7 +1,7 @@
 package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC PIPE_SEP TRUE );
 use App::Notitia::Form      qw( blank_form f_list p_action p_button p_container
                                 p_fields p_rows p_table p_tag p_text
                                 p_textfield );
@@ -91,7 +91,7 @@ my $_event_ops_links = sub {
                             { container_class => 'add-link' };
    my $vreq   = management_link $req, 'asset/request_vehicle', $uri;
 
-   return f_list '&nbsp;|&nbsp;', [ $vreq, $add_ev ];
+   return f_list PIPE_SEP, [ $vreq, $add_ev ];
 };
 
 my $_add_participate_button = sub {
@@ -137,7 +137,7 @@ my $_events_ops_links = sub {
 
    $page_links and unshift @{ $links }, $page_links;
 
-   return f_list '&nbsp;|&nbsp;', $links;
+   return f_list PIPE_SEP, $links;
 };
 
 # Private methods
@@ -207,7 +207,7 @@ my $_participent_ops_links = sub {
    my $href         = uri_for_action $req, $actionp, [], $params;
    my $message_link = $self->message_link( $req, $page, $href, $name );
 
-   return f_list '&nbsp;|&nbsp;', [ $message_link ];
+   return f_list PIPE_SEP, [ $message_link ];
 };
 
 my $_update_event_from_request = sub {

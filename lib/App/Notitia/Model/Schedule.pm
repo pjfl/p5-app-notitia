@@ -3,6 +3,7 @@ package App::Notitia::Model::Schedule;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SHIFT_TYPE_ENUM
                                 SPC TRUE );
+use App::Notitia::Form      qw( blank_form p_tag );
 use App::Notitia::Util      qw( assign_link bind button dialog_anchor
                                 display_duration js_server_config
                                 js_submit_config lcm_for loc
@@ -753,18 +754,23 @@ sub assign_summary : Role(any) {
                 =  split m{ _ }mx, $req->uri_params->( 0 ), 5;
    my $key      =  "${shift_type}_${slot_type}_${subslot}";
    my $rota_dt  =  to_dt $rota_date;
+   my $stash    =  $self->dialog_stash( $req );
+   my $form     =  $stash->{page}->{forms}->[ 0 ] = blank_form;
    my $data     =  $self->$_slot_assignments( {
       rota_type => $self->$_find_rota_type( $rota_name )->id,
       on        => $rota_dt } )->{ $_local_dt->( $rota_dt )->ymd.'_'.$key };
-   my $stash    =  $self->dialog_stash( $req, 'assign-summary' );
-   my $fields   =  $stash->{page}->{fields};
    my $operator =  $data->{operator};
+   my $who      =  $operator->label;
+   my $opts     =  { class => 'label-column' };
+   my ($start, $end) = display_duration $req, $data->{slot};
 
-   $fields->{operator} = $operator->label;
-   $operator->postcode
-      and $fields->{operator} .= ' ('.$operator->outer_postcode.')';
-   $data->{vehicle} and $fields->{vehicle} = $data->{vehicle}->label;
-   ($fields->{start}, $fields->{end}) = display_duration $req, $data->{slot};
+   $operator->postcode and $who .= ' ('.$operator->outer_postcode.')';
+
+   p_tag $form, 'p', $who, $opts;
+
+   $data->{vehicle} and p_tag $form, 'p', $data->{vehicle}->label, $opts;
+
+   p_tag $form, 'p', $start, $opts; p_tag $form, 'p', $end, $opts;
 
    return $stash;
 }
