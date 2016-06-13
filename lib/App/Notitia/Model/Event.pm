@@ -625,7 +625,7 @@ sub vehicle_event : Role(rota_manager) {
       title       => loc $req, "vehicle_event_${action}_heading" };
    my $event      =  $self->$_maybe_find_event( $uri );
    my $label      =  $uri ? $event->vehicle->label : $vrn;
-   my $args       =  [ 'vehicle event', $label ];
+   my $args       =  [ 'vehicle_event', $label ];
 
    p_textfield $form, 'vehicle', $label, { disabled => TRUE };
 
