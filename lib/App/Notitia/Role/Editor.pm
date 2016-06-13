@@ -78,17 +78,17 @@ around 'load_page' => sub {
    my $editing = $req->query_params->( 'edit', { optional => TRUE } )
                ? TRUE : FALSE;
 
-   my $roles = $self->components->{person}->find_by_shortcode( $req->username )->list_roles;
+   $page->{editing} =  $page->{cancel_edit} ? FALSE : $editing;
+   $page->{editing} or $self->$_add_editing_js( $req, $page );
 
-   $page->{is_editor} = (  exists {map { $_ => 1 } @{$roles}}->{'editor'}
-	                or exists {map { $_ => 1 } @{$roles}}->{'event_manager'}
-	                or exists {map { $_ => 1 } @{$roles}}->{'person_manager'});
+   $req->authenticated and 
+        $page->{user} = $self->components->{person}->find_by_shortcode( $req->username );
 
-   $page->{editing}   = $page->{cancel_edit} ? FALSE : $editing;
-   $page->{editing} and $page->{user}
-      = $self->components->{person}->find_by_shortcode( $req->username );
-   $page->{editing}  or $self->$_add_editing_js( $req, $page );
-
+   $page->{is_editor} = $page->{user} and (
+                           is_member 'editor', $page->{user}->list_roles         or
+                           is_member 'event_manager', $page->{user}->list_roles  or
+                           is_member 'people_manager', $page->{user}->list_roles );
+   
    return $page;
 };
 
