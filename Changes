@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Removed remaing specific dialog templates
           - Eliminated the last of the _content templates
           - Replaced f_list from Form with p_list
           - More subtle styling for help links

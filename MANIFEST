@@ -115,7 +115,6 @@ var/root/less/hyde/pygments.less
 var/root/less/hyde/style.less
 var/root/less/hyde/yellow.less
 var/root/templates/hyde/blank-page.tt
-var/root/templates/hyde/claim-slot.tt
 var/root/templates/hyde/day-table.tt
 var/root/templates/hyde/dialog.tt
 var/root/templates/hyde/documentation.tt
@@ -139,7 +138,6 @@ var/root/templates/hyde/totp_request_email.tt
 var/root/templates/hyde/user_email.tt
 var/root/templates/hyde/week-table.tt
 var/root/templates/hyde/wrapper.tt
-var/root/templates/hyde/yield-slot.tt
 var/share/App-Notitia-Schema-Schedule-0.3.160-MySQL.sql
 var/share/App-Notitia-Schema-Schedule-0.3.160-PostgreSQL.sql
 var/share/App-Notitia-Schema-Schedule-0.3.160-SQLite.sql
