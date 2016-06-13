@@ -18,23 +18,11 @@ msgstr ""
 msgid "active"
 msgstr "Active"
 
-msgid "add_blot"
-msgstr "Add Endorsement"
-
-msgid "add_blot_tip"
-msgstr "Create a new [_1] record for [_2]"
-
-msgid "add_cert"
-msgstr "Add Certification"
-
 msgid "add_certification"
 msgstr "Add Certification"
 
 msgid "add_certification_tip"
 msgstr "Add these certificates to the required list for this slot role"
-
-msgid "add_cert_tip"
-msgstr "Create a new [_1] record for [_2]"
 
 msgid "add_role"
 msgstr "Add Role"
@@ -135,17 +123,26 @@ msgstr "Cert. Type"
 msgid "cert_types"
 msgstr "Cert. Types"
 
+msgid "certification_add_link"
+msgstr "Add Certification"
+
+msgid "certification_add_tip"
+msgstr "Create a new certification record for [_1]"
+
 msgid "certification_create_heading"
 msgstr "Add Certification"
 
-msgid "certification_edit_heading"
-msgstr "Edit Certification"
-
-msgid "certification_management_link"
-msgstr "Edit"
-
 msgid "certification_type_create_link"
 msgstr "Add Cert. Type"
+
+msgid "certification_update_heading"
+msgstr "Edit Certification"
+
+msgid "certification_update_link"
+msgstr "Edit"
+
+msgid "certification_update_tip"
+msgstr "Edit the certification record for [_1]"
 
 msgid "certificates_management_heading"
 msgstr "Certifications"
@@ -336,14 +333,23 @@ msgstr "End Time"
 msgid "endorsed"
 msgstr "Endorsed"
 
+msgid "endorsement_add_link"
+msgstr "Add Endorsement"
+
+msgid "endorsement_add_tip"
+msgstr "Create a new endorsement record for [_1]"
+
 msgid "endorsement_create_heading"
 msgstr "Add Endorsement"
 
-msgid "endorsement_edit_heading"
-msgstr "Edit Endorsement"
-
-msgid "endorsement_management_link"
+msgid "endorsement_update_link"
 msgstr "Edit"
+
+msgid "endorsement_update_tip"
+msgstr "Edit the endorsement record for [_1]"
+
+msgid "endorsement_update_heading"
+msgstr "Edit Endorsement"
 
 msgid "endorsements_management_heading"
 msgstr "Endorsements"
@@ -364,16 +370,13 @@ msgid "event_create_link"
 msgstr "Add Event"
 
 msgid "event_create_tip"
-msgstr "Create new 'event' records"
+msgstr "Create new a event record"
 
 msgid "event_date"
 msgstr "Event Date"
 
 msgid "event_create_heading"
 msgstr "Add Event"
-
-msgid "event_edit_heading"
-msgstr "Edit Event"
 
 msgid "event_management_link"
 msgstr "Edit"
@@ -398,6 +401,9 @@ msgstr "View the summary for the [_1] event and participte"
 
 msgid "event_type_create_link"
 msgstr "Add Event Type"
+
+msgid "event_update_heading"
+msgstr "Edit Event"
 
 msgid "events_heading_0"
 msgstr "Event"
@@ -712,10 +718,7 @@ msgid "person_create_link"
 msgstr "Add Person"
 
 msgid "person_create_tip"
-msgstr "Create new 'person' records"
-
-msgid "person_edit_heading"
-msgstr "Edit Person"
+msgstr "Create a new person record"
 
 msgid "person_management_link"
 msgstr "Edit"
@@ -737,6 +740,9 @@ msgstr "View"
 
 msgid "person_summary_management_tip"
 msgstr "View the summary record for [_1]"
+
+msgid "person_update_heading"
+msgstr "Edit Person"
 
 msgid "points"
 msgstr "Points"
@@ -977,22 +983,22 @@ msgid "vehicle_create_link"
 msgstr "Add Vehicle"
 
 msgid "vehicle_create_tip"
-msgstr "Create new 'vehicle' records"
+msgstr "Create a new vehicle record"
 
 msgid "vehicle_create_heading"
 msgstr "Add Vehicle"
 
-msgid "vehicle_edit_heading"
+msgid "vehicle_update_heading"
 msgstr "Edit Vehicle"
 
 msgid "vehicle_event_create_heading"
 msgstr "Create Vehicle Event"
 
-msgid "vehicle_event_edit_heading"
-msgstr "Service Vehicle Event"
-
 msgid "vehicle_event_management_link"
 msgstr "Edit"
+
+msgid "vehicle_event_update_heading"
+msgstr "Service Vehicle Event"
 
 msgid "vehicle_events_heading_0"
 msgstr "Event"
@@ -1019,7 +1025,7 @@ msgid "vehicle_management_link"
 msgstr "Edit"
 
 msgid "vehicle_management_tip"
-msgstr "Edit vehicle records"
+msgstr "Edit this vehicle record"
 
 msgid "vehicle_name"
 msgstr "Nickname"

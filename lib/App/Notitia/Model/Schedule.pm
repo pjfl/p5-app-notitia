@@ -3,9 +3,11 @@ package App::Notitia::Model::Schedule;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SHIFT_TYPE_ENUM
                                 SPC TRUE );
+use App::Notitia::Form      qw( blank_form p_button p_checkbox
+                                p_select p_tag );
 use App::Notitia::Util      qw( assign_link bind button dialog_anchor
                                 display_duration js_server_config
-                                js_submit_config lcm_for loc
+                                js_submit_config lcm_for loc make_tip
                                 register_action_paths set_element_focus
                                 slot_claimed slot_identifier
                                 slot_limit_index table_link to_dt to_msg
@@ -107,11 +109,6 @@ my $_async_vreq_tip = sub {
    push @{ $page->{literal_js} }, js_server_config
       $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    return;
-};
-
-my $_confirm_slot_button = sub {
-   return button $_[ 0 ],
-      { class =>  'right-last', label => 'confirm', value => $_[ 1 ].'_slot' };
 };
 
 my $_day_label = sub {
@@ -635,7 +632,7 @@ my $_day_page = sub {
                      events      => [],
                      headers     => $_day_rota_headers->( $req ),
                      shifts      => [], },
-      template  => [ 'contents', 'rota', 'day-table' ],
+      template  => [ 'menu', 'day-table' ],
       title     => $title };
 
    $_events->( $schema, $req, $page, $name, $local_dt, $todays_events );
@@ -753,18 +750,23 @@ sub assign_summary : Role(any) {
                 =  split m{ _ }mx, $req->uri_params->( 0 ), 5;
    my $key      =  "${shift_type}_${slot_type}_${subslot}";
    my $rota_dt  =  to_dt $rota_date;
+   my $stash    =  $self->dialog_stash( $req );
+   my $form     =  $stash->{page}->{forms}->[ 0 ] = blank_form;
    my $data     =  $self->$_slot_assignments( {
       rota_type => $self->$_find_rota_type( $rota_name )->id,
       on        => $rota_dt } )->{ $_local_dt->( $rota_dt )->ymd.'_'.$key };
-   my $stash    =  $self->dialog_stash( $req, 'assign-summary' );
-   my $fields   =  $stash->{page}->{fields};
    my $operator =  $data->{operator};
+   my $who      =  $operator->label;
+   my $opts     =  { class => 'label-column' };
+   my ($start, $end) = display_duration $req, $data->{slot};
 
-   $fields->{operator} = $operator->label;
-   $operator->postcode
-      and $fields->{operator} .= ' ('.$operator->outer_postcode.')';
-   $data->{vehicle} and $fields->{vehicle} = $data->{vehicle}->label;
-   ($fields->{start}, $fields->{end}) = display_duration $req, $data->{slot};
+   $operator->postcode and $who .= ' ('.$operator->outer_postcode.')';
+
+   p_tag $form, 'p', $who, $opts;
+
+   $data->{vehicle} and p_tag $form, 'p', $data->{vehicle}->label, $opts;
+
+   p_tag $form, 'p', $start, $opts; p_tag $form, 'p', $end, $opts;
 
    return $stash;
 }
@@ -845,7 +847,7 @@ sub month_rota : Role(any) {
                       max_slots => $max_slots,
                       name      => $rota_name,
                       rows      => [] },
-      template   => [ 'contents', 'rota', 'month-table' ],
+      template   => [ 'menu', 'month-table' ],
       title      => $_month_rota_title->( $req, $rota_name, $rota_dt ), };
    my $first     =  $self->$_first_day_of_month( $req, $rota_dt );
    my $opts      =  {
@@ -896,10 +898,10 @@ sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
    my $name   = $params->( 2 );
    my $args   = [ $params->( 0 ), $params->( 1 ), $name ];
    my $action = $req->query_params->( 'action' );
-   my $stash  = $self->dialog_stash( $req, "${action}-slot" );
-   my $page   = $stash->{page};
-   my $fields = $page->{fields};
-
+   my $stash  = $self->dialog_stash( $req );
+   my $href   = uri_for_action $req, $self->moniker.'/slot', $args;
+   my $form   = $stash->{page}->{forms}->[ 0 ]
+              = blank_form "${action}-slot", $href;
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
    if ($action eq 'claim') {
@@ -914,15 +916,15 @@ sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
          my $opts      = { fields => { selected => $person } };
          my $people    = $person_rs->list_people( $role, $opts );
 
-         $fields->{assignee} = bind 'assignee', [ [ NUL, NUL ], @{ $people } ];
+         p_select $form, 'assignee', [ [ NUL, NUL ], @{ $people } ];
       }
 
-      $slot_type eq 'rider'
-         and $fields->{request_bike} = bind 'request_bike', TRUE;
+      $slot_type eq 'rider' and p_checkbox $form, 'request_bike', TRUE
    }
 
-   $fields->{confirm  } = $_confirm_slot_button->( $req, $action );
-   $fields->{slot_href} = uri_for_action( $req, $self->moniker.'/slot', $args );
+   p_button $form, 'confirm', "${action}_slot", {
+      container_class => 'right-last',
+      tip => make_tip $req, "${action}_slot_tip", [ $slot_type ] };
 
    return $stash;
 }
@@ -943,7 +945,7 @@ sub week_rota : Role(any) {
       rota        => { headers => $_week_rota_headers->( $req, $rota_dt ),
                        name    => $rota_name,
                        rows    => [] },
-      template    => [ 'contents', 'rota', 'week-table' ],
+      template    => [ 'menu', 'week-table' ],
       title       => $_week_rota_title->( $req, $rota_name, $rota_dt ), };
    my $opts       =  {
       after       => $rota_dt->clone->subtract( days => 1),

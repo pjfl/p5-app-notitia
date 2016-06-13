@@ -121,7 +121,6 @@ sub change_password : Role(anon) {
       first_field => $username ? 'oldpass' : 'username',
       forms       => [ $form ],
       location    => 'change_password',
-      template    => [ 'contents' ],
       title       => locm $req, 'change_password_title', $self->config->title };
 
    p_textfield $form, 'username', $username;
@@ -171,7 +170,6 @@ sub login : Role(anon) {
       first_field => 'username',
       forms       => [ $form ],
       location    => 'login',
-      template    => [ 'contents' ],
       title       => locm $req, 'login_title', $self->config->title };
 
    p_textfield $form, 'username',  NUL, { class => 'standard-field server' };
@@ -230,7 +228,7 @@ sub profile : Role(any) {
 
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_by_shortcode( $req->username );
-   my $stash     = $self->dialog_stash( $req, 'profile-user' );
+   my $stash     = $self->dialog_stash( $req );
    my $href      = uri_for_action $req, $self->moniker.'/profile';
    my $form      = $stash->{page}->{forms}->[ 0 ]
                  = blank_form 'profile-user', $href;
@@ -255,7 +253,7 @@ sub profile : Role(any) {
 sub request_reset : Role(anon) {
    my ($self, $req) = @_;
 
-   my $stash = $self->dialog_stash( $req, 'request-reset' );
+   my $stash = $self->dialog_stash( $req );
    my $href  = uri_for_action $req, $self->moniker.'/reset';
    my $form  = $stash->{page}->{forms}->[ 0 ]
              = blank_form 'request-reset', $href;
@@ -328,7 +326,7 @@ sub show_if_needed : Role(anon) {
 sub totp_request : Role(anon) {
    my ($self, $req) = @_;
 
-   my $stash = $self->dialog_stash( $req, 'totp-request' );
+   my $stash = $self->dialog_stash( $req );
    my $href  = uri_for_action $req, $self->moniker.'/reset';
    my $form  = $stash->{page}->{forms}->[ 0 ]
              = blank_form 'totp-request', $href;
@@ -377,7 +375,6 @@ sub totp_secret : Role(anon) {
    my $page      =  {
       forms      => [ $form ],
       location   => 'totp_secret',
-      template   => [ 'contents' ],
       title      => locm $req, 'totp_secret_title', $conf->title };
 
    p_textfield $form, 'username', $person->label, { disabled => TRUE };

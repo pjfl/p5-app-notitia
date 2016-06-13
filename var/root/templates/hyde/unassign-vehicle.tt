@@ -1,3 +1,0 @@
-[% PROCESS 'hyde/macros.tt' -%]
-<!-- Unassign Vehicle -->
-[% Dispatch( page.forms.0 ) %]

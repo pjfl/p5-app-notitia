@@ -1,16 +1,20 @@
-<!-- Rota Table -->
-<table class="standard-table">
+<!-- Day Table -->
+<div class="unit four-fifths">
+   <article>
+      <h4>[% page.title %]</h4>
+      <table class="standard-table">
 [% FOR event IN page.rota.events -%]
 [%    TableRow( event ) -%]
 [% END -%]
 [% FOR controller IN page.rota.controllers -%]
 [%    TableRow( controller ) -%]
 [% END -%]
-   <tr>
+         <tr>
 [%    FOR cell IN page.rota.headers -%]
-      <th class="rota-header" colspan="[% cell.colspan %]">[% cell.value %]</th>
+            <th class="rota-header" colspan="[% cell.colspan %]">
+[%             cell.value %]</th>
 [%    END -%]
-   </tr>
+         </tr>
 [% FOR shift IN page.rota.shifts -%]
 [%    FOR rider IN shift.riders -%]
 [%       TableRow( rider ) -%]
@@ -19,4 +23,7 @@
 [%       TableRow( driver ) -%]
 [%    END -%]
 [% END -%]
-</table>
+      </table>
+[% INCLUDE 'hyde/section-nav.tt' -%]
+   </article>
+</div>

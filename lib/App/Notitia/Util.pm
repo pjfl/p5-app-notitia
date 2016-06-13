@@ -23,28 +23,27 @@ use Unexpected::Functions      qw( ValidationErrors );
 use YAML::Tiny;
 
 our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
-                     bind_fields bool_data_type build_navigation build_tree
-                     button check_field_js check_form_field clone create_link
-                     date_data_type delete_button dialog_anchor
-                     display_duration encrypted_attr enhance
-                     enumerated_data_type field_options foreign_key_data_type
-                     get_hashed_pw get_salt is_access_authorised is_draft
-                     is_encrypted iterator js_config js_server_config
-                     js_submit_config js_togglers_config js_window_config
-                     lcm_for load_file_data loc localise_tree locm mail_domain
-                     make_id_from make_name_from make_tip management_link mtime
-                     new_salt nullable_foreign_key_data_type
+                     bool_data_type build_navigation build_tree button
+                     check_field_js check_form_field clone create_link
+                     date_data_type dialog_anchor display_duration
+                     encrypted_attr enhance enumerated_data_type
+                     foreign_key_data_type get_hashed_pw get_salt
+                     is_access_authorised is_draft is_encrypted iterator
+                     js_config js_server_config js_submit_config
+                     js_togglers_config js_window_config lcm_for load_file_data
+                     loc localise_tree locm mail_domain make_id_from
+                     make_name_from make_tip management_link mtime new_salt
+                     nullable_foreign_key_data_type
                      nullable_numerical_id_data_type nullable_varchar_data_type
-                     numerical_id_data_type operation_links page_link_set
-                     register_action_paths save_button serial_data_type
-                     set_element_focus set_on_create_datetime_data_type
-                     set_rota_date slot_claimed slot_identifier
-                     slot_limit_index show_node stash_functions table_link
-                     time2int to_dt to_msg uri_for_action varchar_data_type );
+                     numerical_id_data_type page_link_set register_action_paths
+                     serial_data_type set_element_focus
+                     set_on_create_datetime_data_type set_rota_date
+                     slot_claimed slot_identifier slot_limit_index show_node
+                     stash_functions table_link time2int to_dt to_msg
+                     uri_for_action varchar_data_type );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
-my $field_option_cache  = {};
 my $json_coder          = JSON::MaybeXS->new( utf8 => FALSE );
 my $result_class_cache  = {};
 my $translations        = {};
@@ -122,9 +121,9 @@ my $_page_link = sub {
             hint  => loc( $req, 'Hint' ),
             href  => uri_for_action( $req, $actionp, $args, $params ),
             name  => $name,
-            tip   => loc( $req, to_msg( "${name}_tip", $page ) ),
+            tip   => locm( $req, "${name}_tip", $page ),
             type  => 'link',
-            value => loc( $req, to_msg( "${name}_link", $page ) ), };
+            value => locm( $req, "${name}_link", $page ), };
 };
 
 my $sorted_keys = sub {
@@ -178,6 +177,9 @@ sub assert_unique ($$$$) {
    is_arrayref $fields->{ $k }->{unique} and return;
 
    my $v = ($rs->search( { $k => $columns->{ $k } } )->all)[ 0 ];
+   # TODO: Sticking a parameter in error message makes it untranslatable
+   # that's what the bind values are for [_2] and stick the value in the
+   # list that follows
    my $e = exception "Parameter [_1] is not unique ($columns->{ $k })", [ $k ];
 
    defined $v and throw ValidationErrors, [ $e ], level => 2;
@@ -242,19 +244,6 @@ sub bind ($;$$) {
    $params->{ $_ } = $opts->{ $_ } for (keys %{ $opts });
 
    return $params;
-}
-
-sub bind_fields ($$$$) {
-   my ($schema, $src, $map, $result) = @_; my $fields = {};
-
-   for my $k (keys %{ $map }) {
-      my $value = exists $map->{ $k }->{checked} ? TRUE : $src->$k();
-      my $opts  = field_options( $schema, $result, $k, $map->{ $k } );
-
-      $fields->{ $k } = &bind( $k, $value, $opts );
-   }
-
-   return $fields;
 }
 
 sub bool_data_type (;$) {
@@ -402,7 +391,7 @@ sub create_link ($$$;$) {
             hint  => loc( $req, 'Hint' ),
             href  => uri_for_action( $req, $actionp, $opts->{args} // [] ),
             name  => "create_${k}",
-            tip   => loc( $req, "${k}_create_tip", [ $k ] ),
+            tip   => locm( $req, "${k}_create_tip", $k ),
             type  => 'link',
             value => loc( $req, "${k}_create_link" ) };
 }
@@ -412,18 +401,6 @@ sub date_data_type () {
             is_nullable   => TRUE,
             datetime_undef_if_invalid => TRUE,
             timezone      => 'GMT', };
-}
-
-sub delete_button ($$;$) {
-   my ($req, $name, $opts) = @_; $opts //= {};
-
-   my $class = $opts->{container_class} // 'delete-button right';
-   my $tip   = make_tip( $req, 'delete_tip', [ $opts->{type}, $name ] );
-
-   return { container_class => $class,
-            label           => 'delete',
-            tip             => $tip,
-            value           => 'delete_'.$opts->{type}, };
 }
 
 sub dialog_anchor ($$$) {
@@ -477,24 +454,6 @@ sub enumerated_data_type ($;$) {
             default_value => $_[ 1 ],
             extra         => { list => $_[ 0 ] },
             is_enum       => TRUE, };
-}
-
-sub field_options ($$$;$) {
-   my ($schema, $result, $name, $opts) = @_; my $mandy; $opts //= {};
-
-   unless (defined ($mandy = $field_option_cache->{ $result }->{ $name })) {
-      my $class       = blessed $schema->resultset( $result )->new_result( {} );
-      my $constraints = $class->validation_attributes->{fields}->{ $name };
-
-      $mandy = $field_option_cache->{ $result }->{ $name }
-             = exists $constraints->{validate}
-                   && $constraints->{validate} =~ m{ isMandatory }mx
-             ? ' required' : NUL;
-   }
-
-   $opts->{class} //= NUL; $opts->{class} .= $mandy;
-
-   return $opts;
 }
 
 sub foreign_key_data_type (;$$) {
@@ -702,9 +661,11 @@ sub make_name_from ($) {
 }
 
 sub make_tip ($$;$) {
-   my ($req, $k, $args) = @_; $args //= [];
+   my ($req, $k, $args) = @_;
 
-   return loc( $req, 'Hint' ).SPC.TILDE.SPC.loc( $req, $k, $args );
+   $args = [ map { s{_}{ }gmx; $_ } grep { defined } @{ $args // [] } ];
+
+   return loc( $req, 'Hint' ).SPC.TILDE.SPC.locm( $req, $k, @{ $args } );
 }
 
 sub management_link ($$$;$) {
@@ -719,14 +680,14 @@ sub management_link ($$$;$) {
                   hint  => loc( $req, 'Hint' ),
                   href  => $href,
                   name  => "${name}-${action}",
-                  tip   => loc( $req, "${action}_management_tip", @{ $args } ),
+                  tip   => locm( $req, "${action}_management_tip", @{ $args } ),
                   type  => $type,
                   value => loc( $req, "${action}_management_link" ), };
 
    if ($type eq 'form_button') {
       $button->{action   } = "${name}_${action}";
       $button->{form_name} = "${name}-${action}";
-      $button->{tip      } = loc( $req, "${name}_${action}_tip", @{ $args } );
+      $button->{tip      } = locm( $req, "${name}_${action}_tip", @{ $args } );
       $button->{value    } = loc( $req, "${name}_${action}_link" );
    }
 
@@ -773,17 +734,6 @@ sub numerical_id_data_type (;$) {
             is_numeric        => TRUE, };
 }
 
-sub operation_links ($) {
-   my $list = shift;
-
-   return { class        => 'operation-links align-right right-last',
-            content      => {
-               list      => $list,
-               separator => '&nbsp;|&nbsp;',
-               type      => 'list', },
-            type         => 'container', };
-}
-
 sub page_link_set ($$$$$) {
    my ($req, $actionp, $args, $params, $pager) = @_;
 
@@ -795,6 +745,15 @@ sub page_link_set ($$$$$) {
    my $prev = $pager->previous_page || $pager->first_page;
    my $next = $pager->next_page     || $pager->last_page;
 
+   # TODO: Learn to use a fucking editor that does not leave whitespace
+   # on the ends of lines. The project code standard is 80 columns per line.
+   # Learning to use the change log would be a good move too.
+   # The first and last links have
+   # nbsp's as well as elipses so extra wide then. With the first page selected
+   # I can see (1) 2 3 4 5. With the last page selected I can see
+   # 3 4 5 ( 6 ), what happened to page 2?. The links that these have
+   # replaced would take you half the distance to either the first or
+   # last pages, so that you could use them to do a binary chop
    # Max(current - 2, first + 1)
    my $n_prev = 4; 
    my $page   = ($pager->current_page - $n_prev, $pager->first_page )
@@ -835,19 +794,6 @@ sub register_action_paths (;@) {
    for my $k (keys %{ $args }) { $action_path_uri_map->{ $k } = $args->{ $k } }
 
    return;
-}
-
-sub save_button ($$;$) {
-   my ($req, $name, $opts) = @_; $opts //= {};
-
-   my $action = $name ? 'update' : 'create';
-   my $class  = $opts->{container_class} // 'save-button right-last';
-   my $tip    = make_tip( $req, "${action}_tip", [ $opts->{type}, $name ] );
-
-   return { container_class => $class,
-            label           => $action,
-            tip             => $tip,
-            value           => "${action}_".$opts->{type} };
 }
 
 sub serial_data_type () {
@@ -1015,8 +961,6 @@ Defines no attributes
 
 =item C<bind>
 
-=item C<bind_fields>
-
 =item C<bool_data_type>
 
 =item C<build_navigation>
@@ -1035,8 +979,6 @@ Defines no attributes
 
 =item C<date_data_type>
 
-=item C<delete_button>
-
 =item C<dialog_anchor>
 
 =item C<display_duration>
@@ -1046,8 +988,6 @@ Defines no attributes
 =item C<enhance>
 
 =item C<enumerated_data_type>
-
-=item C<field_options>
 
 =item C<foreign_key_data_type>
 
@@ -1113,8 +1053,6 @@ LCM for a list of integers
 
 =item C<numerical_id_data_type>
 
-=item C<operation_links>
-
 =item C<page_link_set>
 
 =item C<register_action_paths>
@@ -1123,8 +1061,6 @@ LCM for a list of integers
 
 Used by L</uri_for_action> to lookup the partial URI for the action path
 prior to calling L<uri_for|Web::ComposableRequest::Base/uri_for>
-
-=item C<save_button>
 
 =item C<serial_data_type>
 

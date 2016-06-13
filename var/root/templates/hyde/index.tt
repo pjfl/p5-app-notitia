@@ -4,11 +4,10 @@
 <!-- Layout [% page.layout %] Template [% page.template.1 %] -->
 <section class="standard-section">
    <div class="grid">
-[%    path = 'hyde/' _ page.template.0 _ '_mobile.tt';  INCLUDE $path -%]
+[%    path = 'hyde/' _ page.template.0 _ '-mobile.tt';  INCLUDE $path -%]
       <div class="unit four-fifths">
          <article>
             <h4>[% page.title %]</h4>
-            <!-- Template [% page.template.1 %] -->
 [%    path = 'hyde/' _ page.template.1  _ '_content.tt'; INCLUDE $path -%]
          </article>
       </div>

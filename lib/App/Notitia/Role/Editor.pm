@@ -2,9 +2,8 @@ package App::Notitia::Role::Editor;
 
 use namespace::autoclean;
 
-use App::Notitia::Form     qw( blank_form f_list f_tag p_button p_checkbox
-                               p_container p_hidden p_radio
-                               p_text p_textfield );
+use App::Notitia::Form     qw( blank_form f_tag p_button p_checkbox p_hidden
+                               p_list p_radio p_text p_textfield );
 use App::Notitia::Util     qw( dialog_anchor loc make_id_from
                                make_name_from mtime set_element_focus
                                stash_functions to_msg uri_for_action );
@@ -245,7 +244,7 @@ sub get_dialog {
    my $params = $req->query_params;
    my $name   = $params->( 'name' );
    my $val    = $params->( 'val', { optional => TRUE } );
-   my $stash  = $self->dialog_stash( $req, "${name}-file" );
+   my $stash  = $self->dialog_stash( $req );
    my $links  = $stash->{links};
    my $href   = $name eq 'create' ? $links->{root_uri}
               : $name eq 'rename' ? $self->base_uri( $req, [ $val ] )
@@ -333,7 +332,7 @@ sub upload_dialog {
    my ($self, $req, $page) = @_;
 
    my $form    = $page->{forms}->[ 0 ];
-   my $content = f_list f_tag( 'br' ),
+   my $content =
       [ f_tag( 'span', loc( $req, 'Browse' ) ),
         f_tag( 'input', NUL, { class => 'upload', id => 'upload-btn',
                                name  => 'file', type => 'file' } ) ];
@@ -345,7 +344,7 @@ sub upload_dialog {
    $page->{offer_public} and p_checkbox $form, 'public_access', TRUE, {
       label_class => 'align-right clear' };
 
-   p_container $form, $content, { class => 'upload-file button' };
+   p_list $form, f_tag( 'br' ), $content, { class => 'upload-file button' };
 
    p_button $form, 'Upload', 'upload_file', { class => 'right-last' };
 

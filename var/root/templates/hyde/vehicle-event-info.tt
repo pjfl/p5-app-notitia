@@ -1,3 +1,0 @@
-[% PROCESS 'hyde/macros.tt' -%]
-<!-- Vehicle Event Info -->
-[% Dispatch( page.forms.0 ) %]

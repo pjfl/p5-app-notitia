@@ -1,8 +1,8 @@
 package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_list p_button p_container p_fields
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC PIPE_SEP TRUE );
+use App::Notitia::Form      qw( blank_form p_action p_button p_list p_fields
                                 p_rows p_table p_tag p_text p_textfield );
 use App::Notitia::Util      qw( check_field_js create_link display_duration loc
                                 locm make_tip management_link page_link_set
@@ -90,7 +90,11 @@ my $_event_ops_links = sub {
                             { container_class => 'add-link' };
    my $vreq   = management_link $req, 'asset/request_vehicle', $uri;
 
-   return f_list '&nbsp;|&nbsp;', [ $vreq, $add_ev ];
+   return [ $vreq, $add_ev ];
+};
+
+my $_link_opts = sub {
+   return { class => 'operation-links align-right right-last' };
 };
 
 my $_add_participate_button = sub {
@@ -136,7 +140,7 @@ my $_events_ops_links = sub {
 
    $page_links and unshift @{ $links }, $page_links;
 
-   return f_list '&nbsp;|&nbsp;', $links;
+   return $links;
 };
 
 # Private methods
@@ -206,7 +210,7 @@ my $_participent_ops_links = sub {
    my $href         = uri_for_action $req, $actionp, [], $params;
    my $message_link = $self->message_link( $req, $page, $href, $name );
 
-   return f_list '&nbsp;|&nbsp;', [ $message_link ];
+   return [ $message_link ];
 };
 
 my $_update_event_from_request = sub {
@@ -262,7 +266,7 @@ my $_bind_event_fields = sub {
    return
    [  name             => { class    => 'standard-field server',
                             disabled => $editing, label => 'event_name' },
-      date             => $_bind_event_date->( $event, $opts ),
+      event_date       => $_bind_event_date->( $event, $opts ),
       owner            => $self->$_bind_owner( $event, $disabled ),
       description      => { class    => 'standard-field autosize server',
                             disabled => $disabled, type => 'textarea' },
@@ -399,31 +403,25 @@ sub event : Role(event_manager) {
    my $actionp    =  $self->moniker.'/event';
    my $uri        =  $req->uri_params->( 0, { optional => TRUE } );
    my $date       =  $req->query_params->( 'date', { optional => TRUE } );
-   my $event      =  $self->$_maybe_find_event( $uri );
-   my $title      =  $uri ? 'event_edit_heading' : 'event_create_heading';
-   my $action     =  $uri ? 'update' : 'create';
    my $href       =  uri_for_action $req, $actionp, [ $uri ];
    my $form       =  blank_form 'event-admin', $href;
+   my $action     =  $uri ? 'update' : 'create';
    my $page       =  {
       first_field => 'name',
       forms       => [ $form ],
       literal_js  => $self->$_add_event_js(),
-      template    => [ 'contents' ],
-      title       => loc $req, $title };
+      title       => loc $req, "event_${action}_heading" };
+   my $event      =  $self->$_maybe_find_event( $uri );
+   my $links      =  $uri ? $_event_ops_links->( $req, $actionp, $uri ) : [];
 
-   $uri and p_container $form, $_event_ops_links->( $req, $actionp, $uri ), {
-      class => 'operation-links align-right right-last' };
+   $uri and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Event', $event,
       $self->$_bind_event_fields( $event, { date => $date } );
 
-   p_button $form, $action, "${action}_event", {
-      class => 'save-button', container_class => 'right-last',
-      tip   => make_tip( $req, "${action}_tip", [ 'event', $uri ] ) };
+   p_action $form, $action, [ 'event', $uri ], { request => $req };
 
-   $uri and p_button $form, 'delete', 'delete_event', {
-      class => 'delete-button', container_class => 'right',
-      tip   => make_tip( $req, 'delete_tip', [ 'event', $uri ] ) };
+   $uri and p_action $form, 'delete', [ 'event', $uri ], { request => $req };
 
    return $self->get_stash( $req, $page );
 }
@@ -433,7 +431,7 @@ sub event_info : Role(any) {
 
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $stash = $self->dialog_stash( $req, 'event-info' );
+   my $stash = $self->dialog_stash( $req );
    my $form  = $stash->{page}->{forms}->[ 0 ] = blank_form;
    my $label = $event->owner->label;
    my ($start, $end) = display_duration $req, $event;
@@ -460,11 +458,10 @@ sub event_summary : Role(any) {
    my $form    =  blank_form 'event-admin', $href;
    my $page    =  {
       forms    => [ $form ],
-      template => [ 'contents' ],
       title    => loc $req, 'event_summary_heading' };
+   my $links   =  $_event_ops_links->( $req, $actionp, $uri );
 
-   $uri and p_container $form, $_event_ops_links->( $req, $actionp, $uri ), {
-      class => 'operation-links align-right right-last' };
+   $uri and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Event', $event,
       $self->$_bind_event_fields( $event, { disabled => TRUE } );
@@ -495,19 +492,16 @@ sub events : Role(any) {
    my $form      =  blank_form;
    my $page      =  {
       forms      => [ $form ],
-      template   => [ 'contents' ],
       title      => loc $req, $title };
    my $links     =  $_events_ops_links->( $req, $moniker, $params, $pager );
 
-   p_container $form, $links, {
-      class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $table = p_table $form, { headers => $_events_headers->( $req ) };
 
    p_rows $table, [ map { $self->$_event_links( $req, $_ ) } $events->all ];
 
-   p_container $form, $links, {
-      class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
@@ -551,21 +545,18 @@ sub participents : Role(any) {
       class      => 'wider-table', id => 'message-participents' };
    my $page      =  {
       forms      => [ $form ],
-      template   => [ 'contents' ],
       title      =>
          locm $req, 'participents_management_heading', $event->name };
    my $links     =  $self->$_participent_ops_links( $req, $page, $params );
 
-   p_container $form, $links, {
-      class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $table = p_table $form, { headers => $_participent_headers->( $req ) };
 
    p_rows $table, [ map { $self->$_participent_links( $req, $event, $_ ) }
                        @{ $person_rs->list_participents( $event ) } ];
 
-   p_container $form, $links, {
-      class => 'operation-links align-right right-last' };
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
@@ -624,32 +615,26 @@ sub vehicle_event : Role(rota_manager) {
    my $actionp    =  $self->moniker.'/vehicle_event';
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
    my $uri        =  $req->uri_params->( 1, { optional => TRUE } );
-   my $event      =  $self->$_maybe_find_event( $uri );
-   my $action     =  $uri ? 'update' : 'create';
-   my $title      =  $uri ? 'vehicle_event_edit_heading'
-                          : 'vehicle_event_create_heading';
-   my $label      =  $uri ? $event->vehicle->label : $vrn;
    my $href       =  uri_for_action $req, $actionp, [ $vrn, $uri ];
    my $form       =  blank_form 'vehicle-event-admin', $href;
+   my $action     =  $uri ? 'update' : 'create';
    my $page       =  {
       first_field => 'name',
       forms       => [ $form ],
       literal_js  => $self->$_add_event_js(),
-      template    => [ 'contents' ],
-      title       => loc $req, $title };
+      title       => loc $req, "vehicle_event_${action}_heading" };
+   my $event      =  $self->$_maybe_find_event( $uri );
+   my $label      =  $uri ? $event->vehicle->label : $vrn;
+   my $args       =  [ 'vehicle event', $label ];
 
    p_textfield $form, 'vehicle', $label, { disabled => TRUE };
 
    p_fields $form, $self->schema, 'Event', $event,
       $self->$_bind_event_fields( $event, { vehicle_event => TRUE } );
 
-   p_button $form, $action, "${action}_vehicle_event", {
-      class => 'save-button', container_class => 'right-last',
-      tip   => make_tip( $req, "${action}_tip", [ 'vehicle event', $uri ] ) };
+   p_action $form, $action, $args, { request => $req };
 
-   $uri and p_button $form, 'delete', 'delete_vehicle_event', {
-      class => 'delete-button', container_class => 'right',
-      tip   => make_tip( $req, 'delete_tip', [ 'vehicle event', $uri ] ) };
+   $uri and p_action $form, 'delete', $args, { request => $req };
 
    return $self->get_stash( $req, $page );
 }
@@ -659,7 +644,7 @@ sub vehicle_info : Role(rota_manager) {
 
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $stash = $self->dialog_stash( $req, 'vehicle-event-info' );
+   my $stash = $self->dialog_stash( $req );
    my $form  = $stash->{page}->{forms}->[ 0 ] = blank_form;
    my $label = $event->owner->label;
    my ($start, $end) = display_duration $req, $event;

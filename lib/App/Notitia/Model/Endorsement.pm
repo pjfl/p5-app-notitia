@@ -1,11 +1,11 @@
 package App::Notitia::Model::Endorsement;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( bind bind_fields check_field_js
-                                delete_button field_options loc management_link
-                                operation_links register_action_paths
-                                save_button to_dt to_msg uri_for_action );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP TRUE );
+use App::Notitia::Form      qw( blank_form f_link p_action p_list p_fields
+                                p_rows p_table p_textfield );
+use App::Notitia::Util      qw( check_field_js loc locm register_action_paths
+                                to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -40,27 +40,27 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_add_endorsement_links = sub {
-   my ($req, $action, $name) = @_;
-
-   return operation_links [ {
-      class => 'fade',
-      hint  => loc( $req, 'Hint' ),
-      href  => uri_for_action( $req, $action, [ $name ] ),
-      name  => 'add_blot',
-      tip   => loc( $req, 'add_blot_tip', [ 'endorsement', $name ] ),
-      type  => 'link',
-      value => loc( $req, 'add_blot' ) } ];
-};
-
 my $_endorsements_headers = sub {
    my $req = shift;
 
    return [ map { { value => loc( $req, "blots_heading_${_}" ) } } 0 .. 1 ];
 };
 
+my $_endorsement_ops_links = sub {
+   my ($req, $actionp, $person) = @_;
+
+   my $href = uri_for_action $req, $actionp, [ $person->shortcode ];
+   my $opts = { action => 'add', args => [ $person->label ], request => $req };
+
+   return [ f_link 'endorsement', $href, $opts ];
+};
+
+my $_link_opts = sub {
+   return { class => 'operation-links align-right right-last' };
+};
+
 # Private methods
-my $_add_endorsement_js = sub {
+my $_endorsement_js = sub {
    my $self = shift;
    my $opts = { domain => 'schedule', form => 'Endorsement' };
 
@@ -69,29 +69,34 @@ my $_add_endorsement_js = sub {
 };
 
 my $_bind_endorsement_fields = sub {
-   my ($self, $blot) = @_;
+   my ($self, $blot, $opts) = @_; $opts //= {};
 
-   my $map      =  {
-      type_code => { class => 'standard-field server' },
-      endorsed  => { class => 'standard-field server' },
-      notes     => { class => 'standard-field autosize' },
+   my $today    = to_dt time2str '%Y-%m-%d';
+   my $updating = $opts->{action} eq 'update' ? TRUE : FALSE;
+   my $endorsed = $updating ? $blot->endorsed : $today;
+
+   return
+   [  type_code => { class => 'standard-field server', disabled => $updating },
+      endorsed  => { class => 'standard-field server', type => 'date',
+                     value => $endorsed },
       points    => {},
-   };
-
-   return bind_fields $self->schema, $blot, $map, 'Endorsement';
+      notes     => { class => 'standard-field autosize', type => 'textarea' },
+      ];
 };
 
 my $_endorsement_links = sub {
-   my ($self, $req, $name, $uri) = @_;
+   my ($self, $req, $scode, $blot) = @_;
 
-   my $opts = { args => [ $name, $uri ] }; my $links = [];
+   my $args = [ $blot->recipient->label ]; my @links;
 
    for my $actionp (map { $self->moniker."/${_}" } 'endorsement' ) {
-      push @{ $links }, {
-         value => management_link( $req, $actionp, $name, $opts ) };
+      my $href = uri_for_action $req, $actionp, [ $scode, $blot->uri ];
+      my $opts = { action => 'update', args => $args, request => $req };
+
+      push @links, { value => f_link 'endorsement', $href, $opts };
    }
 
-   return @{ $links };
+   return [ { value => $blot->label( $req ) }, @links ];
 };
 
 my $_find_endorsement_by = sub {
@@ -167,35 +172,30 @@ sub delete_endorsement_action : Role(person_manager) {
 sub endorsement : Role(person_manager) {
    my ($self, $req) = @_;
 
+   my $actionp    =  $self->moniker.'/endorsement';
    my $name       =  $req->uri_params->( 0 );
    my $uri        =  $req->uri_params->( 1, { optional => TRUE } );
-   my $blot       =  $self->$_maybe_find_endorsement( $name, $uri );
+   my $action     =  $uri ? 'update' : 'create';
+   my $href       =  uri_for_action $req, $actionp, [ $name, $uri ];
+   my $form       =  blank_form 'endorsement-admin', $href;
    my $page       =  {
-      fields      => $self->$_bind_endorsement_fields( $blot ),
       first_field => $uri ? 'endorsed' : 'type_code',
-      literal_js  => $self->$_add_endorsement_js(),
-      template    => [ 'contents', 'endorsement' ],
-      title       => loc( $req, $uri ? 'endorsement_edit_heading'
-                                     : 'endorsement_create_heading' ), };
+      forms       => [ $form ],
+      literal_js  => $self->$_endorsement_js(),
+      title       => loc $req, "endorsement_${action}_heading" };
+   my $blot       =  $self->$_maybe_find_endorsement( $name, $uri );
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $person_rs->find_by_shortcode( $name );
-   my $args       =  $uri ? [ $name, $uri ] : [ $name ];
-   my $fields     =  $page->{fields};
+   my $args       =  [ 'endorsement', $person->label ];
 
-   if ($uri) {
-      $fields->{type_code}->{disabled} = TRUE;
-      $fields->{delete} = delete_button $req, $uri, { type => 'endorsement' };
-   }
-   else {
-      my $opts = field_options $self->schema, 'Endorsement', 'endorsed',
-                               { class => 'standard-field' };
+   p_textfield $form, 'username', $person->label, { disabled => TRUE };
 
-      $fields->{endorsed} = bind 'endorsed', time2str( '%d/%m/%Y' ), $opts;
-   }
+   p_fields $form, $self->schema, 'Endorsement', $blot,
+      $self->$_bind_endorsement_fields( $blot, { action => $action } );
 
-   $fields->{username} = bind 'username', $person->label, { disabled => TRUE };
-   $fields->{save} = save_button $req, $uri, { type => 'endorsement' };
-   $fields->{href} = uri_for_action $req, 'blots/endorsement', $args;
+   p_action $form, $action, $args, { request => $req };
+
+   $uri and p_action $form, 'delete', $args, { request => $req };
 
    return $self->get_stash( $req, $page );
 }
@@ -203,29 +203,25 @@ sub endorsement : Role(person_manager) {
 sub endorsements : Role(person_manager) {
    my ($self, $req) = @_;
 
+   my $actionp =  $self->moniker.'/endorsement';
    my $scode   =  $req->uri_params->( 0 );
+   my $form    =  blank_form;
+   my $page    =  {
+      forms    => [ $form ],
+      title    => loc $req, 'endorsements_management_heading' };
    my $schema  =  $self->schema;
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );
-   my $page    =  {
-      fields   => {
-         blots => { headers  => $_endorsements_headers->( $req ),
-                    rows     => [], },
-         name  => { disabled => TRUE, label => loc( $req, 'Username' ),
-                    name => 'username', value => $person->label }, },
-      template => [ 'contents', 'endorsements' ],
-      title    => loc( $req, 'endorsements_management_heading' ), };
-   my $blot_rs =  $self->schema->resultset( 'Endorsement' );
-   my $actionp =  $self->moniker.'/endorsement';
-   my $fields  =  $page->{fields};
-   my $rows    =  $fields->{blots}->{rows};
+   my $blot_rs =  $schema->resultset( 'Endorsement' );
+   my $links   =  $_endorsement_ops_links->( $req, $actionp, $person );
 
-   $fields->{links} = $_add_endorsement_links->( $req, $actionp, $scode );
+   p_textfield $form, 'username', $person->label, { disabled => TRUE };
 
-   for my $blot ($blot_rs->search_for_endorsements( $scode )->all) {
-      push @{ $rows },
-         [ { value => $blot->label( $req ) },
-           $self->$_endorsement_links( $req, $scode, $blot->uri ) ];
-   }
+   my $table = p_table $form, { headers => $_endorsements_headers->( $req ) };
+
+   p_rows $table, [ map { $self->$_endorsement_links( $req, $scode, $_ ) }
+                    $blot_rs->search_for_endorsements( $scode )->all ];
+
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
