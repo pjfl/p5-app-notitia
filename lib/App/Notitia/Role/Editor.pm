@@ -78,6 +78,12 @@ around 'load_page' => sub {
    my $editing = $req->query_params->( 'edit', { optional => TRUE } )
                ? TRUE : FALSE;
 
+   my $roles = $self->components->{person}->find_by_shortcode( $req->username )->list_roles;
+
+   $page->{is_editor} = (  exists {map { $_ => 1 } @{$roles}}->{'editor'}
+	                or exists {map { $_ => 1 } @{$roles}}->{'event_manager'}
+	                or exists {map { $_ => 1 } @{$roles}}->{'person_manager'});
+
    $page->{editing}   = $page->{cancel_edit} ? FALSE : $editing;
    $page->{editing} and $page->{user}
       = $self->components->{person}->find_by_shortcode( $req->username );

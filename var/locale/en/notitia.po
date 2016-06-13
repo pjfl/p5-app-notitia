@@ -238,10 +238,10 @@ msgid "current_events_tip"
 msgstr "List current and future events"
 
 msgid "current_page_link"
-msgstr "[_1]"
+msgstr "( [_1] )"
 
 msgid "current_page_tip"
-msgstr "Stay on this page"
+msgstr "Stay on page [_1]"
 
 msgid "current_people_list_link"
 msgstr "Active People"
@@ -316,7 +316,7 @@ msgid "earlier_page_link"
 msgstr "[_1]"
 
 msgid "earlier_page_tip"
-msgstr "Go to this page"
+msgstr "Go to page [_1]"
 
 msgid "editor"
 msgstr "Editor"
@@ -436,7 +436,7 @@ msgid "first_name"
 msgstr "First Name"
 
 msgid "first_page_link"
-msgstr "Α"
+msgstr "First &nbsp;…&nbsp;"
 
 msgid "first_page_tip"
 msgstr "Goto page 1"
@@ -463,7 +463,7 @@ msgid "joined"
 msgstr "Joined"
 
 msgid "last_page_link"
-msgstr "Ω"
+msgstr "&nbsp;…&nbsp;Last"
 
 msgid "last_page_tip"
 msgstr "Goto page [_1]"
@@ -475,7 +475,7 @@ msgid "later_page_link"
 msgstr "[_1]"
 
 msgid "later_page_tip"
-msgstr "Goto this page"
+msgstr "Go to page [_1]"
 
 msgid "login"
 msgstr "Login"

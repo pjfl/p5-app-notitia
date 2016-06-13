@@ -80,7 +80,7 @@ sub update {
 sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       constraints    => {
-         type_code   => { max_length => 25, min_length => 5 },
+         type_code   => { max_length => 25, min_length => 4 },
          notes       => { max_length => VARCHAR_MAX_SIZE(), min_length => 0, },
       },
       fields         => {
