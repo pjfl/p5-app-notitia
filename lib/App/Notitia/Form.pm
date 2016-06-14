@@ -8,9 +8,9 @@ use App::Notitia::Constants qw( FALSE HASH_CHAR NUL TRUE );
 use Class::Usul::Functions  qw( is_arrayref is_hashref throw );
 use Scalar::Util            qw( blessed );
 
-our @EXPORT_OK = qw( blank_form f_link f_tag p_action p_button
+our @EXPORT_OK = qw( blank_form f_link f_tag p_action p_button p_cell
                      p_checkbox p_container p_date p_fields p_hidden p_image
-                     p_label p_list p_password p_radio p_rows p_select p_table
+                     p_label p_list p_password p_radio p_row p_select p_table
                      p_tag p_text p_textarea p_textfield );
 
 # Private package variables
@@ -26,9 +26,9 @@ my $_bind_option = sub {
 
    return is_arrayref $v
         ? { label =>  $v->[ 0 ].NUL,
-            value => (defined $v->[ 1 ] ? ($numify ? 0 + ($v->[ 1 ] || 0)
-                                                   : $prefix.$v->[ 1 ])
-                                        : undef),
+            value => (defined $v->[ 1 ]
+                      ? ($numify ? 0 + ($v->[ 1 ] || 0) : $prefix.$v->[ 1 ])
+                      : undef),
             %{ $v->[ 2 ] // {} } }
         : { label => "${v}", value => ($numify ? 0 + $v : $prefix.$v) };
 };
@@ -39,7 +39,7 @@ my $_bind = sub {
    $opts->{name} = $name; my $class;
 
    if (defined $v and $class = blessed $v and $class eq 'DateTime') {
-      $opts->{value} = $v->set_time_zone( 'local' )->dmy( '/' );
+      $opts->{value} = $v->clone->set_time_zone( 'local' )->dmy( '/' );
    }
    elsif (is_arrayref $v) {
       $opts->{value} = [ map { $_bind_option->( $_, $opts ) } @{ $v } ];
@@ -113,10 +113,10 @@ sub blank_form (;$$$) {
    my $attr = $_parse_args->( @_ ); my $opts = { %{ $attr->{opts} // {} } };
 
    $attr->{name} and $attr->{href} and return {
-      %{ $opts }, content => { list => [], type => 'list' },
-      href => $attr->{href}, form_name => $attr->{name}, type => 'form' };
+      content => { list => [], type => 'list' }, href => $attr->{href},
+      form_name => $attr->{name}, type => 'form', %{ $opts } };
 
-   $opts->{content} ||= { list => [], type => 'list' };
+   $opts->{content} //= { list => [], type => 'list' };
    $opts->{type} //= 'container';
 
    return $opts;
@@ -155,7 +155,7 @@ sub f_tag (@) {
 }
 
 sub p_action ($@) {
-   my ($f, $action, $args, $opts) = @_; $opts //= {};
+   my ($f, $action, $args, $opts) = @_; $opts = { %{ $opts // {} } };
 
    my $type   = $args->[ 0 ];
    my $prefix = $action eq 'create' ? 'save-'
@@ -176,6 +176,14 @@ sub p_action ($@) {
 
 sub p_button ($@) {
    my $f = shift; return $_push_field->( $f, 'button', $_bind->( @_ ) );
+}
+
+sub p_cell ($$) {
+   my ($row, $x) = @_;
+
+   if (not $x or is_hashref $x) { push @{ $row }, $x //= {}; return $x }
+
+   return push @{ $row }, @{ $x };
 }
 
 sub p_checkbox ($@) {
@@ -255,8 +263,14 @@ sub p_radio ($@) {
    my $f = shift; return $_push_field->( $f, 'radio', $_bind->( @_ ) );
 }
 
-sub p_rows ($$) {
-   my ($table, $rows) = @_; return push @{ $table->{rows} //= [] }, @{ $rows };
+sub p_row ($$) {
+   my ($table, $x) = @_;
+
+   if (not $x or is_hashref $x->[ 0 ]) {
+      push @{ $table->{rows} //= [] }, $x //= []; return $x;
+   }
+
+   return push @{ $table->{rows} //= [] }, @{ $x };
 }
 
 sub p_select ($@) {

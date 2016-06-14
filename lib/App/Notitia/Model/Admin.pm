@@ -4,7 +4,7 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP
                                 SLOT_TYPE_ENUM TRUE TYPE_CLASS_ENUM );
 use App::Notitia::Form      qw( blank_form f_link f_tag p_button p_container
-                                p_list p_select p_rows p_table p_textfield );
+                                p_list p_select p_row p_table p_textfield );
 use App::Notitia::Util      qw( loc locm make_tip management_link
                                 register_action_paths to_msg uri_for_action );
 use Class::Null;
@@ -241,8 +241,8 @@ sub slot_roles : Role(administrator) {
       title    => loc $req, 'slot_roles_list_link' };
    my $table   =  p_table $form, { headers => $_slot_roles_headers->( $req ) };
 
-   p_rows $table, [ map { $_slot_roles_links->( $req, $self->moniker, $_ ) }
-                       @{ SLOT_TYPE_ENUM() } ];
+   p_row $table, [ map { $_slot_roles_links->( $req, $self->moniker, $_ ) }
+                      @{ SLOT_TYPE_ENUM() } ];
 
    return $self->get_stash( $req, $page );
 }
@@ -303,7 +303,7 @@ sub types : Role(administrator) {
 
    my $table = p_table $form, { headers => $_types_headers->( $req ) };
 
-   p_rows $table, [ map { $_types_links->( $req, $_ ) } $types->all ];
+   p_row $table, [ map { $_types_links->( $req, $_ ) } $types->all ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 

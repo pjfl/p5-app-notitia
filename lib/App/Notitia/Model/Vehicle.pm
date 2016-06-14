@@ -4,7 +4,7 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
                                 p_date p_fields p_hidden p_list
-                                p_rows p_select p_table p_tag p_textfield );
+                                p_row p_select p_table p_tag p_textfield );
 use App::Notitia::Util      qw( assign_link bind check_field_js
                                 display_duration loc make_tip management_link
                                 page_link_set register_action_paths
@@ -599,8 +599,8 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
 
    my $table = p_table $form, { headers => $_vehicle_request_headers->( $req )};
 
-   p_rows $table, [ map { $_vreq_row->( $schema, $req, $page, $event, $_ ) }
-                    $type_rs->search_for_vehicle_types->all ];
+   p_row $table, [ map { $_vreq_row->( $schema, $req, $page, $event, $_ ) }
+                   $type_rs->search_for_vehicle_types->all ];
 
    p_button $form, 'request_vehicle', 'request_vehicle', {
       class => 'save-button right-last' };
@@ -705,7 +705,7 @@ sub vehicle_events : Role(rota_manager) {
    my $table  = p_table $form, { headers => $_vehicle_events_headers->( $req )};
    my $events = $self->$_vehicle_events( $req, $opts );
 
-   p_rows $table, [ map { $_->[ 1 ] } @{ $events } ];
+   p_row $table, [ map { $_->[ 1 ] } @{ $events } ];
 
    my $href   = uri_for_action $req, 'event/vehicle_event', [ $vrn ];
    my $links  = [ f_link 'event', $href, $_create_action->( $req ) ];
@@ -741,8 +741,8 @@ sub vehicles : Role(rota_manager) {
    my $table = p_table $form, {
       headers => $_vehicles_headers->( $req, $service ) };
 
-   p_rows $table, [ map { $self->$_vehicle_links( $req, $service, $_ ) }
-                    $vehicles->all ];
+   p_row $table, [ map { $self->$_vehicle_links( $req, $service, $_ ) }
+                   $vehicles->all ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 

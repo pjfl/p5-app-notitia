@@ -3,7 +3,7 @@ package App::Notitia::Model::Endorsement;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_list p_fields
-                                p_rows p_table p_textfield );
+                                p_row p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js loc locm register_action_paths
                                 to_dt to_msg uri_for_action );
 use Class::Null;
@@ -218,8 +218,8 @@ sub endorsements : Role(person_manager) {
 
    my $table = p_table $form, { headers => $_endorsements_headers->( $req ) };
 
-   p_rows $table, [ map { $self->$_endorsement_links( $req, $scode, $_ ) }
-                    $blot_rs->search_for_endorsements( $scode )->all ];
+   p_row $table, [ map { $self->$_endorsement_links( $req, $scode, $_ ) }
+                   $blot_rs->search_for_endorsements( $scode )->all ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 

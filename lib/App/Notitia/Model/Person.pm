@@ -4,7 +4,7 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
                                 NUL PIPE_SEP TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_button
-                                p_fields p_list p_rows p_table );
+                                p_fields p_list p_row p_table );
 use App::Notitia::Util      qw( check_field_js dialog_anchor loc make_tip
                                 management_link page_link_set
                                 register_action_paths to_dt to_msg
@@ -498,8 +498,7 @@ sub people : Role(any) {
 
    $type eq 'contacts' and $table->{class} = 'smaller-table';
 
-   p_rows $table, [ map { $_people_links->( $req, $params, $_ ) }
-                    $people->all ];
+   p_row $table, [ map { $_people_links->( $req, $params, $_ ) } $people->all ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 

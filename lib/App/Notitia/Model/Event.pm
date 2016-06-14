@@ -3,7 +3,7 @@ package App::Notitia::Model::Event;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC PIPE_SEP TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_button p_list
-                                p_fields p_rows p_table p_tag p_text
+                                p_fields p_row p_table p_tag p_text
                                 p_textfield );
 use App::Notitia::Util      qw( check_field_js display_duration loc locm
                                 make_tip management_link page_link_set
@@ -508,7 +508,7 @@ sub events : Role(any) {
 
    my $table = p_table $form, { headers => $_events_headers->( $req ) };
 
-   p_rows $table, [ map { $self->$_event_links( $req, $_ ) } $events->all ];
+   p_row $table, [ map { $self->$_event_links( $req, $_ ) } $events->all ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
@@ -562,8 +562,8 @@ sub participents : Role(any) {
 
    my $table = p_table $form, { headers => $_participent_headers->( $req ) };
 
-   p_rows $table, [ map { $self->$_participent_links( $req, $event, $_ ) }
-                       @{ $person_rs->list_participents( $event ) } ];
+   p_row $table, [ map { $self->$_participent_links( $req, $event, $_ ) }
+                      @{ $person_rs->list_participents( $event ) } ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 

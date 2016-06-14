@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds p_cell to Form
           - Replaces create_link calls with Form f_link
           - Replaces table_link calls with Form f_link
           - Fixes failing asset upload

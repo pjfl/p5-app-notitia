@@ -3,7 +3,7 @@ package App::Notitia::Model::Certification;
 use App::Notitia::Attributes;  # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_list p_fields
-                                p_rows p_table p_textfield );
+                                p_row p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js loc locm register_action_paths
                                 to_dt to_msg uri_for_action );
 use Class::Null;
@@ -180,8 +180,8 @@ sub certifications : Role(person_manager) {
 
    my $table = p_table $form, { headers => $_certs_headers->( $req ) };
 
-   p_rows $table, [ map { $self->$_cert_links( $req, $scode, $_ ) }
-                    $cert_rs->search_for_certifications( $scode )->all ];
+   p_row $table, [ map { $self->$_cert_links( $req, $scode, $_ ) }
+                   $cert_rs->search_for_certifications( $scode )->all ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
