@@ -2,10 +2,10 @@ package App::Notitia::Model::Vehicle;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_tag p_action p_button
+use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
                                 p_date p_fields p_hidden p_list
                                 p_rows p_select p_table p_tag p_textfield );
-use App::Notitia::Util      qw( assign_link bind check_field_js create_link
+use App::Notitia::Util      qw( assign_link bind check_field_js
                                 display_duration loc make_tip management_link
                                 page_link_set register_action_paths
                                 set_element_focus slot_identifier time2int
@@ -58,6 +58,11 @@ my $_compare_datetimes = sub {
    $y = time2int $y->[ 1 ]->[ 2 ]->{value};
 
    $x < $y and return -1; $x > $y and return 1; return 0;
+};
+
+my $_create_action = sub {
+   return { action => 'create', container_class => 'add-link',
+            request => $_[ 0 ] };
 };
 
 my $_find_vreq_by = sub {
@@ -445,18 +450,19 @@ my $_vehicle_links = sub {
       { value => management_link( $req, "${moniker}/vehicle", $vrn ) };
 
    if ($service) {
-      my $now = to_dt( time2str );
+      my $now  = to_dt( time2str );
+      my $opts = $_create_action->( $req );
+      my $href = uri_for_action $req, 'event/vehicle_event', [ $vrn ];
 
-      push @{ $links },
-         { value => create_link
-              ( $req, 'event/vehicle_event', 'event', { args => [ $vrn ] } ) };
+      push @{ $links }, { value => f_link 'event', $href, $opts };
+
       push @{ $links },
          { value => management_link
               ( $req, "${moniker}/vehicle_events", $vrn,
                 { params => { after => $now->subtract( days => 1 )->ymd } } ) };
+
       push @{ $links },
          { value => $self->$_find_last_keeper( $req, $vehicle, $now ) };
-
    }
 
    return $links;
@@ -465,9 +471,10 @@ my $_vehicle_links = sub {
 my $_vehicles_ops_links = sub {
    my ($self, $req, $params, $pager) = @_; my $moniker = $self->moniker;
 
-   my $actionp    = "${moniker}/vehicles";
+   my $actionp = "${moniker}/vehicles";
    my $page_links = page_link_set $req, $actionp, [], $params, $pager;
-   my $links      = [ create_link $req, "${moniker}/vehicle", 'vehicle' ];
+   my $href = uri_for_action $req, "${moniker}/vehicle";
+   my $links = [ f_link 'vehicle', $href, $_create_action->( $req ) ];
 
    $page_links and unshift @{ $links }, $page_links;
 
@@ -661,9 +668,10 @@ sub vehicle : Role(rota_manager) {
       title       => loc $req, "vehicle_${action}_heading" };
    my $schema     =  $self->schema;
    my $vehicle    =  $_maybe_find_vehicle->( $schema, $vrn );
-   my $fields     =  $_bind_vehicle_fields->( $schema, $req, $vehicle ),
-   my $links      =  [ create_link $req, $actionp, 'vehicle' ];
-   my $args       =  [ 'vehicle',  $vehicle->label ];
+   my $fields     =  $_bind_vehicle_fields->( $schema, $req, $vehicle );
+      $href       =  uri_for_action $req, $actionp;
+   my $links      =  [ f_link 'vehicle', $href, $_create_action->( $req ) ];
+   my $args       =  [ 'vehicle', $vehicle->label ];
 
    $vrn and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
@@ -679,18 +687,18 @@ sub vehicle : Role(rota_manager) {
 sub vehicle_events : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $vrn     =  $req->uri_params->( 0 );
-   my $params  =  $req->query_params;
-   my $after   =  $params->( 'after',  { optional => TRUE } );
-   my $before  =  $params->( 'before', { optional => TRUE } );
-   my $opts    =  { after      => $after  ? to_dt( $after  ) : FALSE,
-                    before     => $before ? to_dt( $before ) : FALSE,
-                    event_type => 'vehicle',
-                    vehicle    => $vrn, };
-   my $form    =  blank_form { class => 'wide-form no-header-wrap' };
-   my $page    =  {
-      forms    => [ $form ],
-      title    => loc $req, 'vehicle_events_management_heading' };
+   my $vrn    =  $req->uri_params->( 0 );
+   my $params =  $req->query_params;
+   my $after  =  $params->( 'after',  { optional => TRUE } );
+   my $before =  $params->( 'before', { optional => TRUE } );
+   my $opts   =  { after      => $after  ? to_dt( $after  ) : FALSE,
+                   before     => $before ? to_dt( $before ) : FALSE,
+                   event_type => 'vehicle',
+                   vehicle    => $vrn, };
+   my $form   =  blank_form { class => 'wide-form no-header-wrap' };
+   my $page   =  {
+      forms   => [ $form ],
+      title   => loc $req, 'vehicle_events_management_heading' };
 
    p_textfield $form, 'vehicle', $vrn, { disabled => TRUE };
 
@@ -699,8 +707,8 @@ sub vehicle_events : Role(rota_manager) {
 
    p_rows $table, [ map { $_->[ 1 ] } @{ $events } ];
 
-   my $links  = [ create_link $req, 'event/vehicle_event', 'event', {
-      args => [ $vrn ], container_class => 'add-link' } ];
+   my $href   = uri_for_action $req, 'event/vehicle_event', [ $vrn ];
+   my $links  = [ f_link 'event', $href, $_create_action->( $req ) ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 

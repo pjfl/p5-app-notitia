@@ -5,8 +5,8 @@ use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
                                 NUL PIPE_SEP TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_button
                                 p_fields p_list p_rows p_table );
-use App::Notitia::Util      qw( check_field_js create_link dialog_anchor loc
-                                make_tip management_link page_link_set
+use App::Notitia::Util      qw( check_field_js dialog_anchor loc make_tip
+                                management_link page_link_set
                                 register_action_paths to_dt to_msg
                                 uri_for_action );
 use Class::Null;
@@ -182,8 +182,8 @@ my $_person_ops_links = sub {
    my $mugshot = f_link 'mugshot', C_DIALOG, {
       action => 'upload', request => $req };
 
-   my $add_person = create_link $req, $actionp, 'person', {
-      container_class => 'add-link' };
+   my $add_person = f_link 'person', uri_for_action( $req, $actionp ), {
+      action => 'create', container_class => 'add-link', request => $req };
 
    return [ $mugshot, $add_person ];
 };
@@ -215,15 +215,19 @@ my $_next_badge_id = sub {
 my $_people_ops_links = sub {
    my ($self, $req, $page, $params, $pager) = @_;
 
-   my $moniker    = $self->moniker;
-   my $add_user   = create_link $req, "${moniker}/person",
-                                'person', { container_class => 'add-link' };
-   my $name       = 'message_people';
-   my $href       = uri_for_action $req, "${moniker}/message", [], $params;
-   my $message    = $self->message_link( $req, $page, $href, $name );
-   my $links      = [ $message, $add_user ];
-   my $actionp    = "${moniker}/people";
+   my $moniker = $self->moniker;
+   my $actionp = "${moniker}/person";
+   my $add_user = f_link 'person', uri_for_action( $req, $actionp ), {
+      action => 'create', container_class => 'add-link', request => $req };
+
+   my $name = 'message_people';
+   my $href = uri_for_action $req, "${moniker}/message", [], $params;
+   my $message = $self->message_link( $req, $page, $href, $name );
+
+   $actionp = "${moniker}/people";
+
    my $page_links = page_link_set $req, $actionp, [], $params, $pager;
+   my $links = [ $message, $add_user ];
 
    $page_links and unshift @{ $links }, $page_links;
 

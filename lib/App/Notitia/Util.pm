@@ -24,12 +24,11 @@ use YAML::Tiny;
 
 our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      bool_data_type build_navigation build_tree button
-                     check_field_js check_form_field clone create_link
-                     date_data_type dialog_anchor display_duration
-                     encrypted_attr enhance enumerated_data_type
-                     foreign_key_data_type get_hashed_pw get_salt
-                     is_access_authorised is_draft is_encrypted iterator
-                     js_config js_server_config js_submit_config
+                     check_field_js check_form_field clone date_data_type
+                     dialog_anchor display_duration encrypted_attr enhance
+                     enumerated_data_type foreign_key_data_type get_hashed_pw
+                     get_salt is_access_authorised is_draft is_encrypted
+                     iterator js_config js_server_config js_submit_config
                      js_togglers_config js_window_config lcm_for load_file_data
                      loc localise_tree locm mail_domain make_id_from
                      make_name_from make_tip management_link mtime new_salt
@@ -175,16 +174,12 @@ sub assert_unique ($$$$) {
 
    defined $columns->{ $k } or return;
    is_arrayref $fields->{ $k }->{unique} and return;
+   defined( ($rs->search( { $k => $columns->{ $k } } )->all)[ 0 ] ) or return;
 
-   my $v = ($rs->search( { $k => $columns->{ $k } } )->all)[ 0 ];
-   # TODO: Sticking a parameter in error message makes it untranslatable
-   # that's what the bind values are for [_2] and stick the value in the
-   # list that follows
-   my $e = exception "Parameter [_1] is not unique ($columns->{ $k })", [ $k ];
+   my $v = $columns->{ $k }; length $v > 10 and $v = substr( $v, 0, 10 ).'...';
+   my $e = exception 'Parameter [_1] is not unique ([_2])', [ $k, $v ];
 
-   defined $v and throw ValidationErrors, [ $e ], level => 2;
-
-   return;
+   throw ValidationErrors, [ $e ], level => 2;
 }
 
 sub assign_link ($$$$) {
@@ -381,19 +376,6 @@ sub clone (;$) {
    is_arrayref $v and return [ @{ $v // [] } ];
    is_hashref  $v and return { %{ $v // {} } };
    return $v;
-}
-
-sub create_link ($$$;$) {
-   my ($req, $actionp, $k, $opts) = @_; $opts //= {};
-
-   return { class => $opts->{class} // NUL,
-            container_class => $opts->{container_class} // NUL,
-            hint  => loc( $req, 'Hint' ),
-            href  => uri_for_action( $req, $actionp, $opts->{args} // [] ),
-            name  => "create_${k}",
-            tip   => locm( $req, "${k}_create_tip", $k ),
-            type  => 'link',
-            value => loc( $req, "${k}_create_link" ) };
 }
 
 sub date_data_type () {
@@ -974,8 +956,6 @@ Defines no attributes
 =item C<check_form_field>
 
 =item C<clone>
-
-=item C<create_link>
 
 =item C<date_data_type>
 

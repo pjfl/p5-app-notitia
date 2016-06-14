@@ -2,10 +2,11 @@ package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC PIPE_SEP TRUE );
-use App::Notitia::Form      qw( blank_form p_action p_button p_list p_fields
-                                p_rows p_table p_tag p_text p_textfield );
-use App::Notitia::Util      qw( check_field_js create_link display_duration loc
-                                locm make_tip management_link page_link_set
+use App::Notitia::Form      qw( blank_form f_link p_action p_button p_list
+                                p_fields p_rows p_table p_tag p_text
+                                p_textfield );
+use App::Notitia::Util      qw( check_field_js display_duration loc locm
+                                make_tip management_link page_link_set
                                 register_action_paths to_dt to_msg
                                 uri_for_action );
 use Class::Null;
@@ -66,6 +67,11 @@ my $_bind_event_date = sub {
             value =>  $date->set_time_zone( 'local' )->dmy( '/' ) };
 };
 
+my $_create_action = sub {
+   return { action => 'create', container_class => 'add-link',
+            request => $_[ 0 ] };
+};
+
 my $_events_headers = sub {
    return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 4 ];
 };
@@ -86,11 +92,11 @@ my $_event_links = sub {
 my $_event_ops_links = sub {
    my ($req, $actionp, $uri) = @_;
 
-   my $add_ev = create_link $req, $actionp, 'event',
-                            { container_class => 'add-link' };
-   my $vreq   = management_link $req, 'asset/request_vehicle', $uri;
+   my $href = uri_for_action $req, $actionp;
+   my $add_event = f_link 'event', $href, $_create_action->( $req );
+   my $vehicle_request = management_link $req, 'asset/request_vehicle', $uri;
 
-   return [ $vreq, $add_ev ];
+   return [ $vehicle_request, $add_event ];
 };
 
 my $_link_opts = sub {
@@ -134,9 +140,10 @@ my $_vehicle_events_uri = sub {
 my $_events_ops_links = sub {
    my ($req, $moniker, $params, $pager) = @_;
 
-   my $actionp    = "${moniker}/events";
+   my $actionp = "${moniker}/events";
    my $page_links = page_link_set $req, $actionp, [], $params, $pager;
-   my $links      = [ create_link $req, "${moniker}/event", 'event' ];
+   my $href = uri_for_action $req, "${moniker}/event";
+   my $links = [ f_link 'event', $href, $_create_action->( $req ) ];
 
    $page_links and unshift @{ $links }, $page_links;
 

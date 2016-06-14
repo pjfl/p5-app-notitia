@@ -135,6 +135,9 @@ msgstr "Add Certification"
 msgid "certification_type_create_link"
 msgstr "Add Cert. Type"
 
+msgid "certification_type_create_tip"
+msgstr "Create a new certification type record"
+
 msgid "certification_update_heading"
 msgstr "Edit Certification"
 
@@ -398,6 +401,9 @@ msgstr "View the summary for the [_1] event and participte"
 
 msgid "event_type_create_link"
 msgstr "Add Event Type"
+
+msgid "event_type_create_tip"
+msgstr "Create a new event type record"
 
 msgid "event_update_heading"
 msgstr "Edit Event"
@@ -831,6 +837,9 @@ msgstr "Add and remove roles for [_1]"
 msgid "role_type_create_link"
 msgstr "Add Role Type"
 
+msgid "role_type_create_tip"
+msgstr "Create a role type record"
+
 msgid "roles"
 msgstr "Roles"
 
@@ -839,6 +848,9 @@ msgstr "Rota Manager"
 
 msgid "rota_type_create_link"
 msgstr "Add Rota Type"
+
+msgid "rota_type_create_tip"
+msgstr "Create a rota type record"
 
 msgid "route"
 msgstr "Route"
@@ -929,6 +941,9 @@ msgstr "[_1] Type"
 
 msgid "type_management_link"
 msgstr "Remove"
+
+msgid "type_management_tip"
+msgstr "Remove this type record"
 
 msgid "type_name"
 msgstr "Type Name"
@@ -1069,6 +1084,9 @@ msgstr "Type"
 
 msgid "vehicle_type_create_link"
 msgstr "Add Vehicle Type"
+
+msgid "vehicle_type_create_tip"
+msgstr "Create a vehicle type record"
 
 msgid "vehicles_heading_0"
 msgstr "Vehicle"

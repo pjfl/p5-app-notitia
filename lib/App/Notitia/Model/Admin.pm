@@ -3,9 +3,9 @@ package App::Notitia::Model::Admin;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP
                                 SLOT_TYPE_ENUM TRUE TYPE_CLASS_ENUM );
-use App::Notitia::Form      qw( blank_form f_tag p_button p_container p_list
-                                p_select p_rows p_table p_textfield );
-use App::Notitia::Util      qw( create_link loc locm make_tip management_link
+use App::Notitia::Form      qw( blank_form f_link f_tag p_button p_container
+                                p_list p_select p_rows p_table p_textfield );
+use App::Notitia::Util      qw( loc locm make_tip management_link
                                 register_action_paths to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
@@ -40,6 +40,11 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_create_action = sub {
+   return { action => 'create', container_class => 'add-link',
+            request => $_[ 0 ] };
+};
+
 my $_link_opts = sub {
    return { class => 'operation-links align-right right-last' };
 };
@@ -82,15 +87,17 @@ my $_type_create_links = sub {
    my $actionp = "${moniker}/type"; my $links = [];
 
    if ($type_class) {
-      my $k = "${type_class}_type"; my $opts = { args => [ $type_class ] };
+      my $k = "${type_class}_type";
+      my $href = uri_for_action $req, $actionp, [ $type_class ];
 
-      push @{ $links }, create_link( $req, $actionp, $k, $opts );
+      push @{ $links }, f_link $k, $href, $_create_action->( $req );
    }
    else {
       for my $type_class (@{ TYPE_CLASS_ENUM() }) {
-         my $k = "${type_class}_type"; my $opts = { args => [ $type_class ] };
+         my $k = "${type_class}_type";
+         my $href = uri_for_action $req, $actionp, [ $type_class ];
 
-         push @{ $links }, create_link( $req, $actionp, $k, $opts );
+         push @{ $links }, f_link $k, $href, $_create_action->( $req );
       }
    }
 
