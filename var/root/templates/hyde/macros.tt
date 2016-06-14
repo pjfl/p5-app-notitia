@@ -5,6 +5,7 @@
 [%       CASE 'checkbox'; CheckBox( f ); -%]
 [%       CASE 'container'; Container( f ); -%]
 [%       CASE 'date'; DateField( f ); -%]
+[%       CASE 'file'; FileField( f ); -%]
 [%       CASE 'form'; Form( f ); -%]
 [%       CASE 'form_button' -%]
 [%          FormWithButton( f.href, f.class, f.value,
@@ -62,6 +63,11 @@
 [% MACRO FieldHelp( f ) BLOCK %]
       <span class="field-help [% f.container_class %] tips" title="[% f.tip %]">
          &dagger;</span>
+[% END -%]
+[% MACRO FileField( f ) BLOCK -%]
+[%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
+      <input class="[% class %]" id="[% f.id %]" name="[% f.name %]"
+       placeholder="[% f.placeholder%]" type="file">
 [% END -%]
 [% MACRO Form( f ) BLOCK -%]
 [%    IF f.class; class = f.class; ELSE; class = 'standard-form'; END -%]

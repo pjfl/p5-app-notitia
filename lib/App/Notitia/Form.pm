@@ -9,9 +9,9 @@ use Class::Usul::Functions  qw( is_arrayref is_hashref throw );
 use Scalar::Util            qw( blessed );
 
 our @EXPORT_OK = qw( blank_form f_link f_tag p_action p_button p_cell
-                     p_checkbox p_container p_date p_fields p_hidden p_image
-                     p_label p_list p_password p_radio p_row p_select p_table
-                     p_tag p_text p_textarea p_textfield );
+                     p_checkbox p_container p_date p_fields p_file p_hidden
+                     p_image p_label p_list p_password p_radio p_row p_select
+                     p_span p_table p_tag p_text p_textarea p_textfield );
 
 # Private package variables
 my @ARG_NAMES = qw( name href opts );
@@ -229,6 +229,10 @@ sub p_fields ($$$$$) {
    return;
 }
 
+sub p_file ($@) {
+   my $f = shift; return $_push_field->( $f, 'file', $_bind->( @_ ) );
+}
+
 sub p_hidden ($@) {
    my $f = shift; return $_push_field->( $f, 'hidden', $_bind->( @_ ) );
 }
@@ -275,6 +279,10 @@ sub p_row ($$) {
 
 sub p_select ($@) {
    my $f = shift; return $_push_field->( $f, 'select', $_bind->( @_ ) );
+}
+
+sub p_span ($@) {
+   my $f = shift; return $_push_field->( $f, 'tag', f_tag( 'span', @_ ) );
 }
 
 sub p_table ($@) {

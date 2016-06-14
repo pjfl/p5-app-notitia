@@ -2,8 +2,9 @@ package App::Notitia::Role::Editor;
 
 use namespace::autoclean;
 
-use App::Notitia::Form     qw( blank_form f_tag p_button p_checkbox p_hidden
-                               p_list p_radio p_text p_textfield );
+use App::Notitia::Form     qw( blank_form f_tag p_button p_checkbox p_file
+                               p_hidden p_list p_radio p_span p_text
+                               p_textfield );
 use App::Notitia::Util     qw( dialog_anchor loc make_id_from
                                make_name_from mtime set_element_focus
                                stash_functions to_msg uri_for_action );
@@ -333,10 +334,6 @@ sub upload_dialog {
    my ($self, $req, $page) = @_;
 
    my $form    = $page->{forms}->[ 0 ];
-   my $content =
-      [ f_tag( 'span', loc( $req, 'Browse' ) ),
-        f_tag( 'input', NUL, { class => 'upload', id => 'upload-btn',
-                               name  => 'file', type => 'file' } ) ];
 
    p_textfield $form, 'upload-path', NUL, {
       class => 'pathname', disabled => TRUE,
@@ -345,8 +342,10 @@ sub upload_dialog {
    $page->{offer_public} and p_checkbox $form, 'public_access', TRUE, {
       label_class => 'align-right clear' };
 
-   p_list $form, f_tag( 'br' ), $content, { class => 'upload-file button' };
+   my $list = p_list $form, f_tag( 'br' ), [], { class => 'upload-file button'};
 
+   p_span $list, loc( $req, 'Browse' );
+   p_file $list, 'file', NUL, { class => 'upload', id => 'upload-btn' };
    p_button $form, 'Upload', 'upload_file', { class => 'right-last' };
 
    $page->{literal_js} = $_copy_element_value->();
