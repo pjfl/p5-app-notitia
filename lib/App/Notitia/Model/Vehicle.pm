@@ -166,7 +166,7 @@ my $_vehicle_slot_links = sub {
 
    push @links, {
       value => management_link
-         ( $req, 'sched/day_rota', 'edit', { args => [ $type, $date ] } ) };
+         ( $req, 'day/day_rota', 'edit', { args => [ $type, $date ] } ) };
 
    return @links;
 };
@@ -345,7 +345,7 @@ my $_toggle_assignment = sub {
    my $message   = [ to_msg "Vehicle [_1] ${action}ed to [_2] by [_3]",
                      $vrn, $label, $req->session->user_label ];
    my $location  = uri_for_action
-      ( $req, 'sched/day_rota', [ $rota_name, $rota_date, $slot_name ] );
+      ( $req, 'day/day_rota', [ $rota_name, $rota_date, $slot_name ] );
 
    return { redirect => { location => $location, message => $message } };
 };

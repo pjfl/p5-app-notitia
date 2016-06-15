@@ -98,10 +98,10 @@ my $_find_assigner = sub {
    return $schema->resultset( 'Person' )->find_by_shortcode( $scode );
 };
 
-my $_find_rota_type_id_for = sub {
+my $_find_rota_type = sub {
    my ($self, $name) = @_; my $schema = $self->result_source->schema;
 
-   return $schema->resultset( 'Type' )->find_rota_by( $name )->id;
+   return $schema->resultset( 'Type' )->find_rota_by( $name );
 };
 
 my $_find_slot = sub {
@@ -118,7 +118,7 @@ my $_find_slot = sub {
 my $_assert_not_assigned_to_slot = sub {
    my ($self, $rota_name, $date, $shift_type) = @_;
 
-   my $type_id  = $self->$_find_rota_type_id_for( $rota_name );
+   my $type_id  = $self->$_find_rota_type( $rota_name )->id;
    my $slots_rs = $self->result_source->schema->resultset( 'Slot' );
    my $slots    = $slots_rs->assignment_slots( $type_id, $date );
 

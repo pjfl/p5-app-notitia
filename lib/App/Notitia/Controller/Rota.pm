@@ -1,22 +1,21 @@
-package App::Notitia::Controller::CMS;
+package App::Notitia::Controller::Rota;
 
 use Web::Simple;
 
 with q(Web::Components::Role);
 
-has '+moniker' => default => 'cms';
+has '+moniker' => default => 'rota';
 
 sub dispatch_request {
-   sub (POST + /asset + *file~    + ?*) { [ 'docs/upload',        @_ ] },
-   sub (GET  + /docs/dialog       + ?*) { [ 'docs/dialog',        @_ ] },
-   sub (GET  + /docs/search       + ?*) { [ 'docs/search',        @_ ] },
-   sub (GET  + /docs/**           + ?*) { [ 'docs/page',          @_ ] },
-   sub (POST + /docs/**  | /docs  + ?*) { [ 'docs/from_request',  @_ ] },
-   sub (GET  + /docs              + ?*) { [ 'docs/index',         @_ ] },
-   sub (GET  + /posts/dialog      + ?*) { [ 'posts/dialog',       @_ ] },
-   sub (GET  + /posts/rss         + ?*) { [ 'posts/rss_feed',     @_ ] },
-   sub (GET  + /posts/** | /posts + ?*) { [ 'posts/page',         @_ ] },
-   sub (POST + /posts/** | /posts + ?*) { [ 'posts/from_request', @_ ] };
+   sub (GET  + /assignment-summary/* + ?*) { [ 'month/assign_summary', @_ ] },
+   sub (POST + /day-rota             + ?*) { [ 'day/from_request',     @_ ] },
+   sub (GET  + /day-rota/**          + ?*) { [ 'day/day_rota',         @_ ] },
+   sub (GET  + /day-rota             + ?*) { [ 'day/day_rota',         @_ ] },
+   sub (GET  + /month-rota/**        + ?*) { [ 'month/month_rota',     @_ ] },
+   sub (GET  + /month-rota           + ?*) { [ 'month/month_rota',     @_ ] },
+   sub (POST + /slot/**              + ?*) { [ 'day/from_request',     @_ ] },
+   sub (GET  + /slot/**              + ?*) { [ 'day/slot',             @_ ] },
+   sub (GET  + /week-rota/**         + ?*) { [ 'week/week_rota',       @_ ] };
 }
 
 1;
@@ -29,11 +28,11 @@ __END__
 
 =head1 Name
 
-App::Notitia::Controller::CMS - People and resource scheduling
+App::Notitia::Controller::Rota - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia::Controller::CMS;
+   use App::Notitia::Controller::Rota;
    # Brief but working code examples
 
 =head1 Description

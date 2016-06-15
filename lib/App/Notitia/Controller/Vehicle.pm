@@ -1,22 +1,22 @@
-package App::Notitia::Controller::CMS;
+package App::Notitia::Controller::Vehicle;
 
 use Web::Simple;
 
 with q(Web::Components::Role);
 
-has '+moniker' => default => 'cms';
+has '+moniker' => default => 'vehicle';
 
 sub dispatch_request {
-   sub (POST + /asset + *file~    + ?*) { [ 'docs/upload',        @_ ] },
-   sub (GET  + /docs/dialog       + ?*) { [ 'docs/dialog',        @_ ] },
-   sub (GET  + /docs/search       + ?*) { [ 'docs/search',        @_ ] },
-   sub (GET  + /docs/**           + ?*) { [ 'docs/page',          @_ ] },
-   sub (POST + /docs/**  | /docs  + ?*) { [ 'docs/from_request',  @_ ] },
-   sub (GET  + /docs              + ?*) { [ 'docs/index',         @_ ] },
-   sub (GET  + /posts/dialog      + ?*) { [ 'posts/dialog',       @_ ] },
-   sub (GET  + /posts/rss         + ?*) { [ 'posts/rss_feed',     @_ ] },
-   sub (GET  + /posts/** | /posts + ?*) { [ 'posts/page',         @_ ] },
-   sub (POST + /posts/** | /posts + ?*) { [ 'posts/from_request', @_ ] };
+   sub (GET  + /vehicles              + ?*) { [ 'asset/vehicles',        @_ ] },
+   sub (GET  + /vehicle-assign/**     + ?*) { [ 'asset/assign',          @_ ] },
+   sub (GET  + /vehicle-events/*      + ?*) { [ 'asset/vehicle_events',  @_ ] },
+   sub (GET  + /vehicle-request-info/*+ ?*) { [ 'asset/request_info',    @_ ] },
+   sub (GET  + /vehicle-request/*     + ?*) { [ 'asset/request_vehicle', @_ ] },
+   sub (POST + /vehicle/**            + ?*) { [ 'asset/from_request',    @_ ] },
+   sub (POST + /vehicle/*             + ?*) { [ 'asset/from_request',    @_ ] },
+   sub (POST + /vehicle               + ?*) { [ 'asset/from_request',    @_ ] },
+   sub (GET  + /vehicle/*             + ?*) { [ 'asset/vehicle',         @_ ] },
+   sub (GET  + /vehicle               + ?*) { [ 'asset/vehicle',         @_ ] },
 }
 
 1;
@@ -29,11 +29,11 @@ __END__
 
 =head1 Name
 
-App::Notitia::Controller::CMS - People and resource scheduling
+App::Notitia::Controller::Vehicle - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia::Controller::CMS;
+   use App::Notitia::Controller::Vehicle;
    # Brief but working code examples
 
 =head1 Description

@@ -4,7 +4,7 @@ use Web::Simple;
 
 with q(Web::Components::Role);
 
-has '+moniker' => default => 'root';
+has '+moniker' => default => 'z_root';
 
 sub dispatch_request {
    sub (GET  + /check-field        + ?*) { [ 'user/check_field',       @_ ] },

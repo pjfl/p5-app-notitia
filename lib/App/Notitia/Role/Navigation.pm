@@ -136,7 +136,7 @@ sub admin_navigation_links {
 sub rota_navigation_links {
    my ($self, $req, $period, $name) = @_;
 
-   my $actionp  = "sched/${period}_rota";
+   my $actionp  = "${period}/${period}_rota";
    my $date     = $req->session->rota_date // time2str '%Y-%m-01';
    my $local_dt = to_dt( $date )->set_time_zone( 'local' );
    my $f_dom    = $local_dt->clone->set( day => 1 );
@@ -167,7 +167,7 @@ sub rota_navigation_links {
 
    while ($sow->day_of_week > 1) { $sow = $sow->subtract( days => 1 ) }
 
-   $actionp = "sched/week_rota";
+   $actionp = 'week/week_rota';
    push @{ $nav }, $nav_folder->( $req, 'week' );
    push @{ $nav }, $_week_link->( $req, $actionp, $name,
                                   $sow->clone->subtract( weeks => 1 ) );

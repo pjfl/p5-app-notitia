@@ -205,8 +205,9 @@ sub login_action : Role(anon) {
    $wanted and $wanted =~ m{ check_field }mx and $wanted = NUL;
    $wanted and $wanted =~ m{ totp_secret }mx and $wanted = NUL;
 
+   # TODO: Default page should be configurable
    my $location  = $wanted ? $req->uri_for( $wanted )
-                           : uri_for_action $req, 'sched/month_rota';
+                           : uri_for_action $req, 'month/month_rota';
 
    return { redirect => { location => $location, message => $message } };
 }
