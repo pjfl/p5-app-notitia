@@ -203,13 +203,15 @@ footer {
 .option-label {
    display: inline-block; padding: 0.325em 0; vertical-align: top;
 }
-.pathname, .narrow-field, .single-digit, .smallint-field, .standard-field {
+.pathname, .narrow-field, .single-character, .single-digit, .smallint-field,
+.standard-field {
    background-color: #fff; border: 2px inset; .border-radius;
    .box-sizing; color: @darker; margin: 0;
    padding: 3.25px 0.75em; vertical-align: middle;
 }
 .pathname, .standard-field { min-width: 300px; }
-.pathname[disabled], .narrow-field[disabled], .standard-field[disabled] {
+.pathname[disabled], .narrow-field[disabled], .single-character[disabled],
+.single-digit[disabled], .smallint-field[disabled], .standard-field[disabled] {
    background-color: @subtle;
 }
 .standard-field[type=date], .narrow-field[type=time],

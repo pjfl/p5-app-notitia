@@ -203,9 +203,9 @@
 [%    IF f.tip; FieldHelp( f ); END -%]
 [%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
       <input [% IF f.disabled %]disabled="disabled"[% END -%]
-         class="[% class %]" id="[% f.name %]"
+         class="[% class %]" id="[% f.name %]" maxlength="[% f.maxlength %]"
           name="[% f.name %]" placeholder="[% f.placeholder%]"
-          type="textfield" value="[% f.value %]">
+          size="[% f.size %]" type="textfield" value="[% f.value %]">
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>
 [% END -%]

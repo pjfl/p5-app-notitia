@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Adds colour attribute to vehicle class
+          - Adds location and region attributes to person class
           - Split out more controllers and models
           - Adds p_span and p_file to Form
           - Adds p_cell to Form

@@ -41,17 +41,19 @@ $class->add_columns
      subscription     => date_data_type,
      badge_id         => nullable_numerical_id_data_type,
      rows_per_page    => numerical_id_data_type( 20 ),
-     shortcode        => varchar_data_type(   6 ),
+     shortcode        => varchar_data_type(   8 ),
      name             => varchar_data_type(  64 ),
      password         => varchar_data_type( 128 ),
-     first_name       => varchar_data_type(  30 ),
-     last_name        => varchar_data_type(  30 ),
+     first_name       => varchar_data_type(  32 ),
+     last_name        => varchar_data_type(  32 ),
      address          => varchar_data_type(  64 ),
      postcode         => varchar_data_type(  16 ),
+     location         => varchar_data_type(  24),
      email_address    => varchar_data_type(  64 ),
-     mobile_phone     => varchar_data_type(  32 ),
-     home_phone       => varchar_data_type(  32 ),
+     mobile_phone     => varchar_data_type(  16 ),
+     home_phone       => varchar_data_type(  16 ),
      totp_secret      => varchar_data_type(  16 ),
+     region           => varchar_data_type(   1 ),
      notes            => varchar_data_type, );
 
 $class->set_primary_key( 'id' );
@@ -496,14 +498,16 @@ sub validation_attributes {
       constraints      => {
          address       => { max_length =>  64, min_length => 0, },
          email_address => { max_length =>  64, min_length => 0, },
-         first_name    => { max_length =>  30, min_length => 1, },
-         last_name     => { max_length =>  30, min_length => 1, },
+         first_name    => { max_length =>  32, min_length => 1, },
+         last_name     => { max_length =>  32, min_length => 1, },
+         location      => { max_length =>  24, min_length => 3, },
          name          => { max_length =>  64, min_length => 3, },
          notes         => { max_length =>  VARCHAR_MAX_SIZE(),
                             min_length =>   0, },
          password      => { max_length => 128, min_length => 8, },
          postcode      => { max_length =>  16, min_length => 0, },
-         shortcode     => { max_length =>   6, min_length => 5, },
+         region        => { max_length =>   1, min_length => 1, },
+         shortcode     => { max_length =>   8, min_length => 5, },
       },
       fields           => {
          address       => { validate => 'isValidLength isValidText' },
@@ -524,6 +528,9 @@ sub validation_attributes {
          last_name     => {
             filters    => 'filterUCFirst',
             validate   => 'isMandatory isValidLength isValidText' },
+         location      => {
+            filters    => 'filterUCFirst',
+            validate   => 'isValidLength isValidText' },
          mobile_phone  => { filters  => 'filterNonNumeric',
                             validate => 'isValidInteger' },
          name          => {
@@ -535,6 +542,9 @@ sub validation_attributes {
          postcode      => {
             filters    => 'filterUpperCase',
             validate   => 'isValidLength isValidPostcode' },
+         region        => {
+            filters    => 'filterUpperCase',
+            validate   => 'isValidLength isSimpleText' },
          resigned      => { validate => 'isValidDate' },
          shortcode     => {
             validate   => 'isMandatory isValidLength isValidIdentifier' },

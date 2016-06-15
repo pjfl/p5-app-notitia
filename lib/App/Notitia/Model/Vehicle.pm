@@ -289,6 +289,8 @@ my $_bind_vehicle_fields = sub {
                     label    => 'vehicle_name',
                     tip      => make_tip $req, 'vehicle_name_field_tip' },
       owner    => $_owner_list->( $schema, $vehicle, $disabled ),
+      colour   => { disabled => $disabled,
+                    tip      => make_tip $req, 'vehicle_colour_field_tip' },
       aquired  => { disabled => $disabled, type => 'date' },
       disposed => { class    => 'standard-field clearable',
                     disabled => $disabled, type => 'date' },
@@ -355,7 +357,7 @@ my $_update_vehicle_from_request = sub {
 
    my $opts = { optional => TRUE };
 
-   for my $attr (qw( aquired disposed name notes vrn )) {
+   for my $attr (qw( aquired colour disposed name notes vrn )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 

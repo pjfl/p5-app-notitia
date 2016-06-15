@@ -168,6 +168,9 @@ msgstr "Edit"
 msgid "change_password_title"
 msgstr "Change Password"
 
+msgid "colour"
+msgstr "Colour"
+
 msgid "completed"
 msgstr "Date Completed"
 
@@ -480,6 +483,9 @@ msgstr "[_1]"
 msgid "later_page_tip"
 msgstr "Go to page [_1]"
 
+msgid "location"
+msgstr "Location"
+
 msgid "login"
 msgstr "Login"
 
@@ -780,6 +786,9 @@ msgstr "List privately owned vehicles"
 msgid "public_access"
 msgstr "Is this a publicly available asset?"
 
+msgid "region"
+msgstr "Region"
+
 msgid "request_vehicle_management_link"
 msgstr "Vehicles"
 
@@ -996,6 +1005,10 @@ msgstr "If left blank a username will be generated from the "
 
 msgid "vehicle"
 msgstr "Vehicle"
+
+msgid "vehicle_colour_field_tip"
+msgstr "Leave blank to assign a random colour. Colours are either a name or"
+       "or a hexadecimal number, e.g. #1b00b5"
 
 msgid "vehicle_create_link"
 msgstr "Add Vehicle"

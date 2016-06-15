@@ -240,8 +240,9 @@ my $_update_person_from_request = sub {
    my $opts = { optional => TRUE };
 
    for my $attr (qw( active address badge_expires badge_id dob email_address
-                     first_name home_phone joined last_name mobile_phone name
-                     notes password_expired postcode resigned subscription )) {
+                     first_name home_phone joined last_name location
+                     mobile_phone name notes password_expired
+                     postcode region resigned subscription )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 
@@ -292,6 +293,7 @@ my $_bind_person_fields = sub {
       email_address    => { class    => 'standard-field server',
                             disabled => $disabled },
       address          => { disabled => $disabled },
+      location         => { disabled => $disabled },
       postcode         => { class    => 'standard-field server',
                             disabled => $disabled },
       mobile_phone     => { disabled => $disabled },
@@ -311,14 +313,17 @@ my $_bind_person_fields = sub {
       name             => { class    => 'standard-field',
                             disabled => $disabled, label => 'username',
                             tip => make_tip( $req, 'username_field_tip' ) },
-      active           => $is_create || $disabled ? FALSE : {
-         checked       => $person->active, type => 'checkbox' },
-      password_expired => $is_create || $disabled ? FALSE : {
-         checked       => $person->password_expired,
-         label_class   => 'right-last', type => 'checkbox' },
+      region           => { class => 'single-character', disabled => $disabled,
+                            maxlength => 1, size => 1 },
       enable_2fa       => $is_create || $disabled ? FALSE : {
          checked       => $person->totp_secret ? TRUE : FALSE,
-         type          => 'checkbox' },
+         label_class   => 'right', type => 'checkbox' },
+      active           => $is_create || $disabled ? FALSE : {
+         checked       => $person->active,
+         label_class   => 'left', type => 'checkbox' },
+      password_expired => $is_create || $disabled ? FALSE : {
+         checked       => $person->password_expired,
+         label_class   => 'right', type => 'checkbox' },
       ];
 };
 

@@ -23,6 +23,7 @@ $class->add_columns
      owner_id => nullable_foreign_key_data_type,
      aquired  => date_data_type,
      disposed => date_data_type,
+     colour   => varchar_data_type( 16 ),
      vrn      => varchar_data_type( 16 ),
      name     => varchar_data_type( 64 ),
      notes    => varchar_data_type, );
@@ -33,6 +34,11 @@ $class->add_unique_constraint( [ 'vrn' ] );
 
 $class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
 $class->belongs_to( type  => "${result}::Type", 'type_id' );
+
+# Private functions
+my $_random_colour = sub {
+   return sprintf '#%x%x%x', int rand 256, int rand 256, int rand 256;
+};
 
 # Private methods
 sub _as_number {
@@ -198,7 +204,11 @@ sub assign_slot {
 }
 
 sub insert {
-   my $self = shift;
+   my $self = shift; my $columns = { $self->get_inflated_columns };
+
+   $columns->{colour} or $columns->{colour} = $_random_colour->();
+
+   $self->set_inflated_columns( $columns );
 
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
 
@@ -243,8 +253,13 @@ sub update {
    my ($self, $columns) = @_;
 
    $columns and $self->set_inflated_columns( $columns );
+   $columns = { $self->get_inflated_columns };
 
-   $self->validate( TRUE ); $self->$_assert_public_or_private();
+   $columns->{colour} or $columns->{colour} = $_random_colour->();
+
+   $self->set_inflated_columns( $columns ); $self->validate( TRUE );
+
+   $self->$_assert_public_or_private();
 
    return $self->next::method;
 }
@@ -252,18 +267,20 @@ sub update {
 sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       constraints    => {
+         colour      => { max_length => 16, min_length => 3, },
          name        => { max_length => 64, min_length => 3, },
          notes       => { max_length => VARCHAR_MAX_SIZE(), min_length => 0 },
          vrn         => { max_length => 16, min_length => 3, },
       },
       fields         => {
          aquired     => { validate => 'isValidDate' },
+         colour      => { validate => 'isValidLength' },
          disposed    => { validate => 'isValidDate' },
          name        => { validate => 'isValidLength isValidIdentifier' },
          notes       => { validate => 'isValidLength isValidText' },
          vrn         => {
-            filters  => 'filterWhiteSpace filterUpperCase',
             unique   => TRUE,
+            filters  => 'filterWhiteSpace filterUpperCase',
             validate => 'isMandatory isValidLength isValidIdentifier' },
       },
       level => 8,
