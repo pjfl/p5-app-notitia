@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds fullscreen width and colour to spreadsheet view
           - Adds styling for spreadsheet view
           - Adds spreadsheet week view
           - Adds colour attribute to vehicle class

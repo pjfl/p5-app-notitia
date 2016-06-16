@@ -24,6 +24,7 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'week';
 
 register_action_paths
+   'week/alloc_key' => 'allocation-key',
    'week/alloc_table' => 'allocation-table',
    'week/allocation' => 'vehicle-allocation',
    'week/week_rota' => 'week-rota';
@@ -156,6 +157,31 @@ my $_vehicle_list = sub {
       selected => $vrn eq $_->vrn ? TRUE : FALSE } ] } @{ $bikes } ];
 };
 
+my $_alloc_key_rows = sub {
+   my ($self, $req, $now, $vehicle) = @_;
+
+   my $assets = $self->components->{asset};
+   my $keeper = $assets->find_last_keeper( $req, $vehicle, $now );
+   my $details = $vehicle->name.', '.$vehicle->notes.', '.$vehicle->vrn;
+   my $style = 'background-color: '.$vehicle->colour.';';
+   my $row = [];
+
+   push @{ $row }, { value => ucfirst $details };
+   push @{ $row }, { class => 'narrow align-center', value => $keeper->region };
+   push @{ $row }, { style => $style, value => $keeper->label };
+   push @{ $row }, { class => 'narrow', value => $keeper->location };
+
+   return $row;
+};
+
+my $_alloc_key_headers = sub {
+   my $req = shift;
+
+   my @headings = ('Bike Details', 'R', 'Current Rider', 'Rider Location');
+
+   return [ map { { value => $_ } } @headings  ];
+};
+
 my $_alloc_table_label = sub {
    my ($req, $date, $cno) = @_;
 
@@ -183,7 +209,7 @@ my $_alloc_cell_embeded_row = sub {
 
    my $list = $_vehicle_list->( $bikes, $slot ); my $operator = $slot->operator;
 
-   if ($operator->id) {
+   if ($operator->id and $slot->bike_requested) {
       my $href = uri_for_action $req, $self->moniker.'/allocation', [ $dt_key ];
       my $form = blank_form $dt_key, $href;
 
@@ -198,7 +224,10 @@ my $_alloc_cell_embeded_row = sub {
    p_cell $row, { class => 'narrow align-center',
                   value => $operator->id ? $operator->region : NUL };
 
-   p_cell $row, { class => 'spreadsheet-fixed',
+   my $style; $slot->vehicle and $slot->vehicle->colour
+      and $style = 'background-color: '.$slot->vehicle->colour.';';
+
+   p_cell $row, { class => 'spreadsheet-fixed', style => $style,
                   value => $operator->id ? $operator->label : 'Vacant' };
 
    p_cell $row, { class => 'narrow align-center',
@@ -245,11 +274,14 @@ my $_allocation_js = sub {
    $args = [ $rota_name, $_local_dt->( $rota_dt )->add( days => 7 )->ymd ];
 
    my $href2 = uri_for_action $req, $self->moniker.'/alloc_table', $args;
+   my $href3 = uri_for_action $req, $self->moniker.'/alloc_key';
 
    return [ js_server_config( 'allocation-wk1', 'load',
                               'request', [ "${href1}", 'allocation-wk1' ] ),
             js_server_config( 'allocation-wk2', 'load',
-                              'request', [ "${href2}", 'allocation-wk2' ] ) ];
+                              'request', [ "${href2}", 'allocation-wk2' ] ),
+            js_server_config( 'allocation-key', 'load',
+                              'request', [ "${href3}", 'allocation-key' ] ) ];
 };
 
 my $_find_rota_type = sub {
@@ -426,6 +458,25 @@ my $_week_rota_requests = sub {
 };
 
 # Public methods
+sub alloc_key : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $stash = $self->dialog_stash( $req );
+   my $table = $stash->{page}->{forms}->[ 0 ] = blank_form {
+      class => 'key-table', type => 'table' };
+   my $columns = [ qw( colour id name notes vrn ) ];
+   my $vehicles = $self->schema->resultset( 'Vehicle' )->search_for_vehicles( {
+      columns => $columns, service => TRUE, type => 'bike' } );
+   my $now = to_dt time2str;
+
+   $table->{headers} = $_alloc_key_headers->( $req );
+
+   p_row $table, [ map { $self->$_alloc_key_rows( $req, $now, $_ ) }
+                   $vehicles->all ];
+
+   return $stash;
+}
+
 sub alloc_table : Role(rota_manager) {
    my ($self, $req) = @_;
 
@@ -462,9 +513,11 @@ sub allocation : Role(rota_manager) {
    my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
    my $rota_dt = to_dt $rota_date;
    my $list = blank_form { class => 'spreadsheet' };
+   my $form = blank_form { class => 'server', id => 'allocation-key' };
    my $page = {
-      forms => [ $list ],
+      forms => [ $list, $form ],
       literal_js => $self->$_allocation_js( $req, $rota_name, $rota_dt ),
+      off_grid => TRUE,
       template => [ 'none', 'spreadsheet' ],
       title => locm $req, 'Vehicle Allocation'
    };

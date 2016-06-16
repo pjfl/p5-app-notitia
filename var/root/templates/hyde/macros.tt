@@ -174,7 +174,8 @@
    <tr>
 [%    FOR cell IN row -%]
       <td class="[% cell.class %]" id="[% cell.name %]"
-        colspan="[% cell.colspan %]" title="[% cell.title %]">
+        colspan="[% cell.colspan %]" style="[% cell.style %]"
+          title="[% cell.title %]">
 [%       IF reference( cell.value ) == 'HASH'; Dispatch( cell.value ) %]
 [%       ELSE; cell.value; END %]</td>
 [%    END -%]

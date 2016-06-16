@@ -425,24 +425,6 @@ my $_vehicle_events = sub {
             @rows ];
 };
 
-my $_find_last_keeper = sub {
-   my ($self, $req, $vehicle, $now) = @_; my $keeper;
-
-   my $tommorrow = $now->clone->truncate( to => 'day' )->add( days => 1 );
-   my $opts      = { event_type => 'vehicle',
-                     before     => $tommorrow,
-                     vehicle    => $vehicle->vrn, };
-
-   for my $tuple (@{ $self->$_vehicle_events( $req, $opts ) }) {
-      my ($start_datetime) = $tuple->[ 0 ]->duration;
-
-      $start_datetime > $now and next;
-      $keeper = $tuple->[ 1 ]->[ 1 ]->{value}; last;
-   }
-
-   return $keeper;
-};
-
 my $_vehicle_links = sub {
    my ($self, $req, $service, $vehicle) = @_; my $moniker = $self->moniker;
 
@@ -461,10 +443,12 @@ my $_vehicle_links = sub {
       push @{ $links },
          { value => management_link
               ( $req, "${moniker}/vehicle_events", $vrn,
-                { params => { after => $now->subtract( days => 1 )->ymd } } ) };
+                { params => {
+                   after => $now->subtract( days => 1 )->ymd } } ) };
 
-      push @{ $links },
-         { value => $self->$_find_last_keeper( $req, $vehicle, $now ) };
+      my $keeper = $self->find_last_keeper( $req, $vehicle, $now );
+
+      push @{ $links }, { value => $keeper ? $keeper->label : NUL };
    }
 
    return $links;
@@ -554,6 +538,29 @@ sub delete_vehicle_action : Role(rota_manager) {
    my $location = uri_for_action $req, $self->moniker.'/vehicles';
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub find_last_keeper {
+   my ($self, $req, $vehicle, $now) = @_; my $keeper;
+
+   my $tommorrow = $now->clone->truncate( to => 'day' )->add( days => 1 );
+   my $opts      = { event_type => 'vehicle',
+                     before     => $tommorrow,
+                     vehicle    => $vehicle->vrn, };
+
+   # TODO: This cannot call vehicle_events with before tommorrow
+   # But it can if it gets the ordering right and does a paged query
+   for my $tuple (@{ $self->$_vehicle_events( $req, $opts ) }) {
+      my ($start_datetime) = $tuple->[ 0 ]->duration;
+
+      $start_datetime > $now and next;
+
+      my $attr = $tuple->[ 0 ]->can( 'owner' ) ? 'owner' : 'operator';
+
+      $keeper = $tuple->[ 0 ]->$attr(); last;
+   }
+
+   return $keeper;
 }
 
 sub request_info : Role(rota_manager) {
@@ -693,6 +700,7 @@ sub vehicle_events : Role(rota_manager) {
    my $params =  $req->query_params;
    my $after  =  $params->( 'after',  { optional => TRUE } );
    my $before =  $params->( 'before', { optional => TRUE } );
+   # TODO: Add paged query in case of search for vehicle event before tommorrow
    my $opts   =  { after      => $after  ? to_dt( $after  ) : FALSE,
                    before     => $before ? to_dt( $before ) : FALSE,
                    event_type => 'vehicle',

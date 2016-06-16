@@ -675,8 +675,14 @@ msgstr "Night North"
 msgid "night_rider_0_abbrv"
 msgstr "NN"
 
+msgid "night_rider_1"
+msgstr "Night Central"
+
 msgid "night_rider_1_abbrv"
 msgstr "NC"
+
+msgid "night_rider_2"
+msgstr "Night South"
 
 msgid "night_rider_2_abbrv"
 msgstr "NS"

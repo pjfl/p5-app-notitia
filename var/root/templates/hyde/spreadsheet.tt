@@ -1,5 +1,0 @@
-<!-- Spreadsheet -->
-<h4>[% page.title %]</h4>
-[% Dispatch( page.forms.0 ) -%]
-[% INCLUDE 'hyde/section-nav.tt' -%]
-[% Dispatch( page.forms.1 ) -%]

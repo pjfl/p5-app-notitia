@@ -7,6 +7,7 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'rota';
 
 sub dispatch_request {
+   sub (GET  + /allocation-key       + ?*) { [ 'week/alloc_key',       @_ ] },
    sub (GET  + /allocation-table/**  + ?*) { [ 'week/alloc_table',     @_ ] },
    sub (GET  + /assignment-summary/* + ?*) { [ 'month/assign_summary', @_ ] },
    sub (POST + /day-rota             + ?*) { [ 'day/from_request',     @_ ] },

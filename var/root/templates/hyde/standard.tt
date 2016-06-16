@@ -4,7 +4,7 @@
 [%    plate = 'Default'; IF page.template.1; plate = page.template.1; END -%]
 <!-- Layout [% page.layout %] Template [% plate %] -->
 <section class="standard-section">
-   <div class="grid">
+[%    IF !page.off_grid %]<div class="grid">[% END -%]
 [%    IF page.template.0 != 'none' %]
 [%    path = 'hyde/' _ page.template.0 _ '-mobile.tt'; INCLUDE $path -%]
 [%    END -%]
@@ -14,7 +14,9 @@
       <div class="unit four-fifths">
          <article>
          <h4>[% page.title %]</h4>
-[%          Dispatch( page.forms.0 ) -%]
+[%    FOR form IN page.forms -%]
+[%       Dispatch( form ) -%]
+[%    END -%]
          </article>
       </div>
 [%    END -%]
@@ -22,7 +24,7 @@
 [%    path = 'hyde/' _ page.template.0 _ '.tt'; INCLUDE $path -%]
 [%    END -%]
       <div class="clear"></div>
-   </div>
+[%    IF !page.off_grid %]</div>[% END -%]
 </section>
 [%    INCLUDE 'hyde/footer.tt' -%]
 <!-- End of application templates -->
