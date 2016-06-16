@@ -1,0 +1,23 @@
+[% PROCESS 'hyde/macros.tt' -%]
+<!-- Spreadsheet -->
+<h4 class="spreadsheet-heading">[% page.title %]</h4>
+<div class="operation-links left">
+   <div class="left align-right">
+[% Dispatch( page.fields.nav.prev ) -%]
+   </div>
+   <div class="right align-left">
+[% Dispatch( page.fields.nav.next ) -%]
+   </div>
+</div>
+<br>
+[% Dispatch( page.forms.0 ) -%]
+<br>
+<div class="operation-links left">
+   <div class="left align-right">
+[% Dispatch( page.fields.nav.prev ) -%]
+   </div>
+   <div class="right align-left">
+[% Dispatch( page.fields.nav.next ) -%]
+   </div>
+</div>
+[% Dispatch( page.forms.1 ) -%]

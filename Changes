@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Completes spreadsheet layout and content
           - Adds fullscreen width and colour to spreadsheet view
           - Adds styling for spreadsheet view
           - Adds spreadsheet week view

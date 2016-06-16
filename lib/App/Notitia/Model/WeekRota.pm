@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_cell p_container p_row
+use App::Notitia::Form      qw( blank_form f_link p_cell p_container p_row
                                 p_select p_table );
 use App::Notitia::Util      qw( js_server_config js_submit_config
                                 locm register_action_paths slot_limit_index
@@ -179,7 +179,7 @@ my $_alloc_key_headers = sub {
 
    my @headings = ('Bike Details', 'R', 'Current Rider', 'Rider Location');
 
-   return [ map { { value => $_ } } @headings  ];
+   return [ map { { class => 'rota-header', value => $_ } } @headings  ];
 };
 
 my $_alloc_table_label = sub {
@@ -211,15 +211,14 @@ my $_alloc_cell_embeded_row = sub {
 
    if ($operator->id and $slot->bike_requested) {
       my $href = uri_for_action $req, $self->moniker.'/allocation', [ $dt_key ];
-      my $form = blank_form $dt_key, $href;
+      my $form = blank_form $dt_key, $href, { class => 'align-center' };
 
       p_select $form, 'vehicle', $list, {
          class => 'spreadsheet-select', label => NUL };
 
-      p_cell $row, { class => 'spreadsheet-fixed align-center',
-                     value => $form };
+      p_cell $row, { class => 'spreadsheet-fixed-bike', value => $form };
    }
-   else { p_cell $row, { class => 'spreadsheet-fixed', value => NUL } }
+   else { p_cell $row, { class => 'spreadsheet-fixed-bike', value => NUL } }
 
    p_cell $row, { class => 'narrow align-center',
                   value => $operator->id ? $operator->region : NUL };
@@ -227,7 +226,7 @@ my $_alloc_cell_embeded_row = sub {
    my $style; $slot->vehicle and $slot->vehicle->colour
       and $style = 'background-color: '.$slot->vehicle->colour.';';
 
-   p_cell $row, { class => 'spreadsheet-fixed', style => $style,
+   p_cell $row, { class => 'spreadsheet-fixed-operator', style => $style,
                   value => $operator->id ? $operator->label : 'Vacant' };
 
    p_cell $row, { class => 'narrow align-center',
@@ -299,25 +298,43 @@ my $_left_shift = sub {
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
 };
 
-my $_next_week = sub {
-   my ($self, $req, $rota_name, $date) = @_;
+my $_next_week_uri = sub {
+   my ($self, $req, $method, $rota_name, $date) = @_;
 
-   my $actionp = $self->moniker.'/week_rota';
+   my $actionp = $self->moniker."/${method}";
 
    $date = $_local_dt->( $date )->truncate( to => 'day' )->add( weeks => 1 );
 
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
 };
 
-my $_prev_week = sub {
-   my ($self, $req, $rota_name, $date) = @_;
+my $_next_week = sub {
+   my ($self, $req, $method, $rota_name, $date) = @_;
 
-   my $actionp =  $self->moniker.'/week_rota';
+   my $href = $self->$_next_week_uri( $req, $method, $rota_name, $date );
+
+   return f_link 'next-week', $href, {
+      class => 'next-rota', value => locm $req, 'Next' };
+};
+
+my $_prev_week_uri = sub {
+   my ($self, $req, $method, $rota_name, $date) = @_;
+
+   my $actionp = $self->moniker."/${method}";
 
    $date = $_local_dt->( $date )->truncate( to => 'day' )
                                 ->subtract( weeks => 1 );
 
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
+};
+
+my $_prev_week = sub {
+   my ($self, $req, $method, $rota_name, $date) = @_;
+
+   my $href = $self->$_prev_week_uri( $req, $method, $rota_name, $date );
+
+   return f_link 'prev-week', $href, {
+      class => 'prev-rota', value => locm $req, 'Prev' };
 };
 
 my $_right_shift = sub {
@@ -513,8 +530,13 @@ sub allocation : Role(rota_manager) {
    my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
    my $rota_dt = to_dt $rota_date;
    my $list = blank_form { class => 'spreadsheet' };
-   my $form = blank_form { class => 'server', id => 'allocation-key' };
+   my $form = blank_form {
+      class => 'spreadsheet-key-table server', id => 'allocation-key' };
    my $page = {
+      fields => { nav => {
+         next => $self->$_next_week( $req, 'allocation', $rota_name, $rota_dt ),
+         prev => $self->$_prev_week( $req, 'allocation', $rota_name, $rota_dt )
+         }, },
       forms => [ $list, $form ],
       literal_js => $self->$_allocation_js( $req, $rota_name, $rota_dt ),
       off_grid => TRUE,
@@ -538,8 +560,10 @@ sub week_rota : Role(any) {
    my $page       =  {
       fields      => { nav => {
          lshift   => $self->$_left_shift( $req, $rota_name, $rota_dt ),
-         next     => $self->$_next_week( $req, $rota_name, $rota_dt ),
-         prev     => $self->$_prev_week( $req, $rota_name, $rota_dt ),
+         next     => $self->$_next_week_uri
+            ( $req, 'week-rota', $rota_name, $rota_dt ),
+         prev     => $self->$_prev_week_uri
+            ( $req, 'week-rota', $rota_name, $rota_dt ),
          rshift   => $self->$_right_shift( $req, $rota_name, $rota_dt ), }, },
       rota        => { headers => $_week_rota_headers->( $req, $rota_dt ),
                        name    => $rota_name,

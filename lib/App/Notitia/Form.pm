@@ -137,7 +137,7 @@ sub f_link (@) {
               :  blessed( $x ) || !is_hashref( $x ) ? $x
               : ($opts = { %{ $x }, %{ $opts } })   ? HASH_CHAR : undef;
    my $req    = delete $opts->{request};
-   my $action = delete $opts->{action};
+   my $action = delete $opts->{action} // NUL;
    my $args   = delete $opts->{args};
    my $dvalue = $action ? ucfirst "${action} ${name}" : ucfirst $name;
 
