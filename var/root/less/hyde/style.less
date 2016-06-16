@@ -70,7 +70,7 @@ nav {
       }
    }
 }
-.operation-links { margin-bottom: 5px; width: 100%; }
+.operation-links { margin-bottom: 5px; margin-top: 5px; width: 100%; }
 .panel button { color: @contrast; }
 .panel form { display: inline; }
 .togglers:focus { outline: none; }
@@ -117,13 +117,13 @@ footer {
 }
 /* Icons */
 .checkbox {
-   background: url(../img/icons.png) -90px -311px no-repeat;
-   .box-sizing(content-box);
+   background: url(../img/icons.png) -90px -309px no-repeat;
+   .box-sizing;
    display: inline-block; cursor: pointer; height: 16px; width: 16px;
-   margin: 6px;
+   margin: 4px;
 }
 .checked  {
-   background: url(../img/icons.png) -120px -311px no-repeat transparent;
+   background: url(../img/icons.png) -120px -309px no-repeat transparent;
 }
 .close-icon {
    background: url(../img/icons.png) no-repeat -180px -330px; cursor: pointer;
@@ -181,7 +181,7 @@ footer {
 }
 .field-label, .field-text {
    border: 2px solid transparent; .box-sizing; display: inline-block;
-   margin: 0; min-width: 140px; padding: 3.25px 0; vertical-align: top;
+   margin: 0; min-width: 140px; padding: 3px 0; vertical-align: top;
 }
 .footer-nav { list-style-type: none; }
 .form-separator {
@@ -215,6 +215,8 @@ footer {
    background-color: @subtle;
 }
 .spreadsheet { overflow-x: scroll; }
+.spreadsheet-fixed { min-width: 100px; padding-bottom: 0; padding-top: 0; }
+.spreadsheet-select { color: black; }
 .standard-field[type=date], .narrow-field[type=time],
 .standard-field[type=time] {
    padding-bottom: 0; padding-top: 0;
@@ -694,8 +696,9 @@ table.embeded td { white-space: nowrap; }
 .no-header-wrap th { white-space: nowrap; }
 .smaller-table {
    font-size: 0.85em;
-   tbody td { padding: 2px 0.3725em; }
-   tbody td span.checkbox { margin: 4px 0 0 0; }
+   tbody td { padding: 0px 0.3725em; }
+   tbody td span.checkbox { margin: 3px 0 -3px 0; }
+   tbody tr { line-height: 32px; }
 }
 .standard-table { margin: 0.5em 0; }
 

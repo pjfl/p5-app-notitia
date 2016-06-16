@@ -51,6 +51,27 @@ msgstr "Administrator"
 msgid "again"
 msgstr "Again"
 
+msgid "alloc_table_heading_mon"
+msgstr "Mon [_1] [_2]"
+
+msgid "alloc_table_heading_tue"
+msgstr "Tue [_1] [_2]"
+
+msgid "alloc_table_heading_wed"
+msgstr "Wed [_1] [_2]"
+
+msgid "alloc_table_heading_thu"
+msgstr "Thu [_1] [_2]"
+
+msgid "alloc_table_heading_fri"
+msgstr "Fri [_1] [_2]"
+
+msgid "alloc_table_heading_sat"
+msgstr "Sat [_1] [_2]"
+
+msgid "alloc_table_heading_sun"
+msgstr "Sun [_1] [_2]"
+
 msgid "aquired"
 msgstr "Aquired"
 
@@ -264,11 +285,20 @@ msgstr "Day Driver"
 msgid "day_rider_0"
 msgstr "Day North"
 
+msgid "day_rider_0_abbrv"
+msgstr "DN"
+
 msgid "day_rider_1"
 msgstr "Day Central"
 
+msgid "day_rider_1_abbrv"
+msgstr "DC"
+
 msgid "day_rider_2"
 msgstr "Day South"
+
+msgid "day_rider_2_abbrv"
+msgstr "DS"
 
 msgid "day_rota_heading_0"
 msgstr "Shift"
@@ -642,11 +672,14 @@ msgstr "Night Driver"
 msgid "night_rider_0"
 msgstr "Night North"
 
-msgid "night_rider_1"
-msgstr "Night Central"
+msgid "night_rider_0_abbrv"
+msgstr "NN"
 
-msgid "night_rider_2"
-msgstr "Night South"
+msgid "night_rider_1_abbrv"
+msgstr "NC"
+
+msgid "night_rider_2_abbrv"
+msgstr "NS"
 
 msgid "notes"
 msgstr "Notes"

@@ -92,7 +92,7 @@ my $_add_vreq_tip = sub {
 };
 
 my $_alloc_cell_headers = sub {
-   my $req = shift; my @headings = qw( Shift Bike Name BR C4 );
+   my $req = shift; my @headings = qw( Shift Bike R Name BR C4 );
 
    return [ map { { value => $_ } } @headings  ];
 };
@@ -107,18 +107,19 @@ my $_onclick_relocate = sub {
 };
 
 my $_operators_vehicle = sub {
-   my ($slot, $cache) = @_; $slot->operator->id or return NUL; my $label;
+   my ($slot, $cache) = @_; my $id = $slot->operator->id or return NUL;
 
-   exists $cache->{ $slot->operator->id }
-      and return $cache->{ $slot->operator->id };
+   my $label;
+
+   exists $cache->{ $id } and return $cache->{ $id };
 
    for my $pv ($slot->operator_vehicles->all) {
-      $label = $pv->type eq '4x4' ? '4' : $pv->type eq 'car' ? 'C' : 'N';
+      $label = $pv->type eq '4x4' ? '4' : $pv->type eq 'car' ? 'C' : FALSE;
 
       $label and last;
    }
 
-   return $cache->{ $slot->operator->id } = $label // NUL;
+   return $cache->{ $id } = $label || 'N';
 };
 
 my $_week_label = sub {
@@ -149,15 +150,25 @@ my $_week_rota_title = sub {
 my $_vehicle_list = sub {
    my ($bikes, $slot) = @_;
 
-   my $vrn = $slot->vehicle ? $slot->vehicle->vrn : undef;
+   my $vrn = $slot->vehicle ? $slot->vehicle->vrn : NUL;
 
-   return [ [ NUL, NUL ], map { [ $_->name, $_->vrn ] } @{ $bikes } ];
+   return [ [ NUL, NUL ], map { [ $_->name, $_->vrn, {
+      selected => $vrn eq $_->vrn ? TRUE : FALSE } ] } @{ $bikes } ];
 };
 
+my $_alloc_table_label = sub {
+   my ($req, $date, $cno) = @_;
+
+   my $local_dt = $_local_dt->( $date )->add( days => $cno );
+   my $key = 'alloc_table_heading_'.(lc $local_dt->day_abbr);
+   my $v = locm $req, $key, $local_dt->day, $local_dt->month_name;
+
+   return { class => 'day-of-week', value => $v };
+};
 my $_alloc_table_headers = sub {
    my ($req, $date) = @_;
 
-   return [ map { $_week_label->( $req, $date, $_ ) } 0 .. 6 ];
+   return [ map { $_alloc_table_label->( $req, $date, $_ ) } 0 .. 6 ];
 };
 
 # Private methods
@@ -167,28 +178,34 @@ my $_alloc_cell_embeded_row = sub {
    my $dt_key = $_local_dt->( $dt )->ymd."_${slot_key}";
    my $slot = $slots->{ $dt_key }; $slot or $slot = Class::Null->new;
 
-   p_cell $row, { class => 'rota-header', value => locm( $req, $slot_key ) };
+   p_cell $row, { class => 'rota-header align-center',
+                  value => locm $req, "${slot_key}_abbrv" };
 
-   my $list = $_vehicle_list->( $bikes, $slot );
+   my $list = $_vehicle_list->( $bikes, $slot ); my $operator = $slot->operator;
 
-   if ($slot->operator->id) {
+   if ($operator->id) {
       my $href = uri_for_action $req, $self->moniker.'/allocation', [ $dt_key ];
       my $form = blank_form $dt_key, $href;
 
-      p_select $form, 'vehicle', $list, { class => 'embeded', label => NUL };
+      p_select $form, 'vehicle', $list, {
+         class => 'spreadsheet-select', label => NUL };
 
-      p_cell $row, { class => 'embeded', value => $form };
+      p_cell $row, { class => 'spreadsheet-fixed align-center',
+                     value => $form };
    }
-   else { p_cell $row, { value => NUL } }
+   else { p_cell $row, { class => 'spreadsheet-fixed', value => NUL } }
 
-   p_cell $row, { value => $slot->operator->id
-                         ? $slot->operator->label : 'Vacant' };
+   p_cell $row, { class => 'narrow align-center',
+                  value => $operator->id ? $operator->region : NUL };
 
-   p_cell $row, { class => 'narrow',
+   p_cell $row, { class => 'spreadsheet-fixed',
+                  value => $operator->id ? $operator->label : 'Vacant' };
+
+   p_cell $row, { class => 'narrow align-center',
                   value => $slot->bike_requested ? 'Y'
                          : $slot->operator->id ? 'N' : NUL };
 
-   p_cell $row, { class => 'narrow',
+   p_cell $row, { class => 'narrow align-center',
                   value => $_operators_vehicle->( $slot, $cache ) };
 
    return;
@@ -449,7 +466,7 @@ sub allocation : Role(rota_manager) {
       forms => [ $list ],
       literal_js => $self->$_allocation_js( $req, $rota_name, $rota_dt ),
       template => [ 'none', 'spreadsheet' ],
-      title => locm $req, 'Vehicle Alloction'
+      title => locm $req, 'Vehicle Allocation'
    };
 
    p_container $list, NUL, { class => 'server', id => 'allocation-wk1' };
