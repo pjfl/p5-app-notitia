@@ -912,6 +912,9 @@ msgstr "Slot Name"
 msgid "sms_message"
 msgstr "Message text"
 
+msgid "spreadsheet"
+msgstr "Spreadsheet"
+
 msgid "start_time"
 msgstr "Start Time"
 

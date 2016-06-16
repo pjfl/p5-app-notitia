@@ -49,7 +49,8 @@
          name="[% f.name %]" type="checkbox" value="[% f.value %]">
 [% END -%]
 [% MACRO Container( f ) BLOCK -%]
-      <div class="[% f.class %]">[% Dispatch( f.content ) %]</div>
+      <div class="[% f.class %]" id="[% f.id %]">
+[%       Dispatch( f.content ) %]</div>
 [% END -%]
 [% MACRO DateField( f ) WRAPPER label -%]
 [%    IF f.tip; FieldHelp( f ); END -%]

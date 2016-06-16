@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 187 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 188 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -42,7 +42,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 187 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 188 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -254,6 +254,10 @@ TODO: Review caches; people_links_cache, (event)_links_cache, cert_links_cache,
 TODO: Remove rota and shift from schema!
 
 TODO: Req->username should be $req->session->shortcode
+
+TODO: Move template directory to var/templates
+
+TODO: Make standard.tt look for custom/hyde_[% page.template.1 %].tt
 
 =head1 Dependencies
 

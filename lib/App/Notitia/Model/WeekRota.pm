@@ -4,9 +4,12 @@ use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
+use App::Notitia::Form      qw( blank_form p_cell p_container p_row
+                                p_select p_table );
 use App::Notitia::Util      qw( js_server_config js_submit_config
-                                locm register_action_paths
+                                locm register_action_paths slot_limit_index
                                 to_dt uri_for_action );
+use Class::Null;
 use Class::Usul::Time       qw( time2str );
 use Moo;
 
@@ -21,6 +24,8 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'week';
 
 register_action_paths
+   'week/alloc_table' => 'allocation-table',
+   'week/allocation' => 'vehicle-allocation',
    'week/week_rota' => 'week-rota';
 
 # Construction
@@ -37,7 +42,11 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_async_event_tip = sub {
+my $_local_dt = sub {
+   return $_[ 0 ]->clone->set_time_zone( 'local' );
+};
+
+my $_add_event_tip = sub {
    my ($req, $page, $tport) = @_;
 
    my $uri  = $tport->event->uri;
@@ -48,7 +57,7 @@ my $_async_event_tip = sub {
    return;
 };
 
-my $_async_slot_tip = sub {
+my $_add_slot_tip = sub {
    my ($req, $page, $moniker, $id) = @_;
 
    my $name    = $page->{rota}->{name};
@@ -60,7 +69,7 @@ my $_async_slot_tip = sub {
    return;
 };
 
-my $_async_v_event_tip = sub {
+my $_add_v_event_tip = sub {
    my ($req, $page, $event) = @_;
 
    my $href = uri_for_action $req, 'event/vehicle_info', [ $event->uri ];
@@ -70,7 +79,7 @@ my $_async_v_event_tip = sub {
    return;
 };
 
-my $_async_vreq_tip = sub {
+my $_add_vreq_tip = sub {
    my ($req, $page, $event) = @_;
 
    my $actionp = 'asset/request_info';
@@ -82,8 +91,10 @@ my $_async_vreq_tip = sub {
    return;
 };
 
-my $_local_dt = sub {
-   return $_[ 0 ]->clone->set_time_zone( 'local' );
+my $_alloc_cell_headers = sub {
+   my $req = shift; my @headings = qw( Shift Bike Name BR C4 );
+
+   return [ map { { value => $_ } } @headings  ];
 };
 
 my $_onclick_relocate = sub {
@@ -93,6 +104,21 @@ my $_onclick_relocate = sub {
       js_submit_config $k, 'click', 'location', [ "${href}" ];
 
    return;
+};
+
+my $_operators_vehicle = sub {
+   my ($slot, $cache) = @_; $slot->operator->id or return NUL; my $label;
+
+   exists $cache->{ $slot->operator->id }
+      and return $cache->{ $slot->operator->id };
+
+   for my $pv ($slot->operator_vehicles->all) {
+      $label = $pv->type eq '4x4' ? '4' : $pv->type eq 'car' ? 'C' : 'N';
+
+      $label and last;
+   }
+
+   return $cache->{ $slot->operator->id } = $label // NUL;
 };
 
 my $_week_label = sub {
@@ -120,7 +146,95 @@ my $_week_rota_title = sub {
    return locm $req, 'week_rota_title', locm( $req, $rota_name ), $date;
 };
 
+my $_vehicle_list = sub {
+   my ($bikes, $slot) = @_;
+
+   my $vrn = $slot->vehicle ? $slot->vehicle->vrn : undef;
+
+   return [ [ NUL, NUL ], map { [ $_->name, $_->vrn ] } @{ $bikes } ];
+};
+
+my $_alloc_table_headers = sub {
+   my ($req, $date) = @_;
+
+   return [ map { $_week_label->( $req, $date, $_ ) } 0 .. 6 ];
+};
+
 # Private methods
+my $_alloc_cell_embeded_row = sub {
+   my ($self, $req, $row, $slots, $bikes, $dt, $slot_key, $cache) = @_;
+
+   my $dt_key = $_local_dt->( $dt )->ymd."_${slot_key}";
+   my $slot = $slots->{ $dt_key }; $slot or $slot = Class::Null->new;
+
+   p_cell $row, { class => 'rota-header', value => locm( $req, $slot_key ) };
+
+   my $list = $_vehicle_list->( $bikes, $slot );
+
+   if ($slot->operator->id) {
+      my $href = uri_for_action $req, $self->moniker.'/allocation', [ $dt_key ];
+      my $form = blank_form $dt_key, $href;
+
+      p_select $form, 'vehicle', $list, { class => 'embeded', label => NUL };
+
+      p_cell $row, { class => 'embeded', value => $form };
+   }
+   else { p_cell $row, { value => NUL } }
+
+   p_cell $row, { value => $slot->operator->id
+                         ? $slot->operator->label : 'Vacant' };
+
+   p_cell $row, { class => 'narrow',
+                  value => $slot->bike_requested ? 'Y'
+                         : $slot->operator->id ? 'N' : NUL };
+
+   p_cell $row, { class => 'narrow',
+                  value => $_operators_vehicle->( $slot, $cache ) };
+
+   return;
+};
+
+my $_alloc_cell = sub {
+   my ($self, $req, $v_cache, $rota_name, $rota_dt, $slots, $bikes, $cno) = @_;
+
+   my $limits = $self->config->slot_limits;
+   my $dr_max = $limits->[ slot_limit_index 'day', 'rider' ];
+   my $nr_max = $limits->[ slot_limit_index 'night', 'rider' ];
+   my $table = blank_form {
+      class => 'smaller-table embeded', type => 'table' };
+   my $dt = $rota_dt->clone->add( days => $cno );
+
+   $table->{headers} = $_alloc_cell_headers->( $req );
+
+   for my $key (map { "day_rider_${_}" } 0 .. $dr_max - 1) {
+      $self->$_alloc_cell_embeded_row
+         ( $req, p_row( $table ), $slots, $bikes, $dt, $key, $v_cache );
+   }
+
+   for my $key (map { "night_rider_${_}" } 0 .. $nr_max - 1) {
+      $self->$_alloc_cell_embeded_row
+         ( $req, p_row( $table ), $slots, $bikes, $dt, $key, $v_cache );
+   }
+
+   return { class => 'embeded', value => $table };
+};
+
+my $_allocation_js = sub {
+   my ($self, $req, $rota_name, $rota_dt) = @_;
+
+   my $args = [ $rota_name, $_local_dt->( $rota_dt )->ymd ];
+   my $href1 = uri_for_action $req, $self->moniker.'/alloc_table', $args;
+
+   $args = [ $rota_name, $_local_dt->( $rota_dt )->add( days => 7 )->ymd ];
+
+   my $href2 = uri_for_action $req, $self->moniker.'/alloc_table', $args;
+
+   return [ js_server_config( 'allocation-wk1', 'load',
+                              'request', [ "${href1}", 'allocation-wk1' ] ),
+            js_server_config( 'allocation-wk2', 'load',
+                              'request', [ "${href2}", 'allocation-wk2' ] ) ];
+};
+
 my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
 };
@@ -167,8 +281,31 @@ my $_right_shift = sub {
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
 };
 
+my $_search_for_bikes = sub {
+   my $self = shift;
+   my $where = { service => TRUE, type => 'bike' };
+   my $rs = $self->schema->resultset( 'Vehicle' );
+
+   return [ $rs->search_for_vehicles( $where )->all ];
+};
+
+my $_search_for_slots = sub {
+   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   my $slot_rs = $self->schema->resultset( 'Slot' ); my $slots = {};
+
+   for my $slot (grep { $_->type_name->is_rider }
+                 $slot_rs->search_for_slots( $opts )->all) {
+      my $k = $_local_dt->( $slot->start_date )->ymd.'_'.$slot->key;
+
+      $slots->{ $k } = $slot;
+   }
+
+   return $slots;
+};
+
 my $_week_rota_assignments = sub {
-   my ($self, $req, $page, $rota_dt, $tuple, $cache, $tports, $events) = @_;
+   my ($self, $req, $page, $rota_dt, $cache, $tports, $events, $tuple) = @_;
 
    my $moniker   = $self->moniker;
    my $rota_name = $page->{rota}->{name};
@@ -188,7 +325,7 @@ my $_week_rota_assignments = sub {
                            [ $rota_name, $_local_dt->( $date )->ymd ];
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
          map  { my $id = $_local_dt->( $date )->ymd.'_'.$_->key;
-                $_async_slot_tip->( $req, $page, $moniker, $id ); [ $id, $_ ] }
+                $_add_slot_tip->( $req, $page, $moniker, $id ); [ $id, $_ ] }
          grep { $_->vehicle->name eq $tuple->[ 1 ]->name }
          grep { $_->bike_requested and $_->vehicle }
              @{ $cache->[ $cno ] };
@@ -201,7 +338,7 @@ my $_week_rota_assignments = sub {
          map  { my $href = uri_for_action $req, 'asset/request_vehicle',
                            [ $_->[ 0 ] ];
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
-         map  { $_async_event_tip->( $req, $page, $_ );
+         map  { $_add_event_tip->( $req, $page, $_ );
                 [ $_->event->uri, $_ ] }
          grep { $_->vehicle->vrn eq $tuple->[ 1 ]->vrn }
          grep { $_->event->start_date eq $date } @{ $tports };
@@ -214,7 +351,7 @@ my $_week_rota_assignments = sub {
          map  { my $href = uri_for_action $req, 'event/vehicle_event',
                            [ $_->[ 1 ]->vehicle->vrn, $_->[ 0 ] ];
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
-         map  { $_async_v_event_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
+         map  { $_add_v_event_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
          grep { $_->vehicle->vrn eq $tuple->[ 1 ]->vrn }
          grep { $_->start_date eq $date } @{ $events };
 
@@ -225,8 +362,12 @@ my $_week_rota_assignments = sub {
 };
 
 my $_week_rota_requests = sub {
-   my ($self, $req, $page, $rota_dt, $cache, $slots, $events) = @_;
+   my ($self, $req, $page, $rota_dt, $slot_cache, $opts) = @_;
 
+   my $slot_rs   = $self->schema->resultset( 'Slot' );
+   my $vreq_rs   = $self->schema->resultset( 'VehicleRequest' );
+   my $slots     = [ $slot_rs->search_for_slots( $opts )->all ];
+   my $events  = [ $vreq_rs->search_for_events_with_unassigned_vreqs( $opts ) ];
    my $moniker   = $self->moniker;
    my $rota_name = $page->{rota}->{name};
    my $class     = 'narrow week-rota submit server tips';
@@ -245,9 +386,9 @@ my $_week_rota_requests = sub {
                            [ $rota_name, $_local_dt->( $date )->ymd ];
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
          map  { my $id = $_local_dt->( $date )->ymd.'_'.$_->key;
-                $_async_slot_tip->( $req, $page, $moniker, $id ); [ $id, $_ ] }
+                $_add_slot_tip->( $req, $page, $moniker, $id ); [ $id, $_ ] }
          grep { $_->bike_requested and not $_->vehicle }
-         map  { push @{ $cache->[ $cno ] }, $_; $_ }
+         map  { push @{ $slot_cache->[ $cno ] }, $_; $_ }
          grep { $_->date eq $date } @{ $slots };
 
       push @{ $table->{rows} },
@@ -258,7 +399,7 @@ my $_week_rota_requests = sub {
          map  { my $href = uri_for_action $req, 'asset/request_vehicle',
                            [ $_->[ 0 ] ];
                 $_onclick_relocate->( $page, 'request-'.$_->[ 0 ], $href ); $_ }
-         map  { $_async_vreq_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
+         map  { $_add_vreq_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
          grep { $_->start_date eq $date } @{ $events };
 
       push @{ $row }, { class => 'narrow embeded', value => $table };
@@ -268,6 +409,55 @@ my $_week_rota_requests = sub {
 };
 
 # Public methods
+sub alloc_table : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $today = time2str '%Y-%m-%d';
+   my $rota_name = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
+   my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
+   my $rota_dt = to_dt $rota_date;
+   my $stash = $self->dialog_stash( $req );
+   my $table = $stash->{page}->{forms}->[ 0 ] = blank_form { type => 'table' };
+   my $opts = {
+      after => $rota_dt->clone->subtract( days => 1),
+      before => $rota_dt->clone->add( days => 7 ),
+      rota_type => $self->$_find_rota_type( $rota_name )->id };
+   my $slots = $self->$_search_for_slots( $opts );
+   my $bikes = $self->$_search_for_bikes();
+   my $row = p_row $table;
+   my $v_cache = {};
+
+   $table->{headers} = $_alloc_table_headers->( $req, $rota_dt );
+
+   p_cell $row,
+   [  map { $self->$_alloc_cell
+               ( $req, $v_cache, $rota_name, $rota_dt, $slots, $bikes, $_ ) }
+      0 .. 6 ];
+
+   return $stash;
+}
+
+sub allocation : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $today = time2str '%Y-%m-%d';
+   my $rota_name = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
+   my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
+   my $rota_dt = to_dt $rota_date;
+   my $list = blank_form { class => 'spreadsheet' };
+   my $page = {
+      forms => [ $list ],
+      literal_js => $self->$_allocation_js( $req, $rota_name, $rota_dt ),
+      template => [ 'none', 'spreadsheet' ],
+      title => locm $req, 'Vehicle Alloction'
+   };
+
+   p_container $list, NUL, { class => 'server', id => 'allocation-wk1' };
+   p_container $list, NUL, { class => 'server', id => 'allocation-wk2' };
+
+   return $self->get_stash( $req, $page );
+}
+
 sub week_rota : Role(any) {
    my ($self, $req) = @_;
 
@@ -291,25 +481,21 @@ sub week_rota : Role(any) {
       before      => $rota_dt->clone->add( days => 7 ),
       rota_type   => $self->$_find_rota_type( $rota_name )->id };
    my $event_rs   =  $self->schema->resultset( 'Event' );
-   my $slot_rs    =  $self->schema->resultset( 'Slot' );
    my $tport_rs   =  $self->schema->resultset( 'Transport' );
    my $vehicle_rs =  $self->schema->resultset( 'Vehicle' );
-   my $vreq_rs    =  $self->schema->resultset( 'VehicleRequest' );
-   my @slots      =  $slot_rs->search_for_slots( $opts )->all;
-   my @uv_events  =  $vreq_rs->search_for_events_with_unassigned_vreqs( $opts );
-   my @tports     =  $tport_rs->search_for_assigned_vehicles( $opts )->all;
-   my @v_events   =  $event_rs->search_for_vehicle_events( $opts )->all;
+   my $tports     =  [ $tport_rs->search_for_assigned_vehicles( $opts )->all ];
+   my $events     =  [ $event_rs->search_for_vehicle_events( $opts )->all ];
    my $rows       =  $page->{rota}->{rows};
    my $slot_cache =  [];
 
    $self->update_navigation_date( $req, $_local_dt->( $rota_dt ) );
 
    push @{ $rows }, $self->$_week_rota_requests
-      ( $req, $page, $rota_dt, $slot_cache, \@slots, \@uv_events );
+      ( $req, $page, $rota_dt, $slot_cache, $opts );
 
    for my $tuple (@{ $vehicle_rs->list_vehicles( { service => TRUE } ) }) {
       push @{ $rows }, $self->$_week_rota_assignments
-         ( $req, $page, $rota_dt, $tuple, $slot_cache, \@tports, \@v_events );
+         ( $req, $page, $rota_dt, $slot_cache, $tports, $events, $tuple );
    }
 
    return $self->get_stash( $req, $page );

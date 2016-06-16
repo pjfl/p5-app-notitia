@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 178 $ of **App::Notitia**
+This documents version v0.3.$Rev: 188 $ of **App::Notitia**
 
 # Description
 
@@ -213,6 +213,10 @@ TODO: Review caches; people\_links\_cache, (event)\_links\_cache, cert\_links\_c
 TODO: Remove rota and shift from schema!
 
 TODO: Req->username should be $req->session->shortcode
+
+TODO: Move template directory to var/templates
+
+TODO: Make standard.tt look for custom/hyde\_\[% page.template.1 %\].tt
 
 # Dependencies
 

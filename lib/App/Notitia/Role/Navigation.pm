@@ -4,7 +4,7 @@ use attributes ();
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE SPC TRUE );
-use App::Notitia::Util      qw( loc to_dt to_msg uri_for_action );
+use App::Notitia::Util      qw( locm to_dt uri_for_action );
 use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
 use DateTime                qw( );
@@ -19,7 +19,7 @@ my $_list_roles_of = sub {
 
 my $nav_folder = sub {
    return { depth => $_[ 2 ] // 0,
-            title => loc( $_[ 0 ], $_[ 1 ].'_management_heading' ),
+            title => locm( $_[ 0 ], $_[ 1 ].'_management_heading' ),
             type  => 'folder', };
 };
 
@@ -27,9 +27,9 @@ my $nav_linkto = sub {
    my ($req, $opts, $actionp, @args) = @_; my $name = $opts->{name};
 
    my $depth = $opts->{depth} // 1;
-   my $label = loc $req, to_msg $opts->{label} // "${name}_link",
+   my $label = locm $req, $opts->{label} // "${name}_link",
                    @{ $opts->{label_args} // [] };
-   my $tip   = loc $req, to_msg $opts->{tip} // "${name}_tip",
+   my $tip   = locm $req, $opts->{tip} // "${name}_tip",
                    @{ $opts->{tip_args} // [] };
    my $uri   = uri_for_action $req, $actionp, @args;
 
@@ -38,14 +38,17 @@ my $nav_linkto = sub {
 };
 
 my $_week_link = sub {
-   my ($req, $actionp, $name, $date) = @_;
+   my ($req, $actionp, $name, $date, $opts, $params) = @_;
 
-   my $tip    = 'Navigate to week commencing [_1]';
-   my $label  = loc( $req, 'Week' ).SPC.$date->week_number;
-   my $opts   = { label => $label,   name => 'wk'.$date->week_number,
-                  tip   => $tip, tip_args => [ $date->dmy( '/' ) ] };
-   my $args   = [ $name, $date->ymd ];
-   my $params = { rota_date => $date->ymd };
+   $opts //= {}; $params //= {};
+
+   my $args = [ $name, $date->ymd ];
+   my $tip = 'Navigate to week commencing [_1]';
+   my $label = locm( $req, 'Week' ).SPC.$date->week_number;
+
+   $opts = { label => $label,   name => 'wk'.$date->week_number,
+             tip   => $tip, tip_args => [ $date->dmy( '/' ) ], %{ $opts } };
+   $params->{rota_date} = $date->ymd;
 
    return $nav_linkto->( $req, $opts, $actionp, $args, $params );
 };
@@ -64,16 +67,17 @@ my $_year_link = sub {
 
 # Private methods
 my $_allowed = sub {
-   my ($self, $roles, $actionp) = @_;
+   my ($self, $req, $actionp) = @_;
 
    my ($moniker, $method) = split m{ / }mx, $actionp, 2;
    my $model        = $self->components->{ $moniker };
    my $method_roles = $_list_roles_of->( $model->can( $method ) );
 
    is_member 'anon', $method_roles and return TRUE;
+   $req->authenticated or return FALSE;
    is_member 'any',  $method_roles and return TRUE;
 
-   for my $role_name (@{ $roles }) {
+   for my $role_name (@{ $req->session->roles }) {
       is_member $role_name, $method_roles and return TRUE;
    }
 
@@ -82,9 +86,7 @@ my $_allowed = sub {
 
 # Public methods
 sub admin_navigation_links {
-   my ($self, $req) = @_;
-
-   my ($roles) = $self->list_roles( $req ); my $now = DateTime->now;
+   my ($self, $req) = @_; my $now = DateTime->now;
 
    my $nav =
       [ $nav_folder->( $req, 'events' ),
@@ -94,7 +96,7 @@ sub admin_navigation_links {
                        before => $now->ymd ),
         $nav_folder->( $req, 'people' ), ];
 
-   $self->$_allowed( $roles, 'person/contacts' ) and push @{ $nav },
+   $self->$_allowed( $req, 'person/contacts' ) and push @{ $nav },
         $nav_linkto->( $req, { name => 'contacts_list' }, 'person/contacts', [],
                        status => 'current' );
 
@@ -111,7 +113,7 @@ sub admin_navigation_links {
         $nav_linkto->( $req, { name => 'fund_raiser_list' }, 'person/people',
                        [], role => 'fund_raiser', status => 'current' );
 
-   if ($self->$_allowed( $roles, 'admin/types' )) {
+   if ($self->$_allowed( $req, 'admin/types' )) {
       push @{ $nav },
         $nav_folder->( $req, 'types' ),
         $nav_linkto->( $req, { name => 'types_list' }, 'admin/types', [] ),
@@ -119,7 +121,7 @@ sub admin_navigation_links {
                        'admin/slot_roles', [] ),
    }
 
-   if ($self->$_allowed( $roles, 'asset/vehicles' )) {
+   if ($self->$_allowed( $req, 'asset/vehicles' )) {
       push @{ $nav },
         $nav_folder->( $req, 'vehicles' ),
         $nav_linkto->( $req, { name => 'vehicles_list' },
@@ -163,12 +165,17 @@ sub rota_navigation_links {
       push @{ $nav }, $nav_linkto->( $req, $opts, $actionp, $args );
    }
 
-   my $sow = $local_dt->clone;
+   my $sow = $local_dt->clone; $actionp = 'week/week_rota';
 
    while ($sow->day_of_week > 1) { $sow = $sow->subtract( days => 1 ) }
 
-   $actionp = 'week/week_rota';
    push @{ $nav }, $nav_folder->( $req, 'week' );
+
+   if ($self->$_allowed( $req, 'week/allocation' )) {
+      push @{ $nav }, $_week_link->( $req, 'week/allocation', $name, $sow, {
+         label => 'spreadsheet' } );
+   }
+
    push @{ $nav }, $_week_link->( $req, $actionp, $name,
                                   $sow->clone->subtract( weeks => 1 ) );
    push @{ $nav }, $_week_link->( $req, $actionp, $name, $sow );

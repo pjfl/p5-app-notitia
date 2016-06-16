@@ -5,7 +5,9 @@
 <!-- Layout [% page.layout %] Template [% plate %] -->
 <section class="standard-section">
    <div class="grid">
+[%    IF page.template.0 != 'none' %]
 [%    path = 'hyde/' _ page.template.0 _ '-mobile.tt'; INCLUDE $path -%]
+[%    END -%]
 [%    IF page.template.1 %]
 [%       path = 'hyde/' _ page.template.1 _ '.tt'; INCLUDE $path -%]
 [%    ELSE -%]
@@ -15,8 +17,10 @@
 [%          Dispatch( page.forms.0 ) -%]
          </article>
       </div>
-[% END -%]
+[%    END -%]
+[%    IF page.template.0 != 'none' %]
 [%    path = 'hyde/' _ page.template.0 _ '.tt'; INCLUDE $path -%]
+[%    END -%]
       <div class="clear"></div>
    </div>
 </section>

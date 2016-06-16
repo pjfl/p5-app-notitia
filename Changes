@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds spreadsheet week view
           - Adds colour attribute to vehicle class
           - Adds location and region attributes to person class
           - Split out more controllers and models

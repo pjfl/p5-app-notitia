@@ -99,12 +99,18 @@ my $_parse_args = sub {
 };
 
 my $_push_field = sub {
-   my ($form, $type, $opts) = @_; $opts = { %{ $opts } };
+   my ($f, $type, $opts) = @_; $opts = { %{ $opts } };
 
    defined $opts->{name} and $opts->{label} //= $opts->{name};
    $opts->{type} = $type;
 
-   push @{ $form->{content}->{list} }, $opts;
+   my $list = is_arrayref $f ? $f
+            : is_arrayref $f->{list} ? $f->{list}
+            : is_arrayref $f->{content}->{list} ? $f->{content}->{list}
+            : is_hashref  $f ? FALSE : throw 'No field to push to';
+
+   if ($list) { push @{ $list }, $opts } else { $f->{value} = $opts }
+
    return $opts;
 };
 
@@ -116,6 +122,8 @@ sub blank_form (;$$$) {
       content => { list => [], type => 'list' }, href => $attr->{href},
       form_name => $attr->{name}, type => 'form', %{ $opts } };
 
+   $opts->{type} and $opts->{type} eq 'list'
+      and $opts->{list} //= [] and $opts->{content} = NUL;
    $opts->{content} //= { list => [], type => 'list' };
    $opts->{type} //= 'container';
 
@@ -178,7 +186,7 @@ sub p_button ($@) {
    my $f = shift; return $_push_field->( $f, 'button', $_bind->( @_ ) );
 }
 
-sub p_cell ($$) {
+sub p_cell ($;$) {
    my ($row, $x) = @_;
 
    if (not $x or is_hashref $x) { push @{ $row }, $x //= {}; return $x }
@@ -267,7 +275,7 @@ sub p_radio ($@) {
    my $f = shift; return $_push_field->( $f, 'radio', $_bind->( @_ ) );
 }
 
-sub p_row ($$) {
+sub p_row ($;$) {
    my ($table, $x) = @_;
 
    if (not $x or is_hashref $x->[ 0 ]) {
