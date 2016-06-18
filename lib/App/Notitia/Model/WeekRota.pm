@@ -149,18 +149,33 @@ my $_week_rota_title = sub {
 };
 
 my $_vehicle_list = sub {
-   my ($bikes, $vrn) = @_;
+   my ($vehicles, $vrn) = @_; $vrn //= NUL;
 
    return [ [ NUL, NUL ], map { [ $_->name, $_->vrn, {
-      selected => $vrn eq $_->vrn ? TRUE : FALSE } ] } @{ $bikes } ];
+      selected => $vrn eq $_->vrn ? TRUE : FALSE } ] } @{ $vehicles } ];
+};
+
+my $_vehicle_select_cell = sub {
+   my ($page, $vehicles, $form_name, $href, $action, $vrn) = @_;
+
+   my $form = blank_form $form_name, $href, { class => 'align-center' };
+   my $jsid = "vehicle-${form_name}";
+
+   push @{ $page->{literal_js} //= [] }, js_submit_config
+      $jsid, 'change', 'submitForm', [ $action, $form_name ];
+   p_select $form, 'vehicle', $_vehicle_list->( $vehicles, $vrn ), {
+      class => "spreadsheet-select submit", id => $jsid, label => NUL };
+   p_hidden $form, 'vehicle_original', $vrn;
+
+   return { class => 'spreadsheet-fixed-vehicle', value => $form };
 };
 
 my $_alloc_cell_slot_row = sub {
-   my ($req, $page, $cache, $slots, $bikes, $dt, $slot_key) = @_;
+   my ($req, $page, $cache, $data, $dt, $slot_key) = @_;
 
    my $local_ymd = $_local_dt->( $dt )->ymd;
    my $dt_key = "${local_ymd}_${slot_key}";
-   my $slot = $slots->{ $dt_key }; $slot or $slot = Class::Null->new;
+   my $slot = $data->{slots}->{ $dt_key }; $slot or $slot = Class::Null->new;
    my $style; $slot->vehicle and $slot->vehicle->colour
       and $style = 'background-color: '.$slot->vehicle->colour.';';
    my $operator = $slot->operator;
@@ -172,18 +187,13 @@ my $_alloc_cell_slot_row = sub {
    if ($operator->id and $slot->bike_requested) {
       my $args = [ $page->{rota_name}, $local_ymd, $slot_key ];
       my $href = uri_for_action $req, 'asset/vehicle', $args;
-      my $form = blank_form $dt_key, $href, { class => 'align-center' };
       my $vrn  = $slot->vehicle ? $slot->vehicle->vrn : NUL;
-      my $jsid = "vehicle-${dt_key}";
+      my $bikes = $data->{vehicles}->{bike};
 
-      push @{ $page->{literal_js} //= [] }, js_submit_config
-         $jsid, 'change', 'submitForm', [ 'assign_vehicle', $dt_key ];
-      p_select $form, 'vehicle', $_vehicle_list->( $bikes, $vrn ), {
-         class => 'spreadsheet-select submit', id => $jsid, label => NUL };
-      p_hidden $form, 'vehicle_original', $vrn;
-      p_cell $row, { class => 'spreadsheet-fixed-bike', value => $form };
+      p_cell $row, $_vehicle_select_cell->
+         ( $page, $bikes, $dt_key, $href, 'assign_vehicle', $vrn );
    }
-   else { p_cell $row, { class => 'spreadsheet-fixed-bike', value => NUL } }
+   else { p_cell $row, { class => 'spreadsheet-fixed-vehicle', value => NUL } }
 
    p_cell $row, { class => 'narrow align-center',
                   value => $operator->id ? $operator->region : NUL };
@@ -206,9 +216,13 @@ my $_alloc_key_row = sub {
    my $row = [];
 
    p_cell $row, { value => ucfirst $details };
-   p_cell $row, { class => 'narrow align-center', value => $keeper->region };
-   p_cell $row, { style => $style, value => $keeper->label };
-   p_cell $row, { class => 'narrow', value => $keeper->location };
+   p_cell $row, { value => locm $req, $vehicle->type };
+   p_cell $row, { class => 'narrow align-center',
+                  value => $keeper ? $keeper->region : NUL };
+   p_cell $row, { style => $style,
+                  value => $keeper ? $keeper->label : NUL };
+   p_cell $row, { class => 'narrow',
+                  value => $keeper ? $keeper->location : NUL };
 
    return $row;
 };
@@ -216,7 +230,8 @@ my $_alloc_key_row = sub {
 my $_alloc_key_headers = sub {
    my $req = shift;
 
-   my @headings = ('Bike Details', 'R', 'Current Rider', 'Rider Location');
+   my @headings = ( 'Vehicle Details', 'Type', 'R',
+                    'Current Keeper', 'Keeper Location' );
 
    return [ map { { class => 'rota-header', value => locm $req, $_ } }
             @headings  ];
@@ -231,6 +246,7 @@ my $_alloc_table_label = sub {
 
    return { class => 'day-of-week', value => $v };
 };
+
 my $_alloc_table_headers = sub {
    my ($req, $date) = @_;
 
@@ -238,7 +254,7 @@ my $_alloc_table_headers = sub {
 };
 
 my $_alloc_cell_event_row = sub {
-   my ($req, $page, $tuple) = @_;
+   my ($req, $page, $data, $tuple) = @_;
 
    my $row = []; my $event = $tuple->[ 0 ]; my $bike_req = FALSE;
 
@@ -254,12 +270,25 @@ my $_alloc_cell_event_row = sub {
       $vehicle->colour and $style = 'background-color: '.$vehicle->colour.';';
       $_add_event_tip->( $req, $page, $event );
       $vehicle->type eq 'bike' and $bike_req = TRUE;
-      p_cell $row, { value => NUL };
+
+      my $vehicles = $data->{vehicles}->{ $vehicle->type };
+      my $args = [];
+      my $href = uri_for_action $req, 'asset/vehicle', $args;
+      my $vrn  = $vehicle->vrn;
+
+      p_cell $row, $_vehicle_select_cell->
+         ( $page, $vehicles, $vrn, $href, 'assign_vehicle', $vrn );
    }
    else {
       $_add_vreq_tip->( $req, $page, $event );
       $tuple->[ 1 ] eq 'bike' and $bike_req = TRUE;
-      p_cell $row, { value => NUL };
+
+      my $vehicles = $data->{vehicles}->{ $tuple->[ 1 ] };
+      my $args = [];
+      my $href = uri_for_action $req, 'asset/vehicle', $args;
+
+      p_cell $row, $_vehicle_select_cell->
+         ( $page, $vehicles, 'form_name', $href, 'assign_vehicle' );
    }
 
    p_cell $row, { class => 'align-center', value => $event->owner->region };
@@ -273,9 +302,6 @@ my $_alloc_cell_event_row = sub {
 my $_alloc_cell = sub {
    my ($req, $page, $v_cache, $data, $cno) = @_;
 
-   my $events = $data->{events};
-   my $slots = $data->{slots};
-   my $bikes = $data->{bikes};
    my $name = $page->{name};
    my $rota_dt = $page->{rota_dt};
    my $limits = $page->{limits};
@@ -289,16 +315,16 @@ my $_alloc_cell = sub {
 
    for my $key (map { "day_rider_${_}" } 0 .. $dr_max - 1) {
       p_row $table, $_alloc_cell_slot_row->
-         ( $req, $page, $v_cache, $slots, $bikes, $dt, $key );
+         ( $req, $page, $v_cache, $data, $dt, $key );
    }
 
    for my $key (map { "night_rider_${_}" } 0 .. $nr_max - 1) {
       p_row $table, $_alloc_cell_slot_row->
-         ( $req, $page, $v_cache, $slots, $bikes, $dt, $key );
+         ( $req, $page, $v_cache, $data, $dt, $key );
    }
 
-   for my $tuple (@{ $events->{ $_local_dt->( $dt )->ymd } // [] }) {
-      p_row $table, $_alloc_cell_event_row->( $req, $page, $tuple );
+   for my $tuple (@{ $data->{events}->{ $_local_dt->( $dt )->ymd } // [] }) {
+      p_row $table, $_alloc_cell_event_row->( $req, $page, $data, $tuple );
    }
 
    return { class => 'embeded', value => $table };
@@ -444,12 +470,16 @@ my $_right_shift = sub {
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
 };
 
-my $_search_for_bikes = sub {
-   my $self = shift;
-   my $where = { service => TRUE, type => 'bike' };
+my $_search_for_vehicles = sub {
+   my $self = shift; my $vehicles = {};
+
    my $rs = $self->schema->resultset( 'Vehicle' );
 
-   return [ $rs->search_for_vehicles( $where )->all ];
+   for my $vehicle ($rs->search_for_vehicles( { service => TRUE } )->all) {
+      push @{ $vehicles->{ $vehicle->type } //= [] }, $vehicle;
+   }
+
+   return $vehicles;
 };
 
 my $_search_for_events = sub {
@@ -547,7 +577,7 @@ sub alloc_key : Role(rota_manager) {
       class => 'key-table', type => 'table' };
    my $columns = [ qw( colour id name notes vrn ) ];
    my $vehicles = $self->schema->resultset( 'Vehicle' )->search_for_vehicles( {
-      columns => $columns, service => TRUE, type => 'bike' } );
+      columns => $columns, service => TRUE } );
    my $assets = $self->components->{asset};
    my $now = to_dt time2str;
 
@@ -573,10 +603,10 @@ sub alloc_table : Role(rota_manager) {
       after => $rota_dt->clone->subtract( days => 1),
       before => $rota_dt->clone->add( days => 7 ),
       rota_type => $self->$_find_rota_type( $rota_name )->id };
-   my $bikes = $self->$_search_for_bikes();
+   my $vehicles = $self->$_search_for_vehicles();
    my $events = $self->$_search_for_events( $opts );
    my $slots = $self->$_search_for_slots( $opts );
-   my $data = { bikes => $bikes, events => $events, slots => $slots };
+   my $data = { vehicles => $vehicles, events => $events, slots => $slots };
    my $page = $stash->{page};
    my $row = p_row $table;
    my $v_cache = {};
