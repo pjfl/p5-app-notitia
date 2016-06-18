@@ -303,21 +303,50 @@ my $_bind_vehicle_fields = sub {
 my $_toggle_event_assignment = sub {
    my ($self, $req, $action) = @_;
 
-   my $schema   = $self->schema;
-   my $uri      = $req->uri_params->( 0 );
-   my $vrn      = $req->body_params->( 'vehicle' );
-   my $vehicle  = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
-   my $method   = $action eq 'assign'
-                ? 'assign_to_event' : 'unassign_from_event';
+   my $schema = $self->schema;
+   my $uri = $req->uri_params->( 0 );
+   my $vrn = $req->body_params->( 'vehicle' );
+   my $vehicle = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+   my $method = $action eq 'assign' ? 'assign_to_event' : 'unassign_from_event';
 
    $vehicle->$method( $uri, $req->username );
 
-   my $actionp  = $self->moniker.'/request_vehicle';
-   my $location = uri_for_action( $req, $actionp, [ $uri ] );
-   my $message  = [ to_msg "Vehicle [_1] ${action}ed to [_2] by [_3]",
-                    $vrn, $uri, $req->session->user_label ];
+   my $prep = $action eq 'assign' ? 'to' : 'from';
+   my $message = [ to_msg "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]",
+                   $vrn, $uri, $req->session->user_label ];
 
-   return { redirect => { location => $location, message => $message } };
+   return { redirect => { message => $message } };
+};
+
+my $_toggle_slot_assignment = sub {
+   my ($self, $req, $action) = @_;
+
+   my $params = $req->uri_params;
+   my $rota_name = $params->( 0 );
+   my $rota_date = $params->( 1 );
+   my $slot_name = $params->( 2 );
+   my $vrn = $req->body_params->( 'vehicle', { optional => TRUE } );
+
+   unless ($vrn) {
+      $vrn = $req->body_params->( 'vehicle_original' ); $action = 'unassign';
+   }
+
+   my $schema = $self->schema;
+   my $vehicle = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+   my $method = "${action}_slot";
+
+   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
+
+   $vehicle->$method( $rota_name, to_dt( $rota_date ), $shift_type,
+                      $slot_type, $subslot, $req->username );
+
+   my $prep = $action eq 'assign' ? 'to' : 'from';
+   my $label = slot_identifier
+      ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
+   my $message = [ to_msg "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]",
+                   $vrn, $label, $req->session->user_label ];
+
+   return { redirect => { message => $message } };
 };
 
 my $_toggle_assignment = sub {
@@ -330,26 +359,7 @@ my $_toggle_assignment = sub {
 
    $r and return $r;
 
-   my $rota_date = $params->( 1 );
-   my $slot_name = $params->( 2 );
-   my $vrn       = $req->body_params->( 'vehicle' );
-   my $schema    = $self->schema;
-   my $vehicle   = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
-   my $method    = "${action}_slot";
-
-   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
-
-   $vehicle->$method( $rota_name, to_dt( $rota_date ), $shift_type,
-                      $slot_type, $subslot, $req->username );
-
-   my $label     = slot_identifier
-      ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
-   my $message   = [ to_msg "Vehicle [_1] ${action}ed to [_2] by [_3]",
-                     $vrn, $label, $req->session->user_label ];
-   my $location  = uri_for_action
-      ( $req, 'day/day_rota', [ $rota_name, $rota_date, $slot_name ] );
-
-   return { redirect => { location => $location, message => $message } };
+   return $self->$_toggle_slot_assignment( $req, $action );
 };
 
 my $_update_vehicle_from_request = sub {

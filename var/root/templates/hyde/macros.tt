@@ -137,7 +137,7 @@
 [% MACRO Select( f ) WRAPPER label -%]
 [%    IF f.tip; FieldHelp( f ); END -%]
 [%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
-      <select class="[% class %]" name="[% f.name %]"
+      <select class="[% class %]" name="[% f.name %]" id="[% f.id %]"
 [%    IF f.disabled %]disabled="disabled"[% END -%]
 [%    IF f.multiple %]multiple="multiple" size="[% f.size %]" [% END -%]
 [%    IF f.onchange -%]

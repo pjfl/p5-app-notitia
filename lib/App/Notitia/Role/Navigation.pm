@@ -10,7 +10,7 @@ use Class::Usul::Time       qw( time2str );
 use DateTime                qw( );
 use Moo::Role;
 
-requires qw( components list_roles );
+requires qw( components );
 
 # Private functions
 my $_list_roles_of = sub {

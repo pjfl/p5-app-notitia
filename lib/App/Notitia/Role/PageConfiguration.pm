@@ -5,11 +5,24 @@ use namespace::autoclean;
 use App::Notitia::Constants qw( TRUE );
 use App::Notitia::Util      qw( dialog_anchor loc uri_for_action );
 use Try::Tiny;
+use Web::ComposableRequest::Util qw( new_uri );
 use Moo::Role;
 
 requires qw( config initialise_stash load_page log );
 
 # Construction
+around 'execute' => sub {
+   my ($orig, $self, $method, $req) = @_;
+
+   my $stash = $orig->( $self, $method, $req );
+
+   exists $stash->{redirect} and $req->authenticated and $req->referer
+      and $stash->{redirect}->{location} //=
+          new_uri $req->scheme, $req->referer;
+
+   return $stash;
+};
+
 around 'initialise_stash' => sub {
    my ($orig, $self, $req, @args) = @_;
 

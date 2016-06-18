@@ -12,6 +12,24 @@ use Moo::Role;
 requires qw( components config execute );
 
 # Private functions
+my $_list_roles = sub {
+   my ($self, $req) = @_; my $roles_mtime = $self->config->roles_mtime;
+
+   my $session = $req->session; my $roles = $session->roles; my $person;
+
+   $roles_mtime = $roles_mtime->exists ? $roles_mtime->stat->{mtime} : 0;
+
+   $session->roles_mtime < $roles_mtime and $roles = [];
+
+   unless (defined $roles->[ 0 ]) {
+      $person = $self->components->{person}->find_by_shortcode( $req->username);
+      $person and $session->roles( $roles = $person->list_roles );
+      defined $roles->[ 0 ] and $session->roles_mtime( $roles_mtime );
+   }
+
+   return $roles, $person ? $person->label : $req->username;
+};
+
 my $_list_roles_of = sub {
    my $attr = attributes::get( shift ) // {}; return $attr->{Role} // [];
 };
@@ -32,7 +50,7 @@ around 'execute' => sub {
 
    is_member 'any',  $method_roles and return $orig->( $self, $method, $req );
 
-   my ($roles, $name) = $self->list_roles( $req );
+   my ($roles, $name) = $self->$_list_roles( $req );
 
    for my $role_name (@{ $roles }) {
       is_member $role_name, $method_roles
@@ -41,24 +59,6 @@ around 'execute' => sub {
 
    throw '[_1] permission denied', [ $req->session->user_label || $name ];
 };
-
-sub list_roles {
-   my ($self, $req) = @_; my $roles_mtime = $self->config->roles_mtime;
-
-   my $session = $req->session; my $roles = $session->roles; my $person;
-
-   $roles_mtime = $roles_mtime->exists ? $roles_mtime->stat->{mtime} : 0;
-
-   $session->roles_mtime < $roles_mtime and $roles = [];
-
-   unless (defined $roles->[ 0 ]) {
-      $person = $self->components->{person}->find_by_shortcode( $req->username);
-      $person and $session->roles( $roles = $person->list_roles );
-      defined $roles->[ 0 ] and $session->roles_mtime( $roles_mtime );
-   }
-
-   return $roles, $person ? $person->label : $req->username;
-}
 
 1;
 

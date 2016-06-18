@@ -4,8 +4,8 @@ use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_cell p_container p_row
-                                p_select p_table );
+use App::Notitia::Form      qw( blank_form f_link p_cell p_container p_hidden
+                                p_row p_select p_table );
 use App::Notitia::Util      qw( js_server_config js_submit_config
                                 locm register_action_paths slot_limit_index
                                 to_dt uri_for_action );
@@ -149,27 +149,67 @@ my $_week_rota_title = sub {
 };
 
 my $_vehicle_list = sub {
-   my ($bikes, $slot) = @_;
-
-   my $vrn = $slot->vehicle ? $slot->vehicle->vrn : NUL;
+   my ($bikes, $vrn) = @_;
 
    return [ [ NUL, NUL ], map { [ $_->name, $_->vrn, {
       selected => $vrn eq $_->vrn ? TRUE : FALSE } ] } @{ $bikes } ];
 };
 
-my $_alloc_key_rows = sub {
-   my ($self, $req, $now, $vehicle) = @_;
+my $_alloc_cell_embeded_row = sub {
+   my ($req, $page, $cache, $slots, $bikes, $dt, $row, $slot_key) = @_;
 
-   my $assets = $self->components->{asset};
+   my $local_ymd = $_local_dt->( $dt )->ymd;
+   my $dt_key = "${local_ymd}_${slot_key}";
+   my $slot = $slots->{ $dt_key }; $slot or $slot = Class::Null->new;
+   my $operator = $slot->operator;
+
+   p_cell $row, { class => 'rota-header align-center',
+                  value => locm $req, "${slot_key}_abbrv" };
+
+   if ($operator->id and $slot->bike_requested) {
+      my $args = [ $page->{rota_name}, $local_ymd, $slot_key ];
+      my $href = uri_for_action $req, 'asset/vehicle', $args;
+      my $form = blank_form $dt_key, $href, { class => 'align-center' };
+      my $vrn  = $slot->vehicle ? $slot->vehicle->vrn : NUL;
+      my $jsid = "vehicle-${dt_key}";
+
+      push @{ $page->{literal_js} //= [] }, js_submit_config
+         $jsid, 'change', 'submitForm', [ 'assign_vehicle', $dt_key ];
+      p_select $form, 'vehicle', $_vehicle_list->( $bikes, $vrn ), {
+         class => 'spreadsheet-select submit', id => $jsid, label => NUL };
+      p_hidden $form, 'vehicle_original', $vrn;
+      p_cell $row, { class => 'spreadsheet-fixed-bike', value => $form };
+   }
+   else { p_cell $row, { class => 'spreadsheet-fixed-bike', value => NUL } }
+
+   p_cell $row, { class => 'narrow align-center',
+                  value => $operator->id ? $operator->region : NUL };
+
+   my $style; $slot->vehicle and $slot->vehicle->colour
+      and $style = 'background-color: '.$slot->vehicle->colour.';';
+
+   p_cell $row, { class => 'spreadsheet-fixed-operator', style => $style,
+                  value => $operator->id ? $operator->label : 'Vacant' };
+   p_cell $row, { class => 'narrow align-center',
+                  value => $slot->bike_requested ? 'Y'
+                         : $operator->id         ? 'N' : NUL };
+   p_cell $row, { class => 'narrow align-center',
+                  value => $_operators_vehicle->( $slot, $cache ) };
+   return;
+};
+
+my $_alloc_key_rows = sub {
+   my ($req, $assets, $now, $vehicle) = @_;
+
    my $keeper = $assets->find_last_keeper( $req, $vehicle, $now );
    my $details = $vehicle->name.', '.$vehicle->notes.', '.$vehicle->vrn;
    my $style = 'background-color: '.$vehicle->colour.';';
    my $row = [];
 
-   push @{ $row }, { value => ucfirst $details };
-   push @{ $row }, { class => 'narrow align-center', value => $keeper->region };
-   push @{ $row }, { style => $style, value => $keeper->label };
-   push @{ $row }, { class => 'narrow', value => $keeper->location };
+   p_cell $row, { value => ucfirst $details };
+   p_cell $row, { class => 'narrow align-center', value => $keeper->region };
+   p_cell $row, { style => $style, value => $keeper->label };
+   p_cell $row, { class => 'narrow', value => $keeper->location };
 
    return $row;
 };
@@ -179,7 +219,8 @@ my $_alloc_key_headers = sub {
 
    my @headings = ('Bike Details', 'R', 'Current Rider', 'Rider Location');
 
-   return [ map { { class => 'rota-header', value => $_ } } @headings  ];
+   return [ map { { class => 'rota-header', value => locm $req, $_ } }
+            @headings  ];
 };
 
 my $_alloc_table_label = sub {
@@ -197,54 +238,15 @@ my $_alloc_table_headers = sub {
    return [ map { $_alloc_table_label->( $req, $date, $_ ) } 0 .. 6 ];
 };
 
-# Private methods
-my $_alloc_cell_embeded_row = sub {
-   my ($self, $req, $row, $slots, $bikes, $dt, $slot_key, $cache) = @_;
-
-   my $dt_key = $_local_dt->( $dt )->ymd."_${slot_key}";
-   my $slot = $slots->{ $dt_key }; $slot or $slot = Class::Null->new;
-
-   p_cell $row, { class => 'rota-header align-center',
-                  value => locm $req, "${slot_key}_abbrv" };
-
-   my $list = $_vehicle_list->( $bikes, $slot ); my $operator = $slot->operator;
-
-   if ($operator->id and $slot->bike_requested) {
-      my $href = uri_for_action $req, $self->moniker.'/allocation', [ $dt_key ];
-      my $form = blank_form $dt_key, $href, { class => 'align-center' };
-
-      p_select $form, 'vehicle', $list, {
-         class => 'spreadsheet-select', label => NUL };
-
-      p_cell $row, { class => 'spreadsheet-fixed-bike', value => $form };
-   }
-   else { p_cell $row, { class => 'spreadsheet-fixed-bike', value => NUL } }
-
-   p_cell $row, { class => 'narrow align-center',
-                  value => $operator->id ? $operator->region : NUL };
-
-   my $style; $slot->vehicle and $slot->vehicle->colour
-      and $style = 'background-color: '.$slot->vehicle->colour.';';
-
-   p_cell $row, { class => 'spreadsheet-fixed-operator', style => $style,
-                  value => $operator->id ? $operator->label : 'Vacant' };
-
-   p_cell $row, { class => 'narrow align-center',
-                  value => $slot->bike_requested ? 'Y'
-                         : $slot->operator->id ? 'N' : NUL };
-
-   p_cell $row, { class => 'narrow align-center',
-                  value => $_operators_vehicle->( $slot, $cache ) };
-
-   return;
-};
-
 my $_alloc_cell = sub {
-   my ($self, $req, $v_cache, $rota_name, $rota_dt, $slots, $bikes, $cno) = @_;
+   my ($req, $page, $v_cache, $slots, $bikes, $cno) = @_;
 
-   my $limits = $self->config->slot_limits;
+   my $name = $page->{name};
+   my $rota_dt = $page->{rota_dt};
+   my $limits = $page->{limits};
    my $dr_max = $limits->[ slot_limit_index 'day', 'rider' ];
    my $nr_max = $limits->[ slot_limit_index 'night', 'rider' ];
+   # TODO: Create spreadsheet-table, an even smaller-table
    my $table = blank_form {
       class => 'smaller-table embeded', type => 'table' };
    my $dt = $rota_dt->clone->add( days => $cno );
@@ -252,28 +254,28 @@ my $_alloc_cell = sub {
    $table->{headers} = $_alloc_cell_headers->( $req );
 
    for my $key (map { "day_rider_${_}" } 0 .. $dr_max - 1) {
-      $self->$_alloc_cell_embeded_row
-         ( $req, p_row( $table ), $slots, $bikes, $dt, $key, $v_cache );
+      $_alloc_cell_embeded_row->
+         ( $req, $page, $v_cache, $slots, $bikes, $dt, p_row( $table ), $key );
    }
 
    for my $key (map { "night_rider_${_}" } 0 .. $nr_max - 1) {
-      $self->$_alloc_cell_embeded_row
-         ( $req, p_row( $table ), $slots, $bikes, $dt, $key, $v_cache );
+      $_alloc_cell_embeded_row->
+         ( $req, $page, $v_cache, $slots, $bikes, $dt, p_row( $table ), $key );
    }
 
    return { class => 'embeded', value => $table };
 };
 
 my $_allocation_js = sub {
-   my ($self, $req, $rota_name, $rota_dt) = @_;
+   my ($req, $moniker, $rota_name, $rota_dt) = @_;
 
    my $args = [ $rota_name, $_local_dt->( $rota_dt )->ymd ];
-   my $href1 = uri_for_action $req, $self->moniker.'/alloc_table', $args;
+   my $href1 = uri_for_action $req, "${moniker}/alloc_table", $args;
 
    $args = [ $rota_name, $_local_dt->( $rota_dt )->add( days => 7 )->ymd ];
 
-   my $href2 = uri_for_action $req, $self->moniker.'/alloc_table', $args;
-   my $href3 = uri_for_action $req, $self->moniker.'/alloc_key';
+   my $href2 = uri_for_action $req, "${moniker}/alloc_table", $args;
+   my $href3 = uri_for_action $req, "${moniker}/alloc_key";
 
    return [ js_server_config( 'allocation-wk1', 'load',
                               'request', [ "${href1}", 'allocation-wk1' ] ),
@@ -283,6 +285,7 @@ my $_allocation_js = sub {
                               'request', [ "${href3}", 'allocation-key' ] ) ];
 };
 
+# Private methods
 my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
 };
@@ -314,7 +317,7 @@ my $_next_week = sub {
    my $href = $self->$_next_week_uri( $req, $method, $rota_name, $date );
 
    return f_link 'next-week', $href, {
-      class => 'next-rota', value => locm $req, 'Next' };
+      class => 'next-rota', request => $req, value => locm $req, 'Next' };
 };
 
 my $_prev_week_uri = sub {
@@ -334,7 +337,7 @@ my $_prev_week = sub {
    my $href = $self->$_prev_week_uri( $req, $method, $rota_name, $date );
 
    return f_link 'prev-week', $href, {
-      class => 'prev-rota', value => locm $req, 'Prev' };
+      class => 'prev-rota', request => $req, value => locm $req, 'Prev' };
 };
 
 my $_right_shift = sub {
@@ -430,11 +433,11 @@ my $_week_rota_assignments = sub {
 my $_week_rota_requests = sub {
    my ($self, $req, $page, $rota_dt, $slot_cache, $opts) = @_;
 
+   my $moniker   = $self->moniker;
    my $slot_rs   = $self->schema->resultset( 'Slot' );
    my $vreq_rs   = $self->schema->resultset( 'VehicleRequest' );
    my $slots     = [ $slot_rs->search_for_slots( $opts )->all ];
    my $events  = [ $vreq_rs->search_for_events_with_unassigned_vreqs( $opts ) ];
-   my $moniker   = $self->moniker;
    my $rota_name = $page->{rota}->{name};
    my $class     = 'narrow week-rota submit server tips';
    my $row       = [ { class => 'narrow', value => 'Requests' } ];
@@ -484,11 +487,12 @@ sub alloc_key : Role(rota_manager) {
    my $columns = [ qw( colour id name notes vrn ) ];
    my $vehicles = $self->schema->resultset( 'Vehicle' )->search_for_vehicles( {
       columns => $columns, service => TRUE, type => 'bike' } );
+   my $assets = $self->components->{asset};
    my $now = to_dt time2str;
 
    $table->{headers} = $_alloc_key_headers->( $req );
 
-   p_row $table, [ map { $self->$_alloc_key_rows( $req, $now, $_ ) }
+   p_row $table, [ map { $_alloc_key_rows->( $req, $assets, $now, $_ ) }
                    $vehicles->all ];
 
    return $stash;
@@ -509,15 +513,21 @@ sub alloc_table : Role(rota_manager) {
       rota_type => $self->$_find_rota_type( $rota_name )->id };
    my $slots = $self->$_search_for_slots( $opts );
    my $bikes = $self->$_search_for_bikes();
+   my $page = $stash->{page};
    my $row = p_row $table;
    my $v_cache = {};
 
    $table->{headers} = $_alloc_table_headers->( $req, $rota_dt );
+   $page->{limits} = $self->config->slot_limits;
+   $page->{moniker} = $self->moniker;
+   $page->{rota_name} = $rota_name;
+   $page->{rota_dt} = $rota_dt;
 
    p_cell $row,
-   [  map { $self->$_alloc_cell
-               ( $req, $v_cache, $rota_name, $rota_dt, $slots, $bikes, $_ ) }
+   [  map { $_alloc_cell->( $req, $page, $v_cache, $slots, $bikes, $_ ) }
       0 .. 6 ];
+
+   push @{ $page->{literal_js} }, 'behaviour.rebuild();';
 
    return $stash;
 }
@@ -526,6 +536,7 @@ sub allocation : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $today = time2str '%Y-%m-%d';
+   my $moniker = $self->moniker;
    my $rota_name = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
    my $rota_dt = to_dt $rota_date;
@@ -538,7 +549,7 @@ sub allocation : Role(rota_manager) {
          prev => $self->$_prev_week( $req, 'allocation', $rota_name, $rota_dt )
          }, },
       forms => [ $list, $form ],
-      literal_js => $self->$_allocation_js( $req, $rota_name, $rota_dt ),
+      literal_js => $_allocation_js->( $req, $moniker, $rota_name, $rota_dt ),
       off_grid => TRUE,
       template => [ 'none', 'spreadsheet' ],
       title => locm $req, 'Vehicle Allocation'
