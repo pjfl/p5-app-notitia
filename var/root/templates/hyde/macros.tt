@@ -183,7 +183,8 @@
 [% END -%]
 [% MACRO Tag( f ) BLOCK -%]
       <[% f.tag %] class="[% f.class %]" id="[% f.id %]" name="[% f.name %]"
-                    type="[% f.orig_type %]">
+[%    IF f.title %]title="[% f.title %]"[% END -%]
+[%    IF f.orig_type %]type="[% f.orig_type %]"[% END %]>
 [%    IF f.content %][% f.content %]</[% f.tag %]>[% END -%]
 [% END -%]
 [% MACRO Text( f ) WRAPPER label -%]

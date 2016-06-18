@@ -52,6 +52,29 @@ sub search_for_request_info {
    return @tuples;
 }
 
+sub search_for_unassigned_vreqs {
+   my ($self, $opts) = @_; my @tuples; $opts = { %{ $opts } };
+
+   my $where    = { 'quantity' => { '>' => 0 } };
+   my $prefetch = [ { 'event' => 'start_rota' } ];
+   my $parser   = $self->result_source->schema->datetime_parser;
+   my $tport_rs = $self->result_source->schema->resultset( 'Transport' );
+
+   set_rota_date $parser, $where, 'start_rota.date', $opts;
+
+   for my $vreq ($self->search( $where, { prefetch => $prefetch } )->all) {
+      my $where    = { 'event.id'        => $vreq->event_id,
+                       'vehicle.type_id' => $vreq->type_id };
+      my $prefetch = [ 'event', 'vehicle' ];
+      my $count    = $tport_rs->count( $where, { prefetch => $prefetch } );
+
+      $vreq->quantity > $count
+         and push @tuples, [ $vreq, $vreq->quantity - $count ];
+   }
+
+   return @tuples;
+}
+
 1;
 
 __END__

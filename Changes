@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Displays vehicle requests on spreadsheet
           - Updates vehicle assignments from spreadsheet
           - Completes spreadsheet layout and content
           - Adds fullscreen width and colour to spreadsheet view

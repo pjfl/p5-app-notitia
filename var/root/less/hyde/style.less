@@ -256,6 +256,10 @@ footer {
 }
 .standard-form .add-link { margin-bottom: 5px; }
 .standard-form .delete-button, .standard-form .save-button { margin-top: 5px; }
+.table-cell-help {
+   color: @subtle; cursor: pointer; display: block; font-size: 12px;
+   text-align: center;
+}
 .upload-file { margin: 0.25em 0; overflow: hidden; position: relative; }
 .upload-file .upload {
    cursor: pointer; .opacity( 0 ); position: absolute; top: 0; right: 0;
@@ -673,7 +677,7 @@ h5, h6 {
 }
 hr.subtle { display: none; }
 /* Tables */
-.embeded, .key-table, .smaller-table, .standard-table {
+.key-table, .smaller-table, .spreadsheet-table, .standard-table, table.embeded {
    background-color: #555; .border-radius;
    .box-shadow; width: 100%;
    thead {
@@ -723,7 +727,8 @@ table.embeded td { white-space: nowrap; }
    tbody td span.checkbox { margin: 3px 0 -3px 0; }
    tbody tr { line-height: 32px; }
 }
-.standard-table { margin: 0.5em 0; }
+.spreadsheet-table td.embeded { vertical-align: top; }
+.spreadsheet-table, .standard-table { margin: 0.5em 0; }
 
 /* Note types */
 .info {
