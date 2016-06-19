@@ -1,9 +1,11 @@
 package App::Notitia::Model;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( loc to_msg uri_for_action );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
+use App::Notitia::Form      qw( blank_form f_tag p_tag );
+use App::Notitia::Util      qw( locm uri_for_action );
 use Class::Usul::Functions  qw( exception throw );
+use Class::Usul::Time       qw( time2str );
 use Class::Usul::Types      qw( Plinth );
 use HTTP::Status            qw( HTTP_NOT_FOUND HTTP_OK );
 use Scalar::Util            qw( blessed );
@@ -65,24 +67,39 @@ sub exception_handler {
    my ($self, $req, $e) = @_;
 
    my ($leader, $message, $summary) = $_parse_error->( $e );
-
    my $redirect = $_auth_redirect->( $req, $e, $summary );
       $redirect and return $redirect;
-
    my $name = $req->session->first_name || $req->username || 'unknown';
-   my $page = {
-      debug    => $self->application->debug,
-      error    => $e,
-      leader   => $leader,
-      message  => $message,
-      summary  => $summary,
-      template => [ 'menu', 'exception' ],
-      title    => loc( $req, to_msg 'Exception Handler', $name ), };
-
-   $e->class eq ValidationErrors->() and $page->{validation_error}
-      = [ map { my $v = ($_parse_error->( $_ ))[ 1 ] } @{ $e->args } ];
-
+   my $form = blank_form { type => 'list' };
+   my $page = { forms => [ $form ], template => [],
+                title => locm $req, 'Exception Handler', $name };
    my $stash = $self->get_stash( $req, $page );
+
+   if ($e->class eq ValidationErrors->()) {
+      p_tag $form, 'h5', locm $req, 'Form validation errors';
+
+      for my $message (map { ($_parse_error->( $_ ))[ 1 ] } @{ $e->args }) {
+         p_tag $form, 'p', $message;
+      }
+   }
+   else {
+      p_tag $form, 'h5', locm $req, 'The following exception was thrown';
+      p_tag $form, 'p', $summary;
+   }
+
+   if ($self->application->debug) {
+      my $line1 = locm( $req, 'Exception thrown' ).SPC;
+      my $when  = time2str 'on %Y-%m-%d at %H:%M hours', $e->time;
+
+      if ($leader) {
+         $line1 .= locm( $req, 'from' )." ${leader}";
+         p_tag $form, 'h5', "${line1}<br>${when}";
+      }
+      else { p_tag $form, 'h5', "${line1} ${when}" }
+
+      p_tag $form, 'h5', locm( $req, 'HTTP status code' ).'&nbsp;'.$e->rv;
+      p_tag $form, 'h5', locm( $req, 'Have a nice day' ).'...';
+   }
 
    $stash->{code} = $e->rv > HTTP_OK ? $e->rv : HTTP_OK;
 
@@ -128,10 +145,11 @@ sub not_found : Role(anon) {
 sub rethrow_exception {
    my ($self, $e, $verb, $noun, $label) = @_;
 
-   $self->application->debug and throw $e; $self->log->error( $e );
+   $self->application->debug and throw $e;
    $e->can( 'class' ) and $e->class eq ValidationErrors->() and throw $e;
    $e =~ m{ duplicate }imx and throw 'Duplicate [_1] [_2]', [ $noun, $label ],
                                      no_quote_bind_values => TRUE;
+   $self->log->error( $e );
    throw 'Failed to [_1] [_2] [_3]', [ $verb, $noun, $label ],
          no_quote_bind_values => TRUE;
 }

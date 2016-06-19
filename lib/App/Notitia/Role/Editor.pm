@@ -173,7 +173,8 @@ my $_search_results = sub {
    my ($self, $req) = @_;
 
    my $count   = 1;
-   my $query   = $req->query_params->( 'query' );
+   my $scrub   = '[^ !\"%\'\(\)\+\,\-\./0-9:=\?@A-Z\[\]_a-z\~]';
+   my $query   = $req->query_params->( 'query', { scrubber => $scrub } );
    my $langd   = $self->config->docs_root->catdir( $req->locale );
    my $resp    = $self->run_cmd
                  ( [ 'ack', $query, "${langd}" ], { expected_rv => 1, } );
