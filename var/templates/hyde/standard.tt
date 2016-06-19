@@ -9,7 +9,7 @@
 [%    path = 'hyde/' _ page.template.0 _ '-mobile.tt'; INCLUDE $path -%]
 [%    END -%]
 [%    IF page.template.1 %]
-[%       path = 'hyde/' _ page.template.1 _ '.tt'; INCLUDE $path -%]
+[%       path = 'custom/' _ page.template.1 _ '.tt'; INCLUDE $path -%]
 [%    ELSE -%]
       <div class="unit four-fifths">
          <article>

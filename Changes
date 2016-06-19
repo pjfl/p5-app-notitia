@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Templates and less moved to vardir from rootdir
           - Adds paged query to find last keeper
           - Spreadsheet show 5.5 days after compression
           - Spreadsheet complete prior to squidging

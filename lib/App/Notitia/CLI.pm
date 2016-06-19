@@ -25,7 +25,7 @@ my $_build_less = sub {
 
    return $self->less_class->new
       ( compress      =>   $conf->compress_css,
-        include_paths => [ $conf->root->catdir( 'less' )->pathname ],
+        include_paths => [ $conf->vardir->catdir( $conf->less )->pathname ],
         tmp_path      =>   $conf->tempdir, );
 };
 
@@ -144,7 +144,7 @@ my $_write_theme = sub {
 
    my $skin = $self->skin;
    my $conf = $self->config;
-   my $path = $conf->root->catfile( $conf->less, $skin, "${file}.less" );
+   my $path = $conf->vardir->catfile( $conf->less, $skin, "${file}.less" );
 
    $path->exists or return;
 
@@ -172,7 +172,7 @@ sub make_skin : method {
 
    ensure_class_loaded 'Archive::Tar'; my $arc = Archive::Tar->new;
 
-   for my $path ($conf->root->catdir( $conf->less, $skin )->all_files) {
+   for my $path ($conf->vardir->catdir( $conf->less, $skin )->all_files) {
       $arc->add_files( $path->abs2rel( $conf->appldir ) );
    }
 

@@ -153,7 +153,7 @@ has 'less'            => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'less';
 
 has 'less_files'      => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
-   builder            => sub { [ qw( yellow ) ] };
+   builder            => sub { [ qw( dark ) ] };
 
 has 'links'           => is => 'lazy', isa => ArrayRef[HashRef],
    builder            => $_build_links, init_arg => undef;
@@ -227,7 +227,7 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       rota_date       => [ SimpleStr | Undef                ],
       rows_per_page   => [ PositiveInt, 20                  ],
       skin            => [ NonEmptySimpleStr, $_[ 0 ]->skin ],
-      theme           => [ NonEmptySimpleStr, 'yellow'      ],
+      theme           => [ NonEmptySimpleStr, 'dark'        ],
       user_label      => [ SimpleStr | Undef                ],
       wanted          => [ SimpleStr | Undef                ], } };
 
@@ -259,7 +259,7 @@ has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
       session         => [ sort keys %{ $_[ 0 ]->session_attr } ], } };
 
 has 'template_dir'    => is => 'ro',   isa => Directory, coerce => TRUE,
-   builder            => sub { $_[ 0 ]->root->catdir( 'templates' ) };
+   builder            => sub { $_[ 0 ]->vardir->catdir( 'templates' ) };
 
 has 'time_zone'       => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'Europe/London';
@@ -515,12 +515,12 @@ template will be wrapped by F<wrapper.tt>
 
 =item C<less>
 
-A non empty simple string that defaults to F<less>. Relative URI that
-locates the static Less files
+A non empty simple string that defaults to F<less>. Relative path that
+locates the LESS files
 
 =item C<less_files>
 
-The list of predefined colour schemes and feature specific less files
+The list of predefined colour schemes and feature specific LESS files
 
 =item C<links>
 
@@ -660,7 +660,7 @@ HTML in the application
 
 =item C<theme>
 
-A non empty simple string that defaults to C<yellow>. The name of the
+A non empty simple string that defaults to C<dark>. The name of the
 default colour scheme
 
 =back
