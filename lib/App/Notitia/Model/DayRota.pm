@@ -368,7 +368,7 @@ my $_day_page = sub {
                      events      => [],
                      headers     => $_day_rota_headers->( $req ),
                      shifts      => [], },
-      template  => [ 'menu', 'day-table' ],
+      template  => [ '/menu', 'custom/day-table' ],
       title     => $title };
 
    $_events->( $schema, $req, $page, $name, $local_dt, $todays_events );

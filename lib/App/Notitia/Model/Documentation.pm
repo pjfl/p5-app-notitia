@@ -29,9 +29,12 @@ around 'load_page' => sub {
    my ($orig, $self, $req, @args) = @_;
 
    my $page = $orig->( $self, $req, @args );
+   my $skin = $req->session->skin || $self->config->skin;
 
-   $page->{location} //= 'documentation';
-   $page->{template} //= [ 'menu', 'documentation' ];
+   defined $page->{template}->[ 1 ]
+        or $page->{template}->[ 1 ] = "${skin}/documentation";
+
+   $page->{location} = 'documentation';
 
    return $page;
 };

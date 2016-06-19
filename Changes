@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds skin support for custom templates
           - Eliminates exception template
           - Fixes documentation template moving
           - Templates and less moved to vardir from rootdir

@@ -37,13 +37,16 @@ around 'load_page' => sub {
    my $page  = $orig->( $self, $req, @args );
    my @ids   = @{ $req->uri_params->() // [] };
    my $type  = $page->{type} // 'folder';
+   my $skin  = $req->session->skin || $self->config->skin;
    my $plate = $type eq 'folder' ? 'posts-index' : 'documentation';
 
    $ids[ 0 ] and $ids[ 0 ] eq 'index' and @ids = ();
    $page->{wanted_depth} = () = @ids;
    $page->{wanted      } = join '/', $self->config->posts, @ids;
-   $page->{template    } = [ 'menu', $plate ];
    $page->{location    } = 'posts';
+
+   defined $page->{template}->[ 1 ]
+        or $page->{template}->[ 1 ] = "${skin}/${plate}";
 
    return $page;
 };

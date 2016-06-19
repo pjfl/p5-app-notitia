@@ -701,7 +701,7 @@ sub allocation : Role(rota_manager) {
       forms => [ $list, $form ],
       literal_js => $_allocation_js->( $req, $moniker, $rota_name, $rota_dt ),
       off_grid => TRUE,
-      template => [ 'none', 'spreadsheet' ],
+      template => [ 'none', 'custom/two-week-table' ],
       title => locm $req, 'Vehicle Allocation'
    };
 
@@ -729,7 +729,7 @@ sub week_rota : Role(any) {
       rota        => { headers => $_week_rota_headers->( $req, $rota_dt ),
                        name    => $rota_name,
                        rows    => [] },
-      template    => [ 'menu', 'week-table' ],
+      template    => [ '/menu', 'custom/week-table' ],
       title       => $_week_rota_title->( $req, $rota_name, $rota_dt ), };
    my $opts       =  {
       after       => $rota_dt->clone->subtract( days => 1),

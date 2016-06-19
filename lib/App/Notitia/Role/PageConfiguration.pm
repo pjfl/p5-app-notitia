@@ -66,7 +66,11 @@ around 'load_page' => sub {
    $page->{application_version} = $conf->appclass->VERSION;
    $page->{status_message     } = $req->session->collect_status_message( $req );
 
-   $page->{template} //= [ 'menu' ];
+   my $skin = $req->session->skin || $conf->skin;
+
+   $page->{template} //= [ "${skin}/menu" ];
+   $page->{template}->[ 0 ] eq '/menu'
+      and $page->{template}->[ 0 ] = "${skin}/menu";
    $page->{hint    } //= loc( $req, 'Hint' );
    $page->{wanted  } //=
       join '/', @{ $req->uri_params->( { optional => TRUE } ) // [] };

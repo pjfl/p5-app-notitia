@@ -6,10 +6,10 @@
 <section class="standard-section">
 [%    IF !page.off_grid %]<div class="grid">[% END -%]
 [%    IF page.template.0 && page.template.0 != 'none' %]
-[%    path = 'hyde/' _ page.template.0 _ '-mobile.tt'; INCLUDE $path -%]
+[%    path = page.template.0 _ '-mobile.tt'; INCLUDE $path -%]
 [%    END -%]
 [%    IF page.template.1 %]
-[%       path = 'custom/' _ page.template.1 _ '.tt'; INCLUDE $path -%]
+[%       path = page.template.1 _ '.tt'; INCLUDE $path -%]
 [%    ELSE -%]
       <div class="unit four-fifths">
          <article>
@@ -21,7 +21,7 @@
       </div>
 [%    END -%]
 [%    IF page.template.0 && page.template.0 != 'none' %]
-[%    path = 'hyde/' _ page.template.0 _ '.tt'; INCLUDE $path -%]
+[%    path = page.template.0 _ '.tt'; INCLUDE $path -%]
 [%    END -%]
       <div class="clear"></div>
 [%    IF !page.off_grid %]</div>[% END -%]

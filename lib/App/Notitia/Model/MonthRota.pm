@@ -267,7 +267,7 @@ sub month_rota : Role(any) {
                       max_slots => $max_slots,
                       name      => $rota_name,
                       rows      => [] },
-      template   => [ 'menu', 'month-table' ],
+      template   => [ '/menu', 'custom/month-table' ],
       title      => $_month_rota_title->( $req, $rota_name, $rota_dt ), };
    my $first     =  $self->$_first_day_of_month( $req, $rota_dt );
    my $opts      =  {
