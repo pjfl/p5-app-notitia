@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Spreadsheet complete prior to squidging
           - Displays vehicle selection on spreadsheet
           - Displays vehicle requests on spreadsheet
           - Updates vehicle assignments from spreadsheet

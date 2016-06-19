@@ -93,7 +93,7 @@ my $_add_vreq_tip = sub {
 };
 
 my $_alloc_cell_headers = sub {
-   my $req = shift; my @headings = qw( Shift Bike R Name BR C4 );
+   my $req = shift; my @headings = qw( Shift Vehicle R Name C4 );
 
    return [ map { { value => $_ } } @headings  ];
 };
@@ -158,16 +158,18 @@ my $_vehicle_list = sub {
 my $_vehicle_select_cell = sub {
    my ($page, $vehicles, $form_name, $href, $action, $vrn) = @_;
 
+   my $disabled = $form_name eq 'disabled' ? TRUE : FALSE;
    my $form = blank_form $form_name, $href, { class => 'align-center' };
    my $jsid = "vehicle-${form_name}";
 
    push @{ $page->{literal_js} //= [] }, js_submit_config
       $jsid, 'change', 'submitForm', [ $action, $form_name ];
    p_select $form, 'vehicle', $_vehicle_list->( $vehicles, $vrn ), {
-      class => "spreadsheet-select submit", id => $jsid, label => NUL };
+      class => "spreadsheet-select submit", disabled => $disabled,
+      id => $jsid, label => NUL };
    p_hidden $form, 'vehicle_original', $vrn;
 
-   return { class => 'spreadsheet-fixed-vehicle', value => $form };
+   return { class => 'spreadsheet-fixed-select', value => $form };
 };
 
 my $_alloc_cell_slot_row = sub {
@@ -193,15 +195,12 @@ my $_alloc_cell_slot_row = sub {
       p_cell $row, $_vehicle_select_cell->
          ( $page, $bikes, $dt_key, $href, 'assign_vehicle', $vrn );
    }
-   else { p_cell $row, { class => 'spreadsheet-fixed-vehicle', value => NUL } }
+   else { p_cell $row, { class => 'spreadsheet-fixed-select', value => NUL } }
 
    p_cell $row, { class => 'narrow align-center',
                   value => $operator->id ? $operator->region : NUL };
-   p_cell $row, { class => 'spreadsheet-fixed-operator', style => $style,
+   p_cell $row, { class => 'spreadsheet-fixed-cell', style => $style,
                   value => $operator->id ? $operator->label : 'Vacant' };
-   p_cell $row, { class => 'narrow align-center',
-                  value => $slot->bike_requested ? 'Y'
-                         : $operator->id         ? 'N' : NUL };
    p_cell $row, { class => 'narrow align-center',
                   value => $_operators_vehicle->( $slot, $cache ) };
    return $row;
@@ -221,8 +220,12 @@ my $_alloc_key_row = sub {
                   value => $keeper ? $keeper->region : NUL };
    p_cell $row, { style => $style,
                   value => $keeper ? $keeper->label : NUL };
-   p_cell $row, { class => 'narrow',
-                  value => $keeper ? $keeper->location : NUL };
+
+   my $location = $keeper ? $keeper->location : NUL;
+
+   $location and $location .= ' ('.$keeper->outer_postcode.')';
+
+   p_cell $row, { value => $location };
 
    return $row;
 };
@@ -253,49 +256,74 @@ my $_alloc_table_headers = sub {
    return [ map { $_alloc_table_label->( $req, $date, $_ ) } 0 .. 6 ];
 };
 
+my $_alloc_cell_add_owner = sub {
+   my ($row, $event, $style) = @_;
+
+   p_cell $row, { class => 'align-center', value => $event->owner->region };
+   p_cell $row, { class => 'spreadsheet-fixed-cell',
+                  style => $style, value => $event->owner->label };
+   p_cell $row, { value => NUL };
+   return;
+};
+
 my $_alloc_cell_event_row = sub {
-   my ($req, $page, $data, $tuple) = @_;
+   my ($req, $page, $data, $count, $tuple) = @_;
 
-   my $row = []; my $event = $tuple->[ 0 ]; my $bike_req = FALSE;
+   my $event = $tuple->[ 0 ]; my $style;
 
-   my $cell = p_cell $row, { class => 'align-center' }; my $style;
+   my $href = uri_for_action $req, 'asset/vehicle', [ $event->uri ];
+
+   my $row = []; my $cell = p_cell $row, { class => 'align-center' };
+
+   my $id = $event->uri; blessed $tuple->[ 1 ] or $id = "request-${id}";
 
    p_span $cell, '&dagger;', {
-      class => 'table-cell-help server tips', id => $event->uri,
+      class => 'table-cell-help server tips', id => $id,
       title => locm $req, 'Event Information' };
 
    if (blessed $tuple->[ 1 ]) {
       my $vehicle = $tuple->[ 1 ];
-
-      $vehicle->colour and $style = 'background-color: '.$vehicle->colour.';';
-      $_add_event_tip->( $req, $page, $event );
-      $vehicle->type eq 'bike' and $bike_req = TRUE;
-
       my $vehicles = $data->{vehicles}->{ $vehicle->type };
-      my $args = [];
-      my $href = uri_for_action $req, 'asset/vehicle', $args;
-      my $vrn  = $vehicle->vrn;
+      my $vrn = $vehicle->vrn;
+      my $form_name = $event->uri."-${vrn}";
 
       p_cell $row, $_vehicle_select_cell->
-         ( $page, $vehicles, $vrn, $href, 'assign_vehicle', $vrn );
+         ( $page, $vehicles, $form_name, $href, 'assign_vehicle', $vrn );
+      $_add_event_tip->( $req, $page, $event );
+      $vehicle->colour and $style = 'background-color: '.$vehicle->colour.';';
    }
    else {
-      $_add_vreq_tip->( $req, $page, $event );
-      $tuple->[ 1 ] eq 'bike' and $bike_req = TRUE;
-
-      my $vehicles = $data->{vehicles}->{ $tuple->[ 1 ] };
-      my $args = [];
-      my $href = uri_for_action $req, 'asset/vehicle', $args;
+      my $type = $tuple->[ 1 ];
+      my $vehicles = $data->{vehicles}->{ $type };
+      my $form_name = $event->uri."-${type}-${count}";
 
       p_cell $row, $_vehicle_select_cell->
-         ( $page, $vehicles, 'form_name', $href, 'assign_vehicle' );
+         ( $page, $vehicles, $form_name, $href, 'assign_vehicle' );
+      $_add_vreq_tip->( $req, $page, $event );
    }
 
-   p_cell $row, { class => 'align-center', value => $event->owner->region };
-   p_cell $row, { style => $style, value => $event->owner->label };
-   p_cell $row, { class => 'align-center', value => $bike_req ? 'Y' : 'N' };
-   p_cell $row, { value => NUL };
+   $_alloc_cell_add_owner->( $row, $event, $style );
 
+   return $row;
+};
+
+my $_alloc_cell_vevent_row = sub {
+   my ($req, $page, $data, $vevent) = @_; my $style = NUL;
+
+   my $vehicle = $vevent->vehicle; $vehicle->colour
+      and $style = 'background-color: '.$vehicle->colour.';';
+
+   my $row = []; my $cell = p_cell $row, { class => 'align-center' };
+
+   p_span $cell, '&dagger;', {
+      class => 'table-cell-help server tips', id => $vevent->uri,
+      title => locm $req, 'Vehicle Event Information' };
+
+   p_cell $row, $_vehicle_select_cell->
+      ( $page, [ $vehicle ], 'disabled', NUL, NUL, $vehicle->vrn );
+
+   $_alloc_cell_add_owner->( $row, $vevent, $style );
+   $_add_v_event_tip->( $req, $page, $vevent );
    return $row;
 };
 
@@ -310,6 +338,7 @@ my $_alloc_cell = sub {
    my $table = blank_form {
       class => 'smaller-table embeded', type => 'table' };
    my $dt = $rota_dt->clone->add( days => $cno );
+   my $count = 0;
 
    $table->{headers} = $_alloc_cell_headers->( $req );
 
@@ -324,7 +353,12 @@ my $_alloc_cell = sub {
    }
 
    for my $tuple (@{ $data->{events}->{ $_local_dt->( $dt )->ymd } // [] }) {
-      p_row $table, $_alloc_cell_event_row->( $req, $page, $data, $tuple );
+      p_row $table, $_alloc_cell_event_row->
+         ( $req, $page, $data, $count++, $tuple );
+   }
+
+   for my $vevent (@{ $data->{vevents}->{ $_local_dt->( $dt )->ymd } // [] }) {
+      p_row $table, $_alloc_cell_vevent_row->( $req, $page, $data, $vevent );
    }
 
    return { class => 'embeded', value => $table };
@@ -470,6 +504,22 @@ my $_right_shift = sub {
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
 };
 
+my $_search_for_vehicle_events = sub {
+   my ($self, $opts) = @_; my $vevents = {}; $opts = { %{ $opts // {} } };
+
+   my $event_rs = $self->schema->resultset( 'Event' );
+
+   $opts->{prefetch} //= [ 'end_rota', 'owner', 'start_rota', 'vehicle' ];
+
+   for my $vevent ($event_rs->search_for_vehicle_events( $opts )->all) {
+      my $k = $_local_dt->( $vevent->start_date )->ymd;
+
+      push @{ $vevents->{ $k } //= [] }, $vevent;
+   }
+
+   return $vevents;
+};
+
 my $_search_for_vehicles = sub {
    my $self = shift; my $vehicles = {};
 
@@ -606,7 +656,9 @@ sub alloc_table : Role(rota_manager) {
    my $vehicles = $self->$_search_for_vehicles();
    my $events = $self->$_search_for_events( $opts );
    my $slots = $self->$_search_for_slots( $opts );
-   my $data = { vehicles => $vehicles, events => $events, slots => $slots };
+   my $vevents = $self->$_search_for_vehicle_events( $opts );
+   my $data = { vehicles => $vehicles, events => $events, slots => $slots,
+                vevents => $vevents };
    my $page = $stash->{page};
    my $row = p_row $table;
    my $v_cache = {};

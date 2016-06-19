@@ -226,8 +226,9 @@ footer {
 }
 .pathname, .standard-field { min-width: 300px; }
 .pathname[disabled], .narrow-field[disabled], .single-character[disabled],
-.single-digit[disabled], .smallint-field[disabled], .standard-field[disabled] {
-   background-color: @subtle;
+.single-digit[disabled], .smallint-field[disabled], .spreadsheet-select,
+.standard-field[disabled] {
+   background-color: @subtle; color: @darker;
 }
 .prev-rota:before { content: '\2039'; left: 10px; }
 .prev-rota, .prev-rota:hover { margin-left: 10px; padding-left: 30px; }
@@ -238,15 +239,19 @@ footer {
 .smallint-field { min-width: 150px; }
 .spreadsheet { overflow-x: scroll; }
 .spreadsheet-heading { max-width: 978px; margin: 0 auto -40px auto; }
-.spreadsheet-fixed-vehicle, .spreadsheet-fixed-operator {
+.spreadsheet-fixed-cell, .spreadsheet-fixed-select {
    overflow: hidden; padding-bottom: 0; padding-top: 0;
 }
-.spreadsheet-fixed-vehicle { max-width: 100px; min-width: 100px; }
-.spreadsheet-fixed-operator { max-width: 120px; min-width: 120px; }
+.spreadsheet-fixed-cell { max-width: 120px; min-width: 120px; }
+.spreadsheet-fixed-select { max-width: 100px; min-width: 100px; }
 .spreadsheet-key-table {
    max-width: 978px; margin: -20px auto 0 auto; padding: 0 100px;
 }
-.spreadsheet-select { max-width: 90px; min-width: 90px; color: black; }
+.spreadsheet-select {
+   background-color: #fff; border: 2px inset; .border-radius;
+   .box-sizing; color: @darker; max-width: 90px; margin: 0;
+   min-width: 90px; padding: 3.25px 3.25px; vertical-align: middle;
+}
 .standard-field[type=date], .narrow-field[type=time],
 .standard-field[type=time] {
    padding-bottom: 0; padding-top: 0;

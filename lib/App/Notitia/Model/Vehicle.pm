@@ -301,11 +301,10 @@ my $_bind_vehicle_fields = sub {
 
 # Private methods
 my $_toggle_event_assignment = sub {
-   my ($self, $req, $action) = @_;
+   my ($self, $req, $vrn, $action) = @_;
 
    my $schema = $self->schema;
    my $uri = $req->uri_params->( 0 );
-   my $vrn = $req->body_params->( 'vehicle' );
    my $vehicle = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
    my $method = $action eq 'assign' ? 'assign_to_event' : 'unassign_from_event';
 
@@ -319,18 +318,12 @@ my $_toggle_event_assignment = sub {
 };
 
 my $_toggle_slot_assignment = sub {
-   my ($self, $req, $action) = @_;
+   my ($self, $req, $vrn, $action) = @_;
 
    my $params = $req->uri_params;
    my $rota_name = $params->( 0 );
    my $rota_date = $params->( 1 );
    my $slot_name = $params->( 2 );
-   my $vrn = $req->body_params->( 'vehicle', { optional => TRUE } );
-
-   unless ($vrn) {
-      $vrn = $req->body_params->( 'vehicle_original' ); $action = 'unassign';
-   }
-
    my $schema = $self->schema;
    my $vehicle = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
    my $method = "${action}_slot";
@@ -354,12 +347,18 @@ my $_toggle_assignment = sub {
 
    my $params = $req->uri_params; my $rota_name = $params->( 0 ); my $r;
 
+   my $vrn = $req->body_params->( 'vehicle', { optional => TRUE } );
+
+   unless ($vrn) {
+      $vrn = $req->body_params->( 'vehicle_original' ); $action = 'unassign';
+   }
+
    try   { $self->schema->resultset( 'Type' )->find_rota_by( $rota_name ) }
-   catch { $r = $self->$_toggle_event_assignment( $req, $action ) };
+   catch { $r = $self->$_toggle_event_assignment( $req, $vrn, $action ) };
 
    $r and return $r;
 
-   return $self->$_toggle_slot_assignment( $req, $action );
+   return $self->$_toggle_slot_assignment( $req, $vrn, $action );
 };
 
 my $_update_vehicle_from_request = sub {
@@ -585,6 +584,7 @@ sub request_info : Role(rota_manager) {
 
    my ($start, $end) = display_duration $req, $event;
 
+   p_tag $form, 'p', $event->name;
    p_tag $form, 'p', $start; p_tag $form, 'p', $end;
 
    for my $tuple ($vreq_rs->search_for_request_info( { event_id => $id } )) {
