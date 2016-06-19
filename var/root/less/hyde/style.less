@@ -239,18 +239,20 @@ footer {
 .smallint-field { min-width: 150px; }
 .spreadsheet { overflow-x: scroll; }
 .spreadsheet-heading { max-width: 978px; margin: 0 auto -40px auto; }
-.spreadsheet-fixed-cell, .spreadsheet-fixed-select {
+.spreadsheet-fixed-cell, .spreadsheet-fixed-form, .spreadsheet-fixed-select {
    overflow: hidden; padding-bottom: 0; padding-top: 0;
 }
-.spreadsheet-fixed-cell { max-width: 120px; min-width: 120px; }
-.spreadsheet-fixed-select { max-width: 100px; min-width: 100px; }
+.spreadsheet-fixed-cell { max-width: 100px; min-width: 100px; }
+.spreadsheet-fixed-select {
+   max-width: 90px; min-width: 90px; padding: 0 !important;
+}
 .spreadsheet-key-table {
-   max-width: 978px; margin: -20px auto 0 auto; padding: 0 100px;
+   max-width: 978px; margin: -10px auto 0 auto; padding: 0 100px;
 }
 .spreadsheet-select {
    background-color: #fff; border: 2px inset; .border-radius;
-   .box-sizing; color: @darker; max-width: 90px; margin: 0;
-   min-width: 90px; padding: 3.25px 3.25px; vertical-align: middle;
+   .box-sizing; color: @darker; font-size: 12px; max-width: 90px; margin: 0;
+   min-width: 90px; padding: 3px 3px; vertical-align: middle;
 }
 .standard-field[type=date], .narrow-field[type=time],
 .standard-field[type=time] {
@@ -682,7 +684,8 @@ h5, h6 {
 }
 hr.subtle { display: none; }
 /* Tables */
-.key-table, .smaller-table, .spreadsheet-table, .standard-table, table.embeded {
+.embeded-spreadsheet-table, .key-table, .smaller-table, .spreadsheet-table,
+.standard-table, table.embeded {
    background-color: #555; .border-radius;
    .box-shadow; width: 100%;
    thead {
@@ -723,8 +726,12 @@ hr.subtle { display: none; }
    code.flag, th .flag, code.output, th .output { color: #049DCE; }
    code.option, code.flag, code.filter, code.output { margin-bottom: 2px; }
 }
-table.embeded { margin: 0; }
-table.embeded td { white-space: nowrap; }
+.embeded-spreadsheet-table {
+   font-size: 0.85em; margin: 0;
+   tbody td { padding: 0px 3px; white-space: nowrap; }
+   tbody tr { line-height: 32px; }
+   th { padding: 0.5em 5px; }
+}
 .no-header-wrap th { white-space: nowrap; }
 .smaller-table {
    font-size: 0.85em;
@@ -734,7 +741,8 @@ table.embeded td { white-space: nowrap; }
 }
 .spreadsheet-table td.embeded { vertical-align: top; }
 .spreadsheet-table, .standard-table { margin: 0.5em 0; }
-
+table.embeded { margin: 0; }
+table.embeded td { white-space: nowrap; }
 /* Note types */
 .info {
    background-color: #0389aa;

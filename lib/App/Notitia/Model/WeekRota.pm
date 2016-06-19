@@ -159,7 +159,8 @@ my $_vehicle_select_cell = sub {
    my ($page, $vehicles, $form_name, $href, $action, $vrn) = @_;
 
    my $disabled = $form_name eq 'disabled' ? TRUE : FALSE;
-   my $form = blank_form $form_name, $href, { class => 'align-center' };
+   my $form = blank_form $form_name, $href, {
+      class => 'spreadsheet-fixed-form align-center' };
    my $jsid = "vehicle-${form_name}";
 
    push @{ $page->{literal_js} //= [] }, js_submit_config
@@ -336,7 +337,7 @@ my $_alloc_cell = sub {
    my $dr_max = $limits->[ slot_limit_index 'day', 'rider' ];
    my $nr_max = $limits->[ slot_limit_index 'night', 'rider' ];
    my $table = blank_form {
-      class => 'smaller-table embeded', type => 'table' };
+      class => 'embeded-spreadsheet-table', type => 'table' };
    my $dt = $rota_dt->clone->add( days => $cno );
    my $count = 0;
 

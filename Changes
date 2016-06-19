@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Spreadsheet show 5.5 days after compression
           - Spreadsheet complete prior to squidging
           - Displays vehicle selection on spreadsheet
           - Displays vehicle requests on spreadsheet
