@@ -179,7 +179,7 @@ my $_alloc_cell_slot_row = sub {
    my $local_ymd = $_local_dt->( $dt )->ymd;
    my $dt_key = "${local_ymd}_${slot_key}";
    my $slot = $data->{slots}->{ $dt_key }; $slot or $slot = Class::Null->new;
-   my $style; $slot->vehicle and $slot->vehicle->colour
+   my $style = NUL; $slot->vehicle and $slot->vehicle->colour
       and $style = 'background-color: '.$slot->vehicle->colour.';';
    my $operator = $slot->operator;
    my $row = [];
@@ -212,7 +212,8 @@ my $_alloc_key_row = sub {
 
    my $keeper = $assets->find_last_keeper( $req, $vehicle, $now );
    my $details = $vehicle->name.', '.$vehicle->notes.', '.$vehicle->vrn;
-   my $style = 'background-color: '.$vehicle->colour.';';
+   my $style = NUL; $vehicle->colour
+      and $style = 'background-color: '.$vehicle->colour.';';
    my $row = [];
 
    p_cell $row, { value => ucfirst $details };
@@ -270,7 +271,7 @@ my $_alloc_cell_add_owner = sub {
 my $_alloc_cell_event_row = sub {
    my ($req, $page, $data, $count, $tuple) = @_;
 
-   my $event = $tuple->[ 0 ]; my $style;
+   my $event = $tuple->[ 0 ]; my $style = NUL;
 
    my $href = uri_for_action $req, 'asset/vehicle', [ $event->uri ];
 
@@ -389,7 +390,10 @@ my $_week_rota_assignments = sub {
 
    my $rota_name = $page->{rota}->{name};
    my $class = 'narrow week-rota submit server tips';
-   my $row = [ { class => 'narrow', value => $tuple->[ 0 ] } ];
+   my $vehicle = $tuple->[ 1 ];
+   my $style = NUL; $vehicle->colour
+      and $style = 'background-color: '.$vehicle->colour.';';
+   my $row = [ { class => 'narrow', style => $style, value => $tuple->[ 0 ] } ];
 
    for my $cno (0 .. 6) {
       my $date  = $rota_dt->clone->add( days => $cno );
@@ -405,7 +409,7 @@ my $_week_rota_assignments = sub {
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
          map  { my $id = $_local_dt->( $date )->ymd.'_'.$_->key;
                 $_add_slot_tip->( $req, $page, $id ); [ $id, $_ ] }
-         grep { $_->vehicle->name eq $tuple->[ 1 ]->name }
+         grep { $_->vehicle->vrn eq $vehicle->vrn }
          grep { $_->bike_requested and $_->vehicle }
              @{ $cache->[ $cno ] };
 
@@ -419,7 +423,7 @@ my $_week_rota_assignments = sub {
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
          map  { $_add_event_tip->( $req, $page, $_->event );
                 [ $_->event->uri, $_ ] }
-         grep { $_->vehicle->vrn eq $tuple->[ 1 ]->vrn }
+         grep { $_->vehicle->vrn eq $vehicle->vrn }
          grep { $_->event->start_date eq $date } @{ $tports };
 
       push @{ $table->{rows} },
@@ -431,7 +435,7 @@ my $_week_rota_assignments = sub {
                            [ $_->[ 1 ]->vehicle->vrn, $_->[ 0 ] ];
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
          map  { $_add_v_event_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
-         grep { $_->vehicle->vrn eq $tuple->[ 1 ]->vrn }
+         grep { $_->vehicle->vrn eq $vehicle->vrn }
          grep { $_->start_date eq $date } @{ $events };
 
       push @{ $row }, { class => 'narrow embeded', value => $table };

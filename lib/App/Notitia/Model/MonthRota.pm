@@ -261,7 +261,8 @@ sub month_rota : Role(any) {
       fields     => { nav => {
          next    => $_next_month->( $req, $actionp, $rota_name, $rota_dt ),
          prev    => $_prev_month->( $req, $actionp, $rota_name, $rota_dt ) }, },
-      rota       => { headers   => $_month_rota_headers->( $req ),
+      rota       => { #caption   => locm( $req, 'month_rota_table_caption' ),
+                      headers   => $_month_rota_headers->( $req ),
                       lcm       => lcm_for( 4, @{ $max_slots } ),
                       max_slots => $max_slots,
                       name      => $rota_name,

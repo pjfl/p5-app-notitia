@@ -123,7 +123,7 @@ sub search_for_events {
    $vrn  and not is_member 'vehicle', $prefetch
          and push @{ $prefetch }, 'vehicle';
 
-   my $fields = delete $opts->{fields} // {}; delete $opts->{rota_type};
+   my $fields = delete $opts->{fields}; delete $opts->{rota_type};
 
    return $self->search
       ( $where, { columns  => [ 'end_time', 'name', 'start_time', 'uri' ],

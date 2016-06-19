@@ -19,7 +19,7 @@ sub search_for_assigned_vehicles {
    exists $opts->{vehicle}
       and $where->{ 'vehicle.vrn' } = delete $opts->{vehicle};
    set_rota_date( $parser, $where, 'start_rota.date', $opts );
-   $opts->{order_by} //= { -desc => 'date' };
+   $opts->{order_by} //= { -desc => 'start_rota.date' };
    delete $opts->{event_type}; delete $opts->{rota_type};
 
    return $self->search( $where, { prefetch => $prefetch, %{ $opts } } );

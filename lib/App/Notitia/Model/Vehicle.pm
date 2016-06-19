@@ -553,12 +553,12 @@ sub find_last_keeper {
    my ($self, $req, $vehicle, $now) = @_; my $keeper;
 
    my $tommorrow = $now->clone->truncate( to => 'day' )->add( days => 1 );
-   my $opts      = { event_type => 'vehicle',
-                     before     => $tommorrow,
-                     vehicle    => $vehicle->vrn, };
+   my $opts      = { before     => $tommorrow,
+                     event_type => 'vehicle',
+                     page       => 1,
+                     vehicle    => $vehicle->vrn,
+                     rows       => 10, };
 
-   # TODO: This cannot call vehicle_events with before tommorrow
-   # But it can if it gets the ordering right and does a paged query
    for my $tuple (@{ $self->$_vehicle_events( $req, $opts ) }) {
       my ($start_datetime) = $tuple->[ 0 ]->duration;
 

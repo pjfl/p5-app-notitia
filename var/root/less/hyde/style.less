@@ -688,7 +688,7 @@ hr.subtle { display: none; }
 .standard-table, table.embeded {
    background-color: #555; .border-radius;
    .box-shadow; width: 100%;
-   thead {
+   caption, thead {
       background-color: #3a3a3a;
       background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzNhM2EzYSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxZTFlMWUiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
       background-image: -webkit-gradient(linear, left top, left bottom, from(#3a3a3a), to(#1e1e1e));
@@ -696,29 +696,28 @@ hr.subtle { display: none; }
       background-image: -moz-linear-gradient(top, #3a3a3a 0%, #1e1e1e 100%);
       background-image: -o-linear-gradient(top, #3a3a3a 0%, #1e1e1e 100%);
       background-image: linear-gradient(to bottom, #3a3a3a 0%,#1e1e1e 100%);
-      .border-top-left-radius; .border-top-right-radius;
       color: @brighter;
       filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#3a3a3a', endColorstr='#1e1e1e',GradientType=0 );
       th {
-         .box-shadow;
-         position: relative;
+         .box-shadow; position: relative;
          &:first-child { .border-top-left-radius; }
          &:last-child { .border-top-right-radius; }
       }
    }
-   td { padding: .5em .75em; }
-   td p { margin: 0; }
-   th {
+   thead { .border-top-left-radius; .border-top-right-radius; }
+   caption, th {
       color: @heavy; font-size: 10px; padding: .5em .75em;
       text-shadow: 0 -1px 0 rgba(0,0,0,.9); text-transform: uppercase;
    }
+   caption {
+      .border-bottom-left-radius; .border-bottom-right-radius;
+      caption-side: bottom; margin-left: 0; margin-right: 0; margin-top: 0;
+   }
    tbody td {
-      border-top: 1px solid #747474;
-      border-top: 1px solid rgba(0,0,0,.1);
-      .box-shadow;
-      .table-background;
+      border-top: 1px solid #747474; border-top: 1px solid rgba(0,0,0,.1);
+      .box-shadow; .table-background; padding: .5em .75em;
       p {
-         font-size: 12px;
+         font-size: 12px; margin: 0;
          code { font-size: 12px; }
       }
    }

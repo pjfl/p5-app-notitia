@@ -639,6 +639,10 @@ msgstr "Sat"
 msgid "month_rota_heading_6"
 msgstr "Sun"
 
+msgid "month_rota_table_caption"
+msgstr "Blank unclaimed | C - Claimed no vehicle | R - Vehicle requested | "
+       "V - Vehicle assigned"
+
 msgid "month_rota_title"
 msgstr "[_1] rota for [_2]"
 

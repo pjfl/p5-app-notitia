@@ -67,7 +67,7 @@ sub list_vehicles {
 sub search_for_vehicles {
    my ($self, $opts) = @_;
 
-   $opts = { columns  => [ 'id', 'name', 'vrn' ], order_by => 'vrn',
+   $opts = { columns  => [ 'colour', 'id', 'name', 'vrn' ], order_by => 'vrn',
              prefetch => [ 'type', 'owner' ], %{ $opts } };
    delete $opts->{fields};
 
