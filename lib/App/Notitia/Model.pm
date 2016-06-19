@@ -71,7 +71,7 @@ sub exception_handler {
       $redirect and return $redirect;
    my $name = $req->session->first_name || $req->username || 'unknown';
    my $form = blank_form { type => 'list' };
-   my $page = { forms => [ $form ], template => [],
+   my $page = { forms => [ $form ], template => [ 'none', NUL ],
                 title => locm $req, 'Exception Handler', $name };
    my $stash = $self->get_stash( $req, $page );
 

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes missing exception page
           - Adds skin support for custom templates
           - Eliminates exception template
           - Fixes documentation template moving
