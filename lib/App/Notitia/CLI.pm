@@ -180,6 +180,10 @@ sub make_skin : method {
       $arc->add_files( $path->abs2rel( $conf->appldir ) );
    }
 
+   for my $path ($conf->root->catdir( $conf->images, $skin )->all_files) {
+      $arc->add_files( $path->abs2rel( $conf->appldir ) );
+   }
+
    my $path = $conf->root->catfile( $conf->js, "${skin}.js" );
 
    $arc->add_files( $path->abs2rel( $conf->appldir ) );
