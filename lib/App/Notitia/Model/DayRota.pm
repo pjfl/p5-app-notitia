@@ -3,7 +3,8 @@ package App::Notitia::Model::DayRota;
 use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( C_DIALOG FALSE NUL SPC SHIFT_TYPE_ENUM TRUE );
+use App::Notitia::Constants qw( C_DIALOG FALSE NUL SPC
+                                SHIFT_TYPE_ENUM TILDE TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_button
                                 p_checkbox p_select );
 use App::Notitia::Util      qw( assign_link dialog_anchor js_submit_config
@@ -171,17 +172,12 @@ my $_summary_link = sub {
 
    $opts or return { colspan => $span, value => '&nbsp;' x 2 };
 
-   my $value = NUL; my $class = 'vehicle-not-needed';
+   my $class = 'vehicle-not-needed'; my $value = NUL;
 
    if    ($opts->{vehicle    }) { $value = 'V'; $class = 'vehicle-assigned'  }
-   elsif ($opts->{vehicle_req}) { $value = 'V'; $class = 'vehicle-requested' }
+   elsif ($opts->{vehicle_req}) { $value = 'R'; $class = 'vehicle-requested' }
 
-   my $title = locm $req, (ucfirst $type).' Assignment';
-
-   $class .= ' server tips';
-
-   return { class => $class, colspan => $span, name => $id,
-            title => $title, value   => $value };
+   return { class => $class, colspan => $span, name => $id, value => $value };
 };
 
 my $_vreq_state = sub {
@@ -198,7 +194,8 @@ my $_vehicle_request_link = sub {
 
    my $name     = 'view-vehicle-requests';
    my $href     = uri_for_action $req, 'asset/request_vehicle', [ $event->uri ];
-   my $tip      = locm $req, 'vehicle_request_link', $event->label;
+   my $hint     = locm $req, 'Event Assignment';
+   my $tip      = locm $req, 'vehicle_request_tip', $event->label;
    my $tport_rs = $schema->resultset( 'Transport' );
    my $assigned = $tport_rs->assigned_vehicle_count( $event->id );
    my $vreq_rs  = $schema->resultset( 'VehicleRequest' );
@@ -206,10 +203,13 @@ my $_vehicle_request_link = sub {
    my $opts     = $vreqs->count ? $_vreq_state->( $assigned, $vreqs ) : FALSE;
    my $link     = $_summary_link->( $req, 'event', 1, $name, $opts );
 
-   $link->{class} .= ' small-slot';
-   $link->{value}  = { hint  => locm( $req, 'Hint' ), href => $href,
-                       name  => $name, tip => $tip,
-                       type  => 'link', value => $link->{value}, };
+   $link->{title} = $hint.SPC.TILDE.SPC.$tip;
+   $link->{value} = { class => $link->{class},
+                      href  => $href,
+                      name  => $name,
+                      type  => 'link',
+                      value => delete $link->{value}, };
+   $link->{class} = 'small-slot '.$link->{class}.' tips';
 
    return $link;
 };

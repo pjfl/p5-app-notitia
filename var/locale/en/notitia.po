@@ -1135,6 +1135,9 @@ msgstr "Vehicle 3"
 msgid "vehicle_request_heading_5"
 msgstr "Vehicle 4"
 
+msgid "vehicle_request_tip"
+msgstr "View the vehicle requests for this event"
+
 msgid "vehicle_service_heading"
 msgstr "Service Vehicles"
 

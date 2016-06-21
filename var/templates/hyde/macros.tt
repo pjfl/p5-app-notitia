@@ -106,9 +106,9 @@
             id="[% id %]"[% END %]>[% content %]</a>
 [% END -%]
 [% MACRO LinkWithTips( href, class, text, title, tip, id, con_class ) BLOCK -%]
-      <span class="link-help [% con_class %] tips"
-           title="[% title _ ' ~ ' _ tip %]">[% Link( href, class, text, id ) %]
-      </span>
+[%    IF tip %]<span class="link-help [% con_class %] tips"
+           title="[% title _ ' ~ ' _ tip %]">[% END -%]
+[%       Link( href, class, text, id ) %][% IF tip %]</span>[% END %]
 [% END -%]
 [% MACRO List( f ) BLOCK -%]
 [%    IF reference( f.separator ) == 'HASH'; sep = Dispatch( f.separator ) %]

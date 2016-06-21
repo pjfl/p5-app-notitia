@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds vehicle colours to month and day rotas
           - Removes primary and secondary nav templates
           - Moves image assets to skin directory
           - Fixes missing exception page

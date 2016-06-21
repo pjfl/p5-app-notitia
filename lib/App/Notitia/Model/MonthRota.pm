@@ -130,17 +130,21 @@ my $_summary_link = sub {
 
    $opts or return { colspan => $span, value => '&nbsp;' x 2 };
 
-   my $value = NUL; my $class = 'vehicle-not-needed';
+   my $class = 'vehicle-not-needed';
+   my $value = $opts->{operator}->id ? 'C' : NUL;
 
    if    ($opts->{vehicle    }) { $value = 'V'; $class = 'vehicle-assigned'  }
-   elsif ($opts->{vehicle_req}) { $value = 'V'; $class = 'vehicle-requested' }
+   elsif ($opts->{vehicle_req}) { $value = 'R'; $class = 'vehicle-requested' }
 
    my $title = locm $req, (ucfirst $type).' Assignment';
 
    $class .= ' server tips';
 
-   return { class => $class, colspan => $span, name => $id,
-            title => $title, value   => $value };
+   my $style = NUL; $opts->{vehicle} and $opts->{vehicle}->colour
+      and $style = 'background-color: '.$opts->{vehicle}->colour.';';
+
+   return { class => $class, colspan => $span,  name  => $id,
+            style => $style, title   => $title, value => $value };
 };
 
 my $_summary_cells = sub {
@@ -263,7 +267,7 @@ sub month_rota : Role(any) {
       fields     => { nav => {
          next    => $_next_month->( $req, $actionp, $rota_name, $rota_dt ),
          prev    => $_prev_month->( $req, $actionp, $rota_name, $rota_dt ) }, },
-      rota       => { #caption   => locm( $req, 'month_rota_table_caption' ),
+      rota       => { caption   => locm( $req, 'month_rota_table_caption' ),
                       headers   => $_month_rota_headers->( $req ),
                       lcm       => lcm_for( 4, @{ $max_slots } ),
                       max_slots => $max_slots,

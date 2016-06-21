@@ -163,9 +163,13 @@ my $_vehicle_link = sub {
       title   => loc( $req, (ucfirst $action).' Vehicle' ),
       useIcon => \1 } );
 
-   $value = (blessed $value) ? $value->slotref : $value;
-
-   return table_link( $req, "${action}_${name}", $value, $tip );
+   return { class => $opts->{class} // 'table-link windows',
+            hint  => loc( $req, 'Hint' ),
+            href  => HASH_CHAR,
+            name  => "${action}_${name}",
+            tip   => $tip,
+            type  => 'link',
+            value => (blessed $value) ? $value->slotref : $value, };
 };
 
 # Public functions
@@ -198,15 +202,20 @@ sub assign_link ($$$$) {
       $value = $_vehicle_link->( $req, $page, $args, $opts );
    }
    elsif ($state eq 'vehicle-requested') {
-      my $opts = { action => 'assign', name => $name, value => 'requested' };
+      my $opts = { action => 'assign',
+                   class => 'table-link vehicle-requested windows',
+                   name  => $name, value => 'requested' };
 
       $type and $opts->{type} = $type;
       $value = $_vehicle_link->( $req, $page, $args, $opts );
    }
 
+   my $style; $state eq 'vehicle-assigned' and $opts->{vehicle}->colour
+      and $style = 'background-color: '.$opts->{vehicle}->colour.';';
+
    my $class = "centre narrow ${state}";
 
-   return { value => $value, class => $class };
+   return { class => $class, style => $style, value => $value };
 }
 
 sub authenticated_only ($) {
@@ -862,13 +871,6 @@ sub stash_functions ($$$) {
    $dest->{uri_for       } = sub { $req->uri_for( @_ ), };
    $dest->{uri_for_action} = sub { uri_for_action( $req, @_ ), };
    return;
-}
-
-sub table_link ($$$$) {
-   return { class => 'table-link windows', hint  => loc( $_[ 0 ], 'Hint' ),
-            href  => HASH_CHAR,            name  => $_[ 1 ],
-            tip   => $_[ 3 ],              type  => 'link',
-            value => $_[ 2 ], };
 }
 
 sub time2int ($) {
