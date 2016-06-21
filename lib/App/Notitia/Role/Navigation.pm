@@ -152,13 +152,13 @@ sub application_logo {
    my ($self, $req) = @_;
 
    my $conf  =  $self->config;
-   my $href  =  $req->uri_for( $conf->images.'/logo-transparent.png' );
+   my $logo  =  $conf->logo;
+   my $href  =  $req->uri_for( $conf->images.'/'.$logo->[ 0 ] );
    my $image =  p_image {}, $conf->title.' Logo', $href, {
-      height => 99, width => 272 };
+      height => $logo->[ 2 ], width => $logo->[ 1 ] };
+   my $opts  =  { request => $req, args => [ $conf->title ], value => $image };
 
-   $href = uri_for_action $req, 'docs/index';
-
-   return f_link 'logo', $href, { request => $req, value => $image, };
+   return f_link 'logo', uri_for_action( $req, 'docs/index' ), $opts;
 }
 
 sub navigation_links {

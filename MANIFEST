@@ -110,7 +110,7 @@ var/less/hyde/style.less
 var/locale/en/notitia.po
 var/root/css/hyde-dark.css
 var/root/css/hyde-light.css
-var/root/img/favicon-32.ico
+var/root/img/favicon.ico
 var/root/img/hyde/article-footer.png
 var/root/img/hyde/dp-buttons.png
 var/root/img/hyde/dp-days.png
@@ -118,7 +118,7 @@ var/root/img/hyde/dp-frame.png
 var/root/img/hyde/dp-months.png
 var/root/img/hyde/dp-years.png
 var/root/img/hyde/icons.png
-var/root/img/logo-transparent.png
+var/root/img/logo.png
 var/root/js/hyde.js
 var/root/js/mooclasses.js
 var/share/App-Notitia-Schema-Schedule-0.3.187-MySQL.sql
@@ -139,7 +139,6 @@ var/templates/hyde/editor.tt
 var/templates/hyde/email_layout.tt
 var/templates/hyde/footer.tt
 var/templates/hyde/header.tt
-var/templates/hyde/index.tt
 var/templates/hyde/macros.tt
 var/templates/hyde/menu-mobile.tt
 var/templates/hyde/menu.tt

@@ -161,6 +161,9 @@ has 'links'           => is => 'lazy', isa => ArrayRef[HashRef],
 has 'load_factor'     => is => 'ro',   isa => NonZeroPositiveInt,
    default            => 14;
 
+has 'logo'            => is => 'ro',   isa => ArrayRef,
+   builder            => sub { [ 'logo.png', 272, 99 ] };
+
 has 'max_asset_size'  => is => 'ro',   isa => PositiveInt, default => 4_194_304;
 
 has 'max_messages'    => is => 'ro',   isa => NonZeroPositiveInt, default => 3;
@@ -531,6 +534,12 @@ key / value pair, the link name and it's URI
 =item C<load_factor>
 
 Defaults to 14. A non zero positive integer passed to the C<bcrypt> function
+
+=item C<logo>
+
+An array reference defining the attributes of the logo that appears on all
+pages. Contains file name, width and height.  Defaults to
+C<< logo.png, 272, 99 >>
 
 =item C<max_asset_size>
 

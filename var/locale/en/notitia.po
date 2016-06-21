@@ -522,6 +522,9 @@ msgstr "Login"
 msgid "login_title"
 msgstr "Please Login"
 
+msgid "logo_tip"
+msgstr "[_1] home page"
+
 msgid "m_advanced"
 msgstr "Advanced Motorcycle"
 

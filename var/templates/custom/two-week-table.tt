@@ -1,5 +1,5 @@
 [% PROCESS 'hyde/macros.tt' -%]
-<!-- Spreadsheet -->
+<!-- Two Week Table -->
 <h4 class="spreadsheet-heading">[% page.title %]</h4>
 <div class="operation-links left">
    <div class="left align-right">
