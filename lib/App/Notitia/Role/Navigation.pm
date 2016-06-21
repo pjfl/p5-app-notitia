@@ -3,8 +3,9 @@ package App::Notitia::Role::Navigation;
 use attributes ();
 use namespace::autoclean;
 
-use App::Notitia::Constants qw( FALSE SPC TRUE );
-use App::Notitia::Util      qw( locm to_dt uri_for_action );
+use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
+use App::Notitia::Form      qw( blank_form p_button p_item );
+use App::Notitia::Util      qw( locm make_tip to_dt uri_for_action );
 use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
 use DateTime                qw( );
@@ -27,14 +28,22 @@ my $nav_linkto = sub {
    my ($req, $opts, $actionp, @args) = @_; my $name = $opts->{name};
 
    my $depth = $opts->{depth} // 1;
-   my $label = locm $req, $opts->{label} // "${name}_link",
-                   @{ $opts->{label_args} // [] };
+   my $value = locm $req, $opts->{value} // "${name}_link",
+                   @{ $opts->{value_args} // [] };
    my $tip   = locm $req, $opts->{tip} // "${name}_tip",
                    @{ $opts->{tip_args} // [] };
-   my $uri   = uri_for_action $req, $actionp, @args;
+   my $href  = $actionp eq '#'
+             ? $actionp : uri_for_action $req, $actionp, @args;
 
-   return { depth => $depth, label => $label,
-            tip   => $tip,   type  => 'link', uri => $uri, };
+   return { class => $opts->{class} // NUL,
+            container_class => $opts->{container_class} // NUL,
+            depth => $depth,
+            hint  => locm( $req, 'Hint' ),
+            href  => $href,
+            name  => $name,
+            tip   => $tip,
+            type  => 'link',
+            value => $value, };
 };
 
 my $_week_link = sub {
@@ -44,9 +53,9 @@ my $_week_link = sub {
 
    my $args = [ $name, $date->ymd ];
    my $tip = 'Navigate to week commencing [_1]';
-   my $label = locm( $req, 'Week' ).SPC.$date->week_number;
+   my $value = locm( $req, 'Week' ).SPC.$date->week_number;
 
-   $opts = { label => $label,   name => 'wk'.$date->week_number,
+   $opts = { value => $value,   name => 'wk'.$date->week_number,
              tip   => $tip, tip_args => [ $date->dmy( '/' ) ], %{ $opts } };
    $params->{rota_date} = $date->ymd;
 
@@ -57,7 +66,7 @@ my $_year_link = sub {
    my ($req, $actionp, $name, $date) = @_;
 
    my $tip    = 'Navigate to [_1]';
-   my $opts   = { label => $date->year, name => $date->year,
+   my $opts   = { value => $date->year, name => $date->year,
                   tip   => $tip,    tip_args => [ $date->year ], };
    my $args   = [ $name, $date->ymd ];
    my $params = { rota_date => $date->ymd };
@@ -86,21 +95,26 @@ my $_allowed = sub {
 
 # Public methods
 sub admin_navigation_links {
-   my ($self, $req) = @_; my $now = DateTime->now;
+   my ($self, $req, $page) = @_; my $now = DateTime->now;
 
-   my $nav =
-      [ $nav_folder->( $req, 'events' ),
+   my $nav = { menu => { list => [] } }; my $list = $nav->{menu}->{list};
+
+   $nav->{primary} = $self->primary_navigation_links( $req, $page );
+   $nav->{secondary} = $self->secondary_navigation_links( $req, $page );
+
+   push @{ $list },
+        $nav_folder->( $req, 'events' ),
         $nav_linkto->( $req, { name => 'current_events' }, 'event/events', [],
                        after  => $now->clone->subtract( days => 1 )->ymd ),
         $nav_linkto->( $req, { name => 'previous_events' }, 'event/events', [],
                        before => $now->ymd ),
-        $nav_folder->( $req, 'people' ), ];
+        $nav_folder->( $req, 'people' );
 
-   $self->$_allowed( $req, 'person/contacts' ) and push @{ $nav },
+   $self->$_allowed( $req, 'person/contacts' ) and push @{ $list },
         $nav_linkto->( $req, { name => 'contacts_list' }, 'person/contacts', [],
                        status => 'current' );
 
-   push @{ $nav },
+   push @{ $list },
         $nav_linkto->( $req, { name => 'people_list' }, 'person/people', [] ),
         $nav_linkto->( $req, { name => 'current_people_list' }, 'person/people',
                        [], status => 'current' ),
@@ -114,7 +128,7 @@ sub admin_navigation_links {
                        [], role => 'fund_raiser', status => 'current' );
 
    if ($self->$_allowed( $req, 'admin/types' )) {
-      push @{ $nav },
+      push @{ $list },
         $nav_folder->( $req, 'types' ),
         $nav_linkto->( $req, { name => 'types_list' }, 'admin/types', [] ),
         $nav_linkto->( $req, { name => 'slot_roles_list' },
@@ -122,7 +136,7 @@ sub admin_navigation_links {
    }
 
    if ($self->$_allowed( $req, 'asset/vehicles' )) {
-      push @{ $nav },
+      push @{ $list },
         $nav_folder->( $req, 'vehicles' ),
         $nav_linkto->( $req, { name => 'vehicles_list' },
                        'asset/vehicles', [] ),
@@ -135,58 +149,150 @@ sub admin_navigation_links {
    return $nav;
 }
 
+sub primary_navigation_links {
+   my ($self, $req, $page) = @_;
+
+   my $nav = blank_form { type => 'unordered' };
+   my $location = $page->{location} // NUL;
+   my $class = $location eq 'documentation' ? 'current' : NUL;
+
+   p_item $nav, $nav_linkto->( $req, {
+      class => $class, tip => 'Documentation pages for the application',
+      value => 'Documentation', }, 'docs/index' );
+
+   $class = $location eq 'posts' ? 'current' : NUL;
+
+   p_item $nav, $nav_linkto->( $req, {
+      class => $class, tip => 'Posts about upcoming events',
+      value => 'Posts', }, 'posts/index' );
+
+   $class = $location eq 'schedule' ? 'current' : NUL;
+
+   p_item $nav, $nav_linkto->( $req, {
+      class => $class, tip => 'Scheduled rotas',
+      value => 'Rota', }, 'month/month_rota' );
+
+   $class = $location eq 'admin' ? 'current' : NUL;
+
+   $req->authenticated and
+      p_item $nav, $nav_linkto->( $req, {
+         class => $class, tip => 'admin_index_title',
+         value => 'Admin', }, 'person/people' );
+
+   return $nav;
+}
+
 sub rota_navigation_links {
-   my ($self, $req, $period, $name) = @_;
+   my ($self, $req, $page, $period, $name) = @_;
+
+   my $nav = { menu => { list => [] } }; my $list = $nav->{menu}->{list};
+
+   $nav->{primary} = $self->primary_navigation_links( $req, $page );
+   $nav->{secondary} = $self->secondary_navigation_links( $req, $page );
 
    my $actionp  = "${period}/${period}_rota";
    my $date     = $req->session->rota_date // time2str '%Y-%m-01';
    my $local_dt = to_dt( $date )->set_time_zone( 'local' );
    my $f_dom    = $local_dt->clone->set( day => 1 );
-   my $nav      = [ $nav_folder->( $req, 'year' ) ];
 
    $req->session->rota_date or $req->session->rota_date( $local_dt->ymd );
 
+   push @{ $list }, $nav_folder->( $req, 'year' ),;
    $date = $f_dom->clone->subtract( years => 1 );
-   push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
+   push @{ $list }, $_year_link->( $req, $actionp, $name, $date );
    $date = $f_dom->clone->add( years => 1 );
-   push @{ $nav }, $_year_link->( $req, $actionp, $name, $date );
-   push @{ $nav }, $nav_folder->( $req, 'months' );
+   push @{ $list }, $_year_link->( $req, $actionp, $name, $date );
+   push @{ $list }, $nav_folder->( $req, 'months' );
 
    for my $mno (0 .. 11) {
       my $offset = $mno - 5;
       my $date   = $offset > 0 ? $f_dom->clone->add( months => $offset )
                  : $offset < 0 ? $f_dom->clone->subtract( months => -$offset )
                  :               $f_dom->clone;
-      my $opts   = { label_args => [ $date->year ],
+      my $opts   = { value_args => [ $date->year ],
                      name       => lc 'month_'.$date->month_abbr,
                      tip_args   => [ $date->month_name ], };
       my $args   = [ $name, $date->ymd ];
 
-      push @{ $nav }, $nav_linkto->( $req, $opts, $actionp, $args );
+      push @{ $list }, $nav_linkto->( $req, $opts, $actionp, $args );
    }
 
    my $sow = $local_dt->clone; $actionp = 'week/week_rota';
 
    while ($sow->day_of_week > 1) { $sow = $sow->subtract( days => 1 ) }
 
-   push @{ $nav }, $nav_folder->( $req, 'week' );
+   push @{ $list }, $nav_folder->( $req, 'week' );
 
    if ($self->$_allowed( $req, 'week/allocation' )) {
-      push @{ $nav }, $_week_link->( $req, 'week/allocation', $name, $sow, {
-         label => 'spreadsheet' } );
+      push @{ $list }, $_week_link->( $req, 'week/allocation', $name, $sow, {
+         value => 'spreadsheet' } );
    }
 
-   push @{ $nav }, $_week_link->( $req, $actionp, $name,
-                                  $sow->clone->subtract( weeks => 1 ) );
-   push @{ $nav }, $_week_link->( $req, $actionp, $name, $sow );
-   push @{ $nav }, $_week_link->( $req, $actionp, $name,
-                                  $sow->clone->add( weeks => 1 ) );
-   push @{ $nav }, $_week_link->( $req, $actionp, $name,
-                                  $sow->clone->add( weeks => 2 ) );
-   push @{ $nav }, $_week_link->( $req, $actionp, $name,
-                                  $sow->clone->add( weeks => 3 ) );
-   push @{ $nav }, $_week_link->( $req, $actionp, $name,
-                                  $sow->clone->add( weeks => 4 ) );
+   push @{ $list }, $_week_link->( $req, $actionp, $name,
+                                   $sow->clone->subtract( weeks => 1 ) );
+   push @{ $list }, $_week_link->( $req, $actionp, $name, $sow );
+   push @{ $list }, $_week_link->( $req, $actionp, $name,
+                                   $sow->clone->add( weeks => 1 ) );
+   push @{ $list }, $_week_link->( $req, $actionp, $name,
+                                   $sow->clone->add( weeks => 2 ) );
+   push @{ $list }, $_week_link->( $req, $actionp, $name,
+                                   $sow->clone->add( weeks => 3 ) );
+   push @{ $list }, $_week_link->( $req, $actionp, $name,
+                                   $sow->clone->add( weeks => 4 ) );
+
+   return $nav;
+}
+
+sub secondary_navigation_links {
+   my ($self, $req, $page) = @_;
+
+   my $nav = blank_form { type => 'unordered' };
+   my $location = $page->{location} // NUL;
+   my $class = $location eq 'login' ? 'current' : NUL;
+
+   $req->authenticated or p_item $nav, $nav_linkto->( $req, {
+      class => $class, tip => 'Login to the application',
+      value => 'Login', }, 'user/login' );
+
+   $class = $location eq 'change_password' ? 'current' : NUL;
+
+   p_item $nav, $nav_linkto->( $req, {
+      class => $class,
+      tip   => 'Change the password used to access the application',
+      value => 'Change Password', }, 'user/change_password' );
+
+   if ($req->authenticated) {
+      p_item $nav, $nav_linkto->( $req, {
+         class => 'windows', name => 'profile-user',
+         tip   => 'Update personal details', value => 'Profile', }, '#' );
+
+      $class = $location eq 'totp_secret' ? 'current' : NUL;
+
+      $req->session->enable_2fa and p_item $nav, $nav_linkto->( $req, {
+         class => $class, tip => 'View the TOTP account information',
+         value => 'TOTP', }, 'user/totp_secret' );
+
+      my $href = uri_for_action $req, 'user/logout_action';
+      my $form = blank_form  'authentication', $href, { class => 'none' };
+
+      p_button $form, 'logout-user', 'logout', {
+         class => 'none',
+         label => locm( $req, 'Logout' ).' ('.$req->session->user_label.')',
+         tip   => make_tip $req, 'Logout from [_1]', [ $self->config->title ] };
+
+      p_item $nav, $form;
+   }
+   else {
+      p_item $nav, $nav_linkto->( $req, {
+         class => 'windows', name => 'totp-request',
+         tip   => 'Request viewing of the TOTP account information',
+         value => 'TOTP', }, '#' );
+
+      p_item $nav, $nav_linkto->( $req, {
+         class => 'windows', name => 'request-reset',
+         tip   => 'Follow the link to reset your password',
+         value => 'Forgot Password?', }, '#' );
+   }
 
    return $nav;
 }

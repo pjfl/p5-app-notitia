@@ -222,7 +222,7 @@ sub message_stash {
       class    => 'standard-field clear autosize', label_class => 'hidden',
       label_id => 'sms_sink_label' };
 
-   p_button $form, 'confirm', 'message_create', { class => 'right-last' };
+   p_button $form, 'confirm', 'message_create', { class => 'button right-last'};
 
    return $stash;
 }

@@ -28,9 +28,11 @@ var/etc/profile
 var/docs/.mtime
 var/docs/assets
 var/docs/en/*
-var/session
-var/tmp
 var/logs
+var/less/hyde/light.less
+var/session
+var/root/css/hyde-light.css
 var/run
+var/tmp
 *.tar.gz
 App-Notitia-*.*.*

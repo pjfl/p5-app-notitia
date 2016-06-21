@@ -16,6 +16,7 @@ use Moo;
 
 extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
+with    q(App::Notitia::Role::Navigation);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
@@ -39,6 +40,20 @@ register_action_paths
    'user/request_reset'   => 'user/reset',
    'user/totp_request'    => 'user/totp-request',
    'user/totp_secret'     => 'user/totp-secret';
+
+# Construction
+around 'get_stash' => sub {
+   my ($orig, $self, $req, @args) = @_;
+
+   my $stash = $orig->( $self, $req, @args );
+
+   $stash->{navigation}->{primary}
+      = $self->primary_navigation_links( $req, $stash->{page} );
+   $stash->{navigation}->{secondary}
+      = $self->secondary_navigation_links( $req, $stash->{page} );
+
+   return $stash;
+};
 
 # Private functions
 my $_rows_per_page = sub {
@@ -243,11 +258,12 @@ sub profile : Role(any) {
    p_textfield $form, 'email_address', $person->email_address;
    p_textfield $form, 'mobile_phone',  $person->mobile_phone;
    p_textfield $form, 'home_phone',    $person->home_phone;
-   p_radio     $form, 'rows_per_page', $_rows_per_page->( $person ),
-               { label => 'Rows Per Page' };
-   p_checkbox  $form, 'enable_2fa',    TRUE,
-               { checked => $person->totp_secret ? TRUE : FALSE };
-   p_button    $form,  'update', 'update_profile', { class => 'right-last' };
+   p_radio     $form, 'rows_per_page', $_rows_per_page->( $person ),{
+      label => 'Rows Per Page' };
+   p_checkbox  $form, 'enable_2fa',    TRUE, {
+      checked => $person->totp_secret ? TRUE : FALSE };
+   p_button    $form,  'update', 'update_profile', {
+      class => 'button right-last' };
 
    return $stash;
 }
@@ -263,7 +279,8 @@ sub request_reset : Role(anon) {
    $stash->{page}->{literal_js} = set_element_focus 'request-reset', 'username';
 
    p_textfield $form, 'username';
-   p_button    $form, 'request_reset', 'request_reset', { class => 'right' };
+   p_button    $form, 'request_reset', 'request_reset', {
+      class => 'button right' };
 
    return $stash;
 }
@@ -340,7 +357,8 @@ sub totp_request : Role(anon) {
    p_password  $form, 'password';
    p_textfield $form, 'mobile_phone';
    p_textfield $form, 'postcode';
-   p_button    $form, 'totp_request', 'totp_request', { class => 'right-last' };
+   p_button    $form, 'totp_request', 'totp_request', {
+      class => 'button right-last' };
 
    return $stash;
 }

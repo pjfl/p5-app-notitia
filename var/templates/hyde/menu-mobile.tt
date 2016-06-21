@@ -3,14 +3,14 @@
 [% depth = 0 -%]
    <select onchange="if (this.value) window.location.href=this.value">
       <option value="">[% loc( 'Navigate the application') %]…</option>
-[% FOR node IN nav.list -%]
+[% FOR node IN navigation.menu.list -%]
 [%    WHILE node.depth < depth; depth = depth - 1 -%]
       </optgroup>
 [%    END -%]
 [%    IF node.type == 'folder'; depth = depth + 1 -%]
       <optgroup label="[% node.title %]">
 [%    ELSE -%]
-      <option value="[% node.uri %]">[% node.label %]</option>
+      <option value="[% node.href %]">[% node.value %]</option>
 [%    END -%]
 [% END -%]
 [% WHILE depth > 0; depth = depth - 1 -%]

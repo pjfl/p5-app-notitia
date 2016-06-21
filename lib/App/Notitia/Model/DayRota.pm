@@ -35,8 +35,9 @@ around 'get_stash' => sub {
    my $stash = $orig->( $self, $req, @args );
    my $name  = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
 
-   $stash->{nav}->{list} = $self->rota_navigation_links( $req, 'month', $name );
    $stash->{page}->{location} = 'schedule';
+   $stash->{navigation}
+      = $self->rota_navigation_links( $req, $stash->{page}, 'month', $name );
 
    return $stash;
 };
@@ -487,7 +488,7 @@ sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
    }
 
    p_button $form, 'confirm', "${action}_slot", {
-      container_class => 'right-last',
+      class => 'button', container_class => 'right-last',
       tip => make_tip $req, "${action}_slot_tip", [ $slot_type ] };
 
    return $stash;

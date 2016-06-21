@@ -10,8 +10,9 @@ use Scalar::Util            qw( blessed );
 
 our @EXPORT_OK = qw( blank_form f_link f_tag p_action p_button p_cell
                      p_checkbox p_container p_date p_fields p_file p_hidden
-                     p_image p_label p_list p_password p_radio p_row p_select
-                     p_span p_table p_tag p_text p_textarea p_textfield );
+                     p_image p_item p_label p_list p_password p_radio p_row
+                     p_select p_span p_table p_tag p_text p_textarea
+                     p_textfield p_unordered );
 
 # Private package variables
 my @ARG_NAMES = qw( name href opts );
@@ -122,7 +123,7 @@ sub blank_form (;$$$) {
       content => { list => [], type => 'list' }, href => $attr->{href},
       form_name => $attr->{name}, type => 'form', %{ $opts } };
 
-   $opts->{type} and $opts->{type} eq 'list'
+   $opts->{type} and ($opts->{type} eq 'list' or $opts->{type} eq 'unordered')
       and $opts->{list} //= [] and $opts->{content} = NUL;
    $opts->{content} //= { list => [], type => 'list' };
    $opts->{type} //= 'container';
@@ -253,6 +254,14 @@ sub p_image ($@) {
    return $_push_field->( $f, 'image', $opts );
 }
 
+sub p_item ($@) {
+   my ($f, $value, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   $opts->{value} = $value;
+
+   return push @{ $f->{list} }, $opts;
+}
+
 sub p_label ($@) {
    my ($f, $label, $content, $opts) = @_; $opts = { %{ $opts // {} } };
 
@@ -311,6 +320,12 @@ sub p_textarea ($@) {
 
 sub p_textfield ($@) {
    my $f = shift; return $_push_field->( $f, 'textfield', $_bind->( @_ ) );
+}
+
+sub p_unordered ($@) {
+   my ($f, $opts) = @_; $opts = { %{ $opts // {} } }; $opts->{list} //= [];
+
+   return $_push_field->( $f, 'unordered', $opts );
 }
 
 1;

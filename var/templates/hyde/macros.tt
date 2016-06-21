@@ -26,6 +26,7 @@
 [%       CASE 'textarea'; TextArea( f ); -%]
 [%       CASE 'textfield'; TextField( f ); -%]
 [%       CASE 'time'; TimeField( f ); -%]
+[%       CASE 'unordered'; UnorderedList( f ); -%]
 [%    END -%]
 [% END -%]
 [% BLOCK label %]
@@ -39,7 +40,8 @@
 [%    IF f.tip -%]
      <span class="button-help [% f.container_class %] tips" title="[% f.tip %]">
 [%    END -%]
-      <button class="button [% f.class %]" name="_method" type="submit"
+[%    IF f.class; class = f.class; ELSE; class = 'button'; END -%]
+      <button class="[% class %]" name="_method" type="submit"
               value="[% f.value %]">[% loc( f.label ) %]</button>
 [%    IF f.tip -%]</span>[% END -%]
 [% END -%]
@@ -86,8 +88,8 @@
          method="post" name="[% form %]">[% END -%]
       <span class="button-help tips" title="[% page.hint _ ' ~ ' _ tip %]">
          <button class="[% class %]" id="[% id %]" name="_method"
-            type="submit" value="[% value %]">[% content -%]
-         </button></span>
+            type="submit" value="[% value %]">[% content -%]</button>
+      </span>
 [%    IF href && form; %]</form>[% END -%]
 [% END -%]
 [% MACRO HiddenField( f ) BLOCK -%]
@@ -218,4 +220,13 @@
       <input [% IF f.disabled %]disabled="disabled"[% END -%]
          class="[% class %] pick-time" id="[% f.name %]"
           name="[% f.name %]" value="[% f.value %]">
+[% END -%]
+[% MACRO UnorderedList( f ) BLOCK -%]
+      <ul class="[% f.class %]">
+[%    FOR item IN f.list -%]
+         <li class="[% item.class %]">
+[%       IF reference( item.value ) == 'HASH'; Dispatch( item.value ) %]
+[%       ELSE; item.value; END %]</li>
+[%    END -%]
+      </ul>
 [% END -%]

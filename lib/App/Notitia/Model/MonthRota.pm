@@ -33,9 +33,11 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
    my $name  = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
+   my $page  = $stash->{page};
 
-   $stash->{nav}->{list} = $self->rota_navigation_links( $req, 'month', $name );
-   $stash->{page}->{location} = 'schedule';
+   $page->{location} = 'schedule';
+   $stash->{navigation}
+      = $self->rota_navigation_links( $req, $page, 'month', $name );
 
    return $stash;
 };

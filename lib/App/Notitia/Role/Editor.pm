@@ -5,7 +5,7 @@ use namespace::autoclean;
 use App::Notitia::Form     qw( blank_form f_tag p_button p_checkbox p_file
                                p_hidden p_list p_radio p_span p_text
                                p_textfield );
-use App::Notitia::Util     qw( dialog_anchor loc make_id_from
+use App::Notitia::Util     qw( dialog_anchor locm make_id_from
                                make_name_from mtime set_element_focus
                                stash_functions to_msg uri_for_action );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
@@ -51,7 +51,7 @@ my $_add_editing_js = sub {
                search => 'Search Documents', upload => 'Upload File', };
 
    for my $name (keys %{ $map }) {
-      my $opts = { title => loc( $req, $map->{ $name } ), useIcon => \1 };
+      my $opts = { title => locm( $req, $map->{ $name } ), useIcon => \1 };
 
       $name eq 'rename'and $opts->{value} = $page->{url};
       $self->$_add_dialog_js( $req, $page, $name, $opts);
@@ -173,18 +173,18 @@ my $_search_results = sub {
    my ($self, $req) = @_;
 
    my $count   = 1;
-   my $scrub   = '[^ !\"%\'\(\)\+\,\-\./0-9:=\?@A-Z\[\]_a-z\~]';
+   my $scrub   = '[^ 0-9A-Z_a-z]';
    my $query   = $req->query_params->( 'query', { scrubber => $scrub } );
    my $langd   = $self->config->docs_root->catdir( $req->locale );
    my $resp    = $self->run_cmd
                  ( [ 'ack', $query, "${langd}" ], { expected_rv => 1, } );
    my $results = $resp->rv == 1
-               ? $langd->catfile( loc( $req, 'Nothing found' ) ).'::'
+               ? $langd->catfile( locm $req, 'Nothing found' ).'::'
                : $resp->stdout;
    my @tuples  = $self->$_prepare_search_results( $req, $langd, $results );
    my $content = join "\n\n", map { $_result_line->( $count++, $_ ) } @tuples;
-   my $leader  = loc( $req, 'You searched for "[_1]"', $query )."\n\n";
-   my $name    = loc( $req, 'Search Results' );
+   my $leader  = locm( $req, 'You searched for "[_1]"', $query )."\n\n";
+   my $name    = locm( $req, 'Search Results' );
 
    return { content => $leader.$content,
             format  => 'markdown',
@@ -257,24 +257,25 @@ sub get_dialog {
    my $form   = $stash->{page}->{forms}->[ 0 ]
               = blank_form "${name}-file", $href;
    my $page   = $stash->{page};
+   my $opts   = { class => 'button right-last' };
 
    if ($name eq 'create') {
       p_textfield $form, 'pathname', NUL, { class => 'pathname', label => NUL };
       p_radio     $form, 'draft', [ [ 'Draft', TRUE ] ], { label => NUL };
-      p_button    $form, 'Create', 'create_file', { class => 'right-last' };
+      p_button    $form, 'Create', 'create_file', $opts;
       $page->{literal_js} = set_element_focus "${name}-file", 'pathname';
    }
    elsif ($name eq 'rename') {
       p_hidden    $form, 'old_path', $val;
       p_textfield $form, 'pathname', NUL, { class => 'pathname', label => NUL };
       p_text      $form, NUL, $val, { class => 'info-field' };
-      p_button    $form, 'Rename', 'rename_file', { class => 'right-last' };
+      p_button    $form, 'Rename', 'rename_file', $opts;
       $page->{literal_js} = set_element_focus "${name}-file", 'pathname';
    }
    elsif ($name eq 'search') {
       $form->{method} = 'get';
       p_textfield $form, 'query', $stash->{prefs}->{query}, { label => NUL };
-      p_button    $form, 'Search', NUL, { class => 'right-last' };
+      p_button    $form, 'Search', NUL, $opts;
       $page->{literal_js} = set_element_focus "${name}-file", 'query';
    }
    elsif ($name eq 'upload') {
@@ -345,9 +346,9 @@ sub upload_dialog {
 
    my $list = p_list $form, f_tag( 'br' ), [], { class => 'upload-file button'};
 
-   p_span $list, loc( $req, 'Browse' );
+   p_span $list, locm $req, 'Browse';
    p_file $list, 'file', NUL, { class => 'upload', id => 'upload-btn' };
-   p_button $form, 'Upload', 'upload_file', { class => 'right-last' };
+   p_button $form, 'Upload', 'upload_file', { class => 'button right-last' };
 
    $page->{literal_js} = $_copy_element_value->();
    $form->{enctype} = 'multipart/form-data';

@@ -44,8 +44,8 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{nav }->{list    }   = $self->admin_navigation_links( $req );
    $stash->{page}->{location} //= 'admin';
+   $stash->{navigation} = $self->admin_navigation_links( $req, $stash->{page} );
 
    return $stash;
 };
@@ -107,7 +107,6 @@ my $_add_participate_button = sub {
    my ($req, $form, $event, $person) = @_;
 
    my $uri    = $event->uri;
-   my $class  = 'save-button right-last';
    my $action = $person->is_participating_in( $uri, $event )
               ? 'unparticipate' : 'participate';
 
@@ -119,7 +118,7 @@ my $_add_participate_button = sub {
       and return;
 
    p_button $form, "${action}_event", "${action}_event", {
-      container_class => $class,
+      class => 'save-button', container_class => 'right-last',
       tip => make_tip( $req, "${action}_event_tip", [ $uri ] ) };
 
    return;

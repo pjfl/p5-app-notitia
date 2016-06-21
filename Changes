@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Removes primary and secondary nav templates
           - Moves image assets to skin directory
           - Fixes missing exception page
           - Adds skin support for custom templates

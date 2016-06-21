@@ -41,8 +41,8 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{nav }->{list    }   = $self->admin_navigation_links( $req );
    $stash->{page}->{location} //= 'admin';
+   $stash->{navigation} = $self->admin_navigation_links( $req, $stash->{page} );
 
    return $stash;
 };
@@ -380,7 +380,7 @@ my $_update_vehicle_from_request = sub {
       $vehicle->$attr( $v );
    }
 
-   $v = $params->( 'owner_id', $opts ); $vehicle->owner_id( $v ? $v : undef );
+   $v = $params->( 'owner', $opts ); $vehicle->owner_id( $v ? $v : undef );
    $v = $params->( 'type', $opts ); defined $v and $vehicle->type_id( $v );
 
    return;
@@ -507,7 +507,8 @@ sub assign : Role(rota_manager) {
    }
    else { p_hidden $form, 'vehicle', $req->query_params->( 'vehicle' ) }
 
-   p_button $form, 'confirm', "${action}_vehicle", { class => 'right-last' };
+   p_button $form, 'confirm', "${action}_vehicle", {
+      class => 'button right-last' };
 
    return $stash;
 }

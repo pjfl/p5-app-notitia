@@ -3,7 +3,7 @@ package App::Notitia::Model::Person;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
                                 NUL PIPE_SEP TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_action p_button
+use App::Notitia::Form      qw( blank_form f_link p_action
                                 p_fields p_list p_row p_table );
 use App::Notitia::Util      qw( check_field_js dialog_anchor loc make_tip
                                 management_link page_link_set
@@ -41,8 +41,8 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{nav }->{list    }   = $self->admin_navigation_links( $req );
    $stash->{page}->{location} //= 'admin';
+   $stash->{navigation} = $self->admin_navigation_links( $req, $stash->{page} );
 
    return $stash;
 };

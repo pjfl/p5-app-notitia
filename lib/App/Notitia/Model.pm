@@ -38,6 +38,23 @@ my $_auth_redirect = sub {
    return;
 };
 
+my $_debug_output = sub {
+   my ($req, $e, $form, $leader) = @_;
+
+   my $line1 = locm( $req, 'Exception thrown' ).SPC;
+   my $when  = time2str 'on %Y-%m-%d at %H:%M hours', $e->time;
+
+   if ($leader) {
+      $line1 .= locm( $req, 'from' )." ${leader}";
+      p_tag $form, 'h5', "${line1}<br>${when}";
+   }
+   else { p_tag $form, 'h5', "${line1} ${when}" }
+
+   p_tag $form, 'h5', locm( $req, 'HTTP status code' ).'&nbsp;'.$e->rv;
+   p_tag $form, 'h5', locm( $req, 'Have a nice day' ).'...';
+   return;
+};
+
 my $_parse_error = sub {
    my $e = shift; my ($leader, $message, $summary);
 
@@ -48,6 +65,18 @@ my $_parse_error = sub {
    else { $leader = NUL; $summary = $message = "${e}" }
 
    return $leader, $message, $summary;
+};
+
+my $_validation_errors = sub {
+   my ($req, $e, $form) = @_;
+
+   p_tag $form, 'h5', locm $req, 'Form validation errors';
+
+   for my $message (map { ($_parse_error->( $_ ))[ 1 ] } @{ $e->args }) {
+      p_tag $form, 'p', $message;
+   }
+
+   return;
 };
 
 # Public methods
@@ -67,8 +96,10 @@ sub exception_handler {
    my ($self, $req, $e) = @_;
 
    my ($leader, $message, $summary) = $_parse_error->( $e );
+
    my $redirect = $_auth_redirect->( $req, $e, $summary );
       $redirect and return $redirect;
+
    my $name = $req->session->first_name || $req->username || 'unknown';
    my $form = blank_form { type => 'list' };
    my $page = { forms => [ $form ], template => [ 'none', NUL ],
@@ -76,30 +107,14 @@ sub exception_handler {
    my $stash = $self->get_stash( $req, $page );
 
    if ($e->class eq ValidationErrors->()) {
-      p_tag $form, 'h5', locm $req, 'Form validation errors';
-
-      for my $message (map { ($_parse_error->( $_ ))[ 1 ] } @{ $e->args }) {
-         p_tag $form, 'p', $message;
-      }
+      $_validation_errors->( $req, $e, $form );
    }
    else {
       p_tag $form, 'h5', locm $req, 'The following exception was thrown';
       p_tag $form, 'p', $summary;
    }
 
-   if ($self->application->debug) {
-      my $line1 = locm( $req, 'Exception thrown' ).SPC;
-      my $when  = time2str 'on %Y-%m-%d at %H:%M hours', $e->time;
-
-      if ($leader) {
-         $line1 .= locm( $req, 'from' )." ${leader}";
-         p_tag $form, 'h5', "${line1}<br>${when}";
-      }
-      else { p_tag $form, 'h5', "${line1} ${when}" }
-
-      p_tag $form, 'h5', locm( $req, 'HTTP status code' ).'&nbsp;'.$e->rv;
-      p_tag $form, 'h5', locm( $req, 'Have a nice day' ).'...';
-   }
+   $self->application->debug and $_debug_output->( $req, $e, $form, $leader );
 
    $stash->{code} = $e->rv > HTTP_OK ? $e->rv : HTTP_OK;
 
