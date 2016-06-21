@@ -14,9 +14,6 @@ requires qw( components config initialise_stash load_page localised_tree );
 
 has 'type_map' => is => 'ro', isa => HashRef, builder => sub { {} };
 
-# Private class attributes
-my $_nav_cache = {};
-
 # Construction
 around 'BUILDARGS' => sub {
    my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
@@ -106,7 +103,7 @@ sub initialise_page {
 }
 
 sub invalidate_docs_cache {
-   my ($self, $mtime) = @_; $_nav_cache = {};
+   my ($self, $mtime) = @_;
 
    my $filesys = $self->config->docs_mtime;
 

@@ -168,48 +168,48 @@ my $_slot_link = sub {
 };
 
 my $_summary_link = sub {
-   my ($req, $type, $span, $id, $opts) = @_;
+   my $opts = shift; my $class = 'vehicle-not-needed'; my $value = NUL;
 
-   $opts or return { colspan => $span, value => '&nbsp;' x 2 };
-
-   my $class = 'vehicle-not-needed'; my $value = NUL;
+   $opts or return { class => $class, value => '&nbsp;' x 2 };
 
    if    ($opts->{vehicle    }) { $value = 'V'; $class = 'vehicle-assigned'  }
    elsif ($opts->{vehicle_req}) { $value = 'R'; $class = 'vehicle-requested' }
 
-   return { class => $class, colspan => $span, name => $id, value => $value };
+   return { class => $class, value => $value };
 };
 
-my $_vreq_state = sub {
-   my ($n_assigned, $vreqs) = @_;
+my $_vreqs_for_event = sub {
+   my ($schema, $event) = @_;
 
-   my $n_requested = $vreqs->get_column( 'quantity' )->sum;
+   my $tport_rs = $schema->resultset( 'Transport' );
+   my $assigned = $tport_rs->assigned_vehicle_count( $event->id );
+   my $vreq_rs  = $schema->resultset( 'VehicleRequest' );
+   my $vreqs    = $vreq_rs->search( { event_id => $event->id } );
 
-   return { vehicle     => ($n_assigned == $n_requested ? TRUE : FALSE),
+   $vreqs->count or return FALSE;
+
+   my $requested = $vreqs->get_column( 'quantity' )->sum;
+
+   return { vehicle     => ($assigned == $requested ? TRUE : FALSE),
             vehicle_req => TRUE };
 };
 
 my $_vehicle_request_link = sub {
    my ($schema, $req, $page, $event) = @_; $event or return;
 
-   my $name     = 'view-vehicle-requests';
-   my $href     = uri_for_action $req, 'asset/request_vehicle', [ $event->uri ];
-   my $hint     = locm $req, 'Event Assignment';
-   my $tip      = locm $req, 'vehicle_request_tip', $event->label;
-   my $tport_rs = $schema->resultset( 'Transport' );
-   my $assigned = $tport_rs->assigned_vehicle_count( $event->id );
-   my $vreq_rs  = $schema->resultset( 'VehicleRequest' );
-   my $vreqs    = $vreq_rs->search( { event_id => $event->id } );
-   my $opts     = $vreqs->count ? $_vreq_state->( $assigned, $vreqs ) : FALSE;
-   my $link     = $_summary_link->( $req, 'event', 1, $name, $opts );
+   my $vreqs   = $_vreqs_for_event->( $schema, $event );
+   my $href    = uri_for_action $req, 'asset/request_vehicle', [ $event->uri ];
+   my $link    = { class => 'align-center embeded small-slot tips' };
+   my $tip     = locm $req, 'vehicle_request_tip', $event->label;
+   my $hint    = locm $req, 'Event Assignment';
+   my $summary = $_summary_link->( $vreqs );
 
    $link->{title} = $hint.SPC.TILDE.SPC.$tip;
-   $link->{value} = { class => $link->{class},
+   $link->{value} = { class => $summary->{class}.' rota-link',
                       href  => $href,
-                      name  => $name,
+                      name  => 'view-vehicle-requests',
                       type  => 'link',
-                      value => delete $link->{value}, };
-   $link->{class} = 'small-slot '.$link->{class}.' tips';
+                      value => $summary->{value}, };
 
    return $link;
 };

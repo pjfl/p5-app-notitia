@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #53. Vehicle requests on month rota
           - Adds logo configuration option
             Renamed logo and favicon files
           - Removes uri_for_action calls from skin templates

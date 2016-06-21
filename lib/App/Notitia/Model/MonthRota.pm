@@ -125,21 +125,26 @@ my $_first_day_of_month = sub {
    return $date->set_time_zone( 'GMT' );
 };
 
+my $_summary_link_value = sub {
+   my $opts = shift; my $class = 'vehicle-not-needed'; my $value = NUL;
+
+   if    ($opts->{vehicle    }) { $value = 'V'; $class = 'vehicle-assigned'  }
+   elsif ($opts->{vehicle_req}) { $value = 'R'; $class = 'vehicle-requested' }
+
+   return $class, $value;
+};
+
 my $_summary_link = sub {
    my ($req, $type, $span, $id, $opts) = @_;
 
    $opts or return { colspan => $span, value => '&nbsp;' x 2 };
 
-   my $class = 'vehicle-not-needed';
-   my $value = $opts->{operator}->id ? 'C' : NUL;
-
-   if    ($opts->{vehicle    }) { $value = 'V'; $class = 'vehicle-assigned'  }
-   elsif ($opts->{vehicle_req}) { $value = 'R'; $class = 'vehicle-requested' }
-
-   my $title = locm $req, (ucfirst $type).' Assignment';
+   my ($class, $value) = $_summary_link_value->( $opts );
 
    $class .= ' server tips';
+   not $value and $opts->{operator}->id and $value = 'C';
 
+   my $title = locm $req, (ucfirst $type).' Assignment';
    my $style = NUL; $opts->{vehicle} and $opts->{vehicle}->colour
       and $style = 'background-color: '.$opts->{vehicle}->colour.';';
 
@@ -178,17 +183,42 @@ my $_summary_cells = sub {
    return $cells;
 };
 
+my $_vreqs_for_event = sub {
+   my ($schema, $event) = @_;
+
+   my $tport_rs = $schema->resultset( 'Transport' );
+   my $assigned = $tport_rs->assigned_vehicle_count( $event->id );
+   my $vreq_rs  = $schema->resultset( 'VehicleRequest' );
+   my $vreqs    = $vreq_rs->search( { event_id => $event->id } );
+
+   $vreqs->count or return FALSE;
+
+   my $requested = $vreqs->get_column( 'quantity' )->sum;
+
+   return { vehicle     => ($assigned == $requested ? TRUE : FALSE),
+            vehicle_req => TRUE };
+};
+
 my $_rota_summary = sub {
    my ($self, $req, $page, $local_dt, $has_event, $data) = @_;
 
    my $lcm   = $page->{rota}->{lcm};
    my $name  = $page->{rota}->{name};
    my $table = { class => 'month-rota', rows => [], type => 'table' };
-   my $value = $has_event->{ $local_dt->ymd } ? locm( $req, 'Events' ) : NUL;
+
+   my $class = NUL; my $label = NUL; my $value = NUL;
+
+   if (my $event = $has_event->{ $local_dt->ymd }) {
+      my $opts = $_vreqs_for_event->( $self->schema, $event );
+
+      $opts and ($class, $value) = $_summary_link_value->( $opts );
+      $label = locm $req, 'Events';
+   }
 
    push @{ $table->{rows} },
       [ { colspan =>     $lcm / 4, value => $local_dt->day },
-        { colspan => 3 * $lcm / 4, value => $value } ];
+        { colspan =>     $lcm / 4, value => $value, class => $class },
+        { colspan => 2 * $lcm / 4, value => $label } ];
 
    push @{ $table->{rows} }, $self->$_summary_cells
       ( $req, $page, $local_dt, [ 'day', 'night' ], [ 'controller' ], $data, 0);
@@ -237,7 +267,7 @@ sub assign_summary : Role(any) {
    my $form     =  $stash->{page}->{forms}->[ 0 ] = blank_form;
    my $data     =  $self->$_slot_assignments( {
       rota_type => $self->$_find_rota_type( $rota_name )->id,
-      on        => $rota_dt } )->{ $_local_dt->( $rota_dt )->ymd.'_'.$key };
+      on        => $rota_dt } )->{ $_local_dt->( $rota_dt )->ymd."_${key}" };
    my $operator =  $data->{operator};
    my $who      =  $operator->label;
    my $opts     =  { class => 'label-column' };
