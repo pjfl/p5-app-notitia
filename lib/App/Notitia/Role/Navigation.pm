@@ -4,7 +4,7 @@ use attributes ();
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_button p_item );
+use App::Notitia::Form      qw( blank_form f_link p_button p_image p_item );
 use App::Notitia::Util      qw( locm make_tip to_dt uri_for_action );
 use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
@@ -95,12 +95,11 @@ my $_allowed = sub {
 
 # Public methods
 sub admin_navigation_links {
-   my ($self, $req, $page) = @_; my $now = DateTime->now;
+   my ($self, $req, $page) = @_;
 
-   my $nav = { menu => { list => [] } }; my $list = $nav->{menu}->{list};
-
-   $nav->{primary} = $self->primary_navigation_links( $req, $page );
-   $nav->{secondary} = $self->secondary_navigation_links( $req, $page );
+   my $nav  = $self->navigation_links( $req, $page );
+   my $list = $nav->{menu}->{list} //= [];
+   my $now  = DateTime->now;
 
    push @{ $list },
         $nav_folder->( $req, 'events' ),
@@ -149,6 +148,29 @@ sub admin_navigation_links {
    return $nav;
 }
 
+sub application_logo {
+   my ($self, $req) = @_;
+
+   my $conf  =  $self->config;
+   my $href  =  $req->uri_for( $conf->images.'/logo-transparent.png' );
+   my $image =  p_image {}, $conf->title.' Logo', $href, {
+      height => 99, width => 272 };
+
+   $href = uri_for_action $req, 'docs/index';
+
+   return f_link 'logo', $href, { request => $req, value => $image, };
+}
+
+sub navigation_links {
+   my ($self, $req, $page) = @_; my $nav = {};
+
+   $nav->{logo} = $self->application_logo( $req );
+   $nav->{primary} = $self->primary_navigation_links( $req, $page );
+   $nav->{secondary} = $self->secondary_navigation_links( $req, $page );
+
+   return $nav;
+}
+
 sub primary_navigation_links {
    my ($self, $req, $page) = @_;
 
@@ -185,11 +207,8 @@ sub primary_navigation_links {
 sub rota_navigation_links {
    my ($self, $req, $page, $period, $name) = @_;
 
-   my $nav = { menu => { list => [] } }; my $list = $nav->{menu}->{list};
-
-   $nav->{primary} = $self->primary_navigation_links( $req, $page );
-   $nav->{secondary} = $self->secondary_navigation_links( $req, $page );
-
+   my $nav      = $self->navigation_links( $req, $page );
+   my $list     = $nav->{menu}->{list} //= [];
    my $actionp  = "${period}/${period}_rota";
    my $date     = $req->session->rota_date // time2str '%Y-%m-01';
    my $local_dt = to_dt( $date )->set_time_zone( 'local' );

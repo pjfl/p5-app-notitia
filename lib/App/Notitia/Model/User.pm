@@ -47,10 +47,7 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{navigation}->{primary}
-      = $self->primary_navigation_links( $req, $stash->{page} );
-   $stash->{navigation}->{secondary}
-      = $self->secondary_navigation_links( $req, $stash->{page} );
+   $stash->{navigation} = $self->navigation_links( $req, $stash->{page} );
 
    return $stash;
 };
