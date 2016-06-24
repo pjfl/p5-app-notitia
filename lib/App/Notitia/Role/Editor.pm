@@ -57,6 +57,7 @@ my $_add_editing_js = sub {
       $self->$_add_dialog_js( $req, $page, $name, $opts);
    }
 
+   $page->{form_name} = 'editing';
    return;
 };
 
