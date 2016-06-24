@@ -356,6 +356,23 @@ my $_load_template = sub {
    return $stash, $template;
 };
 
+my $_prepare_csv = sub {
+   my $self   = shift;
+   my $file   = $self->next_argv or throw Unspecified, [ 'file name' ];
+   my $f_io   = io $file;
+   my $csv    = Text::CSV->new ( { binary => 1 } )
+                or throw Text::CSV->error_diag();
+   my $status = $csv->parse( $f_io->getline );
+   my $f      = FALSE;
+   my $cno    = 0;
+   my $cmap   = { map { $_make_key_from->( $_->[ 0 ] ) => $_->[ 1 ] }
+                  map { [ $_ ? $_ : "col${cno}", $cno++ ] }
+                  reverse grep { $_ and $f = TRUE; $f }
+                  reverse $csv->fields() };
+
+   return { cmap => $cmap, csv => $csv, io => $f_io };
+};
+
 my $_qualify_assets = sub {
    my ($self, $files) = @_; $files or return FALSE; my $assets = {};
 
@@ -449,7 +466,7 @@ my $_update_person = sub {
    return $person->update;
 };
 
-my $_import_function = sub {
+my $_import_person_function = sub {
    my ($self, $cmap, $cols, $has_nok, $nok, $person, $person_attr) = @_;
 
    my $cert_rs    = $self->schema->resultset( 'Certification' );
@@ -508,7 +525,7 @@ my $_update_or_new_person = sub {
       my $person = $person_rs->find_or_new
          ( $person_attr, { key => 'person_name' } );
 
-      $self->schema->txn_do( $self->$_import_function
+      $self->schema->txn_do( $self->$_import_person_function
          ( $cmap, $cols, $has_nok, $nok, $person, $person_attr ) );
 
       $self->info( 'Created [_1]([_2])',
@@ -559,6 +576,42 @@ my $_create_person = sub {
 
    $self->debug and $self->dumper( $columns, $nok_attr, $person_attr );
    $self->$_update_or_new_person( $cmap, $columns, $nok_attr, $person_attr );
+
+   return $lno;
+};
+
+my $_create_vehicle = sub {
+   my ($self, $csv, $ncols, $cmap, $lno, $line) = @_; $lno++;
+
+   my $status = $csv->parse( $line ); my @columns = $csv->fields();
+
+   my $vrn = $columns[ $cmap->{vrn} ] or return $lno;
+
+   my $columns = [ splice @columns, 0, $ncols ];
+
+   my $attr = {}; for my $k (keys %{ $cmap }) {
+      my $v = $columns->[ $cmap->{ $k } ]; defined $v and length $v or next;
+
+      if ($k eq 'aquired') { $attr->{ $k } = to_dt $v }
+      else { $attr->{ $k } = $v }
+   }
+
+   $self->debug and $self->dumper( $attr );
+
+   my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
+
+   try   {
+      my $vehicle = $vehicle_rs->create( $attr );
+
+      $self->info( 'Created [_1]', { args => [ $vehicle->label ],
+                                     no_quote_bind_values => TRUE } );
+   }
+   catch {
+      if ($_->can( 'class' ) and $_->class eq ValidationErrors->()) {
+         $self->warning( $_ ) for (@{ $_->args });
+      }
+      else { $self->warning( $_ ) }
+   };
 
    return $lno;
 };
@@ -638,19 +691,11 @@ sub deploy_and_populate : method {
 }
 
 sub import_people : method {
-   my $self   = shift;
-   my $file   = $self->next_argv or throw Unspecified, [ 'file name' ];
-   my $f_io   = io $file;
-   my $csv    = Text::CSV->new ( { binary => 1 } )
-                or throw Text::CSV->error_diag();
-   my $status = $csv->parse( $f_io->getline );
-   my $f      = FALSE;
-   my $cno    = 0;
-   my $cmap   = { map { $_make_key_from->( $_->[ 0 ] ) => $_->[ 1 ] }
-                  map { [ $_ ? $_ : "col${cno}", $cno++ ] }
-                  reverse grep { $_ and $f = TRUE; $f }
-                  reverse $csv->fields() };
-   my $ncols  = keys %{ $cmap }; $_extend_column_map->( $cmap, $ncols );
+   my $self  = shift;
+   my $opts  = $self->$_prepare_csv;
+   my $cmap  = $opts->{cmap};
+   my $csv   = $opts->{csv};
+   my $ncols = keys %{ $cmap }; $_extend_column_map->( $cmap, $ncols );
 
    $self->debug and $self->dumper( $cmap );
 
@@ -658,11 +703,28 @@ sub import_people : method {
 
    my $dv = Data::Validation->new( $class->validation_attributes ); my $lno = 1;
 
-   while (defined (my $line = $f_io->getline)) {
+   while (defined (my $line = $opts->{io}->getline)) {
       $lno = $self->$_create_person( $csv, $ncols, $dv, $cmap, $lno, $line );
    }
 
    $self->config->badge_mtime->touch;
+
+   return OK;
+}
+
+sub import_vehicles : method {
+   my $self  = shift;
+   my $opts  = $self->$_prepare_csv;
+   my $cmap  = $opts->{cmap};
+   my $csv   = $opts->{csv};
+   my $ncols = keys %{ $cmap };
+   my $lno   = 1;
+
+   $self->debug and $self->dumper( $cmap );
+
+   while (defined (my $line = $opts->{io}->getline)) {
+      $lno = $self->$_create_vehicle( $csv, $ncols, $cmap, $lno, $line );
+   }
 
    return OK;
 }

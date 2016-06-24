@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #51. Vehicle import
           - Fixes markdown delete option
           - Better week navigation on month rota
           - Implements #53. Vehicle requests on month rota
