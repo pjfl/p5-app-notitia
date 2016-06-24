@@ -622,24 +622,27 @@ msgid "month_dec_tip"
 msgstr "Navigate to [_1]"
 
 msgid "month_rota_heading_0"
-msgstr "Mon"
+msgstr "Wk"
 
 msgid "month_rota_heading_1"
-msgstr "Tue"
+msgstr "Mon"
 
 msgid "month_rota_heading_2"
-msgstr "Wed"
+msgstr "Tue"
 
 msgid "month_rota_heading_3"
-msgstr "Thu"
+msgstr "Wed"
 
 msgid "month_rota_heading_4"
-msgstr "Fri"
+msgstr "Thu"
 
 msgid "month_rota_heading_5"
-msgstr "Sat"
+msgstr "Fri"
 
 msgid "month_rota_heading_6"
+msgstr "Sat"
+
+msgid "month_rota_heading_7"
 msgstr "Sun"
 
 msgid "month_rota_table_caption"

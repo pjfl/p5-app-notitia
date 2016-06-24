@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Better week navigation on month rota
           - Implements #53. Vehicle requests on month rota
           - Adds logo configuration option
             Renamed logo and favicon files

@@ -68,7 +68,7 @@ my $_month_label = sub {
 };
 
 my $_month_rota_headers = sub {
-   return [ map {  $_month_label->( $_[ 0 ], $_ ) } 0 .. 6 ];
+   return [ map {  $_month_label->( $_[ 0 ], $_ ) } 0 .. 7 ];
 };
 
 my $_month_rota_max_slots = sub {
@@ -106,6 +106,13 @@ my $_prev_month = sub {
                                   ->set( day => 1 )->subtract( months => 1 );
 
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
+};
+
+my $_week_number = sub {
+   my ($first, $rno) = @_; my $week = $first->clone->add( days => 7 * $rno );
+
+   return { class => 'month-rota-week-number',
+            value => $_local_dt->( $week )->week_number };
 };
 
 # Private methods
@@ -314,7 +321,7 @@ sub month_rota : Role(any) {
    my $assigned  =  $self->$_slot_assignments( $opts );
 
    for my $rno (0 .. 5) {
-      my $row = []; my $dayno;
+      my $row = []; my $dayno; push @{ $row }, $_week_number->( $first, $rno );
 
       for my $offset (map { 7 * $rno + $_ } 0 .. 6) {
          my $cell = { class => 'month-rota', value => NUL };
