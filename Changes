@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Adds distances to vehicle allocation on spreadsheet
+            Schema changed. Coordinates added to person
           - Implements #51. Vehicle import
           - Fixes markdown delete option
           - Better week navigation on month rota

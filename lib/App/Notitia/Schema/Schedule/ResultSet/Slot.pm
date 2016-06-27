@@ -32,9 +32,10 @@ sub find_slot_by {
 sub search_for_slots {
    my ($self, $opts) = @_; $opts = { %{ $opts } };
 
-   my $attr   = [ 'operator.first_name', 'operator.id', 'operator.last_name',
-                  'operator.name', 'operator.postcode', 'operator.region',
-                  'vehicle.colour', 'vehicle.name', 'vehicle.vrn' ];
+   my $attr   = [ 'operator.coordinates', 'operator.first_name', 'operator.id',
+                  'operator.last_name', 'operator.name', 'operator.postcode',
+                  'operator.region', 'operator.shortcode', 'vehicle.colour',
+                  'vehicle.name', 'vehicle.vrn' ];
    my $where  = { 'rota.type_id' => $opts->{rota_type} };
    my $parser = $self->result_source->schema->datetime_parser;
 

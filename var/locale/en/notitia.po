@@ -246,6 +246,9 @@ msgstr "Controllers"
 msgid "controller_list_tip"
 msgstr "List controllers"
 
+msgid "coordinates"
+msgstr "Coordinates"
+
 msgid "create"
 msgstr "Create"
 

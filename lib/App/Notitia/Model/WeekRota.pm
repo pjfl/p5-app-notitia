@@ -93,6 +93,18 @@ my $_add_vreq_tip = sub {
    return;
 };
 
+my $_add_journal = sub {
+   my ($journal, $vrn, $start, $keeper) = @_;
+
+   my $list = $journal->{ $vrn } //= []; my $i = 0;
+
+   while (my $entry = $list->[ $i ]) { $entry->{start} < $start and last; $i++ }
+
+   splice @{ $list }, $i, 0, { keeper => $keeper, start => $start };
+
+   return;
+};
+
 my $_alloc_cell_headers = sub {
    my $req = shift; my @headings = qw( Shift Vehicle R Name C4 );
 
@@ -111,9 +123,7 @@ my $_onclick_relocate = sub {
 my $_operators_vehicle = sub {
    my ($slot, $cache) = @_; my $id = $slot->operator->id or return NUL;
 
-   my $label;
-
-   exists $cache->{ $id } and return $cache->{ $id };
+   exists $cache->{ $id } and return $cache->{ $id }; my $label;
 
    for my $pv ($slot->operator_vehicles->all) {
       $label = $pv->type eq '4x4' ? '4' : $pv->type eq 'car' ? 'C' : FALSE;
@@ -149,15 +159,44 @@ my $_week_rota_title = sub {
    return locm $req, 'week_rota_title', locm( $req, $rota_name ), $date;
 };
 
-my $_vehicle_list = sub {
-   my ($vehicles, $vrn) = @_; $vrn //= NUL;
+my $_find_keeper = sub {
+   my ($list, $start) = @_; my $i = 0;
 
-   return [ [ NUL, NUL ], map { [ $_->name, $_->vrn, {
-      selected => $vrn eq $_->vrn ? TRUE : FALSE } ] } @{ $vehicles } ];
+   while (my $entry = $list->[ $i ]) { $entry->{start} < $start and last; $i++ }
+
+   return $list->[ $i ] ? $list->[ $i ]->{keeper} : FALSE;
+};
+
+my $_calculate_distance = sub {
+   my ($keeper, $assignee) = @_;
+
+   ($keeper and $keeper->coordinates and $assignee and $assignee->coordinates)
+      or return;
+
+   my ($kx, $ky) = split m{ , }mx, $keeper->coordinates;
+   my ($ax, $ay) = split m{ , }mx, $assignee->coordinates;
+
+   return int( 0.5 + sqrt( ($kx - $ax)**2 + ($ky - $ay)**2 ) / 1000 );
+};
+
+my $_vehicle_label = sub {
+   my ($data, $vehicle) = @_; my $vrn = $vehicle->vrn;
+
+   my $keeper = $_find_keeper->( $data->{journal}->{ $vrn }, $data->{start} );
+   my $distance = $_calculate_distance->( $keeper, $data->{assignee} );
+
+   return $distance ? $vehicle->name."(${distance})" : $vehicle->name;
+};
+
+my $_vehicle_list = sub {
+   my ($data, $vrn) = @_; $vrn //= NUL;
+
+   return [ [ NUL, NUL ], map { [ $_vehicle_label->( $data, $_ ), $_->vrn, {
+      selected => $vrn eq $_->vrn ? TRUE : FALSE } ] } @{ $data->{vehicles} } ];
 };
 
 my $_vehicle_select_cell = sub {
-   my ($page, $vehicles, $form_name, $href, $action, $vrn) = @_;
+   my ($page, $data, $form_name, $href, $action, $vrn) = @_;
 
    my $disabled = $form_name eq 'disabled' ? TRUE : FALSE;
    my $form = blank_form $form_name, $href, {
@@ -166,7 +205,7 @@ my $_vehicle_select_cell = sub {
 
    push @{ $page->{literal_js} //= [] }, js_submit_config
       $jsid, 'change', 'submitForm', [ $action, $form_name ];
-   p_select $form, 'vehicle', $_vehicle_list->( $vehicles, $vrn ), {
+   p_select $form, 'vehicle', $_vehicle_list->( $data, $vrn ), {
       class => "spreadsheet-select submit", disabled => $disabled,
       id => $jsid, label => NUL };
    p_hidden $form, 'vehicle_original', $vrn;
@@ -192,10 +231,13 @@ my $_alloc_cell_slot_row = sub {
       my $args = [ $page->{rota_name}, $local_ymd, $slot_key ];
       my $href = uri_for_action $req, 'asset/vehicle', $args;
       my $vrn  = $slot->vehicle ? $slot->vehicle->vrn : NUL;
-      my $bikes = $data->{vehicles}->{bike};
+      my $opts = { assignee => $operator,
+                   journal => $data->{journal},
+                   start => ($slot->duration)[ 0 ],
+                   vehicles => $data->{vehicles}->{bike} };
 
       p_cell $row, $_vehicle_select_cell->
-         ( $page, $bikes, $dt_key, $href, 'assign_vehicle', $vrn );
+         ( $page, $opts, $dt_key, $href, 'assign_vehicle', $vrn );
    }
    else { p_cell $row, { class => 'spreadsheet-fixed-select', value => NUL } }
 
@@ -211,7 +253,7 @@ my $_alloc_cell_slot_row = sub {
 my $_alloc_key_row = sub {
    my ($req, $assets, $now, $vehicle) = @_;
 
-   my $keeper = $assets->find_last_keeper( $req, $vehicle, $now );
+   my $keeper = $assets->find_last_keeper( $req, $now, $vehicle );
    my $details = $vehicle->name.', '.$vehicle->notes.', '.$vehicle->vrn;
    my $style = NUL; $vehicle->colour
       and $style = 'background-color: '.$vehicle->colour.';';
@@ -284,24 +326,30 @@ my $_alloc_cell_event_row = sub {
       class => 'table-cell-help server tips', id => $id,
       title => locm $req, 'Event Information' };
 
+   my $action = 'assign_vehicle';
+   my $opts = { assignee => $event->owner, journal => $data->{journal},
+                start => ($event->duration)[ 0 ] };
+
    if (blessed $tuple->[ 1 ]) {
       my $vehicle = $tuple->[ 1 ];
-      my $vehicles = $data->{vehicles}->{ $vehicle->type };
-      my $vrn = $vehicle->vrn;
-      my $form_name = $event->uri."-${vrn}";
+
+      my $vrn = $vehicle->vrn; my $form_name = $event->uri."-${vrn}";
+
+      $opts->{vehicles} = $data->{vehicles}->{ $vehicle->type };
 
       p_cell $row, $_vehicle_select_cell->
-         ( $page, $vehicles, $form_name, $href, 'assign_vehicle', $vrn );
+         ( $page, $opts, $form_name, $href, $action, $vrn );
       $_add_event_tip->( $req, $page, $event );
       $vehicle->colour and $style = 'background-color: '.$vehicle->colour.';';
    }
    else {
       my $type = $tuple->[ 1 ];
-      my $vehicles = $data->{vehicles}->{ $type };
       my $form_name = $event->uri."-${type}-${count}";
 
+      $opts->{vehicles} = $data->{vehicles}->{ $type };
+
       p_cell $row, $_vehicle_select_cell->
-         ( $page, $vehicles, $form_name, $href, 'assign_vehicle' );
+         ( $page, $opts, $form_name, $href, $action );
       $_add_vreq_tip->( $req, $page, $event );
    }
 
@@ -322,8 +370,11 @@ my $_alloc_cell_vevent_row = sub {
       class => 'table-cell-help server tips', id => $vevent->uri,
       title => locm $req, 'Vehicle Event Information' };
 
+   my $opts = { assignee => $vevent->owner, journal => $data->{journal},
+                start => ($vevent->duration)[ 0 ], vehicles => [ $vehicle ] };
+
    p_cell $row, $_vehicle_select_cell->
-      ( $page, [ $vehicle ], 'disabled', NUL, NUL, $vehicle->vrn );
+      ( $page, $opts, 'disabled', NUL, NUL, $vehicle->vrn );
 
    $_alloc_cell_add_owner->( $row, $vevent, $style );
    $_add_v_event_tip->( $req, $page, $vevent );
@@ -450,6 +501,22 @@ my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
 };
 
+my $_initialise_journal = sub {
+   my ($self, $req, $rota_dt, $vehicles) = @_;
+
+   my $asset = $self->components->{asset}; my $journal = {};
+
+   for my $type (keys %{ $vehicles }) {
+      for my $vehicle (@{ $vehicles->{ $type } }) {
+         my $keeper = $asset->find_last_keeper( $req, $rota_dt, $vehicle );
+
+         $_add_journal->( $journal, $vehicle->vrn, $rota_dt, $keeper );
+      }
+   }
+
+   return $journal;
+};
+
 my $_left_shift = sub {
    my ($self, $req, $rota_name, $date) = @_;
 
@@ -511,7 +578,9 @@ my $_right_shift = sub {
 };
 
 my $_search_for_vehicle_events = sub {
-   my ($self, $opts) = @_; my $vevents = {}; $opts = { %{ $opts // {} } };
+   my ($self, $opts, $journal) = @_; my $vevents = {};
+
+   $opts = { %{ $opts // {} } }; $journal //= {};
 
    my $event_rs = $self->schema->resultset( 'Event' );
 
@@ -521,6 +590,10 @@ my $_search_for_vehicle_events = sub {
       my $k = $_local_dt->( $vevent->start_date )->ymd;
 
       push @{ $vevents->{ $k } //= [] }, $vevent;
+
+      my $start = ($vevent->duration)[ 0 ]; my $vehicle = $vevent->vehicle;
+
+      $_add_journal->( $journal, $vehicle->vrn, $start, $vevent->owner );
    }
 
    return $vevents;
@@ -539,7 +612,9 @@ my $_search_for_vehicles = sub {
 };
 
 my $_search_for_events = sub {
-   my ($self, $opts) = @_; $opts = { %{ $opts // {} } }; my $events = {};
+   my ($self, $opts, $journal) = @_; my $events = {};
+
+   $opts = { %{ $opts // {} } }; $journal //= {};
 
    my $vreq_rs = $self->schema->resultset( 'VehicleRequest' );
 
@@ -554,17 +629,26 @@ my $_search_for_events = sub {
 
    my $tport_rs = $self->schema->resultset( 'Transport' );
 
+   $opts->{prefetch} = [ { 'event' => [ 'owner', 'start_rota' ] }, 'vehicle' ];
+
    for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
       my $k = $_local_dt->( $tport->event->start_date )->ymd;
+      my $vehicle = $tport->vehicle;
 
-      push @{ $events->{ $k } //= [] }, [ $tport->event, $tport->vehicle ];
+      push @{ $events->{ $k } //= [] }, [ $tport->event, $vehicle ];
+
+      my $start = ($tport->event->duration)[ 0 ];
+
+      $_add_journal->( $journal, $vehicle->vrn, $start, $tport->event->owner );
    }
 
    return $events;
 };
 
 my $_search_for_slots = sub {
-   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
+   my ($self, $opts, $journal) = @_;
+
+   $opts = { %{ $opts // {} } }; $journal //= {};
 
    my $slot_rs = $self->schema->resultset( 'Slot' ); my $slots = {};
 
@@ -572,7 +656,11 @@ my $_search_for_slots = sub {
                  $slot_rs->search_for_slots( $opts )->all) {
       my $k = $_local_dt->( $slot->start_date )->ymd.'_'.$slot->key;
 
-      $slots->{ $k } = $slot;
+      $slots->{ $k } = $slot; $slot->vehicle or next;
+
+      my $start = ($slot->duration)[ 0 ];
+
+      $_add_journal->( $journal, $slot->vehicle->vrn, $start, $slot->operator );
    }
 
    return $slots;
@@ -660,11 +748,12 @@ sub alloc_table : Role(rota_manager) {
       before => $rota_dt->clone->add( days => 7 ),
       rota_type => $self->$_find_rota_type( $rota_name )->id };
    my $vehicles = $self->$_search_for_vehicles();
-   my $events = $self->$_search_for_events( $opts );
-   my $slots = $self->$_search_for_slots( $opts );
-   my $vevents = $self->$_search_for_vehicle_events( $opts );
-   my $data = { vehicles => $vehicles, events => $events, slots => $slots,
-                vevents => $vevents };
+   my $journal = $self->$_initialise_journal( $req, $rota_dt, $vehicles );
+   my $events = $self->$_search_for_events( $opts, $journal );
+   my $slots = $self->$_search_for_slots( $opts, $journal );
+   my $vevents = $self->$_search_for_vehicle_events( $opts, $journal );
+   my $data = { vehicles => $vehicles, events => $events, journal => $journal,
+                slots => $slots, vevents => $vevents };
    my $page = $stash->{page};
    my $row = p_row $table;
    my $v_cache = {};

@@ -48,7 +48,8 @@ $class->add_columns
      last_name        => varchar_data_type(  32 ),
      address          => varchar_data_type(  64 ),
      postcode         => varchar_data_type(  16 ),
-     location         => varchar_data_type(  24),
+     location         => varchar_data_type(  24 ),
+     coordinates      => varchar_data_type(  16 ),
      email_address    => varchar_data_type(  64 ),
      mobile_phone     => varchar_data_type(  16 ),
      home_phone       => varchar_data_type(  16 ),
@@ -497,6 +498,7 @@ sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       constraints      => {
          address       => { max_length =>  64, min_length => 0, },
+         coordinates   => { max_length =>  16, min_length => 3, },
          email_address => { max_length =>  64, min_length => 0, },
          first_name    => { max_length =>  32, min_length => 1, },
          last_name     => { max_length =>  32, min_length => 1, },
@@ -511,6 +513,7 @@ sub validation_attributes {
       },
       fields           => {
          address       => { validate => 'isValidLength isValidText' },
+         coordinates   => { validate => 'isValidLength' },
          badge_expires => { validate => 'isValidDate' },
          badge_id      => {
             unique     => TRUE,

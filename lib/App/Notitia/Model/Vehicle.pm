@@ -48,8 +48,20 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_compare_datetimes = sub {
+my $_compare_forward = sub {
    my ($x, $y) = @_;
+
+   $x->[ 0 ]->start_date < $y->[ 0 ]->start_date and return -1;
+   $x->[ 0 ]->start_date > $y->[ 0 ]->start_date and return  1;
+
+   $x = time2int $x->[ 1 ]->[ 2 ]->{value};
+   $y = time2int $y->[ 1 ]->[ 2 ]->{value};
+
+   $x < $y and return -1; $x > $y and return 1; return 0;
+};
+
+my $_compare_reverse = sub { # Duplication for efficiency
+   my ($y, $x) = @_;
 
    $x->[ 0 ]->start_date < $y->[ 0 ]->start_date and return -1;
    $x->[ 0 ]->start_date > $y->[ 0 ]->start_date and return  1;
@@ -429,9 +441,9 @@ my $_vehicle_events = sub {
              $self->$_transport_links( $req, $event ) ] ];
    }
 
-   return [ sort { exists $opts->{before} ? $_compare_datetimes->( $b, $a )
-                                          : $_compare_datetimes->( $a, $b ) }
-            @rows ];
+   my $compare = exists $opts->{before} ? $_compare_reverse : $_compare_forward;
+
+   return [ sort { $compare->( $a, $b ) } @rows ];
 };
 
 my $_vehicle_links = sub {
@@ -442,23 +454,21 @@ my $_vehicle_links = sub {
    push @{ $links },
       { value => management_link( $req, "${moniker}/vehicle", $vrn ) };
 
-   if ($service) {
-      my $now  = to_dt( time2str );
-      my $opts = $_create_action->( $req );
-      my $href = uri_for_action $req, 'event/vehicle_event', [ $vrn ];
+   $service or return $links;
 
-      push @{ $links }, { value => f_link 'event', $href, $opts };
+   my $now  = to_dt time2str;
+   my $opts = $_create_action->( $req );
+   my $href = uri_for_action $req, 'event/vehicle_event', [ $vrn ];
 
-      push @{ $links },
-         { value => management_link
-              ( $req, "${moniker}/vehicle_events", $vrn,
-                { params => {
-                   after => $now->subtract( days => 1 )->ymd } } ) };
+   push @{ $links }, { value => f_link 'event', $href, $opts };
 
-      my $keeper = $self->find_last_keeper( $req, $vehicle, $now );
+   push @{ $links },
+      { value => management_link( $req, "${moniker}/vehicle_events", $vrn, {
+         params => { after => $now->subtract( days => 1 )->ymd } } ) };
 
-      push @{ $links }, { value => $keeper ? $keeper->label : NUL };
-   }
+   my $keeper = $self->find_last_keeper( $req, $now, $vehicle );
+
+   push @{ $links }, { value => $keeper ? $keeper->label : NUL };
 
    return $links;
 };
@@ -551,7 +561,7 @@ sub delete_vehicle_action : Role(rota_manager) {
 }
 
 sub find_last_keeper {
-   my ($self, $req, $vehicle, $now) = @_; my $keeper;
+   my ($self, $req, $now, $vehicle) = @_; my $keeper;
 
    my $tommorrow = $now->clone->truncate( to => 'day' )->add( days => 1 );
    my $opts      = { before     => $tommorrow,
@@ -561,9 +571,7 @@ sub find_last_keeper {
                      rows       => 10, };
 
    for my $tuple (@{ $self->$_vehicle_events( $req, $opts ) }) {
-      my ($start_datetime) = $tuple->[ 0 ]->duration;
-
-      $start_datetime > $now and next;
+      my ($start_dt) = $tuple->[ 0 ]->duration; $start_dt > $now and next;
 
       my $attr = $tuple->[ 0 ]->can( 'owner' ) ? 'owner' : 'operator';
 

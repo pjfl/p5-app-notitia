@@ -30,6 +30,7 @@ CREATE TABLE "person" (
   "address" varchar(64) NOT NULL DEFAULT '',
   "postcode" varchar(16) NOT NULL DEFAULT '',
   "location" varchar(24) NOT NULL DEFAULT '',
+  "coordinates" varchar(16) NOT NULL DEFAULT '',
   "email_address" varchar(64) NOT NULL DEFAULT '',
   "mobile_phone" varchar(16) NOT NULL DEFAULT '',
   "home_phone" varchar(16) NOT NULL DEFAULT '',

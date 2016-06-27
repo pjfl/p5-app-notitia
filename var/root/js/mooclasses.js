@@ -247,7 +247,7 @@ var Dialog = new Class( {
       maskOpts: {},
       title   : 'Options',
       useIcon : false,
-      useMask : true,
+      useMask : true
    },
 
    initialize: function( el, body, options ) {
@@ -850,7 +850,7 @@ var NoticeBoard = new Class( {
 
       // Create notification container
       if (! this.board) this.board =
-         new Element( 'div', { class: klass } ).inject( $( 'body' ) );
+         new Element( 'div', { 'class': klass } ).inject( $( 'body' ) );
 
       this.queue = [];
    },
@@ -864,10 +864,10 @@ var NoticeBoard = new Class( {
          return;
       }
 
-      var el = new Element( 'div', { class: 'notice' } ).set( 'html', content );
+      var el = new Element( 'div', { 'class': 'notice' } ).set( 'html', content );
 
       if (opt.canClose) {
-         new Element( 'div', { class: 'close-icon' } ).inject( el, 'top' );
+         new Element( 'div', { 'class': 'close-icon' } ).inject( el, 'top' );
       }
 
       el.store( 'notice:options', opt ); this.attach( el );
@@ -2836,6 +2836,11 @@ var WindowUtils = new Class( {
          if (typeOf( opt.customLogFn ) != 'function')
             throw 'customLogFn is not a function';
          else this.customLogFn = opt.customLogFn;
+      }
+
+      if (typeof console == "undefined") {
+         console[ 'log'  ] = function( msg ) { window.alert( msg ); };
+         console[ 'warn' ] = function( msg ) { window.alert( msg ); };
       }
 
       [ 'log', 'warn' ].each( function( method ) {

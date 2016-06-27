@@ -241,7 +241,7 @@ my $_update_person_from_request = sub {
 
    for my $attr (qw( active address badge_expires badge_id dob email_address
                      first_name home_phone joined last_name location
-                     mobile_phone name notes password_expired
+                     coordinates mobile_phone name notes password_expired
                      postcode region resigned subscription )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
@@ -293,9 +293,10 @@ my $_bind_person_fields = sub {
       email_address    => { class    => 'standard-field server',
                             disabled => $disabled },
       address          => { disabled => $disabled },
-      location         => { disabled => $disabled },
       postcode         => { class    => 'standard-field server',
                             disabled => $disabled },
+      location         => { disabled => $disabled },
+      coordinates      => { disabled => $disabled },
       mobile_phone     => { disabled => $disabled },
       home_phone       => { disabled => $disabled },
       next_of_kin      => $self->$_bind_next_of_kin( $person, $disabled ),

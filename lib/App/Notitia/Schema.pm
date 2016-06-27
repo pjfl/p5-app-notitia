@@ -876,6 +876,8 @@ Creates the DDL for multiple RDBMs
 
 =head2 C<import_people> - Import person objects from a CSV file
 
+=head2 C<import_vehicles> - Import vehicle objects from a CSV file
+
 =head2 C<send_message> - Send email or SMS to people
 
 =head2 C<restore_data> - Restore a backup of the database and documents

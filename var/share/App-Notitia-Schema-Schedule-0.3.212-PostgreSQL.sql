@@ -27,6 +27,7 @@ CREATE TABLE "person" (
   "address" character varying(64) DEFAULT '' NOT NULL,
   "postcode" character varying(16) DEFAULT '' NOT NULL,
   "location" character varying(24) DEFAULT '' NOT NULL,
+  "coordinates" character varying(16) DEFAULT '' NOT NULL,
   "email_address" character varying(64) DEFAULT '' NOT NULL,
   "mobile_phone" character varying(16) DEFAULT '' NOT NULL,
   "home_phone" character varying(16) DEFAULT '' NOT NULL,
