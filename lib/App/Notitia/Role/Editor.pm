@@ -178,7 +178,7 @@ my $_search_results = sub {
    my $query   = $req->query_params->( 'query', { scrubber => $scrub } );
    my $langd   = $self->config->docs_root->catdir( $req->locale );
    my $resp    = $self->run_cmd
-                 ( [ 'ack', $query, "${langd}" ], { expected_rv => 1, } );
+                 ( [ 'ack', '-i', $query, "${langd}" ], { expected_rv => 1, } );
    my $results = $resp->rv == 1
                ? $langd->catfile( locm $req, 'Nothing found' ).'::'
                : $resp->stdout;
