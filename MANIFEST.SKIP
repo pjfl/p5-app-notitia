@@ -64,7 +64,6 @@ Thumbs.db
 \bvar/etc/app-notitia.json
 \bvar/etc/max_badge_id
 \bvar/etc/profile
-\bvar/logs
 \bvar/docs/.mtime
 \bvar/docs/assets
 \bvar/docs/en/drafts
@@ -75,6 +74,8 @@ Thumbs.db
 \bvar/docs/en/Dir1
 \bvar/docs/en/Test_C.md
 \bvar/docs/en/Test_D.md
+\bvar/locale/en/notitia_local.po
+\bvar/logs
 \bvar/session
 \bvar/tmp
 

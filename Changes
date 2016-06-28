@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #58. Spreadsheet key table now smaller
           - Implements #59. Case insensitive text search
           - Implements #56. Navigation improvements
           - Adds distances to vehicle allocation on spreadsheet

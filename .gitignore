@@ -28,6 +28,7 @@ var/etc/profile
 var/docs/.mtime
 var/docs/assets
 var/docs/en/*
+var/locale/en/notitia_local.po
 var/logs
 var/less/hyde/light.less
 var/session
