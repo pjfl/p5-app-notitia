@@ -204,6 +204,7 @@ footer {
    .border-radius; float: right; height: 85px; margin: 5px 5px 0 0; width: 85px;
 }
 .narrow-field { min-width: 200px; }
+.nav-link { margin-top: 7px; }
 .next-rota, .prev-rota {
    background-color: #767676; .border-radius; .box-shadow;
    color: @foreground; font-size: 12px; font-weight: 700;
@@ -242,7 +243,9 @@ footer {
 .required { border-right: 3px solid @divider; }
 .smallint-field { min-width: 150px; }
 .spreadsheet { margin-left: 0.5em; margin-right: 0.5em; overflow-x: scroll; }
-.spreadsheet-heading { max-width: 978px; margin: 0 auto -40px auto; }
+.spreadsheet-heading {
+   line-height: 36px; margin: 0 auto; max-width: 320px;
+}
 .spreadsheet-fixed-cell, .spreadsheet-fixed-form, .spreadsheet-fixed-select {
    overflow: hidden; padding-bottom: 0; padding-top: 0;
 }
@@ -251,7 +254,7 @@ footer {
    max-width: 90px; min-width: 90px; padding: 0 !important;
 }
 .spreadsheet-key-table {
-   max-width: 978px; margin: -10px auto 0 auto; padding: 0 100px;
+   max-width: 978px; margin: 10px auto 0 auto; padding: 0 100px;
 }
 .spreadsheet-select {
    background-color: #fff; border: 2px inset; .border-radius;
@@ -628,9 +631,6 @@ h1, h2, h3, h4, h5, h6 { margin: 0; }
 p { line-height: 1.5em; }
 select.standard-field, select.narrow-field { padding-left: 0.5em; }
 strong { font-weight: 700; }
-.align-center { text-align: center; }
-.align-left { text-align: left; }
-.align-right { text-align: right; }
 .document {
    pre, code { font-size: 0.875em; }
 }

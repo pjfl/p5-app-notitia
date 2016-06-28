@@ -1,22 +1,20 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Two Week Table -->
-<h4 class="spreadsheet-heading">[% page.title %]</h4>
-<div class="operation-links left">
-   <div class="left align-right">
+<div class="operation-links">
+   <div class="nav-link left align-right">
 [% Dispatch( page.fields.nav.prev ) -%]
    </div>
-   <div class="right align-left">
+   <div class="nav-link right align-left">
 [% Dispatch( page.fields.nav.next ) -%]
    </div>
+   <h4 class="spreadsheet-heading">[% page.title %]</h4>
 </div>
-<br>
 [% Dispatch( page.forms.0 ) -%]
-<br>
-<div class="operation-links left">
-   <div class="left align-right">
+<div class="operation-links">
+   <div class="nav-link left align-right">
 [% Dispatch( page.fields.nav.prev ) -%]
    </div>
-   <div class="right align-left">
+   <div class="nav-link right align-left">
 [% Dispatch( page.fields.nav.next ) -%]
    </div>
 </div>
