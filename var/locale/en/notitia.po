@@ -42,6 +42,9 @@ msgstr "Address"
 msgid "address_viewer"
 msgstr "Address Viewer"
 
+msgid "admin_index_link"
+msgstr "Management"
+
 msgid "admin_index_title"
 msgstr "Administration Index"
 
@@ -1061,6 +1064,9 @@ msgstr "If left blank a username will be generated from the "
 msgid "vehicle"
 msgstr "Vehicle"
 
+msgid "vehicle_allocation_management_heading"
+msgstr "Vehicle Allocation"
+
 msgid "vehicle_colour_field_tip"
 msgstr "Leave blank to assign a random colour. Colours are either a name or"
        "or a hexadecimal number, e.g. #1b00b5"
@@ -1187,7 +1193,7 @@ msgid "vrn"
 msgstr "Registration"
 
 msgid "week_management_heading"
-msgstr "Vehicle Allocations"
+msgstr "Select Week"
 
 msgid "week_rota_heading_mon"
 msgstr "Mon [_1]"

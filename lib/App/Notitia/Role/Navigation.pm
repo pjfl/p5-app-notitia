@@ -196,10 +196,12 @@ sub primary_navigation_links {
 
    $class = $location eq 'admin' ? 'current' : NUL;
 
+   my $after = DateTime->now->subtract( days => 1 )->ymd;
+
    $req->authenticated and
       p_item $nav, $nav_linkto->( $req, {
          class => $class, tip => 'admin_index_title',
-         value => 'Admin', }, 'person/people' );
+         value => 'admin_index_link', }, 'event/events', [], after => $after );
 
    return $nav;
 }
@@ -241,12 +243,6 @@ sub rota_navigation_links {
    while ($sow->day_of_week > 1) { $sow = $sow->subtract( days => 1 ) }
 
    push @{ $list }, $nav_folder->( $req, 'week' );
-
-   if ($self->$_allowed( $req, 'week/allocation' )) {
-      push @{ $list }, $_week_link->( $req, 'week/allocation', $name, $sow, {
-         value => 'spreadsheet' } );
-   }
-
    push @{ $list }, $_week_link->( $req, $actionp, $name,
                                    $sow->clone->subtract( weeks => 1 ) );
    push @{ $list }, $_week_link->( $req, $actionp, $name, $sow );
@@ -258,6 +254,12 @@ sub rota_navigation_links {
                                    $sow->clone->add( weeks => 3 ) );
    push @{ $list }, $_week_link->( $req, $actionp, $name,
                                    $sow->clone->add( weeks => 4 ) );
+
+   if ($self->$_allowed( $req, 'week/allocation' )) {
+      push @{ $list }, $nav_folder->( $req, 'vehicle_allocation' );
+      push @{ $list }, $_week_link->( $req, 'week/allocation', $name, $sow, {
+         value => 'spreadsheet' } );
+   }
 
    return $nav;
 }

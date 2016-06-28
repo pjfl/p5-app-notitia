@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #56. Navigation improvements
           - Adds distances to vehicle allocation on spreadsheet
             Schema changed. Coordinates added to person
           - Implements #51. Vehicle import

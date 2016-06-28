@@ -472,7 +472,7 @@ sub person_summary : Role(person_manager) Role(address_viewer) {
    return $self->get_stash( $req, $page );
 }
 
-sub people : Role(any) {
+sub people : Role(person_manager) Role(address_viewer) {
    my ($self, $req, $type) = @_;
 
    my $actionp =  $self->moniker.'/people';
