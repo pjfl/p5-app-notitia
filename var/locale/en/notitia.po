@@ -703,6 +703,12 @@ msgstr "Night South"
 msgid "night_rider_2_abbrv"
 msgstr "NS"
 
+msgid "nok_view_link"
+msgstr "NOK"
+
+msgid "nok_view_tip"
+msgstr "View this person's next of kin record"
+
 msgid "notes"
 msgstr "Notes"
 

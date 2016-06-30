@@ -226,7 +226,7 @@ sub p_fields ($$$$$) {
          $opts = $_bind->( $k, delete $opts->{value}, $opts );
       }
       else {
-         my $v = $opts->{value} ? delete $opts->{value} : $src->$k();
+         my $v = defined $opts->{value} ? delete $opts->{value} : $src->$k();
 
          $opts = $_field_options->( $schema, $result, $k, $opts );
          $opts = $_bind->( $k, $v, $opts );

@@ -169,9 +169,10 @@ my $_people_title = sub {
 };
 
 my $_person_ops_links = sub {
-   my ($req, $page, $actionp, $scode) = @_;
+   my ($req, $page, $moniker, $person) = @_;
 
-   my $href = uri_for_action $req, 'person/mugshot', [ $scode ];
+   my $scode = $person->shortcode;
+   my $href = uri_for_action $req, "${moniker}/mugshot", [ $scode ];
 
    push @{ $page->{literal_js} //= [] },
       dialog_anchor( 'upload_mugshot', $href, {
@@ -182,10 +183,19 @@ my $_person_ops_links = sub {
    my $mugshot = f_link 'mugshot', C_DIALOG, {
       action => 'upload', request => $req };
 
+   my $actionp = "${moniker}/person";
    my $add_person = f_link 'person', uri_for_action( $req, $actionp ), {
       action => 'create', container_class => 'add-link', request => $req };
+   my $links = [ $mugshot, $add_person ];
 
-   return [ $mugshot, $add_person ];
+   my $view_nok; if (my $nok = $person->next_of_kin) {
+      $view_nok = f_link 'nok', uri_for_action( $req, $actionp, [ $nok ] ), {
+         action => 'view', container_class => 'add-link', request => $req };
+   }
+
+   $view_nok and unshift @{ $links }, $view_nok;
+
+   return $links;
 };
 
 # Private methods
@@ -200,6 +210,17 @@ my $_bind_next_of_kin = sub {
    $disabled and $opts->{disabled} = TRUE;
 
    return $opts;
+};
+
+my $_bind_view_nok = sub {
+   my ($self, $req, $person, $disabled) = @_;
+
+   $person->next_of_kin or return { value => NUL };
+
+   my $actionp = $self->moniker.($disabled ? '/person_summary' : '/person');
+   my $nok = $person->next_of_kin;
+
+   return ;
 };
 
 my $_list_all_roles = sub {
@@ -424,9 +445,9 @@ sub mugshot : Role(person_manager) {
 sub person : Role(person_manager) {
    my ($self, $req) = @_; my $people;
 
-   my $actionp    =  $self->moniker.'/person';
+   my $moniker    =  $self->moniker;
    my $name       =  $req->uri_params->( 0, { optional => TRUE } );
-   my $href       =  uri_for_action $req, $actionp, [ $name ];
+   my $href       =  uri_for_action $req, "${moniker}/person", [ $name ];
    my $form       =  blank_form 'person-admin', $href;
    my $action     =  $name ? 'update' : 'create';
    my $page       =  {
@@ -437,7 +458,7 @@ sub person : Role(person_manager) {
    my $person     =  $_maybe_find_person->( $person_rs, $name );
    my $opts       =  { action => $action };
    my $fields     =  $self->$_bind_person_fields( $req, $form, $person, $opts );
-   my $links      =  $_person_ops_links->( $req, $page, $actionp, $name );
+   my $links      =  $_person_ops_links->( $req, $page, $moniker, $person );
    my $args       =  [ 'person', $person->label ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
