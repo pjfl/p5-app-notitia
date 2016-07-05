@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Bump F::DC version. Fixes multifile cache invalidation
           - Implements #60. Adds nok link to person form
           - Implements #54. Title centering on spreadsheet
           - Implements #58. Spreadsheet key table now smaller
