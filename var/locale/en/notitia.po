@@ -770,7 +770,7 @@ msgid "people_heading_0"
 msgstr "People"
 
 msgid "people_heading_1"
-msgstr "Edit"
+msgstr "Manage"
 
 msgid "people_heading_2"
 msgstr "Roles"
@@ -965,7 +965,7 @@ msgid "slot_roles_list_tip"
 msgstr "Manage the certificates required by the slot roles"
 
 msgid "slot_yield_tip"
-msgstr "Yield this [_1] slot"
+msgstr "Yield this [_1] slot [_2]"
 
 msgid "slotname"
 msgstr "Slot Name"

@@ -101,15 +101,18 @@ my $_contact_links = sub {
                   value => { name  => 'selected',
                              type  => 'checkbox',
                              value => $person->shortcode } };
-   push @links, { value => $nok ? $nok->label : NUL };
-   push @links, { class => 'align-right',
-                  value => $nok ? $nok->home_phone : NUL };
-   push @links, { class => 'align-right',
-                  value => $nok ? $nok->mobile_phone : NUL };
-   push @links, { class => 'align-center',
-                  value => $nok ? { name  => 'selected',
-                                    type  => 'checkbox',
-                                    value => $nok->shortcode } : NUL };
+
+   if (is_member 'person_manager', $req->session->roles) {
+      push @links, { value => $nok ? $nok->label : NUL };
+      push @links, { class => 'align-right',
+                     value => $nok ? $nok->home_phone : NUL };
+      push @links, { class => 'align-right',
+                     value => $nok ? $nok->mobile_phone : NUL };
+      push @links, { class => 'align-center',
+                     value => $nok ? { name  => 'selected',
+                                       type  => 'checkbox',
+                                       value => $nok->shortcode } : NUL };
+   }
 
    return [ { value => $person->label }, @links ];
 };
@@ -127,34 +130,16 @@ my $_people_headers = sub {
 
    my $role = $params->{role} // NUL; my $type = $params->{type} // NUL;
 
-   if ($type eq 'contacts') { $header = 'contacts_heading'; $max = 7 }
+   if ($type eq 'contacts') {
+      $header = 'contacts_heading';
+      $max = is_member( 'person_manager', $req->session->roles) ? 7 : 3;
+   }
    else {
       $header = 'people_heading';
       $max    = ($role eq 'bike_rider' || $role eq 'driver') ? 4 : 3;
    }
 
    return [ map { { value => loc( $req, "${header}_${_}" ) } } 0 .. $max ];
-};
-
-my $_people_links = sub {
-   my ($req, $params, $person) = @_; my $role = $params->{role};
-
-   $params->{type} and $params->{type} eq 'contacts'
-                   and return $_contact_links->( $req, $person );
-
-   my @links; my $scode = $person->shortcode;
-
-   my @paths = ( 'person/person', 'role/role', 'certs/certifications' );
-
-   $role and ($role eq 'bike_rider' or $role eq 'driver')
-         and push @paths, 'blots/endorsements';
-
-
-   for my $actionp ( @paths ) {
-      push @links, { value => management_link( $req, $actionp, $scode ) };
-   }
-
-   return [ { value => $person->label }, @links ];
 };
 
 my $_people_title = sub {
@@ -231,6 +216,32 @@ my $_list_all_roles = sub {
 
 my $_next_badge_id = sub {
    return $_[ 0 ]->schema->resultset( 'Person' )->next_badge_id;
+};
+
+my $_people_links = sub {
+   my ($self, $req, $params, $person) = @_;
+
+   my $moniker = $self->moniker; my $role = $params->{role};
+
+   $params->{type} and $params->{type} eq 'contacts'
+                   and return $_contact_links->( $req, $person );
+
+   my @links; my $scode = $person->shortcode;
+
+   my @paths = ( 'role/role', 'certs/certifications' );
+
+   unshift @paths, is_member( 'person_manager', $req->session->roles )
+      ? "${moniker}/person" : "${moniker}/person_summary";
+
+   $role and ($role eq 'bike_rider' or $role eq 'driver')
+         and push @paths, 'blots/endorsements';
+
+
+   for my $actionp ( @paths ) {
+      push @links, { value => management_link( $req, $actionp, $scode ) };
+   }
+
+   return [ { value => $person->label }, @links ];
 };
 
 my $_people_ops_links = sub {
@@ -371,7 +382,7 @@ sub activate : Role(anon) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub contacts : Role(person_manager) Role(address_viewer) {
+sub contacts : Role(address_viewer) Role(person_manager) Role(controller) {
    my ($self, $req) = @_; return $self->people( $req, 'contacts' );
 }
 
@@ -493,7 +504,7 @@ sub person_summary : Role(person_manager) Role(address_viewer) {
    return $self->get_stash( $req, $page );
 }
 
-sub people : Role(person_manager) Role(address_viewer) {
+sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
    my ($self, $req, $type) = @_;
 
    my $actionp =  $self->moniker.'/people';
@@ -523,9 +534,11 @@ sub people : Role(person_manager) Role(address_viewer) {
 
    my $table = p_table $form, { headers => $_people_headers->( $req, $params )};
 
-   $type eq 'contacts' and $table->{class} = 'smaller-table';
+   $type eq 'contacts' and is_member( 'person_manager', $req->session->roles )
+      and $table->{class} = 'smaller-table';
 
-   p_row $table, [ map { $_people_links->( $req, $params, $_ ) } $people->all ];
+   p_row $table, [ map { $self->$_people_links( $req, $params, $_ ) }
+                   $people->all ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 

@@ -113,7 +113,7 @@ sub admin_navigation_links {
         $nav_linkto->( $req, { name => 'contacts_list' }, 'person/contacts', [],
                        status => 'current' );
 
-   push @{ $list },
+   $self->$_allowed( $req, 'person/people' ) and push @{ $list },
         $nav_linkto->( $req, { name => 'people_list' }, 'person/people', [] ),
         $nav_linkto->( $req, { name => 'current_people_list' }, 'person/people',
                        [], status => 'current' ),

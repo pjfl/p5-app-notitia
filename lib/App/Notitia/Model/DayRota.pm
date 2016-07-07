@@ -151,6 +151,17 @@ my $_participents_link = sub {
                          value => '&nbsp;', } };
 };
 
+my $_slot_contact_info = sub {
+   my ($req, $slot) = @_; slot_claimed $slot or return NUL;
+
+   for my $role ('controller', 'rota_manager') {
+      is_member $role, $req->session->roles
+         and return '('.$slot->{operator}->mobile_phone.')';
+   }
+
+   return NUL;
+};
+
 my $_slot_label = sub {
    return slot_claimed( $_[ 1 ] ) ? $_[ 1 ]->{operator}->label
                                   : locm $_[ 0 ], 'Vacant';
@@ -161,7 +172,9 @@ my $_slot_link = sub {
 
    my $action = slot_claimed $data->{ $k } ? 'yield' : 'claim';
    my $value = $_slot_label->( $req, $data->{ $k } );
-   my $opts = { action => $action, args => [ $slot_type ],
+   my $opts = { action => $action,
+                args => [ $slot_type,
+                          $_slot_contact_info->( $req, $data->{ $k } ) ],
                 name => $k, request => $req, value => $value };
 
    return { colspan => 2, value => f_link 'slot', C_DIALOG, $opts };
