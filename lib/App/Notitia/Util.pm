@@ -32,7 +32,7 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      js_togglers_config js_window_config lcm_for load_file_data
                      loc localise_tree locm mail_domain make_id_from
                      make_name_from make_tip management_link mtime new_salt
-                     nullable_foreign_key_data_type
+                     now_dt nullable_foreign_key_data_type
                      nullable_numerical_id_data_type nullable_varchar_data_type
                      numerical_id_data_type page_link_set register_action_paths
                      serial_data_type set_element_focus
@@ -696,6 +696,10 @@ sub new_salt ($$) {
         . (en_base64( pack( 'H*', substr( create_token, 0, 32 ) ) ) );
 }
 
+sub now_dt {
+   return to_dt( time2str );
+}
+
 sub nullable_foreign_key_data_type () {
    return { data_type         => 'integer',
             default_value     => undef,
@@ -1026,6 +1030,8 @@ LCM for a list of integers
 =item C<mtime>
 
 =item C<new_salt>
+
+=item C<now_dt>
 
 =item C<nullable_foreign_key_data_type>
 

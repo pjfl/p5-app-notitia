@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #61. Restrict slot claim by region and date
           - Implements #62. Restricts access to NOK
           - Bump F::DC version. Fixes multifile cache invalidation
           - Implements #60. Adds nok link to person form

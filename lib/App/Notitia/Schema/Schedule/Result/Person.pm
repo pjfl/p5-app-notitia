@@ -9,7 +9,7 @@ use App::Notitia;
 use App::Notitia::Constants    qw( EXCEPTION_CLASS SPC TRUE
                                    FALSE NUL VARCHAR_MAX_SIZE );
 use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
-                                   is_encrypted new_salt
+                                   is_encrypted new_salt now_dt
                                    nullable_foreign_key_data_type
                                    nullable_numerical_id_data_type
                                    numerical_id_data_type
@@ -213,8 +213,12 @@ my $_assert_claim_allowed = sub {
    my $i    = slot_limit_index $shift_type, $slot_type;
 
    $subslot > $conf->slot_limits->[ $i ] - 1
-      and throw 'Cannot claim subslot [_1] greater than slot limit [_2]',
+      and throw 'Cannot claim slot [_1] greater than slot limit [_2]',
           [ $subslot, $conf->slot_limits->[ $i ] - 1 ];
+
+   $slot_type eq 'rider' and now_dt->add( weeks => 4 ) < $date
+      and $self->region ne $conf->slot_region->{ $subslot }
+      and throw 'Cannot claim slot [_1] out of region', [ $subslot ];
 
    return;
 };

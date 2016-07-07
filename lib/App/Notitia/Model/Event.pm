@@ -233,6 +233,8 @@ my $_update_event_from_request = sub {
 
       $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
+      $attr eq 'max_participents' and not $v and undef $v;
+
       $event->$attr( $v );
    }
 

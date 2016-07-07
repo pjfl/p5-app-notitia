@@ -251,6 +251,9 @@ has 'slot_certs'      => is => 'ro',   isa => HashRef[ArrayRef],
 has 'slot_limits'     => is => 'ro',   isa => ArrayRef[PositiveInt],
    builder            => sub { [ 2, 1, 3, 3, 1, 1 ] };
 
+has 'slot_region'     => is => 'ro',   isa => HashRef,
+   builder            => sub { { 0 => 'N', 1 => 'C', 2 => 'S' } };
+
 has 'sms_attributes'  => is => 'ro',   isa => HashRef,
    builder            => $_build_sms_attributes, init_arg => undef;
 
@@ -705,6 +708,11 @@ An array reference containing six integers. These are the limits on the number
 of rota slots allowed for each type human resource. In order they are;
 controllers day, controllers night, riders day, riders night, spare drivers
 day, and spare drivers night
+
+=item C<slot_region>
+
+A hash reference used to map slot numbers onto their regions. Defaults to;
+0 - North, 1 - Central, 2 - South
 
 =item C<stash_attr>
 
