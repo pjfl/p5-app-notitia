@@ -108,14 +108,14 @@ msgstr "All Bikes"
 msgid "bike_list_tip"
 msgstr "List only bikes"
 
-msgid "bike_rider"
-msgstr "Bike Rider"
+msgid "rider"
+msgstr "Rider"
 
-msgid "bike_rider_list_link"
-msgstr "Bike Riders"
+msgid "rider_list_link"
+msgstr "Riders"
 
-msgid "bike_rider_list_tip"
-msgstr "List bike riders"
+msgid "rider_list_tip"
+msgstr "List riders"
 
 msgid "blots_heading_0"
 msgstr "Endorsement"

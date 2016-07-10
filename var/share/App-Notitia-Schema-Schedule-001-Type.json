@@ -3,7 +3,7 @@
    "rows": [
       "administrator, role",
       "address_viewer, role",
-      "bike_rider, role",
+      "rider, role",
       "controller, role",
       "driver, role",
       "editor, role",

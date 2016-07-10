@@ -38,7 +38,7 @@
          "C": "controller",
          "D": "driver",
          "F": "fund_raiser",
-         "R": "bike_rider"
+         "R": "rider"
       }
    },
    "l10n_domains": [ "notitia_local", "notitia" ],

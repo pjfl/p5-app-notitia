@@ -1,5 +1,5 @@
 Revision history for App::Notitia
-	
+          - Changed bike_rider role to just rider	
           - Add basic documentation for main menu items
           - Fixes #66. Redirect after vehicle update
           - Fixes end of bst bug on month rota

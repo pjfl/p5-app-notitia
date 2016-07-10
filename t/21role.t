@@ -15,12 +15,12 @@ my $schema     =  $connection->schema;
 my $person_rs  =  $schema->resultset( 'Person' );
 my $person     =  $person_rs->search( { name => 'john' } )->single;
 
-eval { $person->delete_member_from( 'bike_rider' ) };
+eval { $person->delete_member_from( 'rider' ) };
 eval { $person->delete_certification_for( 'catagory_b' ) };
-eval { $person->add_member_to( 'bike_rider' ) }; my $e = $EVAL_ERROR;
+eval { $person->add_member_to( 'rider' ) }; my $e = $EVAL_ERROR;
 
 like $e, qr{ \Qno certification\E }mx,
-   'Need catagory_b certification to be a bike_rider';
+   'Need catagory_b certification to be a rider';
 
 done_testing;
 

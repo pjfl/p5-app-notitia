@@ -397,7 +397,7 @@ my $_find_rota_type = sub {
 };
 
 # Public methods
-sub claim_slot_action : Role(rota_manager) Role(bike_rider) Role(controller)
+sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
                         Role(driver) {
    my ($self, $req) = @_;
 
@@ -469,7 +469,7 @@ sub rota_redirect_action : Role(any) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
+sub slot : Role(rota_manager) Role(rider) Role(controller) Role(driver) {
    my ($self, $req) = @_;
 
    my $params = $req->uri_params;
@@ -484,7 +484,7 @@ sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
 
    if ($action eq 'claim') {
       my $role = $slot_type eq 'controller' ? 'controller'
-               : $slot_type eq 'rider'      ? 'bike_rider'
+               : $slot_type eq 'rider'      ? 'rider'
                : $slot_type eq 'driver'     ? 'driver'
                                             : FALSE;
 
@@ -507,7 +507,7 @@ sub slot : Role(rota_manager) Role(bike_rider) Role(controller) Role(driver) {
    return $stash;
 }
 
-sub yield_slot_action : Role(rota_manager) Role(bike_rider) Role(controller)
+sub yield_slot_action : Role(rota_manager) Role(rider) Role(controller)
                         Role(driver) {
    my ($self, $req) = @_;
 

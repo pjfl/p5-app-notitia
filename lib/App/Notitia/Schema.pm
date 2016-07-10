@@ -157,7 +157,7 @@ my $_populate_certs_from_roles = sub {
 
    my $date = to_dt( '1/1/1970' )->set_time_zone( 'local' );
 
-   (is_member 'bike_rider', $roles
+   (is_member 'rider', $roles
     or is_member 'm_advanced', [ map { $_->{type} } @{ $certs } ])
       and push @{ $certs }, { completed => $date, type => 'catagory_a' };
    is_member 'controller', $roles

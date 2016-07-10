@@ -15,24 +15,24 @@ my $schema     =  $connection->schema;
 my $person_rs  =  $schema->resultset( 'Person' );
 my $person     =  $person_rs->search( { name => 'john' } )->first;
 
-eval { $person->delete_member_from( 'bike_rider' ) };
+eval { $person->delete_member_from( 'rider' ) };
 
-eval { $person->assert_member_of( 'bike_rider' ) }; my $e = $EVAL_ERROR;
+eval { $person->assert_member_of( 'rider' ) }; my $e = $EVAL_ERROR;
 
-like $e, qr{ \Qnot a member\E }mx, 'John is not a bike rider';
+like $e, qr{ \Qnot a member\E }mx, 'John is not a rider';
 
-$person->add_member_to( 'bike_rider' );
+$person->add_member_to( 'rider' );
 
 $person = $person_rs->search
    ( { name => 'john' }, { prefetch => 'roles' } )->first;
 
-my $role = $person->assert_member_of( 'bike_rider' );
+my $role = $person->assert_member_of( 'rider' );
 
-is $role, 'bike_rider', 'John is now a bike rider';
+is $role, 'rider', 'John is now a rider';
 
-eval { $person->add_member_to( 'bike_rider' ) }; $e = $EVAL_ERROR;
+eval { $person->add_member_to( 'rider' ) }; $e = $EVAL_ERROR;
 
-like $e, qr{ \Qalready a member\E }mx, 'John is already a bike rider';
+like $e, qr{ \Qalready a member\E }mx, 'John is already a rider';
 
 done_testing;
 

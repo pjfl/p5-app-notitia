@@ -203,7 +203,7 @@ my $_assert_claim_allowed = sub {
    $self->$_assert_no_slot_collision
       ( $rota_name, $date, $shift_type, $slot_type );
 
-   $slot_type eq 'rider' and $self->assert_member_of( 'bike_rider' );
+   $slot_type eq 'rider' and $self->assert_member_of( 'rider' );
    $slot_type ne 'rider' and $bike
       and throw 'Cannot request a bike for slot type [_1]', [ $slot_type ];
 
