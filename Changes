@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #65. Controller can book am and pm slots
           - Refactored page_link_set in Util
           - Implements #61. Restrict slot claim by region and date
           - Implements #62. Restricts access to NOK
