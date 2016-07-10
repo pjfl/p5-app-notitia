@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #66. Redirect after vehicle update
           - Fixes end of bst bug on month rota
           - Fixes #65. Controller can book am and pm slots
           - Refactored page_link_set in Util

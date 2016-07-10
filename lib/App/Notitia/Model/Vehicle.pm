@@ -675,10 +675,11 @@ sub update_vehicle_action : Role(rota_manager) {
    try   { $vehicle->update }
    catch { $self->rethrow_exception( $_, 'delete', 'vehicle', $vehicle->vrn ) };
 
-   my $who     = $req->session->user_label;
+   my $who = $req->session->user_label; $vrn = $vehicle->vrn;
    my $message = [ to_msg 'Vehicle [_1] updated by [_2]', $vrn, $who ];
+   my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];
 
-   return { redirect => { location => $req->uri, message => $message } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub vehicle : Role(rota_manager) {
