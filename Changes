@@ -1,5 +1,6 @@
 Revision history for App::Notitia
-
+	
+          - Add basic documentation for main menu items
           - Implements #61. Restrict slot claim by region and date
           - Implements #62. Restricts access to NOK
           - Bump F::DC version. Fixes multifile cache invalidation
