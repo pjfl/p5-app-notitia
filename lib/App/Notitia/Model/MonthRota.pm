@@ -109,10 +109,11 @@ my $_prev_month = sub {
 };
 
 my $_week_number = sub {
-   my ($first, $rno) = @_; my $week = $first->clone->add( days => 7 * $rno );
+   my ($date, $rno) = @_;
 
-   return { class => 'month-rota-week-number',
-            value => $_local_dt->( $week )->week_number };
+   my $week = $_local_dt->( $date )->add( days => 7 * $rno );
+
+   return { class => 'month-rota-week-number', value => $week->week_number };
 };
 
 # Private methods
@@ -120,7 +121,7 @@ my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
 };
 
-my $_first_day_of_month = sub {
+my $_first_day_of_table = sub {
    my ($self, $req, $date) = @_;
 
    $date = $_local_dt->( $date )->set( day => 1 );
@@ -312,20 +313,24 @@ sub month_rota : Role(any) {
                       rows      => [] },
       template   => [ '/menu', 'custom/month-table' ],
       title      => $_month_rota_title->( $req, $rota_name, $rota_dt ), };
-   my $first     =  $self->$_first_day_of_month( $req, $rota_dt );
    my $opts      =  {
       after      => $rota_dt->clone->subtract( days => 1 ),
       before     => $rota_dt->clone->add( days => 31 ),
       rota_type  => $self->$_find_rota_type( $rota_name )->id };
    my $has_event =  $self->schema->resultset( 'Event' )->has_events_for( $opts);
    my $assigned  =  $self->$_slot_assignments( $opts );
+   my $first     =  $self->$_first_day_of_table( $req, $rota_dt );
 
    for my $rno (0 .. 5) {
-      my $row = []; my $dayno; push @{ $row }, $_week_number->( $first, $rno );
+      my $row = [];
+      my $dayno = $_local_dt->( $first )->add( days => 7 * $rno )->day;
+
+      $rno > 3 and $dayno == 1 and last;
+      push @{ $row }, $_week_number->( $first, $rno );
 
       for my $offset (map { 7 * $rno + $_ } 0 .. 6) {
          my $cell = { class => 'month-rota', value => NUL };
-         my $ldt  = $_local_dt->( $first->clone->add( days => $offset ) );
+         my $ldt  = $_local_dt->( $first )->add( days => $offset );
 
          $dayno = $ldt->day; $rno > 3 and $dayno == 1 and last;
          $_is_this_month->( $rno, $ldt ) and $cell = $self->$_rota_summary

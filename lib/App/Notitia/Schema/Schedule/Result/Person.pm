@@ -182,7 +182,7 @@ my $_new_shortcode = sub {
 };
 
 my $_assert_no_slot_collision = sub {
-   my ($self, $rota_name, $date, $shift_type) = @_;
+   my ($self, $rota_name, $date, $shift_type, $slot_type) = @_;
 
    my $rs      = $self->result_source->schema->resultset( 'Slot' );
    my $type_id = $self->$_find_rota_type( $rota_name )->id;
@@ -190,6 +190,7 @@ my $_assert_no_slot_collision = sub {
 
    for my $slot ($rs->search_for_slots( $opts )->all) {
       $slot->shift eq $shift_type and $self->id == $slot->operator->id
+         and not ($slot_type eq 'controller' and $slot_type eq $slot->type_name)
          and throw 'Person already assigned to slot [_1]', [ $slot ];
    }
 
@@ -199,7 +200,8 @@ my $_assert_no_slot_collision = sub {
 my $_assert_claim_allowed = sub {
    my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $bike) = @_;
 
-   $self->$_assert_no_slot_collision( $rota_name, $date, $shift_type );
+   $self->$_assert_no_slot_collision
+      ( $rota_name, $date, $shift_type, $slot_type );
 
    $slot_type eq 'rider' and $self->assert_member_of( 'bike_rider' );
    $slot_type ne 'rider' and $bike
