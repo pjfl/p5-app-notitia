@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Refactored page_link_set in Util
           - Implements #61. Restrict slot claim by region and date
           - Implements #62. Restricts access to NOK
           - Bump F::DC version. Fixes multifile cache invalidation

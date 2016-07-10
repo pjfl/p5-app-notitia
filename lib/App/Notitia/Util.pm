@@ -736,40 +736,25 @@ sub page_link_set ($$$$$) {
 
    my $list = [ $_page_link->( $req, 'first_page', $actionp,
                                $args, $params, $pager->first_page ) ];
+   my $lower_b = $pager->current_page - 4;
+   my $page = $lower_b < $pager->first_page ? $pager->first_page : $lower_b;
 
-   my $prev = $pager->previous_page || $pager->first_page;
-   my $next = $pager->next_page     || $pager->last_page;
-
-   # TODO: Learn to use a fucking editor that does not leave whitespace
-   # on the ends of lines. The project code standard is 80 columns per line.
-   # Learning to use the change log would be a good move too.
-   # The first and last links have
-   # nbsp's as well as elipses so extra wide then. With the first page selected
-   # I can see (1) 2 3 4 5. With the last page selected I can see
-   # 3 4 5 ( 6 ), what happened to page 2?. The links that these have
-   # replaced would take you half the distance to either the first or
-   # last pages, so that you could use them to do a binary chop
-   # Max(current - 2, first + 1)
-   my $n_prev = 4; 
-   my $page   = ($pager->current_page - $n_prev, $pager->first_page )
-                [$pager->current_page - $n_prev < $pager->first_page];
-   while ( ++$page < $pager->current_page ) {  
-       push @{ $list }, 
-           $_page_link->( $req, 'earlier_page', $actionp, 
-                          $args, $params, $page ); 
+   while (++$page < $pager->current_page) {
+      push @{ $list }, $_page_link->( $req, 'earlier_page', $actionp,
+                                      $args, $params, $page );
    }
 
    push @{ $list }, $_page_link->( $req, 'current_page', $actionp, $args,
                                    $params, $pager->current_page );
 
-   # Min(current + 2, last)
-   my $n_next = 4; $n_next = ($pager->current_page + $n_next, $pager->last_page -1 )
-                             [$pager->current_page + $n_next > $pager->last_page -1];
-   $page = $pager->current_page + 1;
-   while ( $page <= $n_next ) {
-       push @{ $list }, 
-           $_page_link->( $req, 'later_page', $actionp, 
-                          $args, $params, $page++ );
+   my $upper_b = $pager->current_page + 4;
+
+   $upper_b = $upper_b > $pager->last_page ? $pager->last_page : $upper_b;
+   $page = $pager->current_page;
+
+   while (++$page < $upper_b) {
+       push @{ $list }, $_page_link->( $req, 'later_page', $actionp,
+                                       $args, $params, $page );
    }
 
    push @{ $list }, $_page_link->( $req, 'last_page', $actionp, $args,
