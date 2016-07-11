@@ -306,6 +306,68 @@ var Dialog = new Class( {
    }
 } );
 
+var DropMenu = new Class( {
+   Implements: [ Options, Events ],
+
+   options: {
+      closeDelay: 200,
+      itemSelector: 'li',
+      listSelector: 'ul',
+      onClose: function( el ) {
+         var selector = this.options.itemSelector;
+
+         if (!el.getParent( selector ).hasClass( 'selected' )) el.hide();
+      },
+      onInitialize: function( el ) {
+         var selector = this.options.itemSelector;
+
+         if (!el.getParent( selector ).hasClass( 'selected' )) el.hide();
+      },
+      onOpen: function( el ) { el.show(); },
+      openDelay: 0,
+      selector: '.dropmenu',
+      toggleSelector: 'span'
+   },
+
+   initialize: function( options ) {
+      this.aroundSetOptions( options ); this.build();
+   },
+
+   attach: function( menu ) {
+      var opts = this.options;
+      var selector = opts.itemSelector + ' > ' + opts.listSelector;
+
+      menu.getElements( selector ).each( function( el ) {
+         var parent = el.getParent( opts.itemSelector ), timer;
+
+         this.fireEvent( 'initialize', el );
+
+         parent.getFirst( opts.toggleSelector ).addEvent( 'click', function() {
+            clearTimeout( timer );
+
+            if (parent.retrieve( 'DropDownOpen' )) {
+               parent.store( 'DropDownOpen', false );
+
+               if (opts.closeDelay) {
+                  timer = this.fireEvent.delay
+                     ( opts.closeDelay, this, [ 'close', el ] );
+               }
+               else this.fireEvent( 'close', el );
+            }
+            else {
+               parent.store( 'DropDownOpen', true );
+
+               if (opts.openDelay) {
+                  timer = this.fireEvent.delay
+                     ( opts.openDelay, this, [ 'open', el ] );
+               }
+               else this.fireEvent( 'open', el );
+            }
+         }.bind( this ) );
+      }, this );
+   }
+} );
+
 /* Description: An Fx.Elements extension which allows you to easily
  *              create accordion type controls.
  * License: MIT-style license

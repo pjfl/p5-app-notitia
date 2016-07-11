@@ -4,6 +4,7 @@ use App::Notitia::Attributes;  # Will do cleaning
 use App::Notitia::Util     qw( build_tree iterator localise_tree mtime
                                register_action_paths uri_for_action );
 use Class::Usul::Constants qw( SPC TRUE );
+use Class::Usul::Types     qw( PositiveInt );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -15,6 +16,8 @@ with    q(App::Notitia::Role::Editor);
 with    q(App::Notitia::Role::RSS);
 
 has '+moniker' => default => 'posts';
+
+has 'depth_offset' => is => 'ro', isa => PositiveInt, default => 3;
 
 register_action_paths
    'posts/dialog' => 'posts/dialog', 'posts/page' => 'posts',

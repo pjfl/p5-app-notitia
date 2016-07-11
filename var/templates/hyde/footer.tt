@@ -14,7 +14,6 @@
       </div>
    </div>
 </footer>
-<div id="page-status" class="page-status"></div>
 <script src="[% links.cdnjs.moocore %]"></script>
 <script src="[% links.cdnjs.moomore %]"></script>
 <script src="[% links.js %]mooclasses.js"></script>

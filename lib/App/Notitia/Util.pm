@@ -283,10 +283,10 @@ sub build_navigation ($$) {
       $link->{tip  }  = $get_tip_text->( $opts->{config}->docs_root, $node );
       $link->{value}  = $opts->{label}->( $link );
       $link->{href }  = uri_for_action( $req, $opts->{path}, [ $link->{url} ] );
-      $link->{depth} -= 2;
+      $link->{depth} -= $opts->{depth_offset};
 
       if (defined $ids->[ 0 ] and $ids->[ 0 ] eq $node->{id}) {
-         $link->{class} .= ' open'; shift @{ $ids };
+         $link->{class} .= ' selected'; shift @{ $ids };
       }
 
       push @nav, $link;

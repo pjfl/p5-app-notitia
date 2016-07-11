@@ -12,20 +12,18 @@ var Behaviour = new Class( {
       window   : {}
    },
 
-   options           : {
-      baseURL        : null,
-      cookieDomain   : '',
-      cookiePath     : '/',
-      cookiePrefix   : 'behaviour',
-      editing        : false,
-      firstField     : null,
-      formName       : null,
-      keyMap         : 'default',
-      message        : null,
-      popup          : false,
-      statusUpdPeriod: 4320,
-      target         : null,
-      useCodeMirror  : false
+   options          : {
+      baseURL       : null,
+      cookieDomain  : '',
+      cookiePath    : '/',
+      cookiePrefix  : 'behaviour',
+      editing       : false,
+      firstField    : null,
+      formName      : null,
+      keyMap        : 'default',
+      message       : null,
+      target        : null,
+      useCodeMirror : false
    },
 
    initialize: function( options ) {
@@ -73,6 +71,7 @@ var Behaviour = new Class( {
       this.submit       = new SubmitUtils( {
          context        : this,
          formName       : opt.formName } );
+      this.dropmenu     = new DropMenu( { context: this } );
       this.headroom     = new Headroom( {
          classes        : {
             pinned      : 'navbar-fixed-top' },
@@ -105,9 +104,6 @@ var Behaviour = new Class( {
          showDelay      : 666 } );
 
       if (opt.message) this.noticeBoard.create( opt.message );
-
-      if (opt.statusUpdPeriod && opt.popup)
-         this.statusUpdater.periodical( opt.statusUpdPeriod, this );
 
       if (first_field && (el = $( first_field ))) el.focus();
    },
@@ -155,34 +151,5 @@ var Behaviour = new Class( {
          /* Restore the source URL for elements whose ids end in Img */
          if (el = $( p0 + 'Img'  )) { if (p1) el.src = p1; }
       }
-   },
-
-   setCodeBlockClass: function( val ) {
-      var article = $$( '.content-page article' ), rcol = $$( '.right-column' );
-
-      if (article && rcol) {
-         var code = article.getElements( 'pre' );
-
-         if      (val == 1) {
-            code.each( function( el ) { el.removeClass( 'hidden' ) } );
-            rcol.each( function( el ) { el.addClass( 'float-view' ) } );
-         }
-         else if (val == 2) {
-            code.each( function( el ) { el.removeClass( 'hidden' ) } );
-            rcol.each( function( el ) { el.removeClass( 'float-view' ) } );
-         }
-         else if (val == 3) {
-            code.each( function( el ) { el.addClass( 'hidden' ) } );
-         }
-      }
-   },
-
-   statusUpdater: function() {
-      var el, h = window.getHeight(), w = window.getWidth();
-
-      var swatch_time = Date.swatchTime();
-
-      if (el = $( 'page-status' ) )
-         el.set( 'html', 'w: ' + w + ' h: ' + h + ' @' + swatch_time );
    }
 } );

@@ -5,6 +5,7 @@ use App::Notitia::Util     qw( build_tree iterator localise_tree mtime
                                register_action_paths uri_for_action );
 use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( first_char throw );
+use Class::Usul::Types     qw( PositiveInt );
 use Try::Tiny;
 use Unexpected::Functions  qw( catch_class );
 use Moo;
@@ -17,6 +18,8 @@ with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Editor);
 
 has '+moniker' => default => 'docs';
+
+has 'depth_offset' => is => 'ro', isa => PositiveInt, default => 2;
 
 register_action_paths
    'docs/dialog' => 'docs/dialog',

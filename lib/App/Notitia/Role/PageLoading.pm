@@ -32,7 +32,8 @@ around 'get_stash' => sub {
    my $stash = $orig->( $self, $req, @args );
 
    $stash->{navigation} = $self->navigation_links( $req, $stash->{page} );
-   $stash->{navigation}->{menu}->{list} = $self->navigation( $req, $stash );
+   $stash->{navigation}->{menu}->{list} = $self->navigation( $req );
+   $stash->{navigation}->{menu}->{class} = 'dropmenu';
 
    return $stash;
 };
@@ -113,15 +114,15 @@ sub invalidate_docs_cache {
 }
 
 sub navigation {
-   my ($self, $req, $stash) = @_;
+   my ($self, $req) = @_;
 
-   my $conf     = $self->config;
-   my $locale   = $conf->locale; # Always index config default language
-   my $node     = $self->localised_tree( $locale )
-      or  throw 'Default locale [_1] has no document tree', [ $locale ];
-   my $opts     = { config => $conf, label => $self->nav_label,
-                    limit  => 100,   node  => $node,
-                    path   => $self->moniker.'/page' };
+   my $conf = $self->config;
+   my $locale = $conf->locale; # Always index config default language
+   my $node = $self->localised_tree( $locale )
+      or throw 'Default locale [_1] has no document tree', [ $locale ];
+   my $opts = { config => $conf, depth_offset => $self->depth_offset,
+                label  => $self->nav_label, limit => 100,
+                node   => $node, path => $self->moniker.'/page' };
 
    return build_navigation( $req, $opts );
 }

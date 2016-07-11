@@ -4,7 +4,7 @@
 [% depth        = 0 -%]
 [% file_title   = loc( 'Hint' ) -%]
 [% folder_title = loc( 'Menu Group' ) -%]
-      <ul id="[% navigation.menu.id %]">
+      <ul class="[% navigation.menu.class %]">
 [% FOR node IN navigation.menu.list -%]
 [%    WHILE node.depth < depth; depth = depth - 1 -%]
             </ul>
@@ -14,11 +14,11 @@
 [%    IF node.type == 'folder'; depth = depth + 1 -%]
 [%       text = '<h4>' _ node.title _ '</h4>' -%]
 [%       IF depth == 1 -%]
-[%      LinkWithTips( '#', 'aj-nav', text, folder_title, node.tip, node.id ) -%]
-               <ul class="nav nav-list nav-panel">
+[%          LinkWithTips( '#', '', text, folder_title, node.tip, node.id ) -%]
+            <ul>
 [%       ELSE -%]
 [%          LinkWithTips( '#', '', text, folder_title, node.tip ) -%]
-               <ul class="nav nav-list">
+            <ul class="submenu">
 [%       END -%]
 [%    ELSE -%]
 [%       LinkWithTips( node.href, 'fade', node.value, file_title, node.tip ) -%]
