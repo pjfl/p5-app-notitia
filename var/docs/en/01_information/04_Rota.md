@@ -2,7 +2,7 @@
 author: admin
 created: 2016-07-09 15:37:38 +0000
 roles:
-   - editor
+   - any
 ---
 
 Month View

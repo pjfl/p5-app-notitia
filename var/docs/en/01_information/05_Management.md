@@ -2,7 +2,7 @@
 author: admin
 created: 2016-07-10 14:58:25 +0000
 roles:
-   - editor
+   - any
 ---
 
 The Management Menu gives access to Events, People and Vehicle management functions. 
