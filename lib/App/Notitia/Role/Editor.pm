@@ -111,7 +111,7 @@ my $_copy_element_value = sub {
 my $_prepare_path = sub {
    my $path = shift; $path =~ s{ [\\] }{/}gmx;
 
-   return (map { s{ [ ] }{-}gmx; $_ }
+   return (map { s{ [ ] }{_}gmx; $_ }
            map { trim $_            } split m{ / }mx, $path);
 };
 

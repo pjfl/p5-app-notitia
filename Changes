@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes create file for docs and posts
           - Adds current page marker to docs and posts
           - Upgrades MooTools to 1.6.0
           - Implements #17. Dropmenu on docs and posts
