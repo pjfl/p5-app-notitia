@@ -43,8 +43,8 @@
    },
    "l10n_domains": [ "notitia_local", "notitia" ],
    "jslibs": [
-      [ "moocore", "mootools/1.4.5/mootools-core-full-nocompat.min.js" ],
-      [ "moomore", "mootools-more/1.4.0.1/mootools-more-yui-compressed.min.js" ]
+      [ "moocore", "mootools/1.6.0/mootools-core.min.js" ],
+      [ "moomore", "mootools-more/1.6.0/mootools-more-compressed.js" ]
    ],
    "keywords": "people resource scheduling",
    "links": {

@@ -270,7 +270,7 @@ footer {
 }
 .standard-form .add-link { margin-bottom: 5px; }
 .standard-form .delete-button, .standard-form .save-button { margin-top: 5px; }
-.submenu { padding: 0 10px; }
+.submenu { padding: 0 0 0 10px; }
 .table-cell-help {
    color: @subtle; cursor: pointer; display: block; font-size: 12px;
    text-align: center;
@@ -487,8 +487,8 @@ aside {
       list-style-type: none;
       a { font-size: 14px; position: relative }
       a:hover { color: #f90; text-decoration: none; }
-      &.current a:before {
-        border-color: transparent transparent transparent @lighter;
+      &.selected a:before {
+        border-color: transparent transparent transparent @background;
         border-style: solid; border-width: 10px; content: "";
         left: -30px; height: 0; position: absolute; top: 0; width: 0;
       }

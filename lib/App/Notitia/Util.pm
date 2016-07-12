@@ -286,7 +286,8 @@ sub build_navigation ($$) {
       $link->{depth} -= $opts->{depth_offset};
 
       if (defined $ids->[ 0 ] and $ids->[ 0 ] eq $node->{id}) {
-         $link->{class} .= ' selected'; shift @{ $ids };
+         $link->{class} .= ' open'; shift @{ $ids };
+         defined $ids->[ 0 ] or $link->{class} .= ' selected';
       }
 
       push @nav, $link;

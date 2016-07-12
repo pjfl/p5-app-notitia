@@ -316,12 +316,12 @@ var DropMenu = new Class( {
       onClose: function( el ) {
          var selector = this.options.itemSelector;
 
-         if (!el.getParent( selector ).hasClass( 'selected' )) el.hide();
+         if (!el.getParent( selector ).hasClass( 'open' )) el.hide();
       },
       onInitialize: function( el ) {
          var selector = this.options.itemSelector;
 
-         if (!el.getParent( selector ).hasClass( 'selected' )) el.hide();
+         if (!el.getParent( selector ).hasClass( 'open' )) el.hide();
       },
       onOpen: function( el ) { el.show(); },
       openDelay: 0,
@@ -1386,8 +1386,8 @@ Picker.Attach = new Class( {
       if (typeOf(attachTo) == 'string') attachTo = document.id(attachTo);
       if (typeOf(toggle) == 'string') toggle = document.id(toggle);
 
-      var elements = Array.from(attachTo),
-         toggles = Array.from(toggle),
+      var elements = Array.convert(attachTo),
+         toggles = Array.convert(toggle),
          allElements = [].append(elements).combine(toggles),
          self = this;
 
