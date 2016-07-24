@@ -1,5 +1,8 @@
 Revision history for App::Notitia
 
+          - Implements #69. Cannot delete administrator role
+            from the admin user
+          - Adds notitia-completion a bash completion script
           - Fixes create file for docs and posts
           - Adds current page marker to docs and posts
           - Upgrades MooTools to 1.6.0

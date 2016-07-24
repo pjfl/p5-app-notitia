@@ -70,7 +70,10 @@ sub remove_role_action : Role(administrator) Role(person_manager) {
    my $person = $self->schema->resultset( 'Person' )->find_by_shortcode( $name);
    my $roles  = $req->body_params->( 'person_roles', { multiple => TRUE } );
 
-   $person->delete_member_from( $_ ) for (@{ $roles });
+   for my $role (@{ $roles }) {
+      $role eq 'administrator' and $name eq 'admin' and next;
+      $person->delete_member_from( $role );
+   }
 
    $self->config->roles_mtime->touch;
 

@@ -270,7 +270,6 @@ footer {
 }
 .standard-form .add-link { margin-bottom: 5px; }
 .standard-form .delete-button, .standard-form .save-button { margin-top: 5px; }
-.submenu { padding: 0 0 0 10px; }
 .table-cell-help {
    color: @subtle; cursor: pointer; display: block; font-size: 12px;
    text-align: center;
@@ -472,35 +471,46 @@ article {
    article { margin: 0; }
 }
 @media (min-width: 768px) {
-   article { font-size: 14px; padding: 40px 70px 30px; }
+   article { font-size: 14px; padding: 40px 40px 30px; }
 }
 /* Right-side nav - used by both docs and news */
 aside {
+   margin-left: -10px;
    padding-top: 30px;
    h4 {
       border-bottom: 1px solid @divider; color: @subtle;
       display: inline-block; font-size: 12px;
-      font-weight: 700; margin-bottom: 5px; margin-left: -30px;
-      padding: 0 0 5px 30px; text-transform: uppercase;
+      font-weight: 700; margin-bottom: 5px; margin-left: -20px;
+      padding: 0 0 5px 20px; text-transform: uppercase;
    }
+   h4:active { outline-style: none; }
    li {
       list-style-type: none;
-      a { font-size: 14px; position: relative }
+      a { font-size: 14px; position: relative; }
       a:hover { color: #f90; text-decoration: none; }
       &.selected a:before {
-        border-color: transparent transparent transparent @background;
-        border-style: solid; border-width: 10px; content: "";
-        left: -30px; height: 0; position: absolute; top: 0; width: 0;
+         border-color: transparent transparent transparent @lighter;
+         border-style: solid; border-width: 8px; content: "";
+         left: -20px; height: 0; position: absolute; top: 0; width: 0;
       }
    }
    ul {
       padding-left: 0;
       &:first-child { margin-top: 0; }
    }
+   .submenu {
+      margin-left: 10px;
+      h4 { margin-left: -30px; padding-left: 30px; }
+      li.selected a:before { left: -30px; }
+      .submenu {
+         h4 { margin-left: -40px; padding-left: 40px; }
+         li.selected a:before { left: -40px; }
+      }
+   }
 }
 /* Documentation */
 .standard-section {
-   article { min-height: 800px; width: 100%; }
+   article { min-height: 800px; }
    .content { padding: 0; }
 }
 .docs-nav-mobile select {

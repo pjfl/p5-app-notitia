@@ -419,7 +419,10 @@ sub delete_person_action : Role(person_manager) {
 
    my $name     = $req->uri_params->( 0 );
    my $person   = $self->find_by_shortcode( $name );
-   my $label    = $person->label; $person->delete;
+   my $label    = $person->label;
+
+   $name eq 'admin' and throw 'Cannot delete the admin user'; $person->delete;
+
    my $who      = $req->session->user_label;
    my $message  = [ to_msg '[_1] deleted by [_2]', $label, $who ];
    my $location = uri_for_action $req, $self->moniker.'/people';

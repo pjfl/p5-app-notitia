@@ -25,7 +25,7 @@ Date.implement( {
    swatchTime: function() {
       var met_day_fraction = Date.nowMET().dayFraction();
 
-      return Number.from( met_day_fraction ).format( { decimals: 2 } );
+      return Number.convert( met_day_fraction ).format( { decimals: 2 } );
    }
 } );
 
@@ -321,7 +321,8 @@ var DropMenu = new Class( {
       onInitialize: function( el ) {
          var selector = this.options.itemSelector;
 
-         if (!el.getParent( selector ).hasClass( 'open' )) el.hide();
+         if (!el.getParent( selector ).hasClass( 'open' )
+             && !el.hasClass( 'menu' )) el.hide();
       },
       onOpen: function( el ) { el.show(); },
       openDelay: 0,
@@ -339,11 +340,12 @@ var DropMenu = new Class( {
 
       menu.getElements( selector ).each( function( el ) {
          var parent = el.getParent( opts.itemSelector ), timer;
+         var child  = parent.getFirst( opts.toggleSelector );
 
          this.fireEvent( 'initialize', el );
 
-         parent.getFirst( opts.toggleSelector ).addEvent( 'click', function() {
-            clearTimeout( timer );
+         child.addEvent( 'click', function( ev ) {
+            ev.stop(); clearTimeout( timer );
 
             if (parent.retrieve( 'DropDownOpen' )) {
                parent.store( 'DropDownOpen', false );
@@ -1318,9 +1320,9 @@ var Picker = new Class( {
    },
 
    setTitle: function(content, fn){
-      if (!fn) fn = Function.from;
+      if (!fn) fn = Function.convert;
       this.titleText.empty().adopt(
-         Array.from(content).map(function(item, i){
+         Array.convert(content).map(function(item, i){
             return typeOf(item) == 'element'
                ? item
                : new Element('div.column', {text: fn(item, this.options)}).addClass('column_' + (i + 1));
@@ -1461,8 +1463,8 @@ Picker.Attach = new Class( {
       if (typeOf(attachTo) == 'string') attachTo = document.id(attachTo);
       if (typeOf(toggle) == 'string') toggle = document.id(toggle);
 
-      var elements = Array.from(attachTo),
-         toggles = Array.from(toggle),
+      var elements = Array.convert(attachTo),
+         toggles = Array.convert(toggle),
          allElements = [].append(elements).combine(toggles),
          self = this;
 
@@ -1581,7 +1583,7 @@ this.DatePicker = Picker.Date = new Class( {
          return (options.startView == what) && (options.startView = newViews[i]);
       });
 
-      options.canAlwaysGoUp = options.canAlwaysGoUp ? Array.from(options.canAlwaysGoUp) : [];
+      options.canAlwaysGoUp = options.canAlwaysGoUp ? Array.convert(options.canAlwaysGoUp) : [];
 
       // Set the min and max dates as Date objects
       if (options.minDate){
@@ -2289,9 +2291,9 @@ var Replacements = new Class( {
    },
 
    _add_events: function( el, replacement, events, methods ) {
-      methods = Array.from( methods );
+      methods = Array.convert( methods );
 
-      Array.from( events ).each( function( event, index ) {
+      Array.convert( events ).each( function( event, index ) {
          var handler, key = 'event:' + event;
 
          if (! (handler = replacement.retrieve( key ))) {

@@ -1,0 +1,32 @@
+# Copyright (c) 2016 John Sargent
+
+# This is free software; you can redistribute it and/or modify
+# it under the same terms as Perl itself.
+
+_notitia_cli() {
+   local cur=${COMP_WORDS[COMP_CWORD]}
+   local methods=$(notitia-cli list-methods 2>&1 | awk '/^[a-z-]+/ {print $1}')
+   local opts=$(notitia-cli --help 2>&1 | grep -oP '\-[a-zA-f-]*')
+   COMPREPLY=( $(compgen -W "$methods $opts" -- $cur) )
+}
+
+complete -F _notitia_cli notitia-cli
+
+_notitia_schema() {
+   local cur=${COMP_WORDS[COMP_CWORD]}
+   local methods=$(notitia-schema list-methods 2>&1 | awk '/^[a-z-]+/ {print $1}')
+   local opts=$(notitia-schema --help 2>&1 | grep -oP '\-[a-zA-f-]*')
+   COMPREPLY=( $(compgen -W "$methods $opts" -- $cur) )
+}
+
+complete -F _notitia_schema notitia-schema
+
+_notitia_daemon() {
+   local cur=${COMP_WORDS[COMP_CWORD]}
+   local methods=$(notitia-daemon list-methods 2>&1 | awk '/^[a-z-]+/ {print $1}')
+   local opts=$(notitia-daemon --help 2>&1 | grep -oP '\-[a-zA-f-]*')
+   COMPREPLY=( $(compgen -W "$methods $opts" -- $cur) )
+}
+
+complete -F _notitia_daemon notitia-daemon
+
