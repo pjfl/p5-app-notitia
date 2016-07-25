@@ -3,7 +3,7 @@ package App::Notitia::Role::Navigation;
 use attributes ();
 use namespace::autoclean;
 
-use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
+use App::Notitia::Constants qw( FALSE HASH_CHAR NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_button p_image p_item );
 use App::Notitia::Util      qw( locm make_tip to_dt uri_for_action );
 use Class::Usul::Functions  qw( is_member );
@@ -32,7 +32,7 @@ my $nav_linkto = sub {
                    @{ $opts->{value_args} // [] };
    my $tip   = locm $req, $opts->{tip} // "${name}_tip",
                    @{ $opts->{tip_args} // [] };
-   my $href  = $actionp eq '#'
+   my $href  = $actionp eq HASH_CHAR
              ? $actionp : uri_for_action $req, $actionp, @args;
 
    return { class => $opts->{class} // NUL,
@@ -95,53 +95,82 @@ my $_allowed = sub {
 
 # Public methods
 sub admin_navigation_links {
-   my ($self, $req, $page) = @_;
+   my ($self, $req, $page) = @_; $page->{selected} //= NUL;
 
    my $nav  = $self->navigation_links( $req, $page );
    my $list = $nav->{menu}->{list} //= [];
    my $now  = DateTime->now;
+   my $form_name = $page->{forms}->[ 0 ]->{form_name} // NUL;
 
    push @{ $list },
         $nav_folder->( $req, 'events' ),
-        $nav_linkto->( $req, { name => 'current_events' }, 'event/events', [],
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'current_events' ? 'selected' : NUL,
+           name => 'current_events' }, 'event/events', [],
                        after  => $now->clone->subtract( days => 1 )->ymd ),
-        $nav_linkto->( $req, { name => 'previous_events' }, 'event/events', [],
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'previous_events' ? 'selected' : NUL,
+           name => 'previous_events' }, 'event/events', [],
                        before => $now->ymd ),
         $nav_folder->( $req, 'people' );
 
    $self->$_allowed( $req, 'person/contacts' ) and push @{ $list },
-        $nav_linkto->( $req, { name => 'contacts_list' }, 'person/contacts', [],
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'contacts_list' ? 'selected' : NUL,
+           name => 'contacts_list' }, 'person/contacts', [],
                        status => 'current' );
 
    $self->$_allowed( $req, 'person/people' ) and push @{ $list },
-        $nav_linkto->( $req, { name => 'people_list' }, 'person/people', [] ),
-        $nav_linkto->( $req, { name => 'current_people_list' }, 'person/people',
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'people_list' ? 'selected' : NUL,
+           name => 'people_list' }, 'person/people', [] ),
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'current_people_list'
+              ? 'selected' : NUL,
+           name => 'current_people_list' }, 'person/people',
                        [], status => 'current' ),
-        $nav_linkto->( $req, { name => 'rider_list' }, 'person/people',
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'rider_list' ? 'selected' : NUL,
+           name => 'rider_list' }, 'person/people',
                        [], role => 'rider', status => 'current' ),
-        $nav_linkto->( $req, { name => 'controller_list' }, 'person/people',
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'controller_list' ? 'selected' : NUL,
+           name => 'controller_list' }, 'person/people',
                        [], role => 'controller', status => 'current' ),
-        $nav_linkto->( $req, { name => 'driver_list' }, 'person/people',
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'driver_list' ? 'selected' : NUL,
+           name => 'driver_list' }, 'person/people',
                        [], role => 'driver', status => 'current' ),
-        $nav_linkto->( $req, { name => 'fund_raiser_list' }, 'person/people',
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'fund_raiser_list' ? 'selected' : NUL,
+           name => 'fund_raiser_list' }, 'person/people',
                        [], role => 'fund_raiser', status => 'current' );
 
    if ($self->$_allowed( $req, 'admin/types' )) {
       push @{ $list },
         $nav_folder->( $req, 'types' ),
-        $nav_linkto->( $req, { name => 'types_list' }, 'admin/types', [] ),
-        $nav_linkto->( $req, { name => 'slot_roles_list' },
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'types_list' ? 'selected' : NUL,
+           name => 'types_list' }, 'admin/types', [] ),
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'slot_roles_list' ? 'selected' : NUL,
+           name => 'slot_roles_list' },
                        'admin/slot_roles', [] ),
    }
 
    if ($self->$_allowed( $req, 'asset/vehicles' )) {
       push @{ $list },
         $nav_folder->( $req, 'vehicles' ),
-        $nav_linkto->( $req, { name => 'vehicles_list' },
-                       'asset/vehicles', [] ),
-        $nav_linkto->( $req, { name => 'service_vehicles' },
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'vehicles_list' ? 'selected' : NUL,
+           name => 'vehicles_list' }, 'asset/vehicles', [] ),
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'service_vehicles' ? 'selected' : NUL,
+           name => 'service_vehicles' },
                        'asset/vehicles', [], service => TRUE ),
-        $nav_linkto->( $req, { name => 'private_vehicles' },
+        $nav_linkto->( $req, {
+           class => $page->{selected} eq 'private_vehicles' ? 'selected' : NUL,
+           name => 'private_vehicles' },
                        'asset/vehicles', [], private => TRUE );
    }
 
@@ -230,9 +259,11 @@ sub rota_navigation_links {
       my $date   = $offset > 0 ? $f_dom->clone->add( months => $offset )
                  : $offset < 0 ? $f_dom->clone->subtract( months => -$offset )
                  :               $f_dom->clone;
-      my $opts   = { value_args => [ $date->year ],
+      my $opts   = { class      => $date->month == $local_dt->month
+                                   ? 'selected' : NUL,
                      name       => lc 'month_'.$date->month_abbr,
-                     tip_args   => [ $date->month_name ], };
+                     tip_args   => [ $date->month_name ],
+                     value_args => [ $date->year ], };
       my $args   = [ $name, $date->ymd ];
 
       push @{ $list }, $nav_linkto->( $req, $opts, $actionp, $args );

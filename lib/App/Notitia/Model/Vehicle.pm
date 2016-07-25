@@ -247,6 +247,14 @@ my $_req_quantity = sub {
    return $vreq ? $vreq->quantity : 0;
 };
 
+my $_select_nav_link_name = sub {
+   my $opts = { %{ $_[ 0 ] } };
+
+   return $opts->{private} ? 'private_vehicles'
+      :   $opts->{service} ? 'service_vehicles'
+      :   'vehicles_list';
+};
+
 my $_vehicle_type_list = sub {
    my ($schema, $vehicle, $disabled) = @_;
 
@@ -763,6 +771,7 @@ sub vehicles : Role(rota_manager) {
    my $form     =  blank_form;
    my $page     =  {
       forms     => [ $form ],
+      selected  => $_select_nav_link_name->( $opts ),
       title     => $_vehicle_title->( $req, $type, $private, $service ), };
    my $links    =  $self->$_vehicles_ops_links( $req, $opts, $vehicles->pager );
 

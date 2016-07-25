@@ -498,13 +498,14 @@ sub events : Role(any) {
    my $event_rs  =  $self->schema->resultset( 'Event' );
    my $events    =  $event_rs->search_for_events( $opts );
    my $pager     =  $events->pager;
-   my $title     =  $after  ? 'current_events_heading'
-                 :  $before ? 'previous_events_heading'
-                 :            'events_management_heading';
    my $form      =  blank_form;
+   my $form_name =  $after  ? 'current_events'
+                 :  $before ? 'previous_events'
+                 :            'events_management';
    my $page      =  {
       forms      => [ $form ],
-      title      => loc $req, $title };
+      selected   => $form_name,
+      title      => loc $req, "${form_name}_heading" };
    my $links     =  $_events_ops_links->( $req, $moniker, $params, $pager );
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();

@@ -183,6 +183,19 @@ my $_person_ops_links = sub {
    return $links;
 };
 
+my $_select_nav_link_name = sub {
+   my $opts = { %{ $_[ 0 ] } };
+
+   return
+        $opts->{type} && $opts->{type} eq 'contacts' ? 'contacts_list'
+      : $opts->{role} && $opts->{role} eq 'controller' ? 'controller_list'
+      : $opts->{role} && $opts->{role} eq 'driver' ? 'driver_list'
+      : $opts->{role} && $opts->{role} eq 'fund_raiser' ? 'fund_raiser_list'
+      : $opts->{role} && $opts->{role} eq 'rider' ? 'rider_list'
+      : $opts->{status} && $opts->{status} eq 'current' ? 'current_people_list'
+      : 'people_list';
+};
+
 # Private methods
 my $_bind_next_of_kin = sub {
    my ($self, $person, $disabled) = @_;
@@ -527,6 +540,7 @@ sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
       class    => 'wider-table', id => 'people' };
    my $page    =  {
       forms    => [ $form ],
+      selected => $_select_nav_link_name->( $opts ),
       title    => $_people_title->( $req, $role, $status, $type ), };
    my $rs      =  $self->schema->resultset( 'Person' );
    my $people  =  $rs->search_for_people( $opts );

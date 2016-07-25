@@ -238,6 +238,7 @@ sub slot_roles : Role(administrator) {
    my $form    =  blank_form;
    my $page    =  {
       forms    => [ $form ],
+      selected => 'slot_roles_list',
       title    => loc $req, 'slot_roles_list_link' };
    my $table   =  p_table $form, { headers => $_slot_roles_headers->( $req ) };
 
@@ -292,6 +293,7 @@ sub types : Role(administrator) {
    my $form       =  blank_form;
    my $page       =  {
       forms       => [ $form ],
+      selected    => $type_class ? "${type_class}_list" : 'types_list',
       title       => loc( $req, $type_class ? "${type_class}_list_link"
                                             : 'types_management_heading' ), };
    my $type_rs    =  $self->schema->resultset( 'Type' );
