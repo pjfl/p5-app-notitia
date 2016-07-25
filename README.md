@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.3.$Rev: 224 $ of **App::Notitia**
+This documents version v0.3.$Rev: 230 $ of **App::Notitia**
 
 # Description
 
@@ -154,7 +154,17 @@ standard output in response to the command:
 
     bin/notitia-daemon get-init-file
 
+As the root user you could redirect this to `/etc/init.d/notitia`, then
+restart the notitia service with
+
+    service notitia restart
+
 # Configuration and Environment
+
+The prefered production deployment method uses the `FCGI` engine over
+a socket to `nginx`. There is an example
+\[configuration recipe\](https://www.roxsoft.co.uk/doh/static/en/posts/Blog/Debian-Nginx-Letsencrypt.sh-Configuration-Recipe.html)
+for this method of deployment
 
 Running one of the command line programs like `bin/notitia-cli` calling
 the `dump-config-attr` method will output a list of configuration options,
@@ -167,6 +177,10 @@ Help for command line options can be found be running
 The production server options are detailed by running
 
     bin/notitia-daemon list-methods
+
+The bash completion script is provided by
+
+    . bin/notitia-completion
 
 # Subroutines/Methods
 

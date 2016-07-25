@@ -2,6 +2,7 @@ Build.PL
 Changes
 MANIFEST
 bin/notitia-cli
+bin/notitia-completion
 bin/notitia-daemon
 bin/notitia-localenv
 bin/notitia-schema
@@ -98,7 +99,10 @@ t/42vehicle.t
 t/50endorsement.t
 t/boilerplate.pm
 var/docs/en/01_information/01_getting-started.md
-var/docs/en/01_information/02_a_new_beginning.md
+var/docs/en/01_information/02_Information.md
+var/docs/en/01_information/03_Posts.md
+var/docs/en/01_information/04_Rota.md
+var/docs/en/01_information/05_Management.md
 var/less/hyde/dark.less
 var/less/hyde/font-awesome.less
 var/less/hyde/gridism.less

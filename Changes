@@ -1,6 +1,8 @@
 Revision history for App::Notitia
 
+          - Implements #70. Readme updates
           - Adds navigation indicators
+          - Adds bash completion
           - Implements #69. Cannot delete administrator role
             from the admin user
           - Adds notitia-completion a bash completion script

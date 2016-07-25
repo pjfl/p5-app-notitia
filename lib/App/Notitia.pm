@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 229 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 230 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -42,7 +42,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.3.$Rev: 229 $ of B<App::Notitia>
+This documents version v0.3.$Rev: 230 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -195,7 +195,17 @@ standard output in response to the command:
 
    bin/notitia-daemon get-init-file
 
+As the root user you could redirect this to F</etc/init.d/notitia>, then
+restart the notitia service with
+
+   service notitia restart
+
 =head1 Configuration and Environment
+
+The prefered production deployment method uses the C<FCGI> engine over
+a socket to C<nginx>. There is an example
+[configuration recipe](https://www.roxsoft.co.uk/doh/static/en/posts/Blog/Debian-Nginx-Letsencrypt.sh-Configuration-Recipe.html)
+for this method of deployment
 
 Running one of the command line programs like F<bin/notitia-cli> calling
 the C<dump-config-attr> method will output a list of configuration options,
@@ -208,6 +218,10 @@ Help for command line options can be found be running
 The production server options are detailed by running
 
    bin/notitia-daemon list-methods
+
+The bash completion script is provided by
+
+   . bin/notitia-completion
 
 =head1 Subroutines/Methods
 
