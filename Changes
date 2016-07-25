@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds alternating background colour to navigation indicators
           - Implements #70. Readme updates
           - Adds navigation indicators
           - Adds bash completion
