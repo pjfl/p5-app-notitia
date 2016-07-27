@@ -2327,7 +2327,7 @@ var Replacements = new Class( {
 
       if (el.getProperty( 'disabled' )) return;
 
-      replacement.toggleClass( 'checked' );
+      if (!replacement) return; replacement.toggleClass( 'checked' );
 
       if (replacement.hasClass( 'checked' )) {
          el.setProperty( 'checked', 'checked' ); el.fireEvent( 'checked' );

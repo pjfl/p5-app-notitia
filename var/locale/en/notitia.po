@@ -363,6 +363,9 @@ msgstr "Editor"
 msgid "email_address"
 msgstr "Email Address"
 
+msgid "email_message"
+msgstr "Message text"
+
 msgid "enable_2fa"
 msgstr "Enable 2FA."
 

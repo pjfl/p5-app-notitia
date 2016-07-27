@@ -5,7 +5,7 @@ use namespace::autoclean;
 use App::Notitia::Form      qw( blank_form f_link p_button p_radio
                                 p_select p_textarea );
 use App::Notitia::Constants qw( C_DIALOG NUL SPC TRUE );
-use App::Notitia::Util      qw( js_config loc mail_domain
+use App::Notitia::Util      qw( js_config loc locm mail_domain
                                 to_msg uri_for_action );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token throw );
@@ -86,7 +86,7 @@ my $_list_message_templates = sub {
 my $_make_template = sub {
    my ($self, $message) = @_;
 
-   my $path = $self->$_session_file; $path->print( $message );
+   my $path = $self->$_session_file; $path->println( $message );
 
    return $path;
 };
@@ -155,23 +155,34 @@ sub create_totp_request_email {
 }
 
 sub message_create {
-   my ($self, $req, $params) = @_;
+   my ($self, $req, $opts) = @_;
 
-   my $conf     = $self->config;
-   my $sink     = $req->body_params->( 'sink' );
-   my $opts     = $sink eq 'sms' ? { optional => TRUE } : {};
-   my $template = $req->body_params->( 'template', $opts );
-      $opts     = $sink eq 'email' ? { optional => TRUE } : {};
-   my $message  = $req->body_params->( 'sms_message', $opts );
+   my $conf = $self->config;
+   my $sink = $req->body_params->( 'sink' );
+   my $template;
 
-   $sink eq 'sms' and $template = $self->$_make_template( $message );
+   if ($sink eq 'adhoc_email') {
+      my $message = $req->body_params->( 'email_message', { raw => TRUE } );
 
-   my $cmd      = $conf->binsdir->catfile( 'notitia-schema' ).SPC
-                . $self->$_flatten( $req )."send_message ${sink} ${template}";
-   my $job_rs   = $self->schema->resultset( 'Job' );
-   my $job      = $job_rs->create( { command => $cmd, name => 'send_message' });
-      $message  = [ to_msg 'Job send_message-[_1] created', $job->id ];
-   my $location = uri_for_action $req, $self->moniker.'/'.$params->{action};
+      $message =~ s{ \r\n }{\n}gmx; $message =~ s{ \s+ \z }{}mx;
+      $template = $self->$_make_template( $message ); $sink = 'email';
+   }
+   elsif ($sink eq 'template_email') {
+      $template = $req->body_params->( 'template' ); $sink = 'email';
+   }
+   elsif ($sink eq 'sms') {
+      my $message = $req->body_params->( 'sms_message' );
+
+      $template = $self->$_make_template( $message );
+   }
+   else { throw 'Sink [_1] unknown', [ $sink ] }
+
+   my $cmd = $conf->binsdir->catfile( 'notitia-schema' ).SPC
+           . $self->$_flatten( $req )."send_message ${sink} ${template}";
+   my $job_rs = $self->schema->resultset( 'Job' );
+   my $job = $job_rs->create( { command => $cmd, name => 'send_message' });
+   my $message = [ to_msg 'Job send_message-[_1] created', $job->id ];
+   my $location = uri_for_action $req, $self->moniker.'/'.$opts->{action};
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -179,50 +190,63 @@ sub message_create {
 sub message_link {
    my ($self, $req, $page, $href, $name) = @_;
 
-   my $opts   =  {
+   my $args   =  [ "${href}", {
       name    => $name,
       target  => $page->{forms}->[ 0 ]->{form_name} // $page->{form}->{name},
       title   => loc( $req, 'message_title' ),
-      useIcon => \1 };
-   my $args   =  [ "${href}", $opts ];
+      useIcon => \1 } ];
+   my $opts   =  [ 'send_message', 'click', 'inlineDialog', $args ];
 
-   $opts = [ 'send_message', 'click', 'inlineDialog', $args ];
    js_config $page, 'window', $opts;
-   $args = [ 'email_sink', 'email_sink_label' ];
-   $opts = [ 'email_sink', 'checked', 'showSelected', $args ];
-   js_config $page, 'togglers', $opts;
-   $args = [ 'sms_sink', 'sms_sink_label' ];
-   $opts = [ 'sms_sink', 'checked', 'showSelected', $args ];
-   js_config $page, 'togglers', $opts;
 
    return f_link 'message', C_DIALOG, { action => 'send', request => $req };
 }
 
 sub message_stash {
-   my ($self, $req, $opts) = @_;
+   my ($self, $req) = @_;
 
-   my $params    = $req->query_params->( { optional => TRUE } ) // {};
-   my $stash     = $self->dialog_stash( $req );
-   my $form      = $stash->{page}->{forms}->[ 0 ]
-                 = blank_form NUL, { class => 'standard-form' };
+   my $id = substr create_token(), 0, 5;
+   my $stash = $self->dialog_stash( $req );
+   my $form = $stash->{page}->{forms}->[ 0 ]
+            = blank_form NUL, { class => 'standard-form' };
    my $templates = $self->$_list_message_templates( $req );
-   my $values    =
-      [ [ 'Email', 'email', { class    => 'togglers', id => 'email_sink',
-                              selected => TRUE } ],
-        [ 'SMS',   'sms',   { class    => 'togglers', id => 'sms_sink' } ] ];
+   my $plate_eml_id = "template_email_${id}";
+   my $adhoc_eml_id = "adhoc_email_${id}";
+   my $sms_id = "sms_${id}";
+   my $sink_vals =
+      [ [ 'Adhoc Email', 'adhoc_email', {
+           class => 'togglers', id => $adhoc_eml_id, selected => TRUE } ],
+        [ 'Template Email', 'template_email', {
+           class => 'togglers', id => $plate_eml_id } ],
+        [ 'SMS', 'sms', { class => 'togglers', id => $sms_id } ] ];
+   my $subject = locm $req, '[_1] Notification', $self->config->title;
+   my $email_val = "---\nsubject: ${subject}\n---\n";
 
-   delete $params->{id}; delete $params->{val};
-
-   p_radio $form, 'sink', $values, { label => 'Message sink' };
+   p_radio $form, 'sink', $sink_vals, { label => 'Message sink' };
 
    p_select $form, 'template', [ [ NUL, NUL ], @{ $templates } ], {
-      label_id => 'email_sink_label' };
+      label_id => "${plate_eml_id}_label", label_class => 'hidden' };
+
+   p_textarea $form, 'email_message', $email_val, {
+      class    => 'standard-field clear autosize',
+      label_id => "${adhoc_eml_id}_label" };
 
    p_textarea $form, 'sms_message', NUL, {
       class    => 'standard-field clear autosize', label_class => 'hidden',
-      label_id => 'sms_sink_label' };
+      label_id => "${sms_id}_label" };
 
    p_button $form, 'confirm', 'message_create', { class => 'button right-last'};
+
+   my $args = [ $plate_eml_id, "${plate_eml_id}_label" ];
+   my $opts = [ $plate_eml_id, 'checked', 'showSelected', $args ];
+
+   js_config $stash->{page}, 'togglers', $opts;
+   $args = [ $adhoc_eml_id, "${adhoc_eml_id}_label" ];
+   $opts = [ $adhoc_eml_id, 'checked', 'showSelected', $args ];
+   js_config $stash->{page}, 'togglers', $opts;
+   $args = [ $sms_id, "${sms_id}_label" ];
+   $opts = [ $sms_id, 'checked', 'showSelected', $args ];
+   js_config $stash->{page}, 'togglers', $opts;
 
    return $stash;
 }
