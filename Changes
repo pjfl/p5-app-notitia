@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Moves email templates to var/docs/en/posts/emails
           - Implements #63. Adhoc emails
           - Adds alternating background colour to navigation indicators
           - Implements #70. Readme updates

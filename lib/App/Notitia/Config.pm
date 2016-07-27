@@ -131,6 +131,9 @@ has 'docs_root'       => is => 'lazy', isa => Directory, coerce => TRUE,
 has 'drafts'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'drafts';
 
+has 'email_templates' => is => 'ro',   isa => NonEmptySimpleStr,
+   default            => 'emails';
+
 has 'extensions'      => is => 'ro',   isa => HashRef[ArrayRef],
    builder            => sub { { markdown => [ qw( md mkdn ) ] } };
 
@@ -459,6 +462,11 @@ F<var/root/docs>. The document root for the microformat content pages
 
 A non empty simple string. Prepended to the pathname of files created in
 draft mode. Draft mode files are ignored by the static site generator
+
+=item C<email_templates>
+
+A non empty simple string defaults to C<emails>. Subdirectory of
+F<var/docs/en/posts> containing the email templates
 
 =item C<extensions>
 

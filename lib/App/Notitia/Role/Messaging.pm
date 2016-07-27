@@ -5,7 +5,7 @@ use namespace::autoclean;
 use App::Notitia::Form      qw( blank_form f_link p_button p_radio
                                 p_select p_textarea );
 use App::Notitia::Constants qw( C_DIALOG NUL SPC TRUE );
-use App::Notitia::Util      qw( js_config loc locm mail_domain
+use App::Notitia::Util      qw( js_config locm mail_domain
                                 to_msg uri_for_action );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token throw );
@@ -75,7 +75,7 @@ my $_list_message_templates = sub {
 
    my $conf   = $self->config;
    my $dir    = $conf->docs_root->catdir
-      ( $req->locale, $conf->posts, $conf->drafts );
+      ( $req->locale, $conf->posts, $conf->email_templates );
    my $plates = $dir->filter( sub { m{ \.md \z }mx } );
 
    $dir->exists or return [ [ NUL, NUL ] ];
@@ -106,7 +106,7 @@ sub create_person_email {
    my $token    = substr create_token, 0, 32;
    my $key      = 'Account activation for [_2]@[_1]';
    my $template = $self->$_template_path( 'user_email' );
-   my $subject  = loc $req, to_msg $key, $conf->title, $person->name;
+   my $subject  = locm $req, $key, $conf->title, $person->name;
    my $link     = uri_for_action $req, $self->moniker.'/activate', [ $token ];
    my $stash    = { app_name => $conf->title, link      => $link,
                     password => $password,    shortcode => $scode,
@@ -125,7 +125,7 @@ sub create_reset_email {
    my $token    = substr create_token, 0, 32;
    my $key      = 'Password reset for [_2]@[_1]';
    my $template = $self->$_template_path( 'password_email' );
-   my $subject  = loc $req, to_msg $key, $conf->title, $person->name;
+   my $subject  = locm $req, $key, $conf->title, $person->name;
    my $link     = uri_for_action $req, $self->moniker.'/reset', [ $token ];
    my $stash    = { app_name => $conf->title, link      => $link,
                     password => $password,    shortcode => $scode,
@@ -144,7 +144,7 @@ sub create_totp_request_email {
    my $token    = substr create_token, 0, 32;
    my $key      = 'TOTP Request for [_2]@[_1]';
    my $template = $self->$_template_path( 'totp_request_email' );
-   my $subject  = loc $req, to_msg $key, $conf->title, $person->name;
+   my $subject  = locm $req, $key, $conf->title, $person->name;
    my $link     = uri_for_action $req, $self->moniker.'/totp_secret', [ $token];
    my $stash    = { app_name  => $conf->title, link    => $link,
                     shortcode => $scode,       subject => $subject, };
@@ -193,7 +193,7 @@ sub message_link {
    my $args   =  [ "${href}", {
       name    => $name,
       target  => $page->{forms}->[ 0 ]->{form_name} // $page->{form}->{name},
-      title   => loc( $req, 'message_title' ),
+      title   => locm( $req, 'message_title' ),
       useIcon => \1 } ];
    my $opts   =  [ 'send_message', 'click', 'inlineDialog', $args ];
 
@@ -205,7 +205,7 @@ sub message_link {
 sub message_stash {
    my ($self, $req) = @_;
 
-   my $id = substr create_token(), 0, 5;
+   my $id = substr create_token, 0, 5;
    my $stash = $self->dialog_stash( $req );
    my $form = $stash->{page}->{forms}->[ 0 ]
             = blank_form NUL, { class => 'standard-form' };
