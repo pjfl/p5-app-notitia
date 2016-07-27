@@ -94,6 +94,10 @@ my $_make_template = sub {
 my $_template_path = sub {
    my ($self, $name) = @_; my $conf = $self->config;
 
+   my $file = $conf->template_dir->catfile( "custom/${name}.tt" );
+
+   $file->exists and return $file;
+
    return $conf->template_dir->catfile( $conf->skin."/${name}.tt" );
 };
 

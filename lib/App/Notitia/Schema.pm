@@ -387,6 +387,14 @@ my $_qualify_assets = sub {
    return $assets;
 };
 
+my $_template_path = sub {
+   my ($self, $name) = @_; my $conf = $self->config;
+
+   my $file = $conf->template_dir->catfile( "custom/${name}.tt" );
+
+   return $file->exists ? "custom/${name}.tt" : $conf->skin."/${name}.tt";
+};
+
 my $_send_email = sub {
    my ($self, $template, $person, $stash, $attaches) = @_;
 
@@ -395,7 +403,9 @@ my $_send_email = sub {
 
    $person->email_address =~ m{ \@ example\.com \z }imx and return;
 
-   $template = "[% WRAPPER 'hyde/email_layout.tt' %]${template}[% END %]";
+   my $layout = $self->$_template_path( 'email_layout' );
+
+   $template = "[% WRAPPER '${layout}' %]${template}[% END %]";
 
    $stash->{first_name} = $person->first_name;
    $stash->{label     } = $person->label;
