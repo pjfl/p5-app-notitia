@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #72. Less bling on side navigation
           - Exclude email templates from rss feed
           - Smarter markdown pathnames in create_file
           - Prefer custom email templates over the skin defaults

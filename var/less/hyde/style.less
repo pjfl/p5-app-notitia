@@ -481,9 +481,8 @@ aside {
       border-bottom: 1px solid @divider; color: @subtle;
       display: inline-block; font-size: 12px;
       font-weight: 700; margin-bottom: 5px; margin-left: -20px;
-      padding: 0 0 5px 20px; text-transform: uppercase;
+      outline-style: none; padding: 0 0 5px 20px; text-transform: uppercase;
    }
-   h4:active { outline-style: none; }
    li {
       list-style-type: none;
       a { font-size: 14px; position: relative; }
@@ -494,8 +493,9 @@ aside {
          left: -20px; height: 0; position: absolute; top: 0; width: 0;
       }
       .folder-link {
-         background-color: @lighter; .border-radius;
-         padding-bottom: 5px; padding-right: 5px;
+         /* background-color: @lighter; .border-radius; */
+         /* padding-bottom: 5px; padding-right: 5px; */
+         margin-top: 5px;
       }
    }
    ul {
@@ -504,21 +504,24 @@ aside {
    }
    .submenu {
       margin-left: 10px;
-      h4 { margin-left: -30px; padding-left: 30px; }
+      h4 { /* margin-left: -30px; padding-left: 30px;  */
+         margin-left: 0; padding-left: 0; }
       li.selected a:before { left: -30px; }
-      .folder-link { background-color: @background; .border-radius; }
+      .folder-link { /* background-color: @background; .border-radius; */ }
       .submenu {
-         h4 { margin-left: -40px; padding-left: 40px; }
+         h4 { /* margin-left: -40px; padding-left: 40px; */ }
          li.selected a:before { left: -40px; }
-         .folder-link { background-color: @lighter; .border-radius; }
+         .folder-link { /* background-color: @lighter; .border-radius; */ }
          .submenu {
-            h4 { margin-left: -50px; padding-left: 50px; }
+            h4 { /* margin-left: -50px; padding-left: 50px;  */ }
             li.selected a:before { left: -50px; }
-            .folder-link { background-color: @background; .border-radius; }
+            .folder-link {
+               /* background-color: @background; .border-radius; */ }
             .submenu {
-               h4 { margin-left: -60px; padding-left: 60px; }
+               h4 { /* margin-left: -60px; padding-left: 60px; */ }
                li.selected a:before { left: -60px; }
-               .folder-link { background-color: @lighter; .border-radius; }
+               .folder-link {
+                  /* background-color: @lighter; .border-radius; */ }
             }
          }
       }
