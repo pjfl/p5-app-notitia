@@ -80,7 +80,7 @@ sub cancel_edit_action : Role(anon) {
 }
 
 sub create_file_action : Role(editor) Role(event_manager) Role(person_manager) {
-   return $_[ 0 ]->create_file( $_[ 1 ] );
+   return $_[ 0 ]->create_file( $_[ 1 ], { prefix => $_[ 0 ]->config->posts } );
 }
 
 sub delete_file_action : Role(editor) Role(event_manager) Role(person_manager) {

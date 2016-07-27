@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Smarter markdown pathnames in create_file
           - Prefer custom email templates over the skin defaults
           - Moves email templates to var/docs/en/posts/emails
           - Implements #63. Adhoc emails

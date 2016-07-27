@@ -128,16 +128,26 @@ my $_result_line = sub {
          .$_[ 1 ]->[ 2 ];
 };
 
+my $_fettle_path = sub {
+   my ($self, $locale, @pathname) = @_; my $opts = pop @pathname;
+
+   $opts->{draft} and @pathname = $self->make_draft( @pathname );
+
+   not $opts->{draft} and defined $opts->{prefix}
+      and unshift @pathname, $opts->{prefix};
+
+   return $self->config->docs_root->catfile( $locale, @pathname )->utf8;
+};
+
 # Private methods
 my $_new_node = sub {
-   my ($self, $locale, $pathname, $draft) = @_; my $conf = $self->config;
+   my ($self, $locale, $pathname, $opts) = @_; my $conf = $self->config;
 
    my @pathname = $_prepare_path->( $_append_suffix->( $pathname ) );
 
-   $draft and @pathname = ($self->config->drafts, @pathname);
+   $opts->{draft} and @pathname = ($self->config->drafts, @pathname);
 
-   my $path     = $conf->docs_root->catfile
-      ( $locale, $draft ? $self->make_draft( @pathname ) : @pathname )->utf8;
+   my $path     = $self->$_fettle_path( $locale, @pathname, $opts );
    my @filepath = map { make_id_from( $_ )->[ 0 ] } @pathname;
    my $url      = join '/', @filepath;
    my $id       = pop @filepath;
@@ -196,13 +206,15 @@ my $_search_results = sub {
 
 # Public methods
 sub create_file {
-   my ($self, $req) = @_;
+   my ($self, $req, $opts) = @_; $opts //= {};
 
    my $conf     = $self->config;
    my $params   = $req->body_params;
    my $pathname = $params->( 'pathname' );
-   my $draft    = $params->( 'draft', { optional => TRUE } ) || FALSE;
-   my $new_node = $self->$_new_node( $req->locale, $pathname, $draft );
+
+   $opts->{draft} = $params->( 'draft', { optional => TRUE } ) || FALSE;
+
+   my $new_node = $self->$_new_node( $req->locale, $pathname, $opts );
    my $created  = time2str '%Y-%m-%d %H:%M:%S %z', time, 'GMT';
    my $stash    = { page => { author  => $req->username,
                               created => $created,
