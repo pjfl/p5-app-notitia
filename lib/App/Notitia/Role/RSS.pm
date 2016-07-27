@@ -83,7 +83,7 @@ my $_format_page = sub {
       content    => $content,
       created    => time2str( '%Y-%m-%dT%XZ', $page->{created} ),
       guid       => substr( create_token( $page->{url} ), 0, 32 ),
-      modified   => time2str( '%Y-%m-%dT%XZ', $page->{modified} ),
+      modified   => time2str( '%Y-%m-%dT%XZ', $page->{modified}, 'GMT' ),
       link       => $self->base_uri( $req, [ $page->{url} ] ),
       title      => loc( $req, $page->{title} ), };
 };
@@ -97,6 +97,8 @@ sub get_rss_feed {
    my $iter = iterator $tree;
 
    my @tuples; while (defined( my $node = $iter->() )) {
+      $node->{parent} and $node->{parent} eq $self->config->email_templates
+         and next;
       $node->{type} eq 'file' and $node->{id} ne 'index'
          and push @tuples, [ $node->{modified}, $node ];
    }
