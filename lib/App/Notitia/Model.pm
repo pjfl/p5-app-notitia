@@ -20,24 +20,6 @@ has 'application' => is => 'ro', isa => Plinth,
    required       => TRUE,  weak_ref => TRUE;
 
 # Private functions
-my $_auth_redirect = sub {
-   my ($req, $e, $message) = @_;
-
-   my $location = uri_for_action $req, 'user/login';
-
-   if ($e->class eq AuthenticationRequired->()) {
-      $req->session->wanted( $req->path );
-
-      return { redirect => { location => $location, message => [ $message ] } };
-   }
-
-   if ($e->instance_of( Authentication->() )) {
-      return { redirect => { location => $location, message => [ $message ] } };
-   }
-
-   return;
-};
-
 my $_debug_output = sub {
    my ($req, $e, $form, $leader) = @_;
 
@@ -79,6 +61,25 @@ my $_validation_errors = sub {
    return;
 };
 
+# Private methods
+my $_auth_redirect = sub {
+   my ($self, $req, $e, $message) = @_;
+
+   my $location = uri_for_action $req, $self->config->places->{login};
+
+   if ($e->class eq AuthenticationRequired->()) {
+      $req->session->wanted( $req->path );
+
+      return { redirect => { location => $location, message => [ $message ] } };
+   }
+
+   if ($e->instance_of( Authentication->() )) {
+      return { redirect => { location => $location, message => [ $message ] } };
+   }
+
+   return;
+};
+
 # Public methods
 sub dialog_stash {
    my ($self, $req, $layout) = @_; my $stash = $self->initialise_stash( $req );
@@ -97,7 +98,7 @@ sub exception_handler {
 
    my ($leader, $message, $summary) = $_parse_error->( $e );
 
-   my $redirect = $_auth_redirect->( $req, $e, $summary );
+   my $redirect = $self->$_auth_redirect( $req, $e, $summary );
       $redirect and return $redirect;
 
    my $name = $req->session->first_name || $req->username || 'unknown';

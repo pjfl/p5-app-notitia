@@ -164,9 +164,10 @@ sub change_password_action : Role(anon) {
    $person->set_password( $oldpass, $password );
    $_update_session->( $session, $person );
 
+   my $location = uri_for_action $req, $self->config->places->{login_action};
    my $message  = [ to_msg '[_1] password changed', $person->label ];
 
-   return { redirect => { location => $req->base, message => $message } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub check_field : Role(any) {
@@ -217,9 +218,8 @@ sub login_action : Role(anon) {
    $wanted and $wanted =~ m{ check_field }mx and $wanted = NUL;
    $wanted and $wanted =~ m{ totp_secret }mx and $wanted = NUL;
 
-   # TODO: Default page should be configurable
-   my $location  = $wanted ? $req->uri_for( $wanted )
-                           : uri_for_action $req, 'month/month_rota';
+   my $href = uri_for_action $req, $self->config->places->{login_action};
+   my $location = $wanted ? $req->uri_for( $wanted ) : $href;
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -306,10 +306,11 @@ sub reset_password : Role(anon) {
       my $token  = $path->chomp->getline; $path->unlink;
       my ($scode, $password) = split m{ / }mx, $token, 2;
       my $person = $schema->resultset( 'Person' )->find_by_shortcode( $scode );
+      my $places = $self->config->places;
 
       $person->password( $password ); $person->password_expired( TRUE );
       $person->update;
-      $location = uri_for_action $req, 'user/change_password', [ $scode ];
+      $location = uri_for_action $req, $places->{password}, [ $scode ];
       $message  = [ to_msg '[_1] password reset', $person->label ];
    }
    else {

@@ -262,10 +262,11 @@ sub get_dialog {
    my $val    = $params->( 'val', { optional => TRUE } );
    my $stash  = $self->dialog_stash( $req );
    my $links  = $stash->{links};
+   my $places = $self->config->places;
    my $href   = $name eq 'create' ? $links->{root_uri}
               : $name eq 'rename' ? $self->base_uri( $req, [ $val ] )
-              : $name eq 'search' ? uri_for_action $req, 'docs/search'
-              : $name eq 'upload' ? uri_for_action $req, 'docs/upload'
+              : $name eq 'search' ? uri_for_action $req, $places->{search}
+              : $name eq 'upload' ? uri_for_action $req, $places->{upload}
                                   : NUL;
    my $form   = $stash->{page}->{forms}->[ 0 ]
               = blank_form "${name}-file", $href;

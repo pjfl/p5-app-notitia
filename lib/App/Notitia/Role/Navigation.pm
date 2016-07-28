@@ -180,14 +180,15 @@ sub admin_navigation_links {
 sub application_logo {
    my ($self, $req) = @_;
 
-   my $conf  =  $self->config;
-   my $logo  =  $conf->logo;
-   my $href  =  $req->uri_for( $conf->images.'/'.$logo->[ 0 ] );
-   my $image =  p_image {}, $conf->title.' Logo', $href, {
+   my $conf = $self->config;
+   my $logo = $conf->logo;
+   my $places = $conf->places;
+   my $href = $req->uri_for( $conf->images.'/'.$logo->[ 0 ] );
+   my $image = p_image {}, $conf->title.' Logo', $href, {
       height => $logo->[ 2 ], width => $logo->[ 1 ] };
-   my $opts  =  { request => $req, args => [ $conf->title ], value => $image };
+   my $opts = { request => $req, args => [ $conf->title ], value => $image };
 
-   return f_link 'logo', uri_for_action( $req, 'docs/index' ), $opts;
+   return f_link 'logo', uri_for_action( $req, $places->{logo} ), $opts;
 }
 
 sub navigation_links {
@@ -206,6 +207,7 @@ sub primary_navigation_links {
    my $nav = blank_form { type => 'unordered' };
    my $location = $page->{location} // NUL;
    my $class = $location eq 'documentation' ? 'current' : NUL;
+   my $places = $self->config->places;
 
    p_item $nav, $nav_linkto->( $req, {
       class => $class, tip => 'Documentation pages for the application',
@@ -221,16 +223,17 @@ sub primary_navigation_links {
 
    p_item $nav, $nav_linkto->( $req, {
       class => $class, tip => 'Scheduled rotas',
-      value => 'Rota', }, 'month/month_rota' );
+      value => 'Rota', }, $places->{rota} );
 
    $class = $location eq 'admin' ? 'current' : NUL;
 
    my $after = DateTime->now->subtract( days => 1 )->ymd;
+   my $index = $places->{admin_index};
 
    $req->authenticated and
       p_item $nav, $nav_linkto->( $req, {
          class => $class, tip => 'admin_index_title',
-         value => 'admin_index_link', }, 'event/events', [], after => $after );
+         value => 'admin_index_link', }, $index, [], after => $after );
 
    return $nav;
 }
@@ -301,17 +304,18 @@ sub secondary_navigation_links {
    my $nav = blank_form { type => 'unordered' };
    my $location = $page->{location} // NUL;
    my $class = $location eq 'login' ? 'current' : NUL;
+   my $places = $self->config->places;
 
    $req->authenticated or p_item $nav, $nav_linkto->( $req, {
       class => $class, tip => 'Login to the application',
-      value => 'Login', }, 'user/login' );
+      value => 'Login', }, $places->{login} );
 
    $class = $location eq 'change_password' ? 'current' : NUL;
 
    p_item $nav, $nav_linkto->( $req, {
       class => $class,
       tip   => 'Change the password used to access the application',
-      value => 'Change Password', }, 'user/change_password' );
+      value => 'Change Password', }, $places->{password} );
 
    if ($req->authenticated) {
       p_item $nav, $nav_linkto->( $req, {

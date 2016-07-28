@@ -193,6 +193,17 @@ has 'owner'           => is => 'lazy', isa => NonEmptySimpleStr,
 
 has 'person_prefix'   => is => 'ro',   isa => SimpleStr, default => NUL;
 
+has 'places'          => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
+   builder            => sub { {
+      admin_index     => 'event/events',
+      login           => 'user/login',
+      login_action    => 'month/month_rota',
+      logo            => 'docs/index',
+      password        => 'user/change_password',
+      rota            => 'month/month_rota',
+      search          => 'docs/search',
+      upload          => 'docs/upload', } };
+
 has 'port'            => is => 'lazy', isa => NonZeroPositiveInt,
    default            => 8085;
 
@@ -608,6 +619,11 @@ This non empty simple string must be set in the configuration file for
 the automatic user name generator to work. It is the "sphere of authority"
 prefix which is prepended to the shortcodes created by the generator. This
 should be a unique value for each installation of this application
+
+=item C<places>
+
+A hash reference used by some model methods to reference named places
+within the application
 
 =item C<port>
 
