@@ -214,12 +214,8 @@ sub login_action : Role(anon) {
 
    my $message   = [ to_msg '[_1] logged in', $person->label ];
    my $wanted    = $session->wanted; $req->session->wanted( NUL );
-
-   $wanted and $wanted =~ m{ check_field }mx and $wanted = NUL;
-   $wanted and $wanted =~ m{ totp_secret }mx and $wanted = NUL;
-
-   my $href = uri_for_action $req, $self->config->places->{login_action};
-   my $location = $wanted ? $req->uri_for( $wanted ) : $href;
+   my $location  = $wanted ? $req->uri_for( $wanted )
+                 : uri_for_action $req, $self->config->places->{login_action};
 
    return { redirect => { location => $location, message => $message } };
 }
