@@ -86,7 +86,8 @@ around 'load_page' => sub {
    $req->authenticated and $page->{user}
       = $self->components->{person}->find_by_shortcode( $req->username );
 
-   my $editors = qr{ \A (?: editor|event_manager|person_manager ) \z }mx;
+   my $pattern = join '|', @{ $self->config->editors };
+   my $editors = qr{ \A (?: $pattern ) \z }mx;
 
    $page->{is_editor} = ($req->authenticated && first { $_ =~ $editors }
                         @{ $req->session->roles }) ? TRUE : FALSE;
@@ -145,7 +146,7 @@ my $_new_node = sub {
 
    my @pathname = $_prepare_path->( $_append_suffix->( $pathname ) );
 
-   $opts->{draft} and @pathname = ($self->config->drafts, @pathname);
+   $opts->{draft} and unshift @pathname, $self->config->drafts;
 
    my $path     = $self->$_fettle_path( $locale, @pathname, $opts );
    my @filepath = map { make_id_from( $_ )->[ 0 ] } @pathname;

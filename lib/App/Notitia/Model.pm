@@ -68,7 +68,7 @@ my $_auth_redirect = sub {
    my $location = uri_for_action $req, $self->config->places->{login};
 
    if ($e->class eq AuthenticationRequired->()) {
-      my $pattern = join '|', $self->config->no_redirect;
+      my $pattern = join '|', @{ $self->config->no_redirect };
       my $unwanted = qr{ (?: $pattern ) }mx;
       my $wanted = $req->path || NUL;
 

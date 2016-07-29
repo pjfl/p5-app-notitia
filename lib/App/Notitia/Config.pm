@@ -131,6 +131,9 @@ has 'docs_root'       => is => 'lazy', isa => Directory, coerce => TRUE,
 has 'drafts'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'drafts';
 
+has 'editors'         => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub { [ qw( editor event_manager person_manager ) ] };
+
 has 'email_templates' => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'emails';
 
@@ -476,6 +479,11 @@ F<var/root/docs>. The document root for the microformat content pages
 
 A non empty simple string. Prepended to the pathname of files created in
 draft mode. Draft mode files are ignored by the static site generator
+
+=item C<editors>
+
+An array reference of non empty simple strings. The list of roles deemed
+to have access to markdown editing functions
 
 =item C<email_templates>
 

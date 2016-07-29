@@ -3,8 +3,8 @@
 <form action="[% links.edit_uri %]"
      enctype="application/x-www-form-urlencoded"
       method="post" name="edit">
-   <textarea class="standard-field autosize" id="markdown-editor"
-              name="content">[% page.content | html %]</textarea>
+   <textarea class="standard-field autosize" id="markdown-editor" name="content">
+[%    page.content | html %]</textarea>
    <br/>
    <div class="field-group right-last">
    <button class="button" name="_method" type="submit"

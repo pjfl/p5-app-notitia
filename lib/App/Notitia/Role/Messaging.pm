@@ -5,7 +5,7 @@ use namespace::autoclean;
 use App::Notitia::Form      qw( blank_form f_link p_button p_radio
                                 p_select p_textarea );
 use App::Notitia::Constants qw( C_DIALOG NUL SPC TRUE );
-use App::Notitia::Util      qw( js_config locm mail_domain
+use App::Notitia::Util      qw( js_config locm mail_domain set_element_focus
                                 to_msg uri_for_action );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token throw );
@@ -224,7 +224,7 @@ sub message_stash {
            class => 'togglers', id => $plate_eml_id } ],
         [ 'SMS', 'sms', { class => 'togglers', id => $sms_id } ] ];
    my $subject = locm $req, '[_1] Notification', $self->config->title;
-   my $email_val = "---\nsubject: ${subject}\n---\n";
+   my $email_val = "---\nsubject: ${subject}\n---\n\n\n";
 
    p_radio $form, 'sink', $sink_vals, { label => 'Message sink' };
 
@@ -233,13 +233,17 @@ sub message_stash {
 
    p_textarea $form, 'email_message', $email_val, {
       class    => 'standard-field clear autosize',
+      id       => "${adhoc_eml_id}_message",
       label_id => "${adhoc_eml_id}_label" };
 
-   p_textarea $form, 'sms_message', NUL, {
+   p_textarea $form, 'sms_message', "\n\n", {
+      id       => "${sms_id}_message",
       class    => 'standard-field clear autosize', label_class => 'hidden',
       label_id => "${sms_id}_label" };
 
    p_button $form, 'confirm', 'message_create', { class => 'button right-last'};
+
+   $stash->{page}->{literal_js} = set_element_focus "people", 'email_message';
 
    my $args = [ $plate_eml_id, "${plate_eml_id}_label" ];
    my $opts = [ $plate_eml_id, 'checked', 'showSelected', $args ];

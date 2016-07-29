@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Configurable pattern roles that can edit markdown
+          - Better styling for markdown editor
           - Configurable pattern to stop authentication redirects
           - Maps places onto action paths
           - Implements #72. Less bling on side navigation
