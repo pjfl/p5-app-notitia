@@ -296,9 +296,9 @@ my $_alloc_table_label = sub {
 };
 
 my $_alloc_table_headers = sub {
-   my ($req, $date) = @_;
+   my ($req, $date, $cols) = @_;
 
-   return [ map { $_alloc_table_label->( $req, $date, $_ ) } 0 .. 6 ];
+   return [ map { $_alloc_table_label->( $req, $date, $_ ) } 0 .. $cols - 1 ];
 };
 
 my $_alloc_cell_add_owner = sub {
@@ -419,22 +419,12 @@ my $_alloc_cell = sub {
 };
 
 my $_allocation_js = sub {
-   my ($req, $moniker, $rota_name, $rota_dt) = @_;
+   my ($req, $moniker) = @_;
 
-   my $args = [ $rota_name, $_local_dt->( $rota_dt )->ymd ];
-   my $href1 = uri_for_action $req, "${moniker}/alloc_table", $args;
+   my $href = uri_for_action $req, "${moniker}/alloc_key";
 
-   $args = [ $rota_name, $_local_dt->( $rota_dt )->add( days => 7 )->ymd ];
-
-   my $href2 = uri_for_action $req, "${moniker}/alloc_table", $args;
-   my $href3 = uri_for_action $req, "${moniker}/alloc_key";
-
-   return [ js_server_config( 'allocation-wk1', 'load',
-                              'request', [ "${href1}", 'allocation-wk1' ] ),
-            js_server_config( 'allocation-wk2', 'load',
-                              'request', [ "${href2}", 'allocation-wk2' ] ),
-            js_server_config( 'allocation-key', 'load',
-                              'request', [ "${href3}", 'allocation-key' ] ) ];
+   return [ js_server_config( 'allocation-key', 'load',
+                              'request', [ "${href}", 'allocation-key' ] ) ];
 };
 
 my $_week_rota_assignments = sub {
@@ -739,13 +729,14 @@ sub alloc_table : Role(rota_manager) {
    my $today = time2str '%Y-%m-%d';
    my $rota_name = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
+   my $cols = $req->uri_params->( 2, { optional => TRUE } ) // 7;
    my $rota_dt = to_dt $rota_date;
    my $stash = $self->dialog_stash( $req );
    my $table = $stash->{page}->{forms}->[ 0 ]
              = blank_form { class => 'spreadsheet-table', type => 'table' };
    my $opts = {
       after => $rota_dt->clone->subtract( days => 1),
-      before => $rota_dt->clone->add( days => 7 ),
+      before => $rota_dt->clone->add( days => $cols ),
       rota_type => $self->$_find_rota_type( $rota_name )->id };
    my $vehicles = $self->$_search_for_vehicles();
    my $journal = $self->$_initialise_journal( $req, $rota_dt, $vehicles );
@@ -758,14 +749,14 @@ sub alloc_table : Role(rota_manager) {
    my $row = p_row $table;
    my $v_cache = {};
 
-   $table->{headers} = $_alloc_table_headers->( $req, $rota_dt );
+   $table->{headers} = $_alloc_table_headers->( $req, $rota_dt, $cols );
    $page->{limits} = $self->config->slot_limits;
    $page->{moniker} = $self->moniker;
    $page->{rota_name} = $rota_name;
    $page->{rota_dt} = $rota_dt;
 
    p_cell $row, [ map { $_alloc_cell->( $req, $page, $v_cache, $data, $_ ) }
-                  0 .. 6 ];
+                  0 .. $cols - 1 ];
 
    push @{ $page->{literal_js} }, 'behaviour.rebuild();';
 
@@ -775,10 +766,12 @@ sub alloc_table : Role(rota_manager) {
 sub allocation : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $today = time2str '%Y-%m-%d';
    my $moniker = $self->moniker;
+   my $today = time2str '%Y-%m-%d';
    my $rota_name = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
+   my $rows = $req->query_params->( 'rows', { optional => TRUE } ) // 2;
+   my $cols = $req->query_params->( 'cols', { optional => TRUE } ) // 7;
    my $rota_dt = to_dt $rota_date;
    my $list = blank_form { class => 'spreadsheet' };
    my $form = blank_form {
@@ -789,14 +782,24 @@ sub allocation : Role(rota_manager) {
          prev => $self->$_prev_week( $req, 'allocation', $rota_name, $rota_dt )
          }, },
       forms => [ $list, $form ],
-      literal_js => $_allocation_js->( $req, $moniker, $rota_name, $rota_dt ),
       off_grid => TRUE,
       template => [ 'none', 'custom/two-week-table' ],
       title => locm $req, 'Vehicle Allocation'
    };
+   my $js = $page->{literal_js} = $_allocation_js->( $req, $moniker );
 
-   p_container $list, NUL, { class => 'server', id => 'allocation-wk1' };
-   p_container $list, NUL, { class => 'server', id => 'allocation-wk2' };
+   for my $rno (0 .. $rows - 1) {
+      my $id = "allocation-row${rno}";
+
+      p_container $list, NUL, { class => 'server', id => $id };
+
+      my $date = $_local_dt->( $rota_dt )->add( days => $cols * $rno )->ymd;
+      my $args = [ $rota_name, $date, $cols ];
+      my $href = uri_for_action $req, "${moniker}/alloc_table", $args;
+      my $opts = [ "${href}", $id ];
+
+      push @{ $js }, js_server_config $id, 'load', 'request', $opts;
+   }
 
    return $self->get_stash( $req, $page );
 }

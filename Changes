@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds rows and columns parameters to spreadsheet view
           - Configurable pattern roles that can edit markdown
           - Better styling for markdown editor
           - Configurable pattern to stop authentication redirects

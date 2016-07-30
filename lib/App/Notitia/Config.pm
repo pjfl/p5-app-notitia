@@ -174,7 +174,7 @@ has 'max_asset_size'  => is => 'ro',   isa => PositiveInt, default => 4_194_304;
 
 has 'max_messages'    => is => 'ro',   isa => NonZeroPositiveInt, default => 3;
 
-has 'max_sess_time'   => is => 'ro',   isa => PositiveInt, default => 3_600;
+has 'max_sess_time'   => is => 'ro',   isa => PositiveInt, default => 900;
 
 has 'mdn_tab_width'   => is => 'ro',   isa => NonZeroPositiveInt, default => 3;
 

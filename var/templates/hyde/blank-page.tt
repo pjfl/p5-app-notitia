@@ -4,4 +4,6 @@ created: [% page.created %]
 roles:
    - editor
 ---
+
 Page intentionally created blank
+

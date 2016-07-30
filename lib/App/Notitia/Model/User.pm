@@ -53,6 +53,18 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_clear_session = sub {
+   my $session = shift;
+
+   $session->authenticated( FALSE );
+   $session->roles( [] );
+   $session->roles_mtime( 0 );
+
+   delete $session->messages->{ $_ } for (keys %{ $session->messages });
+
+   return;
+};
+
 my $_rows_per_page = sub {
    my $selected = $_[ 0 ]->rows_per_page;
    my $opts_t   = { container_class => 'radio-group', selected => TRUE };
@@ -213,7 +225,7 @@ sub login_action : Role(anon) {
    $_update_session->( $session, $person );
 
    my $message   = [ to_msg '[_1] logged in', $person->label ];
-   my $wanted    = $session->wanted; $req->session->wanted( NUL );
+   my $wanted    = $session->wanted; $session->wanted( NUL );
    my $location  = $wanted ? $req->uri_for( $wanted )
                  : uri_for_action $req, $self->config->places->{login_action};
 
@@ -221,14 +233,12 @@ sub login_action : Role(anon) {
 }
 
 sub logout_action : Role(any) {
-   my ($self, $req) = @_; my $message;
+   my ($self, $req) = @_; my $message = [ 'Not logged in' ];
 
    if ($req->authenticated) {
       $message = [ to_msg '[_1] logged out', $req->session->user_label ];
-      $req->session->authenticated( FALSE );
-      $req->session->roles( [] );
+      $_clear_session->( $req->session );
    }
-   else { $message = [ 'Not logged in' ] }
 
    return { redirect => { location => $req->base, message => $message } };
 }
@@ -251,7 +261,7 @@ sub profile : Role(any) {
    p_textfield $form, 'email_address', $person->email_address;
    p_textfield $form, 'mobile_phone',  $person->mobile_phone;
    p_textfield $form, 'home_phone',    $person->home_phone;
-   p_radio     $form, 'rows_per_page', $_rows_per_page->( $person ),{
+   p_radio     $form, 'rows_per_page', $_rows_per_page->( $person ), {
       label => 'Rows Per Page' };
    p_checkbox  $form, 'enable_2fa',    TRUE, {
       checked => $person->totp_secret ? TRUE : FALSE };

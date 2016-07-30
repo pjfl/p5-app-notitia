@@ -18,8 +18,9 @@
       p { margin: 1em 0; }
       table { border: 0; height: 100% !important; width: 100% !important; }
       td { border-collapse: collapse; }
+      tr { vertical-align: top; }
       .background { margin: 0; padding: 0; }
-      .foreground { margin-left: 2em; }
+      .foreground { margin-left: 2em; margin-top: 2em; }
    </style>
    <title>[% title %]</title>
 </head>

@@ -5,7 +5,8 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE HASH_CHAR NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_button p_image p_item );
-use App::Notitia::Util      qw( locm make_tip to_dt uri_for_action );
+use App::Notitia::Util      qw( dialog_anchor locm make_tip
+                                to_dt uri_for_action );
 use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
 use DateTime                qw( );
@@ -317,10 +318,18 @@ sub secondary_navigation_links {
       tip   => 'Change the password used to access the application',
       value => 'Change Password', }, $places->{password} );
 
+   my $js = $page->{literal_js} //= []; my ($href, $title);
+
    if ($req->authenticated) {
       p_item $nav, $nav_linkto->( $req, {
          class => 'windows', name => 'profile-user',
          tip   => 'Update personal details', value => 'Profile', }, '#' );
+
+      $href  = uri_for_action $req, 'user/profile';
+      $title = locm $req, 'Person Profile';
+
+      push @{ $js }, dialog_anchor( 'profile-user', $href, {
+         name => 'profile-user', title => $title, useIcon => \1 } );
 
       $class = $location eq 'totp_secret' ? 'current' : NUL;
 
@@ -328,7 +337,8 @@ sub secondary_navigation_links {
          class => $class, tip => 'View the TOTP account information',
          value => 'TOTP', }, 'user/totp_secret' );
 
-      my $href = uri_for_action $req, 'user/logout_action';
+      $href = uri_for_action $req, 'user/logout_action';
+
       my $form = blank_form  'authentication', $href, { class => 'none' };
 
       p_button $form, 'logout-user', 'logout', {
@@ -344,10 +354,22 @@ sub secondary_navigation_links {
          tip   => 'Request viewing of the TOTP account information',
          value => 'TOTP', }, '#' );
 
+      $href  = uri_for_action $req, 'user/totp_request';
+      $title = locm $req, 'TOTP Information Request';
+
+      push @{ $js }, dialog_anchor( 'totp-request', $href, {
+         name => 'totp-request', title => $title, useIcon => \1 } );
+
       p_item $nav, $nav_linkto->( $req, {
          class => 'windows', name => 'request-reset',
          tip   => 'Follow the link to reset your password',
          value => 'Forgot Password?', }, '#' );
+
+      $href  = uri_for_action $req, 'user/reset';
+      $title = locm $req, 'Reset Password';
+
+      push @{ $js }, dialog_anchor( 'request-reset', $href, {
+         name => 'request-reset', title => $title, useIcon => \1 } );
    }
 
    return $nav;
