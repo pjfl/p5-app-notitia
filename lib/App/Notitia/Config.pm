@@ -131,6 +131,9 @@ has 'docs_root'       => is => 'lazy', isa => Directory, coerce => TRUE,
 has 'drafts'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'drafts';
 
+has 'editors'         => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub { [ qw( editor event_manager person_manager ) ] };
+
 has 'email_templates' => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'emails';
 
@@ -171,7 +174,7 @@ has 'max_asset_size'  => is => 'ro',   isa => PositiveInt, default => 4_194_304;
 
 has 'max_messages'    => is => 'ro',   isa => NonZeroPositiveInt, default => 3;
 
-has 'max_sess_time'   => is => 'ro',   isa => PositiveInt, default => 3_600;
+has 'max_sess_time'   => is => 'ro',   isa => PositiveInt, default => 900;
 
 has 'mdn_tab_width'   => is => 'ro',   isa => NonZeroPositiveInt, default => 3;
 
@@ -188,10 +191,24 @@ has 'no_index'        => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
 
 has 'no_message_send' => is => 'ro',   isa => Bool, default => FALSE;
 
+has 'no_redirect'     => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub { [ 'check_field', 'totp_secret', ] };
+
 has 'owner'           => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => sub { $_[ 0 ]->prefix };
 
 has 'person_prefix'   => is => 'ro',   isa => SimpleStr, default => NUL;
+
+has 'places'          => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
+   builder            => sub { {
+      admin_index     => 'event/events',
+      login           => 'user/login',
+      login_action    => 'month/month_rota',
+      logo            => 'docs/index',
+      password        => 'user/change_password',
+      rota            => 'month/month_rota',
+      search          => 'docs/search',
+      upload          => 'docs/upload', } };
 
 has 'port'            => is => 'lazy', isa => NonZeroPositiveInt,
    default            => 8085;
@@ -463,6 +480,11 @@ F<var/root/docs>. The document root for the microformat content pages
 A non empty simple string. Prepended to the pathname of files created in
 draft mode. Draft mode files are ignored by the static site generator
 
+=item C<editors>
+
+An array reference of non empty simple strings. The list of roles deemed
+to have access to markdown editing functions
+
 =item C<email_templates>
 
 A non empty simple string defaults to C<emails>. Subdirectory of
@@ -596,6 +618,11 @@ List of files and directories under the document root to ignore
 Suppress the sending of user activation emails and using SMS. Used in
 development only
 
+=item C<no_redirect>
+
+An array reference of non empty simple strings. Requests matching these
+patterns are not redirected to after a successful login
+
 =item C<owner>
 
 A non empty simple string that defaults to the configuration C<prefix>
@@ -608,6 +635,11 @@ This non empty simple string must be set in the configuration file for
 the automatic user name generator to work. It is the "sphere of authority"
 prefix which is prepended to the shortcodes created by the generator. This
 should be a unique value for each installation of this application
+
+=item C<places>
+
+A hash reference used by some model methods to reference named places
+within the application
 
 =item C<port>
 

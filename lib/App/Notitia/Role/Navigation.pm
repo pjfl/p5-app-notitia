@@ -5,7 +5,8 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE HASH_CHAR NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_button p_image p_item );
-use App::Notitia::Util      qw( locm make_tip to_dt uri_for_action );
+use App::Notitia::Util      qw( dialog_anchor locm make_tip
+                                to_dt uri_for_action );
 use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
 use DateTime                qw( );
@@ -180,14 +181,15 @@ sub admin_navigation_links {
 sub application_logo {
    my ($self, $req) = @_;
 
-   my $conf  =  $self->config;
-   my $logo  =  $conf->logo;
-   my $href  =  $req->uri_for( $conf->images.'/'.$logo->[ 0 ] );
-   my $image =  p_image {}, $conf->title.' Logo', $href, {
+   my $conf = $self->config;
+   my $logo = $conf->logo;
+   my $places = $conf->places;
+   my $href = $req->uri_for( $conf->images.'/'.$logo->[ 0 ] );
+   my $image = p_image {}, $conf->title.' Logo', $href, {
       height => $logo->[ 2 ], width => $logo->[ 1 ] };
-   my $opts  =  { request => $req, args => [ $conf->title ], value => $image };
+   my $opts = { request => $req, args => [ $conf->title ], value => $image };
 
-   return f_link 'logo', uri_for_action( $req, 'docs/index' ), $opts;
+   return f_link 'logo', uri_for_action( $req, $places->{logo} ), $opts;
 }
 
 sub navigation_links {
@@ -206,6 +208,7 @@ sub primary_navigation_links {
    my $nav = blank_form { type => 'unordered' };
    my $location = $page->{location} // NUL;
    my $class = $location eq 'documentation' ? 'current' : NUL;
+   my $places = $self->config->places;
 
    p_item $nav, $nav_linkto->( $req, {
       class => $class, tip => 'Documentation pages for the application',
@@ -221,16 +224,17 @@ sub primary_navigation_links {
 
    p_item $nav, $nav_linkto->( $req, {
       class => $class, tip => 'Scheduled rotas',
-      value => 'Rota', }, 'month/month_rota' );
+      value => 'Rota', }, $places->{rota} );
 
    $class = $location eq 'admin' ? 'current' : NUL;
 
    my $after = DateTime->now->subtract( days => 1 )->ymd;
+   my $index = $places->{admin_index};
 
    $req->authenticated and
       p_item $nav, $nav_linkto->( $req, {
          class => $class, tip => 'admin_index_title',
-         value => 'admin_index_link', }, 'event/events', [], after => $after );
+         value => 'admin_index_link', }, $index, [], after => $after );
 
    return $nav;
 }
@@ -301,22 +305,31 @@ sub secondary_navigation_links {
    my $nav = blank_form { type => 'unordered' };
    my $location = $page->{location} // NUL;
    my $class = $location eq 'login' ? 'current' : NUL;
+   my $places = $self->config->places;
 
    $req->authenticated or p_item $nav, $nav_linkto->( $req, {
       class => $class, tip => 'Login to the application',
-      value => 'Login', }, 'user/login' );
+      value => 'Login', }, $places->{login} );
 
    $class = $location eq 'change_password' ? 'current' : NUL;
 
    p_item $nav, $nav_linkto->( $req, {
       class => $class,
       tip   => 'Change the password used to access the application',
-      value => 'Change Password', }, 'user/change_password' );
+      value => 'Change Password', }, $places->{password} );
+
+   my $js = $page->{literal_js} //= []; my ($href, $title);
 
    if ($req->authenticated) {
       p_item $nav, $nav_linkto->( $req, {
          class => 'windows', name => 'profile-user',
          tip   => 'Update personal details', value => 'Profile', }, '#' );
+
+      $href  = uri_for_action $req, 'user/profile';
+      $title = locm $req, 'Person Profile';
+
+      push @{ $js }, dialog_anchor( 'profile-user', $href, {
+         name => 'profile-user', title => $title, useIcon => \1 } );
 
       $class = $location eq 'totp_secret' ? 'current' : NUL;
 
@@ -324,7 +337,8 @@ sub secondary_navigation_links {
          class => $class, tip => 'View the TOTP account information',
          value => 'TOTP', }, 'user/totp_secret' );
 
-      my $href = uri_for_action $req, 'user/logout_action';
+      $href = uri_for_action $req, 'user/logout_action';
+
       my $form = blank_form  'authentication', $href, { class => 'none' };
 
       p_button $form, 'logout-user', 'logout', {
@@ -340,10 +354,22 @@ sub secondary_navigation_links {
          tip   => 'Request viewing of the TOTP account information',
          value => 'TOTP', }, '#' );
 
+      $href  = uri_for_action $req, 'user/totp_request';
+      $title = locm $req, 'TOTP Information Request';
+
+      push @{ $js }, dialog_anchor( 'totp-request', $href, {
+         name => 'totp-request', title => $title, useIcon => \1 } );
+
       p_item $nav, $nav_linkto->( $req, {
          class => 'windows', name => 'request-reset',
          tip   => 'Follow the link to reset your password',
          value => 'Forgot Password?', }, '#' );
+
+      $href  = uri_for_action $req, 'user/reset';
+      $title = locm $req, 'Reset Password';
+
+      push @{ $js }, dialog_anchor( 'request-reset', $href, {
+         name => 'request-reset', title => $title, useIcon => \1 } );
    }
 
    return $nav;

@@ -86,7 +86,8 @@ around 'load_page' => sub {
    $req->authenticated and $page->{user}
       = $self->components->{person}->find_by_shortcode( $req->username );
 
-   my $editors = qr{ \A (?: editor|event_manager|person_manager ) \z }mx;
+   my $pattern = join '|', @{ $self->config->editors };
+   my $editors = qr{ \A (?: $pattern ) \z }mx;
 
    $page->{is_editor} = ($req->authenticated && first { $_ =~ $editors }
                         @{ $req->session->roles }) ? TRUE : FALSE;
@@ -145,7 +146,7 @@ my $_new_node = sub {
 
    my @pathname = $_prepare_path->( $_append_suffix->( $pathname ) );
 
-   $opts->{draft} and @pathname = ($self->config->drafts, @pathname);
+   $opts->{draft} and unshift @pathname, $self->config->drafts;
 
    my $path     = $self->$_fettle_path( $locale, @pathname, $opts );
    my @filepath = map { make_id_from( $_ )->[ 0 ] } @pathname;
@@ -262,10 +263,11 @@ sub get_dialog {
    my $val    = $params->( 'val', { optional => TRUE } );
    my $stash  = $self->dialog_stash( $req );
    my $links  = $stash->{links};
+   my $places = $self->config->places;
    my $href   = $name eq 'create' ? $links->{root_uri}
               : $name eq 'rename' ? $self->base_uri( $req, [ $val ] )
-              : $name eq 'search' ? uri_for_action $req, 'docs/search'
-              : $name eq 'upload' ? uri_for_action $req, 'docs/upload'
+              : $name eq 'search' ? uri_for_action $req, $places->{search}
+              : $name eq 'upload' ? uri_for_action $req, $places->{upload}
                                   : NUL;
    my $form   = $stash->{page}->{forms}->[ 0 ]
               = blank_form "${name}-file", $href;

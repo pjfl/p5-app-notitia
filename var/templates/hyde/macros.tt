@@ -226,10 +226,11 @@
 [% MACRO TextArea( f ) WRAPPER label -%]
 [%    IF f.tip; FieldHelp( f ); END -%]
 [%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
+[%    IF f.id; id = f.id; ELSE; id = f.name; END -%]
       <div class="field-container">
          <textarea [% IF f.disabled %]disabled="disabled"[% END -%]
-            class="[% class %]" id="[% f.name %]"
-             name="[% f.name %]">[% f.value %]</textarea>
+            class="[% class %]" id="[% id %]" name="[% f.name %]">
+[%          f.value %]</textarea>
       </div>
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>

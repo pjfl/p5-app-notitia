@@ -383,8 +383,9 @@ sub activate : Role(anon) {
    if ($path->exists and $path->is_file) {
       my $name   = $path->chomp->getline; $path->unlink;
       my $person = $self->find_by_shortcode( $name ); $person->activate;
+      my $places = $self->config->places;
 
-      $location = uri_for_action $req, 'user/change_password', [ $name ];
+      $location = uri_for_action $req, $places->{password}, [ $name ];
       $message  = [ to_msg '[_1] account activated', $person->label ];
    }
    else {
@@ -461,7 +462,8 @@ sub mugshot : Role(person_manager) {
    my $scode  = $req->uri_params->( 0 );
    my $stash  = $self->dialog_stash( $req );
    my $params = { name => $scode, type => 'mugshot' };
-   my $href   = uri_for_action $req, 'docs/upload', [], $params;
+   my $places = $self->config->places;
+   my $href   = uri_for_action $req, $places->{upload}, [], $params;
 
    $stash->{page}->{forms}->[ 0 ] = blank_form 'upload-file', $href;
    $self->components->{docs}->upload_dialog( $req, $stash->{page} );

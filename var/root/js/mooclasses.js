@@ -2256,12 +2256,12 @@ var Replacements = new Class( {
       if (el.type == 'checkbox' || el.type == 'radio') {
          el.setStyles( { margin: 0, padding: 0,
                          position: 'absolute', left: '-9999px' } );
-         new Element( 'span', {
+         var span  = new Element( 'span', {
             'class': opt.replacement_class + (el.checked ? ' checked' : ''),
             id     : new_id,
             name   : el.name
          } ).inject( el, 'before' );
-         return;
+         return span;
       }
 
       if (el.type == 'textarea' || el.type == 'text') {
@@ -2272,6 +2272,7 @@ var Replacements = new Class( {
          div.inject( el, 'before' ); pre.inject( div ); div.grab( el );
          span.inject( pre ); new Element( 'br' ).inject( pre );
          span.set( 'text', el.value );
+         return span;
       }
 
       return;

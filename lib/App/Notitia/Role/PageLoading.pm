@@ -10,7 +10,8 @@ use Class::Usul::Functions qw( is_arrayref is_member throw );
 use Class::Usul::Types     qw( HashRef );
 use Moo::Role;
 
-requires qw( components config initialise_stash load_page localised_tree );
+requires qw( components config initialise_stash load_page localised_tree
+             navigation_links );
 
 has 'type_map' => is => 'ro', isa => HashRef, builder => sub { {} };
 
