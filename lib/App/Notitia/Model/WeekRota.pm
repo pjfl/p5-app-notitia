@@ -419,9 +419,9 @@ my $_alloc_cell = sub {
 };
 
 my $_allocation_js = sub {
-   my ($req, $moniker) = @_;
+   my ($req, $moniker, $date) = @_;
 
-   my $href = uri_for_action $req, "${moniker}/alloc_key";
+   my $href = uri_for_action $req, "${moniker}/alloc_key", [ $date->ymd ];
 
    return [ js_server_config( 'allocation-key', 'load',
                               'request', [ "${href}", 'allocation-key' ] ) ];
@@ -706,6 +706,8 @@ my $_week_rota_requests = sub {
 sub alloc_key : Role(rota_manager) {
    my ($self, $req) = @_;
 
+   my $rota_date = $req->uri_params->( 0 );
+   my $rota_dt = to_dt $rota_date;
    my $stash = $self->dialog_stash( $req );
    my $table = $stash->{page}->{forms}->[ 0 ] = blank_form {
       class => 'key-table', type => 'table' };
@@ -713,11 +715,10 @@ sub alloc_key : Role(rota_manager) {
    my $vehicles = $self->schema->resultset( 'Vehicle' )->search_for_vehicles( {
       columns => $columns, service => TRUE } );
    my $assets = $self->components->{asset};
-   my $now = to_dt time2str;
 
    $table->{headers} = $_alloc_key_headers->( $req );
 
-   p_row $table, [ map { $_alloc_key_row->( $req, $assets, $now, $_ ) }
+   p_row $table, [ map { $_alloc_key_row->( $req, $assets, $rota_dt, $_ ) }
                    $vehicles->all ];
 
    return $stash;
@@ -790,7 +791,7 @@ sub allocation : Role(rota_manager) {
       template => [ 'none', 'custom/two-week-table' ],
       title => locm $req, 'Vehicle Allocation'
    };
-   my $js = $page->{literal_js} = $_allocation_js->( $req, $moniker );
+   my $js = $page->{literal_js} = $_allocation_js->( $req, $moniker, $rota_dt );
 
    for my $rno (0 .. $rows - 1) {
       my $id = "allocation-row${rno}";
