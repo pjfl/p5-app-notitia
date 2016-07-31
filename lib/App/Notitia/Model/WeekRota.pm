@@ -519,39 +519,39 @@ my $_left_shift = sub {
 };
 
 my $_next_week_uri = sub {
-   my ($self, $req, $method, $rota_name, $date) = @_;
+   my ($self, $req, $method, $rota_name, $date, $params) = @_;
 
    my $actionp = $self->moniker."/${method}";
 
    $date = $_local_dt->( $date )->truncate( to => 'day' )->add( weeks => 1 );
 
-   return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
+   return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ], $params;
 };
 
 my $_next_week = sub {
-   my ($self, $req, $method, $rota_name, $date) = @_;
+   my ($self, $req, $method, $name, $date, $params) = @_;
 
-   my $href = $self->$_next_week_uri( $req, $method, $rota_name, $date );
+   my $href = $self->$_next_week_uri( $req, $method, $name, $date, $params );
 
    return f_link 'next-week', $href, {
       class => 'next-rota', request => $req, value => locm $req, 'Next' };
 };
 
 my $_prev_week_uri = sub {
-   my ($self, $req, $method, $rota_name, $date) = @_;
+   my ($self, $req, $method, $rota_name, $date, $params) = @_;
 
    my $actionp = $self->moniker."/${method}";
 
    $date = $_local_dt->( $date )->truncate( to => 'day' )
                                 ->subtract( weeks => 1 );
 
-   return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
+   return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ], $params;
 };
 
 my $_prev_week = sub {
-   my ($self, $req, $method, $rota_name, $date) = @_;
+   my ($self, $req, $method, $name, $date, $params) = @_;
 
-   my $href = $self->$_prev_week_uri( $req, $method, $rota_name, $date );
+   my $href = $self->$_prev_week_uri( $req, $method, $name, $date, $params );
 
    return f_link 'prev-week', $href, {
       class => 'prev-rota', request => $req, value => locm $req, 'Prev' };
@@ -772,15 +772,18 @@ sub allocation : Role(rota_manager) {
    my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
    my $rows = $req->query_params->( 'rows', { optional => TRUE } ) // 2;
    my $cols = $req->query_params->( 'cols', { optional => TRUE } ) // 7;
+   my $params = { cols => $cols, rows => $rows };
    my $rota_dt = to_dt $rota_date;
    my $list = blank_form { class => 'spreadsheet' };
    my $form = blank_form {
       class => 'spreadsheet-key-table server', id => 'allocation-key' };
    my $page = {
       fields => { nav => {
-         next => $self->$_next_week( $req, 'allocation', $rota_name, $rota_dt ),
-         prev => $self->$_prev_week( $req, 'allocation', $rota_name, $rota_dt ),
-         oplinks_style => 'max-width: '.($cols * 270 ).'px;'
+         next => $self->$_next_week
+            ( $req, 'allocation', $rota_name, $rota_dt, $params ),
+         prev => $self->$_prev_week
+            ( $req, 'allocation', $rota_name, $rota_dt, $params ),
+         oplinks_style => 'max-width: '.($cols * 270).'px;'
          }, },
       forms => [ $list, $form ],
       off_grid => TRUE,
