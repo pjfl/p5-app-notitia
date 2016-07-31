@@ -242,7 +242,7 @@ footer {
 }
 .required { border-right: 3px solid @divider; }
 .smallint-field { min-width: 150px; }
-.spreadsheet { margin-left: 0.5em; margin-right: 0.5em; overflow-x: scroll; }
+.spreadsheet { margin-left: 0.5em; margin-right: 0.5em; overflow-x: auto; }
 .spreadsheet-heading {
    line-height: 36px; margin: 0 auto; max-width: 320px;
 }
@@ -261,6 +261,7 @@ footer {
    .box-sizing; color: @darker; font-size: 12px; max-width: 90px; margin: 0;
    min-width: 90px; padding: 3px 3px; vertical-align: middle;
 }
+.spreadsheet-oplinks { margin: 5px auto; }
 .standard-field[type=date], .narrow-field[type=time],
 .standard-field[type=time] {
    padding-bottom: 0; padding-top: 0;
@@ -705,10 +706,11 @@ h5, h6 {
 }
 hr.subtle { display: none; }
 /* Tables */
+.key-table, .smaller-table, .standard-table, table.embeded { width: 100%; }
 .embeded-spreadsheet-table, .key-table, .smaller-table, .spreadsheet-table,
 .standard-table, table.embeded {
    background-color: #555; .border-radius;
-   .box-shadow; width: 100%;
+   .box-shadow;
    caption, thead {
       background-color: #3a3a3a;
       background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzNhM2EzYSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxZTFlMWUiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
@@ -747,7 +749,7 @@ hr.subtle { display: none; }
    code.option, code.flag, code.filter, code.output { margin-bottom: 2px; }
 }
 .embeded-spreadsheet-table {
-   font-size: 0.85em; margin: 0;
+   font-size: 0.85em; margin: 0; max-width: 270px;
    tbody td { padding: 0px 3px; white-space: nowrap; }
    tbody tr { line-height: 32px; }
    th { padding: 0.5em 5px; }
@@ -759,8 +761,10 @@ hr.subtle { display: none; }
    tbody tr { line-height: 32px; }
 }
 .no-header-wrap th { white-space: nowrap; }
+.spreadsheet-table { margin: 0.5em auto; }
 .spreadsheet-table td.embeded { vertical-align: top; }
-.spreadsheet-table, .standard-table { margin: 0.5em 0; }
+.spreadsheet-table th.day-of-week { max-width: 270px; }
+.standard-table { margin: 0.5em 0; }
 table.embeded { margin: 0; }
 table.embeded td { white-space: nowrap; }
 /* Note types */

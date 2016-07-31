@@ -779,7 +779,8 @@ sub allocation : Role(rota_manager) {
    my $page = {
       fields => { nav => {
          next => $self->$_next_week( $req, 'allocation', $rota_name, $rota_dt ),
-         prev => $self->$_prev_week( $req, 'allocation', $rota_name, $rota_dt )
+         prev => $self->$_prev_week( $req, 'allocation', $rota_name, $rota_dt ),
+         oplinks_style => 'max-width: '.($cols * 270 ).'px;'
          }, },
       forms => [ $list, $form ],
       off_grid => TRUE,
@@ -791,7 +792,7 @@ sub allocation : Role(rota_manager) {
    for my $rno (0 .. $rows - 1) {
       my $id = "allocation-row${rno}";
 
-      p_container $list, NUL, { class => 'server', id => $id };
+      p_container $list, NUL, { class => 'allocation-row server', id => $id };
 
       my $date = $_local_dt->( $rota_dt )->add( days => $cols * $rno )->ymd;
       my $args = [ $rota_name, $date, $cols ];
