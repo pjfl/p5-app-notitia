@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds spreadsheet display controls
           - Allocation key tracks rota_date
           - Retains query parameters in spreadsheet navigation
           - Centres and limits spreadsheet horizontally

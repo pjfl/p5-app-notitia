@@ -111,6 +111,16 @@ my $_alloc_cell_headers = sub {
    return [ map { { value => $_ } } @headings  ];
 };
 
+my $_onchange_submit = sub {
+   my ($page, $k) = @_;
+
+   push @{ $page->{literal_js} },
+      js_submit_config $k, 'change', 'submitForm',
+                       [ 'display_control', 'display-control' ];
+
+   return;
+};
+
 my $_onclick_relocate = sub {
    my ($page, $k, $href) = @_;
 
@@ -132,6 +142,13 @@ my $_operators_vehicle = sub {
    }
 
    return $cache->{ $id } = $label || 'N';
+};
+
+my $_select_number = sub {
+   my ($max, $selected) = @_;
+
+   return [ map { [ $_ , $_, { selected => $selected eq $_? TRUE : FALSE } ] }
+            1 .. $max ];
 };
 
 my $_week_label = sub {
@@ -702,6 +719,41 @@ my $_week_rota_requests = sub {
    return $row;
 };
 
+my $_alloc_nav = sub {
+   my ($self, $req, $rota_name, $rota_dt, $params) = @_;
+
+   return {
+      next => $self->$_next_week
+         ( $req, 'allocation', $rota_name, $rota_dt, $params ),
+      prev => $self->$_prev_week
+         ( $req, 'allocation', $rota_name, $rota_dt, $params ),
+      oplinks_style => 'max-width: '.($params->{cols} * 270).'px;'
+   };
+};
+
+my $_alloc_query = sub {
+   my ($self, $req, $page, $args, $params) = @_;
+
+   my $moniker = $self->moniker;
+   my $href = uri_for_action $req, "${moniker}/allocation", $args;
+   my $form = blank_form 'display-control', $href, {
+      class => 'standard-form display-control' };
+
+   p_select $form, 'display_rows', $_select_number->( 10, $params->{rows} ), {
+      class => 'single-digit submit', id => 'display_rows',
+      label_field_class => 'align-right' };
+
+   $_onchange_submit->( $page, 'display_rows' );
+
+   p_select $form, 'display_cols', $_select_number->( 10, $params->{cols} ), {
+      class => 'single-digit submit', id => 'display_cols',
+      label_field_class => 'align-right' };
+
+   $_onchange_submit->( $page, 'display_cols' );
+
+   return { control => $form };
+};
+
 # Public methods
 sub alloc_key : Role(rota_manager) {
    my ($self, $req) = @_;
@@ -715,10 +767,11 @@ sub alloc_key : Role(rota_manager) {
    my $vehicles = $self->schema->resultset( 'Vehicle' )->search_for_vehicles( {
       columns => $columns, service => TRUE } );
    my $assets = $self->components->{asset};
+   my $keeper_dt = $_local_dt->( $rota_dt );
 
    $table->{headers} = $_alloc_key_headers->( $req );
 
-   p_row $table, [ map { $_alloc_key_row->( $req, $assets, $rota_dt, $_ ) }
+   p_row $table, [ map { $_alloc_key_row->( $req, $assets, $keeper_dt, $_ ) }
                    $vehicles->all ];
 
    return $stash;
@@ -771,6 +824,7 @@ sub allocation : Role(rota_manager) {
    my $today = time2str '%Y-%m-%d';
    my $rota_name = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
+   my $args = [ $rota_name, $rota_date ];
    my $rows = $req->query_params->( 'rows', { optional => TRUE } ) // 2;
    my $cols = $req->query_params->( 'cols', { optional => TRUE } ) // 7;
    my $params = { cols => $cols, rows => $rows };
@@ -778,20 +832,17 @@ sub allocation : Role(rota_manager) {
    my $list = blank_form { class => 'spreadsheet' };
    my $form = blank_form {
       class => 'spreadsheet-key-table server', id => 'allocation-key' };
-   my $page = {
-      fields => { nav => {
-         next => $self->$_next_week
-            ( $req, 'allocation', $rota_name, $rota_dt, $params ),
-         prev => $self->$_prev_week
-            ( $req, 'allocation', $rota_name, $rota_dt, $params ),
-         oplinks_style => 'max-width: '.($cols * 270).'px;'
-         }, },
+   my $page = { fields => {
+         nav => $self->$_alloc_nav( $req, $rota_name, $rota_dt, $params ), },
       forms => [ $list, $form ],
       off_grid => TRUE,
       template => [ 'none', 'custom/two-week-table' ],
       title => locm $req, 'Vehicle Allocation'
    };
    my $js = $page->{literal_js} = $_allocation_js->( $req, $moniker, $rota_dt );
+   my $fields = $page->{fields};
+
+   $fields->{query} = $self->$_alloc_query( $req, $page, $args, $params );
 
    for my $rno (0 .. $rows - 1) {
       my $id = "allocation-row${rno}";
@@ -807,6 +858,21 @@ sub allocation : Role(rota_manager) {
    }
 
    return $self->get_stash( $req, $page );
+}
+
+sub display_control_action : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $moniker = $self->moniker;
+   my $rota_name = $req->uri_params->( 0 );
+   my $rota_date = $req->uri_params->( 1 );
+   my $cols = $req->body_params->( 'display_cols' );
+   my $rows = $req->body_params->( 'display_rows' );
+   my $args = [ $rota_name, $rota_date ];
+   my $params = { cols => $cols, rows => $rows };
+   my $location = uri_for_action $req, "${moniker}/allocation", $args, $params;
+
+   return { redirect => { location => $location } };
 }
 
 sub week_rota : Role(any) {

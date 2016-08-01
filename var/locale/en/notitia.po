@@ -333,6 +333,12 @@ msgstr "Delete the [_1] record for [_2]"
 msgid "description"
 msgstr "Description"
 
+msgid "display_cols"
+msgstr "Columns"
+
+msgid "display_rows"
+msgstr "Rows"
+
 msgid "disposed"
 msgstr "Disposed"
 

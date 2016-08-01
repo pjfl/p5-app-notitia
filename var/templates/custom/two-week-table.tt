@@ -17,5 +17,6 @@
    <div class="nav-link right align-left">
 [% Dispatch( page.fields.nav.next ) -%]
    </div>
+[% Dispatch( page.fields.query.control ) %]
 </div>
 [% Dispatch( page.forms.1 ) -%]
