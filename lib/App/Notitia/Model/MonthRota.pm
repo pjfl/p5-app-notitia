@@ -317,7 +317,7 @@ sub month_rota : Role(any) {
       after      => $rota_dt->clone->subtract( days => 1 ),
       before     => $rota_dt->clone->add( days => 31 ),
       rota_type  => $self->$_find_rota_type( $rota_name )->id };
-   my $has_event =  $self->schema->resultset( 'Event' )->has_events_for( $opts);
+   my $events    =  $self->schema->resultset( 'Event' )->has_events_for( $opts);
    my $assigned  =  $self->$_slot_assignments( $opts );
    my $first     =  $self->$_first_day_of_table( $req, $rota_dt );
 
@@ -334,7 +334,7 @@ sub month_rota : Role(any) {
 
          $dayno = $ldt->day; $rno > 3 and $dayno == 1 and last;
          $_is_this_month->( $rno, $ldt ) and $cell = $self->$_rota_summary
-            ( $req, $page, $ldt, $has_event, $assigned );
+            ( $req, $page, $ldt, $events, $assigned );
          push @{ $row }, $cell;
       }
 

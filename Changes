@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Refactored navigation
           - Stash key renames; prefs, skin and template
           - Adds spreadsheet display controls
           - Allocation key tracks rota_date
