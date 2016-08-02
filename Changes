@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Persists display cols and rows in session
           - Refactored navigation
           - Stash key renames; prefs, skin and template
           - Adds spreadsheet display controls

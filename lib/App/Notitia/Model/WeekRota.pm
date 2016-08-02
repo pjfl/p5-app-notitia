@@ -111,6 +111,19 @@ my $_alloc_cell_headers = sub {
    return [ map { { value => $_ } } @headings  ];
 };
 
+my $_alloc_query_params = sub {
+   my $req  = shift;  my $sess = $req->session;
+
+   my $cols = $sess->display_cols; my $rows = $sess->display_rows;
+
+   $cols = $req->query_params->( 'cols', { optional => TRUE } ) // $cols;
+   $rows = $req->query_params->( 'rows', { optional => TRUE } ) // $rows;
+
+   $sess->display_cols( $cols ); $sess->display_rows( $rows );
+
+   return { cols => $cols, rows => $rows };
+};
+
 my $_onchange_submit = sub {
    my ($page, $k) = @_;
 
@@ -825,9 +838,7 @@ sub allocation : Role(rota_manager) {
    my $rota_name = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
    my $args = [ $rota_name, $rota_date ];
-   my $rows = $req->query_params->( 'rows', { optional => TRUE } ) // 2;
-   my $cols = $req->query_params->( 'cols', { optional => TRUE } ) // 7;
-   my $params = { cols => $cols, rows => $rows };
+   my $params = $_alloc_query_params->( $req );
    my $rota_dt = to_dt $rota_date;
    my $list = blank_form { class => 'spreadsheet' };
    my $form = blank_form {
@@ -844,8 +855,8 @@ sub allocation : Role(rota_manager) {
 
    $fields->{query} = $self->$_alloc_query( $req, $page, $args, $params );
 
-   for my $rno (0 .. $rows - 1) {
-      my $id = "allocation-row${rno}";
+   for my $rno (0 .. $params->{rows} - 1) {
+      my $id = "allocation-row${rno}"; my $cols = $params->{cols};
 
       p_container $list, NUL, { class => 'allocation-row server', id => $id };
 

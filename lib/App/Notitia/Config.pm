@@ -243,6 +243,8 @@ has 'server'          => is => 'ro',   isa => NonEmptySimpleStr,
 has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
    builder            => sub { {
       enable_2fa      => [ Bool, FALSE                      ],
+      display_cols    => [ PositiveInt, 7                   ],
+      display_rows    => [ PositiveInt, 2                   ],
       first_name      => [ SimpleStr | Undef                ],
       query           => [ SimpleStr | Undef                ],
       roles           => [ ArrayRef, sub { [] }             ],
