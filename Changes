@@ -1,5 +1,8 @@
 Revision history for App::Notitia
 
+          - Renamed Coords in Person info to Eastings/Northings
+          - Reordered fields in Person info
+          - Added "km" to distances
           - Refactored month rota
           - Persists display cols and rows in session
           - Refactored navigation
