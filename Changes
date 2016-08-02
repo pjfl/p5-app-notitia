@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Refactored month rota
           - Persists display cols and rows in session
           - Refactored navigation
           - Stash key renames; prefs, skin and template
