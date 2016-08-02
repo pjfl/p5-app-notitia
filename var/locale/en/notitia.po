@@ -250,7 +250,7 @@ msgid "controller_list_tip"
 msgstr "List controllers"
 
 msgid "coordinates"
-msgstr "Coordinates"
+msgstr "Eastings/Northings"
 
 msgid "create"
 msgstr "Create"
