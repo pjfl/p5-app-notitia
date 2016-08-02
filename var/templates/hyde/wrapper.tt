@@ -12,7 +12,7 @@
 [%    IF config.font -%]
    <link href="[% config.font %]" rel="stylesheet" type="text/css">
 [%    END -%]
-   <link href="[% links.css %][% skin %]-[% prefs.theme %].css"
+   <link href="[% links.css %][% session.skin %]-[% session.theme %].css"
           rel="stylesheet" type="text/css">
 [%    IF links.rss_uri -%]
    <link href="[% links.rss_uri %]" rel="alternate" title="RSS"

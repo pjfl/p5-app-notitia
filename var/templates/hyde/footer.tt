@@ -17,7 +17,7 @@
 <script src="[% links.cdnjs.moocore %]"></script>
 <script src="[% links.cdnjs.moomore %]"></script>
 <script src="[% links.js %]mooclasses.js"></script>
-<script src="[% links.js %][% skin %].js"></script>
+<script src="[% links.js %][% session.skin %].js"></script>
 <script>
       var behaviour = new Behaviour( {
          baseURL     : "[% links.base_uri %]",

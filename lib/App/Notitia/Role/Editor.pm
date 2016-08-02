@@ -217,9 +217,9 @@ sub create_file {
 
    my $new_node = $self->$_new_node( $req->locale, $pathname, $opts );
    my $created  = time2str '%Y-%m-%d %H:%M:%S %z', time, 'GMT';
-   my $stash    = { page => { author  => $req->username,
-                              created => $created,
-                              layout  => 'blank-page', }, };
+   my $skin     = $req->session->skin || $conf->skin;
+   my $stash    = { page => { author => $req->username, created => $created, },
+                    template => { layout => 'blank-page', skin => $skin, }, };
 
    stash_functions $self, $req, $stash;
 
@@ -289,7 +289,7 @@ sub get_dialog {
    }
    elsif ($name eq 'search') {
       $form->{method} = 'get';
-      p_textfield $form, 'query', $stash->{prefs}->{query}, { label => NUL };
+      p_textfield $form, 'query', $req->session->query, { label => NUL };
       p_button    $form, 'Search', NUL, $opts;
       $page->{literal_js} = set_element_focus "${name}-file", 'query';
    }
