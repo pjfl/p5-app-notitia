@@ -108,8 +108,13 @@ my $_local_dt = sub {
 };
 
 my $_onchange_submit = sub {
-   return js_submit_config 'rota_date', 'change', 'submitForm',
-                         [ 'rota_redirect', 'day-rota' ];
+   my $page = shift;
+
+   push @{ $page->{literal_js} },
+      js_submit_config 'rota_date', 'change', 'submitForm',
+                       [ 'rota_redirect', 'day-rota' ];
+
+   return;
 };
 
 my $_onclick_relocate = sub {
@@ -309,7 +314,7 @@ my $_events = sub {
       $col1 = { value => undef }; $first = FALSE;
    }
 
-   push @{ $page->{literal_js} }, $_onchange_submit->();
+   $_onchange_submit->( $page );
    return;
 };
 

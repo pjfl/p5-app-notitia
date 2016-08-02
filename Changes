@@ -1,5 +1,12 @@
 Revision history for App::Notitia
 
+          - Refactored month rota
+          - Persists display cols and rows in session
+          - Refactored navigation
+          - Stash key renames; prefs, skin and template
+          - Adds spreadsheet display controls
+          - Allocation key tracks rota_date
+          - Retains query parameters in spreadsheet navigation
           - Centres and limits spreadsheet horizontally
           - Adds rows and columns parameters to spreadsheet view
           - Configurable pattern roles that can edit markdown

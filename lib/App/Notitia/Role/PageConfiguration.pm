@@ -34,12 +34,12 @@ around 'initialise_stash' => sub {
       try {
          my $v = $params->( $k, { optional => 1 } );
 
-         $stash->{prefs}->{ $k } = defined $v ? $sess->$k( $v ) : $sess->$k();
+         $stash->{session}->{ $k } = defined $v ? $sess->$k( $v ) : $sess->$k();
       }
       catch { $self->log->warn( $_ ) };
    }
 
-   $stash->{skin} = delete $stash->{prefs}->{skin};
+   $stash->{template}->{skin} = $stash->{session}->{skin};
 
    my $links = $stash->{links} //= {};
 

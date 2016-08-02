@@ -24,7 +24,7 @@ my $_template = do { local $RS = undef; <DATA> };
 sub serialize {
    my ($self, $req, $stash) = @_; stash_functions $self, $req, $stash;
 
-   $stash->{page}->{layout} = \$_template;
+   $stash->{template}->{layout} = \$_template;
 
    my $xml = encode( $self->encoding, $self->render_template( $stash ) );
 

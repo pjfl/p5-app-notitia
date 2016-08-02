@@ -89,9 +89,9 @@ sub dialog_stash {
    my ($self, $req, $layout) = @_; my $stash = $self->initialise_stash( $req );
 
    $stash->{page} = $self->load_page( $req, {
-      fields => {},
-      layout => $layout // 'dialog',
-      meta   => { id => $req->query_params->( 'id' ), }, } );
+      fields => {}, meta => { id => $req->query_params->( 'id' ), }, } );
+   $stash->{template}->{layout} = $layout // 'dialog';
+   $stash->{template}->{skin} = $req->session->skin || $self->config->skin;
    $stash->{view} = 'json';
 
    return $stash;

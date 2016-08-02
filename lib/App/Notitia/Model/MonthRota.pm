@@ -108,31 +108,6 @@ my $_prev_month = sub {
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
 };
 
-my $_week_number = sub {
-   my ($date, $rno) = @_;
-
-   my $week = $_local_dt->( $date )->add( days => 7 * $rno );
-
-   return { class => 'month-rota-week-number', value => $week->week_number };
-};
-
-# Private methods
-my $_find_rota_type = sub {
-   return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
-};
-
-my $_first_day_of_table = sub {
-   my ($self, $req, $date) = @_;
-
-   $date = $_local_dt->( $date )->set( day => 1 );
-
-   $self->update_navigation_date( $req, $date );
-
-   while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
-
-   return $date->set_time_zone( 'GMT' );
-};
-
 my $_summary_link_value = sub {
    my $opts = shift; my $class = 'vehicle-not-needed'; my $value = NUL;
 
@@ -158,6 +133,44 @@ my $_summary_link = sub {
 
    return { class => $class, colspan => $span,  name  => $id,
             style => $style, title   => $title, value => $value };
+};
+
+my $_week_number = sub {
+   my ($date, $rno) = @_;
+
+   my $week = $_local_dt->( $date )->add( days => 7 * $rno );
+
+   return { class => 'month-rota-week-number', value => $week->week_number };
+};
+
+# Private methods
+my $_find_rota_type = sub {
+   return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
+};
+
+my $_first_day_of_table = sub {
+   my ($self, $req, $date) = @_;
+
+   $date = $_local_dt->( $date )->set( day => 1 );
+
+   $self->update_navigation_date( $req, $date );
+
+   while ($date->day_of_week > 1) { $date = $date->subtract( days => 1 ) }
+
+   return $date->set_time_zone( 'GMT' );
+};
+
+my $_month_table = sub {
+   my ($self, $req, $rota_name) = @_;
+
+   my $max_slots = $_month_rota_max_slots->( $self->config->slot_limits );
+
+   return { caption   => locm( $req, 'month_rota_table_caption' ),
+            headers   => $_month_rota_headers->( $req ),
+            lcm       => lcm_for( 4, @{ $max_slots } ),
+            max_slots => $max_slots,
+            name      => $rota_name,
+            rows      => [] };
 };
 
 my $_summary_cells = sub {
@@ -205,6 +218,20 @@ my $_vreqs_for_event = sub {
 
    return { vehicle     => ($assigned == $requested ? TRUE : FALSE),
             vehicle_req => TRUE };
+};
+
+my $_month_rota_page = sub {
+   my ($self, $req, $rota_name, $rota_dt) = @_;
+
+   my $actionp = $self->moniker.'/month_rota';
+
+   return  {
+      fields   => { nav => {
+         next  => $_next_month->( $req, $actionp, $rota_name, $rota_dt ),
+         prev  => $_prev_month->( $req, $actionp, $rota_name, $rota_dt ) }, },
+      rota     => $self->$_month_table( $req, $rota_name ),
+      template => [ '/menu', 'custom/month-table' ],
+      title    => $_month_rota_title->( $req, $rota_name, $rota_dt ), };
 };
 
 my $_rota_summary = sub {
@@ -299,25 +326,12 @@ sub month_rota : Role(any) {
    my $rota_name =  $params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date =  $params->( 1, { optional => TRUE } ) // time2str '%Y-%m-01';
    my $rota_dt   =  to_dt $rota_date;
-   my $max_slots =  $_month_rota_max_slots->( $self->config->slot_limits );
-   my $actionp   =  $self->moniker.'/month_rota';
-   my $page      =  {
-      fields     => { nav => {
-         next    => $_next_month->( $req, $actionp, $rota_name, $rota_dt ),
-         prev    => $_prev_month->( $req, $actionp, $rota_name, $rota_dt ) }, },
-      rota       => { caption   => locm( $req, 'month_rota_table_caption' ),
-                      headers   => $_month_rota_headers->( $req ),
-                      lcm       => lcm_for( 4, @{ $max_slots } ),
-                      max_slots => $max_slots,
-                      name      => $rota_name,
-                      rows      => [] },
-      template   => [ '/menu', 'custom/month-table' ],
-      title      => $_month_rota_title->( $req, $rota_name, $rota_dt ), };
+   my $page      =  $self->$_month_rota_page( $req, $rota_name, $rota_dt );
    my $opts      =  {
       after      => $rota_dt->clone->subtract( days => 1 ),
       before     => $rota_dt->clone->add( days => 31 ),
       rota_type  => $self->$_find_rota_type( $rota_name )->id };
-   my $has_event =  $self->schema->resultset( 'Event' )->has_events_for( $opts);
+   my $events    =  $self->schema->resultset( 'Event' )->has_events_for( $opts);
    my $assigned  =  $self->$_slot_assignments( $opts );
    my $first     =  $self->$_first_day_of_table( $req, $rota_dt );
 
@@ -334,7 +348,7 @@ sub month_rota : Role(any) {
 
          $dayno = $ldt->day; $rno > 3 and $dayno == 1 and last;
          $_is_this_month->( $rno, $ldt ) and $cell = $self->$_rota_summary
-            ( $req, $page, $ldt, $has_event, $assigned );
+            ( $req, $page, $ldt, $events, $assigned );
          push @{ $row }, $cell;
       }
 

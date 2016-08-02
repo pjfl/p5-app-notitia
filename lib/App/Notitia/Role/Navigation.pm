@@ -94,6 +94,172 @@ my $_allowed = sub {
    return FALSE;
 };
 
+my $_admin_people_links = sub {
+   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
+
+   my $is_allowed_contacts = $self->$_allowed( $req, 'person/contacts' );
+   my $is_allowed_people = $self->$_allowed( $req, 'person/people' );
+
+   ($is_allowed_contacts or $is_allowed_people)
+      and push @{ $list }, $nav_folder->( $req, 'people' );
+
+   $is_allowed_contacts and push @{ $list },
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'contacts_list' ? 'selected' : NUL,
+         name => 'contacts_list' }, 'person/contacts', [],
+                     status => 'current' );
+
+   $is_allowed_people and push @{ $list },
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'people_list' ? 'selected' : NUL,
+         name => 'people_list' }, 'person/people', [] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'current_people_list' ? 'selected' : NUL,
+         name => 'current_people_list' }, 'person/people',
+                     [], status => 'current' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'rider_list' ? 'selected' : NUL,
+         name => 'rider_list' }, 'person/people',
+                     [], role => 'rider', status => 'current' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'controller_list' ? 'selected' : NUL,
+         name => 'controller_list' }, 'person/people',
+                     [], role => 'controller', status => 'current' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'driver_list' ? 'selected' : NUL,
+         name => 'driver_list' }, 'person/people',
+                     [], role => 'driver', status => 'current' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'fund_raiser_list' ? 'selected' : NUL,
+         name => 'fund_raiser_list' }, 'person/people',
+                     [], role => 'fund_raiser', status => 'current' );
+   return;
+};
+
+my $_admin_vehicle_links = sub {
+   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
+
+   push @{ $list },
+      $nav_folder->( $req, 'vehicles' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'vehicles_list' ? 'selected' : NUL,
+         name => 'vehicles_list' }, 'asset/vehicles', [] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'service_vehicles' ? 'selected' : NUL,
+         name => 'service_vehicles' },
+                     'asset/vehicles', [], service => TRUE ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'private_vehicles' ? 'selected' : NUL,
+         name => 'private_vehicles' },
+                     'asset/vehicles', [], private => TRUE );
+   return;
+};
+
+my $_rota_month_links = sub {
+   my ($self, $req, $actionp, $name, $f_dom, $local_dt, $nav) = @_;
+
+   my $list = $nav->{menu}->{list};
+
+   push @{ $list }, $nav_folder->( $req, 'months' );
+
+   for my $mno (0 .. 11) {
+      my $offset = $mno - 5;
+      my $date   = $offset > 0 ? $f_dom->clone->add( months => $offset )
+                 : $offset < 0 ? $f_dom->clone->subtract( months => -$offset )
+                 :               $f_dom->clone;
+      my $opts   = {
+         class      => $date->month == $local_dt->month ? 'selected' : NUL,
+         name       => lc 'month_'.$date->month_abbr,
+         tip_args   => [ $date->month_name ],
+         value_args => [ $date->year ], };
+      my $args   = [ $name, $date->ymd ];
+
+      push @{ $list }, $nav_linkto->( $req, $opts, $actionp, $args );
+   }
+
+   return;
+};
+
+my $_rota_week_links = sub {
+   my ($self, $req, $name, $sow, $nav) = @_;
+
+   my $actionp = 'week/week_rota'; my $list = $nav->{menu}->{list};
+
+   push @{ $list },
+      $nav_folder->( $req, 'week' ),
+      $_week_link->( $req, $actionp, $name,
+                     $sow->clone->subtract( weeks => 1 ) ),
+      $_week_link->( $req, $actionp, $name, $sow ),
+      $_week_link->( $req, $actionp, $name,
+                     $sow->clone->add( weeks => 1 ) ),
+      $_week_link->( $req, $actionp, $name,
+                     $sow->clone->add( weeks => 2 ) ),
+      $_week_link->( $req, $actionp, $name,
+                     $sow->clone->add( weeks => 3 ) ),
+      $_week_link->( $req, $actionp, $name,
+                     $sow->clone->add( weeks => 4 ) );
+   return;
+};
+
+my $_secondary_authenticated_links = sub {
+   my ($self, $req, $nav, $js, $location) = @_;
+
+   p_item $nav, $nav_linkto->( $req, {
+      class => 'windows', name => 'profile-user',
+      tip   => 'Update personal details', value => 'Profile', }, '#' );
+
+   my $href  = uri_for_action $req, 'user/profile';
+   my $title = locm $req, 'Person Profile';
+
+   push @{ $js }, dialog_anchor( 'profile-user', $href, {
+      name => 'profile-user', title => $title, useIcon => \1 } );
+
+   my $class = $location eq 'totp_secret' ? 'current' : NUL;
+
+   $req->session->enable_2fa and p_item $nav, $nav_linkto->( $req, {
+      class => $class, tip => 'View the TOTP account information',
+      value => 'TOTP', }, 'user/totp_secret' );
+
+   $href = uri_for_action $req, 'user/logout_action';
+
+   my $form = blank_form  'authentication', $href, { class => 'none' };
+
+   p_button $form, 'logout-user', 'logout', {
+      class => 'none',
+      label => locm( $req, 'Logout' ).' ('.$req->session->user_label.')',
+      tip   => make_tip $req, 'Logout from [_1]', [ $self->config->title ] };
+
+   p_item $nav, $form;
+   return;
+};
+
+my $_secondary_unauthenticated_links = sub {
+   my ($self, $req, $nav, $js) = @_;
+
+   p_item $nav, $nav_linkto->( $req, {
+      class => 'windows', name => 'totp-request',
+      tip   => 'Request viewing of the TOTP account information',
+      value => 'TOTP', }, '#' );
+
+   my $href  = uri_for_action $req, 'user/totp_request';
+   my $title = locm $req, 'TOTP Information Request';
+
+   push @{ $js }, dialog_anchor( 'totp-request', $href, {
+      name => 'totp-request', title => $title, useIcon => \1 } );
+
+   p_item $nav, $nav_linkto->( $req, {
+      class => 'windows', name => 'request-reset',
+      tip   => 'Follow the link to reset your password',
+      value => 'Forgot Password?', }, '#' );
+
+   $href  = uri_for_action $req, 'user/reset';
+   $title = locm $req, 'Reset Password';
+
+   push @{ $js }, dialog_anchor( 'request-reset', $href, {
+      name => 'request-reset', title => $title, useIcon => \1 } );
+   return;
+};
+
 # Public methods
 sub admin_navigation_links {
    my ($self, $req, $page) = @_; $page->{selected} //= NUL;
@@ -101,79 +267,30 @@ sub admin_navigation_links {
    my $nav  = $self->navigation_links( $req, $page );
    my $list = $nav->{menu}->{list} //= [];
    my $now  = DateTime->now;
-   my $form_name = $page->{forms}->[ 0 ]->{form_name} // NUL;
 
    push @{ $list },
-        $nav_folder->( $req, 'events' ),
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'current_events' ? 'selected' : NUL,
-           name => 'current_events' }, 'event/events', [],
-                       after  => $now->clone->subtract( days => 1 )->ymd ),
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'previous_events' ? 'selected' : NUL,
-           name => 'previous_events' }, 'event/events', [],
-                       before => $now->ymd ),
-        $nav_folder->( $req, 'people' );
+      $nav_folder->( $req, 'events' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'current_events' ? 'selected' : NUL,
+         name => 'current_events' }, 'event/events', [],
+                     after  => $now->clone->subtract( days => 1 )->ymd ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'previous_events' ? 'selected' : NUL,
+         name => 'previous_events' }, 'event/events', [], before => $now->ymd );
 
-   $self->$_allowed( $req, 'person/contacts' ) and push @{ $list },
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'contacts_list' ? 'selected' : NUL,
-           name => 'contacts_list' }, 'person/contacts', [],
-                       status => 'current' );
+   $self->$_admin_people_links( $req, $page, $nav );
 
-   $self->$_allowed( $req, 'person/people' ) and push @{ $list },
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'people_list' ? 'selected' : NUL,
-           name => 'people_list' }, 'person/people', [] ),
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'current_people_list'
-              ? 'selected' : NUL,
-           name => 'current_people_list' }, 'person/people',
-                       [], status => 'current' ),
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'rider_list' ? 'selected' : NUL,
-           name => 'rider_list' }, 'person/people',
-                       [], role => 'rider', status => 'current' ),
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'controller_list' ? 'selected' : NUL,
-           name => 'controller_list' }, 'person/people',
-                       [], role => 'controller', status => 'current' ),
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'driver_list' ? 'selected' : NUL,
-           name => 'driver_list' }, 'person/people',
-                       [], role => 'driver', status => 'current' ),
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'fund_raiser_list' ? 'selected' : NUL,
-           name => 'fund_raiser_list' }, 'person/people',
-                       [], role => 'fund_raiser', status => 'current' );
+   $self->$_allowed( $req, 'admin/types' ) and push @{ $list },
+      $nav_folder->( $req, 'types' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'types_list' ? 'selected' : NUL,
+         name => 'types_list' }, 'admin/types', [] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'slot_roles_list' ? 'selected' : NUL,
+         name => 'slot_roles_list' }, 'admin/slot_roles', [] );
 
-   if ($self->$_allowed( $req, 'admin/types' )) {
-      push @{ $list },
-        $nav_folder->( $req, 'types' ),
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'types_list' ? 'selected' : NUL,
-           name => 'types_list' }, 'admin/types', [] ),
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'slot_roles_list' ? 'selected' : NUL,
-           name => 'slot_roles_list' },
-                       'admin/slot_roles', [] ),
-   }
-
-   if ($self->$_allowed( $req, 'asset/vehicles' )) {
-      push @{ $list },
-        $nav_folder->( $req, 'vehicles' ),
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'vehicles_list' ? 'selected' : NUL,
-           name => 'vehicles_list' }, 'asset/vehicles', [] ),
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'service_vehicles' ? 'selected' : NUL,
-           name => 'service_vehicles' },
-                       'asset/vehicles', [], service => TRUE ),
-        $nav_linkto->( $req, {
-           class => $page->{selected} eq 'private_vehicles' ? 'selected' : NUL,
-           name => 'private_vehicles' },
-                       'asset/vehicles', [], private => TRUE );
-   }
+   $self->$_allowed( $req, 'asset/vehicles' )
+      and $self->$_admin_vehicle_links( $req, $page, $nav );
 
    return $nav;
 }
@@ -249,52 +366,26 @@ sub rota_navigation_links {
    my $local_dt = to_dt( $date )->set_time_zone( 'local' );
    my $f_dom    = $local_dt->clone->set( day => 1 );
 
-   $req->session->rota_date or $req->session->rota_date( $local_dt->ymd );
+   $req->session->rota_date or $self->update_navigation_date( $req, $local_dt );
 
    push @{ $list }, $nav_folder->( $req, 'year' ),;
    $date = $f_dom->clone->subtract( years => 1 );
    push @{ $list }, $_year_link->( $req, $actionp, $name, $date );
    $date = $f_dom->clone->add( years => 1 );
    push @{ $list }, $_year_link->( $req, $actionp, $name, $date );
-   push @{ $list }, $nav_folder->( $req, 'months' );
 
-   for my $mno (0 .. 11) {
-      my $offset = $mno - 5;
-      my $date   = $offset > 0 ? $f_dom->clone->add( months => $offset )
-                 : $offset < 0 ? $f_dom->clone->subtract( months => -$offset )
-                 :               $f_dom->clone;
-      my $opts   = { class      => $date->month == $local_dt->month
-                                   ? 'selected' : NUL,
-                     name       => lc 'month_'.$date->month_abbr,
-                     tip_args   => [ $date->month_name ],
-                     value_args => [ $date->year ], };
-      my $args   = [ $name, $date->ymd ];
+   $self->$_rota_month_links( $req, $actionp, $name, $f_dom, $local_dt, $nav );
 
-      push @{ $list }, $nav_linkto->( $req, $opts, $actionp, $args );
-   }
-
-   my $sow = $local_dt->clone; $actionp = 'week/week_rota';
+   my $sow = $local_dt->clone;
 
    while ($sow->day_of_week > 1) { $sow = $sow->subtract( days => 1 ) }
 
-   push @{ $list }, $nav_folder->( $req, 'week' );
-   push @{ $list }, $_week_link->( $req, $actionp, $name,
-                                   $sow->clone->subtract( weeks => 1 ) );
-   push @{ $list }, $_week_link->( $req, $actionp, $name, $sow );
-   push @{ $list }, $_week_link->( $req, $actionp, $name,
-                                   $sow->clone->add( weeks => 1 ) );
-   push @{ $list }, $_week_link->( $req, $actionp, $name,
-                                   $sow->clone->add( weeks => 2 ) );
-   push @{ $list }, $_week_link->( $req, $actionp, $name,
-                                   $sow->clone->add( weeks => 3 ) );
-   push @{ $list }, $_week_link->( $req, $actionp, $name,
-                                   $sow->clone->add( weeks => 4 ) );
+   $self->$_rota_week_links( $req, $name, $sow, $nav );
 
-   if ($self->$_allowed( $req, 'week/allocation' )) {
-      push @{ $list }, $nav_folder->( $req, 'vehicle_allocation' );
-      push @{ $list }, $_week_link->( $req, 'week/allocation', $name, $sow, {
+   $self->$_allowed( $req, 'week/allocation' ) and push @{ $list },
+      $nav_folder->( $req, 'vehicle_allocation' ),
+      $_week_link->( $req, 'week/allocation', $name, $sow, {
          value => 'spreadsheet' } );
-   }
 
    return $nav;
 }
@@ -306,6 +397,7 @@ sub secondary_navigation_links {
    my $location = $page->{location} // NUL;
    my $class = $location eq 'login' ? 'current' : NUL;
    my $places = $self->config->places;
+   my $js = $page->{literal_js} //= [];
 
    $req->authenticated or p_item $nav, $nav_linkto->( $req, {
       class => $class, tip => 'Login to the application',
@@ -318,59 +410,10 @@ sub secondary_navigation_links {
       tip   => 'Change the password used to access the application',
       value => 'Change Password', }, $places->{password} );
 
-   my $js = $page->{literal_js} //= []; my ($href, $title);
-
    if ($req->authenticated) {
-      p_item $nav, $nav_linkto->( $req, {
-         class => 'windows', name => 'profile-user',
-         tip   => 'Update personal details', value => 'Profile', }, '#' );
-
-      $href  = uri_for_action $req, 'user/profile';
-      $title = locm $req, 'Person Profile';
-
-      push @{ $js }, dialog_anchor( 'profile-user', $href, {
-         name => 'profile-user', title => $title, useIcon => \1 } );
-
-      $class = $location eq 'totp_secret' ? 'current' : NUL;
-
-      $req->session->enable_2fa and p_item $nav, $nav_linkto->( $req, {
-         class => $class, tip => 'View the TOTP account information',
-         value => 'TOTP', }, 'user/totp_secret' );
-
-      $href = uri_for_action $req, 'user/logout_action';
-
-      my $form = blank_form  'authentication', $href, { class => 'none' };
-
-      p_button $form, 'logout-user', 'logout', {
-         class => 'none',
-         label => locm( $req, 'Logout' ).' ('.$req->session->user_label.')',
-         tip   => make_tip $req, 'Logout from [_1]', [ $self->config->title ] };
-
-      p_item $nav, $form;
+      $self->$_secondary_authenticated_links( $req, $nav, $js, $location );
    }
-   else {
-      p_item $nav, $nav_linkto->( $req, {
-         class => 'windows', name => 'totp-request',
-         tip   => 'Request viewing of the TOTP account information',
-         value => 'TOTP', }, '#' );
-
-      $href  = uri_for_action $req, 'user/totp_request';
-      $title = locm $req, 'TOTP Information Request';
-
-      push @{ $js }, dialog_anchor( 'totp-request', $href, {
-         name => 'totp-request', title => $title, useIcon => \1 } );
-
-      p_item $nav, $nav_linkto->( $req, {
-         class => 'windows', name => 'request-reset',
-         tip   => 'Follow the link to reset your password',
-         value => 'Forgot Password?', }, '#' );
-
-      $href  = uri_for_action $req, 'user/reset';
-      $title = locm $req, 'Reset Password';
-
-      push @{ $js }, dialog_anchor( 'request-reset', $href, {
-         name => 'request-reset', title => $title, useIcon => \1 } );
-   }
+   else { $self->$_secondary_unauthenticated_links( $req, $nav, $js ) }
 
    return $nav;
 }
