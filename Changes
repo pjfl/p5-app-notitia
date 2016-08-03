@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Adds type to vehicles list
+          - Refactored SMS code
           - Refactored exception debug output
           - Renamed Coords in Person info to Eastings/Northings
           - Reordered fields in Person info

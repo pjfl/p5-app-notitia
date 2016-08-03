@@ -12,25 +12,31 @@ use HTTP::Tiny;
 use Moo;
 
 # Public attributes
-has 'base_url'     => is => 'ro', isa => NonEmptySimpleStr,
+has 'base_uri'     => is => 'ro',   isa => NonEmptySimpleStr,
    default         => 'http://www.bulksms.co.uk:5567/eapi';
 
-has 'http_options' => is => 'ro', isa => HashRef, builder => sub { {} };
+has 'http_options' => is => 'ro',   isa => HashRef, builder => sub { {} };
 
-has 'log'          => is => 'ro', isa => Logger,
+has 'log'          => is => 'ro',   isa => Logger,
    builder         => sub { Class::Null->new };
 
-has 'num_tries'    => is => 'ro', isa => PositiveInt, default => 3;
+has 'method'       => is => 'lazy', isa => NonEmptySimpleStr,
+   builder         => sub { $_[ 0 ]->quote ? 'quote_sms' : 'send_sms' };
 
-has 'password'     => is => 'ro', isa => NonEmptySimpleStr;
+has 'num_tries'    => is => 'ro',   isa => PositiveInt, default => 3;
 
-has 'quote'        => is => 'ro', isa => Bool, default => FALSE;
+has 'password'     => is => 'ro',   isa => NonEmptySimpleStr;
 
-has 'send_options' => is => 'ro', isa => HashRef, builder => sub { {} };
+has 'quote'        => is => 'ro',   isa => Bool, default => FALSE;
 
-has 'timeout'      => is => 'ro', isa => PositiveInt, default => 10;
+has 'send_options' => is => 'ro',   isa => HashRef, builder => sub { {} };
 
-has 'username'     => is => 'ro', isa => NonEmptySimpleStr;
+has 'timeout'      => is => 'ro',   isa => PositiveInt, default => 10;
+
+has 'uri_template' => is => 'ro',   isa => NonEmptySimpleStr,
+   default         => '%s/submission/%s/2/2.0';
+
+has 'username'     => is => 'ro',   isa => NonEmptySimpleStr;
 
 # Private functions
 my $_option_keys =
@@ -76,19 +82,17 @@ sub send_sms {
    $params->{message } = $message; $params->{msisdn} = join ',', @recipients;
    $params->{password} = $self->password; $params->{username} = $self->username;
 
-   my $method = $self->quote ? 'quote_sms' : 'send_sms';
-   my $url    = $self->base_url."/submission/${method}/2/2.0";
-   my $http   = HTTP::Tiny->new( %{ $options } );
+   my $uri = sprintf $self->uri_template, $self->base_uri, $self->method;
 
-   $self->log->debug( "SMS ${url} ".$_flatten->( $params ) );
+   $self->log->debug( "SMS ${uri} ".$_flatten->( $params ) );
 
-   my ($code, $desc, $rval);
+   my $http = HTTP::Tiny->new( %{ $options } ); my ($code, $desc, $rval);
 
    for (1 .. $self->num_tries) {
       my $res;
 
       for (1 .. $self->num_tries) {
-         $res = $http->post_form( $url, $params );
+         $res = $http->post_form( $uri, $params );
          $res->{success} and last; nap 0.25;
       }
 

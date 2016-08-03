@@ -212,7 +212,7 @@ my $_vehicle_type_tuple = sub {
 };
 
 my $_vehicles_headers = sub {
-   my ($req, $service) = @_; my $max = $service ? 4 : 1;
+   my ($req, $service) = @_; my $max = $service ? 5 : 2;
 
    return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } }
             0 .. $max ];
@@ -458,6 +458,8 @@ my $_vehicle_links = sub {
    my ($self, $req, $service, $vehicle) = @_; my $moniker = $self->moniker;
 
    my $vrn = $vehicle->vrn; my $links = [ { value => $vehicle->label } ];
+
+   push @{ $links }, { value => loc $req, $vehicle->type };
 
    push @{ $links },
       { value => management_link( $req, "${moniker}/vehicle", $vrn ) };

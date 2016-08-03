@@ -1184,16 +1184,19 @@ msgid "vehicles_heading_0"
 msgstr "Vehicle"
 
 msgid "vehicles_heading_1"
-msgstr "Edit"
+msgstr "Type"
 
 msgid "vehicles_heading_2"
-msgstr "Add Event"
+msgstr "Edit"
 
 msgid "vehicles_heading_3"
-msgstr "Events"
+msgstr "Add Event"
 
 msgid "vehicles_heading_4"
-msgstr "Keeper"
+msgstr "Events"
+
+msgid "vehicles_heading_5"
+msgstr "Current Keeper"
 
 msgid "vehicles_management_heading"
 msgstr "Vehicles"

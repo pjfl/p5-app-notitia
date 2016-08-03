@@ -8,16 +8,17 @@ use Class::Usul::Types     qw( PositiveInt );
 use Moo;
 
 extends q(App::Notitia::Model);
-with    q(App::Notitia::Role::PageConfiguration);
-with    q(App::Notitia::Role::Navigation);
-with    q(App::Notitia::Role::PageLoading);
-with    q(App::Notitia::Role::WebAuthorisation);
-with    q(App::Notitia::Role::Editor);
-with    q(App::Notitia::Role::RSS);
 
 has '+moniker' => default => 'posts';
 
 has 'depth_offset' => is => 'ro', isa => PositiveInt, default => 3;
+
+with q(App::Notitia::Role::PageConfiguration);
+with q(App::Notitia::Role::Navigation);
+with q(App::Notitia::Role::PageLoading);
+with q(App::Notitia::Role::WebAuthorisation);
+with q(App::Notitia::Role::Editor);
+with q(App::Notitia::Role::RSS);
 
 register_action_paths
    'posts/dialog' => 'posts/dialog', 'posts/page' => 'posts',

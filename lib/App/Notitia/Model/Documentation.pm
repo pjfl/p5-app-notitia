@@ -11,15 +11,16 @@ use Unexpected::Functions  qw( catch_class );
 use Moo;
 
 extends q(App::Notitia::Model);
-with    q(App::Notitia::Role::PageConfiguration);
-with    q(App::Notitia::Role::Navigation);
-with    q(App::Notitia::Role::PageLoading);
-with    q(App::Notitia::Role::WebAuthorisation);
-with    q(App::Notitia::Role::Editor);
 
 has '+moniker' => default => 'docs';
 
 has 'depth_offset' => is => 'ro', isa => PositiveInt, default => 2;
+
+with q(App::Notitia::Role::PageConfiguration);
+with q(App::Notitia::Role::Navigation);
+with q(App::Notitia::Role::PageLoading);
+with q(App::Notitia::Role::WebAuthorisation);
+with q(App::Notitia::Role::Editor);
 
 register_action_paths
    'docs/dialog' => 'docs/dialog',
