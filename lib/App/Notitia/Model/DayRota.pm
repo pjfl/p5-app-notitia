@@ -480,7 +480,7 @@ sub slot : Role(rota_manager) Role(rider) Role(controller) Role(driver) {
    my $params = $req->uri_params;
    my $name   = $params->( 2 );
    my $args   = [ $params->( 0 ), $params->( 1 ), $name ];
-   my $action = $req->query_params->( 'action' );
+   my $action = $req->query_params->( 'action' ); # claim or yield
    my $stash  = $self->dialog_stash( $req );
    my $href   = uri_for_action $req, $self->moniker.'/slot', $args;
    my $form   = $stash->{page}->{forms}->[ 0 ]

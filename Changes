@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Refactored exception debug output
           - Renamed Coords in Person info to Eastings/Northings
           - Reordered fields in Person info
           - Added "km" to distances

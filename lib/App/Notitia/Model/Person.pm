@@ -449,7 +449,7 @@ sub find_by_shortcode {
 }
 
 sub message : Role(person_manager) {
-   my ($self, $req) = @_; return $self->message_stash( $req );
+   return $_[ 0 ]->message_stash( $_[ 1 ] );
 }
 
 sub message_create_action : Role(person_manager) {

@@ -520,13 +520,11 @@ sub events : Role(any) {
 }
 
 sub message : Role(event_manager) {
-   my ($self, $req) = @_; return $self->message_stash( $req );
+   return $_[ 0 ]->message_stash( $_[ 1 ] );
 }
 
 sub message_create_action : Role(event_manager) {
-   my ($self, $req) = @_;
-
-   return $self->message_create( $req, { action => 'events' } );
+   return $_[ 0 ]->message_create( $_[ 1 ], { action => 'events' } );
 }
 
 sub participate_event_action : Role(any) {
