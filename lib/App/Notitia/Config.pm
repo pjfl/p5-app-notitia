@@ -140,6 +140,8 @@ has 'email_templates' => is => 'ro',   isa => NonEmptySimpleStr,
 has 'extensions'      => is => 'ro',   isa => HashRef[ArrayRef],
    builder            => sub { { markdown => [ qw( md mkdn ) ] } };
 
+has 'geolocation'     => is => 'ro',   isa => HashRef, builder => sub { {} };
+
 has 'images'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'img';
 
@@ -497,6 +499,10 @@ F<var/docs/en/posts> containing the email templates
 A hash reference. The keys are microformat names and the values are an
 array reference of filename extensions that the corresponding view can
 render
+
+=item C<geolocation>
+
+A hash reference containing attributes passed to the postcode lookup service
 
 =item C<images>
 

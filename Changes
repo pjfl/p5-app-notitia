@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements automatic coordinate and location lookup
           - Fixes LoadMore onComplete event dispatch
           - Adds type to vehicles list
           - Refactored SMS code

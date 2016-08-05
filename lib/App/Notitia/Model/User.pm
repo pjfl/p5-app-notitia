@@ -294,8 +294,8 @@ sub request_reset_action : Role(anon) {
    my $name     = $req->body_params->( 'username' );
    my $person   = $self->schema->resultset( 'Person' )->find_person( $name );
    my $password = substr create_token, 0, 12;
-   my $key      = '[_1] password reset requested ref. [_2]';
    my $job_id   = $self->create_reset_email( $req, $person, $password );
+   my $key      = '[_1] password reset requested ref. [_2]';
    my $message  = [ to_msg $key, $person->label, "send_message-${job_id}" ];
 
    return { redirect => { location => $req->base, message => $message } };

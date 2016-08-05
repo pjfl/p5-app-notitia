@@ -4,6 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( AS_PASSWORD COMMA EXCEPTION_CLASS FALSE NUL
                                 OK QUOTED_RE SLOT_TYPE_ENUM SPC TRUE );
+use App::Notitia::GeoLocation;
 use App::Notitia::SMS;
 use App::Notitia::Util      qw( encrypted_attr load_file_data
                                 mail_domain to_dt );
@@ -433,19 +434,13 @@ my $_send_email = sub {
 };
 
 my $_send_sms = sub {
-   my ($self, $template, $tuples, $stash) = @_; my @recipients;
+   my ($self, $template, $tuples, $stash) = @_; my $conf = $self->config;
 
-   my $conf = $self->config;
    my $attr = { %{ $conf->sms_attributes }, %{ $stash->{sms_attributes} } };
 
    $stash->{template}->{layout} = \$template;
 
-   $attr->{log     } //= $self->log;
-   $attr->{password} //= 'unknown';
-   $attr->{username} //= 'unknown';
-
-   my $sender  = App::Notitia::SMS->new( $attr );
-   my $message = $self->render_template( $stash );
+   my $message = $self->render_template( $stash ); my @recipients;
 
    $self->info( 'SMS message: '.$message );
 
@@ -455,8 +450,13 @@ my $_send_sms = sub {
       $self->log->debug( 'SMS recipient: '.$person->shortcode );
    }
 
-   $self->config->no_message_send and return;
+   $conf->no_message_send and return;
 
+   $attr->{log     } //= $self->log;
+   $attr->{password} //= 'unknown';
+   $attr->{username} //= 'unknown';
+
+   my $sender = App::Notitia::SMS->new( $attr );
    my $rv = $sender->send_sms( $message, @recipients );
 
    $self->info( 'SMS message rv: [_1]', { args => [ $rv ] } );
@@ -700,6 +700,28 @@ sub deploy_and_populate : method {
    return $rv;
 }
 
+sub geolocation : method {
+   my $self = shift;
+   my $scode = $self->next_argv or throw Unspecified, [ 'shortcode' ];
+
+   $self->info( 'Geolocating [_1]', { args => [ $scode ] } );
+
+   my $rs = $self->schema->resultset( 'Person' );
+   my $person = $rs->find_by_shortcode( $scode );
+   my $postcode = $person->postcode;
+   my $locator = App::Notitia::GeoLocation->new( $self->config->geolocation );
+   my $data = $locator->find_by_postcode( $postcode );
+   my $coords = $data->{coordinates}
+              ? $person->coordinates( $data->{coordinates} ) : 'unknown';
+   my $location = $data->{location}
+                ? $person->location( $data->{location} ) : 'unknown';
+
+   ($data->{coordinates} or $data->{location}) and $person->update;
+   $self->info( 'Located [_1]: [_2] [_3] [_4]', {
+      args => [ $scode, $postcode, $coords, $location ] } );
+   return OK;
+}
+
 sub import_people : method {
    my $self  = shift;
    my $opts  = $self->$_prepare_csv;
@@ -883,6 +905,8 @@ Creates the DDL for multiple RDBMs
 =head2 C<dump_connect_attr> - Displays database connection information
 
 =head2 C<deploy_and_populate> - Create tables and populates them with initial data
+
+=head2 C<geolocation> - Lookup geolocation information
 
 =head2 C<import_people> - Import person objects from a CSV file
 
