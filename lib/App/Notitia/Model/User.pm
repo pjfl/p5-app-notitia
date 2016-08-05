@@ -330,10 +330,10 @@ sub reset_password : Role(anon) {
 sub show_if_needed : Role(anon) {
    my ($self, $req) = @_;
 
-   my $meta  = { display => 'inline-block', needed => TRUE };
    my $class = $req->query_params->( 'class' );
-   my $test  = $req->query_params->( 'test' );
-   my $v     = $req->query_params->( 'val', { raw => TRUE } );
+   my $test = $req->query_params->( 'test' );
+   my $v = $req->query_params->( 'val', { raw => TRUE } );
+   my $meta = { display => 'inline-block', needed => TRUE };
 
    try {
       my $r = $self->schema->resultset( $class )->find_by_key( $v );

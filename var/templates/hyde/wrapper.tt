@@ -7,10 +7,10 @@
    <meta name="apple-mobile-web-app-capable" content="yes" />
    <meta name="description" content="[% loc( page.description ) %]">
    <meta name="keywords" content="[% page.keywords %]">
-   <meta name="generator" content="[% config.title %] v[% page.application_version %]">
+   <meta name="generator" content="[% config.title %] v[% application_version %]">
    <link href="[% links.images %]favicon.ico" rel="shortcut icon">
-[%    IF config.font -%]
-   <link href="[% config.font %]" rel="stylesheet" type="text/css">
+[%    IF page.font -%]
+   <link href="[% page.font %]" rel="stylesheet" type="text/css">
 [%    END -%]
    <link href="[% links.css %][% session.skin %]-[% session.theme %].css"
           rel="stylesheet" type="text/css">

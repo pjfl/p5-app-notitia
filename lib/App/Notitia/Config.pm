@@ -172,7 +172,7 @@ has 'logo'            => is => 'ro',   isa => ArrayRef,
 
 has 'max_asset_size'  => is => 'ro',   isa => PositiveInt, default => 4_194_304;
 
-has 'max_messages'    => is => 'ro',   isa => NonZeroPositiveInt, default => 3;
+has 'max_messages'    => is => 'ro',   isa => NonZeroPositiveInt, default => 1;
 
 has 'max_sess_time'   => is => 'ro',   isa => PositiveInt, default => 900;
 

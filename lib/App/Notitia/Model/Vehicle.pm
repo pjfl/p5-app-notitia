@@ -334,7 +334,7 @@ my $_toggle_event_assignment = sub {
    my $message = [ to_msg "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]",
                    $vrn, $uri, $req->session->user_label ];
 
-   return { redirect => { message => $message } };
+   return { redirect => { message => $message } }; # location referer
 };
 
 my $_toggle_slot_assignment = sub {
@@ -359,7 +359,7 @@ my $_toggle_slot_assignment = sub {
    my $message = [ to_msg "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]",
                    $vrn, $label, $req->session->user_label ];
 
-   return { redirect => { message => $message } };
+   return { redirect => { message => $message } }; # location referer
 };
 
 my $_toggle_assignment = sub {

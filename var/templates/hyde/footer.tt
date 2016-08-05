@@ -27,13 +27,6 @@
          firstField  : '[% page.first_field %]',
          message     : "[% page.status_message %]"
       } );
-[% IF page.authenticated -%]
-      behaviour.config.togglers[ 'toggle-edit' ] = {
-         method    : 'toggleSwapText',
-         args      : [ 'toggle-edit', 'edit-panel',
-                       '<i class="edit-panel-icon true"></i>',
-                       '<i class="edit-panel-icon false"></i>' ] };
-[% END -%]
 [% FOR line IN page.literal_js; -%]
    [%+ line | eval %]
 [% END -%]

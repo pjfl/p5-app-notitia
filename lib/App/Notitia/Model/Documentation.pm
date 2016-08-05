@@ -113,8 +113,8 @@ sub dialog : Role(any) {
 sub index : Role(anon) {
    my ($self, $req) = @_;
 
-   my $stash   = { redirect => { location => $self->docs_url( $req ) } };
    my $message = $req->session->collect_status_message( $req );
+   my $stash   = { redirect => { location => $self->docs_url( $req ) } };
 
    $message and $stash->{redirect}->{message} = [ $message ];
 
@@ -138,7 +138,7 @@ sub nav_label {
 }
 
 sub page : Role(anon) {
-   my ($self, $req, $page) = @_; return $self->get_stash( $req, $page );
+   return $_[ 0 ]->get_stash( $_[ 1 ], $_[ 2 ] );
 }
 
 sub rename_file_action : Role(editor) {

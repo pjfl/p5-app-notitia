@@ -3,7 +3,7 @@ package App::Notitia::Role::PageLoading;
 use namespace::autoclean;
 
 use App::Notitia::Util     qw( build_navigation clone is_access_authorised
-                               loc mtime );
+                               js_togglers_config loc mtime );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::File;
 use Class::Usul::Functions qw( is_arrayref is_member throw );
@@ -14,6 +14,19 @@ requires qw( components config depth_offset get_stash load_page
              localised_tree navigation_links );
 
 has 'type_map' => is => 'ro', isa => HashRef, builder => sub { {} };
+
+# Private functions
+my $_add_edit_js = sub {
+   my $page = shift;
+   my $js   = $page->{literal_js} //= [];
+   my $t1   = "<i class='edit-panel-icon true'></i>";
+   my $t2   = "<i class='edit-panel-icon false'></i>";
+
+   push @{ $js }, js_togglers_config 'toggle-edit', 'click',
+      'toggleSwapText', [ 'toggle-edit', 'edit-panel', $t1, $t2 ];
+
+   return;
+};
 
 # Construction
 around 'BUILDARGS' => sub {
@@ -60,8 +73,10 @@ around 'load_page' => sub {
       my $page = $self->initialise_page( $req, $node, $locale );
 
       $page->{cancel_edit} = $cancel_edit;
+      $page = $orig->( $self, $req, $page );
+      $req->authenticated and $_add_edit_js->( $page );
 
-      return $orig->( $self, $req, $page );
+      return $page;
    }
 
    throw 'Page [_1] not found', [ $req->path ];

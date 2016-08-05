@@ -39,6 +39,7 @@ around 'initialise_stash' => sub {
       catch { $self->log->warn( $_ ) };
    }
 
+   $stash->{application_version} = $conf->appclass->VERSION;
    $stash->{template}->{skin} = $stash->{session}->{skin};
 
    my $links = $stash->{links} //= {};
@@ -63,8 +64,7 @@ around 'load_page' => sub {
 
    for my $k (@{ $conf->stash_attr->{config } }) { $page->{ $k } //= $conf->$k }
 
-   $page->{application_version} = $conf->appclass->VERSION;
-   $page->{status_message     } = $req->session->collect_status_message( $req );
+   $page->{status_message} = $req->session->collect_status_message( $req );
 
    my $skin = $req->session->skin || $conf->skin;
 

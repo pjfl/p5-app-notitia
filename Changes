@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes LoadMore onComplete event dispatch
           - Adds type to vehicles list
           - Refactored SMS code
           - Refactored exception debug output

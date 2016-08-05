@@ -800,20 +800,20 @@ var LoadMore = new Class( {
    },
 
    request: function( url, id, val, on_complete ) {
-      if (on_complete) this.onComplete = on_complete;
-
       if (url.substring( 0, 4 ) != 'http') url = this.options.url + url;
 
-      new Request.JSON( { onSuccess: this._response.bind( this ), url: url } )
+      new Request.JSON( { onSuccess: this._response( on_complete ), url: url } )
                   .get( { 'id': id, 'val': val } );
    },
 
-   _response: function( resp ) {
-      if (resp.id) $( resp.id ).set( 'html', resp.html );
+   _response: function( on_complete ) {
+      return function( resp ) {
+         if (resp.id) $( resp.id ).set( 'html', resp.html );
 
-      if (resp.script) Browser.exec( resp.script );
+         if (resp.script) Browser.exec( resp.script );
 
-      if (this.onComplete) this.onComplete.call( this.context, resp );
+         if (on_complete) on_complete.call( this.context, resp );
+      }.bind( this );
    }
 } );
 

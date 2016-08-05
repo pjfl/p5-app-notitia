@@ -21,8 +21,9 @@ with q(App::Notitia::Role::Editor);
 with q(App::Notitia::Role::RSS);
 
 register_action_paths
-   'posts/dialog' => 'posts/dialog', 'posts/page' => 'posts',
-   'posts/rss'    => 'posts/rss';
+   'posts/dialog' => 'posts/dialog',
+   'posts/page' => 'posts',
+   'posts/rss_feed' => 'posts/rss';
 
 # Construction
 around 'initialise_stash' => sub {
@@ -31,7 +32,7 @@ around 'initialise_stash' => sub {
    my $stash = $orig->( $self, $req, @args ); my $links = $stash->{links};
 
    $links->{rss_uri}
-      = uri_for_action( $req, 'posts/rss', { extension => '.xml' } );
+      = uri_for_action( $req, 'posts/rss_feed', { extension => '.xml' } );
 
    return $stash;
 };
