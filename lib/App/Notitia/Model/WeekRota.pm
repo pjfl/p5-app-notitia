@@ -214,8 +214,8 @@ my $_vehicle_label = sub {
 
    my $keeper = $_find_keeper->( $data->{journal}->{ $vrn }, $data->{start} );
    my $distance = $_calculate_distance->( $keeper, $data->{assignee} );
-
-   return $distance ? $vehicle->name." (${distance}km)" : $vehicle->name;
+      $distance = int( 5 * $distance / 8 ); 
+   return $distance ? $vehicle->name." (${distance} mls)" : $vehicle->name;
 };
 
 my $_vehicle_list = sub {
