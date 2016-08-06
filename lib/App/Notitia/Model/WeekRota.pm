@@ -306,10 +306,13 @@ my $_alloc_key_row = sub {
 };
 
 my $_alloc_key_headers = sub {
-   my $req = shift;
+   my ($req, $date) = @_;
 
+   my $local_dt = $_local_dt->( $date );
    my @headings = ( 'Vehicle Details', 'Type', 'R',
-                    'Current Keeper', 'Keeper Location' );
+                    join(' ', 'Keeper at', $local_dt->day_abbr, 
+                              $local_dt->day, $local_dt->month_abbr), 
+                    'Keeper Location' );
 
    return [ map { { class => 'rota-header', value => locm $req, $_ } }
             @headings  ];
@@ -782,7 +785,7 @@ sub alloc_key : Role(rota_manager) {
    my $assets = $self->components->{asset};
    my $keeper_dt = $_local_dt->( $rota_dt );
 
-   $table->{headers} = $_alloc_key_headers->( $req );
+   $table->{headers} = $_alloc_key_headers->( $req, $keeper_dt );
 
    p_row $table, [ map { $_alloc_key_row->( $req, $assets, $keeper_dt, $_ ) }
                    $vehicles->all ];

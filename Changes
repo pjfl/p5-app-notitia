@@ -1,5 +1,6 @@
 Revision history for App::Notitia
-
+ 
+          - Change Week Rota key title to reflect date to which it refers
           - Adds activity logging to most actions
           - Changes distance display to miles rather than kilometers
           - Implements #74. Activity log
