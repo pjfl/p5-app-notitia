@@ -8,6 +8,7 @@ use App::Notitia::Constants qw( C_DIALOG NUL SPC TRUE );
 use App::Notitia::Util      qw( js_config locm mail_domain set_element_focus
                                 to_msg uri_for_action );
 use Class::Usul::File;
+use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Functions  qw( create_token throw );
 use Moo::Role;
 
@@ -181,12 +182,16 @@ sub message_create {
    }
    else { throw 'Sink [_1] unknown', [ $sink ] }
 
-   my $cmd = $conf->binsdir->catfile( 'notitia-schema' ).SPC
-           . $self->$_flatten( $req )."send_message ${sink} ${template}";
-   my $job_rs = $self->schema->resultset( 'Job' );
-   my $job = $job_rs->create( { command => $cmd, name => 'send_message' });
-   my $message = [ to_msg 'Job send_message-[_1] created', $job->id ];
+   my $cmd      = $conf->binsdir->catfile( 'notitia-schema' ).SPC
+                . $self->$_flatten( $req )."send_message ${sink} ${template}";
+   my $job_rs   = $self->schema->resultset( 'Job' );
+   my $job      = $job_rs->create( { command => $cmd, name => 'send_message' });
    my $location = uri_for_action $req, $self->moniker.'/'.$opts->{action};
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:createjob job:send_message-".$job->id;
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg 'Job send_message-[_1] created', $job->id ];
 
    return { redirect => { location => $location, message => $message } };
 }

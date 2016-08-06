@@ -1,7 +1,7 @@
 package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC PIPE_SEP TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_button p_list
                                 p_fields p_row p_table p_tag p_text
                                 p_textfield );
@@ -11,6 +11,7 @@ use App::Notitia::Util      qw( check_field_js display_duration loc locm
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
+use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Time       qw( time2str );
 use DateTime;
 use Try::Tiny;
@@ -354,10 +355,16 @@ sub create_event_action : Role(event_manager) {
 
    $self->$_create_event_post( $req, $event->post_filename, $event );
 
+   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+               . 'action:createevent event:'.$event->uri;
+
+   get_logger( 'activity' )->log( $message );
+
    my $actionp  = $self->moniker.'/event';
-   my $location = uri_for_action $req, $actionp, [ $event->uri ];
    my $who      = $req->session->user_label;
-   my $message  = [ to_msg 'Event [_1] created by [_2]', $event->label, $who ];
+   my $location = uri_for_action $req, $actionp, [ $event->uri ];
+
+   $message = [ to_msg 'Event [_1] created by [_2]', $event->label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -369,10 +376,16 @@ sub create_vehicle_event_action : Role(rota_manager) {
    my $date     = to_dt $req->body_params->( 'event_date' );
    my $event    = $self->$_create_event
                 ( $req, $date, 'vehicle', $req->username, $vrn );
-   my $location = $_vehicle_events_uri->( $req, $vrn );
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . 'action:createvehicleevent event:'.$event->uri;
+
+   get_logger( 'activity' )->log( $message );
+
+   my $label    = $event->label;
    my $who      = $req->session->user_label;
-   my $message  =
-      [ to_msg 'Vehicle event [_1] created by [_2]', $event->label, $who ];
+   my $location = $_vehicle_events_uri->( $req, $vrn );
+
+   $message = [ to_msg 'Vehicle event [_1] created by [_2]', $label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -386,9 +399,15 @@ sub delete_event_action : Role(event_manager) {
 
    $self->$_delete_event_post( $req, $event->post_filename );
 
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:deleteevent event:${uri}";
+
+   get_logger( 'activity' )->log( $message );
+
    my $who      = $req->session->user_label;
-   my $message  = [ to_msg 'Event [_1] deleted by [_2]', $label, $who ];
    my $location = uri_for_action $req, $self->moniker.'/events';
+
+   $message = [ to_msg 'Event [_1] deleted by [_2]', $label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -399,10 +418,16 @@ sub delete_vehicle_event_action : Role(rota_manager) {
    my $vrn      = $req->uri_params->( 0 );
    my $uri      = $req->uri_params->( 1 );
    my $event    = $self->$_delete_event( $uri );
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:deletevehicleevent event:${uri} vehicle:${vrn}";
+
+   get_logger( 'activity' )->log( $message );
+
    my $label    = $event->label;
    my $who      = $req->session->user_label;
-   my $message  = [ to_msg 'Vehicle event [_1] deleted by [_2]', $label, $who ];
    my $location = $_vehicle_events_uri->( $req, $vrn );
+
+   $message = [ to_msg 'Vehicle event [_1] deleted by [_2]', $label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -536,9 +561,15 @@ sub participate_event_action : Role(any) {
 
    $person->add_participent_for( $uri );
 
+   my $message   = 'user:'.$req->username.' client:'.$req->address.SPC
+                 . "action:participateevent event:${uri}";
+
+   get_logger( 'activity' )->log( $message );
+
    my $actionp   = $self->moniker.'/event_summary';
    my $location  = uri_for_action $req, $actionp, [ $uri ];
-   my $message   = [ to_msg 'Event [_1] attendee [_2]', $uri, $person->label ];
+
+   $message = [ to_msg 'Event [_1] attendee [_2]', $uri, $person->label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -582,10 +613,16 @@ sub unparticipate_event_action : Role(any) {
 
    $person->delete_participent_for( $uri );
 
+   my $message   = 'user:'.$req->username.' client:'.$req->address.SPC
+                 . "action:unparticipateevent event:${uri}";
+
+   get_logger( 'activity' )->log( $message );
+
+   my $who       = $person->label;
    my $actionp   = $self->moniker.'/event_summary';
    my $location  = uri_for_action $req, $actionp, [ $uri ];
-   my $message   = [ to_msg 'Event [_1] attendence cancelled for [_2]',
-                     $uri, $person->label ];
+
+   $message = [ to_msg 'Event [_1] attendence cancelled for [_2]', $uri, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -598,10 +635,16 @@ sub update_event_action : Role(event_manager) {
 
    $self->$_update_event_post( $req, $event->post_filename, $event );
 
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:updateevent event:${uri}";
+
+   get_logger( 'activity' )->log( $message );
+
+   my $who      = $req->session->user_label;
    my $actionp  = $self->moniker.'/event';
    my $location = uri_for_action $req, $actionp, [ $uri ];
-   my $who      = $req->session->user_label;
-   my $message  = [ to_msg 'Event [_1] updated by [_2]', $event->label, $who ];
+
+   $message = [ to_msg 'Event [_1] updated by [_2]', $event->label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -613,9 +656,14 @@ sub update_vehicle_event_action : Role(rota_manager) {
    my $uri      = $req->uri_params->( 1 );
    my $event    = $self->$_update_event( $req, $uri );
    my $location = $_vehicle_events_uri->( $req, $vrn );
-   my $who      = $req->session->user_label;
-   my $message  =
-      [ to_msg 'Vehicle event [_1] updated by [_2]', $event->label, $who ];
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:updatevehicleevent event:${uri} vehicle:${vrn}";
+
+   get_logger( 'activity' )->log( $message );
+
+   my $label = $event->label; my $who = $req->session->user_label;
+
+   $message = [ to_msg 'Vehicle event [_1] updated by [_2]', $label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 };

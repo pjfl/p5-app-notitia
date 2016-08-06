@@ -2,7 +2,7 @@ package App::Notitia::Model::Person;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
-                                NUL PIPE_SEP TRUE );
+                                NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action
                                 p_fields p_list p_row p_table );
 use App::Notitia::Util      qw( check_field_js dialog_anchor loc make_tip
@@ -11,6 +11,7 @@ use App::Notitia::Util      qw( check_field_js dialog_anchor loc make_tip
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
+use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Types      qw( ArrayRef );
 use Try::Tiny;
 use Moo;
@@ -398,6 +399,9 @@ sub activate : Role(anon) {
       my $person = $self->find_by_shortcode( $name ); $person->activate;
       my $places = $self->config->places;
 
+      $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:activateperson shortcode:${name}";
+      get_logger( 'activity' )->log( $message );
       $location = uri_for_action $req, $places->{password}, [ $name ];
       $message  = [ to_msg '[_1] account activated', $person->label ];
    }
@@ -433,11 +437,17 @@ sub create_person_action : Role(person_manager) {
    try   { $self->schema->txn_do( $create ) }
    catch { $self->rethrow_exception( $_, 'create', 'person', $person->name ) };
 
+   my $id       = $self->create_person_email( $req, $person, $password );
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . 'action:createperson shortcode:'.$person->shortcode;
+
+   get_logger( 'activity' )->log( $message );
+
    my $who      = $req->session->user_label;
    my $key      = '[_1] created by [_2] ref. [_3]';
-   my $id       = $self->create_person_email( $req, $person, $password );
-   my $message  = [ to_msg $key, $person->label, $who, "send_message-${id}" ];
    my $location = uri_for_action $req, $self->moniker.'/people';
+
+   $message = [ to_msg $key, $person->label, $who, "send_message-${id}" ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -451,9 +461,15 @@ sub delete_person_action : Role(person_manager) {
 
    $name eq 'admin' and throw 'Cannot delete the admin user'; $person->delete;
 
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:deleteperson shortcode:${name}";
+
+   get_logger( 'activity' )->log( $message );
+
    my $who      = $req->session->user_label;
-   my $message  = [ to_msg '[_1] deleted by [_2]', $label, $who ];
    my $location = uri_for_action $req, $self->moniker.'/people';
+
+   $message = [ to_msg '[_1] deleted by [_2]', $label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -594,9 +610,15 @@ sub update_person_action : Role(person_manager) {
    }
    catch { $self->rethrow_exception( $_, 'update', 'person', $label ) };
 
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:updateperson shortcode:${name}";
+
+   get_logger( 'activity' )->log( $message );
+
    my $who      = $req->session->user_label;
-   my $message  = [ to_msg '[_1] updated by [_2]', $label, $who ];
    my $location = uri_for_action $req, $self->moniker.'/people';
+
+   $message = [ to_msg '[_1] updated by [_2]', $label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }

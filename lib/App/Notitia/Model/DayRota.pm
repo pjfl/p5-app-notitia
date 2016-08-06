@@ -423,8 +423,8 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
    $person->claim_slot( $rota_name, to_dt( $rota_date ), $shift_type,
                         $slot_type, $subslot, $bike );
 
-   my $message = 'user:'.$req->username.' client:'.$req->address
-               . ' action:slotclaim slot:'.$name;
+   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+               . "action:slotclaim slot:${name}";
 
    get_logger( 'activity' )->log( $message );
 
@@ -535,11 +535,17 @@ sub yield_slot_action : Role(rota_manager) Role(rider) Role(controller)
    $person->yield_slot( $rota_name, to_dt( $rota_date ), $shift_type,
                         $slot_type, $subslot );
 
-   my $args     = [ $rota_name, $rota_date ];
+   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+               . "action:slotyield slot:${slot_name}";
+
+   get_logger( 'activity' )->log( $message );
+
+   my $args = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;
-   my $label    = slot_identifier $rota_name, $rota_date,
-                                  $shift_type, $slot_type, $subslot;
-   my $message  = [ to_msg '[_1] yielded slot [_2]', $person->label, $label ];
+   my $label = slot_identifier
+                  $rota_name, $rota_date,$shift_type, $slot_type, $subslot;
+
+   $message = [ to_msg '[_1] yielded slot [_2]', $person->label, $label ];
 
    return { redirect => { location => $location, message => $message } };
 }

@@ -1,13 +1,14 @@
 package App::Notitia::Model::Endorsement;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_list p_fields
                                 p_row p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js loc locm register_action_paths
                                 to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
+use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Time       qw( time2str );
 use Try::Tiny;
 use Unexpected::Functions   qw( ValidationErrors );
@@ -147,10 +148,16 @@ sub create_endorsement_action : Role(person_manager) {
          ( $_, 'create', 'endorsement', $blot->label( $req ) );
    };
 
+   my $type     = $blot->type_code;
+   my $who      = $req->session->user_label;
    my $action   = $self->moniker.'/endorsements';
    my $location = uri_for_action $req, $action, [ $name ];
-   my $message  = [ to_msg 'Endorsement [_1] for [_2] added by [_3]',
-                    $blot->type_code, $name, $req->session->user_label ];
+   my $key      = 'Endorsement [_1] for [_2] added by [_3]';
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:createblot shortcode:${name} type:${type}";
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg $key, $type, $name, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -163,8 +170,12 @@ sub delete_endorsement_action : Role(person_manager) {
    my $blot     = $self->$_find_endorsement_by( $name, $uri ); $blot->delete;
    my $action   = $self->moniker.'/endorsements';
    my $location = uri_for_action $req, $action, [ $name ];
-   my $message  = [ to_msg 'Endorsement [_1] for [_2] deleted by [_3]',
-                    $uri, $name, $req->session->user_label ];
+   my $key      = 'Endorsement [_1] for [_2] deleted by [_3]';
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:deleteblot shortcode:${name} blot:${uri}";
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg $key, $uri, $name, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -235,8 +246,12 @@ sub update_endorsement_action : Role(person_manager) {
 
    $self->$_update_endorsement_from_request( $req, $blot ); $blot->update;
 
-   my $message = [ to_msg 'Endorsement [_1] for [_2] updated by [_3]',
-                   $uri, $name, $req->session->user_label ];
+   my $key     = 'Endorsement [_1] for [_2] updated by [_3]';
+   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+               . "action:updateblot shortcode:${name} blot:${uri}";
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg $key, $uri, $name, $req->session->user_label ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }

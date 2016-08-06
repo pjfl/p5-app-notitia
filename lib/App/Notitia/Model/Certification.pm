@@ -1,13 +1,14 @@
 package App::Notitia::Model::Certification;
 
 use App::Notitia::Attributes;  # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_list p_fields
                                 p_row p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js loc locm register_action_paths
                                 to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
+use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Time       qw( time2str );
 use Try::Tiny;
 use Moo;
@@ -204,11 +205,15 @@ sub create_certification_action : Role(person_manager) {
          ( $_, 'create', 'certification', $cert->label( $req ) );
    };
 
-   my $action   = $self->moniker.'/certifications';
-   my $location = uri_for_action( $req, $action, [ $name ] );
    my $who      = $req->session->user_label;
-   my $message  =
-      [ to_msg 'Cert. [_1] for [_2] added by [_3]', $type, $name, $who ];
+   my $action   = $self->moniker.'/certifications';
+   my $key      = 'Cert. [_1] for [_2] added by [_3]';
+   my $location = uri_for_action $req, $action, [ $name ];
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:createcert shortcode:${name} type:${type}";
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg $key, $type, $name, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -219,11 +224,15 @@ sub delete_certification_action : Role(person_manager) {
    my $name     = $req->uri_params->( 0 );
    my $type     = $req->uri_params->( 1 );
    my $cert     = $self->find_cert_by( $name, $type ); $cert->delete;
-   my $action   = $self->moniker.'/certifications';
-   my $location = uri_for_action( $req, $action, [ $name ] );
    my $who      = $req->session->user_label;
-   my $message  =
-      [ to_msg 'Cert. [_1] for [_2] deleted by [_3]', $type, $name, $who ];
+   my $action   = $self->moniker.'/certifications';
+   my $key      = 'Cert. [_1] for [_2] deleted by [_3]';
+   my $location = uri_for_action $req, $action, [ $name ];
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:deletecert shortcode:${name} type:${type}";
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg $key, $type, $name, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -244,8 +253,12 @@ sub update_certification_action : Role(person_manager) {
    $self->$_update_cert_from_request( $req, $cert ); $cert->update;
 
    my $who     = $req->session->user_label;
-   my $message =
-      [ to_msg 'Cert. [_1] for [_2] updated by [_3]', $type, $name, $who ];
+   my $key     = 'Cert. [_1] for [_2] updated by [_3]';
+   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+               . "action:updatecert shortcode:${name} type:${type}";
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg $key, $type, $name, $who ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }

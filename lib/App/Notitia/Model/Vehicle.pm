@@ -331,10 +331,10 @@ my $_toggle_event_assignment = sub {
 
    $vehicle->$method( $uri, $req->username );
 
-   my $message; $action eq 'assign'
-      and $message = 'user:'.$req->username.' client:'.$req->address
-                   . ' action:vehicleasignment event:'.$uri.' vehicle:'.$vrn
-      and get_logger( 'activity' )->log( $message );
+   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+               . "action:vehicle${action}ment event:${uri} vehicle:${vrn}";
+
+   get_logger( 'activity' )->log( $message );
 
    my $prep = $action eq 'assign' ? 'to' : 'from';
 
@@ -360,11 +360,10 @@ my $_toggle_slot_assignment = sub {
    $vehicle->$method( $rota_name, to_dt( $rota_date ), $shift_type,
                       $slot_type, $subslot, $req->username );
 
-   my $message; $action eq 'assign'
-      and $message = 'user:'.$req->username.' client:'.$req->address
-                   . ' action:vehicleasignment slot:'.$slot_name
-                   . ' vehicle:'.$vrn
-      and get_logger( 'activity' )->log( $message );
+   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+               . "action:vehicle${action}ment slot:${slot_name} vehicle:${vrn}";
+
+   get_logger( 'activity' )->log( $message );
 
    my $prep = $action eq 'assign' ? 'to' : 'from';
    my $label = slot_identifier
@@ -561,10 +560,16 @@ sub create_vehicle_action : Role(rota_manager) {
    try   { $vehicle->insert }
    catch { $self->rethrow_exception( $_, 'create', 'vehicle', $vehicle->vrn ) };
 
-   my $vrn      = $vehicle->vrn;
+   my $vrn     = $vehicle->vrn;
+   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+               . "action:createvehicle vehicle:${vrn}";
+
+   get_logger( 'activity' )->log( $message );
+
    my $who      = $req->session->user_label;
-   my $message  = [ to_msg 'Vehicle [_1] created by [_2]', $vrn, $who ];
    my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];
+
+   $message = [ to_msg 'Vehicle [_1] created by [_2]', $vrn, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -577,9 +582,15 @@ sub delete_vehicle_action : Role(rota_manager) {
 
    $vehicle->delete;
 
+   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+               . "action:deletevehicle vehicle:${vrn}";
+
+   get_logger( 'activity' )->log( $message );
+
    my $who      = $req->session->user_label;
-   my $message  = [ to_msg 'Vehicle [_1] deleted by [_2]', $vrn, $who ];
    my $location = uri_for_action $req, $self->moniker.'/vehicles';
+
+   $message = [ to_msg 'Vehicle [_1] deleted by [_2]', $vrn, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -674,6 +685,13 @@ sub request_vehicle_action : Role(event_manager) {
       $_update_vehicle_req_from_request->( $req, $vreq, $vehicle_type );
 
       if ($vreq->in_storage) { $vreq->update } else { $vreq->insert }
+
+      my $quantity = $vreq->quantity // 0;
+      my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                   . "action:requestvehicle event:${uri} "
+                   . "vehicletype:${vehicle_type} quantity:${quantity}";
+
+      $quantity > 0 and get_logger( 'activity' )->log( $message );
    }
 
    my $actionp  = $self->moniker.'/request_vehicle';
@@ -699,9 +717,13 @@ sub update_vehicle_action : Role(rota_manager) {
    try   { $vehicle->update }
    catch { $self->rethrow_exception( $_, 'delete', 'vehicle', $vehicle->vrn ) };
 
-   my $who = $req->session->user_label; $vrn = $vehicle->vrn;
-   my $message = [ to_msg 'Vehicle [_1] updated by [_2]', $vrn, $who ];
+   my $who      = $req->session->user_label; $vrn = $vehicle->vrn;
    my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:updatevehicle vehicle:${vrn}";
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg 'Vehicle [_1] updated by [_2]', $vrn, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }

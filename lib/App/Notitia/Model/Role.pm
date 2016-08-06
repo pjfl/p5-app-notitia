@@ -1,12 +1,13 @@
 package App::Notitia::Model::Role;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_tag p_button p_container
                                 p_select p_textfield );
 use App::Notitia::Util      qw( loc make_tip register_action_paths
                                 to_msg uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
+use Class::Usul::Log        qw( get_logger );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -52,7 +53,14 @@ sub add_role_action : Role(administrator) Role(person_manager) {
    my $person = $self->schema->resultset( 'Person' )->find_by_shortcode( $name);
    my $roles  = $req->body_params->( 'roles', { multiple => TRUE } );
 
-   $person->add_member_to( $_ ) for (@{ $roles });
+   for my $role (@{ $roles }) {
+      $person->add_member_to( $role );
+
+      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+                  . "action:addrole shortcode:${name} role:${role}";
+
+      get_logger( 'activity' )->log( $message );
+   }
 
    $self->config->roles_mtime->touch;
 
@@ -73,6 +81,11 @@ sub remove_role_action : Role(administrator) Role(person_manager) {
    for my $role (@{ $roles }) {
       $role eq 'administrator' and $name eq 'admin' and next;
       $person->delete_member_from( $role );
+
+      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+                  . "action:deleterole shortcode:${name} role:${role}";
+
+      get_logger( 'activity' )->log( $message );
    }
 
    $self->config->roles_mtime->touch;

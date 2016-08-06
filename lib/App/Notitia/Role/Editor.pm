@@ -8,9 +8,10 @@ use App::Notitia::Form     qw( blank_form f_tag p_button p_checkbox p_file
 use App::Notitia::Util     qw( dialog_anchor locm make_id_from
                                make_name_from mtime set_element_focus
                                stash_functions to_msg uri_for_action );
-use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
+use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::Functions qw( io is_member throw trim untaint_path );
 use Class::Usul::IPC;
+use Class::Usul::Log       qw( get_logger );
 use Class::Usul::Time      qw( time2str );
 use Class::Usul::Types     qw( ProcCommer );
 use List::Util             qw( first );
@@ -229,10 +230,14 @@ sub create_file {
    $path->assert_filepath->println( $content )->close;
    $self->invalidate_docs_cache( $path->stat->{mtime} );
 
+   my $who      = $req->session->user_label;
    my $rel_path = $path->abs2rel( $conf->docs_root );
-   my $message  = [ to_msg 'File [_1] created by [_2]',
-                    $rel_path, $req->session->user_label ];
    my $location = $self->base_uri( $req, [ $new_node->{url} ] );
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:createfile file:${rel_path}";
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg 'File [_1] created by [_2]', $rel_path, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -248,9 +253,13 @@ sub delete_file {
    $self->invalidate_docs_cache;
 
    my $location = $self->base_uri( $req );
+   my $who      = $req->session->user_label;
    my $rel_path = $path->abs2rel( $self->config->docs_root );
-   my $message  = [ to_msg 'File [_1] deleted by [_2]',
-                    $rel_path, $req->session->user_label ];
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:deletefile file:${rel_path}";
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg 'File [_1] deleted by [_2]', $rel_path, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -315,10 +324,14 @@ sub rename_file {
    $node->{path}->close->move( $new_node->{path} ); $_prune->( $node->{path} );
    $self->invalidate_docs_cache;
 
+   my $who      = $req->session->user_label;
    my $rel_path = $node->{path}->abs2rel( $conf->docs_root );
-   my $message  = [ to_msg 'File [_1] renamed by [_2]',
-                    $rel_path, $req->session->user_label ];
    my $location = $self->base_uri( $req, [ $new_node->{url} ] );
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:renamefile file:${rel_path}";
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg 'File [_1] renamed by [_2]', $rel_path, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -330,13 +343,18 @@ sub save_file {
       or throw 'Cannot find document tree node to update';
    my $content  =  $req->body_params->( 'content', { raw => TRUE } );
       $content  =~ s{ \r\n }{\n}gmx; $content =~ s{ \s+ \z }{}mx;
-   my $path     =  $node->{path}; $path->println( $content ); $path->close;
-   my $rel_path =  $path->abs2rel( $self->config->docs_root );
-   my $message  =  [ to_msg 'File [_1] updated by [_2]',
-                     $rel_path, $req->session->user_label ];
-   my $location =  $self->base_uri( $req, [ $node->{url} ] );
+   my $path     =  $node->{path}; $path->println( $content );
 
-   $self->invalidate_docs_cache( $path->stat->{mtime} );
+   $path->close; $self->invalidate_docs_cache( $path->stat->{mtime} );
+
+   my $who      =  $req->session->user_label;
+   my $rel_path =  $path->abs2rel( $self->config->docs_root );
+   my $location =  $self->base_uri( $req, [ $node->{url} ] );
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:updatefile file:${rel_path}";
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg 'File [_1] updated by [_2]', $rel_path, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -398,10 +416,14 @@ sub upload_file {
 
    io( $upload->path )->copy( $dest );
 
-   my $rel_path = $dest->abs2rel( $conf->assetdir );
-   my $message  = [ to_msg 'File [_1] uploaded by [_2]',
-                    $rel_path, $req->session->user_label ];
    my $location = $self->base_uri( $req );
+   my $who      = $req->session->user_label;
+   my $rel_path = $dest->abs2rel( $conf->assetdir );
+   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
+                . "action:uploadfile file:${rel_path}";
+
+   get_logger( 'activity' )->log( $message );
+   $message = [ to_msg 'File [_1] uploaded by [_2]', $rel_path, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }

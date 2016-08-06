@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds activity logging to most actions
           - Implements #74. Activity log
           - Implements automatic coordinate and location lookup
           - Fixes LoadMore onComplete event dispatch

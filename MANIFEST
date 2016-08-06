@@ -21,6 +21,7 @@ lib/App/Notitia/Controller/Vehicle.pm
 lib/App/Notitia/Daemon.pm
 lib/App/Notitia/Exception.pm
 lib/App/Notitia/Form.pm
+lib/App/Notitia/GeoLocation.pm
 lib/App/Notitia/Markdown.pm
 lib/App/Notitia/Model.pm
 lib/App/Notitia/Model/Admin.pm
