@@ -388,6 +388,30 @@ my $_qualify_assets = sub {
    return $assets;
 };
 
+my $_runjob = sub {
+   my ($self, $job) = @_;
+
+   try {
+      $self->info( 'Running job [_1]-[_2]',
+                   { args => [ $job->name, $job->id ] } );
+
+      my $r = $self->run_cmd( [ split SPC, $job->command ] );
+
+      $self->info( 'Job [_1]-[_2] rv [_3]',
+                   { args => [ $job->name, $job->id, $r->rv ] } );
+   }
+   catch {
+      my ($summary) = split m{ \n }mx, "${_}";
+
+      $self->error( 'Job [_1]-[_2] rv [_3]: [_4]',
+                    { args => [ $job->name, $job->id, $_->rv, $summary ],
+                      no_quote_bind_values => TRUE } );
+   };
+
+   $job->delete;
+   return;
+};
+
 my $_template_path = sub {
    my ($self, $name) = @_; my $conf = $self->config;
 
@@ -711,12 +735,13 @@ sub geolocation : method {
    my $postcode = $person->postcode;
    my $locator = App::Notitia::GeoLocation->new( $self->config->geolocation );
    my $data = $locator->find_by_postcode( $postcode );
-   my $coords = $data->{coordinates}
-              ? $person->coordinates( $data->{coordinates} ) : 'unknown';
-   my $location = $data->{location}
-                ? $person->location( $data->{location} ) : 'unknown';
+   my $coords = defined $data->{coordinates}
+              ? $person->coordinates( $data->{coordinates} ) : 'undefined';
+   my $location = defined $data->{location}
+                ? $person->location( $data->{location} ) : 'undefined';
 
-   ($data->{coordinates} or $data->{location}) and $person->update;
+   (defined $data->{coordinates} or defined $data->{location})
+      and $person->update;
    $self->info( 'Located [_1]: [_2] [_3] [_4]', {
       args => [ $scode, $postcode, $coords, $location ] } );
    return OK;
@@ -825,24 +850,7 @@ sub runqueue : method {
    $self->lock->set( k => 'runqueue' );
 
    for my $job ($self->schema->resultset( 'Job' )->search( {} )->all) {
-      try {
-         $self->info( 'Running job [_1]-[_2]',
-                      { args => [ $job->name, $job->id ] } );
-
-         my $r = $self->run_cmd( [ split SPC, $job->command ] );
-
-         $self->info( 'Job [_1]-[_2] rv [_3]',
-                      { args => [ $job->name, $job->id, $r->rv ] } );
-      }
-      catch {
-         my ($summary) = split m{ \n }mx, "${_}";
-
-         $self->error( 'Job [_1]-[_2] rv [_3]: [_4]',
-                       { args => [ $job->name, $job->id, $_->rv, $summary ],
-                         no_quote_bind_values => TRUE } );
-      };
-
-      $job->delete;
+      $self->$_runjob( $job );
    }
 
    $self->lock->reset( k => 'runqueue' );

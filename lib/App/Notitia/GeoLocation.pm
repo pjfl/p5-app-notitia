@@ -2,12 +2,13 @@ package App::Notitia::GeoLocation;
 
 use namespace::autoclean;
 
-use Class::Usul::Constants qw( FALSE TRUE );
+use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions qw( throw );
 use Class::Usul::Time      qw( nap );
 use Class::Usul::Types     qw( HashRef Logger NonEmptySimpleStr PositiveInt );
 use HTTP::Tiny;
 use JSON::MaybeXS;
+use Unexpected::Functions  qw( Unspecified );
 use Moo;
 
 # Public attributes
@@ -15,9 +16,6 @@ has 'base_uri'     => is => 'ro',   isa => NonEmptySimpleStr,
    default         => 'http://www.uk-postcodes.com';
 
 has 'http_options' => is => 'ro',   isa => HashRef, builder => sub { {} };
-
-has 'log'          => is => 'ro',   isa => Logger,
-   builder         => sub { Class::Null->new };
 
 has 'num_tries'    => is => 'ro',   isa => PositiveInt, default => 3;
 
@@ -28,12 +26,14 @@ has 'uri_template' => is => 'ro',   isa => NonEmptySimpleStr,
 
 # Public methods
 sub find_by_postcode {
-   my ($self, $postcode, $opts) = @_; $opts //= {};
+   my ($self, $postcode, $opts) = @_; $postcode //= NUL; $opts //= {};
 
-   my $res; $postcode =~ s{ [ ] }{}gmx;
+   $postcode =~ s{ [ ] }{}gmx; $postcode or throw Unspecified, [ 'postcode' ];
+
    my $uri  = sprintf $self->uri_template, $self->base_uri, uc $postcode;
-   my $attr = { %{ $self->http_options } }; $attr->{timeout} ||= $self->timeout;
+   my $attr = { %{ $self->http_options }, timeout => $self->timeout };
    my $http = HTTP::Tiny->new( %{ $attr } );
+   my $res;
 
    for (1 .. $self->num_tries) {
       $res = $http->get( $uri ); $res->{success} and last; nap 0.25;

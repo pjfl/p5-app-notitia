@@ -738,7 +738,7 @@ skin used to theme the appearance of the application
 =item C<sms_attributes>
 
 By default an empty hash reference. Should be set as required from
-F<lib/App/Notitia/app-notitia_local.json>. Should contain the C<sms_username>
+F<lib/App/Notitia/app-notitia_local.json>. Should contain the C<username>
 attribute which defaults to C<unknown> if left unset. The password used to send
 SMS text messages should be set using
 

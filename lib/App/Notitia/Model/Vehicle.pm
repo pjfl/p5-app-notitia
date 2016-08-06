@@ -12,6 +12,7 @@ use App::Notitia::Util      qw( assign_link bind check_field_js
                                 to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
+use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Time       qw( time2str );
 use Try::Tiny;
 use Moo;
@@ -330,9 +331,15 @@ my $_toggle_event_assignment = sub {
 
    $vehicle->$method( $uri, $req->username );
 
+   my $message; $action eq 'assign'
+      and $message = 'user:'.$req->username.' client:'.$req->address
+                   . ' action:vehicleasignment event:'.$uri.' vehicle:'.$vrn
+      and get_logger( 'activity' )->log( $message );
+
    my $prep = $action eq 'assign' ? 'to' : 'from';
-   my $message = [ to_msg "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]",
-                   $vrn, $uri, $req->session->user_label ];
+
+   $message = [ to_msg "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]",
+                $vrn, $uri, $req->session->user_label ];
 
    return { redirect => { message => $message } }; # location referer
 };
@@ -353,11 +360,18 @@ my $_toggle_slot_assignment = sub {
    $vehicle->$method( $rota_name, to_dt( $rota_date ), $shift_type,
                       $slot_type, $subslot, $req->username );
 
+   my $message; $action eq 'assign'
+      and $message = 'user:'.$req->username.' client:'.$req->address
+                   . ' action:vehicleasignment slot:'.$slot_name
+                   . ' vehicle:'.$vrn
+      and get_logger( 'activity' )->log( $message );
+
    my $prep = $action eq 'assign' ? 'to' : 'from';
    my $label = slot_identifier
       ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
-   my $message = [ to_msg "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]",
-                   $vrn, $label, $req->session->user_label ];
+
+   $message = [ to_msg "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]",
+                $vrn, $label, $req->session->user_label ];
 
    return { redirect => { message => $message } }; # location referer
 };

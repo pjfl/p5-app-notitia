@@ -12,6 +12,7 @@ use App::Notitia::Util      qw( assign_link dialog_anchor js_submit_config
                                 slot_identifier slot_limit_index to_dt to_msg
                                 uri_for_action );
 use Class::Usul::Functions  qw( is_member );
+use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Time       qw( time2str );
 use Moo;
 
@@ -422,11 +423,17 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
    $person->claim_slot( $rota_name, to_dt( $rota_date ), $shift_type,
                         $slot_type, $subslot, $bike );
 
+   my $message = 'user:'.$req->username.' client:'.$req->address
+               . ' action:slotclaim slot:'.$name;
+
+   get_logger( 'activity' )->log( $message );
+
    my $args     = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;
    my $label    = slot_identifier
                      $rota_name, $rota_date, $shift_type, $slot_type, $subslot;
-   my $message  = [ to_msg '[_1] claimed slot [_2]', $person->label, $label ];
+
+   $message = [ to_msg '[_1] claimed slot [_2]', $person->label, $label ];
 
    return { redirect => { location => $location, message => $message } };
 }

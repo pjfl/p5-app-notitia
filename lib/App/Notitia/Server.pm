@@ -6,6 +6,7 @@ use App::Notitia::Util     qw( authenticated_only enhance );
 use Class::Usul;
 use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( ensure_class_loaded );
+use Class::Usul::Log       qw( );
 use Class::Usul::Types     qw( HashRef Plinth );
 use HTTP::Status           qw( HTTP_FOUND );
 use Plack::Builder;
@@ -66,6 +67,11 @@ sub BUILD {
    my $info   = 'v'.$class->VERSION; $port and $info .= " on port ${port}";
 
    $self->log->info( "${server} Server started ${info}" );
+
+   my $file = $conf->logsdir->catfile( 'activity.log' );
+   my $opts = { appclass => 'activity', builder => $self, logfile => $file, };
+
+   Class::Usul::Log->new( $opts );
 
    return;
 }
