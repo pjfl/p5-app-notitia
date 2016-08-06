@@ -331,15 +331,13 @@ my $_toggle_event_assignment = sub {
 
    $vehicle->$method( $uri, $req->username );
 
+   my $prep = $action eq 'assign' ? 'to' : 'from';
+   my $key  = "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]";
    my $message = 'user:'.$req->username.' client:'.$req->address.SPC
                . "action:vehicle${action}ment event:${uri} vehicle:${vrn}";
 
    get_logger( 'activity' )->log( $message );
-
-   my $prep = $action eq 'assign' ? 'to' : 'from';
-
-   $message = [ to_msg "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]",
-                $vrn, $uri, $req->session->user_label ];
+   $message = [ to_msg $key, $vrn, $uri, $req->session->user_label ];
 
    return { redirect => { message => $message } }; # location referer
 };
@@ -360,17 +358,15 @@ my $_toggle_slot_assignment = sub {
    $vehicle->$method( $rota_name, to_dt( $rota_date ), $shift_type,
                       $slot_type, $subslot, $req->username );
 
+   my $prep = $action eq 'assign' ? 'to' : 'from';
+   my $key = "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]";
+   my $label = slot_identifier
+      ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
    my $message = 'user:'.$req->username.' client:'.$req->address.SPC
                . "action:vehicle${action}ment slot:${slot_name} vehicle:${vrn}";
 
    get_logger( 'activity' )->log( $message );
-
-   my $prep = $action eq 'assign' ? 'to' : 'from';
-   my $label = slot_identifier
-      ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
-
-   $message = [ to_msg "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]",
-                $vrn, $label, $req->session->user_label ];
+   $message = [ to_msg $key, $vrn, $label, $req->session->user_label ];
 
    return { redirect => { message => $message } }; # location referer
 };
@@ -560,15 +556,13 @@ sub create_vehicle_action : Role(rota_manager) {
    try   { $vehicle->insert }
    catch { $self->rethrow_exception( $_, 'create', 'vehicle', $vehicle->vrn ) };
 
-   my $vrn     = $vehicle->vrn;
+   my $vrn = $vehicle->vrn;
+   my $who = $req->session->user_label;
+   my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];
    my $message = 'user:'.$req->username.' client:'.$req->address.SPC
                . "action:createvehicle vehicle:${vrn}";
 
    get_logger( 'activity' )->log( $message );
-
-   my $who      = $req->session->user_label;
-   my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];
-
    $message = [ to_msg 'Vehicle [_1] created by [_2]', $vrn, $who ];
 
    return { redirect => { location => $location, message => $message } };
@@ -577,19 +571,17 @@ sub create_vehicle_action : Role(rota_manager) {
 sub delete_vehicle_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $vrn     = $req->uri_params->( 0 );
+   my $vrn = $req->uri_params->( 0 );
    my $vehicle = $self->schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
 
    $vehicle->delete;
 
+   my $who = $req->session->user_label;
+   my $location = uri_for_action $req, $self->moniker.'/vehicles';
    my $message = 'user:'.$req->username.' client:'.$req->address.SPC
                . "action:deletevehicle vehicle:${vrn}";
 
    get_logger( 'activity' )->log( $message );
-
-   my $who      = $req->session->user_label;
-   my $location = uri_for_action $req, $self->moniker.'/vehicles';
-
    $message = [ to_msg 'Vehicle [_1] deleted by [_2]', $vrn, $who ];
 
    return { redirect => { location => $location, message => $message } };

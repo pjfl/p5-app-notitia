@@ -5,11 +5,10 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE HASH_CHAR NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_button p_image p_item );
-use App::Notitia::Util      qw( dialog_anchor locm make_tip
+use App::Notitia::Util      qw( dialog_anchor locm make_tip now_dt
                                 to_dt uri_for_action );
 use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
-use DateTime                qw( );
 use Moo::Role;
 
 requires qw( components );
@@ -266,7 +265,7 @@ sub admin_navigation_links {
 
    my $nav  = $self->navigation_links( $req, $page );
    my $list = $nav->{menu}->{list} //= [];
-   my $now  = DateTime->now;
+   my $now  = now_dt;
 
    push @{ $list },
       $nav_folder->( $req, 'events' ),
@@ -345,7 +344,7 @@ sub primary_navigation_links {
 
    $class = $location eq 'admin' ? 'current' : NUL;
 
-   my $after = DateTime->now->subtract( days => 1 )->ymd;
+   my $after = now_dt->subtract( days => 1 )->ymd;
    my $index = $places->{admin_index};
 
    $req->authenticated and

@@ -697,7 +697,7 @@ sub new_salt ($$) {
         . (en_base64( pack( 'H*', substr( create_token, 0, 32 ) ) ) );
 }
 
-sub now_dt {
+sub now_dt () {
    return to_dt( time2str );
 }
 

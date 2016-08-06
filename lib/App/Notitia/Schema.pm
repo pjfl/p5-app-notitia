@@ -7,7 +7,7 @@ use App::Notitia::Constants qw( AS_PASSWORD COMMA EXCEPTION_CLASS FALSE NUL
 use App::Notitia::GeoLocation;
 use App::Notitia::SMS;
 use App::Notitia::Util      qw( encrypted_attr load_file_data
-                                mail_domain to_dt );
+                                mail_domain now_dt to_dt );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
                                 io is_member squeeze throw trim );
@@ -15,7 +15,6 @@ use Class::Usul::File;
 use Class::Usul::Types      qw( NonEmptySimpleStr );
 use Data::Record;
 use Data::Validation;
-use DateTime                qw( );
 use Scalar::Util            qw( blessed );
 use Text::CSV;
 use Try::Tiny;
@@ -653,7 +652,7 @@ my $_create_vehicle = sub {
 # Public methods
 sub backup_data : method {
    my $self = shift;
-   my $now  = DateTime->now;
+   my $now  = now_dt;
    my $conf = $self->config;
    my $date = $now->ymd( NUL ).'-'.$now->hms( NUL );
    my $file = $self->database."-${date}.sql";
