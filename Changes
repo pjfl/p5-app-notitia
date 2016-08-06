@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Changes distance display to miles rather than kilometers
           - Implements #74. Activity log
           - Implements automatic coordinate and location lookup
           - Fixes LoadMore onComplete event dispatch
