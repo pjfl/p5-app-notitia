@@ -2,7 +2,7 @@ DROP TABLE "job" CASCADE;
 CREATE TABLE "job" (
   "id" serial NOT NULL,
   "name" character varying(32) DEFAULT '' NOT NULL,
-  "command" character varying(1024) DEFAULT '' NOT NULL,
+  "command" character varying(1024),
   PRIMARY KEY ("id")
 );
 

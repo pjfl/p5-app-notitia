@@ -4,7 +4,8 @@ use strictures;
 use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( TRUE );
-use App::Notitia::Util      qw( serial_data_type varchar_data_type );
+use App::Notitia::Util      qw( nullable_varchar_data_type
+                                serial_data_type varchar_data_type );
 use Class::Usul::IPC;
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -14,7 +15,7 @@ $class->table( 'job' );
 $class->add_columns
    ( id      => serial_data_type,
      name    => varchar_data_type(   32 ),
-     command => varchar_data_type( 1024 ), );
+     command => nullable_varchar_data_type( 1024 ), );
 
 $class->set_primary_key( 'id' );
 

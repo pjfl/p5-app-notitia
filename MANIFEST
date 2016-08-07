@@ -126,9 +126,9 @@ var/root/img/hyde/icons.png
 var/root/img/logo.png
 var/root/js/hyde.js
 var/root/js/mooclasses.js
-var/share/App-Notitia-Schema-Schedule-0.3.212-MySQL.sql
-var/share/App-Notitia-Schema-Schedule-0.3.212-PostgreSQL.sql
-var/share/App-Notitia-Schema-Schedule-0.3.212-SQLite.sql
+var/share/App-Notitia-Schema-Schedule-0.3.258-MySQL.sql
+var/share/App-Notitia-Schema-Schedule-0.3.258-PostgreSQL.sql
+var/share/App-Notitia-Schema-Schedule-0.3.258-SQLite.sql
 var/share/App-Notitia-Schema-Schedule-001-Type.json
 var/share/App-Notitia-Schema-Schedule-002-Person.json
 var/share/App-Notitia-Schema-Schedule-003-Role.json

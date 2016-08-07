@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS `job`;
 CREATE TABLE `job` (
   `id` integer unsigned NOT NULL auto_increment,
   `name` varchar(32) NOT NULL DEFAULT '',
-  `command` text NOT NULL DEFAULT '',
+  `command` text NULL,
   PRIMARY KEY (`id`)
 );
 
