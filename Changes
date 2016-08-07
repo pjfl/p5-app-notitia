@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Added report screens to navigation
           - Removed explicite calls to DateTime now
           - Change Week Rota key title to reflect date to which it refers
           - Adds activity logging to most actions
