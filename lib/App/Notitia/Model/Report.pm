@@ -46,21 +46,34 @@ sub people : Role(person_manager) {
    my $now = now_dt;
    my $rota_name = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
    my $report_from = $req->uri_params->( 1, { optional => TRUE } )
-      // $now->subtract( months => 1 )->set_time_zone( 'local' )->ymd;
+      // $now->clone->subtract( months => 1 )->set_time_zone( 'local' )->ymd;
    my $report_to = $req->uri_params->( 2, { optional => TRUE } )
-      // $now->set_time_zone( 'local' )->ymd;
+      // $now->clone->set_time_zone( 'local' )->ymd;
    my $opts = { after => to_dt( $report_from )->subtract( days => 1 ),
                 before => to_dt( $report_to ),
-                page => $req->query_params->( { optional => TRUE } ) // 1,
-                rota_type => $self->$_find_rota_type( $rota_name )->id,
-                rows => $req->session->rows_per_page, };
-   my $slots = $self->schema->resultset( 'Slot' )->search_for_slots( $opts );
+                rota_type => $self->$_find_rota_type( $rota_name )->id, };
+   my $slot_rs = $self->schema->resultset( 'Slot' );
+   my $slots = $slot_rs->search_for_slots( $opts );
+   my $participent_rs = $self->schema->resultset( 'Participent' );
+   my $attendees = $participent_rs->search_for_attendees( $opts );
    my $page = {
       forms => [ blank_form ],
       selected => 'people_report',
       title => locm $req, 'people_report_heading'
    };
    my $form = $page->{forms}->[ 0 ];
+   my $events_attended = {};
+
+   for my $slot ($slots->all) {
+   }
+
+   for my $person (map { $_->participent } $attendees->all) {
+      $events_attended->{ $person->shortcode } //= { person => $person };
+      $events_attended->{ $person->shortcode }->{count} //= 0;
+      $events_attended->{ $person->shortcode }->{count}++;
+   }
+
+   $self->application->dumper( $events_attended );
 
    return $self->get_stash( $req, $page );
 }
