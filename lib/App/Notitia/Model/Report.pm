@@ -2,9 +2,9 @@ package App::Notitia::Model::Report;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form );
+use App::Notitia::Form      qw( blank_form p_row p_table );
 use App::Notitia::Util      qw( locm now_dt to_dt register_action_paths );
-use Class::Usul::Functions  qw( throw );
+use Class::Usul::Functions  qw( sum throw );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -34,7 +34,67 @@ around 'get_stash' => sub {
    return $stash;
 };
 
+# Private functions
+my $_compare_counts = sub {
+   my ($data, $k1, $k2) = @_;
+
+   return $data->{ $k2 }->{count}->[ 4 ] <=> $data->{ $k1 }->{count}->[ 4 ];
+};
+
+my $_people_headers = sub {
+   return [ map { { value => locm $_[ 0 ], "people_report_heading_${_}" } }
+            0 .. 5 ];
+};
+
+my $_people_row = sub {
+   my ($data, $k) = @_; my $rec = $data->{ $k }; my $counts = $rec->{count};
+
+   return [ { value => $rec->{person}->label },
+            { class => 'align-right', value => $counts->[ 0 ] // 0 },
+            { class => 'align-right', value => $counts->[ 1 ] // 0 },
+            { class => 'align-right', value => $counts->[ 2 ] // 0 },
+            { class => 'align-right', value => $counts->[ 3 ] // 0 },
+            { class => 'align-right', value => $counts->[ 4 ] // 0 } ];
+};
+
+my $_sum_counts = sub {
+   my ($data, $k) = @_; my $counts = $data->{ $k }->{count};
+
+   $counts->[ 4 ] = sum map { defined $_ ? $_ : 0 } @{ $counts };
+
+   return $k;
+};
+
 # Private methods
+my $_counts_by_person = sub {
+   my ($self, $opts) = @_;
+
+   my $slot_rs = $self->schema->resultset( 'Slot' );
+   my $participent_rs = $self->schema->resultset( 'Participent' );
+   my $attendees = $participent_rs->search_for_attendees( $opts );
+   my $data = {};
+
+   for my $slot ($slot_rs->search_for_slots( $opts )->all) {
+      my $person = $slot->operator;
+      my $rec = $data->{ $person->shortcode } //= { person => $person };
+      my $index;
+
+      $slot->type_name->is_controller and $index = 0;
+      $slot->type_name->is_rider and $index = 1;
+      $slot->type_name->is_driver and $index = 2;
+      defined $index or next;
+      $rec->{count}->[ $index ] //= 0; $rec->{count}->[ $index ]++;
+   }
+
+   for my $person (map { $_->participent } $attendees->all) {
+      my $rec = $data->{ $person->shortcode } //= { person => $person };
+
+      $rec->{count}->[ 3 ] //= 0; $rec->{count}->[ 3 ]++;
+   }
+
+   return $data;
+};
+
 my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
 };
@@ -49,31 +109,22 @@ sub people : Role(person_manager) {
       // $now->clone->subtract( months => 1 )->set_time_zone( 'local' )->ymd;
    my $report_to = $req->uri_params->( 2, { optional => TRUE } )
       // $now->clone->set_time_zone( 'local' )->ymd;
-   my $opts = { after => to_dt( $report_from )->subtract( days => 1 ),
-                before => to_dt( $report_to ),
-                rota_type => $self->$_find_rota_type( $rota_name )->id, };
-   my $slot_rs = $self->schema->resultset( 'Slot' );
-   my $slots = $slot_rs->search_for_slots( $opts );
-   my $participent_rs = $self->schema->resultset( 'Participent' );
-   my $attendees = $participent_rs->search_for_attendees( $opts );
+   my $data = $self->$_counts_by_person( {
+      after => to_dt( $report_from )->subtract( days => 1 ),
+      before => to_dt( $report_to ),
+      rota_type => $self->$_find_rota_type( $rota_name )->id, } );
    my $page = {
       forms => [ blank_form ],
       selected => 'people_report',
-      title => locm $req, 'people_report_heading'
+      title => locm $req, 'people_report_title'
    };
    my $form = $page->{forms}->[ 0 ];
-   my $events_attended = {};
+   my $table = p_table $form, { headers => $_people_headers->( $req ) };
 
-   for my $slot ($slots->all) {
-   }
-
-   for my $person (map { $_->participent } $attendees->all) {
-      $events_attended->{ $person->shortcode } //= { person => $person };
-      $events_attended->{ $person->shortcode }->{count} //= 0;
-      $events_attended->{ $person->shortcode }->{count}++;
-   }
-
-   $self->application->dumper( $events_attended );
+   p_row $table, [ map   { $_people_row->( $data, $_ ) }
+                   sort  { $_compare_counts->( $data, $a, $b ) }
+                   map   { $_sum_counts->( $data, $_ ) }
+                   keys %{ $data } ];
 
    return $self->get_stash( $req, $page );
 }
