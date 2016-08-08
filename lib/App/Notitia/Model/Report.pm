@@ -36,9 +36,10 @@ around 'get_stash' => sub {
 
 # Private functions
 my $_compare_counts = sub {
-   my ($data, $k1, $k2) = @_;
+   my ($data, $k1, $k2, $index) = @_;
 
-   return $data->{ $k2 }->{count}->[ 4 ] <=> $data->{ $k1 }->{count}->[ 4 ];
+   return $data->{ $k2 }->{count}->[ $index ]
+      <=> $data->{ $k1 }->{count}->[ $index ];
 };
 
 my $_people_headers = sub {
@@ -46,23 +47,32 @@ my $_people_headers = sub {
             0 .. 5 ];
 };
 
-my $_people_row = sub {
-   my ($data, $k) = @_; my $rec = $data->{ $k }; my $counts = $rec->{count};
+my $_report_row = sub {
+   my ($data, $k, $max_count, $type) = @_;
 
-   return [ { value => $rec->{person}->label },
-            { class => 'align-right', value => $counts->[ 0 ] // 0 },
-            { class => 'align-right', value => $counts->[ 1 ] // 0 },
-            { class => 'align-right', value => $counts->[ 2 ] // 0 },
-            { class => 'align-right', value => $counts->[ 3 ] // 0 },
-            { class => 'align-right', value => $counts->[ 4 ] // 0 } ];
+   my $rec = $data->{ $k }; my $counts = $rec->{count};
+
+   return [ { value => $rec->{ $type }->label },
+            map { { class => 'align-right', value => $counts->[ $_ ] // 0 } }
+            0 .. $max_count ];
+};
+
+my $_slots_headers = sub {
+   return [ map { { value => locm $_[ 0 ], "slot_report_heading_${_}" } }
+            0 .. 4 ];
 };
 
 my $_sum_counts = sub {
-   my ($data, $k) = @_; my $counts = $data->{ $k }->{count};
+   my ($data, $k, $index) = @_; my $counts = $data->{ $k }->{count};
 
-   $counts->[ 4 ] = sum map { defined $_ ? $_ : 0 } @{ $counts };
+   $counts->[ $index ] = sum map { defined $_ ? $_ : 0 } @{ $counts };
 
    return $k;
+};
+
+my $_vehicle_headers = sub {
+   return [ map { { value => locm $_[ 0 ], "vehicle_report_heading_${_}" } }
+            0 .. 4 ];
 };
 
 # Private methods
@@ -95,12 +105,39 @@ my $_counts_by_person = sub {
    return $data;
 };
 
+my $_counts_by_vehicle = sub {
+   my ($self, $opts) = @_;
+
+   my $slot_rs = $self->schema->resultset( 'Slot' );
+   my $tport_rs = $self->schema->resultset( 'Transport' );
+   my $tports = $tport_rs->search_for_assigned_vehicles( $opts );
+   my $data = {};
+
+   for my $slot ($slot_rs->search_for_slots( $opts )->all) {
+      my $vehicle = $slot->vehicle or next;
+      my $rec = $data->{ $vehicle->vrn } //= { vehicle => $vehicle };
+      my $index;
+
+      $slot->shift->type_name->is_day and $index = 0;
+      $slot->shift->type_name->is_night and $index = 1;
+      defined $index or next;
+      $rec->{count}->[ $index ] //= 0; $rec->{count}->[ $index ]++;
+   }
+
+   for my $vehicle (map { $_->vehicle } $tports->all) {
+      my $rec = $data->{ $vehicle->vrn } //= { vehicle => $vehicle };
+
+      $rec->{count}->[ 2 ] //= 0; $rec->{count}->[ 2 ]++;
+   }
+
+   return $data;
+};
+
 my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
 };
 
-# Public methods
-sub people : Role(person_manager) {
+my $_get_period_options = sub {
    my ($self, $req) = @_;
 
    my $now = now_dt;
@@ -109,21 +146,27 @@ sub people : Role(person_manager) {
       // $now->clone->subtract( months => 1 )->set_time_zone( 'local' )->ymd;
    my $report_to = $req->uri_params->( 2, { optional => TRUE } )
       // $now->clone->set_time_zone( 'local' )->ymd;
-   my $data = $self->$_counts_by_person( {
-      after => to_dt( $report_from )->subtract( days => 1 ),
-      before => to_dt( $report_to ),
-      rota_type => $self->$_find_rota_type( $rota_name )->id, } );
-   my $page = {
-      forms => [ blank_form ],
-      selected => 'people_report',
-      title => locm $req, 'people_report_title'
-   };
-   my $form = $page->{forms}->[ 0 ];
+
+   return { after => to_dt( $report_from )->subtract( days => 1 ),
+            before => to_dt( $report_to ),
+            rota_type => $self->$_find_rota_type( $rota_name )->id, };
+};
+
+# Public methods
+sub people : Role(person_manager) {
+   my ($self, $req) = @_;
+
+   my $opts  = $self->$_get_period_options( $req );
+   my $data  = $self->$_counts_by_person( $opts );
+   my $page  = { forms => [ blank_form ],
+                 selected => 'people_report',
+                 title => locm $req, 'people_report_title' };
+   my $form  = $page->{forms}->[ 0 ];
    my $table = p_table $form, { headers => $_people_headers->( $req ) };
 
-   p_row $table, [ map   { $_people_row->( $data, $_ ) }
-                   sort  { $_compare_counts->( $data, $a, $b ) }
-                   map   { $_sum_counts->( $data, $_ ) }
+   p_row $table, [ map   { $_report_row->( $data, $_, 4, 'person' ) }
+                   sort  { $_compare_counts->( $data, $a, $b, 4 ) }
+                   map   { $_sum_counts->( $data, $_, 4 ) }
                    keys %{ $data } ];
 
    return $self->get_stash( $req, $page );
@@ -132,10 +175,13 @@ sub people : Role(person_manager) {
 sub slots : Role(rota_manager) {
    my ($self, $req) = @_;
 
+   my $opts  = $self->$_get_period_options( $req );
    my $page = {
       selected => 'slots_report',
-      title => locm $req, 'slots_report_heading'
+      title => locm $req, 'slots_report_title'
    };
+   my $form  = $page->{forms}->[ 0 ];
+   my $table = p_table $form, { headers => $_slots_headers->( $req ) };
 
    return $self->get_stash( $req, $page );
 }
@@ -143,10 +189,18 @@ sub slots : Role(rota_manager) {
 sub vehicles : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $page = {
-      selected => 'vehicles_report',
-      title => locm $req, 'vehicles_report_heading'
-   };
+   my $opts  = $self->$_get_period_options( $req );
+   my $data  = $self->$_counts_by_vehicle( $opts );
+   my $page  = { forms => [ blank_form ],
+                 selected => 'vehicles_report',
+                 title => locm $req, 'vehicles_report_title' };
+   my $form  = $page->{forms}->[ 0 ];
+   my $table = p_table $form, { headers => $_vehicle_headers->( $req ) };
+
+   p_row $table, [ map   { $_report_row->( $data, $_, 3, 'vehicle' ) }
+                   sort  { $_compare_counts->( $data, $a, $b, 3 ) }
+                   map   { $_sum_counts->( $data, $_, 3 ) }
+                   keys %{ $data } ];
 
    return $self->get_stash( $req, $page );
 }
