@@ -9,6 +9,7 @@ has '+moniker' => default => 'report';
 sub dispatch_request {
    sub (GET  + /people-report      + ?*) { [ 'report/people',   @_ ] },
    sub (GET  + /people-report/**   + ?*) { [ 'report/people',   @_ ] },
+   sub (POST + /report-controls/** + ?*) { [ 'report/controls', @_ ] },
    sub (GET  + /slots-report       + ?*) { [ 'report/slots',    @_ ] },
    sub (GET  + /slots-report/**    + ?*) { [ 'report/slots',    @_ ] },
    sub (GET  + /vehicles-report    + ?*) { [ 'report/vehicles', @_ ] },

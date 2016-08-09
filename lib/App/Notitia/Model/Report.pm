@@ -2,9 +2,10 @@ package App::Notitia::Model::Report;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_row p_table );
-use App::Notitia::Util      qw( locm now_dt to_dt register_action_paths
-                                slot_limit_index );
+use App::Notitia::Form      qw( blank_form p_date p_row p_table );
+use App::Notitia::Util      qw( js_submit_config locm now_dt to_dt
+                                register_action_paths slot_limit_index
+                                uri_for_action );
 use Class::Usul::Functions  qw( sum throw );
 use Moo;
 
@@ -19,6 +20,7 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'report';
 
 register_action_paths
+   'report/controls' => 'report-controls',
    'report/people' => 'people-report',
    'report/slots' => 'slots-report',
    'report/vehicles' => 'vehicles-report';
@@ -69,6 +71,20 @@ my $_get_date_function = sub {
    return sub { $_[ 0 ]->dmy( '/' ) }, 'day';
 };
 
+my $_get_expected = sub {
+   my ($day_max, $night_max, $basis) = @_;
+
+   my $spw = (2 * $day_max) + (7 * $night_max);
+   my $spm = (4 * $spw) + (5 * $spw / 14); # Not exact
+
+   if    ($basis eq 'year')    { return sub { 12 * $spm } }
+   elsif ($basis eq 'quarter') { return sub { 3 * $spm } }
+   elsif ($basis eq 'month')   { return sub { $spm } }
+   elsif ($basis eq 'week')    { return sub { $spw } }
+
+   return sub { $_[ 0 ]->{date}->dow < 6 ? $night_max : $day_max + $night_max };
+};
+
 my $_increment_resource_count = sub {
    my ($slot, $rec) = @_; my $index;
 
@@ -77,6 +93,34 @@ my $_increment_resource_count = sub {
    $slot->type_name->is_driver and $index = 2;
    defined $index or return;
    $rec->{count}->[ $index ] //= 0; $rec->{count}->[ $index ]++;
+   return;
+};
+
+my $_local_dt = sub {
+   return $_[ 0 ]->clone->set_time_zone( 'local' );
+};
+
+my $_onchange_submit = sub {
+   my ($page, $k) = @_;
+
+   push @{ $page->{literal_js} },
+      js_submit_config $k, 'change', 'submitForm',
+                       [ 'display_control', 'display-control' ];
+
+   return;
+};
+
+my $_push_date_controls = sub {
+   my ($page, $opts) = @_; my $form = $page->{forms}->[ 0 ];
+
+   p_date $form, 'after_date', $opts->{after}, {
+      class => 'date-field submit' };
+   p_date $form, 'before_date', $opts->{before}, {
+      class => 'date-field submit', label_class => 'right' };
+
+   $_onchange_submit->( $page, 'after_date' );
+   $_onchange_submit->( $page, 'before_date' );
+
    return;
 };
 
@@ -93,20 +137,6 @@ my $_report_headers = sub {
 
    return [ map { { value => locm $req, "${type}_report_heading_${_}" } }
             0 .. $max_count ];
-};
-
-my $_get_expected = sub {
-   my ($day_max, $night_max, $basis) = @_;
-
-   my $spw = (2 * $day_max) + (7 * $night_max);
-   my $spm = (4 * $spw) + (5 * $spw / 14); # Not exact
-
-   if    ($basis eq 'year')    { return sub { 12 * $spm } }
-   elsif ($basis eq 'quarter') { return sub { 3 * $spm } }
-   elsif ($basis eq 'month')   { return sub { $spm } }
-   elsif ($basis eq 'week')    { return sub { $spw } }
-
-   return sub { $_[ 0 ]->{date}->dow < 6 ? $night_max : $day_max + $night_max };
 };
 
 my $_slot_utilisation = sub {
@@ -160,8 +190,8 @@ my $_counts_by_slot = sub {
    my $data = []; my $lookup = {}; $opts->{order_by} = 'rota.date';
 
    for my $slot ($slot_rs->search_for_slots( $opts )->all) {
-      my $date = $slot->date->clone->set_time_zone( 'local' );
-      my $key = $function->( $date ); my $rec = { date => $date };
+      my $key = $function->( my $date = $_local_dt->( $slot->date ) );
+      my $rec = { date => $date };
 
       if (exists $lookup->{ $key }) { $rec = $lookup->{ $key } }
       else { $lookup->{ $key } = $rec; push @{ $data }, $rec }
@@ -216,25 +246,46 @@ my $_get_period_options = sub {
    my $now = now_dt;
    my $rota_name = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
    my $report_from = $req->uri_params->( 1, { optional => TRUE } )
-      // $now->clone->subtract( months => 1 )->set_time_zone( 'local' )->ymd;
+      // $_local_dt->( $now )->subtract( months => 1 )->ymd;
    my $report_to = $req->uri_params->( 2, { optional => TRUE } )
-      // $now->clone->set_time_zone( 'local' )->ymd;
+      // $_local_dt->( $now )->ymd;
 
    return { after => to_dt( $report_from )->subtract( days => 1 ),
             before => to_dt( $report_to ),
+            rota_name => $rota_name,
             rota_type => $self->$_find_rota_type( $rota_name )->id, };
 };
 
 # Public methods
+sub controls : Role(person_manager) Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $report = $req->uri_params->( 0 );
+   my $rota_name = $req->uri_params->( 1 );
+   my $after = $_local_dt->( to_dt $req->body_params->( 'after_date' ) );
+   my $before = $_local_dt->( to_dt $req->body_params->( 'before_date' ) );
+   my $args = [ $rota_name, $after->ymd, $before->ymd ];
+   my $location = uri_for_action $req, $self->moniker."/${report}", $args;
+   my $message  = [ $req->session->collect_status_message( $req ) ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub people : Role(person_manager) {
    my ($self, $req) = @_;
 
+   my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options( $req );
+   my $name = delete $opts->{rota_name};
    my $data = $self->$_counts_by_person( $opts );
-   my $page = { forms => [ blank_form ],
+   my $href = uri_for_action $req, $actp, [ 'people', $name ];
+   my $form = blank_form 'display-control', $href, { class => 'wide-form' };
+   my $page = { forms => [ $form ],
                 selected => 'people_report',
                 title => locm $req, 'people_report_title' };
-   my $form = $page->{forms}->[ 0 ];
+
+   $_push_date_controls->( $page, $opts );
+
    my $headers = $_report_headers->( $req, 'people', 5 );
    my $table = p_table $form, { headers => $headers };
 
@@ -250,8 +301,11 @@ sub people : Role(person_manager) {
 sub slots : Role(rota_manager) {
    my ($self, $req) = @_;
 
+   my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options( $req );
+   my $name = delete $opts->{rota_name};
    my $data = $self->$_counts_by_slot( $opts );
+   my $href = uri_for_action $req, $actp, [ 'slots', $name ];
    my ($display, $basis) = $_get_date_function->( $opts );
    my $limits = $self->config->slot_limits;
    my $day_max = sum map { $limits->[ slot_limit_index 'day', $_ ] }
@@ -259,10 +313,13 @@ sub slots : Role(rota_manager) {
    my $night_max = sum map { $limits->[ slot_limit_index 'night', $_ ] }
                            'controller', 'rider', 'driver';
    my $expected = $_get_expected->( $day_max, $night_max, $basis );
-   my $page = { forms => [ blank_form ],
+   my $form = blank_form 'display-control', $href, { class => 'wide-form' };
+   my $page = { forms => [ $form ],
                 selected => 'slots_report',
                 title => locm $req, 'slots_report_title' };
-   my $form = $page->{forms}->[ 0 ];
+
+   $_push_date_controls->( $page, $opts );
+
    my $headers = $_report_headers->( $req, 'slot', 4 );
    my $table = p_table $form, { headers => $headers };
 
@@ -276,12 +333,18 @@ sub slots : Role(rota_manager) {
 sub vehicles : Role(rota_manager) {
    my ($self, $req) = @_;
 
+   my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options( $req );
+   my $name = delete $opts->{rota_name};
    my $data = $self->$_counts_by_vehicle( $opts );
-   my $page = { forms => [ blank_form ],
+   my $href = uri_for_action $req, $actp, [ 'vehicles', $name ];
+   my $form = blank_form 'display-control', $href, { class => 'wide-form' };
+   my $page = { forms => [ $form ],
                 selected => 'vehicles_report',
                 title => locm $req, 'vehicles_report_title' };
-   my $form = $page->{forms}->[ 0 ];
+
+   $_push_date_controls->( $page, $opts );
+
    my $headers = $_report_headers->( $req, 'vehicle', 4 );
    my $table = p_table $form, { headers => $headers };
 

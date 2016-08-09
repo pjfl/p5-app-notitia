@@ -163,6 +163,7 @@ footer {
 .button-help, .link-help {
    display: inline-block; position: relative;
 }
+.date-field { max-width: 100px; }
 .dialog {
    background-color: @dialog-background; border: 2px solid @divider;
    .border-radius; color: @darker; padding: 0.5em 1em;
@@ -223,16 +224,16 @@ footer {
 .option-label {
    display: inline-block; padding: 0.325em 0; vertical-align: top;
 }
-.pathname, .narrow-field, .single-character, .single-digit, .smallint-field,
-.standard-field {
+.pathname, .date-field, .narrow-field, .single-character, .single-digit,
+.smallint-field, .standard-field {
    background-color: #fff; border: 2px inset; .border-radius;
    .box-sizing; color: @darker; margin: 0;
    padding: 3.25px 0.75em; vertical-align: middle;
 }
 .pathname, .standard-field { min-width: 300px; }
-.pathname[disabled], .narrow-field[disabled], .single-character[disabled],
-.single-digit[disabled], .smallint-field[disabled], .spreadsheet-select,
-.standard-field[disabled] {
+.pathname[disabled], .date-field[disabled], .narrow-field[disabled],
+.single-character[disabled], .single-digit[disabled],
+.smallint-field[disabled], .spreadsheet-select, .standard-field[disabled] {
    background-color: @subtle; color: @darker;
 }
 .prev-rota:before { content: '\2039'; left: 10px; }

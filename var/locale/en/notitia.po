@@ -790,6 +790,24 @@ msgstr "Certs"
 msgid "people_heading_4"
 msgstr "Endorsements"
 
+msgid "people_report_heading_0"
+msgstr "Period"
+
+msgid "people_report_heading_1"
+msgstr "Controller"
+
+msgid "people_report_heading_2"
+msgstr "Rider"
+
+msgid "people_report_heading_3"
+msgstr "Driver"
+
+msgid "people_report_heading_4"
+msgstr "Events"
+
+msgid "people_report_heading_5"
+msgstr "Total"
+
 msgid "person_create_heading"
 msgstr "Add Person"
 
@@ -960,6 +978,21 @@ msgstr "Manage the certificates required by the slot roles"
 
 msgid "slot_claim_tip"
 msgstr "Claim this [_1] slot"
+
+msgid "slot_report_heading_0"
+msgstr "Period"
+
+msgid "slot_report_heading_1"
+msgstr "Controllers"
+
+msgid "slot_report_heading_2"
+msgstr "Riders"
+
+msgid "slot_report_heading_3"
+msgstr "Drivers"
+
+msgid "slot_report_heading_4"
+msgstr "Capacity"
 
 msgid "slot_roles_heading_0"
 msgstr "Slot Role"
@@ -1143,6 +1176,21 @@ msgstr "Only service vehicles are given a name. Private vehicles have an "
 
 msgid "vehicle_private_heading"
 msgstr "Private Vehicles"
+
+msgid "vehicle_report_heading_0"
+msgstr "Period"
+
+msgid "vehicle_report_heading_1"
+msgstr "Day Shifts"
+
+msgid "vehicle_report_heading_2"
+msgstr "Night Shifts"
+
+msgid "vehicle_report_heading_3"
+msgstr "Events"
+
+msgid "vehicle_report_heading_4"
+msgstr "Total"
 
 msgid "vehicle_request_heading"
 msgstr "Vehicle Requests"
