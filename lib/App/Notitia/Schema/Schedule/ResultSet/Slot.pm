@@ -39,6 +39,7 @@ sub search_for_slots {
                   'vehicle.vrn' ];
    my $where  = { 'rota.type_id' => $opts->{rota_type} };
    my $parser = $self->result_source->schema->datetime_parser;
+   my $order  = $opts->{order_by} // 'shift.type_name';
 
    set_rota_date $parser, $where, 'rota.date', $opts;
 
@@ -46,7 +47,7 @@ sub search_for_slots {
       ( $where,
         { 'columns'      => [ qw( bike_requested type_name subslot ) ],
           'join'         => [ 'operator', 'vehicle' ],
-          'order_by'     => 'shift.type_name',
+          'order_by'     => $order,
           'prefetch'     => [ { 'shift' => 'rota' }, 'operator_vehicles' ],
           '+select'      => $attr,
           '+as'          => $attr, } );
