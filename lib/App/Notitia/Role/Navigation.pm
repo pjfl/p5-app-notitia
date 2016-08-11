@@ -146,6 +146,9 @@ my $_admin_report_links = sub {
          class => $page->{selected} eq 'people_report' ? 'selected' : NUL,
          name => 'people_report', }, 'report/people', [] ),
       $nav_linkto->( $req, {
+         class => $page->{selected} eq 'people_meta_report' ? 'selected' : NUL,
+         name => 'people_meta_report', }, 'report/people_meta', [] ),
+      $nav_linkto->( $req, {
          class => $page->{selected} eq 'slots_report' ? 'selected' : NUL,
          name => 'slots_report', }, 'report/slots', [] ),
       $nav_linkto->( $req, {

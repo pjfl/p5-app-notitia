@@ -790,8 +790,44 @@ msgstr "Certs"
 msgid "people_heading_4"
 msgstr "Endorsements"
 
-msgid "people_report_heading_0"
+msgid "people_meta_report_heading_0"
 msgstr "Period"
+
+msgid "people_meta_report_heading_1"
+msgstr "Joined"
+
+msgid "people_meta_report_heading_2"
+msgstr "Resigned"
+
+msgid "people_meta_report_heading_3"
+msgstr "Total"
+
+msgid "people_meta_report_title"
+msgstr "People Metadata Summary"
+
+msgid "people_meta_summary_heading_0"
+msgstr "Period"
+
+msgid "people_meta_summary_heading_1_link"
+msgstr "Active"
+
+msgid "people_meta_summary_heading_2_link"
+msgstr "Rider"
+
+msgid "people_meta_summary_heading_3_link"
+msgstr "Controller"
+
+msgid "people_meta_summary_heading_4_link"
+msgstr "Driver"
+
+msgid "people_meta_summary_heading_5_link"
+msgstr "Fund Raiser"
+
+msgid "people_meta_summary_report_title"
+msgstr "People Metadata - [_1]"
+
+msgid "people_report_heading_0"
+msgstr "Person"
 
 msgid "people_report_heading_1"
 msgstr "Controller"
@@ -1178,7 +1214,7 @@ msgid "vehicle_private_heading"
 msgstr "Private Vehicles"
 
 msgid "vehicle_report_heading_0"
-msgstr "Period"
+msgstr "Vehicle"
 
 msgid "vehicle_report_heading_1"
 msgstr "Day Shifts"
