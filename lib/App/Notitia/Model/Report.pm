@@ -52,6 +52,14 @@ my $_compare_counts = sub {
       <=> $data->{ $k1 }->{count}->[ $index ];
 };
 
+my $_exclusive_date_range = sub {
+   my $opts = shift; $opts = { %{ $opts } };
+
+   $opts->{after} = $opts->{after}->clone->subtract( days => 1 );
+   $opts->{before} = $opts->{before}->clone->add( days => 1 );
+   return $opts;
+};
+
 my $_find_insertion_pos = sub {
    my ($data, $dt) = @_; my $i = 0;
 
@@ -75,43 +83,36 @@ my $_get_bucket = sub {
 };
 
 my $_get_date_function = sub {
-   my $opts = shift; my $duration = $opts->{before}->delta_md( $opts->{after} );
+   my $opts = shift;
+   my $after = $opts->{after};
+   my $before = $opts->{before};
+   my $drtn = $_local_dt->( $after )->delta_md( $_local_dt->( $before ) );
 
-   if ($duration->years > 2 or ($duration->years == 2
-       and ($duration->months > 0 or $duration->days > 0))) {
-      return sub { $_[ 0 ]->year }, 'year';
+   if ($drtn->years > 2 or ($drtn->years == 2
+       and ($drtn->months > 0 or $drtn->weeks > 0 or $drtn->days > 0))) {
+      return sub { $_[ 0 ] ? $_[ 0 ]->year : 'year' };
    }
-   elsif ($duration->years == 2 or ($duration->years == 1
-          and ($duration->months > 0 or $duration->days > 0))) {
-      return sub { 'Q'.$_[ 0 ]->quarter.SPC.$_[ 0 ]->year }, 'quarter';
-   }
-   elsif ($duration->years == 1 or $duration->months > 3) {
-      return sub { $_[ 0 ]->month_name.SPC.$_[ 0 ]->year }, 'month';
-   }
-   elsif ($duration->months > 1 or ($duration->months == 1
-          and $duration->days > 1)) {
+   elsif ($drtn->years == 2 or ($drtn->years == 1
+          and ($drtn->months > 0 or $drtn->weeks > 0 or $drtn->days > 0))) {
       return sub {
-         my $dt = (shift)->clone->truncate( to => 'week' );
+             $_[ 0 ] ? 'Q'.$_[ 0 ]->quarter.SPC.$_[ 0 ]->year : 'quarter' };
+   }
+   elsif ($drtn->years == 1 or $drtn->months > 3
+          or ($drtn->months == 3 and ($drtn->weeks > 0 or $drtn->days > 0))) {
+      return sub { $_[ 0 ] ? $_[ 0 ]->month_name.SPC.$_[ 0 ]->year : 'month' };
+   }
+   elsif ($drtn->months > 2
+          or ($drtn->months == 2 and ($drtn->weeks > 0 or $drtn->days > 0))) {
+      return sub {
+         my $dt = shift; $dt or return 'week';
+
+         $dt = $dt->clone->truncate( to => 'week' );
 
          return 'Wk'.$dt->week_number.SPC.$dt->dmy( '/' );
-      }, 'week';
+      };
    }
 
-   return sub { $_[ 0 ]->dmy( '/' ) }, 'day';
-};
-
-my $_get_expected = sub {
-   my ($day_max, $night_max, $basis) = @_;
-
-   my $spw = (2 * $day_max) + (7 * $night_max);
-   my $spm = (4 * $spw) + (5 * $spw / 14); # Not exact
-
-   if    ($basis eq 'year')    { return sub { 12 * $spm } }
-   elsif ($basis eq 'quarter') { return sub { 3 * $spm } }
-   elsif ($basis eq 'month')   { return sub { $spm } }
-   elsif ($basis eq 'week')    { return sub { $spw } }
-
-   return sub { $_[ 0 ]->{date}->dow < 6 ? $night_max : $day_max + $night_max };
+   return sub { $_[ 0 ] ? $_[ 0 ]->dmy( '/' ) : 'day' };
 };
 
 my $_inc_bucket = sub {
@@ -204,6 +205,17 @@ my $_people_meta_header_link = sub {
    return { value => f_link $name, $href, { request => $req } };
 };
 
+my $_people_meta_report_title = sub {
+   my ($req, $name) = @_;
+
+   my $label = ucfirst $name; $label =~ s{ [_] }{ }gmx;
+
+   $name ne 'all'
+      and return locm $req, 'people_meta_summary_report_title', $label;
+
+   return locm $req, 'people_meta_report_title';
+};
+
 my $_people_meta_table = sub {
    my ($req, $form, $data, $name) = @_;
 
@@ -218,9 +230,9 @@ my $_people_meta_table = sub {
 
 # Private methods
 my $_counts_by_person = sub {
-   my ($self, $opts) = @_; $opts = { %{ $opts } };
+   my ($self, $opts) = @_;
 
-   $opts->{after} = $opts->{after}->clone->subtract( days => 1 );
+   $opts = $_exclusive_date_range->( $opts ); delete $opts->{rota_name};
 
    my $slot_rs = $self->schema->resultset( 'Slot' );
    my $participent_rs = $self->schema->resultset( 'Participent' );
@@ -244,16 +256,15 @@ my $_counts_by_person = sub {
 };
 
 my $_counts_by_slot = sub {
-   my ($self, $opts) = @_; $opts = { %{ $opts } };
+   my ($self, $opts) = @_; my $df = $_get_date_function->( $opts );
 
-   $opts->{after} = $opts->{after}->clone->subtract( days => 1 );
+   $opts = $_exclusive_date_range->( $opts ); delete $opts->{rota_name};
 
-   my ($function) = $_get_date_function->( $opts );
    my $slot_rs = $self->schema->resultset( 'Slot' );
    my $data = []; my $lookup = {}; $opts->{order_by} = 'rota.date';
 
    for my $slot ($slot_rs->search_for_slots( $opts )->all) {
-      my $key = $function->( my $date = $_local_dt->( $slot->date ) );
+      my $key = $df->( my $date = $_local_dt->( $slot->date ) );
       my $rec = { date => $date };
 
       if (exists $lookup->{ $key }) { $rec = $lookup->{ $key } }
@@ -272,9 +283,9 @@ my $_counts_by_slot = sub {
 };
 
 my $_counts_by_vehicle = sub {
-   my ($self, $opts) = @_; $opts = { %{ $opts } };
+   my ($self, $opts) = @_;
 
-   $opts->{after} = $opts->{after}->clone->subtract( days => 1 );
+   $opts = $_exclusive_date_range->( $opts ); delete $opts->{rota_name};
 
    my $slot_rs = $self->schema->resultset( 'Slot' );
    my $tport_rs = $self->schema->resultset( 'Transport' );
@@ -302,12 +313,11 @@ my $_counts_by_vehicle = sub {
 };
 
 my $_counts_of_people = sub {
-   my ($self, $opts) = @_; $opts = { %{ $opts } };
+   my ($self, $opts) = @_; my $df = $_get_date_function->( $opts );
 
-   $opts->{after} = $opts->{after}->clone->subtract( days => 1 );
+   $opts = $_exclusive_date_range->( $opts ); delete $opts->{role_name};
 
    my $person_rs = $self->schema->resultset( 'Person' );
-   my ($df) = $_get_date_function->( $opts );
    my $data = []; my $lookup = {}; my $totals = {};
 
    for my $person ($person_rs->search_by_period( $opts )->all) {
@@ -347,6 +357,25 @@ my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
 };
 
+my $_get_expected = sub {
+   my ($self, $basis) = @_;
+
+   my $limits = $self->config->slot_limits;
+   my $day_max = sum map { $limits->[ slot_limit_index 'day', $_ ] }
+                         'controller', 'rider', 'driver';
+   my $night_max = sum map { $limits->[ slot_limit_index 'night', $_ ] }
+                           'controller', 'rider', 'driver';
+   my $spw = (2 * $day_max) + (7 * $night_max);
+   my $spm = (4 * $spw) + (5 * $spw / 14); # Not exact
+
+   if    ($basis eq 'year')    { return sub { 12 * $spm } }
+   elsif ($basis eq 'quarter') { return sub { 3 * $spm } }
+   elsif ($basis eq 'month')   { return sub { $spm } }
+   elsif ($basis eq 'week')    { return sub { $spw } }
+
+   return sub { $_[ 0 ]->{date}->dow < 6 ? $night_max : $day_max + $night_max };
+};
+
 my $_get_period_options = sub {
    my ($self, $req, $pos, $opts) = @_; $pos //= 1; $opts //= {};
 
@@ -354,7 +383,7 @@ my $_get_period_options = sub {
    my $report_from = $req->uri_params->( $pos, { optional => TRUE } )
       // $_local_dt->( $now )->subtract( months => 1 )->ymd;
    my $report_to = $req->uri_params->( $pos + 1, { optional => TRUE } )
-      // $_local_dt->( $now )->ymd;
+      // $_local_dt->( $now )->subtract( days => 1 )->ymd;
 
    $opts->{after} = to_dt( $report_from );
    $opts->{before} = to_dt( $report_to );
@@ -383,6 +412,38 @@ my $_get_rota_name = sub {
    return $opts;
 };
 
+my $_people_meta_link_args = sub {
+   my ($opts, $dt) = @_;
+
+   my $name = $opts->{role_name};
+   my $basis = $_get_date_function->( $opts )->();
+   my $from = $_local_dt->( $dt );
+   my $to =  $_local_dt->( $dt );
+
+   if ($basis eq 'year') {
+      $from = $from->truncate( to => 'year' );
+      $to = $to->truncate( to => 'year' )
+               ->add( years => 1 )->subtract( days => 1 );
+   }
+   elsif ($basis eq 'quarter') {
+      $from = $from->set( month => 3 * ($from->quarter - 1) + 1 )
+                   ->truncate( to => 'month' );
+      $to = $from->clone->add( months => 3 )->subtract( days => 1 );
+   }
+   elsif ($basis eq 'month') {
+      $from = $from->truncate( to => 'month' );
+      $to = $to->truncate( to => 'month' )
+               ->add( months => 1 )->subtract( days => 1 );
+   }
+   elsif ($basis eq 'week') {
+      $from = $from->truncate( to => 'week' );
+      $to = $to->truncate( to => 'week' )
+               ->add( weeks => 1 )->subtract( days => 1 );
+   }
+
+   return [ $name, $from->ymd, $to->ymd ];
+};
+
 my $_people_meta_summary_table = sub {
    my ($self, $req, $form, $data, $opts) = @_;
 
@@ -394,7 +455,11 @@ my $_people_meta_summary_table = sub {
    my $table = p_table $form, { headers => $headers };
 
    for my $bucket (@{ $data }) {
-      my $row = p_row $table; p_cell $row, { value => $bucket->{key} };
+      my $row  = p_row $table;
+      my $args = $_people_meta_link_args->( $opts, $bucket->{date} );
+      my $href = uri_for_action $req, "${moniker}/people_meta", $args;
+
+      p_cell $row, { value => f_link $bucket->{key}, $href };
 
       for my $role (@ROLES) {
          p_cell $row, { class => 'align-right',
@@ -428,8 +493,7 @@ sub people : Role(person_manager) {
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
-   my $name = delete $opts->{rota_name};
-   my $href = uri_for_action $req, $actp, [ 'people', $name ];
+   my $href = uri_for_action $req, $actp, [ 'people', $opts->{rota_name} ];
    my $form = blank_form 'display-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
                 selected => 'people_report',
@@ -450,24 +514,13 @@ sub people : Role(person_manager) {
    return $self->get_stash( $req, $page );
 }
 
-my $_people_meta_report_title = sub {
-   my ($req, $name) = @_;
-
-   my $label = ucfirst $name; $label =~ s{ [_] }{ }gmx;
-
-   $name ne 'all'
-      and return locm $req, 'people_meta_summary_report_title', $label;
-
-   return locm $req, 'people_meta_report_title';
-};
-
 sub people_meta : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_role_name( $req ) );
-   my $name = delete $opts->{role_name};
+   my $name = $opts->{role_name};
    my $href = uri_for_action $req, $actp, [ 'people_meta', $name ];
    my $form = blank_form 'display-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
@@ -490,8 +543,7 @@ sub slots : Role(rota_manager) {
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
-   my $name = delete $opts->{rota_name};
-   my $href = uri_for_action $req, $actp, [ 'slots', $name ];
+   my $href = uri_for_action $req, $actp, [ 'slots', $opts->{rota_name} ];
    my $form = blank_form 'display-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
                 selected => 'slots_report',
@@ -500,17 +552,12 @@ sub slots : Role(rota_manager) {
    $_push_date_controls->( $page, $opts );
 
    my $data = $self->$_counts_by_slot( $opts );
-   my ($display, $basis) = $_get_date_function->( $opts );
-   my $limits = $self->config->slot_limits;
-   my $day_max = sum map { $limits->[ slot_limit_index 'day', $_ ] }
-                         'controller', 'rider', 'driver';
-   my $night_max = sum map { $limits->[ slot_limit_index 'night', $_ ] }
-                           'controller', 'rider', 'driver';
-   my $expected = $_get_expected->( $day_max, $night_max, $basis );
+   my $df = $_get_date_function->( $opts );
+   my $expected = $self->$_get_expected( $df->() );
    my $headers = $_report_headers->( $req, 'slot', 4 );
    my $table = p_table $form, { headers => $headers };
 
-   p_row $table, [ map { $_report_row->( $display->( $_->{date} ), $_, 3 ) }
+   p_row $table, [ map { $_report_row->( $df->( $_->{date} ), $_, 3 ) }
                    map { $_slot_utilisation->( $_, $expected ) }
                       @{ $data } ];
 
@@ -523,8 +570,7 @@ sub vehicles : Role(rota_manager) {
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
-   my $name = delete $opts->{rota_name};
-   my $href = uri_for_action $req, $actp, [ 'vehicles', $name ];
+   my $href = uri_for_action $req, $actp, [ 'vehicles', $opts->{rota_name} ];
    my $form = blank_form 'display-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
                 selected => 'vehicles_report',

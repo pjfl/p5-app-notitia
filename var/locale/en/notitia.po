@@ -51,6 +51,9 @@ msgstr "Administration Index"
 msgid "administrator"
 msgstr "Administrator"
 
+msgid "after_date"
+msgstr "From"
+
 msgid "again"
 msgstr "Again"
 
@@ -99,6 +102,9 @@ msgstr "Badge Id."
 msgid "badge_id_field_tip"
 msgstr "Set this to 'next' and the next available badge id wil be automatically selected"
 
+msgid "before_date"
+msgstr "To"
+
 msgid "bike"
 msgstr "Bike"
 
@@ -107,15 +113,6 @@ msgstr "All Bikes"
 
 msgid "bike_list_tip"
 msgstr "List only bikes"
-
-msgid "rider"
-msgstr "Rider"
-
-msgid "rider_list_link"
-msgstr "Riders"
-
-msgid "rider_list_tip"
-msgstr "List riders"
 
 msgid "blots_heading_0"
 msgstr "Endorsement"
@@ -957,6 +954,12 @@ msgstr "Resigned"
 
 msgid "rider"
 msgstr "Rider"
+
+msgid "rider_list_link"
+msgstr "Riders"
+
+msgid "rider_list_tip"
+msgstr "List riders"
 
 msgid "role_management_heading"
 msgstr "Manage Roles"
