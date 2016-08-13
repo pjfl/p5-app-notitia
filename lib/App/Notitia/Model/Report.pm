@@ -64,6 +64,14 @@ my $_compare_counts = sub {
       <=> $data->{ $k1 }->{count}->[ $index ];
 };
 
+my $_display_period = sub {
+   my $opts = shift; my $period = $opts->{period} // NUL;
+
+   return
+      [ map { $_->[ 1 ] eq $period and $_->[ 2 ] = { selected => TRUE }; $_ }
+        [ NUL, NUL ], $_select_periods->() ];
+};
+
 my $_exclusive_date_range = sub {
    my $opts = shift; $opts = { %{ $opts } }; delete $opts->{period};
 
@@ -185,6 +193,35 @@ my $_inc_resource_count = sub {
    return;
 };
 
+my $_link_args = sub {
+   my ($name, $basis, $dt) = @_;
+
+   my $from = $_local_dt->( $dt ); my $to = $_local_dt->( $dt );
+
+   if ($basis eq 'year') {
+      $from = $from->truncate( to => 'year' );
+      $to = $to->truncate( to => 'year' )
+               ->add( years => 1 )->subtract( days => 1 );
+   }
+   elsif ($basis eq 'quarter') {
+      $from = $from->set( month => 3 * ($from->quarter - 1) + 1 )
+                   ->truncate( to => 'month' );
+      $to = $from->clone->add( months => 3 )->subtract( days => 1 );
+   }
+   elsif ($basis eq 'month') {
+      $from = $from->truncate( to => 'month' );
+      $to = $to->truncate( to => 'month' )
+               ->add( months => 1 )->subtract( days => 1 );
+   }
+   elsif ($basis eq 'week') {
+      $from = $from->truncate( to => 'week' );
+      $to = $to->truncate( to => 'week' )
+               ->add( weeks => 1 )->subtract( days => 1 );
+   }
+
+   return [ $name, $from->ymd, $to->ymd ];
+};
+
 my $_onchange_submit = sub {
    my ($page, $k) = @_;
 
@@ -193,14 +230,6 @@ my $_onchange_submit = sub {
                        [ 'display_control', 'display-control' ];
 
    return;
-};
-
-my $_display_period = sub {
-   my $opts = shift; my $period = $opts->{period} // NUL;
-
-   return
-      [ map { $_->[ 1 ] eq $period and $_->[ 2 ] = { selected => TRUE }; $_ }
-        [ NUL, NUL ], $_select_periods->() ];
 };
 
 my $_push_date_controls = sub {
@@ -476,35 +505,6 @@ my $_get_rota_name = sub {
    return $opts;
 };
 
-my $_people_meta_link_args = sub {
-   my ($opts, $basis, $dt) = @_;
-
-   my $from = $_local_dt->( $dt ); my $to = $_local_dt->( $dt );
-
-   if ($basis eq 'year') {
-      $from = $from->truncate( to => 'year' );
-      $to = $to->truncate( to => 'year' )
-               ->add( years => 1 )->subtract( days => 1 );
-   }
-   elsif ($basis eq 'quarter') {
-      $from = $from->set( month => 3 * ($from->quarter - 1) + 1 )
-                   ->truncate( to => 'month' );
-      $to = $from->clone->add( months => 3 )->subtract( days => 1 );
-   }
-   elsif ($basis eq 'month') {
-      $from = $from->truncate( to => 'month' );
-      $to = $to->truncate( to => 'month' )
-               ->add( months => 1 )->subtract( days => 1 );
-   }
-   elsif ($basis eq 'week') {
-      $from = $from->truncate( to => 'week' );
-      $to = $to->truncate( to => 'week' )
-               ->add( weeks => 1 )->subtract( days => 1 );
-   }
-
-   return [ $opts->{role_name}, $from->ymd, $to->ymd ];
-};
-
 my $_people_meta_summary_table = sub {
    my ($self, $req, $form, $data, $opts) = @_;
 
@@ -518,7 +518,7 @@ my $_people_meta_summary_table = sub {
 
    for my $bucket (@{ $data }) {
       my $row  = p_row $table;
-      my $args = $_people_meta_link_args->( $opts, $basis, $bucket->{date} );
+      my $args = $_link_args->( $opts->{role_name}, $basis, $bucket->{date} );
       my $href = uri_for_action $req, "${moniker}/people_meta", $args;
 
       p_cell $row, { value => f_link $bucket->{key}, $href };
@@ -530,6 +530,18 @@ my $_people_meta_summary_table = sub {
    }
 
    return;
+};
+
+my $_slots_row = sub {
+   my ($self, $req, $rota_name, $df, $basis, $rec, $max_count) = @_;
+
+   my $counts = $rec->{count};
+   my $args = $_link_args->( $rota_name, $basis, $rec->{date} );
+   my $href = uri_for_action $req, $self->moniker.'/slots', $args;
+
+   return [ { value => f_link $df->( $rec->{date} ), $href },
+            map { { class => 'align-right', value => $counts->[ $_ ] // 0 } }
+            0 .. $max_count ];
 };
 
 # Public methods
@@ -615,7 +627,8 @@ sub slots : Role(rota_manager) {
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
-   my $href = uri_for_action $req, $actp, [ 'slots', $opts->{rota_name} ];
+   my $name = $opts->{rota_name};
+   my $href = uri_for_action $req, $actp, [ 'slots', $name ];
    my $form = blank_form 'display-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
                 selected => 'slot_report',
@@ -625,11 +638,12 @@ sub slots : Role(rota_manager) {
 
    my $data = $self->$_counts_by_slot( $opts );
    my $df = $_get_date_function->( $opts );
-   my $expected = $self->$_get_expected( $df->() );
+   my $basis = $df->();
+   my $expected = $self->$_get_expected( $basis );
    my $headers = $_report_headers->( $req, 'slot', 4 );
    my $table = p_table $form, { headers => $headers };
 
-   p_row $table, [ map { $_report_row->( $df->( $_->{date} ), $_, 3 ) }
+   p_row $table, [ map { $self->$_slots_row( $req, $name, $df, $basis, $_, 3 ) }
                    map { $_slot_utilisation->( $_, $expected ) }
                       @{ $data } ];
 
