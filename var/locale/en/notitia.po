@@ -333,6 +333,9 @@ msgstr "Description"
 msgid "display_cols"
 msgstr "Columns"
 
+msgid "display_period"
+msgstr "Period"
+
 msgid "display_rows"
 msgstr "Rows"
 
@@ -799,6 +802,9 @@ msgstr "Resigned"
 msgid "people_meta_report_heading_3"
 msgstr "Total"
 
+msgid "people_meta_report_link"
+msgstr "People Meta Report"
+
 msgid "people_meta_report_title"
 msgstr "People Metadata Summary"
 
@@ -840,6 +846,12 @@ msgstr "Events"
 
 msgid "people_report_heading_5"
 msgstr "Total"
+
+msgid "people_report_link"
+msgstr "People Report"
+
+msgid "people_report_title"
+msgstr "People Report"
 
 msgid "person_create_heading"
 msgstr "Add Person"
@@ -909,6 +921,9 @@ msgstr "Is this a publicly available asset?"
 
 msgid "region"
 msgstr "Region"
+
+msgid "reports_management_heading"
+msgstr "Reports"
 
 msgid "request_vehicle_management_link"
 msgstr "Vehicles"
@@ -1032,6 +1047,12 @@ msgstr "Drivers"
 
 msgid "slot_report_heading_4"
 msgstr "Capacity"
+
+msgid "slot_report_link"
+msgstr "Slot Report"
+
+msgid "slot_report_title"
+msgstr "Slot Report"
 
 msgid "slot_roles_heading_0"
 msgstr "Slot Role"
@@ -1230,6 +1251,12 @@ msgstr "Events"
 
 msgid "vehicle_report_heading_4"
 msgstr "Total"
+
+msgid "vehicle_report_link"
+msgstr "Vehicle Report"
+
+msgid "vehicle_report_title"
+msgstr "Vehicle Report"
 
 msgid "vehicle_request_heading"
 msgstr "Vehicle Requests"

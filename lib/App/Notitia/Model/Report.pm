@@ -2,7 +2,8 @@ package App::Notitia::Model::Report;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_cell p_date p_row p_table );
+use App::Notitia::Form      qw( blank_form f_link p_cell p_date
+                                p_hidden p_row p_select p_table );
 use App::Notitia::Util      qw( js_submit_config locm now_dt to_dt
                                 register_action_paths slot_limit_index
                                 uri_for_action );
@@ -45,6 +46,17 @@ my $_local_dt = sub {
    return $_[ 0 ]->clone->set_time_zone( 'local' );
 };
 
+my $_select_periods = sub {
+   return
+      [ 'Last month', 'last-month' ],
+      [ 'Last quarter', 'last-quarter' ],
+      [ 'Last week', 'last-week' ],
+      [ 'Last year', 'last-year' ],
+      [ 'Rolling month', 'rolling-month' ],
+      [ 'Rolling quarter', 'rolling-quarter' ],
+      [ 'Year to date', 'year-to-date' ];
+};
+
 my $_compare_counts = sub {
    my ($data, $k1, $k2, $index) = @_;
 
@@ -53,11 +65,48 @@ my $_compare_counts = sub {
 };
 
 my $_exclusive_date_range = sub {
-   my $opts = shift; $opts = { %{ $opts } };
+   my $opts = shift; $opts = { %{ $opts } }; delete $opts->{period};
 
    $opts->{after} = $opts->{after}->clone->subtract( days => 1 );
    $opts->{before} = $opts->{before}->clone->add( days => 1 );
    return $opts;
+};
+
+my $_expand_range = sub {
+   my $period = shift; my $now = now_dt;
+
+   my $after = $_local_dt->( $now ); my $before = $_local_dt->( $now );
+
+   if ($period eq 'last-month') {
+      $after = $after->subtract( months => 1 )->truncate( to => 'month' ) ;
+      $before = $after->clone->add( months => 1 )->subtract( days => 1 ) ;
+   }
+   elsif ($period eq 'last-quarter') {
+      $after = $after->subtract( months => 3 )->truncate( to => 'month' ) ;
+      $before = $after->clone->add( months => 3 )->subtract( days => 1 ) ;
+   }
+   elsif ($period eq 'last-week') {
+      $after = $after->subtract( weeks => 1 )->truncate( to => 'week' ) ;
+      $before = $after->clone->add( weeks => 1 )->subtract( days => 1 ) ;
+   }
+   elsif ($period eq 'last-year') {
+      $after = $after->subtract( years => 1 )->truncate( to => 'year' ) ;
+      $before = $after->clone->add( years => 1 )->subtract( days => 1 ) ;
+   }
+   elsif ($period eq 'rolling-month') {
+      $after = $after->subtract( months => 1 );
+      $before = $before->subtract( days => 1 );
+   }
+   elsif ($period eq 'rolling-quarter') {
+      $after = $after->subtract( months => 3 );
+      $before = $before->subtract( days => 1 );
+   }
+   elsif ($period eq 'year-to-date') {
+      $after = $after->truncate( to => 'year' );
+      $before = $before->subtract( days => 1 );
+   }
+
+   return $after->ymd, $before->ymd;
 };
 
 my $_find_insertion_pos = sub {
@@ -101,8 +150,8 @@ my $_get_date_function = sub {
           or ($drtn->months == 3 and ($drtn->weeks > 0 or $drtn->days > 0))) {
       return sub { $_[ 0 ] ? $_[ 0 ]->month_name.SPC.$_[ 0 ]->year : 'month' };
    }
-   elsif ($drtn->months > 2
-          or ($drtn->months == 2 and ($drtn->weeks > 0 or $drtn->days > 0))) {
+   elsif ($drtn->months >= 2
+          or ($drtn->months == 1 and ($drtn->weeks > 0 or $drtn->days > 0))) {
       return sub {
          my $dt = shift; $dt or return 'week';
 
@@ -146,16 +195,31 @@ my $_onchange_submit = sub {
    return;
 };
 
+my $_display_period = sub {
+   my $opts = shift; my $period = $opts->{period} // NUL;
+
+   return
+      [ map { $_->[ 1 ] eq $period and $_->[ 2 ] = { selected => TRUE }; $_ }
+        [ NUL, NUL ], $_select_periods->() ];
+};
+
 my $_push_date_controls = sub {
    my ($page, $opts) = @_; my $form = $page->{forms}->[ 0 ];
 
    p_date $form, 'after_date', $opts->{after}, {
-      class => 'date-field submit' };
-   p_date $form, 'before_date', $opts->{before}, {
-      class => 'date-field submit', label_class => 'right' };
-
+      class => 'date-field submit', label_field_class => 'control-label' };
+   p_hidden $form, 'prev_after_date', $opts->{after};
    $_onchange_submit->( $page, 'after_date' );
+
+   p_date $form, 'before_date', $opts->{before}, {
+      class => 'date-field submit', label_field_class => 'control-label' };
+   p_hidden $form, 'prev_before_date', $opts->{before};
    $_onchange_submit->( $page, 'before_date' );
+
+   p_select $form, 'display_period', $_display_period->( $opts ), {
+      class => 'narrow-field submit', id => 'period', label_class => 'right',
+      label_field_class => 'control-label' };
+   $_onchange_submit->( $page, 'period' );
 
    return;
 };
@@ -380,13 +444,13 @@ my $_get_period_options = sub {
    my ($self, $req, $pos, $opts) = @_; $pos //= 1; $opts //= {};
 
    my $now = now_dt;
-   my $report_from = $req->uri_params->( $pos, { optional => TRUE } )
-      // $_local_dt->( $now )->subtract( months => 1 )->ymd;
-   my $report_to = $req->uri_params->( $pos + 1, { optional => TRUE } )
+   my $after = $req->uri_params->( $pos, { optional => TRUE } )
+      // $_local_dt->( $now )->truncate( to => 'year' )->ymd;
+   my $before = $req->uri_params->( $pos + 1, { optional => TRUE } )
       // $_local_dt->( $now )->subtract( days => 1 )->ymd;
 
-   $opts->{after} = to_dt( $report_from );
-   $opts->{before} = to_dt( $report_to );
+   $opts->{after} = to_dt $after; $opts->{before} = to_dt $before;
+   $opts->{period} = $req->query_params->( 'period', { optional => TRUE } );
 
    return $opts;
 };
@@ -413,12 +477,9 @@ my $_get_rota_name = sub {
 };
 
 my $_people_meta_link_args = sub {
-   my ($opts, $dt) = @_;
+   my ($opts, $basis, $dt) = @_;
 
-   my $name = $opts->{role_name};
-   my $basis = $_get_date_function->( $opts )->();
-   my $from = $_local_dt->( $dt );
-   my $to =  $_local_dt->( $dt );
+   my $from = $_local_dt->( $dt ); my $to = $_local_dt->( $dt );
 
    if ($basis eq 'year') {
       $from = $from->truncate( to => 'year' );
@@ -441,13 +502,14 @@ my $_people_meta_link_args = sub {
                ->add( weeks => 1 )->subtract( days => 1 );
    }
 
-   return [ $name, $from->ymd, $to->ymd ];
+   return [ $opts->{role_name}, $from->ymd, $to->ymd ];
 };
 
 my $_people_meta_summary_table = sub {
    my ($self, $req, $form, $data, $opts) = @_;
 
    my $moniker = $self->moniker;
+   my $basis = $_get_date_function->( $opts )->();
    my $headers =
       [ { value => locm $req, 'people_meta_summary_heading_0' },
         map { $_people_meta_header_link->( $req, $moniker, $opts, $_ ) }
@@ -456,7 +518,7 @@ my $_people_meta_summary_table = sub {
 
    for my $bucket (@{ $data }) {
       my $row  = p_row $table;
-      my $args = $_people_meta_link_args->( $opts, $bucket->{date} );
+      my $args = $_people_meta_link_args->( $opts, $basis, $bucket->{date} );
       my $href = uri_for_action $req, "${moniker}/people_meta", $args;
 
       p_cell $row, { value => f_link $bucket->{key}, $href };
@@ -476,15 +538,25 @@ sub controls : Role(person_manager) Role(rota_manager) {
 
    my $report = $req->uri_params->( 0 );
    my $args = [ $req->uri_params->( 1 ) ];
-   my $after = $_local_dt->( to_dt $req->body_params->( 'after_date' ) );
-   my $before = $_local_dt->( to_dt $req->body_params->( 'before_date' ) );
+   my $after = $req->body_params->( 'after_date' );
+   my $before = $req->body_params->( 'before_date' );
+   my $prev_after = $req->body_params->( 'prev_after_date' );
+   my $prev_before = $req->body_params->( 'prev_before_date' );
+   my $period = $req->body_params->( 'display_period', { optional => TRUE } );
+   my $params = {};
 
-   push @{ $args }, $after->ymd, $before->ymd;
+   if ($period and $after eq $prev_after and $before eq $prev_before) {
+      ($after, $before) = $_expand_range->( $period );
+      $params->{period} = $period;
+   }
 
-   my $location = uri_for_action $req, $self->moniker."/${report}", $args;
-   my $message  = [ $req->session->collect_status_message( $req ) ];
+   push @{ $args }, $_local_dt->( to_dt $after )->ymd;
+   push @{ $args }, $_local_dt->( to_dt  $before )->ymd;
 
-   return { redirect => { location => $location, message => $message } };
+   my $actionp = $self->moniker."/${report}";
+   my $location = uri_for_action $req, $actionp, $args, $params;
+
+   return { redirect => { location => $location } };
 }
 
 sub people : Role(person_manager) {
@@ -546,8 +618,8 @@ sub slots : Role(rota_manager) {
    my $href = uri_for_action $req, $actp, [ 'slots', $opts->{rota_name} ];
    my $form = blank_form 'display-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
-                selected => 'slots_report',
-                title => locm $req, 'slots_report_title' };
+                selected => 'slot_report',
+                title => locm $req, 'slot_report_title' };
 
    $_push_date_controls->( $page, $opts );
 
@@ -573,8 +645,8 @@ sub vehicles : Role(rota_manager) {
    my $href = uri_for_action $req, $actp, [ 'vehicles', $opts->{rota_name} ];
    my $form = blank_form 'display-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
-                selected => 'vehicles_report',
-                title => locm $req, 'vehicles_report_title' };
+                selected => 'vehicle_report',
+                title => locm $req, 'vehicle_report_title' };
 
    $_push_date_controls->( $page, $opts );
 

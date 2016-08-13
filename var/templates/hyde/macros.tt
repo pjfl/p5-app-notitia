@@ -33,8 +33,9 @@
 [% BLOCK label %]
 [%    IF f.label -%]
       <label class="label [% f.label_class %]" id="[% f.label_id %]">
-         <span class="field-label [% f.label_field_class %]">
-[%          loc( f.label ) %]</span>[% END -%]
+[%      IF f.label_field_class; class = f.label_field_class; %]
+[%      ELSE; class = 'field-label'; END -%]
+         <span class="[% class %]">[% loc( f.label ) %]</span>[% END -%]
 [%       content -%]
 [%    IF f.label -%]</label>[% END -%]
 [% END -%]

@@ -184,10 +184,11 @@ footer {
    font-size: 0.75em; height: 20px; left: -20px; margin-right: -23px;
    position: relative; text-align: center; width: 20px;
 }
-.field-label, .field-text {
+.field-label, .field-text, .control-label {
    border: 2px solid transparent; .box-sizing; display: inline-block;
-   margin: 0; min-width: 140px; padding: 3px 0; vertical-align: top;
+   margin: 0; padding: 3px 0; vertical-align: top;
 }
+.field-label, .field-text { min-width: 140px; }
 .footer-nav { list-style-type: none; }
 .form-separator {
    min-height: 2em; overflow: hidden; padding: 1em 0; width: 100%;
@@ -874,6 +875,18 @@ table.embeded td { white-space: nowrap; }
    }
    a .show-on-mobiles {
       display: inline !important;
+   }
+}
+@media print {
+   article { min-width: 650px !important; }
+   article h4, .standard-table th {
+      background-color: white; color: black !important;
+   }
+   aside, footer, .main-nav { display: none !important; }
+   body { color: black !important; }
+   .standard-table { box-shadow: 0 0 0 !important; }
+   .standard-table thead {
+      background-color: white; background-image: none !important;
    }
 }
 /* Helper class taken from Bootstrap.

@@ -144,16 +144,20 @@ my $_admin_report_links = sub {
       $nav_folder->( $req, 'reports' ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'people_report' ? 'selected' : NUL,
-         name => 'people_report', }, 'report/people', [] ),
+         name => 'people_report', }, 'report/people', [],
+                     period => 'year-to-date' ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'people_meta_report' ? 'selected' : NUL,
-         name => 'people_meta_report', }, 'report/people_meta', [] ),
+         name => 'people_meta_report', }, 'report/people_meta', [],
+                     period => 'year-to-date' ),
       $nav_linkto->( $req, {
-         class => $page->{selected} eq 'slots_report' ? 'selected' : NUL,
-         name => 'slots_report', }, 'report/slots', [] ),
+         class => $page->{selected} eq 'slot_report' ? 'selected' : NUL,
+         name => 'slot_report', }, 'report/slots', [],
+                     period => 'year-to-date' ),
       $nav_linkto->( $req, {
-         class => $page->{selected} eq 'vehicles_report' ? 'selected' : NUL,
-         name => 'vehicles_report', }, 'report/vehicles', [] );
+         class => $page->{selected} eq 'vehicle_report' ? 'selected' : NUL,
+         name => 'vehicle_report', }, 'report/vehicles', [],
+                     period => 'year-to-date' );
 
    return;
 };
