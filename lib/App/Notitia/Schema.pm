@@ -387,30 +387,6 @@ my $_qualify_assets = sub {
    return $assets;
 };
 
-my $_runjob = sub {
-   my ($self, $job) = @_;
-
-   try {
-      $self->info( 'Running job [_1]-[_2]',
-                   { args => [ $job->name, $job->id ] } );
-
-      my $r = $self->run_cmd( [ split SPC, $job->command ] );
-
-      $self->info( 'Job [_1]-[_2] rv [_3]',
-                   { args => [ $job->name, $job->id, $r->rv ] } );
-   }
-   catch {
-      my ($summary) = split m{ \n }mx, "${_}";
-
-      $self->error( 'Job [_1]-[_2] rv [_3]: [_4]',
-                    { args => [ $job->name, $job->id, $_->rv, $summary ],
-                      no_quote_bind_values => TRUE } );
-   };
-
-   $job->delete;
-   return;
-};
-
 my $_template_path = sub {
    my ($self, $name) = @_; my $conf = $self->config;
 
@@ -843,20 +819,6 @@ sub restore_data : method {
    return OK;
 }
 
-sub runqueue : method {
-   my $self = shift;
-
-   $self->lock->set( k => 'runqueue' );
-
-   for my $job ($self->schema->resultset( 'Job' )->search( {} )->all) {
-      $self->$_runjob( $job );
-   }
-
-   $self->lock->reset( k => 'runqueue' );
-
-   return OK;
-}
-
 sub upgrade_schema : method {
    my $self = shift;
 
@@ -922,8 +884,6 @@ Creates the DDL for multiple RDBMs
 =head2 C<send_message> - Send email or SMS to people
 
 =head2 C<restore_data> - Restore a backup of the database and documents
-
-=head2 C<runqueue> - Process the queue of background tasks
 
 =head2 C<upgrade_schema> - Upgrade the database schema
 
