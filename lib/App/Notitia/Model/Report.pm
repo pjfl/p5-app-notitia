@@ -3,8 +3,8 @@ package App::Notitia::Model::Report;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_cell p_date
-                                p_hidden p_row p_select p_table );
-use App::Notitia::Util      qw( js_submit_config locm now_dt to_dt
+                                p_hidden p_list p_row p_select p_table );
+use App::Notitia::Util      qw( js_submit_config locm make_tip now_dt to_dt
                                 register_action_paths slot_limit_index
                                 uri_for_action );
 use Class::Usul::Functions  qw( sum throw );
@@ -28,6 +28,14 @@ register_action_paths
    'report/vehicles' => 'vehicles-report';
 
 # Construction
+my $_download_format = sub {
+   my ($self, $req, $stash, $format) = @_;
+
+   delete $stash->{page}->{literal_js}; $stash->{view} = $format;
+
+   return;
+};
+
 around 'get_stash' => sub {
    my ($orig, $self, $req, @args) = @_;
 
@@ -35,6 +43,10 @@ around 'get_stash' => sub {
 
    $stash->{page}->{location} //= 'admin';
    $stash->{navigation} = $self->admin_navigation_links( $req, $stash->{page} );
+
+   my $format = $req->query_params->( 'format', { optional => TRUE } );
+
+   $format and $self->$_download_format( $req, $stash, $format );
 
    return $stash;
 };
@@ -70,6 +82,23 @@ my $_display_period = sub {
    return
       [ map { $_->[ 1 ] eq $period and $_->[ 2 ] = { selected => TRUE }; $_ }
         [ NUL, NUL ], $_select_periods->() ];
+};
+
+my $_dl_links = sub {
+   my ($req, $type, $opts) = @_;
+
+   my $after = $_local_dt->( $opts->{after} )->ymd;
+   my $before = $_local_dt->( $opts->{before} )->ymd;
+   my $csv_opts = {
+      class => 'button', container_class => 'right',
+      download => "${type}-report_${after}_${before}.csv", request => $req,
+      tip => locm $req, 'Download the [_1] report as a CSV file', $type };
+   my $href = $req->uri->clone;
+   my %query = $href->query_form;
+
+   exists $query{format} or $href->query_form( %query, format => 'csv' );
+
+   return [ f_link 'download_csv', $href, $csv_opts ];
 };
 
 my $_exclusive_date_range = sub {
@@ -222,6 +251,10 @@ my $_link_args = sub {
    return [ $name, $from->ymd, $to->ymd ];
 };
 
+my $_link_opts = sub {
+   return { class => 'operation-links align-right right-last' };
+};
+
 my $_onchange_submit = sub {
    my ($page, $k) = @_;
 
@@ -318,7 +351,7 @@ my $_people_meta_table = sub {
    p_row $table, [ map { $_report_row->( $_->{key}, $_, 2 ) }
                    map { { count => $_->{ $name }, key => $_->{key} } }
                       @{ $data } ];
-   return;
+   return $table;
 };
 
 # Private methods
@@ -529,7 +562,7 @@ my $_people_meta_summary_table = sub {
       }
    }
 
-   return;
+   return $table;
 };
 
 my $_slots_row = sub {
@@ -545,7 +578,7 @@ my $_slots_row = sub {
 };
 
 # Public methods
-sub controls : Role(person_manager) Role(rota_manager) {
+sub display_control_action : Role(person_manager) Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $report = $req->uri_params->( 0 );
@@ -587,13 +620,15 @@ sub people : Role(person_manager) {
 
    my $data = $self->$_counts_by_person( $opts );
    my $headers = $_report_headers->( $req, 'people', 5 );
-   my $table = p_table $form, { headers => $headers };
+   my $table = $page->{content} = p_table $form, { headers => $headers };
 
    p_row $table, [ map   { $_report_row->( $_->{person}->label, $_, 4 ) }
                    map   { $data->{ $_ } }
                    sort  { $_compare_counts->( $data, $a, $b, 4 ) }
                    map   { $_sum_counts->( $data, $_, 4 ) }
                    keys %{ $data } ];
+
+   p_list $form, NUL, $_dl_links->( $req, 'people', $opts ), $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
@@ -615,8 +650,16 @@ sub people_meta : Role(person_manager) {
 
    my $data = $self->$_counts_of_people( $opts );
 
-   if ($name ne 'all') { $_people_meta_table->( $req, $form, $data, $name ) }
-   else { $self->$_people_meta_summary_table( $req, $form, $data, $opts ) }
+   if ($name ne 'all') {
+      $page->{content} = $_people_meta_table->( $req, $form, $data, $name );
+   }
+   else {
+      $page->{content} = $self->$_people_meta_summary_table
+         ( $req, $form, $data, $opts );
+   }
+
+   p_list $form, NUL, $_dl_links->( $req, 'people meta', $opts ),
+      $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
@@ -641,11 +684,13 @@ sub slots : Role(rota_manager) {
    my $basis = $df->();
    my $expected = $self->$_get_expected( $basis );
    my $headers = $_report_headers->( $req, 'slot', 4 );
-   my $table = p_table $form, { headers => $headers };
+   my $table = $page->{content} = p_table $form, { headers => $headers };
 
    p_row $table, [ map { $self->$_slots_row( $req, $name, $df, $basis, $_, 3 ) }
                    map { $_slot_utilisation->( $_, $expected ) }
                       @{ $data } ];
+
+   p_list $form, NUL, $_dl_links->( $req, 'slots', $opts ), $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
@@ -666,13 +711,15 @@ sub vehicles : Role(rota_manager) {
 
    my $data = $self->$_counts_by_vehicle( $opts );
    my $headers = $_report_headers->( $req, 'vehicle', 4 );
-   my $table = p_table $form, { headers => $headers };
+   my $table = $page->{content} = p_table $form, { headers => $headers };
 
    p_row $table, [ map   { $_report_row->( $_->{vehicle}->label, $_, 3 ) }
                    map   { $data->{ $_ } }
                    sort  { $_compare_counts->( $data, $a, $b, 3 ) }
                    map   { $_sum_counts->( $data, $_, 3 ) }
                    keys %{ $data } ];
+
+   p_list $form, NUL, $_dl_links->( $req, 'vehicles', $opts ), $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }

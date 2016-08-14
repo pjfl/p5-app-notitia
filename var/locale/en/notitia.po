@@ -348,6 +348,9 @@ msgstr "Date of Birth"
 msgid "Documentation"
 msgstr "Information"
 
+msgid "download_csv_link"
+msgstr "Download CSV"
+
 msgid "driver"
 msgstr "Driver"
 

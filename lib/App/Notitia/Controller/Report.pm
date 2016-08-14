@@ -7,15 +7,15 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'report';
 
 sub dispatch_request {
-   sub (GET  + /people-meta-report    + ?*) { [ 'report/people_meta', @_ ] },
-   sub (GET  + /people-meta-report/** + ?*) { [ 'report/people_meta', @_ ] },
-   sub (GET  + /people-report         + ?*) { [ 'report/people',      @_ ] },
-   sub (GET  + /people-report/**      + ?*) { [ 'report/people',      @_ ] },
-   sub (POST + /report-controls/**    + ?*) { [ 'report/controls',    @_ ] },
-   sub (GET  + /slots-report          + ?*) { [ 'report/slots',       @_ ] },
-   sub (GET  + /slots-report/**       + ?*) { [ 'report/slots',       @_ ] },
-   sub (GET  + /vehicles-report       + ?*) { [ 'report/vehicles',    @_ ] },
-   sub (GET  + /vehicles-report/**    + ?*) { [ 'report/vehicles',    @_ ] };
+   sub (GET  + /people-meta-report    + ?*) { [ 'report/people_meta',  @_ ] },
+   sub (GET  + /people-meta-report/** + ?*) { [ 'report/people_meta',  @_ ] },
+   sub (GET  + /people-report         + ?*) { [ 'report/people',       @_ ] },
+   sub (GET  + /people-report/**      + ?*) { [ 'report/people',       @_ ] },
+   sub (POST + /report-controls/**    + ?*) { [ 'report/from_request', @_ ] },
+   sub (GET  + /slots-report          + ?*) { [ 'report/slots',        @_ ] },
+   sub (GET  + /slots-report/**       + ?*) { [ 'report/slots',        @_ ] },
+   sub (GET  + /vehicles-report       + ?*) { [ 'report/vehicles',     @_ ] },
+   sub (GET  + /vehicles-report/**    + ?*) { [ 'report/vehicles',     @_ ] };
 }
 
 1;

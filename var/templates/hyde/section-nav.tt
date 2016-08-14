@@ -2,10 +2,10 @@
 [% IF page.fields.nav %]
 <div class="section-nav">
    <div class="left align-right">
-[%    Link( page.fields.nav.prev, 'prev', loc( 'Prev' ) ) -%]
+[%    LinkWithTips( page.fields.nav.prev, 'prev', loc( 'Prev' ) ) -%]
    </div>
    <div class="right align-left">
-[%    Link( page.fields.nav.next, 'next', loc( 'Next' ) ) -%]
+[%    LinkWithTips( page.fields.nav.next, 'next', loc( 'Next' ) ) -%]
    </div>
 </div>
 <div class="clear"></div>
