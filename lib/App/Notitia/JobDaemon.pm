@@ -4,100 +4,156 @@ use namespace::autoclean;
 
 use App::Notitia; our $VERSION = $App::Notitia::VERSION;
 
-use Class::Usul::Constants qw( EXCEPTION_CLASS NUL OK SPC TRUE );
-use Class::Usul::Functions qw( get_user throw );
-use Class::Usul::Types     qw( ArrayRef NonEmptySimpleStr );
+use Class::Usul::Constants qw( COMMA EXCEPTION_CLASS FALSE NUL OK SPC TRUE );
+use Class::Usul::Functions qw( emit get_user is_member throw );
+use Class::Usul::Time      qw( nap time2str );
+use Class::Usul::Types     qw( NonEmptySimpleStr Object PositiveInt );
 use Daemon::Control;
 use English                qw( -no_match_vars );
+use File::DataClass::Types qw( Path );
+use IO::Socket::UNIX       qw( SOCK_DGRAM SOCK_STREAM SOMAXCONN );
 use Scalar::Util           qw( blessed );
 use Try::Tiny;
 use Unexpected::Functions  qw( Unspecified );
 use Moo;
 
-extends q(Class::Usul::Schema);
+extends q(Class::Usul::Programs);
+with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
 
 # Override default in base class
 has '+config_class'   => default => 'App::Notitia::Config';
 
-has '+database'       => default => sub { $_[ 0 ]->config->database };
+# Attribute constructors
+my $_build_read_socket = sub {
+   return  IO::Socket::UNIX->new
+      ( Local => $_[ 0 ]->_socket_path->pathname, Type => SOCK_DGRAM, );
+};
 
-has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
+my $_build_write_socket = sub {
+   my $self = shift; my $name = $self->config->name; my $start = time;
 
-has '+schema_version' => default => sub { App::Notitia->schema_version.NUL };
+   my $socket;
+
+   while (TRUE) {
+      my $pid = $self->_daemon_pid;
+      my $list = $self->lock->list || [];
+      my $lock = is_member $name, map { $_->{key} } @{ $list };
+      my $exists = $self->_socket_path->exists;
+
+      if ($pid and $lock and $exists) {
+         $socket = IO::Socket::UNIX->new
+            ( Peer => $self->_socket_path->pathname, Type => SOCK_DGRAM, );
+         $socket and last;
+      }
+
+      time - $start > $self->max_wait and
+         throw 'Write socket timeout [_1] [_2] [_3]', [ $pid, $lock, $exists ];
+      $self->_clear_daemon_pid;
+      nap 0.25;
+   }
+
+   return $socket;
+};
 
 # Public attributes
-has 'program_name' => is => 'ro',   isa => NonEmptySimpleStr,
-   default         => 'notitia-jobdaemon';
+has 'max_wait'     => is => 'ro',   isa => PositiveInt, default => 10;
 
-has 'read_socket'  => is => 'lazy', isa => ,
-   builder         => sub { $_[ 0 ]->_socket_pair->[ 0 ] };
+has 'read_socket'  => is => 'lazy', isa => Object,
+   builder         => $_build_read_socket;
 
-has 'write_socket' => is => 'lazy', isa => ,
-   builder         => sub { $_[ 0 ]->_socket_pair->[ 1 ] };
+has 'write_socket' => is => 'lazy', isa => Object,
+   builder         => $_build_write_socket;
 
 # Private attributes
-has '_socket_pair' => is => 'lazy', isa => ArrayRef,
-   builder         => sub {};
+has '_daemon_pid'   => is => 'lazy', isa => PositiveInt, builder => sub {
+   my $file = $_[ 0 ]->config->name.'.pid';
+   my $path = $_[ 0 ]->config->rundir->catfile( $file )->chomp;
+
+   return $path->exists ? $path->getline : 0; }, clearer => TRUE;
+
+has '_program_name' => is => 'lazy', isa => NonEmptySimpleStr, builder => sub {
+   return $_[ 0 ]->config->prefix.'-'.$_[ 0 ]->config->name };
+
+has '_socket_path'  => is => 'lazy', isa => Path, builder => sub {
+   return $_[ 0 ]->config->tempdir->catfile( $_[ 0 ]->config->name.'.sock' ) };
 
 # Private methods
+my $_drop_lock = sub {
+   my $self = shift;
+
+   my $pid  = $self->_daemon_pid; my $name = $self->config->name;
+
+   try { $self->lock->reset( k => $name, p => $pid ) } catch {};
+
+   $self->log->info( "Stopping job daemon ${pid}" );
+   $self->_clear_daemon_pid;
+   return;
+};
+
 my $_lower_semaphore = sub {
-   my $self = shift; my $buf; my $red = $self->read_socket->read( $buf, 1 );
+   my $self = shift; my $pid = $self->_daemon_pid; my $buf = NUL;
 
-   $red == 1 and $buf eq 'x' and $self->lock->reset( k => 'semaphore' );
+   $self->read_socket->recv( $buf, 1 ) until ($buf eq 'x');
 
+   $self->lock->reset( k => 'jobqueue_semaphore', p => $pid );
+   $self->log->debug( 'Lowered jobqueue semaphore' );
    return;
 };
 
 my $_raise_semaphore = sub {
-   my $self = shift;
-   my $lock = $self->lock->set( k => 'semaphore', async => TRUE );
+   my $self = shift; my $pid = $self->_daemon_pid;
 
-   $lock and $self->write_socket->write( 'x', 1 );
+   $self->lock->set( k => 'jobqueue_semaphore', p => $pid, async => TRUE )
+      or return FALSE;
 
-   return $lock;
+   $self->write_socket->send( 'x' );
+
+   return TRUE;
 };
 
 my $_runjob = sub {
    my ($self, $job) = @_;
 
    try {
-      $self->info( 'Running job [_1]-[_2]',
-                   { args => [ $job->name, $job->id ] } );
+      $self->log->info( 'Running job [_1]-[_2]',
+                        { args => [ $job->name, $job->id ] } );
 
       my $r = $self->run_cmd( [ split SPC, $job->command ] );
 
-      $self->info( 'Job [_1]-[_2] rv [_3]',
-                   { args => [ $job->name, $job->id, $r->rv ] } );
+      $self->log->info( 'Job [_1]-[_2] rv [_3]',
+                        { args => [ $job->name, $job->id, $r->rv ] } );
    }
    catch {
       my ($summary) = split m{ \n }mx, "${_}";
 
-      $self->error( 'Job [_1]-[_2] rv [_3]: [_4]',
-                    { args => [ $job->name, $job->id, $_->rv, $summary ],
-                      no_quote_bind_values => TRUE } );
+      $self->log->error( 'Job [_1]-[_2] rv [_3]: [_4]',
+                         { args => [ $job->name, $job->id, $_->rv, $summary ],
+                           no_quote_bind_values => TRUE } );
    };
 
    return;
 };
 
 my $_stdio_file = sub {
-   my ($self, $extn, $name) = @_; $name //= $self->program_name;
+   my ($self, $extn, $name) = @_; $name //= $self->_program_name;
 
    return $self->file->tempdir->catfile( "${name}.${extn}" );
 };
 
 my $_daemon = sub {
-   my $self = shift; $PROGRAM_NAME = $self->program_name;
+   my $self = shift; $PROGRAM_NAME = $self->_program_name;
 
+   $self->log->debug( 'Trying to start the job daemon' );
    $self->config->appclass->env_var( 'debug', $self->debug );
 
-   my $lock = $self->lock->set( k => 'runqueue', async => TRUE );
+   my $pid  = $self->_daemon_pid; my $name = $self->config->name;
 
-   $lock or exit OK; my $stopping = FALSE;
+   my $lock = $self->lock->set( k => $name, p => $pid, async => TRUE );
 
-   $self->$_raise_semaphore
-      and $self->log->debug( 'Raised jobqueue semaphore on startup' );
+   $lock or exit OK; my $stopping = FALSE; $self->_socket_path->unlink;
+
+   $self->log->info( "Started job daemon ${pid}" );
 
    while (not $stopping) {
       $self->$_lower_semaphore;
@@ -112,7 +168,7 @@ my $_daemon = sub {
       }
    }
 
-   $self->lock->reset( k => 'runqueue' );
+   $self->read_socket->close; $self->lock->reset( k => $name, p => $pid );
 
    exit OK;
 };
@@ -124,10 +180,6 @@ my $_build_daemon_control = sub {
    my $tempdir = $conf->tempdir;
    my $args    = {
       name         => blessed $self || $self,
-      lsb_start    => '$syslog $remote_fs',
-      lsb_stop     => '$syslog',
-      lsb_sdesc    => 'Scheduler',
-      lsb_desc     => 'People and resource scheduling server daemon',
       path         => $conf->pathname,
 
       directory    => $conf->appldir,
@@ -165,14 +217,32 @@ around 'run' => sub {
 };
 
 # Public methods
-sub raise_semaphore {
-   return $_[ 0 ]->$_raise_semaphore;
+sub is_running {
+   return $_[ 0 ]->_daemon_control->pid_running ? TRUE : FALSE;
 }
 
 sub restart : method {
    my $self = shift; $self->params->{restart} = [ { expected_rv => 1 } ];
 
-   return $self->_daemon_control->do_restart;
+   $self->_daemon_pid; $self->_daemon_control->read_pid;
+
+   $self->_daemon_control->pid_running and $self->_daemon_control->do_stop;
+
+   $self->_daemon_pid and $self->$_drop_lock;
+
+   return $self->start;
+}
+
+sub show_locks : method {
+   my $self = shift;
+
+   for my $ref (@{ $self->lock->list || [] }) {
+      my $stime = time2str '%Y-%m-%d %H:%M:%S', $ref->{stime};
+
+      emit join COMMA, $ref->{key}, $ref->{pid}, $stime, $ref->{timeout};
+   }
+
+   return OK;
 }
 
 sub show_warnings : method {
@@ -182,7 +252,12 @@ sub show_warnings : method {
 sub start : method {
    my $self = shift; $self->params->{start} = [ { expected_rv => 1 } ];
 
-   return $self->_daemon_control->do_start;
+   my $rv = $self->_daemon_control->do_start;
+
+   $rv == OK and $self->write_socket and $self->$_raise_semaphore
+      and $self->log->debug( 'Raised jobqueue semaphore on startup' );
+
+   return $rv;
 }
 
 sub status : method {
@@ -194,11 +269,15 @@ sub status : method {
 sub stop : method {
    my $self = shift; $self->params->{stop} = [ { expected_rv => 1 } ];
 
-   my $rv = $self->_daemon_control->do_stop;
+   $self->_daemon_pid; my $rv = $self->_daemon_control->do_stop;
 
-   $self->lock->reset( k => 'runqueue' );
-   $self->lock->reset( k => 'semaphore' );
+   $self->_daemon_pid and $self->$_drop_lock;
+
    return $rv;
+}
+
+sub trigger : method {
+   $_[ 0 ]->$_raise_semaphore; return OK;
 }
 
 1;
@@ -229,6 +308,34 @@ Defines the following attributes;
 =back
 
 =head1 Subroutines/Methods
+
+=head2 C<restart> - Restart the server
+
+Restart the server
+
+=head2 C<show_locks> - Show the contents of the lock table
+
+Show the contents of the lock table
+
+=head2 C<show_warnings> - Show server warnings
+
+Show server warnings
+
+=head2 C<start> - Start the server
+
+Start the server
+
+=head2 C<status> - Show the current server status
+
+Show the current server status
+
+=head2 C<stop> - Stop the server
+
+Stop the server
+
+=head2 C<trigger> - Triggers the dequeueing process
+
+Triggers the dequeueing process
 
 =head1 Diagnostics
 
