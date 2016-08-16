@@ -22,7 +22,7 @@ with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
 
 # Override default in base class
-has '+config_class'   => default => 'App::Notitia::Config';
+has '+config_class' => default => 'App::Notitia::Config';
 
 # Attribute constructors
 my $_build_read_socket = sub {
@@ -33,7 +33,7 @@ my $_build_read_socket = sub {
 my $_build_write_socket = sub {
    my $self = shift; my $name = $self->config->name; my $start = time;
 
-   my $socket;
+   my $socket; $self->_clear_daemon_pid;
 
    while (TRUE) {
       my $pid = $self->_daemon_pid;
@@ -55,17 +55,16 @@ my $_build_write_socket = sub {
       nap 0.5;
    }
 
+   $self->_set__socket_ctime( $self->_socket_path->stat->{ctime} );
+
    return $socket;
 };
 
 # Public attributes
-has 'max_wait'     => is => 'ro',   isa => PositiveInt, default => 10;
+has 'max_wait'    => is => 'ro',   isa => PositiveInt, default => 10;
 
-has 'read_socket'  => is => 'lazy', isa => Object,
-   builder         => $_build_read_socket;
-
-has 'write_socket' => is => 'lazy', isa => Object,
-   builder         => $_build_write_socket;
+has 'read_socket' => is => 'lazy', isa => Object,
+   builder        => $_build_read_socket;
 
 # Private attributes
 has '_daemon_pid'   => is => 'lazy', isa => PositiveInt, builder => sub {
@@ -82,8 +81,13 @@ has '_pid_file'     => is => 'lazy', isa => Path, builder => sub {
 has '_program_name' => is => 'lazy', isa => NonEmptySimpleStr, builder => sub {
    return $_[ 0 ]->config->prefix.'-'.$_[ 0 ]->config->name };
 
+has '_socket_ctime' => is => 'rwp',  isa => PositiveInt, default => 0;
+
 has '_socket_path'  => is => 'lazy', isa => Path, builder => sub {
    return $_[ 0 ]->config->tempdir->catfile( $_[ 0 ]->config->name.'.sock' ) };
+
+has '_write_socket' => is => 'lazy', isa => Object, clearer => TRUE,
+   builder          => $_build_write_socket, init_arg => 'write_socket';
 
 # Private methods
 my $_drop_lock = sub {
@@ -98,6 +102,14 @@ my $_drop_lock = sub {
    return;
 };
 
+my $_is_write_socket_stale = sub {
+   my $self = shift;
+
+   my $path = $self->_socket_path; $path->exists or return FALSE;
+
+   return $path->stat->{ctime} > $self->_socket_ctime ? TRUE : FALSE;
+};
+
 my $_lower_semaphore = sub {
    my $self = shift; my $buf = NUL;
 
@@ -109,12 +121,13 @@ my $_lower_semaphore = sub {
 };
 
 my $_raise_semaphore = sub {
-   my $self = shift; $self->write_socket or throw 'No write socket';
+   my $self = shift;
+   my $socket = $self->write_socket or throw 'No write socket';
 
    $self->lock->set( k => 'jobqueue_semaphore', p => 666, async => TRUE )
       or return FALSE;
 
-   $self->write_socket->send( 'x' );
+   $socket->send( 'x' );
 
    return TRUE;
 };
@@ -123,23 +136,19 @@ my $_runjob = sub {
    my ($self, $job) = @_;
 
    try {
-      $self->log->info( 'Running job [_1]-[_2]',
-                        { args => [ $job->name, $job->id ] } );
+      $self->log->info( 'Running job '.$job->name.'-'.$job->id );
 
       my $r = $self->run_cmd( [ split SPC, $job->command ] );
 
-      $self->log->info( 'Job [_1]-[_2] rv [_3]',
-                        { args => [ $job->name, $job->id, $r->rv ] } );
+      $self->log->info( 'Job '.$job->name.'-'.$job->id.' rv '.$r->rv );
    }
    catch {
-      my ($summary) = split m{ \n }mx, "${_}";
+      my ($msg) = split m{ \n }mx, "${_}";
 
-      $self->log->error( 'Job [_1]-[_2] rv [_3]: [_4]',
-                         { args => [ $job->name, $job->id, $_->rv, $summary ],
-                           no_quote_bind_values => TRUE } );
+      $self->log->error( 'Job '.$job->name.'-'.$job->id.' rv '.$_->rv.": $msg");
    };
 
-   return;
+   return OK;
 };
 
 my $_stdio_file = sub {
@@ -159,7 +168,9 @@ my $_daemon_loop = sub {
             $job->delete; $stopping = TRUE; last;
          }
 
-         $self->run_cmd( sub { $_runjob->( $self, $job ) }, { async => TRUE } );
+         $self->run_cmd( [ sub { $_runjob->( $self, $job ) } ],
+                         { async => TRUE, detach => TRUE } );
+
          $job->delete;
       }
    }
@@ -179,11 +190,9 @@ my $_daemon = sub {
 
    $lock or exit OK; $self->log->info( "Started job daemon ${pid}" );
 
-   try   {
-      my $path = $self->_socket_path; $path->exists and $path->unlink;
+   my $path = $self->_socket_path;
 
-      $path->close; $self->$_daemon_loop;
-   }
+   try   { $path->exists and $path->unlink; $path->close; $self->$_daemon_loop }
    catch { $self->log->error( $_ ) };
 
    try {
@@ -259,10 +268,8 @@ sub is_running {
 sub restart : method {
    my $self = shift; $self->params->{restart} = [ { expected_rv => 1 } ];
 
-   $self->_daemon_pid; $self->_daemon_control->read_pid;
-
+   $self->_daemon_pid;
    $self->_daemon_control->pid_running and $self->_daemon_control->do_stop;
-
    $self->_daemon_pid and $self->$_drop_lock;
 
    return $self->start;
@@ -313,6 +320,14 @@ sub stop : method {
 
 sub trigger : method {
    $_[ 0 ]->$_raise_semaphore; return OK;
+}
+
+sub write_socket {
+   my $self = shift;
+
+   $self->$_is_write_socket_stale and $self->_clear_write_socket;
+
+   return $self->_write_socket;
 }
 
 1;
