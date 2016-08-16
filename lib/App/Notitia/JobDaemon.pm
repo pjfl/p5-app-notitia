@@ -60,56 +60,6 @@ my $_build_write_socket = sub {
    return $socket;
 };
 
-# Public attributes
-has 'max_wait'    => is => 'ro',   isa => PositiveInt, default => 10;
-
-has 'read_socket' => is => 'lazy', isa => Object,
-   builder        => $_build_read_socket;
-
-# Private attributes
-has '_daemon_pid'   => is => 'lazy', isa => PositiveInt, builder => sub {
-   my $path = $_[ 0 ]->_pid_file;
-
-   return (($path->exists && !$path->empty ? $path->getline : 0) // 0) },
-   clearer => TRUE;
-
-has '_pid_file'     => is => 'lazy', isa => Path, builder => sub {
-   my $file = $_[ 0 ]->config->name.'.pid';
-
-   return $_[ 0 ]->config->rundir->catfile( $file )->chomp };
-
-has '_program_name' => is => 'lazy', isa => NonEmptySimpleStr, builder => sub {
-   return $_[ 0 ]->config->prefix.'-'.$_[ 0 ]->config->name };
-
-has '_socket_ctime' => is => 'rwp',  isa => PositiveInt, default => 0;
-
-has '_socket_path'  => is => 'lazy', isa => Path, builder => sub {
-   return $_[ 0 ]->config->tempdir->catfile( $_[ 0 ]->config->name.'.sock' ) };
-
-has '_write_socket' => is => 'lazy', isa => Object, clearer => TRUE,
-   builder          => $_build_write_socket, init_arg => 'write_socket';
-
-# Private methods
-my $_drop_lock = sub {
-   my $self = shift;
-
-   my $pid  = $self->_daemon_pid; my $name = $self->config->name;
-
-   try { $self->lock->reset( k => $name, p => $pid ) } catch {};
-
-   $self->log->info( "Stopping job daemon ${pid}" );
-   $self->_clear_daemon_pid;
-   return;
-};
-
-my $_is_write_socket_stale = sub {
-   my $self = shift;
-
-   my $path = $self->_socket_path; $path->exists or return FALSE;
-
-   return $path->stat->{ctime} > $self->_socket_ctime ? TRUE : FALSE;
-};
-
 my $_lower_semaphore = sub {
    my $self = shift; my $buf = NUL;
 
@@ -118,18 +68,6 @@ my $_lower_semaphore = sub {
    $self->lock->reset( k => 'jobqueue_semaphore', p => 666 );
    $self->log->debug( 'Lowered jobqueue semaphore' );
    return;
-};
-
-my $_raise_semaphore = sub {
-   my $self = shift;
-   my $socket = $self->write_socket or throw 'No write socket';
-
-   $self->lock->set( k => 'jobqueue_semaphore', p => 666, async => TRUE )
-      or return FALSE;
-
-   $socket->send( 'x' );
-
-   return TRUE;
 };
 
 my $_runjob = sub {
@@ -190,21 +128,25 @@ my $_daemon = sub {
 
    $lock or exit OK; $self->log->info( "Started job daemon ${pid}" );
 
+   my $reset = sub {
+      $self->log->info( "Stopping job daemon ${pid}" );
+      $self->read_socket and $self->read_socket->close;
+      $self->lock->reset( k => $name, p => $pid ) };
+
    my $path = $self->_socket_path;
 
-   try   { $path->exists and $path->unlink; $path->close; $self->$_daemon_loop }
+   try {
+      local $SIG{TERM} = sub { $reset->(); exit OK };
+      $path->exists and $path->unlink; $path->close;
+      $self->$_daemon_loop;
+   }
    catch { $self->log->error( $_ ) };
 
-   try {
-      $self->read_socket and $self->read_socket->close;
-      $self->lock->reset( k => $name, p => $pid );
-   }
-   catch {};
+   try { $reset->() } catch {};
 
    exit OK;
 };
 
-# Attribute construction
 my $_build_daemon_control = sub {
    my $self = shift; my $conf = $self->config; my $name = $conf->name;
 
@@ -227,9 +169,37 @@ my $_build_daemon_control = sub {
    return Daemon::Control->new( $args );
 };
 
+# Public attributes
+has 'max_wait' => is => 'ro',   isa => PositiveInt, default => 10;
+
+has 'read_socket' => is => 'lazy', isa => Object,
+   builder => $_build_read_socket;
+
 # Private attributes
 has '_daemon_control' => is => 'lazy', isa => Object,
-   builder            => $_build_daemon_control;
+   builder => $_build_daemon_control;
+
+has '_daemon_pid' => is => 'lazy', isa => PositiveInt, builder => sub {
+   my $path = $_[ 0 ]->_pid_file;
+
+   return (($path->exists && !$path->empty ? $path->getline : 0) // 0) },
+   clearer => TRUE;
+
+has '_pid_file' => is => 'lazy', isa => Path, builder => sub {
+   my $file = $_[ 0 ]->config->name.'.pid';
+
+   return $_[ 0 ]->config->rundir->catfile( $file )->chomp };
+
+has '_program_name' => is => 'lazy', isa => NonEmptySimpleStr, builder => sub {
+   return $_[ 0 ]->config->prefix.'-'.$_[ 0 ]->config->name };
+
+has '_socket_ctime' => is => 'rwp',  isa => PositiveInt, default => 0;
+
+has '_socket_path' => is => 'lazy', isa => Path, builder => sub {
+   return $_[ 0 ]->config->tempdir->catfile( $_[ 0 ]->config->name.'.sock' ) };
+
+has '_write_socket' => is => 'lazy', isa => Object, clearer => TRUE,
+   builder => $_build_write_socket, init_arg => 'write_socket';
 
 # Construction
 around 'run' => sub {
@@ -247,9 +217,45 @@ around 'run' => sub {
    return $orig->( $self );
 };
 
+# Private methods
+my $_drop_lock = sub {
+   my $self = shift;
+
+   try {
+      my $pid  = $self->_daemon_pid; my $name = $self->config->name;
+
+      $self->lock->reset( k => $name, p => $pid );
+      $self->log->warn( "Dropping ${name} lock ${pid}" );
+   }
+   catch {};
+
+   $self->_clear_daemon_pid;
+   return;
+};
+
+my $_is_write_socket_stale = sub {
+   my $self = shift;
+
+   my $path = $self->_socket_path; $path->exists or return FALSE;
+
+   return $path->stat->{ctime} > $self->_socket_ctime ? TRUE : FALSE;
+};
+
+my $_raise_semaphore = sub {
+   my $self = shift;
+   my $socket = $self->write_socket or throw 'No write socket';
+
+   $self->lock->set( k => 'jobqueue_semaphore', p => 666, async => TRUE )
+      or return FALSE;
+
+   $socket->send( 'x' );
+
+   return TRUE;
+};
+
 # Public methods
 sub clear : method {
-   my $self = shift;
+   my $self = shift; $self->is_running and throw 'Cannot clear whilst running';
 
    my $pid = $self->_daemon_pid; my $name = $self->config->name;
 
