@@ -6,7 +6,6 @@ use parent 'App::Notitia::Schema::Base';
 use App::Notitia::Constants qw( TRUE );
 use App::Notitia::Util      qw( nullable_varchar_data_type
                                 serial_data_type varchar_data_type );
-use Class::Usul::IPC;
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -19,22 +18,10 @@ $class->add_columns
 
 $class->set_primary_key( 'id' );
 
-my $_ipc_obj;
-
-my $_ipc = sub {
-   my $self = shift; defined $_ipc_obj and return $_ipc_obj;
-   my $app  = $self->result_source->schema->application;
-
-   return $_ipc_obj = Class::Usul::IPC->new( builder => $app );
-};
-
 sub insert {
-   my $self = shift;
-   my $job  = $self->next::method;
-   my $conf = $self->result_source->schema->config;
-   my $cmd  = $conf->binsdir->catfile( 'notitia-schema' );
+   my $self = shift; my $job = $self->next::method;
 
-   $self->$_ipc->run_cmd( [ $cmd, '-q', 'runqueue' ], { async => TRUE } );
+   $self->result_source->schema->application->application->jobdaemon->trigger;
 
    return $job;
 }
