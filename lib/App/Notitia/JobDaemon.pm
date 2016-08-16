@@ -11,7 +11,7 @@ use Class::Usul::Types     qw( NonEmptySimpleStr Object PositiveInt );
 use Daemon::Control;
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( Path );
-use IO::Socket::UNIX       qw( SOCK_DGRAM SOCK_STREAM SOMAXCONN );
+use IO::Socket::UNIX       qw( SOCK_DGRAM );
 use Scalar::Util           qw( blessed );
 use Try::Tiny;
 use Unexpected::Functions  qw( Unspecified );
@@ -37,20 +37,22 @@ my $_build_write_socket = sub {
 
    while (TRUE) {
       my $pid = $self->_daemon_pid;
+      my $running = $pid ? $self->is_running : FALSE;
       my $list = $self->lock->list || [];
       my $lock = is_member $name, map { $_->{key} } @{ $list };
       my $exists = $self->_socket_path->exists;
 
-      if ($pid and $lock and $exists) {
+      if ($pid and $running and $lock and $exists) {
          $socket = IO::Socket::UNIX->new
             ( Peer => $self->_socket_path->pathname, Type => SOCK_DGRAM, );
          $socket and last;
       }
 
-      time - $start > $self->max_wait and
-         throw 'Write socket timeout [_1] [_2] [_3]', [ $pid, $lock, $exists ];
+      time - $start > $self->max_wait
+         and throw 'Write socket timeout [_1] [_2] [_3] [_4]',
+                   [ $pid, $running, $lock, $exists ];
       $self->_clear_daemon_pid;
-      nap 0.25;
+      nap 0.5;
    }
 
    return $socket;
@@ -67,10 +69,15 @@ has 'write_socket' => is => 'lazy', isa => Object,
 
 # Private attributes
 has '_daemon_pid'   => is => 'lazy', isa => PositiveInt, builder => sub {
-   my $file = $_[ 0 ]->config->name.'.pid';
-   my $path = $_[ 0 ]->config->rundir->catfile( $file )->chomp;
+   my $path = $_[ 0 ]->_pid_file;
 
-   return $path->exists ? $path->getline : 0; }, clearer => TRUE;
+   return (($path->exists && !$path->empty ? $path->getline : 0) // 0) },
+   clearer => TRUE;
+
+has '_pid_file'     => is => 'lazy', isa => Path, builder => sub {
+   my $file = $_[ 0 ]->config->name.'.pid';
+
+   return $_[ 0 ]->config->rundir->catfile( $file )->chomp };
 
 has '_program_name' => is => 'lazy', isa => NonEmptySimpleStr, builder => sub {
    return $_[ 0 ]->config->prefix.'-'.$_[ 0 ]->config->name };
@@ -92,19 +99,19 @@ my $_drop_lock = sub {
 };
 
 my $_lower_semaphore = sub {
-   my $self = shift; my $pid = $self->_daemon_pid; my $buf = NUL;
+   my $self = shift; my $buf = NUL;
 
    $self->read_socket->recv( $buf, 1 ) until ($buf eq 'x');
 
-   $self->lock->reset( k => 'jobqueue_semaphore', p => $pid );
+   $self->lock->reset( k => 'jobqueue_semaphore', p => 666 );
    $self->log->debug( 'Lowered jobqueue semaphore' );
    return;
 };
 
 my $_raise_semaphore = sub {
-   my $self = shift; my $pid = $self->_daemon_pid;
+   my $self = shift; $self->write_socket or throw 'No write socket';
 
-   $self->lock->set( k => 'jobqueue_semaphore', p => $pid, async => TRUE )
+   $self->lock->set( k => 'jobqueue_semaphore', p => 666, async => TRUE )
       or return FALSE;
 
    $self->write_socket->send( 'x' );
@@ -141,19 +148,8 @@ my $_stdio_file = sub {
    return $self->file->tempdir->catfile( "${name}.${extn}" );
 };
 
-my $_daemon = sub {
-   my $self = shift; $PROGRAM_NAME = $self->_program_name;
-
-   $self->log->debug( 'Trying to start the job daemon' );
-   $self->config->appclass->env_var( 'debug', $self->debug );
-
-   my $pid  = $self->_daemon_pid; my $name = $self->config->name;
-
-   my $lock = $self->lock->set( k => $name, p => $pid, async => TRUE );
-
-   $lock or exit OK; my $stopping = FALSE; $self->_socket_path->unlink;
-
-   $self->log->info( "Started job daemon ${pid}" );
+my $_daemon_loop = sub {
+   my $self = shift; my $stopping = FALSE;
 
    while (not $stopping) {
       $self->$_lower_semaphore;
@@ -168,7 +164,33 @@ my $_daemon = sub {
       }
    }
 
-   $self->read_socket->close; $self->lock->reset( k => $name, p => $pid );
+   return;
+};
+
+my $_daemon = sub {
+   my $self = shift; $PROGRAM_NAME = $self->_program_name;
+
+   $self->log->debug( 'Trying to start the job daemon' );
+   $self->config->appclass->env_var( 'debug', $self->debug );
+
+   my $pid  = $self->_daemon_pid; my $name = $self->config->name;
+
+   my $lock = $self->lock->set( k => $name, p => $pid, async => TRUE );
+
+   $lock or exit OK; $self->log->info( "Started job daemon ${pid}" );
+
+   try   {
+      my $path = $self->_socket_path; $path->exists and $path->unlink;
+
+      $path->close; $self->$_daemon_loop;
+   }
+   catch { $self->log->error( $_ ) };
+
+   try {
+      $self->read_socket and $self->read_socket->close;
+      $self->lock->reset( k => $name, p => $pid );
+   }
+   catch {};
 
    exit OK;
 };
@@ -217,6 +239,19 @@ around 'run' => sub {
 };
 
 # Public methods
+sub clear : method {
+   my $self = shift;
+
+   my $pid = $self->_daemon_pid; my $name = $self->config->name;
+
+   try { $self->lock->reset( k => 'jobqueue_semaphore', p => 666 ) } catch {};
+   try { $self->lock->reset( k => $name, p => $pid ) } catch {};
+
+   $self->_pid_file->exists and $self->_pid_file->unlink;
+
+   return OK;
+}
+
 sub is_running {
    return $_[ 0 ]->_daemon_control->pid_running ? TRUE : FALSE;
 }
@@ -254,7 +289,7 @@ sub start : method {
 
    my $rv = $self->_daemon_control->do_start;
 
-   $rv == OK and $self->write_socket and $self->$_raise_semaphore
+   $rv == OK and $self->$_raise_semaphore
       and $self->log->debug( 'Raised jobqueue semaphore on startup' );
 
    return $rv;
@@ -308,6 +343,10 @@ Defines the following attributes;
 =back
 
 =head1 Subroutines/Methods
+
+=head2 C<clear> - Clears left over locks in the event of failure
+
+Clears left over locks in the event of failure
 
 =head2 C<restart> - Restart the server
 
