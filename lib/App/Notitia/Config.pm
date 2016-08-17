@@ -77,10 +77,6 @@ my $_build_user_home = sub {
         ? $appldir->dirname : $appldir;
 };
 
-sub _build_l10n_domains {
-   my $prefix = $_[ 0 ]->prefix; return [ $prefix, "${prefix}-".$_[ 0 ]->name ];
-}
-
 # Public attributes
 has 'assetdir'        => is => 'lazy', isa => Path, coerce => TRUE,
    builder            => sub { $_[ 0 ]->docs_root->catdir( $_[ 0 ]->assets ) };
@@ -329,7 +325,17 @@ sub _build_ctlfile {
 }
 
 sub _build__l10n_attributes {
-   return { gettext_catagory => NUL, };
+   return {
+      cache_attributes => {
+         page_size => 131_072,
+         namespace => $_[ 0 ]->prefix.'-l10n',
+         num_pages => 89,
+         unlink_on_exit => FALSE, },
+      gettext_catagory => NUL, };
+}
+
+sub _build_l10n_domains {
+   my $prefix = $_[ 0 ]->prefix; return [ "${prefix}_local", $prefix ];
 }
 
 sub BUILD {
