@@ -193,7 +193,7 @@ msgid "clear_jobdaemon"
 msgstr "Clear Locks"
 
 msgid "clear_jobdaemon_tip"
-msgstr "With the job daemon stopped there should be no locks left in the"
+msgstr "With the job daemon stopped there should be no locks left in the "
        "lock table. Use this button to remove any left over locks"
 
 msgid "colour"
