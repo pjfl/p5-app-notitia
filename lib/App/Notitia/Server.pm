@@ -81,8 +81,6 @@ sub BUILD {
 
    $self->_usul->log_class->new( $opts );
 
-   $self->jobdaemon->is_running or $self->jobdaemon->start;
-
    return;
 }
 

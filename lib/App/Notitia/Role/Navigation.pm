@@ -277,6 +277,12 @@ sub admin_navigation_links {
          class => $page->{selected} eq 'previous_events' ? 'selected' : NUL,
          name => 'previous_events' }, 'event/events', [], before => $now->ymd );
 
+   $self->$_allowed( $req, 'daemon/status' ) and push @{ $list },
+      $nav_folder->( $req, 'jobdaemon' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'jobdaemon_status' ? 'selected' : NUL,
+         name => 'jobdaemon_status' }, 'daemon/status', [] );
+
    $self->$_admin_people_links( $req, $page, $nav );
 
    $self->$_allowed( $req, 'admin/types' ) and push @{ $list },
