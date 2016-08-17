@@ -189,6 +189,9 @@ msgstr "Edit"
 msgid "change_password_title"
 msgstr "Change Password"
 
+msgid "clear_jobdaemon"
+msgstr "Clear Locks"
+
 msgid "colour"
 msgstr "Colour"
 
@@ -275,6 +278,9 @@ msgstr "Active People"
 
 msgid "current_people_list_tip"
 msgstr "List currently active members"
+
+msgid "daemon_pid"
+msgstr "Process Id."
 
 msgid "day_controller_0"
 msgstr "Ctrl. AM"
@@ -513,6 +519,27 @@ msgstr "Information"
 msgid "home_phone"
 msgstr "Home Phone"
 
+msgid "is_running"
+msgstr "Running"
+
+msgid "job_queue"
+msgstr "Job Queue"
+
+msgid "job_table_header_0"
+msgstr "Job Identity"
+
+msgid "job_table_header_1"
+msgstr "Command"
+
+msgid "jobdaemon_management_heading"
+msgstr "Job Daemon"
+
+msgid "jobdaemon_status_link"
+msgstr "Status"
+
+msgid "jobdaemon_status_title"
+msgstr "Job Daemon Status"
+
 msgid "joined"
 msgstr "Joined"
 
@@ -533,6 +560,18 @@ msgstr "Go to page [_1]"
 
 msgid "location"
 msgstr "Location"
+
+msgid "lock_table_header_0"
+msgstr "Lock Name"
+
+msgid "lock_table_header_1"
+msgstr "Pid"
+
+msgid "lock_table_header_2"
+msgstr "Created"
+
+msgid "lock_table_header_3"
+msgstr "Timeout"
 
 msgid "login"
 msgstr "Login"
@@ -976,6 +1015,9 @@ msgstr "Password Reset Request"
 msgid "resigned"
 msgstr "Resigned"
 
+msgid "restart_jobdaemon"
+msgstr "Restart"
+
 msgid "rider"
 msgstr "Rider"
 
@@ -1091,6 +1133,12 @@ msgstr "Message text"
 msgid "spreadsheet"
 msgstr "Spreadsheet"
 
+msgid "start_jobdaemon"
+msgstr "Start"
+
+msgid "stop_jobdaemon"
+msgstr "Stop"
+
 msgid "start_time"
 msgstr "Start Time"
 
@@ -1120,6 +1168,9 @@ msgstr "Template"
 
 msgid "trailer"
 msgstr "Trailer"
+
+msgid "trigger_jobdaemon"
+msgstr "Trigger"
 
 msgid "type_code"
 msgstr "Type Code"
@@ -1336,6 +1387,9 @@ msgstr "All Vehicles"
 
 msgid "vehicles_list_tip"
 msgstr "List all the vehicles"
+
+msgid "version"
+msgstr "Version"
 
 msgid "vrn"
 msgstr "Registration"

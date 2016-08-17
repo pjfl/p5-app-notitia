@@ -21,7 +21,11 @@ $class->set_primary_key( 'id' );
 sub insert {
    my $self = shift; my $job = $self->next::method;
 
-   $self->result_source->schema->application->application->jobdaemon->trigger;
+   my $model = $self->result_source->schema->application;
+
+   my $jobdaemon = $model->application->jobdaemon;
+
+   $jobdaemon->is_running and $jobdaemon->trigger;
 
    return $job;
 }
