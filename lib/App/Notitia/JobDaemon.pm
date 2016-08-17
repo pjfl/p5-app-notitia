@@ -34,8 +34,13 @@ my $_is_lock_set = sub {
 };
 
 my $_build_read_socket = sub {
-   return  IO::Socket::UNIX->new
-      ( Local => $_[ 0 ]->_socket_path->pathname, Type => SOCK_DGRAM, );
+   my $path = $_[ 0 ]->_socket_path;
+   my $socket = IO::Socket::UNIX->new( Local => "${path}", Type => SOCK_DGRAM );
+
+   defined $socket
+      or throw 'Cannot bind to socket [_1]: [_2]', [ $path, $OS_ERROR ];
+
+   return $socket;
 };
 
 my $_build_write_socket = sub {
@@ -54,13 +59,18 @@ my $_build_write_socket = sub {
          $socket and last;
          not $have_warned and $have_warned = TRUE and $self->log->warn
             ( 'Cannot connect to socket '.$self->_socket_path
-              ." ${stopping} ${starting} ${started} ${exists}" );
+              ." ${stopping} ${starting} ${started} ${exists} ${OS_ERROR}" );
       }
 
       if (time - $start > $self->max_wait) {
-         $started or throw 'Job daemon not started';
-         throw 'Write socket timeout [_1] [_2] [_3]',
-               [ $stopping, $starting, $exists ];
+         my $message = 'Write socket timeout';
+
+         $exists   or  $message = 'Socket file not found';
+         $started  or  $message = 'Job daemon not started';
+         $starting and $message = 'Job daemon still starting';
+         $stopping and $message = 'Job daemon still stopping';
+         throw "${message} [_1] [_2] [_3] [_4]",
+               [ $stopping, $starting, $started, $exists ];
       }
 
       nap 0.5;
@@ -123,7 +133,9 @@ my $_stdio_file = sub {
 };
 
 my $_daemon_loop = sub {
-   my $self = shift; my $stopping = FALSE;
+   my $self = shift; my $conf = $self->config; my $stopping = FALSE;
+
+   my $last_run = $conf->tempdir->catfile( $conf->name.'_last_run' )->lock;
 
    while (not $stopping) {
       $self->$_lower_semaphore;
@@ -135,6 +147,8 @@ my $_daemon_loop = sub {
 
          $self->run_cmd( [ sub { $_runjob->( $self, $job ) } ],
                          { async => TRUE, detach => TRUE } );
+
+         $last_run->println( $job->name.'-'.$job->id ); $last_run->close;
 
          $job->delete;
       }
@@ -292,6 +306,7 @@ sub clear : method {
 
    try { $self->lock->reset( k => "${name}_semaphore", p => 666 ) } catch {};
    try { $self->lock->reset( k => "${name}_starting",  p => 666 ) } catch {};
+   try { $self->lock->reset( k => "${name}_stopping",  p => 666 ) } catch {};
    try { $self->lock->reset( k => $name, p => $pid ) } catch {};
 
    $self->_pid_file->exists and $self->_pid_file->unlink;

@@ -552,6 +552,9 @@ msgstr "Goto page [_1]"
 msgid "last_name"
 msgstr "Last Name"
 
+msgid "last_run"
+msgstr "Last Job Run"
+
 msgid "later_page_link"
 msgstr "[_1]"
 
