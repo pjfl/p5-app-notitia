@@ -25,35 +25,44 @@ with    q(App::Notitia::Role::Schema);
 has '+config_class' => default => 'App::Notitia::Config';
 
 # Attribute constructors
+my $_is_lock_set = sub {
+   my ($self, $list, $extn) = @_; my $name = $self->config->name;
+
+   $extn and $name = "${name}_${extn}";
+
+   return is_member $name, map { $_->{key} } @{ $list };
+};
+
 my $_build_read_socket = sub {
    return  IO::Socket::UNIX->new
       ( Local => $_[ 0 ]->_socket_path->pathname, Type => SOCK_DGRAM, );
 };
 
 my $_build_write_socket = sub {
-   my $self = shift; my $name = $self->config->name; my $start = time;
-
-   my $socket; $self->_clear_daemon_pid; my $have_warned = FALSE;
+   my $self = shift; my $have_warned = FALSE; my $start = time; my $socket;
 
    while (TRUE) {
-      my $pid = $self->daemon_pid;
-      my $running = $pid ? $self->is_running : FALSE;
       my $list = $self->lock->list || [];
-      my $lock = is_member $name, map { $_->{key} } @{ $list };
+      my $starting = $self->$_is_lock_set( $list, 'starting' );
+      my $stopping = $self->$_is_lock_set( $list, 'stopping' );
+      my $started = $self->$_is_lock_set( $list );
       my $exists = $self->_socket_path->exists;
 
-      if ($pid and $running and $lock and $exists) {
+      if (not $stopping and not $starting and $started and $exists) {
          $socket = IO::Socket::UNIX->new
             ( Peer => $self->_socket_path->pathname, Type => SOCK_DGRAM, );
          $socket and last;
          not $have_warned and $have_warned = TRUE and $self->log->warn
-            ( 'Cannot connect to socket '.$self->_socket_path.SPC.$pid );
+            ( 'Cannot connect to socket '.$self->_socket_path
+              ." ${stopping} ${starting} ${started} ${exists}" );
       }
 
-      time - $start > $self->max_wait
-         and throw 'Write socket timeout [_1] [_2] [_3] [_4]',
-                   [ $pid, $running, $lock, $exists ];
-      $self->_clear_daemon_pid;
+      if (time - $start > $self->max_wait) {
+         $started or throw 'Job daemon not started';
+         throw 'Write socket timeout [_1] [_2] [_3]',
+               [ $stopping, $starting, $exists ];
+      }
+
       nap 0.5;
    }
 
@@ -63,11 +72,11 @@ my $_build_write_socket = sub {
 };
 
 my $_lower_semaphore = sub {
-   my $self = shift; my $buf = NUL;
+   my $self = shift; my $name = $self->config->name; my $buf = NUL;
 
    $self->read_socket->recv( $buf, 1 ) until ($buf eq 'x');
 
-   $self->lock->reset( k => 'jobqueue_semaphore', p => 666 );
+   $self->lock->reset( k => "${name}_semaphore", p => 666 );
    $self->log->debug( 'Lowered jobqueue semaphore' );
    return;
 };
@@ -89,6 +98,22 @@ my $_runjob = sub {
    };
 
    return OK;
+};
+
+my $_set_started_lock = sub {
+   my ($self, $lock, $name, $pid) = @_;
+
+   unless ($lock->set( k => $name, p => $pid, t => 0, async => TRUE )) {
+      try { $lock->reset( k => "${name}_starting", p => 666 ) } catch {};
+      exit OK;
+   }
+
+   my $path = $self->_socket_path;
+      $path->exists and $path->unlink; $path->close;
+
+   try { $lock->reset( k => "${name}_starting", p => 666 ) } catch {};
+
+   return;
 };
 
 my $_stdio_file = sub {
@@ -124,32 +149,25 @@ my $_daemon = sub {
    $self->log->debug( 'Trying to start the job daemon' );
    $self->config->appclass->env_var( 'debug', $self->debug );
 
-   my $pid  = $PID; my $name = $self->config->name;
+   my $lock = $self->lock; my $name = $self->config->name; my $pid = $PID;
 
-   my $lock = $self->lock->set( k => $name, p => $pid, t => 0, async => TRUE );
+   $self->$_set_started_lock( $lock, $name, $pid );
 
-   $lock or exit OK; $self->log->info( "Started job daemon ${pid}" );
+   $self->log->info( "Started job daemon ${pid}" );
 
    my $reset = sub {
       $self->log->info( "Stopping job daemon ${pid}" );
       $self->read_socket and $self->read_socket->close;
 
-      try   { $self->lock->reset( k => 'jobqueue_semaphore', p => 666 ) }
-      catch {};
-
-      try { $self->lock->reset( k => $name, p => $pid ) } catch {};
+      try { $lock->reset( k => "${name}_stopping", p => 666 ) } catch {};
+      try { $lock->reset( k => "${name}_semaphore", p => 666 ) } catch {};
+      try { $lock->reset( k => $name, p => $pid ) } catch {};
    };
 
-   my $path = $self->_socket_path;
-
-   try {
-      local $SIG{TERM} = sub { $reset->(); exit OK };
-      $path->exists and $path->unlink; $path->close;
-      $self->$_daemon_loop;
-   }
+   try { local $SIG{TERM} = sub { $reset->(); exit OK }; $self->$_daemon_loop }
    catch { $self->log->error( $_ ) };
 
-   try { $reset->() } catch {};
+   $reset->();
 
    exit OK;
 };
@@ -243,18 +261,22 @@ my $_drop_lock = sub {
 };
 
 my $_is_write_socket_stale = sub {
-   my $self = shift;
+   my $self = shift; my $list = $self->lock->list || [];
 
-   my $path = $self->_socket_path; $path->exists or return FALSE;
+   $self->$_is_lock_set( $list, 'starting' ) and return TRUE;
+   $self->$_is_lock_set( $list, 'stopping' ) and return TRUE;
+
+   my $path = $self->_socket_path; $path->exists or return TRUE;
 
    return $path->stat->{ctime} > $self->socket_ctime ? TRUE : FALSE;
 };
 
 my $_raise_semaphore = sub {
    my $self = shift;
+   my $name = $self->config->name;
    my $socket = $self->write_socket or throw 'No write socket';
 
-   $self->lock->set( k => 'jobqueue_semaphore', p => 666, async => TRUE )
+   $self->lock->set( k => "${name}_semaphore", p => 666, async => TRUE )
       or return FALSE;
 
    $socket->send( 'x' );
@@ -268,7 +290,8 @@ sub clear : method {
 
    my $pid = $self->daemon_pid; my $name = $self->config->name;
 
-   try { $self->lock->reset( k => 'jobqueue_semaphore', p => 666 ) } catch {};
+   try { $self->lock->reset( k => "${name}_semaphore", p => 666 ) } catch {};
+   try { $self->lock->reset( k => "${name}_starting",  p => 666 ) } catch {};
    try { $self->lock->reset( k => $name, p => $pid ) } catch {};
 
    $self->_pid_file->exists and $self->_pid_file->unlink;
@@ -291,6 +314,8 @@ sub is_running {
 
 sub restart : method {
    my $self = shift; $self->params->{restart} = [ { expected_rv => 1 } ];
+
+   $self->lock->set( k => $self->config->name.'_stopping', p => 666 );
 
    $self->daemon_pid;
    $self->_daemon_control->pid_running and $self->_daemon_control->do_stop;
@@ -318,6 +343,15 @@ sub show_warnings : method {
 sub start : method {
    my $self = shift; $self->params->{start} = [ { expected_rv => 1 } ];
 
+   my $name = $self->config->name; my $stopping;
+
+   while (not defined $stopping or $stopping) {
+      $stopping = $self->$_is_lock_set( $self->lock->list, 'stopping' );
+      $stopping and nap 0.5
+   }
+
+   $self->lock->set( k => "${name}_starting", p => 666 );
+
    my $rv = $self->_daemon_control->do_start;
 
    $rv == OK and $self->$_raise_semaphore
@@ -334,6 +368,8 @@ sub status : method {
 
 sub stop : method {
    my $self = shift; $self->params->{stop} = [ { expected_rv => 1 } ];
+
+   $self->lock->set( k => $self->config->name.'_stopping', p => 666 );
 
    $self->daemon_pid; my $rv = $self->_daemon_control->do_stop;
 
