@@ -195,6 +195,10 @@ msgstr "Change Password"
 msgid "clear_jobdaemon"
 msgstr "Clear Locks"
 
+msgid "clear_jobdaemon_tip"
+msgstr "With the job daemon stopped there should be no locks left in the"
+       "lock table. Use this button to remove any left over locks"
+
 msgid "colour"
 msgstr "Colour"
 
@@ -531,8 +535,16 @@ msgstr "Command"
 msgid "jobdaemon_management_heading"
 msgstr "Job Daemon"
 
+msgid "jobdaemon_status_job_queue_help"
+msgstr "With the job daemon running jobs should not remain in the queue for "
+       "more than a few seconds. Reload this page to see if the current queue "
+       "of jobs has been processed"
+
 msgid "jobdaemon_status_link"
 msgstr "Status"
+
+msgid "jobdaemon_status_tip"
+msgstr "Job daemon status and control"
 
 msgid "jobdaemon_status_title"
 msgstr "Job Daemon Status"
@@ -946,6 +958,9 @@ msgstr "Resigned"
 msgid "restart_jobdaemon"
 msgstr "Restart"
 
+msgid "restart_jobdaemon_tip"
+msgstr "Restart the job daemon process"
+
 msgid "rider"
 msgstr "Rider"
 
@@ -1033,8 +1048,14 @@ msgstr "Spreadsheet"
 msgid "start_jobdaemon"
 msgstr "Start"
 
+msgid "start_jobdaemon_tip"
+msgstr "Start the job daemon process"
+
 msgid "stop_jobdaemon"
 msgstr "Stop"
+
+msgid "stop_jobdaemon_tip"
+msgstr "Stop the job daemon process"
 
 msgid "start_time"
 msgstr "Start Time"
@@ -1068,6 +1089,9 @@ msgstr "Trailer"
 
 msgid "trigger_jobdaemon"
 msgstr "Trigger"
+
+msgid "trigger_jobdaemon_tip"
+msgstr "Trigger the job daemon causing it to process the job queue"
 
 msgid "type_code"
 msgstr "Type Code"
