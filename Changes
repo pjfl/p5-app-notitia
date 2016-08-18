@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes persmissions on report links
           - Selects events for reports
           - Fixes l10n cache removal by command line programs
           - Fixes #79. No default for text type in mysql

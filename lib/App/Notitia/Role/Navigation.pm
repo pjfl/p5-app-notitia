@@ -138,10 +138,12 @@ my $_admin_people_links = sub {
 my $_admin_report_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
-   $self->$_allowed( $req, 'report/people' ) or return;
+   $self->$_allowed( $req, 'report/people' )
+      or $self->$_allowed( $req, 'report/slots' ) or return;
 
-   push @{ $list },
-      $nav_folder->( $req, 'reports' ),
+   push @{ $list }, $nav_folder->( $req, 'reports' );
+
+   $self->$_allowed( $req, 'report/people' ) and push @{ $list },
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'people_report' ? 'selected' : NUL,
          name => 'people_report', }, 'report/people', [],
@@ -149,7 +151,9 @@ my $_admin_report_links = sub {
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'people_meta_report' ? 'selected' : NUL,
          name => 'people_meta_report', }, 'report/people_meta', [],
-                     period => 'year-to-date' ),
+                     period => 'year-to-date' );
+
+   $self->$_allowed( $req, 'report/slots' ) and push @{ $list },
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'slot_report' ? 'selected' : NUL,
          name => 'slot_report', }, 'report/slots', [],

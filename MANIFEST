@@ -15,6 +15,7 @@ lib/App/Notitia/Constants.pm
 lib/App/Notitia/Controller/CMS.pm
 lib/App/Notitia/Controller/Event.pm
 lib/App/Notitia/Controller/Main.pm
+lib/App/Notitia/Controller/Report.pm
 lib/App/Notitia/Controller/Root.pm
 lib/App/Notitia/Controller/Rota.pm
 lib/App/Notitia/Controller/Vehicle.pm
@@ -33,6 +34,7 @@ lib/App/Notitia/Model/Event.pm
 lib/App/Notitia/Model/MonthRota.pm
 lib/App/Notitia/Model/Person.pm
 lib/App/Notitia/Model/Posts.pm
+lib/App/Notitia/Model/Report.pm
 lib/App/Notitia/Model/Role.pm
 lib/App/Notitia/Model/User.pm
 lib/App/Notitia/Model/Vehicle.pm
@@ -67,6 +69,7 @@ lib/App/Notitia/Schema/Schedule/Result/VehicleRequest.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Certification.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Endorsement.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Event.pm
+lib/App/Notitia/Schema/Schedule/ResultSet/Participent.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Person.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Rota.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Slot.pm
@@ -76,6 +79,7 @@ lib/App/Notitia/Schema/Schedule/ResultSet/Vehicle.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/VehicleRequest.pm
 lib/App/Notitia/Server.pm
 lib/App/Notitia/Util.pm
+lib/App/Notitia/View/CSV.pm
 lib/App/Notitia/View/HTML.pm
 lib/App/Notitia/View/HTML/Markdown.pm
 lib/App/Notitia/View/JSON.pm
