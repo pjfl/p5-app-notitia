@@ -1,6 +1,7 @@
 Revision history for App::Notitia
 
           - Selects events for reports
+          - Fixes l10n cache removal by command line programs
           - Fixes #79. No default for text type in mysql
           - Added report screens to navigation
           - Removed explicite calls to DateTime now

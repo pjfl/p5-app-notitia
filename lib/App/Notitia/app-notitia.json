@@ -41,7 +41,6 @@
          "R": "rider"
       }
    },
-   "l10n_domains": [ "notitia_local", "notitia" ],
    "jslibs": [
       [ "moocore", "mootools/1.6.0/mootools-core.min.js" ],
       [ "moomore", "mootools-more/1.6.0/mootools-more-compressed.js" ]
