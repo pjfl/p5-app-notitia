@@ -4,8 +4,7 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::Util qw( foreign_key_data_type serial_data_type
-                           varchar_data_type );
+use App::Notitia::Util qw( serial_data_type varchar_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -25,6 +24,19 @@ $class->has_many( journeys => "${result}::Journey", 'customer_id' );
 # Private methods
 sub _as_string {
    return $_[ 0 ]->name;
+}
+
+# Public methods
+sub validation_attributes {
+   return { # Keys: constraints, fields, and filters (all hashes)
+      constraints => {
+         name     => { max_length => 64, min_length => 5, },
+      },
+      fields      => {
+         name     => { validate => 'isValidLength isValidText' },
+      },
+      level => 8,
+   };
 }
 
 1;

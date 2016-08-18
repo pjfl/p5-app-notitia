@@ -12,9 +12,9 @@ Class::Usul::Constants->Exception_Class( 'App::Notitia::Exception' );
 Data::Validation::Constants->Exception_Class( 'App::Notitia::Exception' );
 Web::ComposableRequest::Constants->Exception_Class( 'App::Notitia::Exception' );
 
-our @EXPORT = qw( C_DIALOG DOTS HASH_CHAR LOCATION_TYPE_ENUM PIPE_SEP
-                  PRIORITY_TYPE_ENUM SHIFT_TYPE_ENUM SLOT_TYPE_ENUM TILDE
-                  TYPE_CLASS_ENUM VARCHAR_MAX_SIZE );
+our @EXPORT = qw( C_DIALOG DOTS HASH_CHAR PIPE_SEP PRIORITY_TYPE_ENUM
+                  SHIFT_TYPE_ENUM SLOT_TYPE_ENUM TILDE TYPE_CLASS_ENUM
+                  VARCHAR_MAX_SIZE );
 
 sub import {
    my $class       = shift;
@@ -37,7 +37,6 @@ sub HASH_CHAR () { chr 35     }
 sub PIPE_SEP  () { '&nbsp;|&nbsp;' }
 sub TILDE     () { chr 126    }
 
-sub LOCATION_TYPE_ENUM () { [ qw( journey leg ) ] }
 sub PRIORITY_TYPE_ENUM () { [ qw( routine urgent emergency ) ] }
 sub SHIFT_TYPE_ENUM    () { [ qw( day night ) ] }
 sub SLOT_TYPE_ENUM     () { [ qw( controller rider driver ) ] }

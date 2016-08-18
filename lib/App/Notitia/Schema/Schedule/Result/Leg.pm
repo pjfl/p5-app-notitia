@@ -32,6 +32,20 @@ $class->belongs_to( journey   => "${result}::Journey",  'journey_id'   );
 $class->belongs_to( body      => "${result}::Person",   'person_id'    );
 $class->belongs_to( vehicle   => "${result}::Vehicle",  'vehicle_id'   );
 
+# Public methods
+sub validation_attributes {
+   return { # Keys: constraints, fields, and filters (all hashes)
+      fields            => {
+         called         => { validate => 'isValidDate' },
+         collection_eta => { validate => 'isValidDate' },
+         collected      => { validate => 'isValidDate' },
+         delivered      => { validate => 'isValidDate' },
+         on_station     => { validate => 'isValidDate' },
+      },
+      level => 8,
+   };
+}
+
 1;
 
 __END__

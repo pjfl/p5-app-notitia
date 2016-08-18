@@ -36,6 +36,21 @@ $class->belongs_to( pickup       => "${result}::Location", 'pickup_id' );
 
 $class->has_many( legs => "${result}::Leg", 'journey_id' );
 
+# Public methods
+sub validation_attributes {
+   return { # Keys: constraints, fields, and filters (all hashes)
+      constraints      => {
+         notes         => { max_length => VARCHAR_MAX_SIZE(), min_length => 0 },
+         package_other => { max_length => 64, min_length => 0, },
+      },
+      fields           => {
+         notes         => { validate => 'isValidLength isValidText' },
+         package_other => { validate => 'isValidLength isValidText' },
+      },
+      level => 8,
+   };
+}
+
 1;
 
 __END__

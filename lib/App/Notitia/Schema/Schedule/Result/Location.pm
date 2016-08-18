@@ -4,24 +4,19 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( LOCATION_TYPE_ENUM SPC );
-use App::Notitia::Util      qw( enumerated_data_type nullable_varchar_data_type
-                                serial_data_type varchar_data_type );
+use App::Notitia::Util qw( serial_data_type varchar_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
 $class->table( 'location' );
 
 $class->add_columns
-   ( id          => serial_data_type,
-     type        => enumerated_data_type( LOCATION_TYPE_ENUM, 'journey' ),
-     postcode    => nullable_varchar_data_type( 16 ),
-     address     => varchar_data_type( 64 ),
-     coordinates => varchar_data_type( 16 ), );
+   ( id      => serial_data_type,
+     address => varchar_data_type( 64 ), );
 
 $class->set_primary_key( 'id' );
 
-$class->add_unique_constraint( [ 'postcode' ] );
+$class->add_unique_constraint( [ 'address' ] );
 
 $class->has_many( beginnings => "${result}::Leg",      'beginning_id' );
 $class->has_many( dropoffs   => "${result}::Journey",  'dropoff_id'   );
@@ -30,12 +25,20 @@ $class->has_many( pickups    => "${result}::Journey",  'pickup_id'    );
 
 # Private methods
 sub _as_string {
-   return $_[ 0 ]->postcode;
+   return $_[ 0 ]->address;
 }
 
 # Public methods
-sub label {
-   return $_[ 0 ]->address.SPC.$_[ 0 ]->postcode;
+sub validation_attributes {
+   return { # Keys: constraints, fields, and filters (all hashes)
+      constraints => {
+         address  => { max_length => 64, min_length => 5, },
+      },
+      fields      => {
+         address  => { validate => 'isValidLength isValidText' },
+      },
+      level => 8,
+   };
 }
 
 1;
