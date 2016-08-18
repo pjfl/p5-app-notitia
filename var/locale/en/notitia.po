@@ -808,6 +808,9 @@ msgstr "Total"
 msgid "people_meta_report_link"
 msgstr "People Meta Report"
 
+msgid "people_meta_report_tip"
+msgstr "View counts and trends in the membership"
+
 msgid "people_meta_report_title"
 msgstr "People Metadata Summary"
 
@@ -852,6 +855,9 @@ msgstr "Total"
 
 msgid "people_report_link"
 msgstr "People Report"
+
+msgid "people_report_tip"
+msgstr "View the leaderboard of slots claimed by people"
 
 msgid "people_report_title"
 msgstr "People Report"
@@ -1053,6 +1059,10 @@ msgstr "Capacity"
 
 msgid "slot_report_link"
 msgstr "Slot Report"
+
+msgid "slot_report_tip"
+msgstr "View the counts of slots claimed and the filled slots to total slots "
+       "percentage"
 
 msgid "slot_report_title"
 msgstr "Slot Report"
@@ -1257,6 +1267,9 @@ msgstr "Total"
 
 msgid "vehicle_report_link"
 msgstr "Vehicle Report"
+
+msgid "vehicle_report_tip"
+msgstr "View the counts by vehicle of slot assignments"
 
 msgid "vehicle_report_title"
 msgstr "Vehicle Report"
