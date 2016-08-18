@@ -135,6 +135,33 @@ my $_admin_people_links = sub {
    return;
 };
 
+my $_admin_report_links = sub {
+   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
+
+   $self->$_allowed( $req, 'report/people' ) or return;
+
+   push @{ $list },
+      $nav_folder->( $req, 'reports' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'people_report' ? 'selected' : NUL,
+         name => 'people_report', }, 'report/people', [],
+                     period => 'year-to-date' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'people_meta_report' ? 'selected' : NUL,
+         name => 'people_meta_report', }, 'report/people_meta', [],
+                     period => 'year-to-date' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'slot_report' ? 'selected' : NUL,
+         name => 'slot_report', }, 'report/slots', [],
+                     period => 'year-to-date' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'vehicle_report' ? 'selected' : NUL,
+         name => 'vehicle_report', }, 'report/vehicles', [],
+                     period => 'year-to-date' );
+
+   return;
+};
+
 my $_admin_vehicle_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
@@ -278,6 +305,8 @@ sub admin_navigation_links {
          name => 'previous_events' }, 'event/events', [], before => $now->ymd );
 
    $self->$_admin_people_links( $req, $page, $nav );
+
+   $self->$_admin_report_links( $req, $page, $nav );
 
    $self->$_allowed( $req, 'admin/types' ) and push @{ $list },
       $nav_folder->( $req, 'types' ),

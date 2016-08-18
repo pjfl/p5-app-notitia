@@ -161,6 +161,26 @@ sub next_badge_id {
    return $_[ 0 ]->max_badge_id( $_[ 0 ]->max_badge_id + 1 );
 }
 
+sub search_by_period {
+   my ($self, $opts) = @_;
+
+   my $parser = $self->result_source->schema->datetime_parser;
+   my $after  = $parser->format_datetime( $opts->{after} );
+   my $before = $parser->format_datetime( $opts->{before} );
+   my $where  = {
+      $self->me( 'joined' ) => { '!=' => undef },
+      $self->me( 'joined' ) => { '<'  => $before },
+      $self->me( 'resigned' ) => [ { '=' => undef },
+                                   { '>' => $after, '<' => $before } ], };
+   my $cols   = [ 'joined', 'resigned', 'shortcode' ];
+   my $order  = [ $self->me( 'joined' ) ];
+   my $fetch  = [ { 'roles' => 'type' } ];
+
+   $opts = { columns => $cols, order_by => $order, prefetch => $fetch };
+
+   return $self->search( $where, $opts );
+}
+
 sub search_for_people {
    my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
 

@@ -163,6 +163,7 @@ footer {
 .button-help, .link-help {
    display: inline-block; position: relative;
 }
+.date-field { max-width: 100px; }
 .dialog {
    background-color: @dialog-background; border: 2px solid @divider;
    .border-radius; color: @darker; padding: 0.5em 1em;
@@ -183,10 +184,11 @@ footer {
    font-size: 0.75em; height: 20px; left: -20px; margin-right: -23px;
    position: relative; text-align: center; width: 20px;
 }
-.field-label, .field-text {
+.field-label, .field-text, .control-label {
    border: 2px solid transparent; .box-sizing; display: inline-block;
-   margin: 0; min-width: 140px; padding: 3px 0; vertical-align: top;
+   margin: 0; padding: 3px 0; vertical-align: top;
 }
+.field-label, .field-text { min-width: 140px; }
 .footer-nav { list-style-type: none; }
 .form-separator {
    min-height: 2em; overflow: hidden; padding: 1em 0; width: 100%;
@@ -223,16 +225,16 @@ footer {
 .option-label {
    display: inline-block; padding: 0.325em 0; vertical-align: top;
 }
-.pathname, .narrow-field, .single-character, .single-digit, .smallint-field,
-.standard-field {
+.pathname, .date-field, .narrow-field, .single-character, .single-digit,
+.smallint-field, .standard-field {
    background-color: #fff; border: 2px inset; .border-radius;
    .box-sizing; color: @darker; margin: 0;
    padding: 3.25px 0.75em; vertical-align: middle;
 }
 .pathname, .standard-field { min-width: 300px; }
-.pathname[disabled], .narrow-field[disabled], .single-character[disabled],
-.single-digit[disabled], .smallint-field[disabled], .spreadsheet-select,
-.standard-field[disabled] {
+.pathname[disabled], .date-field[disabled], .narrow-field[disabled],
+.single-character[disabled], .single-digit[disabled],
+.smallint-field[disabled], .spreadsheet-select, .standard-field[disabled] {
    background-color: @subtle; color: @darker;
 }
 .prev-rota:before { content: '\2039'; left: 10px; }
@@ -285,7 +287,7 @@ footer {
 }
 .vehicle-not-needed { text-align: center; }
 .wide-form {
-   display: block; max-width: 606px; margin: auto; overflow: hidden;
+   display: block; margin: auto; overflow: hidden; width: 100%;
 }
 .hidden { display: none; }
 /* Notice board */
@@ -873,6 +875,18 @@ table.embeded td { white-space: nowrap; }
    }
    a .show-on-mobiles {
       display: inline !important;
+   }
+}
+@media print {
+   article { min-width: 650px !important; }
+   article h4, .standard-table th {
+      background-color: white; color: black !important;
+   }
+   aside, footer, .main-nav { display: none !important; }
+   body { color: black !important; }
+   .standard-table { box-shadow: 0 0 0 !important; }
+   .standard-table thead {
+      background-color: white; background-image: none !important;
    }
 }
 /* Helper class taken from Bootstrap.

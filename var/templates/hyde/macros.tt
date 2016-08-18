@@ -13,9 +13,7 @@
 [%       CASE 'hidden'; HiddenField( f ); -%]
 [%       CASE 'image'; Image( f ); -%]
 [%       CASE 'label'; Label( f ); -%]
-[%       CASE 'link' -%]
-[%          LinkWithTips( f.href, f.class, f.value, f.hint,
-                          f.tip, f.name, f.container_class ) -%]
+[%       CASE 'link'; Link( f ) -%]
 [%       CASE 'list'; List( f ); -%]
 [%       CASE 'password'; PasswordField( f ); -%]
 [%       CASE 'radio'; RadioButtons( f ); -%]
@@ -33,8 +31,9 @@
 [% BLOCK label %]
 [%    IF f.label -%]
       <label class="label [% f.label_class %]" id="[% f.label_id %]">
-         <span class="field-label [% f.label_field_class %]">
-[%          loc( f.label ) %]</span>[% END -%]
+[%      IF f.label_field_class; class = f.label_field_class; %]
+[%      ELSE; class = 'field-label'; END -%]
+         <span class="[% class %]">[% loc( f.label ) %]</span>[% END -%]
 [%       content -%]
 [%    IF f.label -%]</label>[% END -%]
 [% END -%]
@@ -117,17 +116,23 @@
 [%    Dispatch( f.content ) %]
 [% END -%]
 [%# -%]
-[% MACRO Link( href, class, content, id ) BLOCK -%]
-      <a class="[% class %]" href="[% href %]"[% IF id -%]
-            id="[% id %]"[% END %]>
-[%    IF reference( content ) == 'HASH'; Dispatch( content ) -%]
-[%    ELSE; content; END %]</a>
+[% MACRO Link( f ) BLOCK -%]
+[%    IF f.tip %]<span class="link-help [% f.container_class %] tips"
+           title="[% f.hint _ ' ~ ' _ f.tip %]">[% END %]
+      <a class="[% f.class %]" href="[% f.href %]"
+[%       IF f.download -%] download="[% f.download %]"[% END -%]
+[%       IF f.name -%] id="[% f.name %]"[% END %]>
+[%    IF reference( f.value ) == 'HASH'; Dispatch( f.value ) -%]
+[%    ELSE; f.value; END %]</a>[% IF f.tip %]</span>[% END %]
 [% END -%]
 [%# -%]
-[% MACRO LinkWithTips( href, class, text, title, tip, id, con_class ) BLOCK -%]
-[%    IF tip %]<span class="link-help [% con_class %] tips"
-           title="[% title _ ' ~ ' _ tip %]">[% END -%]
-[%       Link( href, class, text, id ) %][% IF tip %]</span>[% END %]
+[% MACRO LinkWithTips( href, class, value, hint, tip, id, conk ) BLOCK -%]
+[%    IF tip %]<span class="link-help [% conk %] tips"
+           title="[% hint _ ' ~ ' _ tip %]">[% END -%]
+      <a class="[% class %]" href="[% href %]"[% IF id -%]
+            id="[% id %]"[% END %]>
+[%    IF reference( value ) == 'HASH'; Dispatch( value ) -%]
+[%    ELSE; value; END %]</a>[% IF tip %]</span>[% END %]
 [% END -%]
 [%# -%]
 [% MACRO List( f ) BLOCK -%]
@@ -182,7 +187,9 @@
       <thead>
          <tr>
 [%       FOR cell IN f.headers -%]
-           <th class="[% cell.class %]">[% cell.value %]</th>
+           <th class="[% cell.class %]">
+[%          IF reference( cell.value ) == 'HASH'; Dispatch( cell.value ) %]
+[%          ELSE; cell.value; END %]</th>
 [%       END -%]
          </tr>
       </thead>
