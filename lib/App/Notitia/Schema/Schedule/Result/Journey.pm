@@ -3,7 +3,7 @@ package App::Notitia::Schema::Schedule::Result::Journey;
 use strictures;
 use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( PRIORITY_TYPE_ENUM );
+use App::Notitia::Constants qw( FALSE PRIORITY_TYPE_ENUM TRUE );
 use App::Notitia::Util      qw( bool_data_type enumerated_data_type
                                 foreign_key_data_type serial_data_type
                                 set_on_create_datetime_data_type
@@ -19,6 +19,7 @@ $class->add_columns
      priority          => enumerated_data_type( PRIORITY_TYPE_ENUM, 'routine' ),
      original_priority => enumerated_data_type( PRIORITY_TYPE_ENUM, 'routine' ),
      requested         => set_on_create_datetime_data_type,
+     controller_id     => foreign_key_data_type,
      customer_id       => foreign_key_data_type,
      pickup_id         => foreign_key_data_type,
      dropoff_id        => foreign_key_data_type,
@@ -29,6 +30,7 @@ $class->add_columns
 
 $class->set_primary_key( 'id' );
 
+$class->belongs_to( controller   => "${result}::Person",   'controller_id' );
 $class->belongs_to( customer     => "${result}::Customer", 'customer_id' );
 $class->belongs_to( dropoff      => "${result}::Location", 'dropoff_id' );
 $class->belongs_to( package_type => "${result}::Type",     'package_type_id' );
@@ -37,6 +39,28 @@ $class->belongs_to( pickup       => "${result}::Location", 'pickup_id' );
 $class->has_many( legs => "${result}::Leg", 'journey_id' );
 
 # Public methods
+sub insert {
+   my $self    = shift;
+   my $columns = { $self->get_inflated_columns };
+
+   $columns->{original_priority} = $columns->{priority};
+
+   $self->set_inflated_columns( $columns );
+
+   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   return $self->next::method;
+}
+
+sub update {
+   my ($self, $columns) = @_;
+
+   $columns and $self->set_inflated_columns( $columns );
+   $self->validate( TRUE );
+
+   return $self->next::method;
+}
+
 sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       constraints      => {

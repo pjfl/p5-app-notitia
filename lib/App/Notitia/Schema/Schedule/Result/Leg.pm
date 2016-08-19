@@ -3,8 +3,9 @@ package App::Notitia::Schema::Schedule::Result::Leg;
 use strictures;
 use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::Util qw( date_data_type foreign_key_data_type
-                           serial_data_type );
+use App::Notitia::Constants qw( TRUE );
+use App::Notitia::Util      qw( date_data_type foreign_key_data_type
+                                serial_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -13,7 +14,7 @@ $class->table( 'leg' );
 $class->add_columns
    (  id             => serial_data_type,
       journey_id     => foreign_key_data_type,
-      person_id      => foreign_key_data_type,
+      operator_id    => foreign_key_data_type,
       vehicle_id     => foreign_key_data_type,
       beginning_id   => foreign_key_data_type,
       ending_id      => foreign_key_data_type,
@@ -29,10 +30,27 @@ $class->set_primary_key( 'id' );
 $class->belongs_to( beginning => "${result}::Location", 'beginning_id' );
 $class->belongs_to( ending    => "${result}::Location", 'ending_id'    );
 $class->belongs_to( journey   => "${result}::Journey",  'journey_id'   );
-$class->belongs_to( body      => "${result}::Person",   'person_id'    );
+$class->belongs_to( operator  => "${result}::Person",   'operator_id'  );
 $class->belongs_to( vehicle   => "${result}::Vehicle",  'vehicle_id'   );
 
 # Public methods
+sub insert {
+   my $self = shift;
+
+   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   return $self->next::method;
+}
+
+sub update {
+   my ($self, $columns) = @_;
+
+   $columns and $self->set_inflated_columns( $columns );
+   $self->validate( TRUE );
+
+   return $self->next::method;
+}
+
 sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       fields            => {

@@ -4,7 +4,8 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::Util qw( serial_data_type varchar_data_type );
+use App::Notitia::Constants qw( TRUE );
+use App::Notitia::Util      qw( serial_data_type varchar_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -29,6 +30,23 @@ sub _as_string {
 }
 
 # Public methods
+sub insert {
+   my $self = shift;
+
+   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   return $self->next::method;
+}
+
+sub update {
+   my ($self, $columns) = @_;
+
+   $columns and $self->set_inflated_columns( $columns );
+   $self->validate( TRUE );
+
+   return $self->next::method;
+}
+
 sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       constraints => {
