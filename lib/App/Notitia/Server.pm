@@ -6,19 +6,10 @@ use App::Notitia::Util     qw( authenticated_only enhance );
 use Class::Usul;
 use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( ensure_class_loaded );
-use Class::Usul::Types     qw( HashRef LoadableClass Object Plinth );
+use Class::Usul::Types     qw( HashRef Plinth );
 use HTTP::Status           qw( HTTP_FOUND );
 use Plack::Builder;
 use Web::Simple;
-
-# Public attributes
-has 'jobdaemon' => is => 'lazy', isa => Object, builder => sub {
-   $_[ 0 ]->jobdaemon_class->new( {
-      appclass => $_[ 0 ]->config->appclass, config => { name => 'jobdaemon' },
-      noask => TRUE } ) };
-
-has 'jobdaemon_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
-   default  => 'App::Notitia::JobDaemon';
 
 # Private attributes
 has '_config_attr' => is => 'ro', isa => HashRef,

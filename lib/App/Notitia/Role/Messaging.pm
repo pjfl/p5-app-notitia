@@ -12,7 +12,7 @@ use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Functions  qw( create_token throw );
 use Moo::Role;
 
-requires qw( config dialog_stash moniker );
+requires qw( components config dialog_stash moniker );
 
 # Private functions
 my $_plate_label = sub {
@@ -157,6 +157,10 @@ sub create_totp_request_email {
    $conf->sessdir->catfile( $token )->println( $scode );
 
    return $self->$_create_send_email_job( $stash, $template )->id;
+}
+
+sub jobdaemon {
+   return $_[ 0 ]->components->{daemon}->jobdaemon;
 }
 
 sub message_create {

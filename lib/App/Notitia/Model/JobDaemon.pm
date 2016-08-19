@@ -7,6 +7,7 @@ use App::Notitia::Form      qw( blank_form p_button p_row
 use App::Notitia::Util      qw( locm make_tip register_action_paths
                                 to_msg uri_for_action );
 use Class::Usul::Time       qw( time2str );
+use Class::Usul::Types      qw( LoadableClass Object );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -18,6 +19,14 @@ with    q(App::Notitia::Role::Schema);
 
 # Public attributes
 has '+moniker' => default => 'daemon';
+
+has 'jobdaemon' => is => 'lazy', isa => Object, builder => sub {
+   $_[ 0 ]->jobdaemon_class->new( {
+      appclass => $_[ 0 ]->config->appclass, config => { name => 'jobdaemon' },
+      noask => TRUE } ) };
+
+has 'jobdaemon_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
+   default => 'App::Notitia::JobDaemon';
 
 register_action_paths
    'daemon/status' => 'jobdaemon-status';
@@ -52,7 +61,7 @@ my $_lock_table_headers = sub {
 my $_get_jobdaemon_status = sub {
    my ($self, $req) = @_; my $conf = $self->config;
 
-   my $jobdaemon  = $self->application->jobdaemon;
+   my $jobdaemon  = $self->jobdaemon;
    my $is_running = $jobdaemon->is_running;
    my $daemon_pid = $jobdaemon->daemon_pid;
    my $start_time = time2str '%Y-%m-%d %H:%M:%S', $jobdaemon->socket_ctime;
@@ -88,9 +97,7 @@ my $_lock_table = sub {
 
 # Public methods
 sub clear_action : Role(administrator) {
-   my ($self, $req) = @_;
-
-   $self->application->jobdaemon->clear;
+   my ($self, $req) = @_; $self->jobdaemon->clear;
 
    my $message = [ to_msg 'Clearing job daemon locks' ];
 
@@ -135,9 +142,7 @@ sub status : Role(administrator) {
 };
 
 sub restart_action : Role(administrator) {
-   my ($self, $req) = @_;
-
-   $self->application->jobdaemon->restart;
+   my ($self, $req) = @_; $self->jobdaemon->restart;
 
    my $message = [ to_msg 'Restarting job daemon' ];
 
@@ -145,9 +150,7 @@ sub restart_action : Role(administrator) {
 }
 
 sub start_action : Role(administrator) {
-   my ($self, $req) = @_;
-
-   $self->application->jobdaemon->start;
+   my ($self, $req) = @_; $self->jobdaemon->start;
 
    my $message = [ to_msg 'Starting job daemon' ];
 
@@ -155,9 +158,7 @@ sub start_action : Role(administrator) {
 }
 
 sub stop_action : Role(administrator) {
-   my ($self, $req) = @_;
-
-   $self->application->jobdaemon->stop;
+   my ($self, $req) = @_; $self->jobdaemon->stop;
 
    my $message = [ to_msg 'Stopping job daemon' ];
 
@@ -165,9 +166,7 @@ sub stop_action : Role(administrator) {
 }
 
 sub trigger_action : Role(administrator) {
-   my ($self, $req) = @_;
-
-   $self->application->jobdaemon->trigger;
+   my ($self, $req) = @_; $self->jobdaemon->trigger;
 
    my $message = [ to_msg 'Triggering the job daemon' ];
 
