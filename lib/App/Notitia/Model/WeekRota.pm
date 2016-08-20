@@ -214,7 +214,9 @@ my $_vehicle_label = sub {
 
    my $keeper = $_find_keeper->( $data->{journal}->{ $vrn }, $data->{start} );
    my $distance = $_calculate_distance->( $keeper, $data->{assignee} );
-      $distance = int( 5 * $distance / 8 ); 
+
+   $distance = int( 5 * $distance / 8 ); # Kilometers to miles
+
    return $distance ? $vehicle->name." (${distance} mls)" : $vehicle->name;
 };
 
@@ -281,9 +283,9 @@ my $_alloc_cell_slot_row = sub {
 };
 
 my $_alloc_key_row = sub {
-   my ($req, $assets, $now, $vehicle) = @_;
+   my ($req, $assets, $keeper_dt, $vehicle) = @_;
 
-   my $keeper = $assets->find_last_keeper( $req, $now, $vehicle );
+   my $keeper = $assets->find_last_keeper( $req, $keeper_dt, $vehicle );
    my $details = $vehicle->name.', '.$vehicle->notes.', '.$vehicle->vrn;
    my $style = NUL; $vehicle->colour
       and $style = 'background-color: '.$vehicle->colour.';';
@@ -306,15 +308,14 @@ my $_alloc_key_row = sub {
 };
 
 my $_alloc_key_headers = sub {
-   my ($req, $date) = @_;
+   my ($req, $keeper_dt) = @_;
 
-   my $local_dt = $_local_dt->( $date );
    my @headings = ( 'Vehicle Details', 'Type', 'R',
-                    join(' ', 'Keeper at', $local_dt->day_abbr, 
-                              $local_dt->day, $local_dt->month_abbr), 
-                    'Keeper Location' );
+                    'Keeper at [_1] [_2] [_3]', 'Keeper Location' );
 
-   return [ map { { class => 'rota-header', value => locm $req, $_ } }
+   return [ map { { class => 'rota-header', value => locm $req, $_,
+                    $keeper_dt->day_abbr, $keeper_dt->day,
+                    $keeper_dt->month_abbr } }
             @headings  ];
 };
 
