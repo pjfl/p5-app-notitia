@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds badge_excludes range to max_badge_id
           - Fixes persmissions on report links
           - Selects events for reports
           - Fixes l10n cache removal by command line programs

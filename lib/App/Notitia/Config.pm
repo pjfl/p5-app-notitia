@@ -84,6 +84,9 @@ has 'assetdir'        => is => 'lazy', isa => Path, coerce => TRUE,
 has 'assets'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'assets';
 
+has 'badge_excludes'  => is => 'ro',   isa => ArrayRef[PositiveInt],
+   builder            => sub { [ 0, 0 ] };
+
 has 'badge_mtime'     => is => 'lazy', isa => Path, coerce => TRUE,
    builder            => sub { $_[ 0 ]->tempdir->catfile( 'badge_mtime' ) };
 
@@ -387,6 +390,11 @@ containing user uploaded files
 
 A non empty simple string that defaults to F<assets>. Relative URI
 that locates the asset files uploaded by users
+
+=item C<badge_excludes>
+
+An array reference of positive integers which defaults to C<[ 0, 0 ]>. Numbers
+in this range will be ignored by the maximum badge id method
 
 =item C<badge_mtime>
 

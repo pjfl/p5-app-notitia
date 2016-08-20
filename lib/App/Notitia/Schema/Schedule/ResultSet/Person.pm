@@ -47,9 +47,12 @@ my $_load_cache = sub {
 };
 
 my $_set_max_badge_id = sub {
-   my ($self, $v) = @_; my $dir = $self->result_source->schema->config->ctrldir;
+   my ($self, $v) = @_; my $conf = $self->result_source->schema->config;
 
-   $dir->catfile( 'max_badge_id' )->lock->println( $v );
+   $v >= $conf->badge_excludes->[ 0 ] and $v <= $conf->badge_excludes->[ 1 ]
+      and $v = $conf->badge_excludes->[ 1 ] + 1;
+
+   $conf->ctrldir->catfile( 'max_badge_id' )->lock->println( $v );
 
    return $v;
 };
@@ -138,7 +141,7 @@ sub max_badge_id {
    my ($self, $v) = @_;
 
    defined $v and $v > $_max_badge_id->[ 1 ]
-       and return $self->$_set_max_badge_id( $_max_badge_id->[ 1 ] = $v );
+       and return $_max_badge_id->[ 1 ] = $self->$_set_max_badge_id( $v );
 
    my $conf    = $self->result_source->schema->config;
    my $file    = $conf->badge_mtime; $file->exists or $file->touch;
@@ -146,15 +149,21 @@ sub max_badge_id {
 
    $f_mtime <= $_max_badge_id->[ 0 ] and return $_max_badge_id->[ 1 ];
 
-   my $max_s = $self->$_get_max_badge_id;
-   my $rs    = $self->search( { 'badge_id' => { '!=' => undef } } );
-   my $max_c = $rs->get_column( 'badge_id' )->max;
+   my $max_f = $self->$_get_max_badge_id;
+   my $where = { 'badge_id' => { '!=' => undef } };
+
+   $conf->badge_excludes->[ 0 ] and
+      $where = { 'badge_id' => [ -and => { '!=' => undef }, [ -or => {
+         '<' => $conf->badge_excludes->[ 0 ] }, {
+            '>' => $conf->badge_excludes->[ 1 ] } ] ] };
+
+   my $max_d = $self->search( $where )->get_column( 'badge_id' )->max;
    my $max   = $_max_badge_id->[ 1 ]; $_max_badge_id->[ 0 ] = $f_mtime;
 
-   $max_s and $max_s > $max and $max = $max_s;
-   $max_c and $max_c > $max and $max = $max_c;
+   $max_f and $max_f > $max and $max = $max_f;
+   $max_d and $max_d > $max and $max = $max_d;
 
-   return $self->$_set_max_badge_id( $_max_badge_id->[ 1 ] = $max );
+   return $_max_badge_id->[ 1 ] = $self->$_set_max_badge_id( $max );
 }
 
 sub next_badge_id {
