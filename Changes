@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Add mobile phone to assignment tip popup
           - Make vehicle allocation key table headers translatable
           - Adds badge_excludes range to max_badge_id
           - Fixes persmissions on report links
