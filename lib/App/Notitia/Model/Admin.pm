@@ -25,7 +25,8 @@ register_action_paths
    'admin/slot_certs' => 'slot-certs',
    'admin/slot_roles' => 'slot-roles',
    'admin/type'       => 'type',
-   'admin/types'      => 'types';
+   'admin/types'      => 'types',
+   'admin/logs'       => 'logs';
 
 # Construction
 around 'get_stash' => sub {
@@ -284,6 +285,40 @@ sub type : Role(administrator) {
 
    return $self->get_stash( $req, $page );
 }
+
+sub logs : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $moniker =  $self->moniker;
+   my $logtype =  $req->query_params->( 'logtype', { optional => TRUE } );
+   my $form    =  blank_form;
+   my $conf    =  $self->config;
+   my $title   =  loc( $req, 'logs_title');
+      $logtype and $title .= " - $logtype";
+   
+   my $logfile = $logtype eq 'server' ? 'server.log' : 'activity.log';
+   my $page    =  {
+      forms => [ $form ],
+      title => $title
+   };
+
+   my $table = p_table $form, { headers => [{value => loc($req, "logs_header_date")},
+                                            {value => loc($req, "logs_header_level")},
+                                            {value => loc($req, "logs_header_detail")} ] };
+   
+   my $file  = $conf->logsdir->catfile( $logfile );
+
+   if ( $file->exists ) {
+      $file->assert_open();
+      while ( my $line = $file->chomp->getline ) {
+          my @fields = split(/\s+/, $line, 5);
+          p_row $table, [{value=>join(' ', @fields[0..2])},{value=>$fields[3]},{value=>$fields[4]} ];
+      }
+   }
+
+   return $self->get_stash( $req, $page );
+}
+
 
 sub types : Role(administrator) {
    my ($self, $req) = @_;

@@ -185,6 +185,24 @@ my $_admin_vehicle_links = sub {
    return;
 };
 
+
+my $_admin_log_links = sub {
+   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
+
+   push @{ $list },
+      $nav_folder->( $req, 'logs' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'activity' ? 'selected' : NUL,
+         name => 'activity_log' }, 'logs', [], logtype => 'activity' ),
+
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'server' ? 'selected' : NUL,
+         name => 'server_log' }, 'logs', [], logtype => 'server');
+
+   return;
+};
+
+
 my $_rota_month_links = sub {
    my ($self, $req, $actionp, $name, $f_dom, $local_dt, $nav) = @_;
 
@@ -323,6 +341,9 @@ sub admin_navigation_links {
 
    $self->$_allowed( $req, 'asset/vehicles' )
       and $self->$_admin_vehicle_links( $req, $page, $nav );
+
+   $self->$_allowed( $req, 'admin/logs' )
+      and $self->$_admin_log_links( $req, $page, $nav );
 
    return $nav;
 }

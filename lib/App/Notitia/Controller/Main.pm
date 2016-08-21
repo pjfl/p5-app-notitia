@@ -30,6 +30,7 @@ sub dispatch_request {
    sub (GET  + /types                 + ?*) { [ 'admin/types',           @_ ] },
    sub (POST + /type/**               + ?*) { [ 'admin/from_request',    @_ ] },
    sub (GET  + /type/**  | /type/*    + ?*) { [ 'admin/type',            @_ ] },
+   sub (GET  + /logs                  + ?*) { [ 'admin/logs',            @_ ] },
 }
 
 1;

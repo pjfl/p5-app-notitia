@@ -18,6 +18,9 @@ msgstr ""
 msgid "active"
 msgstr "Active"
 
+msgid "activity_log_link"
+msgstr "Activity"
+
 msgid "add_certification"
 msgstr "Add Certification"
 
@@ -543,6 +546,21 @@ msgstr "Please Login"
 msgid "logo_tip"
 msgstr "[_1] home page"
 
+msgid "logs_title"
+msgstr "Logs"
+
+msgid "logs_header_date"
+msgstr "Date"
+
+msgid "logs_header_detail"
+msgstr "Detail"
+
+msgid "logs_header_level"
+msgstr "Level"
+
+msgid "logs_management_heading"
+msgstr "Logs"
+
 msgid "m_advanced"
 msgstr "Advanced Motorcycle"
 
@@ -1017,6 +1035,9 @@ msgstr "Route"
 
 msgid "select_person"
 msgstr "Select Person"
+
+msgid "server_log_link"
+msgstr "Server"
 
 msgid "service_vehicles_link"
 msgstr "Service Vehicles"
