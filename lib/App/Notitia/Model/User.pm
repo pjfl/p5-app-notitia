@@ -8,6 +8,7 @@ use App::Notitia::Util      qw( check_form_field js_server_config
                                 locm register_action_paths set_element_focus
                                 to_msg uri_for_action );
 use Class::Usul::Functions  qw( create_token throw );
+use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Types      qw( ArrayRef );
 use HTTP::Status            qw( HTTP_OK );
 use Try::Tiny;
@@ -229,6 +230,10 @@ sub login_action : Role(anon) {
    my $location  = $wanted ? $req->uri_for( $wanted )
                  : uri_for_action $req, $self->config->places->{login_action};
 
+   get_logger( 'activity' )->log( 'user:'.$req->session->user_label.SPC.
+                                  'client:'.$req->address.SPC.
+                                  'action:logged-in');
+
    return { redirect => { location => $location, message => $message } };
 }
 
@@ -239,6 +244,10 @@ sub logout_action : Role(any) {
       $message = [ to_msg '[_1] logged out', $req->session->user_label ];
       $_clear_session->( $req->session );
    }
+
+   get_logger( 'activity' )->log( 'user:'.$req->session->user_label.SPC.
+                                  'client:'.$req->address.SPC.
+                                  'action:logged-out');
 
    return { redirect => { location => $req->base, message => $message } };
 }
