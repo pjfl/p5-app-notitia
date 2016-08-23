@@ -230,9 +230,9 @@ sub login_action : Role(anon) {
    my $location  = $wanted ? $req->uri_for( $wanted )
                  : uri_for_action $req, $self->config->places->{login_action};
 
-   get_logger( 'activity' )->log( 'user:'.$req->session->user_label.SPC.
+   get_logger( 'activity' )->log( 'user:'.$req->username.SPC.
                                   'client:'.$req->address.SPC.
-                                  'action:logged-in');
+                                  'action:logged-in' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -245,9 +245,9 @@ sub logout_action : Role(any) {
       $_clear_session->( $req->session );
    }
 
-   get_logger( 'activity' )->log( 'user:'.$req->session->user_label.SPC.
+   get_logger( 'activity' )->log( 'user:'.$req->username.SPC.
                                   'client:'.$req->address.SPC.
-                                  'action:logged-out');
+                                  'action:logged-out' );
 
    return { redirect => { location => $req->base, message => $message } };
 }

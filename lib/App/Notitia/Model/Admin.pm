@@ -6,9 +6,11 @@ use App::Notitia::Constants qw( FALSE NUL PIPE_SEP
 use App::Notitia::Form      qw( blank_form f_link f_tag p_button p_container
                                 p_list p_select p_row p_table p_textfield );
 use App::Notitia::Util      qw( loc locm make_tip management_link
-                                register_action_paths to_msg uri_for_action );
+                                page_link_set register_action_paths to_msg
+                                uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
+use Data::Page;
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -22,7 +24,7 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'admin';
 
 register_action_paths
-   'admin/log'        => 'logs',
+   'admin/logs'       => 'log',
    'admin/slot_certs' => 'slot-certs',
    'admin/slot_roles' => 'slot-roles',
    'admin/type'       => 'type',
@@ -58,18 +60,48 @@ my $_list_slot_certs = sub {
                           { prefetch    => 'certification_type' } )->all ];
 };
 
+my $_log_user_label = sub {
+   my ($data, $field) = @_; (my $scode = $field) =~ s{ \A .+ : }{}mx;
+
+   exists $data->{cache}->{ $scode } and return $data->{cache}->{ $scode };
+
+   my $label = $data->{person_rs}->find_by_shortcode( $scode )->label;
+
+   return $data->{cache}->{ $scode } = $label;
+};
+
+my $_log_columns = sub {
+   my ($data, $logname, $line) = @_; my @fields = split SPC, $line, 5;
+
+   my @cols = [ (join SPC, @fields[ 0 .. 2 ]), 'log-date' ];
+
+   if ($logname eq 'activity') {
+      my @subfields = split SPC, $fields[ 4 ], 4;
+
+      push @cols, [ $_log_user_label->( $data, $subfields[ 0 ] ), 'log-user' ];
+      push @cols,
+         [ (map { s{ \A .+ : }{}mx; $_ } $subfields[ 1 ]), 'log-client' ];
+      push @cols,
+         [ (map { s{ \A .+ : }{}mx; $_ } $subfields[ 2 ]), 'log-action' ];
+      push @cols, [ $subfields[ 3 ], 'log-detail' ];
+   }
+   else {
+      my $value = $fields[ 3 ]; $value =~ s{ [\[\]] }{}gmx;
+      my $level = lc $value;
+
+      push @cols, [ $value, "log-${level}-level" ];
+      push @cols, [ $fields[ 4 ], 'log-detail' ];
+   }
+
+   return @cols;
+};
+
 my $_log_headers = sub {
    my ($req, $logname) = @_; my $max = 2; my $header = 'log_header';
 
    $logname eq 'activity' and $max = 4 and $header = "${logname}_${header}";
 
    return [ map { { value => loc $req, "${header}_${_}" } } 0 .. $max ];
-};
-
-my $_log_level_cell = sub {
-   my $field = shift; $field =~ s{ [\[\]] }{}gmx; my $level = lc $field;
-
-   return [ $field, "log-${level}-level" ];
 };
 
 my $_maybe_find_type = sub {
@@ -187,34 +219,39 @@ sub logs : Role(administrator) {
       forms => [ $form ],
       title => locm $req, 'logs_title', locm $req, ucfirst $logname,
    };
-   my $table = p_table $form, {
-      class => 'smaller-table', headers => $_log_headers->( $req, $logname ) };
-   my $file = $self->config->logsdir->catfile( "${logname}.log" )->chomp;
+   my $dir = $self->config->logsdir;
+   my $file = $dir->catfile( "${logname}.log" )->backwards->chomp;
 
    $file->exists or return $self->get_stash( $req, $page );
+
+   my $pageno = $req->query_params->( 'page', { optional => TRUE } ) || 1;
+   my $rows_pp = $req->session->rows_per_page;
+   my $first = $rows_pp * ($pageno - 1);
+   my $last = $rows_pp * $pageno - 1;
+   my $data = { cache => {}, person_rs => $self->schema->resultset( 'Person' )};
+   my $lno = 0; my @rows;
 
    while (defined (my $line = $file->getline)) {
       $line =~ m{ \A [a-zA-z]{3} [ ] \d+ [ ] \d+ : }mx or next;
 
-      my @fields = split SPC, $line, 5;
-      my @cols = [ (join SPC, @fields[ 0 .. 2 ]), 'log-date' ];
+      $lno < $first and ++$lno and next; $lno > $last and ++$lno and next;
 
-      if ($logname eq 'activity') {
-         my @subfields = split SPC, $fields[ 4 ], 4;
-
-         push @cols, [ map { s{ \A .+ : }{}mx; $_ } $subfields[ 0 ] ];
-         push @cols, [ map { s{ \A .+ : }{}mx; $_ } $subfields[ 1 ] ];
-         push @cols, [ map { s{ \A .+ : }{}mx; $_ } $subfields[ 2 ] ];
-         push @cols, [ $subfields[ 3 ], 'log-detail' ];
-      }
-      else {
-         push @cols, $_log_level_cell->( $fields[ 3 ] );
-         push @cols, [ $fields[ 4 ], 'log-detail' ];
-      }
-
-      p_row $table, [ map { { class => $_->[ 1 ], value => $_->[ 0 ] } }
-                      @cols ];
+      push @rows, [ map { { class => $_->[ 1 ], value => $_->[ 0 ] } }
+                    $_log_columns->( $data, $logname, $line ) ];
+      $lno++;
    }
+
+   my $moniker = $self->moniker;
+   my $dp = Data::Page->new( $lno, $rows_pp, $pageno );
+   my $links = [ page_link_set $req, "${moniker}/logs", [ $logname ], {}, $dp ];
+
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
+
+   my $table = p_table $form, {
+      class => 'smaller-table', headers => $_log_headers->( $req, $logname ) };
+
+   p_row $table, [ @rows ];
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }

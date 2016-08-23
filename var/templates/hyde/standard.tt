@@ -14,9 +14,9 @@
       <div class="unit four-fifths">
          <article>
             <h4>[% page.title %]</h4>
-[%    FOR form IN page.forms -%]
-[%       Dispatch( form ) -%]
-[%    END -%]
+[%       FOR form IN page.forms -%]
+[%          Dispatch( form ) -%]
+[%       END -%]
          </article>
       </div>
 [%    END -%]

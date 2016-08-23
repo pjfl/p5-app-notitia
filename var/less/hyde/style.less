@@ -622,10 +622,12 @@ article h2:first-child, { margin-top: 0; }
 .rota-link { display: block; }
 table.month-rota { font-size: 0.625em; width: 100%; }
 td.embeded { padding: 0 !important; }
-td.log-date, { width: 1%; }
+td.log-date, td.log-action, td.log-client, td.log-user {
+   white-space: nowrap; width: 1%;
+}
 td.log-date, td.log-detail, td.log-debug-level, td.log-error-level,
 td.log-info-level, td.log-warning-level {
-   line-height: 18px;
+   line-height: 24px;
 }
 td.month-rota { padding: 0 !important; }
 td.month-rota.submit, td.month-rota.server, td.week-rota.server,

@@ -8,6 +8,7 @@ requires "DBIx::Class" => "0.08204";
 requires "DBIx::Class::InflateColumn::Object::Enum" => "0.04";
 requires "DBIx::Class::TimeStamp" => "0.14";
 requires "Daemon::Control" => "0.001006";
+requires "Data::Page" => "2.02";
 requires "Data::Record" => "0.02";
 requires "Data::Validation" => "v0.25.0";
 requires "DateTime" => "1.19";

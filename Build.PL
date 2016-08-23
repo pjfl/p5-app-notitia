@@ -30,6 +30,7 @@ my $prereqs  = {
     'DBIx::Class::InflateColumn::Object::Enum' => '0.04',
     'DBIx::Class::TimeStamp' => '0.14',
     'Daemon::Control' => '0.001006',
+    'Data::Page' => '2.02',
     'Data::Record' => '0.02',
     'Data::Validation' => 'v0.25.0',
     'DateTime' => '1.19',
