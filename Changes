@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds display controls to log viewer
           - Adds pages queries to log viewer
           - Add more logs and a restful uri scheme
           - Make logs viewable in the application (by admin)

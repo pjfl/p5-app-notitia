@@ -510,6 +510,15 @@ msgstr "Events"
 msgid "Exception Handler"
 msgstr "I'm sorry [_1], I can't do that"
 
+msgid "filter_column"
+msgstr "Column"
+
+msgid "filter_log"
+msgstr "Filter"
+
+msgid "filter_pattern"
+msgstr "Matches"
+
 msgid "first_name"
 msgstr "First Name"
 

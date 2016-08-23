@@ -70,7 +70,9 @@ nav {
       }
    }
 }
-.operation-links { margin-bottom: 5px; margin-top: 5px; width: 100%; }
+.operation-links {
+   margin-bottom: 5px; margin-top: 5px; overflow: hidden; width: 100%;
+}
 .panel button { color: @contrast; }
 .panel form { display: inline; }
 .togglers:focus { outline: none; }
@@ -163,6 +165,7 @@ footer {
 .button-help, .link-help {
    display: inline-block; position: relative;
 }
+.control-label { font-size: 0.75em; }
 .date-field { max-width: 100px; }
 .dialog {
    background-color: @dialog-background; border: 2px solid @divider;
@@ -189,6 +192,7 @@ footer {
    margin: 0; padding: 3px 0; vertical-align: top;
 }
 .field-label, .field-text { min-width: 140px; }
+.filter-column, .filter-pattern { font-size: 0.75em; }
 .footer-nav { list-style-type: none; }
 .form-separator {
    min-height: 2em; overflow: hidden; padding: 1em 0; width: 100%;
@@ -204,6 +208,7 @@ footer {
 .log-debug-level { color: orange; }
 .log-error-level { color: red; }
 .log-detail { max-width: 530px; }
+.log-links { margin: 0.5em 0; }
 .log-warning-level { color: yellow; }
 .month-rota-week-number { font-size: 0.625em; text-align: center; width: 1%; }
 .mugshot {
