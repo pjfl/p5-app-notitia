@@ -93,6 +93,27 @@ my $_allowed = sub {
    return FALSE;
 };
 
+my $_admin_log_links = sub {
+   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
+
+   push @{ $list },
+      $nav_folder->( $req, 'logs' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'activity' ? 'selected' : NUL,
+         name => 'activity_log' }, 'log', [ 'activity' ] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'cli' ? 'selected' : NUL,
+         name => 'cli_log' }, 'log', [ 'cli' ] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'schema' ? 'selected' : NUL,
+         name => 'schema_log' }, 'log', [ 'schema' ] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'server' ? 'selected' : NUL,
+         name => 'server_log' }, 'log', [ 'server' ] );
+
+   return;
+};
+
 my $_admin_people_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
@@ -184,24 +205,6 @@ my $_admin_vehicle_links = sub {
                      'asset/vehicles', [], private => TRUE );
    return;
 };
-
-
-my $_admin_log_links = sub {
-   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
-
-   push @{ $list },
-      $nav_folder->( $req, 'logs' ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'activity' ? 'selected' : NUL,
-         name => 'activity_log' }, 'logs', [], logtype => 'activity' ),
-
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'server' ? 'selected' : NUL,
-         name => 'server_log' }, 'logs', [], logtype => 'server');
-
-   return;
-};
-
 
 my $_rota_month_links = sub {
    my ($self, $req, $actionp, $name, $f_dom, $local_dt, $nav) = @_;

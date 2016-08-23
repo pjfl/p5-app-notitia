@@ -2,7 +2,7 @@ package App::Notitia::Model::Admin;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP
-                                SLOT_TYPE_ENUM TRUE TYPE_CLASS_ENUM );
+                                SLOT_TYPE_ENUM SPC TRUE TYPE_CLASS_ENUM );
 use App::Notitia::Form      qw( blank_form f_link f_tag p_button p_container
                                 p_list p_select p_row p_table p_textfield );
 use App::Notitia::Util      qw( loc locm make_tip management_link
@@ -22,11 +22,11 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'admin';
 
 register_action_paths
+   'admin/log'        => 'logs',
    'admin/slot_certs' => 'slot-certs',
    'admin/slot_roles' => 'slot-roles',
    'admin/type'       => 'type',
-   'admin/types'      => 'types',
-   'admin/logs'       => 'logs';
+   'admin/types'      => 'types';
 
 # Construction
 around 'get_stash' => sub {
@@ -56,6 +56,20 @@ my $_list_slot_certs = sub {
    return  [ map { $_->certification_type }
              $rs->search( { 'slot_type' => $slot_type },
                           { prefetch    => 'certification_type' } )->all ];
+};
+
+my $_log_headers = sub {
+   my ($req, $logname) = @_; my $max = 2; my $header = 'log_header';
+
+   $logname eq 'activity' and $max = 4 and $header = "${logname}_${header}";
+
+   return [ map { { value => loc $req, "${header}_${_}" } } 0 .. $max ];
+};
+
+my $_log_level_cell = sub {
+   my $field = shift; $field =~ s{ [\[\]] }{}gmx; my $level = lc $field;
+
+   return [ $field, "log-${level}-level" ];
 };
 
 my $_maybe_find_type = sub {
@@ -161,6 +175,48 @@ sub add_type_action : Role(administrator) {
    my $location =  uri_for_action $req, $self->moniker.'/types';
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub logs : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $logname = $req->uri_params->( 0 );
+   my $form = blank_form;
+   my $page = {
+      selected => $logname,
+      forms => [ $form ],
+      title => locm $req, 'logs_title', locm $req, ucfirst $logname,
+   };
+   my $table = p_table $form, {
+      class => 'smaller-table', headers => $_log_headers->( $req, $logname ) };
+   my $file = $self->config->logsdir->catfile( "${logname}.log" )->chomp;
+
+   $file->exists or return $self->get_stash( $req, $page );
+
+   while (defined (my $line = $file->getline)) {
+      $line =~ m{ \A [a-zA-z]{3} [ ] \d+ [ ] \d+ : }mx or next;
+
+      my @fields = split SPC, $line, 5;
+      my @cols = [ (join SPC, @fields[ 0 .. 2 ]), 'log-date' ];
+
+      if ($logname eq 'activity') {
+         my @subfields = split SPC, $fields[ 4 ], 4;
+
+         push @cols, [ map { s{ \A .+ : }{}mx; $_ } $subfields[ 0 ] ];
+         push @cols, [ map { s{ \A .+ : }{}mx; $_ } $subfields[ 1 ] ];
+         push @cols, [ map { s{ \A .+ : }{}mx; $_ } $subfields[ 2 ] ];
+         push @cols, [ $subfields[ 3 ], 'log-detail' ];
+      }
+      else {
+         push @cols, $_log_level_cell->( $fields[ 3 ] );
+         push @cols, [ $fields[ 4 ], 'log-detail' ];
+      }
+
+      p_row $table, [ map { { class => $_->[ 1 ], value => $_->[ 0 ] } }
+                      @cols ];
+   }
+
+   return $self->get_stash( $req, $page );
 }
 
 sub remove_certification_action : Role(administrator) {
@@ -285,40 +341,6 @@ sub type : Role(administrator) {
 
    return $self->get_stash( $req, $page );
 }
-
-sub logs : Role(administrator) {
-   my ($self, $req) = @_;
-
-   my $moniker =  $self->moniker;
-   my $logtype =  $req->query_params->( 'logtype', { optional => TRUE } );
-   my $form    =  blank_form;
-   my $conf    =  $self->config;
-   my $title   =  loc( $req, 'logs_title');
-      $logtype and $title .= " - $logtype";
-   
-   my $logfile = $logtype eq 'server' ? 'server.log' : 'activity.log';
-   my $page    =  {
-      forms => [ $form ],
-      title => $title
-   };
-
-   my $table = p_table $form, { headers => [{value => loc($req, "logs_header_date")},
-                                            {value => loc($req, "logs_header_level")},
-                                            {value => loc($req, "logs_header_detail")} ] };
-   
-   my $file  = $conf->logsdir->catfile( $logfile );
-
-   if ( $file->exists ) {
-      $file->assert_open();
-      while ( my $line = $file->chomp->getline ) {
-          my @fields = split(/\s+/, $line, 5);
-          p_row $table, [{value=>join(' ', @fields[0..2])},{value=>$fields[3]},{value=>$fields[4]} ];
-      }
-   }
-
-   return $self->get_stash( $req, $page );
-}
-
 
 sub types : Role(administrator) {
    my ($self, $req) = @_;

@@ -201,6 +201,10 @@ footer {
 .label-column { white-space: nowrap; }
 .link-group { display: inline-block; }
 .link-help a:hover { color: #f90; text-decoration: none; }
+.log-debug-level { color: orange; }
+.log-error-level { color: red; }
+.log-detail { max-width: 530px; }
+.log-warning-level { color: yellow; }
 .month-rota-week-number { font-size: 0.625em; text-align: center; width: 1%; }
 .mugshot {
    .border-radius; float: right; height: 85px; margin: 5px 5px 0 0; width: 85px;
@@ -618,6 +622,11 @@ article h2:first-child, { margin-top: 0; }
 .rota-link { display: block; }
 table.month-rota { font-size: 0.625em; width: 100%; }
 td.embeded { padding: 0 !important; }
+td.log-date, { width: 1%; }
+td.log-date, td.log-detail, td.log-debug-level, td.log-error-level,
+td.log-info-level, td.log-warning-level {
+   line-height: 18px;
+}
 td.month-rota { padding: 0 !important; }
 td.month-rota.submit, td.month-rota.server, td.week-rota.server,
 td.blank-event.submit { cursor: pointer; }

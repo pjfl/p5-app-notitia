@@ -21,6 +21,21 @@ msgstr "Active"
 msgid "activity_log_link"
 msgstr "Activity"
 
+msgid "activity_log_header_0"
+msgstr "Date"
+
+msgid "activity_log_header_1"
+msgstr "User"
+
+msgid "activity_log_header_2"
+msgstr "Client"
+
+msgid "activity_log_header_3"
+msgstr "Action"
+
+msgid "activity_log_header_4"
+msgstr "Detail"
+
 msgid "add_certification"
 msgstr "Add Certification"
 
@@ -191,6 +206,12 @@ msgstr "Edit"
 
 msgid "change_password_title"
 msgstr "Change Password"
+
+msgid "Cli"
+msgstr "Command Line"
+
+msgid "cli_log_link"
+msgstr "Command Line"
 
 msgid "colour"
 msgstr "Colour"
@@ -537,6 +558,15 @@ msgstr "Go to page [_1]"
 msgid "location"
 msgstr "Location"
 
+msgid "log_header_0"
+msgstr "Date"
+
+msgid "log_header_1"
+msgstr "Level"
+
+msgid "log_header_2"
+msgstr "Detail"
+
 msgid "login"
 msgstr "Login"
 
@@ -547,16 +577,7 @@ msgid "logo_tip"
 msgstr "[_1] home page"
 
 msgid "logs_title"
-msgstr "Logs"
-
-msgid "logs_header_date"
-msgstr "Date"
-
-msgid "logs_header_detail"
-msgstr "Detail"
-
-msgid "logs_header_level"
-msgstr "Level"
+msgstr "[_1] Log"
 
 msgid "logs_management_heading"
 msgstr "Logs"
@@ -1032,6 +1053,9 @@ msgstr "Create a rota type record"
 
 msgid "route"
 msgstr "Route"
+
+msgid "schema_log_link"
+msgstr "Schema"
 
 msgid "select_person"
 msgstr "Select Person"

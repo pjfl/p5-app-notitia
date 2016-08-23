@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Add more logs and a restful uri scheme
           - Make logs viewable in the application (by admin)
           - Implements #84. Added log in/out activity to log
           - Add mobile phone to assignment tip popup

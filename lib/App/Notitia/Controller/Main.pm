@@ -14,6 +14,7 @@ sub dispatch_request {
    sub (GET  + /endorsements/*        + ?*) { [ 'blots/endorsements',    @_ ] },
    sub (POST + /endorsement/**        + ?*) { [ 'blots/from_request',    @_ ] },
    sub (GET  + /endorsement/**        + ?*) { [ 'blots/endorsement',     @_ ] },
+   sub (GET  + /log/**                + ?*) { [ 'admin/logs',            @_ ] },
    sub (GET  + /message-people        + ?*) { [ 'person/message',        @_ ] },
    sub (GET  + /mugshot/*             + ?*) { [ 'person/mugshot',        @_ ] },
    sub (POST + /people                + ?*) { [ 'person/from_request',   @_ ] },
@@ -29,8 +30,7 @@ sub dispatch_request {
    sub (GET  + /slot-roles            + ?*) { [ 'admin/slot_roles',      @_ ] },
    sub (GET  + /types                 + ?*) { [ 'admin/types',           @_ ] },
    sub (POST + /type/**               + ?*) { [ 'admin/from_request',    @_ ] },
-   sub (GET  + /type/**  | /type/*    + ?*) { [ 'admin/type',            @_ ] },
-   sub (GET  + /logs                  + ?*) { [ 'admin/logs',            @_ ] },
+   sub (GET  + /type/**  | /type/*    + ?*) { [ 'admin/type',            @_ ] };
 }
 
 1;
