@@ -178,7 +178,7 @@ my $_format_as_markdown = sub {
    my $date    = $event->start_date->clone->set_time_zone( 'local' );
    my $created = time2str '%Y-%m-%d %H:%M:%S %z', time, 'GMT';
    my $yaml    = "---\nauthor: ".$event->owner."\n"
-               . "created: ${created}\nrole: anon\ntitle: ${name}\n---\n";
+               . "created: ${created}\nrole: any\ntitle: ${name}\n---\n";
    my $desc    = $event->description."\n\n";
    my @opts    = ($date->dmy( '/' ), $event->start_time, $event->end_time);
    my $when    = locm( $req, 'event_blog_when', @opts )."\n\n";

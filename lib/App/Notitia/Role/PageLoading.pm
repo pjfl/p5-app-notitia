@@ -8,6 +8,7 @@ use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::File;
 use Class::Usul::Functions qw( is_arrayref is_member throw );
 use Class::Usul::Types     qw( HashRef );
+use Unexpected::Functions  qw( AuthenticationRequired );
 use Moo::Role;
 
 requires qw( components config depth_offset get_stash load_page
@@ -67,8 +68,8 @@ around 'load_page' => sub {
 
       my $node = $self->find_node( $locale, $req->uri_params->() ) or next;
 
-      is_access_authorised( $req, $node )
-         or throw '[_1] permission denied', [ $who ];
+      is_access_authorised( $req, $node ) or throw '[_1] permission denied',
+         args => [ $who ], class => AuthenticationRequired->();
 
       my $page = $self->initialise_page( $req, $node, $locale );
 
