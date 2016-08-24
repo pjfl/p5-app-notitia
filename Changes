@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #83. Events posts require login to view
           - Adds display controls to log viewer
           - Adds pages queries to log viewer
           - Add more logs and a restful uri scheme
