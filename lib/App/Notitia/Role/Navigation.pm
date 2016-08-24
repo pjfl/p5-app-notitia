@@ -105,6 +105,9 @@ my $_admin_log_links = sub {
          class => $page->{selected} eq 'cli' ? 'selected' : NUL,
          name => 'cli_log' }, 'log', [ 'cli' ] ),
       $nav_linkto->( $req, {
+         class => $page->{selected} eq 'jobdaemon' ? 'selected' : NUL,
+         name => 'jobdaemon_log' }, 'log', [ 'jobdaemon' ] ),
+      $nav_linkto->( $req, {
          class => $page->{selected} eq 'schema' ? 'selected' : NUL,
          name => 'schema_log' }, 'log', [ 'schema' ] ),
       $nav_linkto->( $req, {

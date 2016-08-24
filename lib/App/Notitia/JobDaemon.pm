@@ -176,6 +176,8 @@ my $_daemon = sub {
 
       try { $lock->reset( k => "${name}_semaphore", p => 666 ) } catch {};
       try { $lock->reset( k => $name, p => $pid ) } catch {};
+      try { $lock->reset( k => "${name}_stopping",  p => 666 ) } catch {};
+
    };
 
    try { local $SIG{TERM} = sub { $reset->(); exit OK }; $self->$_daemon_loop }
@@ -322,8 +324,6 @@ sub restart : method {
 
    $self->_daemon_control->pid_running and $self->_daemon_control->do_stop;
 
-   try { $self->lock->reset( k => $key, p => 666 ) } catch {};
-
    $self->_clear_daemon_pid;
 
    return $self->start;
@@ -360,8 +360,6 @@ sub start : method {
 
    my $rv = $self->_daemon_control->do_start;
 
-   try { $self->lock->reset( k => $key, p => 666 ) } catch {};
-
    $rv == OK and $self->$_raise_semaphore
       and $self->log->debug( 'Raised jobqueue semaphore on startup' );
 
@@ -383,8 +381,6 @@ sub stop : method {
       or throw 'Job daemon already stopping';
 
    my $rv = $self->_daemon_control->do_stop; $self->_clear_daemon_pid;
-
-   try { $self->lock->reset( k => $key, p => 666 ) } catch {};
 
    return $rv;
 }

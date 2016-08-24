@@ -568,6 +568,9 @@ msgstr "Job Identity"
 msgid "job_table_header_1"
 msgstr "Command"
 
+msgid "jobdaemon_log_link"
+msgstr "Job Daemon"
+
 msgid "jobdaemon_management_heading"
 msgstr "Job Daemon"
 
