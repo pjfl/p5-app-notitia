@@ -115,7 +115,7 @@ my $_set_started_lock = sub {
 
    unless ($lock->set( k => $name, p => $pid, t => 0, async => TRUE )) {
       try { $lock->reset( k => "${name}_starting", p => 666 ) } catch {};
-      exit OK;
+      throw 'Job daemon already running';
    }
 
    my $path = $self->_socket_path;
@@ -172,8 +172,8 @@ my $_daemon = sub {
    my $reset = sub {
       $self->log->info( "Stopping job daemon ${pid}" );
       $self->read_socket and $self->read_socket->close;
+      $self->_socket_path->exists and $self->_socket_path->unlink;
 
-      try { $lock->reset( k => "${name}_stopping", p => 666 ) } catch {};
       try { $lock->reset( k => "${name}_semaphore", p => 666 ) } catch {};
       try { $lock->reset( k => $name, p => $pid ) } catch {};
    };
@@ -259,21 +259,6 @@ around 'run' => sub {
 };
 
 # Private methods
-my $_drop_lock = sub {
-   my $self = shift;
-
-   try {
-      my $pid  = $self->daemon_pid; my $name = $self->config->name;
-
-      $self->lock->reset( k => $name, p => $pid );
-      $self->log->warn( "Dropping ${name} lock ${pid}" );
-   }
-   catch {};
-
-   $self->_clear_daemon_pid;
-   return;
-};
-
 my $_is_write_socket_stale = sub {
    my $self = shift; my $list = $self->lock->list || [];
 
@@ -330,11 +315,16 @@ sub is_running {
 sub restart : method {
    my $self = shift; $self->params->{restart} = [ { expected_rv => 1 } ];
 
-   $self->lock->set( k => $self->config->name.'_stopping', p => 666 );
+   my $key = $self->config->name.'_stopping';
 
-   $self->daemon_pid;
+   $self->lock->set( k => $key, p => 666, async => TRUE )
+      or throw 'Job daemon already stopping';
+
    $self->_daemon_control->pid_running and $self->_daemon_control->do_stop;
-   $self->daemon_pid and $self->$_drop_lock;
+
+   try { $self->lock->reset( k => $key, p => 666 ) } catch {};
+
+   $self->_clear_daemon_pid;
 
    return $self->start;
 }
@@ -358,16 +348,19 @@ sub show_warnings : method {
 sub start : method {
    my $self = shift; $self->params->{start} = [ { expected_rv => 1 } ];
 
-   my $name = $self->config->name; my $stopping;
+   my $name = $self->config->name; my $key = "${name}_starting"; my $stopping;
 
    while (not defined $stopping or $stopping) {
       $stopping = $self->$_is_lock_set( $self->lock->list, 'stopping' );
       $stopping and nap 0.5
    }
 
-   $self->lock->set( k => "${name}_starting", p => 666 );
+   $self->lock->set( k => $key, p => 666, async => TRUE )
+      or throw 'Job daemon already starting';
 
    my $rv = $self->_daemon_control->do_start;
+
+   try { $self->lock->reset( k => $key, p => 666 ) } catch {};
 
    $rv == OK and $self->$_raise_semaphore
       and $self->log->debug( 'Raised jobqueue semaphore on startup' );
@@ -384,11 +377,14 @@ sub status : method {
 sub stop : method {
    my $self = shift; $self->params->{stop} = [ { expected_rv => 1 } ];
 
-   $self->lock->set( k => $self->config->name.'_stopping', p => 666 );
+   my $key = $self->config->name.'_stopping';
 
-   $self->daemon_pid; my $rv = $self->_daemon_control->do_stop;
+   $self->lock->set( k => $key, p => 666, async =>TRUE )
+      or throw 'Job daemon already stopping';
 
-   $self->daemon_pid and $self->$_drop_lock;
+   my $rv = $self->_daemon_control->do_stop; $self->_clear_daemon_pid;
+
+   try { $self->lock->reset( k => $key, p => 666 ) } catch {};
 
    return $rv;
 }
