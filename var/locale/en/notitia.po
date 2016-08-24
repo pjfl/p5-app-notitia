@@ -18,6 +18,24 @@ msgstr ""
 msgid "active"
 msgstr "Active"
 
+msgid "activity_log_link"
+msgstr "Activity"
+
+msgid "activity_log_header_0"
+msgstr "Date"
+
+msgid "activity_log_header_1"
+msgstr "User"
+
+msgid "activity_log_header_2"
+msgstr "Client"
+
+msgid "activity_log_header_3"
+msgstr "Action"
+
+msgid "activity_log_header_4"
+msgstr "Detail"
+
 msgid "add_certification"
 msgstr "Add Certification"
 
@@ -195,6 +213,12 @@ msgstr "Clear Locks"
 msgid "clear_jobdaemon_tip"
 msgstr "With the job daemon stopped there should be no locks left in the "
        "lock table. Use this button to remove any left over locks"
+
+msgid "Cli"
+msgstr "Command Line"
+
+msgid "cli_log_link"
+msgstr "Command Line"
 
 msgid "colour"
 msgstr "Colour"
@@ -496,6 +520,15 @@ msgstr "Events"
 msgid "Exception Handler"
 msgstr "I'm sorry [_1], I can't do that"
 
+msgid "filter_column"
+msgstr "Column"
+
+msgid "filter_log"
+msgstr "Filter"
+
+msgid "filter_pattern"
+msgstr "Matches"
+
 msgid "first_name"
 msgstr "First Name"
 
@@ -588,6 +621,15 @@ msgstr "Created"
 msgid "lock_table_header_3"
 msgstr "Timeout"
 
+msgid "log_header_0"
+msgstr "Date"
+
+msgid "log_header_1"
+msgstr "Level"
+
+msgid "log_header_2"
+msgstr "Detail"
+
 msgid "login"
 msgstr "Login"
 
@@ -596,6 +638,12 @@ msgstr "Please Login"
 
 msgid "logo_tip"
 msgstr "[_1] home page"
+
+msgid "logs_title"
+msgstr "[_1] Log"
+
+msgid "logs_management_heading"
+msgstr "Logs"
 
 msgid "m_advanced"
 msgstr "Advanced Motorcycle"
@@ -1075,8 +1123,14 @@ msgstr "Create a rota type record"
 msgid "route"
 msgstr "Route"
 
+msgid "schema_log_link"
+msgstr "Schema"
+
 msgid "select_person"
 msgstr "Select Person"
+
+msgid "server_log_link"
+msgstr "Server"
 
 msgid "service_vehicles_link"
 msgstr "Service Vehicles"

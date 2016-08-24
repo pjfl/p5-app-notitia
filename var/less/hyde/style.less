@@ -70,7 +70,9 @@ nav {
       }
    }
 }
-.operation-links { margin-bottom: 5px; margin-top: 5px; width: 100%; }
+.operation-links {
+   margin-bottom: 5px; margin-top: 5px; overflow: hidden; width: 100%;
+}
 .panel button { color: @contrast; }
 .panel form { display: inline; }
 .togglers:focus { outline: none; }
@@ -163,6 +165,7 @@ footer {
 .button-help, .link-help {
    display: inline-block; position: relative;
 }
+.control-label { font-size: 0.75em; }
 .date-field { max-width: 100px; }
 .dialog {
    background-color: @dialog-background; border: 2px solid @divider;
@@ -189,6 +192,7 @@ footer {
    margin: 0; padding: 3px 0; vertical-align: top;
 }
 .field-label, .field-text { min-width: 140px; }
+.filter-column, .filter-pattern { font-size: 0.75em; }
 .footer-nav { list-style-type: none; }
 .form-separator {
    min-height: 2em; overflow: hidden; padding: 1em 0; width: 100%;
@@ -201,6 +205,11 @@ footer {
 .label-column { white-space: nowrap; }
 .link-group { display: inline-block; }
 .link-help a:hover { color: #f90; text-decoration: none; }
+.log-debug-level { color: orange; }
+.log-error-level { color: red; }
+.log-detail { max-width: 530px; }
+.log-links { margin: 0.5em 0; }
+.log-warning-level { color: yellow; }
 .month-rota-week-number { font-size: 0.625em; text-align: center; width: 1%; }
 .mugshot {
    .border-radius; float: right; height: 85px; margin: 5px 5px 0 0; width: 85px;
@@ -619,6 +628,13 @@ article h2:first-child, { margin-top: 0; }
 .rota-link { display: block; }
 table.month-rota { font-size: 0.625em; width: 100%; }
 td.embeded { padding: 0 !important; }
+td.log-date, td.log-action, td.log-client, td.log-user {
+   white-space: nowrap; width: 1%;
+}
+td.log-date, td.log-detail, td.log-debug-level, td.log-error-level,
+td.log-info-level, td.log-warning-level {
+   line-height: 24px;
+}
 td.month-rota { padding: 0 !important; }
 td.month-rota.submit, td.month-rota.server, td.week-rota.server,
 td.blank-event.submit { cursor: pointer; }

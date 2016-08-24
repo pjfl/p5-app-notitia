@@ -93,6 +93,27 @@ my $_allowed = sub {
    return FALSE;
 };
 
+my $_admin_log_links = sub {
+   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
+
+   push @{ $list },
+      $nav_folder->( $req, 'logs' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'activity' ? 'selected' : NUL,
+         name => 'activity_log' }, 'log', [ 'activity' ] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'cli' ? 'selected' : NUL,
+         name => 'cli_log' }, 'log', [ 'cli' ] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'schema' ? 'selected' : NUL,
+         name => 'schema_log' }, 'log', [ 'schema' ] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'server' ? 'selected' : NUL,
+         name => 'server_log' }, 'log', [ 'server' ] );
+
+   return;
+};
+
 my $_admin_people_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
@@ -329,6 +350,9 @@ sub admin_navigation_links {
 
    $self->$_allowed( $req, 'asset/vehicles' )
       and $self->$_admin_vehicle_links( $req, $page, $nav );
+
+   $self->$_allowed( $req, 'admin/logs' )
+      and $self->$_admin_log_links( $req, $page, $nav );
 
    return $nav;
 }

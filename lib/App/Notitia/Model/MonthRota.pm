@@ -312,6 +312,9 @@ sub assign_summary : Role(any) {
 
    p_tag $form, 'p', $who, $opts;
 
+   $operator->mobile_phone and
+       p_tag $form, 'p', "\x{260E} ".$operator->mobile_phone, $opts;
+
    $data->{vehicle} and p_tag $form, 'p', $data->{vehicle}->label, $opts;
 
    p_tag $form, 'p', $start, $opts; p_tag $form, 'p', $end, $opts;

@@ -16,6 +16,8 @@ sub dispatch_request {
    sub (GET  + /endorsement/**        + ?*) { [ 'blots/endorsement',     @_ ] },
    sub (POST + /jobdaemon-status      + ?*) { [ 'daemon/from_request',   @_ ] },
    sub (GET  + /jobdaemon-status      + ?*) { [ 'daemon/status',         @_ ] },
+   sub (POST + /log/*                 + ?*) { [ 'admin/from_request',    @_ ] },
+   sub (GET  + /log/*                 + ?*) { [ 'admin/logs',            @_ ] },
    sub (GET  + /message-people        + ?*) { [ 'person/message',        @_ ] },
    sub (GET  + /mugshot/*             + ?*) { [ 'person/mugshot',        @_ ] },
    sub (POST + /people                + ?*) { [ 'person/from_request',   @_ ] },

@@ -1,5 +1,13 @@
 Revision history for App::Notitia
 
+          - Adds display controls to log viewer
+          - Adds pages queries to log viewer
+          - Add more logs and a restful uri scheme
+          - Make logs viewable in the application (by admin)
+          - Implements #84. Added log in/out activity to log
+          - Add mobile phone to assignment tip popup
+          - Make vehicle allocation key table headers translatable
+          - Adds badge_excludes range to max_badge_id
           - Fixes persmissions on report links
           - Selects events for reports
           - Fixes l10n cache removal by command line programs

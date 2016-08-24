@@ -2,13 +2,15 @@ package App::Notitia::Model::Admin;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP
-                                SLOT_TYPE_ENUM TRUE TYPE_CLASS_ENUM );
+                                SLOT_TYPE_ENUM SPC TRUE TYPE_CLASS_ENUM );
 use App::Notitia::Form      qw( blank_form f_link f_tag p_button p_container
                                 p_list p_select p_row p_table p_textfield );
 use App::Notitia::Util      qw( loc locm make_tip management_link
-                                register_action_paths to_msg uri_for_action );
+                                page_link_set register_action_paths to_msg
+                                uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
+use Data::Page;
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -22,6 +24,7 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'admin';
 
 register_action_paths
+   'admin/logs'       => 'log',
    'admin/slot_certs' => 'slot-certs',
    'admin/slot_roles' => 'slot-roles',
    'admin/type'       => 'type',
@@ -45,16 +48,89 @@ my $_create_action = sub {
             request => $_[ 0 ] };
 };
 
-my $_link_opts = sub {
-   return { class => 'operation-links align-right right-last' };
-};
-
 my $_list_slot_certs = sub {
    my ($schema, $slot_type) = @_; my $rs = $schema->resultset( 'SlotCriteria' );
 
    return  [ map { $_->certification_type }
              $rs->search( { 'slot_type' => $slot_type },
                           { prefetch    => 'certification_type' } )->all ];
+};
+
+my $_log_user_label = sub {
+   my ($data, $field) = @_; (my $scode = $field) =~ s{ \A .+ : }{}mx;
+
+   exists $data->{cache}->{ $scode } and return $data->{cache}->{ $scode };
+
+   my $label = $data->{person_rs}->find_by_shortcode( $scode )->label;
+
+   return $data->{cache}->{ $scode } = $label;
+};
+
+my $_log_columns = sub {
+   my ($data, $logname, $line) = @_; my @fields = split SPC, $line, 5;
+
+   my $date = join SPC, @fields[ 0 .. 2 ];
+
+   $data->{filter_column} eq 'date' and $date !~ $data->{filter_pattern}
+      and return ();
+
+   my @cols = [ $date, 'log-date' ]; my $detail;
+
+   if ($logname eq 'activity') {
+      my @subfields = split SPC, $fields[ 4 ], 4;
+      my $label = $_log_user_label->( $data, $subfields[ 0 ] );
+
+      $data->{filter_column} eq 'user' and $label !~ $data->{filter_pattern}
+         and return ();
+
+      push @cols, [ $label, 'log-user' ];
+
+      (my $client = $subfields[ 1 ]) =~ s{ \A .+ : }{}mx;
+
+      $data->{filter_column} eq 'client' and $client !~ $data->{filter_pattern}
+         and return ();
+
+      push @cols, [ $client, 'log-client' ];
+
+      (my $action = $subfields[ 2 ]) =~ s{ \A .+ : }{}mx;
+
+      $data->{filter_column} eq 'action' and $action !~ $data->{filter_pattern}
+         and return ();
+
+      push @cols, [ $action, 'log-action' ];
+
+      $detail = $subfields[ 3 ];
+
+   }
+   else {
+      my $value = $fields[ 3 ]; $value =~ s{ [\[\]] }{}gmx;
+      my $level = lc $value;
+
+      $data->{filter_column} eq 'level' and $level !~ $data->{filter_pattern}
+         and return ();
+
+      push @cols, [ $value, "log-${level}-level" ];
+      $detail = $fields[ 4 ];
+   }
+
+   $data->{filter_column} eq 'detail' and $detail !~ $data->{filter_pattern}
+         and return ();
+
+   push @cols, [ $detail, 'log-detail' ];
+
+   return @cols;
+};
+
+my $_log_headers = sub {
+   my ($req, $logname) = @_; my $max = 2; my $header = 'log_header';
+
+   $logname eq 'activity' and $max = 4 and $header = "${logname}_${header}";
+
+   return [ map { { value => loc $req, "${header}_${_}" } } 0 .. $max ];
+};
+
+my $_log_link_opts = sub {
+   return { class => 'operation-links' };
 };
 
 my $_maybe_find_type = sub {
@@ -108,6 +184,10 @@ my $_types_headers = sub {
    return [ map { { value => loc( $_[ 0 ], "types_heading_${_}" ) } } 0 .. 2 ];
 };
 
+my $_types_link_opts = sub {
+   return { class => 'operation-links align-right right-last' };
+};
+
 my $_types_links = sub {
    my ($req, $type) = @_; my $name = $type->name;
 
@@ -119,6 +199,33 @@ my $_types_links = sub {
 };
 
 # Private methods
+my $_filter_controls = sub {
+   my ($self, $req, $logname, $params) = @_;
+
+   my $f_col = $params->{filter_column} // 'none';
+   my $href = uri_for_action $req, $self->moniker.'/logs', [ $logname ];
+   my $form = blank_form 'filter-controls', $href, { class => 'link-group' };
+   my $opts = { class => 'single-character filter-column',
+                label_field_class => 'control-label' };
+   my @columns = $logname eq 'activity'
+               ? qw( action client date detail user )
+               : qw( date detail level );
+
+   p_select $form, 'filter_column',
+      [ map { [ $_, $_, { selected => $_ eq $f_col ? TRUE : FALSE } ] }
+        'none', @columns ], $opts;
+
+   p_textfield $form, 'filter_pattern', $params->{filter_pattern}, {
+      class => 'single-character filter-pattern',
+      label_field_class => 'control-label' };
+
+   p_button $form, 'filter_log', 'filter_log', {
+      class => 'button',
+      tip   => make_tip( $req, 'filter_log_tip' ) };
+
+   return $form;
+};
+
 my $_list_all_certs = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
@@ -160,6 +267,75 @@ sub add_type_action : Role(administrator) {
    my $location =  uri_for_action $req, $self->moniker.'/types';
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub filter_log_action : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $args = [ $req->uri_params->( 0 ) ];
+   my $column = $req->body_params->( 'filter_column' );
+   my $pattern = $req->body_params->( 'filter_pattern' );
+   my $params = { filter_column => $column, filter_pattern => $pattern };
+   my $location = uri_for_action $req, $self->moniker.'/logs', $args, $params;
+
+   return { redirect => { location => $location } };
+}
+
+sub logs : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $logname = $req->uri_params->( 0 );
+   my $form = blank_form;
+   my $page = {
+      selected => $logname,
+      forms => [ $form ],
+      title => locm $req, 'logs_title', locm $req, ucfirst $logname,
+   };
+   my $dir = $self->config->logsdir;
+   my $file = $dir->catfile( "${logname}.log" )->backwards->chomp;
+
+   $file->exists or return $self->get_stash( $req, $page );
+
+   my $pageno = $req->query_params->( 'page', { optional => TRUE } ) || 1;
+   my $rows_pp = $req->session->rows_per_page;
+   my $first = $rows_pp * ($pageno - 1);
+   my $last = $rows_pp * $pageno - 1;
+   my $queryp = $req->query_params;
+   my $column = $queryp->( 'filter_column', { optional => TRUE } ) // 'none';
+   my $pattern = $queryp->( 'filter_pattern', { optional => TRUE } ) // NUL;
+   my $data = { cache => {},
+                filter_column => $column,
+                filter_pattern => qr{ $pattern }imx,
+                person_rs => $self->schema->resultset( 'Person' ) };
+   my $lno = 0; my @rows;
+
+   while (defined (my $line = $file->getline)) {
+      $line =~ m{ \A [a-zA-z]{3} [ ] \d+ [ ] \d+ : }mx or next;
+
+      my @cols = $_log_columns->( $data, $logname, $line ); @cols or next;
+
+      $lno < $first and ++$lno and next; $lno > $last and ++$lno and next;
+
+      push @rows, [ map { { class => $_->[ 1 ], value => $_->[ 0 ] } } @cols ];
+      $lno++;
+   }
+
+   my $actp = $self->moniker.'/logs';
+   my $params = { filter_column => $column, filter_pattern => $pattern, };
+   my $dp = Data::Page->new( $lno, $rows_pp, $pageno );
+   my $opts = { class => 'log-links right-last' };
+   my $plinks = page_link_set $req, $actp, [ $logname ], $params, $dp, $opts;
+   my $links = [ $self->$_filter_controls( $req, $logname, $params ), $plinks ];
+
+   p_list $form, NUL, $links, $_log_link_opts->();
+
+   my $table = p_table $form, {
+      class => 'smaller-table', headers => $_log_headers->( $req, $logname ) };
+
+   p_row $table, [ @rows ];
+   p_list $form, NUL, $links, $_log_link_opts->();
+
+   return $self->get_stash( $req, $page );
 }
 
 sub remove_certification_action : Role(administrator) {
@@ -301,13 +477,13 @@ sub types : Role(administrator) {
                                  : $type_rs->search_for_all_types;
    my $links      =  $_type_create_links->( $req, $moniker, $type_class );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, $_types_link_opts->();
 
    my $table = p_table $form, { headers => $_types_headers->( $req ) };
 
    p_row $table, [ map { $_types_links->( $req, $_ ) } $types->all ];
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, $_types_link_opts->();
 
    return $self->get_stash( $req, $page );
 }

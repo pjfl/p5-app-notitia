@@ -730,8 +730,8 @@ sub numerical_id_data_type (;$) {
             is_numeric        => TRUE, };
 }
 
-sub page_link_set ($$$$$) {
-   my ($req, $actionp, $args, $params, $pager) = @_;
+sub page_link_set ($$$$$;$) {
+   my ($req, $actionp, $args, $params, $pager, $opts) = @_;
 
    $pager->last_page > $pager->first_page or return;
 
@@ -761,7 +761,7 @@ sub page_link_set ($$$$$) {
    push @{ $list }, $_page_link->( $req, 'last_page', $actionp, $args,
                                    $params, $pager->last_page );
 
-   return { class        => 'link-group',
+   return { class        => $opts->{class} // 'link-group',
             content      => {
                list      => $list,
                separator => ' ',
