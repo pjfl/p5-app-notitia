@@ -178,6 +178,7 @@ my $_daemon = sub {
       try { $lock->reset( k => $name, p => $pid ) } catch {};
       try { $lock->reset( k => "${name}_stopping",  p => 666 ) } catch {};
 
+      return;
    };
 
    try { local $SIG{TERM} = sub { $reset->(); exit OK }; $self->$_daemon_loop }
@@ -285,6 +286,17 @@ my $_raise_semaphore = sub {
    return TRUE;
 };
 
+my $_wait_while_stopping = sub {
+   my $self = shift; my $stopping;
+
+   while (not defined $stopping or $stopping) {
+      $stopping = $self->$_is_lock_set( $self->lock->list, 'stopping' );
+      $stopping and nap 0.5
+   }
+
+   return;
+};
+
 # Public methods
 sub clear : method {
    my $self = shift; $self->is_running and throw 'Cannot clear whilst running';
@@ -317,14 +329,7 @@ sub is_running {
 sub restart : method {
    my $self = shift; $self->params->{restart} = [ { expected_rv => 1 } ];
 
-   my $key = $self->config->name.'_stopping';
-
-   $self->lock->set( k => $key, p => 666, async => TRUE )
-      or throw 'Job daemon already stopping';
-
-   $self->_daemon_control->pid_running and $self->_daemon_control->do_stop;
-
-   $self->_clear_daemon_pid;
+   $self->is_running and $self->stop; $self->_clear_daemon_pid;
 
    return $self->start;
 }
@@ -348,12 +353,9 @@ sub show_warnings : method {
 sub start : method {
    my $self = shift; $self->params->{start} = [ { expected_rv => 1 } ];
 
-   my $name = $self->config->name; my $key = "${name}_starting"; my $stopping;
+   $self->$_wait_while_stopping;
 
-   while (not defined $stopping or $stopping) {
-      $stopping = $self->$_is_lock_set( $self->lock->list, 'stopping' );
-      $stopping and nap 0.5
-   }
+   my $key = $self->config->name.'_starting';
 
    $self->lock->set( k => $key, p => 666, async => TRUE )
       or throw 'Job daemon already starting';
