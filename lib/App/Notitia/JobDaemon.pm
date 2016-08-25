@@ -96,7 +96,7 @@ my $_build_daemon_control = sub {
 
       directory    => $conf->appldir,
       program      => $conf->binsdir->catfile( $self->_program_name ),
-      program_args => [ 'runqueue' ],
+      program_args => [ 'rundaemon' ],
 
       pid_file     => $self->_pid_file->pathname,
       stderr_file  => $self->$_stdio_file( 'err' ),
@@ -127,6 +127,11 @@ has '_daemon_pid' => is => 'lazy', isa => PositiveInt, builder => sub {
 
    return (($path->exists && !$path->empty ? $path->getline : 0) // 0) },
    clearer => TRUE;
+
+has '_last_run_file' => is => 'lazy', isa => Path, builder => sub {
+   my $file = $_[ 0 ]->config->name.'_last_run';
+
+   return $_[ 0 ]->config->tempdir->catfile( $file )->chomp->lock };
 
 has '_pid_file' => is => 'lazy', isa => Path, builder => sub {
    my $file = $_[ 0 ]->config->name.'.pid';
@@ -242,8 +247,6 @@ my $_wait_while_stopping = sub {
 my $_daemon_loop = sub {
    my $self = shift; my $conf = $self->config; my $stopping = FALSE;
 
-   my $last_run = $conf->tempdir->catfile( $conf->name.'_last_run' )->lock;
-
    while (not $stopping) {
       $self->$_lower_semaphore;
 
@@ -255,8 +258,8 @@ my $_daemon_loop = sub {
          $self->run_cmd( [ sub { $_runjob->( $self, $job ) } ],
                          { async => TRUE, detach => TRUE } );
 
-         $last_run->println( $job->name.'-'.$job->id ); $last_run->close;
-
+         $self->_last_run_file->println( $job->name.'-'.$job->id );
+         $self->_last_run_file->close;
          $job->delete;
       }
    }
@@ -264,7 +267,7 @@ my $_daemon_loop = sub {
    return;
 };
 
-my $_runqueue = sub {
+my $_rundaemon = sub {
    my $self = shift; $PROGRAM_NAME = $self->_program_name;
 
    $self->log->debug( 'Trying to start the job daemon' );
@@ -325,6 +328,15 @@ sub is_running {
    return $_[ 0 ]->_daemon_control->pid_running ? TRUE : FALSE;
 }
 
+sub last_run {
+   my $self = shift; my $last_run = $self->_last_run_file;
+
+   $last_run->exists or return 'Never'; $last_run->close;
+
+   return time2str( '%Y-%m-%d %H:%M:%S', $last_run->stat->{mtime} ).SPC
+        . $last_run->getline;
+}
+
 sub restart : method {
    my $self = shift; $self->params->{restart} = [ { expected_rv => 1 } ];
 
@@ -333,8 +345,8 @@ sub restart : method {
    return $self->start;
 }
 
-sub runqueue : method {
-   return $_[ 0 ]->$_runqueue;
+sub rundaemon : method {
+   return $_[ 0 ]->$_rundaemon;
 }
 
 sub show_locks : method {
@@ -436,6 +448,10 @@ Clears left over locks in the event of failure
 =head2 C<restart> - Restart the server
 
 Restart the server
+
+=head2 C<rundaemon> - Run the job dequeuing process
+
+Run the job dequeuing process
 
 =head2 C<show_locks> - Show the contents of the lock table
 

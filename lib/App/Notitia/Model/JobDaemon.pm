@@ -1,7 +1,7 @@
 package App::Notitia::Model::JobDaemon;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
+use App::Notitia::Constants qw( FALSE NUL TRUE );
 use App::Notitia::Form      qw( blank_form p_button p_row
                                 p_select p_table p_textfield );
 use App::Notitia::Util      qw( locm make_tip register_action_paths
@@ -65,7 +65,6 @@ my $_get_jobdaemon_status = sub {
    my $is_running = $jobdaemon->is_running;
    my $daemon_pid = 'N/A';
    my $start_time = 'N/A';
-   my $path       = $conf->tempdir->catfile( 'jobdaemon_last_run' )->chomp;
 
    if ($is_running) {
       nap 0.5 until ($daemon_pid = $jobdaemon->daemon_pid);
@@ -79,10 +78,7 @@ my $_get_jobdaemon_status = sub {
       daemon_pid => $daemon_pid,
       version    => $jobdaemon->VERSION,
       start_time => $start_time,
-      last_run   => $path->exists
-                  ? $path->getline.SPC
-                  . time2str( '%Y-%m-%d %H:%M:%S',$path->stat->{mtime} )
-                  : 'Never' };
+      last_run   => $jobdaemon->last_run };
 };
 
 my $_lock_table = sub {
