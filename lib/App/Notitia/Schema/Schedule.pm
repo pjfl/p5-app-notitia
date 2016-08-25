@@ -12,8 +12,6 @@ __PACKAGE__->load_namespaces;
 
 __PACKAGE__->load_components( qw( Schema::Versioned ) );
 
-my ($context, $config);
-
 sub deploy {
    my ($self, @args) = @_;
 
@@ -25,17 +23,19 @@ sub deploy {
 }
 
 sub accept_context {
-   return defined $_[ 1 ] ? $context = $_[ 1 ] : $context;
+   my ($self, $v) = @_;
+
+   return defined $v ? $self->{_context} = $v : $self->{_context};
 }
 
 sub application {
-   return $context;
+   return $_[ 0 ]->{_context};
 }
 
 sub config {
-   return $context        ? $context->config
-        : defined $_[ 1 ] ? $config = $_[ 1 ]
-        :                   $config;
+   return $_[ 0 ]->{_context} ? $_[ 0 ]->{_context}->config
+        :     defined $_[ 1 ] ? $_[ 0 ]->{_config} = $_[ 1 ]
+                              : $_[ 0 ]->{_config};
 }
 
 sub ddl_filename {
