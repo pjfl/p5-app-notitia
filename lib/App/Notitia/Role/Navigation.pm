@@ -395,9 +395,10 @@ sub primary_navigation_links {
 
    $class = $location eq 'schedule' ? 'current' : NUL;
 
-   p_item $nav, $nav_linkto->( $req, {
-      class => $class, tip => 'Scheduled rotas',
-      value => 'Rota', }, $places->{rota} );
+   $req->authenticated and 
+      p_item $nav, $nav_linkto->( $req, {
+          class => $class, tip => 'Scheduled rotas',
+          value => 'Rota', }, $places->{rota} );
 
    $class = $location eq 'admin' ? 'current' : NUL;
 
