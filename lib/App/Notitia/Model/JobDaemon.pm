@@ -6,7 +6,7 @@ use App::Notitia::Form      qw( blank_form p_button p_row
                                 p_select p_table p_textfield );
 use App::Notitia::Util      qw( locm make_tip register_action_paths
                                 to_msg uri_for_action );
-use Class::Usul::Time       qw( nap time2str );
+use Class::Usul::Time       qw( time2str );
 use Class::Usul::Types      qw( LoadableClass Object );
 use Moo;
 
@@ -67,8 +67,7 @@ my $_get_jobdaemon_status = sub {
    my $start_time = 'N/A';
 
    if ($is_running) {
-      nap 0.5 until ($daemon_pid = $jobdaemon->daemon_pid);
-
+      $daemon_pid = $jobdaemon->daemon_pid;
       $start_time = time2str '%Y-%m-%d %H:%M:%S', $jobdaemon->socket_ctime;
    }
 

@@ -245,7 +245,7 @@ my $_wait_while_stopping = sub {
 };
 
 my $_daemon_loop = sub {
-   my $self = shift; my $conf = $self->config; my $stopping = FALSE;
+   my $self = shift; my $stopping = FALSE;
 
    while (not $stopping) {
       $self->$_lower_semaphore;
@@ -303,7 +303,7 @@ my $_rundaemon = sub {
 sub clear : method {
    my $self = shift; $self->is_running and throw 'Cannot clear whilst running';
 
-   my $pid = $self->daemon_pid; my $name = $self->config->name;
+   my $pid = $self->_daemon_pid; my $name = $self->config->name;
 
    try { $self->lock->reset( k => "${name}_semaphore", p => 666 ) } catch {};
    try { $self->lock->reset( k => "${name}_starting",  p => 666 ) } catch {};
@@ -316,10 +316,12 @@ sub clear : method {
 }
 
 sub daemon_pid {
-   my $self = shift; my $pid = $self->_daemon_pid;
+   my $self = shift; my $start = time; my $pid;
 
-   $pid == 0 and $self->_clear_daemon_pid;
-   $pid == 0 and $pid = $self->_daemon_pid;
+   until ($pid = $self->_daemon_pid) {
+      time - $start > $self->max_wait and last;
+      $self->_clear_daemon_pid; nap 0.5;
+   }
 
    return $pid;
 }
@@ -343,7 +345,7 @@ sub last_run {
 sub restart : method {
    my $self = shift; $self->params->{restart} = [ { expected_rv => 1 } ];
 
-   $self->is_running and $self->stop; $self->_clear_daemon_pid;
+   $self->is_running and $self->stop;
 
    return $self->start;
 }
@@ -371,9 +373,11 @@ sub show_warnings : method {
 sub start : method {
    my $self = shift; $self->params->{start} = [ { expected_rv => 1 } ];
 
-   my $key = $self->config->name.'_starting'; $self->$_wait_while_stopping;
+   $self->$_wait_while_stopping; $self->is_running and throw 'Already running';
 
-   $self->lock->set( k => $key, p => 666, async => TRUE )
+   my $name = $self->config->name;
+
+   $self->lock->set( k => "${name}_starting", p => 666, async => TRUE )
       or throw 'Job daemon already starting';
 
    my $rv = $self->_daemon_control->do_start;
@@ -393,11 +397,9 @@ sub status : method {
 sub stop : method {
    my $self = shift; $self->params->{stop} = [ { expected_rv => 1 } ];
 
-   $self->is_running or throw 'Not running';
+   $self->is_running or throw 'Not running'; my $name = $self->config->name;
 
-   my $key = $self->config->name.'_stopping';
-
-   $self->lock->set( k => $key, p => 666, async =>TRUE )
+   $self->lock->set( k => "${name}_stopping", p => 666, async =>TRUE )
       or throw 'Job daemon already stopping';
 
    my $rv = $self->_daemon_control->do_stop; $self->_clear_daemon_pid;
