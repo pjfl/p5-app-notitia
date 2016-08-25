@@ -90,12 +90,13 @@ my $_build_write_socket = sub {
 my $_build_daemon_control = sub {
    my $self = shift; my $conf = $self->config;
 
+   my $prog = $conf->binsdir->catfile( $self->_program_name );
    my $args = {
       name         => blessed $self || $self,
-      path         => $conf->pathname,
+      path         => $prog->pathname,
 
       directory    => $conf->appldir,
-      program      => $conf->binsdir->catfile( $self->_program_name ),
+      program      => $prog,
       program_args => [ 'rundaemon' ],
 
       pid_file     => $self->_pid_file->pathname,
