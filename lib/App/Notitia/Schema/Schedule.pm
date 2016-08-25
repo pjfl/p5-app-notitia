@@ -12,6 +12,8 @@ __PACKAGE__->load_namespaces;
 
 __PACKAGE__->load_components( qw( Schema::Versioned ) );
 
+#TODO: Work a plan for row life
+
 sub deploy {
    my ($self, @args) = @_;
 

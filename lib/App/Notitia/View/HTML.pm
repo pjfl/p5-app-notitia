@@ -12,6 +12,7 @@ use Moo;
 with q(Web::Components::Role);
 with q(Web::Components::Role::TT);
 
+#TODO: Add media query to reduce form size on mobiles
 # Public attributes
 has '+moniker'   => default => 'html';
 

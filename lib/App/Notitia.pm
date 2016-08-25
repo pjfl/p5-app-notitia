@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -10,6 +10,7 @@ sub env_var {
    return ns_environment __PACKAGE__, $_[ 1 ], $_[ 2 ];
 }
 
+#TODO: Automate incrementing of schema versions
 sub schema_version {
    return qv( '0.3.258' );
 }
@@ -42,7 +43,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.4.$Rev: 1 $ of B<App::Notitia>
+This documents version v0.4.$Rev: 2 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -253,18 +254,6 @@ F<var/logs/access.log>
 Exporting C<DBIC_TRACE> and setting it to true will cause L<DBIx::Class>
 to emit the SQL it generates to C<stderr>. On the production server
 C<stderr> is redirected to F<var/tmp/daemon.err>
-
-=head1 Project To Do List
-
-TODO: Add media query to reduce form size on mobiles
-
-TODO: Schema version numbers. Automate manual incrementing of schema versions
-
-TODO: Work a plan for row life
-
-TODO: Remove rota and shift from schema!
-
-TODO: Req->username should be $req->session->shortcode
 
 =head1 Dependencies
 
