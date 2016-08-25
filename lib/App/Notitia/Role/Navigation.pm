@@ -105,6 +105,9 @@ my $_admin_log_links = sub {
          class => $page->{selected} eq 'cli' ? 'selected' : NUL,
          name => 'cli_log' }, 'log', [ 'cli' ] ),
       $nav_linkto->( $req, {
+         class => $page->{selected} eq 'jobdaemon' ? 'selected' : NUL,
+         name => 'jobdaemon_log' }, 'log', [ 'jobdaemon' ] ),
+      $nav_linkto->( $req, {
          class => $page->{selected} eq 'schema' ? 'selected' : NUL,
          name => 'schema_log' }, 'log', [ 'schema' ] ),
       $nav_linkto->( $req, {
@@ -328,6 +331,12 @@ sub admin_navigation_links {
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'previous_events' ? 'selected' : NUL,
          name => 'previous_events' }, 'event/events', [], before => $now->ymd );
+
+   $self->$_allowed( $req, 'daemon/status' ) and push @{ $list },
+      $nav_folder->( $req, 'jobdaemon' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'jobdaemon_status' ? 'selected' : NUL,
+         name => 'jobdaemon_status' }, 'daemon/status', [] );
 
    $self->$_admin_people_links( $req, $page, $nav );
 

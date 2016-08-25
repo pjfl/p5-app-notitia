@@ -9,11 +9,14 @@ requires qw( config get_connect_info );
 
 # Attribute constructors
 my $_build_schema = sub {
-   my $self = shift; my $extra = $self->config->connect_params;
+   my $self = shift;
+   my $class = $self->schema_class;
+   my $extra = $self->config->connect_params;
+   my $schema = $class->connect( @{ $self->get_connect_info }, $extra );
 
-   $self->schema_class->accept_context( $self );
+   $schema->can( 'accept_context' ) and $schema->accept_context( $self );
 
-   return $self->schema_class->connect( @{ $self->get_connect_info }, $extra );
+   return $schema;
 };
 
 my $_build_schema_class = sub {

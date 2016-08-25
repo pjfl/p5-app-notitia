@@ -6,19 +6,18 @@ use App::Notitia::Util     qw( authenticated_only enhance );
 use Class::Usul;
 use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( ensure_class_loaded );
-use Class::Usul::Log       qw( );
 use Class::Usul::Types     qw( HashRef Plinth );
 use HTTP::Status           qw( HTTP_FOUND );
 use Plack::Builder;
 use Web::Simple;
 
 # Private attributes
-has '_config_attr' => is => 'ro',   isa => HashRef,
-   builder         => sub { { name => 'server' } }, init_arg => 'config';
+has '_config_attr' => is => 'ro', isa => HashRef,
+   builder  => sub { { name => 'server' } }, init_arg => 'config';
 
-has '_usul'        => is => 'lazy', isa => Plinth,
-   builder         => sub { Class::Usul->new( enhance $_[ 0 ]->_config_attr ) },
-   handles         => [ 'config', 'debug', 'dumper', 'l10n', 'lock', 'log' ];
+has '_usul' => is => 'lazy', isa => Plinth,
+   builder  => sub { Class::Usul->new( enhance $_[ 0 ]->_config_attr ) },
+   handles  => [ 'config', 'debug', 'dumper', 'l10n', 'lock', 'log' ];
 
 with 'Web::Components::Loader';
 
@@ -71,7 +70,7 @@ sub BUILD {
    my $file = $conf->logsdir->catfile( 'activity.log' );
    my $opts = { appclass => 'activity', builder => $self, logfile => $file, };
 
-   Class::Usul::Log->new( $opts );
+   $self->_usul->log_class->new( $opts );
 
    return;
 }
