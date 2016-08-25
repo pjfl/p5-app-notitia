@@ -331,10 +331,13 @@ sub is_running {
 sub last_run {
    my $self = shift; my $last_run = $self->_last_run_file;
 
-   $last_run->exists or return 'Never'; $last_run->close;
+   $last_run->exists or return 'Never';
 
-   return time2str( '%Y-%m-%d %H:%M:%S', $last_run->stat->{mtime} ).SPC
-        . $last_run->getline;
+   my $r = time2str( '%Y-%m-%d %H:%M:%S', $last_run->stat->{mtime} ).SPC
+         . $last_run->getline;
+
+   $last_run->close;
+   return $r;
 }
 
 sub restart : method {
