@@ -19,8 +19,12 @@ my $_list_roles_of = sub {
 };
 
 my $nav_folder = sub {
-   return { depth => $_[ 2 ] // 0,
-            title => locm( $_[ 0 ], $_[ 1 ].'_management_heading' ),
+   my ($req, $name, $opts) = @_;
+
+   return { class => $opts->{class},
+            depth => $opts->{depth} // 0,
+            tip   => $opts->{tip},
+            title => locm( $req, "${name}_management_heading" ),
             type  => 'folder', };
 };
 
@@ -97,34 +101,71 @@ my $_admin_log_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
    push @{ $list },
-      $nav_folder->( $req, 'logs' ),
+      $nav_folder->( $req, 'logs', {
+         class => $page->{selected} eq 'activity'
+               || $page->{selected} eq 'cli'
+               || $page->{selected} eq 'jobdaemon'
+               || $page->{selected} eq 'schema'
+               || $page->{selected} eq 'server' ? 'open' : NUL,
+         depth => 1, tip => 'Logs Menu' } ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'activity' ? 'selected' : NUL,
-         name => 'activity_log' }, 'log', [ 'activity' ] ),
+         depth => 2, name => 'activity_log' }, 'log', [ 'activity' ] ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'cli' ? 'selected' : NUL,
-         name => 'cli_log' }, 'log', [ 'cli' ] ),
+         depth => 2, name => 'cli_log' }, 'log', [ 'cli' ] ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'jobdaemon' ? 'selected' : NUL,
-         name => 'jobdaemon_log' }, 'log', [ 'jobdaemon' ] ),
+         depth => 2, name => 'jobdaemon_log' }, 'log', [ 'jobdaemon' ] ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'schema' ? 'selected' : NUL,
-         name => 'schema_log' }, 'log', [ 'schema' ] ),
+         depth => 2, name => 'schema_log' }, 'log', [ 'schema' ] ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'server' ? 'selected' : NUL,
-         name => 'server_log' }, 'log', [ 'server' ] );
+         depth => 2, name => 'server_log' }, 'log', [ 'server' ] );
+   return;
+};
+
+my $_admin_links = sub {
+   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
+
+   push @{ $list },
+      $nav_folder->( $req, 'admin', { tip => "Administrator's Menu" } );
+
+   push @{ $list },
+      $nav_folder->( $req, 'jobdaemon', {
+         class => $page->{selected} eq 'jobdaemon_status' ? 'open' : NUL,
+         depth => 1, tip => 'Job Daemon Menu' } ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'jobdaemon_status' ? 'selected' : NUL,
+         depth => 2, name => 'jobdaemon_status' }, 'daemon/status', [] );
+
+   $self->$_admin_log_links( $req, $page, $nav );
+
+   push @{ $list },
+      $nav_folder->( $req, 'types', {
+         class => $page->{selected} eq 'types_list'
+               || $page->{selected} eq 'slot_roles_list' ? 'open' : NUL,
+         depth => 1, tip => 'Tyes Menu' } ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'types_list' ? 'selected' : NUL,
+         depth => 2, name => 'types_list' }, 'admin/types', [] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'slot_roles_list' ? 'selected' : NUL,
+         depth => 2, name => 'slot_roles_list' }, 'admin/slot_roles', [] );
 
    return;
 };
 
-my $_admin_people_links = sub {
+my $_people_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
    my $is_allowed_contacts = $self->$_allowed( $req, 'person/contacts' );
    my $is_allowed_people = $self->$_allowed( $req, 'person/people' );
 
    ($is_allowed_contacts or $is_allowed_people)
-      and push @{ $list }, $nav_folder->( $req, 'people' );
+      and push @{ $list }, $nav_folder->( $req, 'people', {
+         tip => 'People Menu' } );
 
    $is_allowed_contacts and push @{ $list },
       $nav_linkto->( $req, {
@@ -159,13 +200,13 @@ my $_admin_people_links = sub {
    return;
 };
 
-my $_admin_report_links = sub {
+my $_report_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
    $self->$_allowed( $req, 'report/people' )
       or $self->$_allowed( $req, 'report/slots' ) or return;
 
-   push @{ $list }, $nav_folder->( $req, 'reports' );
+   push @{ $list }, $nav_folder->( $req, 'reports', { tip => 'Report Menu' } );
 
    $self->$_allowed( $req, 'report/people' ) and push @{ $list },
       $nav_linkto->( $req, {
@@ -187,25 +228,6 @@ my $_admin_report_links = sub {
          name => 'vehicle_report', }, 'report/vehicles', [],
                      period => 'year-to-date' );
 
-   return;
-};
-
-my $_admin_vehicle_links = sub {
-   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
-
-   push @{ $list },
-      $nav_folder->( $req, 'vehicles' ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'vehicles_list' ? 'selected' : NUL,
-         name => 'vehicles_list' }, 'asset/vehicles', [] ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'service_vehicles' ? 'selected' : NUL,
-         name => 'service_vehicles' },
-                     'asset/vehicles', [], service => TRUE ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'private_vehicles' ? 'selected' : NUL,
-         name => 'private_vehicles' },
-                     'asset/vehicles', [], private => TRUE );
    return;
 };
 
@@ -314,16 +336,38 @@ my $_secondary_unauthenticated_links = sub {
    return;
 };
 
+my $_vehicle_links = sub {
+   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
+
+   push @{ $list },
+      $nav_folder->( $req, 'vehicles', { tip => 'Vehicle Menu' } ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'vehicles_list' ? 'selected' : NUL,
+         name => 'vehicles_list' }, 'asset/vehicles', [] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'service_vehicles' ? 'selected' : NUL,
+         name => 'service_vehicles' },
+                     'asset/vehicles', [], service => TRUE ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'private_vehicles' ? 'selected' : NUL,
+         name => 'private_vehicles' },
+                     'asset/vehicles', [], private => TRUE );
+   return;
+};
+
 # Public methods
 sub admin_navigation_links {
    my ($self, $req, $page) = @_; $page->{selected} //= NUL;
 
    my $nav  = $self->navigation_links( $req, $page );
-   my $list = $nav->{menu}->{list} //= [];
+   my $list = $nav->{menu}->{list} //= []; $nav->{menu}->{class} = 'dropmenu';
    my $now  = now_dt;
 
+   $self->$_allowed( $req, 'admin/types' )
+      and $self->$_admin_links( $req, $page, $nav );
+
    push @{ $list },
-      $nav_folder->( $req, 'events' ),
+      $nav_folder->( $req, 'events', { tip => 'Event Menu' } ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'current_events' ? 'selected' : NUL,
          name => 'current_events' }, 'event/events', [],
@@ -332,30 +376,12 @@ sub admin_navigation_links {
          class => $page->{selected} eq 'previous_events' ? 'selected' : NUL,
          name => 'previous_events' }, 'event/events', [], before => $now->ymd );
 
-   $self->$_allowed( $req, 'daemon/status' ) and push @{ $list },
-      $nav_folder->( $req, 'jobdaemon' ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'jobdaemon_status' ? 'selected' : NUL,
-         name => 'jobdaemon_status' }, 'daemon/status', [] );
+   $self->$_people_links( $req, $page, $nav );
 
-   $self->$_admin_people_links( $req, $page, $nav );
-
-   $self->$_admin_report_links( $req, $page, $nav );
-
-   $self->$_allowed( $req, 'admin/types' ) and push @{ $list },
-      $nav_folder->( $req, 'types' ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'types_list' ? 'selected' : NUL,
-         name => 'types_list' }, 'admin/types', [] ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'slot_roles_list' ? 'selected' : NUL,
-         name => 'slot_roles_list' }, 'admin/slot_roles', [] );
+   $self->$_report_links( $req, $page, $nav );
 
    $self->$_allowed( $req, 'asset/vehicles' )
-      and $self->$_admin_vehicle_links( $req, $page, $nav );
-
-   $self->$_allowed( $req, 'admin/logs' )
-      and $self->$_admin_log_links( $req, $page, $nav );
+      and $self->$_vehicle_links( $req, $page, $nav );
 
    return $nav;
 }
@@ -402,22 +428,22 @@ sub primary_navigation_links {
       class => $class, tip => 'Posts about upcoming events',
       value => 'Posts', }, 'posts/index' );
 
-   $class = $location eq 'schedule' ? 'current' : NUL;
+   if ($req->authenticated) {
+      $class = $location eq 'schedule' ? 'current' : NUL;
 
-   $req->authenticated and 
       p_item $nav, $nav_linkto->( $req, {
           class => $class, tip => 'Scheduled rotas',
           value => 'Rota', }, $places->{rota} );
 
-   $class = $location eq 'admin' ? 'current' : NUL;
+      $class = $location eq 'admin' ? 'current' : NUL;
 
-   my $after = now_dt->subtract( days => 1 )->ymd;
-   my $index = $places->{admin_index};
+      my $after = now_dt->subtract( days => 1 )->ymd;
+      my $index = $places->{admin_index};
 
-   $req->authenticated and
       p_item $nav, $nav_linkto->( $req, {
          class => $class, tip => 'admin_index_title',
          value => 'admin_index_link', }, $index, [], after => $after );
+   }
 
    return $nav;
 }

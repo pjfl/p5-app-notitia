@@ -66,6 +66,9 @@ msgstr "Management"
 msgid "admin_index_title"
 msgstr "Administration Index"
 
+msgid "admin_management_heading"
+msgstr "Admin"
+
 msgid "administrator"
 msgstr "Administrator"
 

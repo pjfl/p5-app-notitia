@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.4.$Rev: 1 $ of **App::Notitia**
+This documents version v0.4.$Rev: 2 $ of **App::Notitia**
 
 # Description
 
@@ -212,18 +212,6 @@ By default the production server logs access requests to the file
 Exporting `DBIC_TRACE` and setting it to true will cause [DBIx::Class](https://metacpan.org/pod/DBIx::Class)
 to emit the SQL it generates to `stderr`. On the production server
 `stderr` is redirected to `var/tmp/daemon.err`
-
-# Project To Do List
-
-TODO: Add media query to reduce form size on mobiles
-
-TODO: Schema version numbers. Automate manual incrementing of schema versions
-
-TODO: Work a plan for row life
-
-TODO: Remove rota and shift from schema!
-
-TODO: Req->username should be $req->session->shortcode
 
 # Dependencies
 
