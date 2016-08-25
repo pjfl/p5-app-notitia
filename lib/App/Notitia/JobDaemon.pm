@@ -33,6 +33,12 @@ my $_is_lock_set = sub {
    return is_member $name, map { $_->{key} } @{ $list };
 };
 
+my $_stdio_file = sub {
+   my ($self, $extn, $name) = @_; $name //= $self->_program_name;
+
+   return $self->file->tempdir->catfile( "${name}.${extn}" );
+};
+
 my $_build_read_socket = sub {
    my $path = $_[ 0 ]->_socket_path;
    my $socket = IO::Socket::UNIX->new( Local => "${path}", Type => SOCK_DGRAM );
@@ -81,125 +87,16 @@ my $_build_write_socket = sub {
    return $socket;
 };
 
-my $_lower_semaphore = sub {
-   my $self = shift; my $name = $self->config->name; my $buf = NUL;
-
-   $self->read_socket->recv( $buf, 1 ) until ($buf eq 'x');
-
-   $self->lock->reset( k => "${name}_semaphore", p => 666 );
-   $self->log->debug( 'Lowered jobqueue semaphore' );
-   return;
-};
-
-my $_runjob = sub {
-   my ($self, $job) = @_;
-
-   try {
-      $self->log->info( 'Running job '.$job->name.'-'.$job->id );
-
-      my $r = $self->run_cmd( [ split SPC, $job->command ] );
-
-      $self->log->info( 'Job '.$job->name.'-'.$job->id.' rv '.$r->rv );
-   }
-   catch {
-      my ($msg) = split m{ \n }mx, "${_}";
-
-      $self->log->error( 'Job '.$job->name.'-'.$job->id.' rv '.$_->rv.": $msg");
-   };
-
-   return OK;
-};
-
-my $_set_started_lock = sub {
-   my ($self, $lock, $name, $pid) = @_;
-
-   unless ($lock->set( k => $name, p => $pid, t => 0, async => TRUE )) {
-      try { $lock->reset( k => "${name}_starting", p => 666 ) } catch {};
-      throw 'Job daemon already running';
-   }
-
-   my $path = $self->_socket_path;
-      $path->exists and $path->unlink; $path->close;
-
-   try { $lock->reset( k => "${name}_starting", p => 666 ) } catch {};
-
-   return;
-};
-
-my $_stdio_file = sub {
-   my ($self, $extn, $name) = @_; $name //= $self->_program_name;
-
-   return $self->file->tempdir->catfile( "${name}.${extn}" );
-};
-
-my $_daemon_loop = sub {
-   my $self = shift; my $conf = $self->config; my $stopping = FALSE;
-
-   my $last_run = $conf->tempdir->catfile( $conf->name.'_last_run' )->lock;
-
-   while (not $stopping) {
-      $self->$_lower_semaphore;
-
-      for my $job ($self->schema->resultset( 'Job' )->search( {} )->all) {
-         if ($job->command eq 'stop_jobdaemon') {
-            $job->delete; $stopping = TRUE; last;
-         }
-
-         $self->run_cmd( [ sub { $_runjob->( $self, $job ) } ],
-                         { async => TRUE, detach => TRUE } );
-
-         $last_run->println( $job->name.'-'.$job->id ); $last_run->close;
-
-         $job->delete;
-      }
-   }
-
-   return;
-};
-
-my $_daemon = sub {
-   my $self = shift; $PROGRAM_NAME = $self->_program_name;
-
-   $self->log->debug( 'Trying to start the job daemon' );
-   $self->config->appclass->env_var( 'debug', $self->debug );
-
-   my $lock = $self->lock; my $name = $self->config->name; my $pid = $PID;
-
-   $self->$_set_started_lock( $lock, $name, $pid );
-
-   $self->log->info( "Started job daemon ${pid}" );
-
-   my $reset = sub {
-      $self->log->info( "Stopping job daemon ${pid}" );
-      $self->read_socket and $self->read_socket->close;
-      $self->_socket_path->exists and $self->_socket_path->unlink;
-
-      try { $lock->reset( k => "${name}_semaphore", p => 666 ) } catch {};
-      try { $lock->reset( k => $name, p => $pid ) } catch {};
-      try { $lock->reset( k => "${name}_stopping",  p => 666 ) } catch {};
-
-      return;
-   };
-
-   try { local $SIG{TERM} = sub { $reset->(); exit OK }; $self->$_daemon_loop }
-   catch { $self->log->error( $_ ) };
-
-   $reset->();
-
-   exit OK;
-};
-
 my $_build_daemon_control = sub {
-   my $self = shift; my $conf = $self->config; my $name = $conf->name;
+   my $self = shift; my $conf = $self->config;
 
-   my $tempdir = $conf->tempdir;
-   my $args    = {
+   my $args = {
       name         => blessed $self || $self,
       path         => $conf->pathname,
 
       directory    => $conf->appldir,
-      program      => sub { shift; $self->$_daemon( @_ ) },
-      program_args => [],
+      program      => $conf->binsdir->catfile( $self->_program_name ),
+      program_args => [ 'runqueue' ],
 
       pid_file     => $self->_pid_file->pathname,
       stderr_file  => $self->$_stdio_file( 'err' ),
@@ -273,9 +170,19 @@ my $_is_write_socket_stale = sub {
    return $path->stat->{ctime} > $self->socket_ctime ? TRUE : FALSE;
 };
 
+my $_lower_semaphore = sub {
+   my $self = shift; my $name = $self->config->name; my $buf = NUL;
+
+   $self->read_socket->recv( $buf, 1 ) until ($buf eq 'x');
+
+   $self->lock->reset( k => "${name}_semaphore", p => 666 );
+   $self->log->debug( 'Lowered jobqueue semaphore' );
+   return;
+};
+
 my $_raise_semaphore = sub {
-   my $self = shift;
-   my $name = $self->config->name;
+   my $self = shift; my $name = $self->config->name;
+
    my $socket = $self->write_socket or throw 'No write socket';
 
    $self->lock->set( k => "${name}_semaphore", p => 666, async => TRUE )
@@ -286,15 +193,107 @@ my $_raise_semaphore = sub {
    return TRUE;
 };
 
+my $_runjob = sub {
+   my ($self, $job) = @_;
+
+   try {
+      $self->log->info( 'Running job '.$job->name.'-'.$job->id );
+
+      my $r = $self->run_cmd( [ split SPC, $job->command ] );
+
+      $self->log->info( 'Job '.$job->name.'-'.$job->id.' rv '.$r->rv );
+   }
+   catch {
+      my ($msg) = split m{ \n }mx, "${_}";
+
+      $self->log->error( 'Job '.$job->name.'-'.$job->id.' rv '.$_->rv.": $msg");
+   };
+
+   return OK;
+};
+
+my $_set_started_lock = sub {
+   my ($self, $lock, $name, $pid) = @_;
+
+   unless ($lock->set( k => $name, p => $pid, t => 0, async => TRUE )) {
+      try { $lock->reset( k => "${name}_starting", p => 666 ) } catch {};
+      throw 'Job daemon already running';
+   }
+
+   my $path = $self->_socket_path;
+      $path->exists and $path->unlink; $path->close;
+
+   try { $lock->reset( k => "${name}_starting", p => 666 ) } catch {};
+
+   return;
+};
+
 my $_wait_while_stopping = sub {
    my $self = shift; my $stopping;
 
    while (not defined $stopping or $stopping) {
       $stopping = $self->$_is_lock_set( $self->lock->list, 'stopping' );
-      $stopping and nap 0.5
+      $stopping and nap 0.5;
    }
 
    return;
+};
+
+my $_daemon_loop = sub {
+   my $self = shift; my $conf = $self->config; my $stopping = FALSE;
+
+   my $last_run = $conf->tempdir->catfile( $conf->name.'_last_run' )->lock;
+
+   while (not $stopping) {
+      $self->$_lower_semaphore;
+
+      for my $job ($self->schema->resultset( 'Job' )->search( {} )->all) {
+         if ($job->command eq 'stop_jobdaemon') {
+            $job->delete; $stopping = TRUE; last;
+         }
+
+         $self->run_cmd( [ sub { $_runjob->( $self, $job ) } ],
+                         { async => TRUE, detach => TRUE } );
+
+         $last_run->println( $job->name.'-'.$job->id ); $last_run->close;
+
+         $job->delete;
+      }
+   }
+
+   return;
+};
+
+my $_runqueue = sub {
+   my $self = shift; $PROGRAM_NAME = $self->_program_name;
+
+   $self->log->debug( 'Trying to start the job daemon' );
+   $self->config->appclass->env_var( 'debug', $self->debug );
+
+   my $lock = $self->lock; my $name = $self->config->name; my $pid = $PID;
+
+   $self->$_set_started_lock( $lock, $name, $pid );
+
+   $self->log->info( "Started job daemon ${pid}" );
+
+   my $reset = sub {
+      $self->log->info( "Stopping job daemon ${pid}" );
+      $self->read_socket and $self->read_socket->close;
+      $self->_socket_path->exists and $self->_socket_path->unlink;
+
+      try { $lock->reset( k => "${name}_semaphore", p => 666 ) } catch {};
+      try { $lock->reset( k => $name, p => $pid ) } catch {};
+      try { $lock->reset( k => "${name}_stopping",  p => 666 ) } catch {};
+
+      return;
+   };
+
+   try { local $SIG{TERM} = sub { $reset->(); exit OK }; $self->$_daemon_loop }
+   catch { $self->log->error( $_ ) };
+
+   $reset->();
+
+   exit OK;
 };
 
 # Public methods
@@ -334,6 +333,10 @@ sub restart : method {
    return $self->start;
 }
 
+sub runqueue : method {
+   return $_[ 0 ]->$_runqueue;
+}
+
 sub show_locks : method {
    my $self = shift;
 
@@ -353,9 +356,7 @@ sub show_warnings : method {
 sub start : method {
    my $self = shift; $self->params->{start} = [ { expected_rv => 1 } ];
 
-   $self->$_wait_while_stopping;
-
-   my $key = $self->config->name.'_starting';
+   my $key = $self->config->name.'_starting'; $self->$_wait_while_stopping;
 
    $self->lock->set( k => $key, p => 666, async => TRUE )
       or throw 'Job daemon already starting';
