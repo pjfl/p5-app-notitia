@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+0.4.1     2016-08-25 22:16:54
+          - Implements #81. Persistant job daemon process
           - Implements #83. Events posts require login to view
           - Adds display controls to log viewer
           - Adds pages queries to log viewer

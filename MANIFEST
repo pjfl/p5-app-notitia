@@ -4,6 +4,7 @@ MANIFEST
 bin/notitia-cli
 bin/notitia-completion
 bin/notitia-daemon
+bin/notitia-jobdaemon
 bin/notitia-localenv
 bin/notitia-schema
 bin/notitia-server
@@ -23,6 +24,7 @@ lib/App/Notitia/Daemon.pm
 lib/App/Notitia/Exception.pm
 lib/App/Notitia/Form.pm
 lib/App/Notitia/GeoLocation.pm
+lib/App/Notitia/JobDaemon.pm
 lib/App/Notitia/Markdown.pm
 lib/App/Notitia/Model.pm
 lib/App/Notitia/Model/Admin.pm
@@ -31,6 +33,7 @@ lib/App/Notitia/Model/DayRota.pm
 lib/App/Notitia/Model/Documentation.pm
 lib/App/Notitia/Model/Endorsement.pm
 lib/App/Notitia/Model/Event.pm
+lib/App/Notitia/Model/JobDaemon.pm
 lib/App/Notitia/Model/MonthRota.pm
 lib/App/Notitia/Model/Person.pm
 lib/App/Notitia/Model/Posts.pm
