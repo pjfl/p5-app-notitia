@@ -390,6 +390,8 @@ sub status : method {
 sub stop : method {
    my $self = shift; $self->params->{stop} = [ { expected_rv => 1 } ];
 
+   $self->is_running or throw 'Not running';
+
    my $key = $self->config->name.'_stopping';
 
    $self->lock->set( k => $key, p => 666, async =>TRUE )
