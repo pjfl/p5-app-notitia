@@ -276,14 +276,13 @@ sub build_navigation ($$) {
          $keepit or next;
       }
 
-      my $link   = clone( $node ); delete $link->{tree};
-      my $prefix = $link->{prefix};
+      my $link = clone( $node ); delete $link->{tree};
 
       $link->{class}  = $node->{type} eq 'folder' ? 'folder-link' : 'file-link';
+      $link->{depth} -= $opts->{depth_offset};
+      $link->{href }  = uri_for_action( $req, $opts->{path}, [ $link->{url} ] );
       $link->{tip  }  = $get_tip_text->( $opts->{config}->docs_root, $node );
       $link->{value}  = $opts->{label}->( $link );
-      $link->{href }  = uri_for_action( $req, $opts->{path}, [ $link->{url} ] );
-      $link->{depth} -= $opts->{depth_offset};
 
       if (defined $ids->[ 0 ] and $ids->[ 0 ] eq $node->{id}) {
          $link->{class} .= ' open'; shift @{ $ids };
