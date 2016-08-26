@@ -361,6 +361,9 @@ msgstr "[_1] rota for [_2]"
 msgid "delete"
 msgstr "Delete"
 
+msgid "delete_document_tip"
+msgstr "Delete the selected document"
+
 msgid "delete_tip"
 msgstr "Delete the [_1] record for [_2]"
 
@@ -382,11 +385,38 @@ msgstr "Disposed"
 msgid "dob"
 msgstr "Date of Birth"
 
+msgid "document_upload_link"
+msgstr "Document Upload"
+
+msgid "document_upload_tip"
+msgstr "Upload personal documents for this person"
+
 msgid "Documentation"
 msgstr "Information"
 
+msgid "docs_heading_0"
+msgstr "DL"
+
+msgid "docs_heading_1"
+msgstr "Filename"
+
+msgid "docs_heading_2"
+msgstr "Size"
+
+msgid "docs_heading_3"
+msgstr "Modified"
+
+msgid "docs_heading_4"
+msgstr "択"
+
 msgid "download_csv_link"
 msgstr "Download CSV"
+
+msgid "download_document_tip"
+msgstr "Download this document"
+
+msgid "download_file_tip"
+msgstr "Download the [_1] file"
 
 msgid "driver"
 msgstr "Driver"
@@ -1474,6 +1504,9 @@ msgstr "All Vehicles"
 
 msgid "vehicles_list_tip"
 msgstr "List all the vehicles"
+
+msgid "view_document_tip"
+msgstr "View this document"
 
 msgid "version"
 msgstr "Version"

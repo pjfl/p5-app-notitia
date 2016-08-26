@@ -159,7 +159,8 @@
          <input [% IF option.selected %]checked="checked"[% END %]
             class="[% option.class %]" id="[% option.id %]" name="[% f.name %]"
              type="radio" value="[% option.value %]">
-         <span class="option-label">[% loc( option.label ) %]</span>
+[%       IF option.label %]<span class="option-label">
+[%              loc( option.label ) %]</span>[% END -%]
       </label>
 [%    END -%]
 [% END -%]
@@ -223,7 +224,8 @@
 [%    IF f.title %] title="[% f.title %]"[% END -%]
 [%    IF f.orig_type %] type="[% f.orig_type %]"[% END -%]
 [%    IF f.width %] width="[% f.width %]"[% END %]>
-[%    IF f.content %][% f.content %]</[% f.tag %]>[% END -%]
+[%    IF f.content; f.content;  END -%]
+[%    IF f.content || f.close %]</[% f.tag %]>[% END -%]
 [% END -%]
 [%# -%]
 [% MACRO Text( f ) WRAPPER label -%]
@@ -250,7 +252,7 @@
       <input [% IF f.disabled %]disabled="disabled"[% END -%]
          class="[% class %]" id="[% f.name %]" maxlength="[% f.maxlength %]"
           name="[% f.name %]" placeholder="[% f.placeholder%]"
-          size="[% f.size %]" type="textfield" value="[% f.value %]">
+          size="[% f.fieldsize %]" type="textfield" value="[% f.value %]">
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>
 [% END -%]

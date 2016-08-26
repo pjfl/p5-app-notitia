@@ -404,19 +404,24 @@ sub upload_file {
    $upload->size > $conf->max_asset_size and
       throw 'File [_1] size [_2] too big', [ $upload->filename, $upload->size ];
 
-   my $dir    = $public ? $conf->assetdir->catdir( 'public' )
-              : $type   ? $conf->assetdir->catdir( $type )
-              :           $conf->assetdir;
    my ($extn) = $upload->filename =~ m{ ( \. .+) \z }mx;
 
    is_member $extn, @extensions or throw 'File type [_1] unknown', [ $extn ];
 
-   my $file   = $name ? "${name}${extn}" : $upload->filename;
-   my $dest   = $dir->catfile( $file )->assert_filepath;
+   my $dir = $public ? $conf->assetdir->catdir( 'public' )
+           : $type   ? $conf->assetdir->catdir( $type )
+           :           $conf->assetdir;
+
+   if ($type and $type eq 'personal') {
+      $name or throw 'No user name supplied'; $dir = $dir->catdir( $name );
+      $name = FALSE;
+   }
+
+   my $file = $name ? "${name}${extn}" : $upload->filename;
+   my $dest = $dir->catfile( $file )->assert_filepath;
 
    io( $upload->path )->copy( $dest );
 
-   my $location = $self->base_uri( $req );
    my $who      = $req->session->user_label;
    my $rel_path = $dest->abs2rel( $conf->assetdir );
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
@@ -425,7 +430,7 @@ sub upload_file {
    get_logger( 'activity' )->log( $message );
    $message = [ to_msg 'File [_1] uploaded by [_2]', $rel_path, $who ];
 
-   return { redirect => { location => $location, message => $message } };
+   return { redirect => { message => $message } }; # location referer
 }
 
 1;

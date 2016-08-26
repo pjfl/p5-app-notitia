@@ -78,6 +78,9 @@ my $_build_user_home = sub {
 };
 
 # Public attributes
+has 'asset_manager'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub { [ qw( administrator person_manager ) ] };
+
 has 'assetdir'        => is => 'lazy', isa => Path, coerce => TRUE,
    builder            => sub { $_[ 0 ]->docs_root->catdir( $_[ 0 ]->assets ) };
 
@@ -380,6 +383,12 @@ function
 Defines the following attributes;
 
 =over 3
+
+=item C<asset_manager>
+
+An array reference of non empty simple strings. The list of roles who have
+access to the personal assets files. Defaults to C<administrator> and
+C<person_manager>
 
 =item C<assetdir>
 

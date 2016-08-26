@@ -219,13 +219,23 @@ sub assign_link ($$$$) {
 }
 
 sub authenticated_only ($) {
-   my $assets = shift;
+   my $conf = shift; my $assets = $conf->assets;
 
    return sub {
       $_ =~ m{ \A / $assets         }mx or  return FALSE;
       $_ =~ m{ \A / $assets /public }mx and return TRUE;
 
-      return $_[ 1 ]->{ 'psgix.session' }->{authenticated} ? TRUE : FALSE;
+      my $sess = $_[ 1 ]->{ 'psgix.session' };
+
+      $sess->{authenticated} or return FALSE;
+
+      $_ =~ m{ \A / $assets /personal }mx or return TRUE;
+
+      for my $role (@{ $conf->asset_manager }) {
+         is_member $role, $sess->{roles} and return TRUE;
+      }
+
+      return FALSE;
    };
 }
 
