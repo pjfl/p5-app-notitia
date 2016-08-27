@@ -7,6 +7,7 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'main';
 
 sub dispatch_request {
+   sub (POST + /certifications/*      + ?*) { [ 'certs/from_request',    @_ ] },
    sub (GET  + /certifications/*      + ?*) { [ 'certs/certifications',  @_ ] },
    sub (POST + /certification/**      + ?*) { [ 'certs/from_request',    @_ ] },
    sub (GET  + /certification/**      + ?*) { [ 'certs/certification',   @_ ] },
@@ -26,6 +27,7 @@ sub dispatch_request {
    sub (GET  + /person-activate/*     + ?*) { [ 'person/activate',       @_ ] },
    sub (POST + /person/* | /person    + ?*) { [ 'person/from_request',   @_ ] },
    sub (GET  + /person/* | /person    + ?*) { [ 'person/person',         @_ ] },
+   sub (GET  + /personal-document/*   + ?*) { [ 'certs/upload_document', @_ ] },
    sub (POST + /role/*                + ?*) { [ 'role/from_request',     @_ ] },
    sub (GET  + /role/*                + ?*) { [ 'role/role',             @_ ] },
    sub (POST + /slot-certs/*          + ?*) { [ 'admin/from_request',    @_ ] },

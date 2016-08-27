@@ -175,11 +175,7 @@ sub tree_root {
 }
 
 sub upload : Role(editor) Role(event_manager) Role(person_manager) {
-   my ($self, $req) = @_; my $stash = $self->upload_file( $req );
-
-   $stash->{redirect}->{location} = $self->docs_url( $req );
-
-   return $stash;
+   return $_[ 0 ]->upload_file( $_[ 1 ] );
 }
 
 1;

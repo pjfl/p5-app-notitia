@@ -25,9 +25,7 @@ with 'Web::Components::Loader';
 around 'to_psgi_app' => sub {
    my ($orig, $self, @args) = @_; my $psgi_app = $orig->( $self, @args );
 
-   my $conf = $self->config; my $assets = $conf->assets;
-
-   my $serve_as_static = $conf->serve_as_static;
+   my $conf = $self->config; my $serve_as_static = $conf->serve_as_static;
 
    return builder {
       enable 'ContentLength';
@@ -45,7 +43,7 @@ around 'to_psgi_app' => sub {
             secret      => $conf->secret,
             session_key => $conf->prefix.'_session';
          enable 'Static',
-            path => authenticated_only( $assets ), pass_through => TRUE,
+            path => authenticated_only( $conf ), pass_through => TRUE,
             root => $conf->docs_root;
          enable 'LogDispatch', logger => $self->log;
          enable_if { $self->debug } 'Debug';

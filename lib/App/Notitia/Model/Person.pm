@@ -374,7 +374,7 @@ my $_bind_person_fields = sub {
                             disabled => $disabled, label => 'username',
                             tip => make_tip( $req, 'username_field_tip' ) },
       region           => { class => 'single-character', disabled => $disabled,
-                            maxlength => 1, size => 1 },
+                            maxlength => 1, fieldsize => 1 },
       enable_2fa       => $is_create || $disabled ? FALSE : {
          checked       => $person->totp_secret ? TRUE : FALSE,
          label_class   => 'right', type => 'checkbox' },
@@ -533,7 +533,8 @@ sub person : Role(person_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub person_summary : Role(person_manager) Role(address_viewer) {
+sub person_summary : Role(person_manager) Role(address_viewer)
+                     Role(training_manager) {
    my ($self, $req) = @_; my $people;
 
    my $name       =  $req->uri_params->( 0 );
