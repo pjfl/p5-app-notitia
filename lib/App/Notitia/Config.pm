@@ -79,7 +79,8 @@ my $_build_user_home = sub {
 
 # Public attributes
 has 'asset_manager'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
-   builder            => sub { [ qw( administrator person_manager ) ] };
+   builder            => sub {
+      [ qw( administrator person_manager training_manager ) ] };
 
 has 'assetdir'        => is => 'lazy', isa => Path, coerce => TRUE,
    builder            => sub { $_[ 0 ]->docs_root->catdir( $_[ 0 ]->assets ) };

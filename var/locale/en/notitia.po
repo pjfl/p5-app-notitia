@@ -389,7 +389,7 @@ msgid "document_upload_link"
 msgstr "Document Upload"
 
 msgid "document_upload_tip"
-msgstr "Upload personal documents for this person"
+msgstr "Upload personal documents for [_1]"
 
 msgid "Documentation"
 msgstr "Information"
@@ -1282,6 +1282,9 @@ msgstr "Template"
 
 msgid "trailer"
 msgstr "Trailer"
+
+msgid "training_manager"
+msgstr "Training Manager"
 
 msgid "trigger_jobdaemon"
 msgstr "Trigger"

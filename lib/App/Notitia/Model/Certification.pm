@@ -1,13 +1,10 @@
 package App::Notitia::Model::Certification;
 
-use utf8;
-
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
-                                NUL PIPE_SEP SPC TRUE );
+use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
-                                p_cell p_list p_fields p_row p_table p_tag
-                                p_textfield );
+                                p_cell p_link p_list p_fields p_row p_table
+                                p_tag p_textfield );
 use App::Notitia::Util      qw( check_field_js dialog_anchor loc locm
                                 make_tip register_action_paths to_dt to_msg
                                 uri_for_action );
@@ -63,7 +60,7 @@ my $_personal_docs_headers = sub {
 };
 
 # Private methods
-my $_cert_links = sub {
+my $_cert_row = sub {
    my ($self, $req, $scode, $cert) = @_;
 
    my $args = [ $cert->recipient->label ];
@@ -94,18 +91,7 @@ my $_certs_ops_links = sub {
    my $opts  = { action => 'add', args => [ $person->label ],
                  container_class => 'ops-links right', request => $req };
 
-   push @{ $links }, f_link 'certification', $href, $opts;
-
-   return $links;
-};
-
-my $_files_action_links = sub {
-   my ($self, $req, $page, $person) = @_; my $links = [];
-
-   p_button $links, 'delete', 'delete_document', {
-      class => 'button', container_class => 'right',
-      tip => make_tip $req, 'delete_document_tip',
-   };
+   p_link $links, 'certification', $href, $opts;
 
    return $links;
 };
@@ -119,16 +105,14 @@ my $_file_row = sub {
    p_cell $row, {
       class => 'narrow align-center',
       value => f_link $file, $href, {
-         action => 'download',
-         download => $file,
-         request => $req,
-         tip => locm( $req, 'download_document_tip' ),
-         value => f_tag 'i', NUL, { class => 'download-icon', close => TRUE },
+         action => 'download', download => $file, request => $req,
+         tip    => locm( $req, 'download_document_tip' ),
+         value  => f_tag 'i', NUL, { class => 'download-icon', close => TRUE },
       } };
 
    p_cell $row, { value => f_link "view_${file}", $href, {
       request => $req, tip => locm( $req, 'view_document_tip' ),
-      value => $file } };
+      value   => $file } };
 
    p_cell $row, { class => 'narrow align-right', value => $path->stat->{size} };
 
@@ -142,14 +126,25 @@ my $_file_row = sub {
    return $row;
 };
 
+my $_files_action_links = sub {
+   my ($self, $req, $page, $person) = @_; my $links = [];
+
+   p_button $links, 'delete', 'delete_document', {
+      class => 'button', container_class => 'right',
+      tip => make_tip $req, 'delete_document_tip',
+   };
+
+   return $links;
+};
+
 my $_files_ops_links = sub {
    my ($self, $req, $page, $person) = @_; my $links = [];
 
    p_tag $links, 'h4', 'Personal Documents', { class => 'label left' };
 
-   push @{ $links }, f_link 'document', C_DIALOG, {
-      action => 'upload', container_class => 'action-links right',
-      request => $req };
+   p_link $links, 'document', C_DIALOG, {
+      action => 'upload', args => [ $person->label ],
+      container_class => 'action-links right', request => $req };
 
    my $actionp = $self->moniker.'/upload_document';
    my $href = uri_for_action $req, $actionp, [ $person->shortcode ];
@@ -214,7 +209,7 @@ my $_bind_cert_fields = sub {
 };
 
 # Public functions
-sub certification : Role(person_manager) {
+sub certification : Role(person_manager) Role(training_manager) {
    my ($self, $req) = @_;
 
    my $actionp   =  $self->moniker.'/certification';
@@ -226,6 +221,7 @@ sub certification : Role(person_manager) {
    my $page      =  {
       forms      => [ $form ],
       literal_js => $self->$_certification_js(),
+      selected   => 'people_list',
       title      => loc $req, "certification_${action}_heading" };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $name );
@@ -244,7 +240,7 @@ sub certification : Role(person_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub certifications : Role(person_manager) {
+sub certifications : Role(person_manager) Role(training_manager) {
    my ($self, $req) = @_;
 
    my $moniker =  $self->moniker;
@@ -253,41 +249,40 @@ sub certifications : Role(person_manager) {
    my $form    =  blank_form 'certifications', $href, { class => 'wide-form' };
    my $page    =  {
       forms    => [ $form ],
+      selected => 'people_list',
       title    => loc $req, 'certificates_management_heading' };
    my $schema  =  $self->schema;
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );
-   my $cert_rs =  $schema->resultset( 'Certification' );
    my $links   =  $self->$_certs_ops_links( $req, $page, $person );
 
    p_list $form, NUL, $links, $_link_opts->();
 
-   my $table = p_table $form, { headers => $_certs_headers->( $req ) };
+   my $cert_rs =  $schema->resultset( 'Certification' );
+   my $table   =  p_table $form, { headers => $_certs_headers->( $req ) };
 
-   p_row $table, [ map { $self->$_cert_links( $req, $scode, $_ ) }
+   p_row $table, [ map { $self->$_cert_row( $req, $scode, $_ ) }
                    $cert_rs->search_for_certifications( $scode )->all ];
 
    $links = $self->$_files_ops_links( $req, $page, $person );
-
    p_list $form, NUL, $links, $_link_opts->();
+
+   $table = p_table $form, { headers => $_personal_docs_headers->( $req ) };
 
    my $assetdir = $self->config->assetdir;
    my $userdir  = $assetdir->catdir( 'personal' )->catdir( $scode );
 
    $userdir->exists or return $self->get_stash( $req, $page );
 
-   $table = p_table $form, { headers => $_personal_docs_headers->( $req ) };
-
    p_row $table, [ map { $self->$_file_row( $req, $scode, $_ ) }
                    $userdir->all_files ];
 
    $links = $self->$_files_action_links( $req, $page, $person );
-
    p_list $form, NUL, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
 
-sub create_certification_action : Role(person_manager) {
+sub create_certification_action : Role(person_manager) Role(training_manager) {
    my ($self, $req) = @_;
 
    my $name    = $req->uri_params->( 0 );
@@ -316,7 +311,7 @@ sub create_certification_action : Role(person_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_certification_action : Role(person_manager) {
+sub delete_certification_action : Role(person_manager) Role(training_manager) {
    my ($self, $req) = @_;
 
    my $name     = $req->uri_params->( 0 );
@@ -335,7 +330,7 @@ sub delete_certification_action : Role(person_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_document_action : Role(person_manager) {
+sub delete_document_action : Role(person_manager) Role(training_manager) {
    my ($self, $req) = @_; my $message;
 
    my $scode = $req->uri_params->( 0 );
@@ -361,7 +356,7 @@ sub find_cert_by {
    return $rs->find_cert_by( @_ );
 }
 
-sub update_certification_action : Role(person_manager) {
+sub update_certification_action : Role(person_manager) Role(training_manager) {
    my ($self, $req) = @_;
 
    my $name = $req->uri_params->( 0 );
@@ -381,7 +376,7 @@ sub update_certification_action : Role(person_manager) {
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub upload_document : Role(person_manager) {
+sub upload_document : Role(person_manager) Role(training_manager) {
    my ($self, $req) = @_;
 
    my $scode  = $req->uri_params->( 0 );

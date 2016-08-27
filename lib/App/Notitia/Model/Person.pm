@@ -533,7 +533,8 @@ sub person : Role(person_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub person_summary : Role(person_manager) Role(address_viewer) {
+sub person_summary : Role(person_manager) Role(address_viewer)
+                     Role(training_manager) {
    my ($self, $req) = @_; my $people;
 
    my $name       =  $req->uri_params->( 0 );

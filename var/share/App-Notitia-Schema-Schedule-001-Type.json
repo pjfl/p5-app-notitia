@@ -11,6 +11,7 @@
       "fund_raiser, role",
       "person_manager, role",
       "rota_manager, role",
+      "training_manager, role",
       "assessment, certification",
       "bluelight, certification",
       "c_advanced, certification",
