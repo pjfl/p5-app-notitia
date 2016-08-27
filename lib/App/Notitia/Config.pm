@@ -303,6 +303,10 @@ has 'title'           => is => 'ro',   isa => NonEmptySimpleStr,
 has 'transport_attr'  => is => 'lazy', isa => HashRef,
    builder            => $_build_transport_attr, init_arg => undef;
 
+has 'upload_extns'    => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub {
+      [ qw( .csv .doc .docx .gif .jpeg .jpg .odt .pdf .png .xls .xlsx ) ] };
+
 has 'user'            => is => 'ro',   isa => SimpleStr, default => NUL;
 
 has 'user_home'       => is => 'lazy', isa => Path, coerce => TRUE,
@@ -840,6 +844,12 @@ in the email role. The password used to send emails via TLS should be set
 using
 
    notitia-cli set-sasl-password
+
+=item C<upload_extns>
+
+An array reference of non empty simple strings. Defaults to
+C< .csv .doc .docx .gif .jpeg .jpg .odt .pdf .png .xls .xlsx >.
+Only allow uploading of files with these extensions
 
 =item C<user>
 

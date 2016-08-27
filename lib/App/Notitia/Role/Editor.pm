@@ -28,9 +28,6 @@ with q(Web::Components::Role::TT);
 has '_ipc' => is => 'lazy', isa => ProcCommer, handles => [ 'run_cmd' ],
    builder => sub { Class::Usul::IPC->new( builder => $_[ 0 ]->application ) };
 
-# Private class attributes
-my @extensions = qw( .csv .doc .docx .gif .jpeg .jpg .png .xls .xlsx );
-
 # Private methods
 my $_add_dialog_js = sub {
    my ($self, $req, $page, $name, $opts) = @_;
@@ -406,7 +403,8 @@ sub upload_file {
 
    my ($extn) = $upload->filename =~ m{ ( \. .+) \z }mx;
 
-   is_member $extn, @extensions or throw 'File type [_1] unknown', [ $extn ];
+   is_member $extn, $conf->upload_extns
+      or throw 'File type [_1] unknown', [ $extn ];
 
    my $dir = $public ? $conf->assetdir->catdir( 'public' )
            : $type   ? $conf->assetdir->catdir( $type )
