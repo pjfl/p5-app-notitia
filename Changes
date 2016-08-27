@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+0.5.1     2016-08-27 13:55:05
+          - Implements #75. Document store
           - Moves job daemon, types, and logs to admin menu
 
 0.4.1     2016-08-25 22:16:54

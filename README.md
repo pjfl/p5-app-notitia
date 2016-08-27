@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.4.$Rev: 2 $ of **App::Notitia**
+This documents version v0.5.$Rev: 1 $ of **App::Notitia**
 
 # Description
 
