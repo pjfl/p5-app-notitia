@@ -338,9 +338,9 @@ sub _build_ctlfile {
 sub _build__l10n_attributes {
    return {
       cache_attributes => {
-         page_size => 131_072,
+         page_size => 262_144,
          namespace => $_[ 0 ]->prefix.'-l10n',
-         num_pages => 89,
+         num_pages => 19,
          unlink_on_exit => FALSE, },
       gettext_catagory => NUL, };
 }

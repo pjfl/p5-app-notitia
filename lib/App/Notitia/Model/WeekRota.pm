@@ -758,13 +758,13 @@ my $_alloc_query = sub {
 
    p_select $form, 'display_rows', $_select_number->( 10, $params->{rows} ), {
       class => 'single-digit submit', id => 'display_rows',
-      label_field_class => 'align-right' };
+      label_field_class => 'control-label align-right' };
 
    $_onchange_submit->( $page, 'display_rows' );
 
    p_select $form, 'display_cols', $_select_number->( 10, $params->{cols} ), {
       class => 'single-digit submit', id => 'display_cols',
-      label_field_class => 'align-right' };
+      label_field_class => 'control-label align-right' };
 
    $_onchange_submit->( $page, 'display_cols' );
 
