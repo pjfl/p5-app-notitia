@@ -44,7 +44,7 @@ nav {
       }
       form { display: inline; }
       a.current, button.current {
-         background-color: @contrast; color: @darker;
+         background-color: @contrast; color: @darker-fg;
          .box-shadow;
          text-shadow: 0 1px 0 rgba(255,255,255,.3);
       }
@@ -66,7 +66,7 @@ nav {
       a {
          background-color: @contrast;
          .box-shadow;
-         color: @darker; text-shadow: 0 1px 0 rgba(255,255,255,.3);
+         color: @darker-fg; text-shadow: 0 1px 0 rgba(255,255,255,.3);
       }
    }
 }
@@ -139,12 +139,12 @@ footer {
 }
 .edit-panel-icon {
    &.true {
-      background: url(../img/hyde/icons.png) no-repeat -210px -330px;
+      background: url(../img/hyde/icons.png) no-repeat -240px -330px;
       display: inline-block; height: 20px; overflow: hidden;
       vertical-align: top; width: 20px;
    }
    &.false {
-      background: url(../img/hyde/icons.png) no-repeat -240px -330px;
+      background: url(../img/hyde/icons.png) no-repeat -210px -330px;
       display: inline-block; height: 20px; overflow: hidden;
       vertical-align: top; width: 20px;
    }
@@ -175,14 +175,14 @@ footer {
 .date-field { max-width: 100px; }
 .dialog {
    background-color: @dialog-background; border: 2px solid @divider;
-   .border-radius; color: @darker; padding: 0.5em 1em;
+   .border-radius; color: @darker-fg; padding: 0.5em 1em;
 }
 .dialog-close { float: right; margin-left: 1em; }
 .dialog-title { font-size: 18px; margin-bottom: 10px; }
 .display-control { font-size: 0.75em; }
 .field-error {
     background-color: #fcc; border-color: @darker;
-   .border-radius; border: 1px solid; color: @darker; display: block;
+   .border-radius; border: 1px solid; color: @darker-fg; display: block;
    font-size: 0.825em; margin: 5px 0 0 145px;  max-width: 300px;
    overflow: hidden; padding: 5px 1em; white-space: nowrap;
 }
@@ -228,7 +228,7 @@ footer {
    padding: 8px 12px 10px; position: relative; text-transform: uppercase;
 }
 .next-rota:after, .prev-rota:before {
-   color: @darker; position: absolute; font-size: 32px; font-weight: 900;
+   color: @darker-fg; position: absolute; font-size: 32px; font-weight: 900;
    text-shadow: 0 1px 0 rgba(255,255,255,.4); top: -5px;
 }
 .next-rota:after { content: '\203A'; right: 10px; }
@@ -244,7 +244,7 @@ footer {
 .pathname, .date-field, .narrow-field, .single-character, .single-digit,
 .smallint-field, .standard-field {
    background-color: #fff; border: 2px inset; .border-radius;
-   .box-sizing; color: @darker; margin: 0;
+   .box-sizing; color: @darker-fg; margin: 0;
    padding: 3.25px 0.75em; vertical-align: middle;
 }
 .pathname, .standard-field { min-width: 300px; }
@@ -252,7 +252,7 @@ footer {
 .single-character[disabled], .single-digit[disabled],
 .smallint-field[disabled], .spreadsheet-select, .standard-field[disabled],
 .fake-disabled {
-   background-color: @subtle; color: @darker;
+   background-color: @subtle-bg; color: @darker-fg;
 }
 .prev-rota:before { content: '\2039'; left: 10px; }
 .prev-rota, .prev-rota:hover { margin-left: 10px; padding-left: 30px; }
@@ -277,7 +277,7 @@ footer {
 }
 .spreadsheet-select {
    background-color: #fff; border: 2px inset; .border-radius;
-   .box-sizing; color: @darker; font-size: 12px; max-width: 90px; margin: 0;
+   .box-sizing; color: @darker-fg; font-size: 12px; max-width: 90px; margin: 0;
    min-width: 90px; padding: 3px 3px; vertical-align: middle;
 }
 .spreadsheet-oplinks { margin: 5px auto; }
@@ -318,8 +318,8 @@ footer {
 .notice-board.nb-bottom .notice { margin-bottom: 10px; }
 .notice-board.nb-left .notice { margin-left: 10px; }
 .notice-board .notice {
-   background: @dialog-background; border: 2px solid @divider; color: @lighter;
-   .border-radius; .box-shadow; .box-sizing(content-box);
+   background: @dialog-background; border: 2px solid @divider;
+   color: @lighter-fg; .border-radius; .box-shadow; .box-sizing(content-box);
    font-size: 12px; padding: 10px; position: relative; z-index: 13000;
 }
 .notice-board .notice:after {
@@ -352,7 +352,7 @@ footer {
    top: -14px; width: 0;
 }
 .tips-term {
-   color: @lighter; display: block; font-size: 14px; line-height: 18px;
+   color: @lighter-fg; display: block; font-size: 14px; line-height: 18px;
    padding: 8px 16px 4px 16px;
 }
 /* Flags - Images are 32px by 24px */
@@ -468,9 +468,8 @@ footer {
          background-image: -o-linear-gradient(top, #f7f7f7 0%, #cfcfcf 7%, #aaaaaa 100%);
          background-image: linear-gradient(top, #f7f7f7 0%,#cfcfcf 7%,#aaaaaa 100%);
          border-bottom: 1px solid #111;
-         .border-radius;
-         .box-shadow;
-         color: @lighter; display: block;
+         .border-radius; .box-shadow;
+         color: @lighter-fg; display: block;
          filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f7f7f7', endColorstr='#aaaaaa',GradientType=0 );
          font: 400 16px/24px 'Helvetica Neue', Helvetica, Arial, sans-serif;
          margin: 0 20px; padding: 5px 0; text-align: center;
@@ -505,7 +504,7 @@ aside {
    }
    li {
       list-style-type: none;
-      a { font-size: 14px; position: relative; }
+      a { font-size: 14px; position: relative; text-shadow: none; }
       a:hover { color: #f90; text-decoration: none; }
       &.selected a:before {
          border-color: transparent transparent transparent @lighter;
@@ -573,7 +572,7 @@ aside {
    .disabled { cursor: default; opacity: .5; }
    .next, .prev { position: relative; }
    .next:after, .prev:before {
-      color: @darker; position: absolute; font-size: 32px; font-weight: 900;
+      color: @darker-fg; position: absolute; font-size: 32px; font-weight: 900;
       text-shadow: 0 1px 0 rgba(255,255,255,.4); top: -5px;
    }
    .next:after { content: '\203A'; right: 10px; }
@@ -628,7 +627,8 @@ article h2:first-child, { margin-top: 0; }
 }
 /* Rota */
 .rota-date-field {
-   .table-background; border: 0; color: @contrast; font-size: 12px;
+   border-top: 1px solid #747474; border-top: 1px solid rgba(0,0,0,.1);
+   .box-shadow; .table-background; border: 0; color: @contrast; font-size: 12px;
    line-height: 28px; outline: none; padding: 0 10px 0 10px; width: 80px;
 }
 .rota-date-form { display: inline-block; }
@@ -735,7 +735,7 @@ hr.subtle { display: none; }
 .key-table, .smaller-table, .standard-table, table.embeded { width: 100%; }
 .embeded-spreadsheet-table, .key-table, .smaller-table, .spreadsheet-table,
 .standard-table, table.embeded {
-   background-color: #555; .border-radius;
+   background-color: @table-bg; .border-radius;
    .box-shadow;
    caption, thead {
       background-color: #3a3a3a;

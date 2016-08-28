@@ -164,7 +164,7 @@ has 'less'            => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'less';
 
 has 'less_files'      => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
-   builder            => sub { [ qw( dark ) ] };
+   builder            => sub { [ qw( dark light ) ] };
 
 has 'links'           => is => 'lazy', isa => ArrayRef[HashRef],
    builder            => $_build_links, init_arg => undef;
