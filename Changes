@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #90. Mugshot aspect ratio
           - Stops error-field from disrupting layout
 
 0.6.1     2016-08-28 02:11:50
