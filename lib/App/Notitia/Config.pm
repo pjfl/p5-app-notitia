@@ -289,7 +289,7 @@ has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
       config          => [ qw( description keywords ) ],
       links           => [ qw( assets css images js ) ],
       request         => [ qw( authenticated host language locale username ) ],
-      session         => [ sort keys %{ $_[ 0 ]->session_attr } ], } };
+      session         => [ qw( rota_date skin theme ) ], } };
 
 has 'template_dir'    => is => 'ro',   isa => Directory, coerce => TRUE,
    builder            => sub { $_[ 0 ]->vardir->catdir( 'templates' ) };
