@@ -11,7 +11,7 @@ sub env_var {
 }
 
 sub schema_version {
-   return qv( '0.4.0' );
+   return qv( '0.4.1' );
 }
 
 1;

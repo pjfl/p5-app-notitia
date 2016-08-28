@@ -3,7 +3,8 @@ package App::Notitia::Schema::Schedule::Result::Journey;
 use strictures;
 use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( FALSE PRIORITY_TYPE_ENUM TRUE );
+use App::Notitia::Constants qw( FALSE PRIORITY_TYPE_ENUM
+                                TRUE VARCHAR_MAX_SIZE );
 use App::Notitia::Util      qw( bool_data_type enumerated_data_type
                                 foreign_key_data_type serial_data_type
                                 set_on_create_datetime_data_type

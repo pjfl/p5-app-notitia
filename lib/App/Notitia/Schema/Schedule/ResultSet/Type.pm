@@ -72,6 +72,13 @@ sub search_for_event_types {
                          { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
+sub search_for_package_types {
+   my ($self, $opts) = @_; $opts //= {};
+
+   return $self->search( { type_class => 'package' },
+                         { columns    => [ 'id', 'name' ], %{ $opts } } );
+}
+
 sub search_for_role_types {
    my ($self, $opts) = @_; $opts //= {};
 

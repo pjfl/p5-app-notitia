@@ -157,7 +157,7 @@ msgid "certification_create_heading"
 msgstr "Add Certification"
 
 msgid "certification_type_create_link"
-msgstr "Add Cert. Type"
+msgstr "Certification"
 
 msgid "certification_type_create_tip"
 msgstr "Create a new certification type record"
@@ -448,7 +448,7 @@ msgid "event_summary_management_tip"
 msgstr "View the summary for the [_1] event and participte"
 
 msgid "event_type_create_link"
-msgstr "Add Event Type"
+msgstr "Event"
 
 msgid "event_type_create_tip"
 msgstr "Create a new event type record"
@@ -730,6 +730,9 @@ msgstr "Owner"
 msgid "owner_id"
 msgstr "Owner"
 
+msgid "package_type_create_link"
+msgstr "Package"
+
 msgid "Parameter [_1] is not a valid email address"
 msgstr "Not a valid email address"
 
@@ -914,7 +917,7 @@ msgid "role_management_tip"
 msgstr "Add and remove roles for [_1]"
 
 msgid "role_type_create_link"
-msgstr "Add Role Type"
+msgstr "Role"
 
 msgid "role_type_create_tip"
 msgstr "Create a role type record"
@@ -926,7 +929,7 @@ msgid "rota_manager"
 msgstr "Rota Manager"
 
 msgid "rota_type_create_link"
-msgstr "Add Rota Type"
+msgstr "Rota"
 
 msgid "rota_type_create_tip"
 msgstr "Create a rota type record"
@@ -1175,7 +1178,7 @@ msgid "vehicle_type"
 msgstr "Type"
 
 msgid "vehicle_type_create_link"
-msgstr "Add Vehicle Type"
+msgstr "Vehicle"
 
 msgid "vehicle_type_create_tip"
 msgstr "Create a vehicle type record"

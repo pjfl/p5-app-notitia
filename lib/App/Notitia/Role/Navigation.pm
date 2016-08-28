@@ -308,6 +308,27 @@ sub application_logo {
    return f_link 'logo', uri_for_action( $req, $places->{logo} ), $opts;
 }
 
+sub call_navigation_links {
+   my ($self, $req, $page) = @_; $page->{selected} //= NUL;
+
+   my $nav  = $self->navigation_links( $req, $page );
+   my $list = $nav->{menu}->{list} //= [];
+
+   push @{ $list },
+      $nav_folder->( $req, 'Setup' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'journey' ? 'selected' : NUL,
+         name => 'journey_call' }, 'call/journey', [], ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'customer' ? 'selected' : NUL,
+         name => 'customer_setup' }, 'call/customer', [], ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'location' ? 'selected' : NUL,
+         name => 'location_setup' }, 'call/location', [], );
+
+   return $nav;
+}
+
 sub navigation_links {
    my ($self, $req, $page) = @_; my $nav = {};
 
@@ -351,6 +372,13 @@ sub primary_navigation_links {
       p_item $nav, $nav_linkto->( $req, {
          class => $class, tip => 'admin_index_title',
          value => 'admin_index_link', }, $index, [], after => $after );
+
+   $class = $location eq 'calls' ? 'current' : NUL;
+
+   $req->authenticated and
+      p_item $nav, $nav_linkto->( $req, {
+         class => $class, tip => 'journey_call_tip',
+         value => 'journey_call_link', }, 'call/journey', [] );
 
    return $nav;
 }
