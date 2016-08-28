@@ -338,9 +338,9 @@ my $_bind_person_fields = sub {
                  ? TRUE : FALSE;
 
    return
-   [  first_name       => { class    => 'narrow-field server',
+   [  mugshot          => $_bind_mugshot->( $self->config, $req, $person ),
+      first_name       => { class    => 'narrow-field server',
                             disabled => $disabled },
-      mugshot          => $_bind_mugshot->( $self->config, $req, $person ),
       last_name        => { class    => 'narrow-field server',
                             disabled => $disabled },
       primary_role     => { class    => 'narrow-field',
