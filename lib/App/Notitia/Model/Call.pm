@@ -6,8 +6,9 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PRIORITY_TYPE_ENUM PIPE_SEP TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_fields p_link
                                 p_list p_row p_table p_tag );
-use App::Notitia::Util      qw( js_window_config locm register_action_paths
-                                to_dt to_msg uri_for_action );
+use App::Notitia::Util      qw( js_window_config locm now_dt
+                                register_action_paths to_dt
+                                to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member );
 use Try::Tiny;
@@ -64,6 +65,15 @@ my $_customers_headers = sub {
    my $req = shift; my $header = 'customers_heading';
 
    return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 0 ];
+};
+
+my $_is_disabled = sub {
+   my ($req, $journey, $done) = @_; $journey->id or return $done;
+
+   $req->username ne $journey->controller and return TRUE;
+   now_dt > $journey->requested->clone->add( minutes => 30 ) and return TRUE;
+
+   return $done;
 };
 
 my $_link_opts = sub {
@@ -153,7 +163,7 @@ my $_bind_package_type = sub {
    return [ [ NUL, 0 ],
             (map  { $_package_tuple->( $selected, $_ ) }
              grep { $_->name eq 'other' and $other = $_; $_->name ne 'other' }
-             $types->all), [ 'other', $other->id ] ];
+             $types->all), $_package_tuple->( $selected, $other ) ];
 };
 
 my $_priority_tuple = sub {
@@ -267,6 +277,10 @@ my $_bind_leg_fields = sub {
    $opts->{people   } = $schema->resultset( 'Person' )->search_for_people( {
       roles => [ 'driver', 'rider' ], status => 'current' } );
 
+   my $on_station_disabled = $leg->on_station
+      || $opts->{request}->username ne $opts->{journey}->controller
+       ? TRUE : FALSE;
+
    return
       [  customer       => {
             disabled    => TRUE, value => $opts->{journey}->customer },
@@ -287,13 +301,13 @@ my $_bind_leg_fields = sub {
             disabled    => $disabled, type => 'datetime',
             value       => $leg->collection_eta_label },
          collected      => $leg->id ? {
-            disabled    => $disabled, type => 'datetime',
+            disabled    => $opts->{done}, type => 'datetime',
             value       => $leg->collected_label } : FALSE,
          delivered      => $leg->id ? {
-            disabled    => $disabled, type => 'datetime',
+            disabled    => $opts->{done}, type => 'datetime',
             value       => $leg->delivered_label } : FALSE,
          on_station     => $leg->id ? {
-            disabled    => $disabled, type => 'datetime',
+            disabled    => $on_station_disabled, type => 'datetime',
             value       => $leg->on_station_label } : FALSE,
       ];
 };
@@ -497,13 +511,14 @@ my $_update_journey_from_request = sub {
 sub create_customer_action : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $name    = $req->body_params->( 'name' );
-   my $rs      = $self->schema->resultset( 'Customer' );
-   my $cid     = $rs->create( { name => $name } )->id;
-   my $who     = $req->session->user_label;
-   my $message = [ to_msg 'Customer [_1] created by [_2]', $cid, $who ];
+   my $name     = $req->body_params->( 'name' );
+   my $rs       = $self->schema->resultset( 'Customer' );
+   my $cid      = $rs->create( { name => $name } )->id;
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg 'Customer [_1] created by [_2]', $cid, $who ];
+   my $location = uri_for_action $req, $self->moniker.'/customers';
 
-   return { redirect => { location => $req->uri, message => $message } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub create_journey_action : Role(administrator) {
@@ -551,13 +566,14 @@ sub create_leg_action : Role(administrator) {
 sub create_location_action : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $address = $req->body_params->( 'address' );
-   my $rs      = $self->schema->resultset( 'Location' );
-   my $lid     = $rs->create( { address => $address } )->id;
-   my $who     = $req->session->user_label;
-   my $message = [ to_msg 'Location [_1] created by [_2]', $lid, $who ];
+   my $address  = $req->body_params->( 'address' );
+   my $rs       = $self->schema->resultset( 'Location' );
+   my $lid      = $rs->create( { address => $address } )->id;
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg 'Location [_1] created by [_2]', $lid, $who ];
+   my $location = uri_for_action $req, $self->moniker.'/locations';
 
-   return { redirect => { location => $req->uri, message => $message } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub customer : Role(administrator) {
@@ -568,6 +584,7 @@ sub customer : Role(administrator) {
    my $form    =  blank_form 'customer', $href;
    my $action  =  $cid ? 'update' : 'create';
    my $page    =  {
+      first_field => 'name',
       forms    => [ $form ],
       selected => 'customers',
       title    => locm $req, 'customer_setup_title'
@@ -633,22 +650,23 @@ sub journey : Role(administrator) {
       selected => $done ? 'completed' : 'journeys',
       title    => locm $req, 'journey_call_title'
    };
-   my $links   =  $self->$_journey_ops_links( $req, $jid );
+   my $links    = $self->$_journey_ops_links( $req, $jid );
+   my $disabled = $_is_disabled->( $req, $journey, $done );
 
    p_fields $jform, $self->schema, 'Journey', $journey,
-      $self->$_bind_journey_fields( $page, $journey, { disabled => $done } );
+      $self->$_bind_journey_fields( $page, $journey, { disabled => $disabled });
 
-   $done or p_action $jform, $action, [ 'journey', $jid ], { request => $req };
+   $disabled or p_action $jform, $action, [ 'journey', $jid ], {
+      request => $req };
 
-   $done or
-      ($jid and
-       p_action $jform, 'delete', [ 'journey', $jid ], { request => $req });
+   $disabled or ($jid and
+      p_action $jform, 'delete', [ 'journey', $jid ], { request => $req } );
 
    $jid or return $self->get_stash( $req, $page );
 
    p_tag  $lform, 'h5', locm $req, 'journey_leg_title';
 
-   $done or p_list $lform, PIPE_SEP, $links, $_link_opts->();
+   $disabled or p_list $lform, PIPE_SEP, $links, $_link_opts->();
 
    my $rs    = $self->schema->resultset( 'Leg' );
    my $legs  = $rs->search( { journey_id => $jid } );
@@ -699,20 +717,22 @@ sub leg : Role(administrator) {
       selected => $done ? 'completed' : 'journeys',
       title    => locm $req, 'journey_leg_title'
    };
-   my $links   =  $self->$_leg_ops_links( $req, $page, $jid );
-   my $leg     =  $self->$_maybe_find_leg( $lid );
-   my $count   =  !$lid ? $self->$_count_legs( $jid ) : undef;
+   my $links    = $self->$_leg_ops_links( $req, $page, $jid );
+   my $leg      = $self->$_maybe_find_leg( $lid );
+   my $count    = !$lid ? $self->$_count_legs( $jid ) : undef;
+   my $disabled = $_is_disabled->( $req, $journey, $done );
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Leg', $leg, $self->$_bind_leg_fields( $leg, {
-      disabled => $done, journey_id => $jid, leg_count => $count } );
+      disabled => $disabled, done => $done,
+      journey_id => $jid, leg_count => $count, request => $req } );
 
-   $done or p_action $form, $action, [ 'leg', $lid ], { request => $req };
+   ($done and $leg->on_station) or p_action $form, $action, [ 'leg', $lid ], {
+      request => $req };
 
-   $done
-      or ($lid
-          and p_action $form, 'delete', [ 'leg', $lid ], { request => $req });
+   $done or ($lid and
+      p_action $form, 'delete', [ 'leg', $lid ], { request => $req } );
 
    return $self->get_stash( $req, $page );
 }
@@ -725,6 +745,7 @@ sub location : Role(administrator) {
    my $form    =  blank_form 'location', $href;
    my $action  =  $lid ? 'update' : 'create';
    my $page    =  {
+      first_field => 'address',
       forms    => [ $form ],
       selected => 'location',
       title    => locm $req, 'location_setup_title'

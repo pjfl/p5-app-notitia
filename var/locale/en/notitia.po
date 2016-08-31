@@ -304,6 +304,15 @@ msgstr "Customer Name"
 msgid "customer_setup_title"
 msgstr "Customer"
 
+msgid "customer_create_link"
+msgstr "Add Customer"
+
+msgid "customer_create_tip"
+msgstr "Add a named customer for deliveries"
+
+msgid "customers_heading_0"
+msgstr "Customer Name"
+
 msgid "customers_list_link"
 msgstr "Customers"
 
@@ -640,14 +649,26 @@ msgstr "Location"
 msgid "location_address"
 msgstr "Location Address"
 
-msgid "location_setup_link"
-msgstr "Locations"
+msgid "location_create_link"
+msgstr "Add Location"
+
+msgid "location_create_tip"
+msgstr "Add a pickup or drop-off location for deliveries"
 
 msgid "location_setup_title"
+msgstr "Location"
+
+msgid "locations_heading_0"
+msgstr "Location Address"
+
+msgid "locations_list_link"
 msgstr "Locations"
 
-msgid "location_setup_tip"
+msgid "locations_list_tip"
 msgstr "Setup locations for deliveries"
+
+msgid "locations_list_title"
+msgstr "Locations"
 
 msgid "login"
 msgstr "Login"

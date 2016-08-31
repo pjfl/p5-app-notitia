@@ -28,6 +28,7 @@
       "trailer, vehicle",
       "person, event",
       "vehicle, event",
+      "other, package",
       "main, rota"
    ]
 }
