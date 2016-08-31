@@ -471,14 +471,15 @@ sub rota_redirect_action : Role(any) {
    my ($self, $req) = @_;
 
    my $period    = 'day';
-   my $params    = $req->body_params;
-   my $rota_name = $params->( 'rota_name' );
-   my $local_dt  = to_dt $params->( 'rota_date' ), 'local';
+   my $rota_name = $req->body_params->( 'rota_name' );
+   my $local_dt  = to_dt $req->body_params->( 'rota_date' ), 'local';
+   my $mid       = $req->query_params->( 'mid', { optional => TRUE } );
+   my $actionp   = $self->moniker."/${period}_rota";
    my $args      = [ $rota_name, $local_dt->ymd ];
-   my $location  = uri_for_action $req, $self->moniker."/${period}_rota", $args;
-   my $message   = [ $req->session->collect_status_message( $req ) ];
+   my $params    = $mid ? { mid => $mid } : {};
+   my $location  = uri_for_action $req, $actionp, $args, $params;
 
-   return { redirect => { location => $location, message => $message } };
+   return { redirect => { location => $location } };
 }
 
 sub slot : Role(rota_manager) Role(rider) Role(controller) Role(driver) {
