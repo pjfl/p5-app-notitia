@@ -317,8 +317,11 @@ sub call_navigation_links {
    push @{ $list },
       $nav_folder->( $req, 'Setup' ),
       $nav_linkto->( $req, {
-         class => $page->{selected} eq 'journey' ? 'selected' : NUL,
-         name => 'journey_call' }, 'call/journey', [], ),
+         class => $page->{selected} eq 'journeys' ? 'selected' : NUL,
+         name => 'journeys' }, 'call/journeys', [], ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'completed' ? 'selected' : NUL,
+         name => 'completed' }, 'call/journeys', [], { status => 'completed' }),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'customer' ? 'selected' : NUL,
          name => 'customer_setup' }, 'call/customer', [], ),

@@ -4,8 +4,10 @@ use strictures;
 use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( TRUE );
-use App::Notitia::Util      qw( date_data_type foreign_key_data_type
-                                serial_data_type );
+use App::Notitia::Util      qw( datetime_label date_data_type
+                                foreign_key_data_type
+                                nullable_foreign_key_data_type serial_data_type
+                                set_on_create_datetime_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -15,10 +17,10 @@ $class->add_columns
    (  id             => serial_data_type,
       journey_id     => foreign_key_data_type,
       operator_id    => foreign_key_data_type,
-      vehicle_id     => foreign_key_data_type,
       beginning_id   => foreign_key_data_type,
       ending_id      => foreign_key_data_type,
-      called         => date_data_type,
+      vehicle_id     => nullable_foreign_key_data_type,
+      called         => set_on_create_datetime_data_type,
       collection_eta => date_data_type,
       collected      => date_data_type,
       delivered      => date_data_type,
@@ -34,12 +36,32 @@ $class->belongs_to( operator  => "${result}::Person",   'operator_id'  );
 $class->belongs_to( vehicle   => "${result}::Vehicle",  'vehicle_id'   );
 
 # Public methods
+sub called_label {
+   return datetime_label $_[ 0 ]->called;
+}
+
+sub collection_eta_label {
+   return datetime_label $_[ 0 ]->collection_eta;
+}
+
+sub collected_label {
+   return datetime_label $_[ 0 ]->collected;
+}
+
+sub delivered_label {
+   return datetime_label $_[ 0 ]->delivered;
+}
+
 sub insert {
    my $self = shift;
 
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
 
    return $self->next::method;
+}
+
+sub on_station_label {
+   return datetime_label $_[ 0 ]->on_station;
 }
 
 sub update {

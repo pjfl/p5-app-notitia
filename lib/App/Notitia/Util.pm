@@ -25,10 +25,11 @@ use YAML::Tiny;
 our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      bool_data_type build_navigation build_tree button
                      check_field_js check_form_field clone date_data_type
-                     dialog_anchor display_duration encrypted_attr enhance
-                     enumerated_data_type foreign_key_data_type get_hashed_pw
-                     get_salt is_access_authorised is_draft is_encrypted
-                     iterator js_config js_server_config js_submit_config
+                     datetime_label dialog_anchor display_duration
+                     encrypted_attr enhance enumerated_data_type
+                     foreign_key_data_type get_hashed_pw get_salt
+                     is_access_authorised is_draft is_encrypted iterator
+                     js_config js_server_config js_submit_config
                      js_togglers_config js_window_config lcm_for load_file_data
                      loc localise_tree locm mail_domain make_id_from
                      make_name_from make_tip management_link mtime new_salt
@@ -393,6 +394,14 @@ sub date_data_type () {
             is_nullable   => TRUE,
             datetime_undef_if_invalid => TRUE,
             timezone      => 'GMT', };
+}
+
+sub datetime_label ($) {
+   my $dt = shift; $dt or return NUL;
+
+   $dt = $dt->clone->set_time_zone( 'local' );
+
+   return sprintf '%s @ %.2d:%.2d', $dt->dmy( '/' ), $dt->hour, $dt->minute;
 }
 
 sub dialog_anchor ($$$) {
@@ -950,6 +959,8 @@ Defines no attributes
 =item C<clone>
 
 =item C<date_data_type>
+
+=item C<datetime_label>
 
 =item C<dialog_anchor>
 

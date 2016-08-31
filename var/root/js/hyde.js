@@ -79,7 +79,6 @@ var Behaviour = new Class( {
          offset         : 108,
          selector       : '.navbar',
          tolerance      : 10 } );
-      this.navigation   = new Navigation( { context: this } );
       this.noticeBoard  = new NoticeBoard( { context: this } );
       this.pickers      = new Pickers( { context: this } );
       this.replacements = new Replacements( { context: this } );

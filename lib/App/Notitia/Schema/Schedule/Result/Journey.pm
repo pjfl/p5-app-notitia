@@ -3,10 +3,11 @@ package App::Notitia::Schema::Schedule::Result::Journey;
 use strictures;
 use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( FALSE PRIORITY_TYPE_ENUM
+use App::Notitia::Constants qw( FALSE PRIORITY_TYPE_ENUM SPC
                                 TRUE VARCHAR_MAX_SIZE );
-use App::Notitia::Util      qw( bool_data_type enumerated_data_type
-                                foreign_key_data_type serial_data_type
+use App::Notitia::Util      qw( bool_data_type datetime_label
+                                enumerated_data_type foreign_key_data_type
+                                serial_data_type
                                 set_on_create_datetime_data_type
                                 varchar_data_type );
 
@@ -51,6 +52,10 @@ sub insert {
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
 
    return $self->next::method;
+}
+
+sub requested_label {
+   return datetime_label $_[ 0 ]->requested;
 }
 
 sub update {

@@ -11,6 +11,9 @@ sub dispatch_request {
    sub (GET  + /customer | /customer/* + ?*) { [ 'call/customer',     @_ ] },
    sub (POST + /journey  | /journey/*  + ?*) { [ 'call/from_request', @_ ] },
    sub (GET  + /journey  | /journey/*  + ?*) { [ 'call/journey',      @_ ] },
+   sub (GET  + /journeys               + ?*) { [ 'call/journeys',     @_ ] },
+   sub (POST + /leg/*    | /leg/**     + ?*) { [ 'call/from_request', @_ ] },
+   sub (GET  + /leg/**                 + ?*) { [ 'call/leg',          @_ ] },
    sub (POST + /location | /location/* + ?*) { [ 'call/from_request', @_ ] },
    sub (GET  + /location | /location/* + ?*) { [ 'call/location',     @_ ] };
 }

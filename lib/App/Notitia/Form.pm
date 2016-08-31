@@ -10,8 +10,8 @@ use Scalar::Util            qw( blessed );
 
 our @EXPORT_OK = qw( blank_form f_link f_tag p_action p_button p_cell
                      p_checkbox p_container p_date p_fields p_file p_hidden
-                     p_image p_item p_label p_list p_password p_radio p_row
-                     p_select p_span p_table p_tag p_text p_textarea
+                     p_image p_item p_label p_link p_list p_password p_radio
+                     p_row p_select p_span p_table p_tag p_text p_textarea
                      p_textfield p_unordered );
 
 # Private package variables
@@ -99,11 +99,8 @@ my $_parse_args = sub {
                                 : { @_ };
 };
 
-my $_push_field = sub {
-   my ($f, $type, $opts) = @_; $opts = { %{ $opts } };
-
-   defined $opts->{name} and $opts->{label} //= $opts->{name};
-   $opts->{type} = $type;
+my $_push_to = sub {
+   my ($f, $opts) = @_;
 
    my $list = is_arrayref $f ? $f
             : is_arrayref $f->{list} ? $f->{list}
@@ -113,6 +110,14 @@ my $_push_field = sub {
    if ($list) { push @{ $list }, $opts } else { $f->{value} = $opts }
 
    return $opts;
+};
+
+my $_push_field = sub {
+   my ($f, $type, $opts) = @_; $opts = { %{ $opts } }; $opts->{type} = $type;
+
+   defined $opts->{name} and $opts->{label} //= $opts->{name};
+
+   return $_push_to->( $f, $opts );
 };
 
 # Public functions
@@ -268,6 +273,10 @@ sub p_label ($@) {
    $opts->{content} = $content; $opts->{label} = $label;
 
    return $_push_field->( $f, 'label', $opts );
+}
+
+sub p_link ($@) {
+   my $f = shift; return $_push_to->( $f, f_link( @_ ) );
 }
 
 sub p_list ($@) {

@@ -5,6 +5,7 @@
 [%       CASE 'checkbox'; CheckBox( f ); -%]
 [%       CASE 'container'; Container( f ); -%]
 [%       CASE 'date'; DateField( f ); -%]
+[%       CASE 'datetime'; DateTimeField( f ); -%]
 [%       CASE 'file'; FileField( f ); -%]
 [%       CASE 'form'; Form( f ); -%]
 [%       CASE 'form_button' -%]
@@ -68,6 +69,14 @@
              name="[% f.name %]" value="[% f.value %]">
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>
+[% END -%]
+[%# -%]
+[% MACRO DateTimeField( f ) WRAPPER label -%]
+[%    IF f.tip; FieldHelp( f ); END -%]
+[%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
+      <input [% IF f.disabled %]disabled="disabled"[% END -%]
+             class="[% class %] pick-datetime" id="[% f.name %]"
+             name="[% f.name %]" value="[% f.value %]">
 [% END -%]
 [%# -%]
 [% MACRO FieldHelp( f ) BLOCK %]

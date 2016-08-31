@@ -1,5 +1,7 @@
 // Perl Artistic license except where stated otherwise
 
+Date.defineParser( '%d/%m/%Y @ %H:%M' );
+
 Date.extend( 'nowMET', function() { // Calculate Middle European Time UTC + 1
    var now = new Date();
 
@@ -814,72 +816,6 @@ var LoadMore = new Class( {
 
          if (on_complete) on_complete.call( this.context, resp );
       }.bind( this );
-   }
-} );
-
-var Navigation = new Class( {
-   Implements: [ Options ],
-
-   options         : {
-      config_attr  : 'sidebars',
-      panel        : 0,
-      panelClass   : '.nav-panel',
-      reset        : false,
-      selector     : 'navigation',
-      togglerClass : '.aj-nav'
-   },
-
-   initialize: function( options ) {
-      this.config  = options.config; delete options[ 'config'  ];
-      this.context = options.context || {}; delete options[ 'context' ];
-
-      this.setOptions( options );
-
-      var opt = this.options, selector = opt.selector;
-
-      if (!this.config && opt.config_attr)
-         this.config = this.context.config[ opt.config_attr ];
-
-      if (!this.config) this.config = {};
-
-      var sb; if (! (sb = this.el = $( selector ))) return;
-
-      var cookies   = this.context.cookies || {};
-      var sb_panel  = cookies.get( selector + 'Panel' ) || opt.panel;
-      var togglers  = $$( opt.togglerClass ), panels = $$( opt.panelClass );
-
-      if (this.config.navigation_reset) { sb_panel = opt.panel }
-
-      // Create an Accordion widget in the side bar
-      this.accordion = new Fx.Accordion( togglers, panels, {
-         display      : sb_panel,
-         opacity      : false,
-         onActive     : function( togglers, index, el ) {
-            var toggler = togglers[ index ];
-
-            toggler.swapClass( 'inactive', 'active' );
-            this.context.cookies.set( selector + 'Panel', index );
-
-            var cfg; if (! (cfg = this.config[ toggler.id ])) return;
-
-            if (cfg.action && cfg.name) {
-               this.context.server.request( cfg.action, cfg.name,
-                                            cfg.value,  cfg.onComplete );
-            }
-         }.bind( this ),
-         onBackground : function( togglers, index, el ) {
-            togglers[ index ].swapClass( 'active', 'inactive' );
-         }
-      } );
-
-      return;
-   },
-
-   reset: function() {
-      var opt = this.options;
-
-      this.context.cookies.set( opt.selector + 'Panel', opt.panel );
-      return;
    }
 } );
 
@@ -2181,7 +2117,7 @@ var Pickers = new Class( {
 
    options       : {
       pickerClass: 'datepicker_vista',
-      selector   : [ '.pick-date', '.pick-time' ]
+      selector   : [ '.pick-date', '.pick-datetime', '.pick-time' ]
    },
 
    initialize: function( options ) {
@@ -2200,6 +2136,12 @@ var Pickers = new Class( {
 
                if (el.hasClass( 'pick-date')) {
                   opts[ 'format' ] = '%d/%m/%Y';
+               }
+
+               if (el.hasClass( 'pick-datetime')) {
+                  opts[ 'format' ] = '%d/%m/%Y @ %H:%M';
+                  opts[ 'timePicker' ] = true;
+                  opts[ 'timeWheelStep' ] = 5;
                }
 
                if (el.hasClass( 'pick-time')) {
@@ -2979,5 +2921,12 @@ var WindowUtils = new Class( {
 
    openWindow: function( href, options ) {
       return new Browser.Popup( href, this.mergeOptions( options ) );
+   },
+
+   showIfNeeded: function( id, value, target, display ) {
+      display = display || 'inline-block';
+
+      if ($( id ).value == value) { $( target ).show( display ) }
+      else { $( target ).hide() }
    }
 } );
