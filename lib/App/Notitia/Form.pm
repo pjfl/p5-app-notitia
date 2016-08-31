@@ -150,7 +150,7 @@ sub f_link (@) {
    $action and $action .= '_';
 
    my $tkey   = "${name}_${action}tip";
-   my $tip    = $req ? locm( $req, $tkey, @{ $args } ) : $tkey;
+   my $tip    = $req ? locm( $req, $tkey, @{ $args // [] } ) : $tkey;
    my $vkey   = "${name}_${action}link";
    my $value  = $req ? locm( $req, $vkey ) : $dvalue;
    my $hint   = $req ? locm( $req, 'Hint' ) : 'Hint';

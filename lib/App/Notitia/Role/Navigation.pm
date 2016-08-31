@@ -315,19 +315,20 @@ sub call_navigation_links {
    my $list = $nav->{menu}->{list} //= [];
 
    push @{ $list },
-      $nav_folder->( $req, 'Setup' ),
+      $nav_folder->( $req, 'calls' ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'journeys' ? 'selected' : NUL,
          name => 'journeys' }, 'call/journeys', [], ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'completed' ? 'selected' : NUL,
          name => 'completed' }, 'call/journeys', [], { status => 'completed' }),
+      $nav_folder->( $req, 'setup' ),
       $nav_linkto->( $req, {
-         class => $page->{selected} eq 'customer' ? 'selected' : NUL,
-         name => 'customer_setup' }, 'call/customer', [], ),
+         class => $page->{selected} eq 'customers' ? 'selected' : NUL,
+         name => 'customers_list' }, 'call/customers', [], ),
       $nav_linkto->( $req, {
-         class => $page->{selected} eq 'location' ? 'selected' : NUL,
-         name => 'location_setup' }, 'call/location', [], );
+         class => $page->{selected} eq 'locations' ? 'selected' : NUL,
+         name => 'locations_list' }, 'call/locations', [], );
 
    return $nav;
 }
@@ -380,8 +381,8 @@ sub primary_navigation_links {
 
    $req->authenticated and
       p_item $nav, $nav_linkto->( $req, {
-         class => $class, tip => 'journey_call_tip',
-         value => 'journey_call_link', }, 'call/journey', [] );
+         class => $class, tip => 'journeys_tip',
+         value => 'calls', }, 'call/journeys', [] );
 
    return $nav;
 }

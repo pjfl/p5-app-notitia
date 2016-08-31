@@ -97,7 +97,11 @@ msgid "badge_id"
 msgstr "Badge Id."
 
 msgid "badge_id_field_tip"
-msgstr "Set this to 'next' and the next available badge id wil be automatically selected"
+msgstr "Set this to 'next' and the next available badge id will be "
+       "automatically selected"
+
+msgid "beginning"
+msgstr "Beginning Location"
 
 msgid "bike"
 msgstr "Bike"
@@ -107,15 +111,6 @@ msgstr "All Bikes"
 
 msgid "bike_list_tip"
 msgstr "List only bikes"
-
-msgid "rider"
-msgstr "Rider"
-
-msgid "rider_list_link"
-msgstr "Riders"
-
-msgid "rider_list_tip"
-msgstr "List riders"
 
 msgid "blots_heading_0"
 msgstr "Endorsement"
@@ -128,6 +123,12 @@ msgstr "Bluelight"
 
 msgid "c_advanced"
 msgstr "Advanced Car"
+
+msgid "called"
+msgstr "Called"
+
+msgid "calls_management_heading"
+msgstr "Calls"
 
 msgid "car"
 msgstr "Car"
@@ -192,11 +193,26 @@ msgstr "Edit"
 msgid "change_password_title"
 msgstr "Change Password"
 
+msgid "collected"
+msgstr "Collected"
+
+msgid "collection_eta"
+msgstr "Collection ETA"
+
 msgid "colour"
 msgstr "Colour"
 
 msgid "completed"
 msgstr "Date Completed"
+
+msgid "completed_link"
+msgstr "Completed Deliveries"
+
+msgid "completed_tip"
+msgstr "List and view call records that lead to package delivery"
+
+msgid "completed_title"
+msgstr "Completed Deliveries"
 
 msgid "confirm"
 msgstr "Confirm"
@@ -279,6 +295,24 @@ msgstr "Active People"
 msgid "current_people_list_tip"
 msgstr "List currently active members"
 
+msgid "customer"
+msgstr "Customer"
+
+msgid "customer_name"
+msgstr "Customer Name"
+
+msgid "customer_setup_title"
+msgstr "Customer"
+
+msgid "customers_list_link"
+msgstr "Customers"
+
+msgid "customers_list_tip"
+msgstr "Setup customers for deliveries"
+
+msgid "customers_list_title"
+msgstr "Customers"
+
 msgid "day_controller_0"
 msgstr "Ctrl. AM"
 
@@ -330,6 +364,12 @@ msgstr "Delete"
 msgid "delete_tip"
 msgstr "Delete the [_1] record for [_2]"
 
+msgid "delivered"
+msgstr "Delivered"
+
+msgid "delivery_request_tip"
+msgstr "Select this existing delivery request"
+
 msgid "description"
 msgstr "Description"
 
@@ -357,6 +397,9 @@ msgstr "Drivers"
 msgid "driver_list_tip"
 msgstr "List drivers"
 
+msgid "dropoff"
+msgstr "Dropoff Location"
+
 msgid "earlier_page_link"
 msgstr "[_1]"
 
@@ -377,6 +420,9 @@ msgstr "Enable 2FA."
 
 msgid "end_time"
 msgstr "End Time"
+
+msgid "ending"
+msgstr "Ending Location"
 
 msgid "endorsed"
 msgstr "Endorsed"
@@ -513,6 +559,57 @@ msgstr "Home Phone"
 msgid "joined"
 msgstr "Joined"
 
+msgid "journey_call_title"
+msgstr "Delivery Request"
+
+msgid "journey_create_link"
+msgstr "Add Request"
+
+msgid "journey_create_tip"
+msgstr "Create a new delivery request record"
+
+msgid "journey_leg_heading_0"
+msgstr "Operator"
+
+msgid "journey_leg_heading_1"
+msgstr "Called"
+
+msgid "journey_leg_heading_2"
+msgstr "Beginning"
+
+msgid "journey_leg_heading_3"
+msgstr "Ending"
+
+msgid "journey_leg_title"
+msgstr "Leg"
+
+msgid "journey_view_link"
+msgstr "Delivery Request"
+
+msgid "journey_view_tip"
+msgstr "View the package delivery request details"
+
+msgid "journeys_heading_0"
+msgstr "Customer"
+
+msgid "journeys_heading_1"
+msgstr "Requested"
+
+msgid "journeys_heading_2"
+msgstr "Priority"
+
+msgid "journeys_heading_3"
+msgstr "Package Type"
+
+msgid "journeys_link"
+msgstr "Deliveries"
+
+msgid "journeys_tip"
+msgstr "List, create, and update call records leading to package delivery"
+
+msgid "journeys_title"
+msgstr "Package Deliveries"
+
 msgid "last_page_link"
 msgstr "&nbsp;…&nbsp;Last"
 
@@ -528,8 +625,29 @@ msgstr "[_1]"
 msgid "later_page_tip"
 msgstr "Go to page [_1]"
 
+msgid "leg_create_link"
+msgstr "Add Leg"
+
+msgid "leg_create_tip"
+msgstr "Add another leg to this journey"
+
+msgid "leg_operator_tip"
+msgstr "View the leg for this operator"
+
 msgid "location"
 msgstr "Location"
+
+msgid "location_address"
+msgstr "Location Address"
+
+msgid "location_setup_link"
+msgstr "Locations"
+
+msgid "location_setup_title"
+msgstr "Locations"
+
+msgid "location_setup_tip"
+msgstr "Setup locations for deliveries"
 
 msgid "login"
 msgstr "Login"
@@ -724,11 +842,26 @@ msgstr "Notes"
 msgid "old_password"
 msgstr "Old Password"
 
+msgid "on_station"
+msgstr "On Station"
+
+msgid "operator"
+msgstr "Operator"
+
+msgid "orig_priority"
+msgstr "Original Priority"
+
 msgid "owner"
 msgstr "Owner"
 
 msgid "owner_id"
 msgstr "Owner"
+
+msgid "package_other"
+msgstr "Package Description"
+
+msgid "package_type"
+msgstr "Package Type"
 
 msgid "package_type_create_link"
 msgstr "Package"
@@ -826,6 +959,9 @@ msgstr "View the summary record for [_1]"
 msgid "person_update_heading"
 msgstr "Edit Person"
 
+msgid "pickup"
+msgstr "Pickup Location"
+
 msgid "points"
 msgstr "Points"
 
@@ -849,6 +985,9 @@ msgstr "Goto page [_1]"
 
 msgid "primary_role"
 msgstr "Primary Role"
+
+msgid "priority"
+msgstr "Priority"
 
 msgid "private_vehicles_link"
 msgstr "Private Vehicles"
@@ -898,6 +1037,9 @@ msgstr "Request Vehicles"
 msgid "request_vehicle_tip"
 msgstr "Request vehicles for the [_1] event"
 
+msgid "requested"
+msgstr "Requested"
+
 msgid "Reset Password"
 msgstr "Password Reset Request"
 
@@ -906,6 +1048,12 @@ msgstr "Resigned"
 
 msgid "rider"
 msgstr "Rider"
+
+msgid "rider_list_link"
+msgstr "Riders"
+
+msgid "rider_list_tip"
+msgstr "List riders"
 
 msgid "role_management_heading"
 msgstr "Manage Roles"
@@ -945,6 +1093,9 @@ msgstr "Service Vehicles"
 
 msgid "service_vehicles_tip"
 msgstr "List the service vehicles"
+
+msgid "setup_management_heading"
+msgstr "Setup"
 
 msgid "Site Description"
 msgstr "People and resource scheduling"

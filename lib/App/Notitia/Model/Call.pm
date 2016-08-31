@@ -24,11 +24,13 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'call';
 
 register_action_paths
-   'call/customer' => 'customer',
-   'call/journey'  => 'journey',
-   'call/journeys' => 'journeys',
-   'call/leg'      => 'leg',
-   'call/location' => 'location';
+   'call/customer'  => 'customer',
+   'call/customers' => 'customers',
+   'call/journey'   => 'journey',
+   'call/journeys'  => 'journeys',
+   'call/leg'       => 'leg',
+   'call/location'  => 'location',
+   'call/locations' => 'locations';
 
 # Construction
 around 'get_stash' => sub {
@@ -58,6 +60,12 @@ my $_bind_customer = sub {
             map { $_customer_tuple->( $selected, $_ ) } $customers->all ];
 };
 
+my $_customers_headers = sub {
+   my $req = shift; my $header = 'customers_heading';
+
+   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 0 ];
+};
+
 my $_link_opts = sub {
    return { class => 'operation-links align-right right-last' };
 };
@@ -68,6 +76,12 @@ my $_location_tuple = sub {
    my $opts = { selected => $location->id == $selected ? TRUE : FALSE };
 
    return [ $location->address, $location->id, $opts ];
+};
+
+my $_locations_headers = sub {
+   my $req = shift; my $header = 'locations_heading';
+
+   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 0 ];
 };
 
 my $_bind_dropoff_location = sub {
@@ -101,10 +115,11 @@ my $_journeys_row = sub {
 
    my $href = uri_for_action $req, $self->moniker.'/journey', [ $journey->id ];
 
-   return [ { value => f_link $journey->customer, $href },
-            { value => $journey->controller->label },
+   return [ { value => f_link 'delivery_request', $href, {
+      request => $req, value => $journey->customer, } },
             { value => $journey->requested_label },
-            { value => $journey->priority }, ];
+            { value => $journey->priority },
+            { value => $journey->package_type }, ];
 };
 
 my $_person_tuple = sub {
@@ -216,6 +231,9 @@ my $_bind_journey_fields = sub {
          priority      => {
             disabled   => $disabled, type => 'radio',
             value      => $_bind_priority->( $journey ) },
+         orig_priority => $journey->priority eq $journey->original_priority
+                       ?  FALSE : {
+            disabled   => TRUE, value => $journey->original_priority },
          pickup        => {
             disabled   => $disabled, type => 'select',
             value      => $_bind_pickup_location->( $locations, $journey ) },
@@ -294,12 +312,33 @@ my $_count_legs = sub {
    return $rs->search( { journey_id => $jid } )->count;
 };
 
+my $_customers_ops_links = sub {
+   my ($self, $req) = @_; my $links = [];
+
+   my $actionp = $self->moniker.'/customer';
+
+   p_link $links, 'customer', uri_for_action( $req, $actionp ), {
+      action => 'create', container_class => 'add-link', request => $req };
+
+   return $links;
+};
+
+my $_customers_row = sub {
+   my ($self, $req, $customer) = @_; my $moniker = $self->moniker;
+
+   my $href = uri_for_action $req, "${moniker}/customer", [ $customer->id ];
+
+   return [ { value => f_link 'customer', $href, {
+      request => $req, value => "${customer}" } }, ];
+};
+
 my $_journey_leg_row = sub {
    my ($self, $req, $jid, $leg) = @_;
 
    my $href = uri_for_action $req, $self->moniker.'/leg', [ $jid, $leg->id ];
 
-   return [ { value => f_link $leg->operator->label, $href },
+   return [ { value => f_link 'leg_operator', $href, {
+      request => $req, value => $leg->operator->label } },
             { value => $leg->called_label },
             { value => $leg->beginning },
             { value => $leg->ending }, ];
@@ -336,6 +375,26 @@ my $_leg_ops_links = sub {
       action => 'view', container_class => 'table-link', request => $req };
 
    return $links;
+};
+
+my $_locations_ops_links = sub {
+   my ($self, $req) = @_; my $links = [];
+
+   my $actionp = $self->moniker.'/location';
+
+   p_link $links, 'location', uri_for_action( $req, $actionp ), {
+      action => 'create', container_class => 'add-link', request => $req };
+
+   return $links;
+};
+
+my $_locations_row = sub {
+   my ($self, $req, $location) = @_; my $moniker = $self->moniker;
+
+   my $href = uri_for_action $req, "${moniker}/location", [ $location->id ];
+
+   return [ { value => f_link 'location', $href, {
+      request => $req, value => "${location}" } }, ];
 };
 
 my $_maybe_find_customer = sub {
@@ -510,7 +569,7 @@ sub customer : Role(administrator) {
    my $action  =  $cid ? 'update' : 'create';
    my $page    =  {
       forms    => [ $form ],
-      selected => 'customer',
+      selected => 'customers',
       title    => locm $req, 'customer_setup_title'
    };
    my $custer  =  $self->$_maybe_find_customer( $cid );
@@ -521,6 +580,26 @@ sub customer : Role(administrator) {
    p_action $form, $action, [ 'customer', $cid ], { request => $req };
 
    $cid and p_action $form, 'delete', [ 'customer', $cid ], { request => $req };
+
+   return $self->get_stash( $req, $page );
+}
+
+sub customers : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $form = blank_form { class => 'standard-form' };
+   my $page = {
+      forms => [ $form ], selected => 'customers',
+      title => locm $req, 'customers_list_title'
+   };
+   my $links = $self->$_customers_ops_links( $req );
+
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
+
+   my $table = p_table $form, { headers => $_customers_headers->( $req ) };
+   my $customers = $self->schema->resultset( 'Customer' )->search( {} );
+
+   p_row $table, [ map { $self->$_customers_row( $req, $_ ) } $customers->all ];
 
    return $self->get_stash( $req, $page );
 }
@@ -567,7 +646,7 @@ sub journey : Role(administrator) {
 
    $jid or return $self->get_stash( $req, $page );
 
-   p_tag  $lform, 'h5', 'journey_leg_title';
+   p_tag  $lform, 'h5', locm $req, 'journey_leg_title';
 
    $done or p_list $lform, PIPE_SEP, $links, $_link_opts->();
 
@@ -585,15 +664,17 @@ sub journeys : Role(administrator) {
    my ($self, $req) = @_;
 
    my $status  =  $req->query_params->( 'status', { optional => TRUE } );
+   my $done    =  $status && $status eq 'completed' ? TRUE : FALSE;
+   my $select  =  $done ? 'completed' : 'journeys';
    my $form    =  blank_form;
    my $page    =  {
       forms    => [ $form ],
-      selected => $status && $status eq 'completed' ? 'completed' : 'journeys',
-      title    => locm $req, 'journeys_title'
+      selected => $select,
+      title    => locm $req, "${select}_title"
    };
    my $links   =  $self->$_journeys_ops_links( $req, $page );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   $done or p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $journeys = $self->$_search_for_journeys( $status );
    my $table    = p_table $form, { headers => $_journeys_headers->( $req ) };
@@ -658,6 +739,46 @@ sub location : Role(administrator) {
    $lid and p_action $form, 'delete', [ 'location', $lid ], { request => $req };
 
    return $self->get_stash( $req, $page );
+}
+
+sub locations : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $form = blank_form { class => 'standard-form' };
+   my $page = {
+      forms => [ $form ], selected => 'locations',
+      title => locm $req, 'locations_list_title'
+   };
+   my $links = $self->$_locations_ops_links( $req );
+
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
+
+   my $table = p_table $form, { headers => $_locations_headers->( $req ) };
+   my $locations = $self->schema->resultset( 'Location' )->search( {} );
+
+   p_row $table, [ map { $self->$_locations_row( $req, $_ ) } $locations->all ];
+
+   return $self->get_stash( $req, $page );
+}
+
+sub update_journey_action : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $schema  = $self->schema;
+   my $jid     = $req->uri_params->( 0 );
+   my $journey = $schema->resultset( 'Journey' )->find( $jid );
+   my $c_name  = $journey->customer->name;
+
+   $self->$_update_journey_from_request( $req, $journey );
+
+   try   { $journey->update }
+   catch { $self->rethrow_exception( $_, 'update', 'journey', $c_name ) };
+
+   my $who     = $req->session->user_label;
+   my $message = [ to_msg 'Journey [_1] for [_2] updated by [_3]',
+                   $jid, $c_name, $who ];
+
+   return { redirect => { location => $req->uri, message => $message } };
 }
 
 sub update_leg_action : Role(administrator) {
