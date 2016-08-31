@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes double info log messages
           - Implements #90. Mugshot aspect ratio
           - Stops error-field from disrupting layout
 

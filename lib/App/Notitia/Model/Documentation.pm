@@ -113,12 +113,13 @@ sub dialog : Role(any) {
 sub index : Role(anon) {
    my ($self, $req) = @_;
 
-   my $message = $req->session->collect_status_message( $req );
-   my $stash   = { redirect => { location => $self->docs_url( $req ) } };
+   my $mid = $req->query_params->( 'mid', { optional => TRUE } );
+   my $location = $self->docs_url( $req );
+   my %query = $location->query_form;
 
-   $message and $stash->{redirect}->{message} = [ $message ];
+   $mid and $location->query_form( %query, mid => $mid );
 
-   return $stash;
+   return { redirect => { location => $location } };
 }
 
 sub locales {
