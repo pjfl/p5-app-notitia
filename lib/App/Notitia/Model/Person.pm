@@ -98,7 +98,7 @@ my $_contact_links = sub {
 
    push @links, { class => 'align-right', value => $person->home_phone };
    push @links, { class => 'align-right', value => $person->mobile_phone };
-   push @links, { class => 'align-center',
+   push @links, { class => 'select-col align-center',
                   value => { name  => 'selected',
                              type  => 'checkbox',
                              value => $person->shortcode } };
@@ -109,7 +109,7 @@ my $_contact_links = sub {
                      value => $nok ? $nok->home_phone : NUL };
       push @links, { class => 'align-right',
                      value => $nok ? $nok->mobile_phone : NUL };
-      push @links, { class => 'align-center',
+      push @links, { class => 'select-col align-center',
                      value => $nok ? { name  => 'selected',
                                        type  => 'checkbox',
                                        value => $nok->shortcode } : NUL };
