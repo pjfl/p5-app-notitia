@@ -1,16 +1,15 @@
 <!-- Footer -->
 <footer role="contentinfo">
+[% IF config.links.0 -%]
    <div class="grid">
       <div class="unit two-thirds center-on-mobiles">
-[% IF config.links.0 -%]
-         <ul class="footer-nav">
-[%    FOR link IN config.links -%]
-            | <a href="[% link.url | eval %]" target="_blank">
-               [% link.name %]</a>
-[%    END -%]
-            |
-         </ul>
+[%    Dispatch( navigation.external ) %]
+      </div>
+   </div>
 [% END -%]
+   <div class="grid">
+      <div class="unit two-thirds center-on-mobiles">
+[%       Dispatch( navigation.credits ) %]
       </div>
    </div>
 </footer>

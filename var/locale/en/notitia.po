@@ -15,6 +15,12 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "about_link"
+msgstr "About"
+
+msgid "about_tip"
+msgstr "View the credits information for this application"
+
 msgid "active"
 msgstr "Active"
 
@@ -209,6 +215,12 @@ msgstr "Edit"
 
 msgid "change_password_title"
 msgstr "Change Password"
+
+msgid "changes_link"
+msgstr "Changes"
+
+msgid "changes_tip"
+msgstr "View the application change log"
 
 msgid "clear_jobdaemon"
 msgstr "Clear Locks"
@@ -549,6 +561,9 @@ msgstr "Displays 'event' records"
 
 msgid "events_management_heading"
 msgstr "Events"
+
+msgid "external_link_tip"
+msgstr "View this external link in another tab"
 
 msgid "Exception Handler"
 msgstr "I'm sorry [_1], I can't do that"

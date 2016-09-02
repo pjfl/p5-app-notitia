@@ -192,7 +192,7 @@ has 'mount_point'     => is => 'ro',   isa => NonEmptySimpleStr,
 
 has 'no_index'        => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    builder            => sub {
-      [ qw( \.git$ \.htpasswd$ \.json$ \.mtime$ \.svn$ assets$ posts$ ) ] };
+   [ qw( \.contributors\.md$ \.git$ \.json$ \.mtime$ \.svn$ assets$ posts$ ) ]};
 
 has 'no_message_send' => is => 'ro',   isa => Bool, default => FALSE;
 
@@ -206,7 +206,9 @@ has 'person_prefix'   => is => 'ro',   isa => SimpleStr, default => NUL;
 
 has 'places'          => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
    builder            => sub { {
+      about           => 'user/about',
       admin_index     => 'event/events',
+      changes         => 'user/changes',
       login           => 'user/login',
       login_action    => 'month/month_rota',
       logo            => 'docs/index',

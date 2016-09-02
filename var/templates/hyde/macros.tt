@@ -119,11 +119,11 @@
 [% MACRO Link( f ) BLOCK -%]
 [%    IF f.tip %]<span class="link-help [% f.container_class %] tips"
            title="[% f.hint _ ' ~ ' _ f.tip %]">[% END %]
-      <a class="[% f.class %]" href="[% f.href %]"
-[%       IF f.download -%] download="[% f.download %]"[% END -%]
-[%       IF f.name -%] id="[% f.name %]"[% END %]>
+      <a class="[% f.class %]" href="[% f.href %]" [% IF f.download -%]
+      download="[% f.download %]"[% END; IF f.target -%]
+        target="[% f.target%]"[% END; IF f.name -%] id="[% f.name %]"[% END -%]>
 [%    IF reference( f.value ) == 'HASH'; Dispatch( f.value ) -%]
-[%    ELSE; f.value; END %]</a>[% IF f.tip %]</span>[% END %]
+[%    ELSE; f.value; END %]</a>[% IF f.tip %]</span>[% END -%]
 [% END -%]
 [%# -%]
 [% MACRO LinkWithTips( href, class, value, hint, tip, id, conk ) BLOCK -%]
@@ -136,7 +136,7 @@
 [% END -%]
 [%# -%]
 [% MACRO List( f ) BLOCK -%]
-[%    IF reference( f.separator ) == 'HASH'; sep = Dispatch( f.separator ) %]
+[%    IF reference( f.separator ) == 'HASH'; sep = Dispatch( f.separator ) -%]
 [%    ELSE; sep = f.separator; END -%]
 [%    FOR field IN f.list; -%]
 [%       IF !loop.first && f.separator; -%][% sep %][% END -%]
