@@ -137,7 +137,7 @@ sub ACTION_install {
 }
 
 sub process_changes_files {
-   return $self->_process_files( 'Changes', catdir( 'blib', 'var', 'etc' ) );
+   return $_[ 0 ]->_process_files( 'Changes', catdir( 'blib', 'var', 'etc' ) );
 }
 
 sub process_config_files {
