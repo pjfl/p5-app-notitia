@@ -3,8 +3,9 @@ package App::Notitia::Role::Navigation;
 use attributes ();
 use namespace::autoclean;
 
-use App::Notitia::Constants qw( FALSE HASH_CHAR NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_button p_image p_item );
+use App::Notitia::Constants qw( FALSE HASH_CHAR NUL PIPE_SEP SPC TRUE );
+use App::Notitia::Form      qw( blank_form f_link p_button p_image p_item
+                                p_link p_list );
 use App::Notitia::Util      qw( dialog_anchor locm make_tip now_dt
                                 to_dt uri_for_action );
 use Class::Usul::Functions  qw( is_member );
@@ -400,9 +401,47 @@ sub application_logo {
    return f_link 'logo', uri_for_action( $req, $places->{logo} ), $opts;
 }
 
+sub credit_links {
+   my ($self, $req, $page) = @_; my $form = blank_form { type => 'list' };
+
+   my $links = []; my $places = $self->config->places;
+
+   p_link $links, 'changes', uri_for_action( $req, $places->{changes} ), {
+      request => $req };
+
+   p_link $links, 'about', '#', { class => 'windows', request => $req };
+
+   my $href = uri_for_action $req, $places->{about};
+
+   push @{ $page->{literal_js} }, dialog_anchor( 'about', $href, {
+      name => 'about', title => locm( $req, 'About' ), useIcon => \1 } );
+
+   p_list $form, PIPE_SEP, $links;
+
+   return $form;
+}
+
+sub external_links {
+   my ($self, $req) = @_; my $links = [];
+
+   my $form = blank_form { type => 'list' };
+
+   for my $link (@{ $self->config->links }) {
+      p_link $links, $link->{name}, $link->{url}, {
+         request => $req, target => '_blank',
+         tip => locm( $req, 'external_link_tip' ), value => $link->{name} };
+   }
+
+   p_list $form, PIPE_SEP, $links;
+
+   return $form;
+}
+
 sub navigation_links {
    my ($self, $req, $page) = @_; my $nav = {};
 
+   $nav->{credits} = $self->credit_links( $req, $page );
+   $nav->{external} = $self->external_links( $req );
    $nav->{logo} = $self->application_logo( $req );
    $nav->{primary} = $self->primary_navigation_links( $req, $page );
    $nav->{secondary} = $self->secondary_navigation_links( $req, $page );

@@ -3,13 +3,13 @@ package App::Notitia::Model::User;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form p_button p_checkbox p_image p_label
-                                p_password p_radio p_text p_textfield );
+                                p_password p_radio p_tag p_text p_textfield );
 use App::Notitia::Util      qw( check_form_field js_server_config
                                 locm register_action_paths set_element_focus
                                 to_msg uri_for_action );
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Log        qw( get_logger );
-use Class::Usul::Types      qw( ArrayRef );
+use Class::Usul::Types      qw( ArrayRef HashRef Object );
 use HTTP::Status            qw( HTTP_OK );
 use Try::Tiny;
 use Unexpected::Functions   qw( Unspecified );
@@ -26,12 +26,16 @@ with    q(App::Notitia::Role::Messaging);
 # Public attributes
 has '+moniker' => default => 'user';
 
+has 'formatters' => is => 'ro', isa => HashRef[Object], builder => sub { {} };
+
 has 'profile_keys' => is => 'ro', isa => ArrayRef, builder => sub {
    [ qw( address postcode email_address
          mobile_phone home_phone rows_per_page ) ] };
 
 register_action_paths
+   'user/about'           => 'about',
    'user/change_password' => 'user/password',
+   'user/changes'         => 'changes',
    'user/check_field'     => 'check-field',
    'user/show_if_needed'  => 'show-if-needed',
    'user/login'           => 'user/login',
@@ -43,6 +47,17 @@ register_action_paths
    'user/totp_secret'     => 'user/totp-secret';
 
 # Construction
+around 'BUILDARGS' => sub {
+   my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
+
+   my $views = $attr->{views} or return $attr;
+
+   exists $views->{html} and $attr->{formatters}
+        = $views->{html}->can( 'formatters' ) ? $views->{html}->formatters : {};
+
+   return $attr;
+};
+
 around 'get_stash' => sub {
    my ($orig, $self, $req, @args) = @_;
 
@@ -132,6 +147,20 @@ my $_fetch_shortcode = sub {
 };
 
 # Public methods
+sub about : Role(anon) {
+   my ($self, $req) = @_;
+
+   my $stash = $self->dialog_stash( $req );
+   my $form  = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $root  = $self->config->docs_root;
+   my $path  = $root->catdir( $req->locale )->catfile( '.contributors.md' );
+   my $coder = $self->formatters->{markdown};
+
+   p_tag $form, 'div', $coder->serialize( $req, { content => $path } );
+
+   return $stash;
+}
+
 sub change_password : Role(anon) {
    my ($self, $req) = @_;
 
@@ -181,6 +210,23 @@ sub change_password_action : Role(anon) {
    my $message  = [ to_msg '[_1] password changed', $person->label ];
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub changes : Role(anon) {
+   my ($self, $req) = @_;
+
+   my $form = blank_form;
+   my $page = { forms => [ $form ], title => locm $req, 'Changes' };
+   my $path = $self->config->appldir->catfile( 'Changes' );
+
+   $path->exists or $path = $self->config->ctrldir->catfile( 'Changes' );
+
+   my $coder = $self->formatters->{markdown};
+   my $content = join "\n", map { "    ${_}" } $path->getlines;
+
+   p_tag $form, 'div', $coder->serialize( $req, { content => $content } );
+
+   return $self->get_stash( $req, $page );
 }
 
 sub check_field : Role(any) {

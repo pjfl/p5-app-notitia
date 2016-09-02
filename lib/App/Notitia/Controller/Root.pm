@@ -7,6 +7,8 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'z_root';
 
 sub dispatch_request {
+   sub (GET  + /about              + ?*) { [ 'user/about',             @_ ] },
+   sub (GET  + /changes            + ?*) { [ 'user/changes',           @_ ] },
    sub (GET  + /check-field        + ?*) { [ 'user/check_field',       @_ ] },
    sub (GET  + /show-if-needed     + ?*) { [ 'user/show_if_needed',    @_ ] },
    sub (POST + /user/login         + ?*) { [ 'user/from_request',      @_ ] },

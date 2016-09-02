@@ -108,9 +108,10 @@ $bob->install_path( 'local'  => catdir( $bob->install_base, 'local' ) );
 $bob->install_path( 'script' => catdir( $bob->install_base, 'bin'   ) );
 $bob->install_path( 'bindoc' => catdir( $bob->install_base, 'man', 'man1' ) );
 $bob->install_path( 'libdoc' => catdir( $bob->install_base, 'man', 'man3' ) );
-$bob->add_build_element( 'config' );
-$bob->add_build_element( 'local'  );
-$bob->add_build_element( 'var'    );
+$bob->add_build_element( 'changes' );
+$bob->add_build_element( 'config'  );
+$bob->add_build_element( 'local'   );
+$bob->add_build_element( 'var'     );
 $bob->create_build_script;
 exit 0;
 
@@ -133,6 +134,10 @@ sub ACTION_install {
    }
 
    return;
+}
+
+sub process_changes_files {
+   return $self->_process_files( 'Changes', catdir( 'blib', 'var', 'etc' ) );
 }
 
 sub process_config_files {
