@@ -5,11 +5,13 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_tag p_tag );
 use App::Notitia::Util      qw( locm uri_for_action );
 use Class::Usul::Functions  qw( exception throw );
+use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Time       qw( time2str );
 use Class::Usul::Types      qw( Plinth );
 use HTTP::Status            qw( HTTP_NOT_FOUND HTTP_OK );
 use Scalar::Util            qw( blessed );
 use Unexpected::Functions   qw( Authentication AuthenticationRequired
+                                IncorrectPassword IncorrectAuthCode
                                 ValidationErrors );
 use Moo;
 
@@ -62,9 +64,15 @@ my $_validation_errors = sub {
 
 # Private methods
 my $_auth_redirect = sub {
-   my ($self, $req, $e, $message) = @_;
+   my ($self, $req, $e, $message) = @_; my $class = $e->class;
 
    my $location = uri_for_action $req, $self->config->places->{login};
+
+   if ($class eq IncorrectPassword->() or $class eq IncorrectAuthCode->()) {
+      get_logger( 'activity' )->log( 'user:'.$req->username.SPC.
+                                     'client:'.$req->address.SPC.
+                                     'action:failed-login' );
+   }
 
    if ($e->class eq AuthenticationRequired->()) {
       my $pattern = join '|', @{ $self->config->no_redirect };
