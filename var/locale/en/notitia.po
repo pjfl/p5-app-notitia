@@ -24,6 +24,30 @@ msgstr "View the credits information for this application"
 msgid "active"
 msgstr "Active"
 
+msgid "activity_header_0"
+msgstr "User"
+
+msgid "activity_header_1"
+msgstr "Date"
+
+msgid "activity_header_2"
+msgstr "Action"
+
+msgid "activity_header_3"
+msgstr "Date"
+
+msgid "activity_header_4"
+msgstr "Action"
+
+msgid "activity_header_5"
+msgstr "Date"
+
+msgid "activity_header_6"
+msgstr "Action"
+
+msgid "activity_link"
+msgstr "Activity"
+
 msgid "activity_log_link"
 msgstr "Activity"
 
@@ -41,6 +65,9 @@ msgstr "Action"
 
 msgid "activity_log_header_4"
 msgstr "Detail"
+
+msgid "activity_tip"
+msgstr "Recent activity"
 
 msgid "add_certification"
 msgstr "Add Certification"

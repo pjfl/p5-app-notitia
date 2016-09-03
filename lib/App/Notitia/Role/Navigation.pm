@@ -406,15 +406,22 @@ sub credit_links {
 
    my $links = []; my $places = $self->config->places;
 
-   p_link $links, 'changes', uri_for_action( $req, $places->{changes} ), {
-      request => $req };
-
    p_link $links, 'about', '#', { class => 'windows', request => $req };
 
    my $href = uri_for_action $req, $places->{about};
 
    push @{ $page->{literal_js} }, dialog_anchor( 'about', $href, {
       name => 'about', title => locm( $req, 'About' ), useIcon => \1 } );
+
+   p_link $links, 'activity', '#', { class => 'windows', request => $req };
+
+   $href = uri_for_action $req, $places->{activity};
+
+   push @{ $page->{literal_js} }, dialog_anchor( 'activity', $href, {
+      name => 'activity', title => locm( $req, 'Activity' ), useIcon => \1 } );
+
+   p_link $links, 'changes', uri_for_action( $req, $places->{changes} ), {
+      request => $req };
 
    p_list $form, PIPE_SEP, $links;
 

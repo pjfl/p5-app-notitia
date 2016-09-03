@@ -100,7 +100,6 @@ my $_log_columns = sub {
       push @cols, [ $action, 'log-action' ];
 
       $detail = $subfields[ 3 ];
-
    }
    else {
       my $value = $fields[ 3 ]; $value =~ s{ [\[\]] }{}gmx;

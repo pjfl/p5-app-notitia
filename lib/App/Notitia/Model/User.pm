@@ -3,7 +3,8 @@ package App::Notitia::Model::User;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form p_button p_checkbox p_image p_label
-                                p_password p_radio p_tag p_text p_textfield );
+                                p_password p_radio p_row p_table p_tag p_text
+                                p_textfield );
 use App::Notitia::Util      qw( check_form_field js_server_config
                                 locm register_action_paths set_element_focus
                                 to_msg uri_for_action );
@@ -34,6 +35,7 @@ has 'profile_keys' => is => 'ro', isa => ArrayRef, builder => sub {
 
 register_action_paths
    'user/about'           => 'about',
+   'user/activity'        => 'activity',
    'user/change_password' => 'user/password',
    'user/changes'         => 'changes',
    'user/check_field'     => 'check-field',
@@ -157,6 +159,77 @@ sub about : Role(anon) {
    my $coder = $self->formatters->{markdown};
 
    p_tag $form, 'div', $coder->serialize( $req, { content => $path } );
+
+   return $stash;
+}
+
+my $_log_user_label = sub {
+   my ($data, $field) = @_; (my $scode = $field) =~ s{ \A .+ : }{}mx;
+
+   exists $data->{cache}->{ $scode } and return $data->{cache}->{ $scode };
+
+   my $label = $data->{person_rs}->find_by_shortcode( $scode )->label;
+
+   return $data->{cache}->{ $scode } = $label;
+};
+
+my $_log_columns = sub {
+   my ($data, $line) = @_;
+
+   my @fields = split SPC, $line, 5;
+   my $date = join SPC, @fields[ 0 .. 2 ];
+   my @subfields = split SPC, $fields[ 4 ], 4;
+   my $label = $_log_user_label->( $data, $subfields[ 0 ] );
+  (my $action = $subfields[ 2 ]) =~ s{ \A .+ : }{}mx;
+
+   return [ $label, 'log-user' ],
+          [ $date, 'log-date' ],
+          [ $action, 'log-action' ];
+};
+
+my $_activity_headers = sub {
+   my $req = shift; my $header = 'activity_header';
+
+   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 6 ];
+};
+
+sub activity : Role(anon) {
+   my ($self, $req) = @_;
+
+   my $stash = $self->dialog_stash( $req );
+   my $form  = $stash->{page}->{forms}->[ 0 ]
+             = blank_form { class => 'dialog-form' };
+   my $dir   = $self->config->logsdir;
+   my $file  = $dir->catfile( 'activity.log' )->backwards->chomp;
+
+   $file->exists or return $self->get_stash( $req, $stash->{page} );
+
+   my $schema  = $self->schema;
+   my $data    = { cache => {}, person_rs => $schema->resultset( 'Person' ) };
+   my $users   = {};
+   my $u_count = 0;
+   my @rows;
+
+   while (defined (my $line = $file->getline)) {
+      my @cols = $_log_columns->( $data, $line ); my $user = $cols[ 0 ]->[ 0 ];
+
+      if (exists $users->{ $user }) {
+         @{ $rows[ $users->{ $user } ] } > 6 and next;
+         push @{ $rows[ $users->{ $user } ] },
+            { class => $cols[ 1 ]->[ 1 ], value => $cols[ 1 ]->[ 0 ] },
+            { class => $cols[ 2 ]->[ 1 ], value => $cols[ 2 ]->[ 0 ] };
+      }
+      else {
+         $u_count > 4 and last; $users->{ $user } = $u_count++;
+         push @rows, [ map { { class => $_->[ 1 ], value => $_->[ 0 ] } }
+                       @cols ];
+      }
+   }
+
+   my $table = p_table $form, {
+      class => 'smaller-table', headers => $_activity_headers->( $req ) };
+
+   p_row $table, [ @rows ];
 
    return $stash;
 }

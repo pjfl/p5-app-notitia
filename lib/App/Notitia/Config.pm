@@ -207,6 +207,7 @@ has 'person_prefix'   => is => 'ro',   isa => SimpleStr, default => NUL;
 has 'places'          => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
    builder            => sub { {
       about           => 'user/about',
+      activity        => 'user/activity',
       admin_index     => 'event/events',
       changes         => 'user/changes',
       login           => 'user/login',
