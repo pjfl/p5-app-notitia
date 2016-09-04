@@ -71,6 +71,12 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_activity_headers = sub {
+   my $req = shift; my $header = 'activity_header';
+
+   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 6 ];
+};
+
 my $_clear_session = sub {
    my $session = shift;
 
@@ -81,6 +87,30 @@ my $_clear_session = sub {
    delete $session->messages->{ $_ } for (keys %{ $session->messages });
 
    return;
+};
+
+my $_log_user_label = sub {
+   my ($data, $field) = @_; (my $scode = $field) =~ s{ \A .+ : }{}mx;
+
+   exists $data->{cache}->{ $scode } and return $data->{cache}->{ $scode };
+
+   my $label = $data->{person_rs}->find_by_shortcode( $scode )->label;
+
+   return $data->{cache}->{ $scode } = $label;
+};
+
+my $_log_columns = sub {
+   my ($data, $line) = @_;
+
+   my @fields = split SPC, $line, 5;
+   my $date = join SPC, @fields[ 0 .. 2 ];
+   my @subfields = split SPC, $fields[ 4 ], 4;
+   my $label = $_log_user_label->( $data, $subfields[ 0 ] );
+  (my $action = $subfields[ 2 ]) =~ s{ \A .+ : }{}mx;
+
+   return [ $label, 'log-user' ],
+          [ $date, 'log-date' ],
+          [ $action, 'log-action' ];
 };
 
 my $_rows_per_page = sub {
@@ -162,36 +192,6 @@ sub about : Role(anon) {
 
    return $stash;
 }
-
-my $_log_user_label = sub {
-   my ($data, $field) = @_; (my $scode = $field) =~ s{ \A .+ : }{}mx;
-
-   exists $data->{cache}->{ $scode } and return $data->{cache}->{ $scode };
-
-   my $label = $data->{person_rs}->find_by_shortcode( $scode )->label;
-
-   return $data->{cache}->{ $scode } = $label;
-};
-
-my $_log_columns = sub {
-   my ($data, $line) = @_;
-
-   my @fields = split SPC, $line, 5;
-   my $date = join SPC, @fields[ 0 .. 2 ];
-   my @subfields = split SPC, $fields[ 4 ], 4;
-   my $label = $_log_user_label->( $data, $subfields[ 0 ] );
-  (my $action = $subfields[ 2 ]) =~ s{ \A .+ : }{}mx;
-
-   return [ $label, 'log-user' ],
-          [ $date, 'log-date' ],
-          [ $action, 'log-action' ];
-};
-
-my $_activity_headers = sub {
-   my $req = shift; my $header = 'activity_header';
-
-   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 6 ];
-};
 
 sub activity : Role(anon) {
    my ($self, $req) = @_;
@@ -362,11 +362,10 @@ sub logout_action : Role(any) {
    if ($req->authenticated) {
       $message = [ to_msg '[_1] logged out', $req->session->user_label ];
       $_clear_session->( $req->session );
+      get_logger( 'activity' )->log( 'user:'.$req->username.SPC.
+                                     'client:'.$req->address.SPC.
+                                     'action:logged-out' );
    }
-
-   get_logger( 'activity' )->log( 'user:'.$req->username.SPC.
-                                  'client:'.$req->address.SPC.
-                                  'action:logged-out' );
 
    return { redirect => { location => $req->base, message => $message } };
 }

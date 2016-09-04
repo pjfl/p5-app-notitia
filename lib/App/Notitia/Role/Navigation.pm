@@ -158,21 +158,58 @@ my $_admin_links = sub {
    return;
 };
 
+my $_people_by_role_links = sub {
+   my ($req, $page, $list) = @_;
+
+   push @{ $list },
+      $nav_folder->( $req, 'people_by_type', {
+         class => $page->{selected} eq 'committee_list'
+               || $page->{selected} eq 'controller_list'
+               || $page->{selected} eq 'driver_list'
+               || $page->{selected} eq 'fund_raiser_list'
+               || $page->{selected} eq 'rider_list'
+               || $page->{selected} eq 'staff_list'
+               || $page->{selected} eq 'trustee_list' ? 'open' : NUL,
+         depth => 1, tip => locm $req, 'people_by_type_tip' } ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'committee_list' ? 'selected' : NUL,
+         depth => 2, name => 'committee_list' }, 'person/people',
+                     [], role => 'committee', status => 'current' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'controller_list' ? 'selected' : NUL,
+         depth => 2, name => 'controller_list' }, 'person/people',
+                     [], role => 'controller', status => 'current' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'driver_list' ? 'selected' : NUL,
+         depth => 2, name => 'driver_list' }, 'person/people',
+                     [], role => 'driver', status => 'current' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'fund_raiser_list' ? 'selected' : NUL,
+         depth => 2, name => 'fund_raiser_list' }, 'person/people',
+                     [], role => 'fund_raiser', status => 'current' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'rider_list' ? 'selected' : NUL,
+         depth => 2, name => 'rider_list' }, 'person/people',
+                     [], role => 'rider', status => 'current' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'staff_list' ? 'selected' : NUL,
+         depth => 2, name => 'staff_list' }, 'person/people',
+                     [], role => 'staff', status => 'current' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'trustee_list' ? 'selected' : NUL,
+         depth => 2, name => 'trustee_list' }, 'person/people',
+                     [], role => 'trustee', status => 'current' );
+   return;
+};
+
 my $_people_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
    my $is_allowed_contacts = $self->$_allowed( $req, 'person/contacts' );
    my $is_allowed_people = $self->$_allowed( $req, 'person/people' );
 
-   ($is_allowed_contacts or $is_allowed_people)
-      and push @{ $list }, $nav_folder->( $req, 'people', {
-         tip => 'People Menu' } );
-
-   $is_allowed_contacts and push @{ $list },
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'contacts_list' ? 'selected' : NUL,
-         name => 'contacts_list' }, 'person/contacts', [],
-                     status => 'current' );
+   ($is_allowed_contacts or $is_allowed_people) and push @{ $list },
+      $nav_folder->( $req, 'people', { tip => 'People Menu' } );
 
    $is_allowed_people and push @{ $list },
       $nav_linkto->( $req, {
@@ -181,23 +218,15 @@ my $_people_links = sub {
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'current_people_list' ? 'selected' : NUL,
          name => 'current_people_list' }, 'person/people',
-                     [], status => 'current' ),
+                     [], status => 'current' );
+
+   $is_allowed_contacts and push @{ $list },
       $nav_linkto->( $req, {
-         class => $page->{selected} eq 'rider_list' ? 'selected' : NUL,
-         name => 'rider_list' }, 'person/people',
-                     [], role => 'rider', status => 'current' ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'controller_list' ? 'selected' : NUL,
-         name => 'controller_list' }, 'person/people',
-                     [], role => 'controller', status => 'current' ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'driver_list' ? 'selected' : NUL,
-         name => 'driver_list' }, 'person/people',
-                     [], role => 'driver', status => 'current' ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'fund_raiser_list' ? 'selected' : NUL,
-         name => 'fund_raiser_list' }, 'person/people',
-                     [], role => 'fund_raiser', status => 'current' );
+         class => $page->{selected} eq 'contacts_list' ? 'selected' : NUL,
+         name => 'contacts_list' }, 'person/contacts', [], status => 'current');
+
+   $is_allowed_people and $_people_by_role_links->( $req, $page, $list );
+
    return;
 };
 
@@ -474,22 +503,22 @@ sub primary_navigation_links {
       class => $class, tip => 'Posts about upcoming events',
       value => 'Posts', }, 'posts/index' );
 
-   if ($req->authenticated) {
-      $class = $location eq 'schedule' ? 'current' : NUL;
+   $req->authenticated or return $nav;
 
-      p_item $nav, $nav_linkto->( $req, {
-          class => $class, tip => 'Scheduled rotas',
-          value => 'Rota', }, $places->{rota} );
+   $class = $location eq 'schedule' ? 'current' : NUL;
 
-      $class = $location eq 'admin' ? 'current' : NUL;
+   p_item $nav, $nav_linkto->( $req, {
+      class => $class, tip => 'Scheduled rotas',
+      value => 'Rota', }, $places->{rota} );
 
-      my $after = now_dt->subtract( days => 1 )->ymd;
-      my $index = $places->{admin_index};
+   $class = $location eq 'admin' ? 'current' : NUL;
 
-      p_item $nav, $nav_linkto->( $req, {
-         class => $class, tip => 'admin_index_title',
-         value => 'admin_index_link', }, $index, [], after => $after );
-   }
+   my $after = now_dt->subtract( days => 1 )->ymd;
+   my $index = $places->{admin_index};
+
+   p_item $nav, $nav_linkto->( $req, {
+      class => $class, tip => 'admin_index_title',
+      value => 'admin_index_link', }, $index, [], after => $after );
 
    return $nav;
 }

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #91. Additional roles
           - Implements #93 and #86. Activity display and failed logins
           - Fixes double info log messages
           - Implements #90. Mugshot aspect ratio

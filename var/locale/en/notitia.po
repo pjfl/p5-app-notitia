@@ -265,6 +265,15 @@ msgstr "Command Line"
 msgid "colour"
 msgstr "Colour"
 
+msgid "committee"
+msgstr "Committee"
+
+msgid "committee_list_link"
+msgstr "The Committee"
+
+msgid "committee_list_tip"
+msgstr "Members of The Committee"
+
 msgid "completed"
 msgstr "Date Completed"
 
@@ -949,6 +958,12 @@ msgstr "Password"
 msgid "password_expired"
 msgstr "Password Expired"
 
+msgid "people_by_type_management_heading"
+msgstr "People By Role"
+
+msgid "people_by_type_tip"
+msgstr "Lists of people grouped by the roles they belong to"
+
 msgid "people_list_link"
 msgstr "All People"
 
@@ -1283,6 +1298,15 @@ msgstr "Message text"
 msgid "spreadsheet"
 msgstr "Spreadsheet"
 
+msgid "staff"
+msgstr "Staff"
+
+msgid "staff_list_link"
+msgstr "Staffers"
+
+msgid "staff_list_tip"
+msgstr "Members of staff"
+
 msgid "start_jobdaemon"
 msgstr "Start"
 
@@ -1333,6 +1357,15 @@ msgstr "Trigger"
 
 msgid "trigger_jobdaemon_tip"
 msgstr "Trigger the job daemon causing it to process the job queue"
+
+msgid "trustee"
+msgstr "Trustee"
+
+msgid "trustee_list_link"
+msgstr "Trustees"
+
+msgid "trustee_list_tip"
+msgstr "The Bored of Trustees"
 
 msgid "type_code"
 msgstr "Type Code"

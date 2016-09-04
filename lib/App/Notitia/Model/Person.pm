@@ -137,7 +137,9 @@ my $_people_headers = sub {
    }
    else {
       $header = 'people_heading';
-      $max    = ($role eq 'rider' || $role eq 'driver') ? 4 : 3;
+      $max    = (is_member $role, qw( rider driver )) ? 4
+              : (is_member $role, qw( controller rider driver )) ? 3
+              : 2;
    }
 
    return [ map { { value => loc( $req, "${header}_${_}" ) } } 0 .. $max ];
@@ -189,10 +191,13 @@ my $_select_nav_link_name = sub {
 
    return
         $opts->{type} && $opts->{type} eq 'contacts' ? 'contacts_list'
+      : $opts->{role} && $opts->{role} eq 'committee' ? 'committee_list'
       : $opts->{role} && $opts->{role} eq 'controller' ? 'controller_list'
       : $opts->{role} && $opts->{role} eq 'driver' ? 'driver_list'
       : $opts->{role} && $opts->{role} eq 'fund_raiser' ? 'fund_raiser_list'
       : $opts->{role} && $opts->{role} eq 'rider' ? 'rider_list'
+      : $opts->{role} && $opts->{role} eq 'staff' ? 'staff_list'
+      : $opts->{role} && $opts->{role} eq 'trustee' ? 'trustee_list'
       : $opts->{status} && $opts->{status} eq 'current' ? 'current_people_list'
       : 'people_list';
 };
@@ -255,7 +260,10 @@ my $_people_links = sub {
 
    my @links; my $scode = $person->shortcode;
 
-   my @paths = ( 'role/role', 'certs/certifications' );
+   my @paths = ( 'role/role' );
+
+   $role and is_member $role, qw( controller driver rider )
+      and push @paths, 'certs/certifications';
 
    unshift @paths, is_member( 'person_manager', $req->session->roles )
       ? "${moniker}/person" : "${moniker}/person_summary";
