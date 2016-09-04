@@ -1302,7 +1302,7 @@ msgid "staff"
 msgstr "Staff"
 
 msgid "staff_list_link"
-msgstr "Staffers"
+msgstr "Staff"
 
 msgid "staff_list_tip"
 msgstr "Members of staff"
