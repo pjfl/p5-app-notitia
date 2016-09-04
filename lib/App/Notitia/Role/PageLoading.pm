@@ -137,11 +137,15 @@ sub navigation {
    my $locale = $conf->locale; # Always index config default language
    my $node = $self->localised_tree( $locale )
       or throw 'Default locale [_1] has no document tree', [ $locale ];
-   my $opts = { config => $conf, depth_offset => $self->depth_offset,
-                label  => $self->nav_label, limit => 100,
-                node   => $node, path => $self->moniker.'/page' };
 
-   return build_navigation( $req, $opts );
+   return build_navigation $req, {
+      config => $conf,
+      depth_offset => $self->depth_offset,
+      label => $self->nav_label,
+      limit => $self->max_navigation,
+      node => $node,
+      path => $self->moniker.'/page',
+   };
 }
 
 1;

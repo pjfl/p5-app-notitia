@@ -4,7 +4,7 @@ use App::Notitia::Attributes;  # Will do cleaning
 use App::Notitia::Util     qw( build_tree iterator localise_tree mtime
                                register_action_paths uri_for_action );
 use Class::Usul::Constants qw( SPC TRUE );
-use Class::Usul::Types     qw( PositiveInt );
+use Class::Usul::Types     qw( NonZeroPositiveInt PositiveInt );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -12,6 +12,8 @@ extends q(App::Notitia::Model);
 has '+moniker' => default => 'posts';
 
 has 'depth_offset' => is => 'ro', isa => PositiveInt, default => 3;
+
+has 'max_navigation' => is => 'ro', isa => NonZeroPositiveInt, default => 20;
 
 with q(App::Notitia::Role::PageConfiguration);
 with q(App::Notitia::Role::Navigation);
