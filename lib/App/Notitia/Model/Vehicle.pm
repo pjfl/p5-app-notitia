@@ -6,14 +6,14 @@ use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
                                 p_date p_fields p_hidden p_list
                                 p_row p_select p_table p_tag p_textfield );
 use App::Notitia::Util      qw( assign_link bind check_field_js
-                                display_duration loc make_tip management_link
-                                page_link_set register_action_paths
-                                set_element_focus slot_identifier time2int
-                                to_dt to_msg uri_for_action );
+                                display_duration loc now_dt make_tip
+                                management_link page_link_set
+                                register_action_paths set_element_focus
+                                slot_identifier time2int to_dt to_msg
+                                uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Log        qw( get_logger );
-use Class::Usul::Time       qw( time2str );
 use Try::Tiny;
 use Moo;
 
@@ -475,7 +475,7 @@ my $_vehicle_links = sub {
 
    $service or return $links;
 
-   my $now  = to_dt time2str;
+   my $now  = now_dt;
    my $opts = $_create_action->( $req );
    my $href = uri_for_action $req, 'event/vehicle_event', [ $vrn ];
 

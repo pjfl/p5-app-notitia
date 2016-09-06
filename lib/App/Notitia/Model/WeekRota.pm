@@ -453,9 +453,9 @@ my $_alloc_cell = sub {
 };
 
 my $_allocation_js = sub {
-   my ($req, $moniker, $date) = @_;
+   my ($req, $moniker, $dt) = @_; $dt = $_local_dt->( $dt );
 
-   my $href = uri_for_action $req, "${moniker}/alloc_key", [ $date->ymd ];
+   my $href = uri_for_action $req, "${moniker}/alloc_key", [ $dt->ymd ];
 
    return [ js_server_config( 'allocation-key', 'load',
                               'request', [ "${href}", 'allocation-key' ] ) ];
@@ -784,7 +784,7 @@ sub alloc_key : Role(rota_manager) {
    my $vehicles = $self->schema->resultset( 'Vehicle' )->search_for_vehicles( {
       columns => $columns, service => TRUE } );
    my $assets = $self->components->{asset};
-   my $keeper_dt = $_local_dt->( $rota_dt );
+   my $keeper_dt = $_local_dt->( $rota_dt->clone->subtract( seconds => 1 ) );
 
    $table->{headers} = $_alloc_key_headers->( $req, $keeper_dt );
 
