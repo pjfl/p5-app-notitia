@@ -43,6 +43,18 @@ my $_build_components = sub {
    return $conf;
 };
 
+my $_build_expire_session = sub {
+   return sub {
+      my $session = shift; $session->authenticated( FALSE );
+
+      $session->roles( [] ); $session->roles_mtime( 0 );
+
+      delete $session->messages->{ $_ } for (keys %{ $session->messages });
+
+      return [ '[_1] session expired', $session->user_label ];
+   };
+};
+
 my $_build_links = sub {
    return $_to_array_of_hash->( $_[ 0 ]->_links, 'name', 'url' );
 };
@@ -139,6 +151,9 @@ has 'editors'         => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
 
 has 'email_templates' => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'emails';
+
+has 'expire_session'  => is => 'ro',   isa => CodeRef,
+   builder            => $_build_expire_session;
 
 has 'extensions'      => is => 'ro',   isa => HashRef[ArrayRef],
    builder            => sub { { markdown => [ qw( md mkdn ) ] } };
@@ -524,6 +539,13 @@ to have access to markdown editing functions
 
 A non empty simple string defaults to C<emails>. Subdirectory of
 F<var/docs/en/posts> containing the email templates
+
+=item C<expire_session>
+
+This code reference is called when a user session expires or the user logs
+out. It is passed a session object reference and a request object reference. It
+is expected to return an array reference, the message to be displayed to the
+user
 
 =item C<extensions>
 

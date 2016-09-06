@@ -77,18 +77,6 @@ my $_activity_headers = sub {
    return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 6 ];
 };
 
-my $_clear_session = sub {
-   my $session = shift;
-
-   $session->authenticated( FALSE );
-   $session->roles( [] );
-   $session->roles_mtime( 0 );
-
-   delete $session->messages->{ $_ } for (keys %{ $session->messages });
-
-   return;
-};
-
 my $_log_user_label = sub {
    my ($data, $field) = @_; (my $scode = $field) =~ s{ \A .+ : }{}mx;
 
@@ -360,8 +348,8 @@ sub logout_action : Role(any) {
    my ($self, $req) = @_; my $message = [ 'Not logged in' ];
 
    if ($req->authenticated) {
+      $self->config->expire_session->( $req->session );
       $message = [ to_msg '[_1] logged out', $req->session->user_label ];
-      $_clear_session->( $req->session );
       get_logger( 'activity' )->log( 'user:'.$req->username.SPC.
                                      'client:'.$req->address.SPC.
                                      'action:logged-out' );

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds Config expire_session
           - Fixes messages in Documentation index redirect
           - Implements #96. Renames staffers
           - Implements #95. Limits size of posts menu
