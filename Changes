@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes messages in Documentation index redirect
           - Implements #96. Renames staffers
           - Implements #95. Limits size of posts menu
           - Implements #91. Additional roles

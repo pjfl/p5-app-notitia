@@ -115,7 +115,7 @@ sub dialog : Role(any) {
 sub index : Role(anon) {
    my ($self, $req) = @_;
 
-   my $mid = $req->query_params->( 'mid', { optional => TRUE } );
+   my $mid = $req->session->collect_message_id( $req );
    my $location = $self->docs_url( $req );
    my %query = $location->query_form;
 
