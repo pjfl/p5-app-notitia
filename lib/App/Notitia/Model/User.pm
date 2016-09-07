@@ -74,7 +74,7 @@ around 'get_stash' => sub {
 my $_activity_headers = sub {
    my $req = shift; my $header = 'activity_header';
 
-   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 6 ];
+   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 1 ];
 };
 
 my $_log_user_label = sub {
@@ -186,7 +186,7 @@ sub activity : Role(anon) {
 
    my $stash = $self->dialog_stash( $req );
    my $form  = $stash->{page}->{forms}->[ 0 ]
-             = blank_form { class => 'dialog-form' };
+             = blank_form { class => 'standard-form' };
    my $dir   = $self->config->logsdir;
    my $file  = $dir->catfile( 'activity.log' )->backwards->chomp;
 
@@ -201,16 +201,10 @@ sub activity : Role(anon) {
    while (defined (my $line = $file->getline)) {
       my @cols = $_log_columns->( $data, $line ); my $user = $cols[ 0 ]->[ 0 ];
 
-      if (exists $users->{ $user }) {
-         @{ $rows[ $users->{ $user } ] } > 6 and next;
-         push @{ $rows[ $users->{ $user } ] },
-            { class => $cols[ 1 ]->[ 1 ], value => $cols[ 1 ]->[ 0 ] },
-            { class => $cols[ 2 ]->[ 1 ], value => $cols[ 2 ]->[ 0 ] };
-      }
-      else {
+      unless (exists $users->{ $user }) {
          $u_count > 4 and last; $users->{ $user } = $u_count++;
          push @rows, [ map { { class => $_->[ 1 ], value => $_->[ 0 ] } }
-                       @cols ];
+                       $cols[ 0 ], $cols[ 1 ] ];
       }
    }
 

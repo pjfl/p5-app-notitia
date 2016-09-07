@@ -30,21 +30,6 @@ msgstr "User"
 msgid "activity_header_1"
 msgstr "Date"
 
-msgid "activity_header_2"
-msgstr "Action"
-
-msgid "activity_header_3"
-msgstr "Date"
-
-msgid "activity_header_4"
-msgstr "Action"
-
-msgid "activity_header_5"
-msgstr "Date"
-
-msgid "activity_header_6"
-msgstr "Action"
-
 msgid "activity_link"
 msgstr "Activity"
 
