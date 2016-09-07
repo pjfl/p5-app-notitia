@@ -379,9 +379,9 @@ sub primary_navigation_links {
 
    $class = $location eq 'calls' ? 'current' : NUL;
 
-   $req->authenticated and
+   $self->$_allowed( $req, 'call/journeys' ) and
       p_item $nav, $nav_linkto->( $req, {
-         class => $class, tip => 'journeys_tip',
+         class => $class, tip => 'calls_tip',
          value => 'calls', }, 'call/journeys', [] );
 
    return $nav;

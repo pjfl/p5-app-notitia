@@ -130,6 +130,9 @@ msgstr "Called"
 msgid "calls_management_heading"
 msgstr "Calls"
 
+msgid "calls_tip"
+msgstr "Log incomming calls from other agencies"
+
 msgid "car"
 msgstr "Car"
 

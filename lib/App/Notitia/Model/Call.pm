@@ -508,7 +508,7 @@ my $_update_journey_from_request = sub {
 };
 
 # Public methods
-sub create_customer_action : Role(administrator) {
+sub create_customer_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $name     = $req->body_params->( 'name' );
@@ -521,7 +521,7 @@ sub create_customer_action : Role(administrator) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_journey_action : Role(administrator) {
+sub create_journey_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $schema   = $self->schema;
@@ -543,7 +543,7 @@ sub create_journey_action : Role(administrator) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_leg_action : Role(administrator) {
+sub create_leg_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $jid = $req->uri_params->( 0 );
@@ -563,7 +563,7 @@ sub create_leg_action : Role(administrator) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_location_action : Role(administrator) {
+sub create_location_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $address  = $req->body_params->( 'address' );
@@ -576,7 +576,7 @@ sub create_location_action : Role(administrator) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub customer : Role(administrator) {
+sub customer : Role(controller) {
    my ($self, $req) = @_;
 
    my $cid     =  $req->uri_params->( 0, { optional => TRUE } );
@@ -601,7 +601,7 @@ sub customer : Role(administrator) {
    return $self->get_stash( $req, $page );
 }
 
-sub customers : Role(administrator) {
+sub customers : Role(controller) {
    my ($self, $req) = @_;
 
    my $form = blank_form { class => 'standard-form' };
@@ -621,7 +621,37 @@ sub customers : Role(administrator) {
    return $self->get_stash( $req, $page );
 }
 
-sub delete_leg_action : Role(administrator) {
+sub delete_customer_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $cid = $req->uri_params->( 0 );
+   my $custer = $self->schema->resultset( 'Customer' )->find( $cid );
+
+   $custer->delete;
+
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Customer [_1] deleted by [_2]', $cid, $who ];
+   my $location = uri_for_action $req, $self->moniker.'/customers';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub delete_journey_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $jid      = $req->uri_params->( 0 );
+   my $journey  = $self->schema->resultset( 'Journey' )->find( $jid );
+
+   $journey->delete;
+
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg 'Journey [_1] deleted by [_2]', $jid, $who ];
+   my $location = uri_for_action $req, $self->moniker.'/journeys';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub delete_leg_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $jid      = $req->uri_params->( 0 );
@@ -635,7 +665,23 @@ sub delete_leg_action : Role(administrator) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub journey : Role(administrator) {
+sub delete_location_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $lid = $req->uri_params->( 0 );
+   my $location = $self->schema->resultset( 'Location' )->find( $lid );
+
+   $location->delete;
+
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Location [_1] deleted by [_2]', $lid, $who ];
+
+   $location = uri_for_action $req, $self->moniker.'/locations';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub journey : Role(controller) {
    my ($self, $req) = @_;
 
    my $jid     =  $req->uri_params->( 0, { optional => TRUE } );
@@ -678,7 +724,7 @@ sub journey : Role(administrator) {
    return $self->get_stash( $req, $page );
 }
 
-sub journeys : Role(administrator) {
+sub journeys : Role(controller) {
    my ($self, $req) = @_;
 
    my $status  =  $req->query_params->( 'status', { optional => TRUE } );
@@ -702,7 +748,7 @@ sub journeys : Role(administrator) {
    return $self->get_stash( $req, $page );
 }
 
-sub leg : Role(administrator) {
+sub leg : Role(controller) {
    my ($self, $req) = @_;
 
    my $jid     =  $req->uri_params->( 0 );
@@ -737,7 +783,7 @@ sub leg : Role(administrator) {
    return $self->get_stash( $req, $page );
 }
 
-sub location : Role(administrator) {
+sub location : Role(controller) {
    my ($self, $req) = @_;
 
    my $lid     =  $req->uri_params->( 0, { optional => TRUE } );
@@ -762,7 +808,7 @@ sub location : Role(administrator) {
    return $self->get_stash( $req, $page );
 }
 
-sub locations : Role(administrator) {
+sub locations : Role(controller) {
    my ($self, $req) = @_;
 
    my $form = blank_form { class => 'standard-form' };
@@ -782,7 +828,22 @@ sub locations : Role(administrator) {
    return $self->get_stash( $req, $page );
 }
 
-sub update_journey_action : Role(administrator) {
+sub update_customer_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $cid = $req->uri_params->( 0 );
+   my $custer = $self->schema->resultset( 'Customer' )->find( $cid );
+
+   $custer->name( $req->body_params->( 'name' ) ); $custer->update;
+
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Customer [_1] updated by [_2]', $cid, $who ];
+   my $location = uri_for_action $req, $self->moniker.'/customers';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub update_journey_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $schema  = $self->schema;
@@ -802,7 +863,7 @@ sub update_journey_action : Role(administrator) {
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub update_leg_action : Role(administrator) {
+sub update_leg_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $schema    = $self->schema;
@@ -831,6 +892,22 @@ sub update_leg_action : Role(administrator) {
                    $lid, $jid, $who ];
 
    return { redirect => { location => $req->uri, message => $message } };
+}
+
+sub update_location_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $lid = $req->uri_params->( 0 );
+   my $location = $self->schema->resultset( 'Location' )->find( $lid );
+
+   $location->address( $req->body_params->( 'address' ) ); $location->update;
+
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Location [_1] updated by [_2]', $lid, $who ];
+
+   $location = uri_for_action $req, $self->moniker.'/locations';
+
+   return { redirect => { location => $location, message => $message } };
 }
 
 1;
