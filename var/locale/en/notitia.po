@@ -15,8 +15,27 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "accused_create_link"
+msgstr "Manage Accused"
+
+msgid "accused_create_tip"
+msgstr "Manage the list of people accused of this incident"
+
+msgid "accused_people"
+msgstr "Accused"
+
+msgid "accused_title"
+msgstr "Accused"
+
 msgid "active"
 msgstr "Active"
+
+msgid "add_accused"
+msgstr "Add Accusation"
+
+msgid "add_accused_tip"
+msgstr "Add the selected people to the list of the accused for "
+       "this incident"
 
 msgid "add_certification"
 msgstr "Add Certification"
@@ -124,8 +143,14 @@ msgstr "Bluelight"
 msgid "c_advanced"
 msgstr "Advanced Car"
 
+msgid "call_category_type_create_link"
+msgstr "Call Category"
+
 msgid "called"
 msgstr "Called"
+
+msgid "call_category"
+msgstr "Category"
 
 msgid "calls_management_heading"
 msgstr "Calls"
@@ -137,13 +162,16 @@ msgid "car"
 msgstr "Car"
 
 msgid "catagory_a"
-msgstr "Catagory A"
+msgstr "Category A"
 
 msgid "catagory_b"
-msgstr "Catagory B"
+msgstr "Category B"
 
 msgid "catagory_e"
-msgstr "Catagory E"
+msgstr "Category E"
+
+msgid "category_other"
+msgstr "Description"
 
 msgid "cert_type"
 msgstr "Cert. Type"
@@ -204,6 +232,9 @@ msgstr "Collection ETA"
 
 msgid "colour"
 msgstr "Colour"
+
+msgid "committee_informed"
+msgstr "Committed Informed"
 
 msgid "completed"
 msgstr "Date Completed"
@@ -568,6 +599,42 @@ msgstr "Information"
 msgid "home_phone"
 msgstr "Home Phone"
 
+msgid "incident_create_link"
+msgstr "Add Incident"
+
+msgid "incident_create_tip"
+msgstr "Create a new incident record"
+
+msgid "incident_record_tip"
+msgstr "View this incident record"
+
+msgid "incident_title"
+msgstr "Incident"
+
+msgid "incident_view_link"
+msgstr "View Incident"
+
+msgid "incident_view_tip"
+msgstr "View the incident for which these people stand accused"
+
+msgid "incidents_heading_0"
+msgstr "Title"
+
+msgid "incidents_heading_1"
+msgstr "Raised"
+
+msgid "incidents_heading_2"
+msgstr "Category"
+
+msgid "incidents_link"
+msgstr "Incidents"
+
+msgid "incidents_tip"
+msgstr "List, create, and update incident call records"
+
+msgid "incidents_title"
+msgstr "Incidents"
+
 msgid "joined"
 msgstr "Joined"
 
@@ -926,6 +993,9 @@ msgstr "Password"
 msgid "password_expired"
 msgstr "Password Expired"
 
+msgid "people"
+msgstr "All People"
+
 msgid "people_list_link"
 msgstr "All People"
 
@@ -1022,6 +1092,9 @@ msgstr "List privately owned vehicles"
 msgid "public_access"
 msgstr "Is this a publicly available asset?"
 
+msgid "raised"
+msgstr "Raised"
+
 msgid "region"
 msgstr "Region"
 
@@ -1030,6 +1103,13 @@ msgstr "Vehicles"
 
 msgid "request_vehicle_management_tip"
 msgstr "Request vehicles for the [_1] event"
+
+msgid "remove_accused"
+msgstr "Remove Accusation"
+
+msgid "remove_accused_tip"
+msgstr "Remove the selected people from the list of the accused for "
+       "this incident"
 
 msgid "remove_certification"
 msgstr "Remove Certification"
@@ -1048,6 +1128,12 @@ msgstr "Remove Type"
 
 msgid "remove_type_tip"
 msgstr "Remove this type record"
+
+msgid "reporter"
+msgstr "Reported By"
+
+msgid "reporter_phone"
+msgstr "Contact Phone"
 
 msgid "request_bike"
 msgstr "Do you want a bike?"

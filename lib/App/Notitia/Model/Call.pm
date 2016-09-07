@@ -3,14 +3,17 @@ package App::Notitia::Model::Call;
 use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( FALSE NUL PRIORITY_TYPE_ENUM PIPE_SEP TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_action p_fields p_link
-                                p_list p_row p_table p_tag );
-use App::Notitia::Util      qw( js_window_config locm now_dt
+use App::Notitia::Constants qw( FALSE NUL PRIORITY_TYPE_ENUM
+                                PIPE_SEP SPC TRUE );
+use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
+                                p_container p_fields p_link p_list p_row
+                                p_select p_table p_tag p_textfield );
+use App::Notitia::Util      qw( js_window_config locm make_tip now_dt
                                 register_action_paths to_dt
                                 to_msg uri_for_action );
 use Class::Null;
-use Class::Usul::Functions  qw( is_member );
+use Class::Usul::Functions  qw( is_arrayref is_member );
+use Class::Usul::Log        qw( get_logger );
 use Try::Tiny;
 use Moo;
 
@@ -25,8 +28,11 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'call';
 
 register_action_paths
+   'call/accused'   => 'accused',
    'call/customer'  => 'customer',
    'call/customers' => 'customers',
+   'call/incident'  => 'incident',
+   'call/incidents' => 'incidents',
    'call/journey'   => 'journey',
    'call/journeys'  => 'journeys',
    'call/leg'       => 'leg',
@@ -67,6 +73,12 @@ my $_customers_headers = sub {
    return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 0 ];
 };
 
+my $_incidents_headers = sub {
+   my $req = shift; my $header = 'incidents_heading';
+
+   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 2 ];
+};
+
 my $_is_disabled = sub {
    my ($req, $journey, $done) = @_; $journey->id or return $done;
 
@@ -92,6 +104,25 @@ my $_locations_headers = sub {
    my $req = shift; my $header = 'locations_heading';
 
    return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 0 ];
+};
+
+my $_category_tuple = sub {
+   my ($selected, $category) = @_;
+
+   my $opts = { selected => $selected == $category->id ? TRUE : FALSE };
+
+   return [ $category->name, $category->id, $opts ];
+};
+
+my $_bind_call_category = sub {
+   my ($categories, $incident) = @_;
+
+   my $selected = $incident->category_id; my $other;
+
+   return [ [ NUL, 0 ],
+            (map  { $_category_tuple->( $selected, $_ ) }
+             grep { $_->name eq 'other' and $other = $_; $_->name ne 'other' }
+             $categories->all), $_category_tuple->( $selected, $other ) ];
 };
 
 my $_bind_dropoff_location = sub {
@@ -181,7 +212,23 @@ my $_bind_priority = sub {
                @{ PRIORITY_TYPE_ENUM() } ];
 };
 
+my $_subtract = sub {
+   return [ grep { not is_member $_->[ 1 ], [ map { $_->[ 1 ] } @{ $_[ 1 ] } ] }
+                @{ $_[ 0 ] } ];
+};
+
 # Private methods
+my $_accused_ops_links = sub {
+   my ($self, $req, $page, $iid) = @_; my $links = [];
+
+   my $actionp = $self->moniker.'/incident';
+
+   p_link $links, 'incident', uri_for_action( $req, $actionp, [ $iid ] ), {
+      action => 'view', container_class => 'table-link', request => $req };
+
+   return $links;
+};
+
 my $_bind_beginning_location = sub {
    my ($self, $leg, $opts) = @_;
 
@@ -213,6 +260,47 @@ my $_bind_ending_location = sub {
    return [ [ NUL, 0 ],
             map { $_location_tuple->( $selected, $_ ) }
                @{ $opts->{locations} } ];
+};
+
+my $_bind_incident_fields = sub {
+   my ($self, $page, $incident, $opts) = @_; $opts //= {};
+
+   my $schema = $self->schema;
+   my $disabled = $opts->{disabled} // FALSE;
+   my $type_rs = $schema->resultset( 'Type' );
+   my $categories = $type_rs->search_for_call_categories;
+   my $other_type_id = $type_rs->search( {
+      name => 'other', type_class => 'call_category', } )->first->id;
+
+   push @{ $page->{literal_js} }, js_window_config 'category', 'change',
+      'showIfNeeded', [ 'category', $other_type_id, 'category_other_field' ];
+
+   return
+      [  title          => { disabled => $disabled, label => 'incident_title' },
+         controller     => $incident->id ? {
+            disabled    => TRUE,
+            value       => $incident->controller->label } : FALSE,
+         raised         => $incident->id ? {
+            disabled    => TRUE, value => $incident->raised_label } : FALSE,
+         reporter       => { disabled => $disabled },
+         reporter_phone => { disabled => $disabled },
+         category       => {
+            class       => 'standard-field windows',
+            disabled    => $disabled, id => 'category',
+            label       => 'call_category', type => 'select',
+            value       => $_bind_call_category->( $categories, $incident ) },
+         category_other => {
+            disabled    => $disabled,
+            label_class => $incident->id && $incident->category eq 'other'
+                         ? NUL : 'hidden',
+            label_id    => 'category_other_field' },
+         notes          => {
+            class       => 'standard-field autosize',
+            disabled    => $disabled, type => 'textarea' },
+         committee_informed => $incident->id ? {
+            disabled    => $disabled, type => 'datetime',
+            value       => $incident->committee_informed_label } : FALSE,
+       ];
 };
 
 my $_bind_journey_fields = sub {
@@ -346,6 +434,45 @@ my $_customers_row = sub {
       request => $req, value => "${customer}" } }, ];
 };
 
+my $_find_person = sub {
+   my ($self, $scode) = @_; my $rs = $self->schema->resultset( 'Person' );
+
+   return $rs->find_by_shortcode( $scode );
+};
+
+my $_incident_ops_links = sub {
+   my ($self, $req, $iid) = @_; my $links = [];
+
+   my $actionp = $self->moniker.'/accused';
+
+   p_link $links, 'accused', uri_for_action( $req, $actionp, [ $iid ] ), {
+      action => 'create', container_class => 'add-link', request => $req };
+
+   return $links;
+};
+
+my $_incidents_ops_links = sub {
+   my ($self, $req, $page) = @_; my $links = [];
+
+   my $actionp = $self->moniker.'/incident';
+
+   p_link $links, 'incident', uri_for_action( $req, $actionp ), {
+      action => 'create', container_class => 'add-link', request => $req };
+
+   return $links;
+};
+
+my $_incidents_row = sub {
+   my ($self, $req, $incident) = @_;
+
+   my $href = uri_for_action $req, $self->moniker.'/incident', [ $incident->id];
+
+   return [ { value => f_link 'incident_record', $href, {
+      request => $req, value => $incident->title, } },
+            { value => $incident->raised_label },
+            { value => $incident->category }, ];
+};
+
 my $_journey_leg_row = sub {
    my ($self, $req, $jid, $leg) = @_;
 
@@ -391,6 +518,12 @@ my $_leg_ops_links = sub {
    return $links;
 };
 
+my $_list_all_people = sub {
+   my $self = shift; my $rs = $self->schema->resultset( 'Person' );
+
+   return [ map { [ $_->label, $_->shortcode ] } $rs->search( {} )->all ];
+};
+
 my $_locations_ops_links = sub {
    my ($self, $req) = @_; my $links = [];
 
@@ -411,28 +544,18 @@ my $_locations_row = sub {
       request => $req, value => "${location}" } }, ];
 };
 
-my $_maybe_find_customer = sub {
-   my ($self, $id) = @_; $id or return Class::Null->new;
+my $_maybe_find = sub {
+   my ($self, $class, $id) = @_; $id or return Class::Null->new;
 
-   return $self->schema->resultset( 'Customer' )->find( $id );
+   return $self->schema->resultset( $class )->find( $id );
 };
 
-my $_maybe_find_journey = sub {
-   my ($self, $id) = @_; $id or return Class::Null->new;
+my $_search_for_incidents = sub {
+   my $self = shift; my $rs = $self->schema->resultset( 'Incident' );
 
-   return $self->schema->resultset( 'Journey' )->find( $id );
-};
+   my $opts = { prefetch => [ 'category', 'controller' ] };
 
-my $_maybe_find_leg = sub {
-   my ($self, $id) = @_; $id or return Class::Null->new;
-
-   return $self->schema->resultset( 'Leg' )->find( $id );
-};
-
-my $_maybe_find_location = sub {
-   my ($self, $id) = @_; $id or return Class::Null->new;
-
-   return $self->schema->resultset( 'Location' )->find( $id );
+   return $rs->search( {}, $opts );
 };
 
 my $_search_for_journeys = sub {
@@ -442,6 +565,32 @@ my $_search_for_journeys = sub {
    my $completed = $status && $status eq 'completed' ? TRUE : FALSE;
 
    return $rs->search( { completed => $completed }, $opts );
+};
+
+my $_update_incident_from_request = sub {
+   my ($self, $req, $incident) = @_; my $params = $req->body_params;
+
+   my $opts = { optional => TRUE };
+
+   for my $attr (qw( title reporter reporter_phone category_other
+                     notes committee_informed )) {
+      my $v = $params->( $attr, $opts ); defined $v or next;
+
+      $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
+
+      if (length $v and is_member $attr, [ qw( committee_informed ) ]) {
+         $v =~ s{ [@] }{}mx; $v = to_dt $v;
+      }
+
+      $incident->$attr( $v );
+   }
+
+   $incident->controller_id( $self->$_find_person( $req->username )->id );
+
+   my $v = $params->( 'category', $opts ); defined $v
+      and $incident->category_id( $v );
+
+   return;
 };
 
 my $_update_leg_from_request = sub {
@@ -489,10 +638,7 @@ my $_update_journey_from_request = sub {
       $journey->$attr( $v );
    }
 
-   my $rs     = $self->schema->resultset( 'Person' );
-   my $person = $rs->find_by_shortcode( $req->username );
-
-   $journey->controller_id( $person->id );
+   $journey->controller_id( $self->$_find_person( $req->username )->id );
 
    my $v = $params->( 'customer', $opts ); defined $v
       and $journey->customer_id( $v );
@@ -508,6 +654,73 @@ my $_update_journey_from_request = sub {
 };
 
 # Public methods
+sub accused : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $iid  = $req->uri_params->( 0 );
+   my $href = uri_for_action $req, $self->moniker.'/accused', [ $iid ];
+   my $form = blank_form 'accused', $href;
+   my $page = {
+      forms => [ $form ], selected => 'incidents',
+      title => locm $req, 'accused_title'
+   };
+   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
+   my $title = $incident->title;
+   my $accused = [ map { [ $_->person->label, $_->person->shortcode ] }
+                   $incident->accused->all ];
+   my $people = $_subtract->( $self->$_list_all_people, $accused );
+   my $links = $self->$_accused_ops_links( $req, $page, $iid );
+
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
+
+   p_textfield $form, 'incident', $title, {
+      disabled => TRUE, label => 'incident_title' };
+   p_textfield $form, 'raised', $incident->raised_label, { disabled => TRUE };
+
+   p_select $form, 'accused', $accused, {
+      label => 'accused_people', multiple => TRUE, size => 5 };
+
+   p_button $form, 'remove_accused', 'remove_accused', {
+      class => 'delete-button', container_class => 'right-last',
+      tip   => make_tip $req, 'remove_accused_tip', [ 'person', $title ] };
+
+   p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
+
+   p_select $form, 'people', $people, { multiple => TRUE, size => 5 };
+
+   p_button $form, 'add_accused', 'add_accused', {
+      class => 'save-button', container_class => 'right-last',
+      tip   => make_tip $req, 'add_accused_tip', [ 'person', $title ] };
+
+   return $self->get_stash( $req, $page );
+}
+
+sub add_accused_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $iid = $req->uri_params->( 0 );
+   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
+   my $accused = $req->body_params->( 'people', { multiple => TRUE } );
+   my $accused_rs = $self->schema->resultset( 'Accused' );
+
+   for my $scode (@{ $accused }) {
+      my $person = $self->$_find_person( $scode );
+
+      $accused_rs->create( { accused_id => $person->id, incident_id => $iid } );
+
+      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+                  . "action:addaccused shortcode:${scode} incident:${iid}";
+
+      get_logger( 'activity' )->log( $message );
+   }
+
+   my $who = $req->session->user_label;
+   my $message = [ to_msg '[_1] incident accused added by [_2]',
+                   $incident->title, $who ];
+
+   return { redirect => { location => $req->uri, message => $message } };
+}
+
 sub create_customer_action : Role(controller) {
    my ($self, $req) = @_;
 
@@ -517,6 +730,26 @@ sub create_customer_action : Role(controller) {
    my $who      = $req->session->user_label;
    my $message  = [ to_msg 'Customer [_1] created by [_2]', $cid, $who ];
    my $location = uri_for_action $req, $self->moniker.'/customers';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub create_incident_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $incident = $self->schema->resultset( 'Incident' )->new_result( {} );
+
+   $self->$_update_incident_from_request( $req, $incident );
+
+   try { $incident->insert }
+   catch {
+      $self->rethrow_exception( $_, 'create', 'incident', $incident->title );
+   };
+
+   my $iid = $incident->id;
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Incident [_1] created by [_2]', $iid, $who ];
+   my $location = uri_for_action $req, $self->moniker.'/incident', [ $iid ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -589,7 +822,7 @@ sub customer : Role(controller) {
       selected => 'customers',
       title    => locm $req, 'customer_setup_title'
    };
-   my $custer  =  $self->$_maybe_find_customer( $cid );
+   my $custer  =  $self->$_maybe_find( 'Customer', $cid );
 
    p_fields $form, $self->schema, 'Customer', $custer,
       $self->$_bind_customer_fields( $custer, {} );
@@ -632,6 +865,21 @@ sub delete_customer_action : Role(controller) {
    my $who = $req->session->user_label;
    my $message = [ to_msg 'Customer [_1] deleted by [_2]', $cid, $who ];
    my $location = uri_for_action $req, $self->moniker.'/customers';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub delete_incident_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $iid      = $req->uri_params->( 0 );
+   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
+
+   $incident->delete;
+
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg 'Incident [_1] deleted by [_2]', $iid, $who ];
+   my $location = uri_for_action $req, $self->moniker.'/incidents';
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -681,6 +929,56 @@ sub delete_location_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub incident : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $iid = $req->uri_params->( 0, { optional => TRUE } );
+   my $href = uri_for_action $req, $self->moniker.'/incident', [ $iid ];
+   my $action = $iid ? 'update' : 'create';
+   my $form = blank_form 'incident', $href;
+   my $page = {
+      forms => [ $form ], selected => 'incidents',
+      title => locm $req, 'incident_title',
+   };
+   my $links    = $self->$_incident_ops_links( $req, $iid );
+   my $incident = $self->$_maybe_find( 'Incident', $iid );
+   my $disabled = FALSE;
+
+   $iid and p_list $form, PIPE_SEP, $links, $_link_opts->();
+
+   p_fields $form, $self->schema, 'Incident', $incident,
+      $self->$_bind_incident_fields
+         ( $page, $incident, { disabled => $disabled } );
+
+   p_action $form, $action, [ 'incident', $iid ], {
+      request => $req };
+
+   $iid and p_action $form, 'delete', [ 'incident', $iid ], {
+      request => $req };
+
+   return $self->get_stash( $req, $page );
+}
+
+sub incidents : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $form = blank_form;
+   my $page = {
+      forms => [ $form ], selected => 'incidents',
+      title => locm $req, 'incidents_title',
+   };
+   my $links = $self->$_incidents_ops_links( $req, $page );
+
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
+
+   my $incidents = $self->$_search_for_incidents;
+   my $table = p_table $form, { headers => $_incidents_headers->( $req ) };
+
+   p_row $table, [ map { $self->$_incidents_row( $req, $_ ) } $incidents->all ];
+
+   return $self->get_stash( $req, $page );
+}
+
 sub journey : Role(controller) {
    my ($self, $req) = @_;
 
@@ -689,7 +987,7 @@ sub journey : Role(controller) {
    my $jform   =  blank_form 'journey', $href;
    my $lform   =  blank_form { class => 'wide-form' };
    my $action  =  $jid ? 'update' : 'create';
-   my $journey =  $self->$_maybe_find_journey( $jid );
+   my $journey =  $self->$_maybe_find( 'Journey', $jid );
    my $done    =  $jid && $journey->completed ? TRUE : FALSE;
    my $page    =  {
       forms    => [ $jform, $lform ],
@@ -710,7 +1008,7 @@ sub journey : Role(controller) {
 
    $jid or return $self->get_stash( $req, $page );
 
-   p_tag  $lform, 'h5', locm $req, 'journey_leg_title';
+   p_tag $lform, 'h5', locm $req, 'journey_leg_title';
 
    $disabled or p_list $lform, PIPE_SEP, $links, $_link_opts->();
 
@@ -753,7 +1051,7 @@ sub leg : Role(controller) {
 
    my $jid     =  $req->uri_params->( 0 );
    my $lid     =  $req->uri_params->( 1, { optional => TRUE } );
-   my $journey =  $self->$_maybe_find_journey( $jid );
+   my $journey =  $self->$_maybe_find( 'Journey', $jid );
    my $done    =  $jid && $journey->completed ? TRUE : FALSE;
    my $href    =  uri_for_action $req, $self->moniker.'/leg', [ $jid, $lid ];
    my $action  =  $lid ? 'update' : 'create';
@@ -764,7 +1062,7 @@ sub leg : Role(controller) {
       title    => locm $req, 'journey_leg_title'
    };
    my $links    = $self->$_leg_ops_links( $req, $page, $jid );
-   my $leg      = $self->$_maybe_find_leg( $lid );
+   my $leg      = $self->$_maybe_find( 'Leg', $lid );
    my $count    = !$lid ? $self->$_count_legs( $jid ) : undef;
    my $disabled = $_is_disabled->( $req, $journey, $done );
 
@@ -796,7 +1094,7 @@ sub location : Role(controller) {
       selected => 'location',
       title    => locm $req, 'location_setup_title'
    };
-   my $where   =  $self->$_maybe_find_location( $lid );
+   my $where   =  $self->$_maybe_find( 'Location', $lid );
 
    p_fields $form, $self->schema, 'Location', $where,
       $self->$_bind_location_fields( $where, {} );
@@ -828,6 +1126,32 @@ sub locations : Role(controller) {
    return $self->get_stash( $req, $page );
 }
 
+sub remove_accused_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $iid = $req->uri_params->( 0 );
+   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
+   my $people = $req->body_params->( 'accused', { multiple => TRUE } );
+   my $accused_rs = $self->schema->resultset( 'Accused' );
+
+   for my $scode (@{ $people }) {
+      my $person = $self->$_find_person( $scode );
+
+      $accused_rs->find( $iid, $person->id )->delete;
+
+      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+                  . "action:removeaccused shortcode:${scode} incident:${iid}";
+
+      get_logger( 'activity' )->log( $message );
+   }
+
+   my $who = $req->session->user_label;
+   my $message = [ to_msg '[_1] incident accused removed by [_2]',
+                   $incident->title, $who ];
+
+   return { redirect => { location => $req->uri, message => $message } };
+}
+
 sub update_customer_action : Role(controller) {
    my ($self, $req) = @_;
 
@@ -841,6 +1165,23 @@ sub update_customer_action : Role(controller) {
    my $location = uri_for_action $req, $self->moniker.'/customers';
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub update_incident_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $iid = $req->uri_params->( 0 );
+   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
+
+   $self->$_update_incident_from_request( $req, $incident );
+
+   try   { $incident->update }
+   catch { $self->rethrow_exception( $_, 'update', 'incident', $iid ) };
+
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Incident [_1] updated by [_2]', $iid, $who ];
+
+   return { redirect => { location => $req->uri, message => $message } };
 }
 
 sub update_journey_action : Role(controller) {

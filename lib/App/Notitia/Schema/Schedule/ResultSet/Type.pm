@@ -58,6 +58,13 @@ sub search_for_all_types {
       ( {}, { columns => [ 'name', 'type_class' ], %{ $opts } } );
 }
 
+sub search_for_call_categories {
+   my ($self, $opts) = @_; $opts //= {};
+
+   return $self->search( { type_class => 'call_category' },
+                         { columns    => [ 'id', 'name' ], %{ $opts } } );
+}
+
 sub search_for_certification_types {
    my ($self, $opts) = @_; $opts //= {};
 

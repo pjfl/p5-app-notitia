@@ -7,17 +7,22 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'call';
 
 sub dispatch_request {
-   sub (POST + /customer | /customer/* + ?*) { [ 'call/from_request', @_ ] },
-   sub (GET  + /customer | /customer/* + ?*) { [ 'call/customer',     @_ ] },
-   sub (GET  + /customers              + ?*) { [ 'call/customers',    @_ ] },
-   sub (POST + /journey  | /journey/*  + ?*) { [ 'call/from_request', @_ ] },
-   sub (GET  + /journey  | /journey/*  + ?*) { [ 'call/journey',      @_ ] },
-   sub (GET  + /journeys               + ?*) { [ 'call/journeys',     @_ ] },
-   sub (POST + /leg/*    | /leg/**     + ?*) { [ 'call/from_request', @_ ] },
-   sub (GET  + /leg/**                 + ?*) { [ 'call/leg',          @_ ] },
-   sub (POST + /location | /location/* + ?*) { [ 'call/from_request', @_ ] },
-   sub (GET  + /location | /location/* + ?*) { [ 'call/location',     @_ ] },
-   sub (GET  + /locations              + ?*) { [ 'call/locations',    @_ ] };
+   sub (POST + /accused/* | /accused/** + ?*) { [ 'call/from_request', @_ ] },
+   sub (GET  + /accused/**              + ?*) { [ 'call/accused',      @_ ] },
+   sub (POST + /customer  | /customer/* + ?*) { [ 'call/from_request', @_ ] },
+   sub (GET  + /customer  | /customer/* + ?*) { [ 'call/customer',     @_ ] },
+   sub (GET  + /customers               + ?*) { [ 'call/customers',    @_ ] },
+   sub (POST + /incident  | /incident/* + ?*) { [ 'call/from_request', @_ ] },
+   sub (GET  + /incident  | /incident/* + ?*) { [ 'call/incident',     @_ ] },
+   sub (GET  + /incidents               + ?*) { [ 'call/incidents',    @_ ] },
+   sub (POST + /journey   | /journey/*  + ?*) { [ 'call/from_request', @_ ] },
+   sub (GET  + /journey   | /journey/*  + ?*) { [ 'call/journey',      @_ ] },
+   sub (GET  + /journeys                + ?*) { [ 'call/journeys',     @_ ] },
+   sub (POST + /leg/*     | /leg/**     + ?*) { [ 'call/from_request', @_ ] },
+   sub (GET  + /leg/**                  + ?*) { [ 'call/leg',          @_ ] },
+   sub (POST + /location  | /location/* + ?*) { [ 'call/from_request', @_ ] },
+   sub (GET  + /location  | /location/* + ?*) { [ 'call/location',     @_ ] },
+   sub (GET  + /locations               + ?*) { [ 'call/locations',    @_ ] };
 }
 
 1;
