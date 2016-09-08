@@ -3,8 +3,7 @@ package App::Notitia::Model::User;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form p_button p_checkbox p_image p_label
-                                p_password p_radio p_row p_table p_tag p_text
-                                p_textfield );
+                                p_password p_radio p_tag p_text p_textfield );
 use App::Notitia::Util      qw( check_form_field js_server_config
                                 locm register_action_paths set_element_focus
                                 to_msg uri_for_action );
@@ -71,36 +70,6 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_activity_headers = sub {
-   my $req = shift; my $header = 'activity_header';
-
-   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 1 ];
-};
-
-my $_log_user_label = sub {
-   my ($data, $field) = @_; (my $scode = $field) =~ s{ \A .+ : }{}mx;
-
-   exists $data->{cache}->{ $scode } and return $data->{cache}->{ $scode };
-
-   my $label = $data->{person_rs}->find_by_shortcode( $scode )->label;
-
-   return $data->{cache}->{ $scode } = $label;
-};
-
-my $_log_columns = sub {
-   my ($data, $line) = @_;
-
-   my @fields = split SPC, $line, 5;
-   my $date = join SPC, @fields[ 0 .. 2 ];
-   my @subfields = split SPC, $fields[ 4 ], 4;
-   my $label = $_log_user_label->( $data, $subfields[ 0 ] );
-  (my $action = $subfields[ 2 ]) =~ s{ \A .+ : }{}mx;
-
-   return [ $label, 'log-user' ],
-          [ $date, 'log-date' ],
-          [ $action, 'log-action' ];
-};
-
 my $_rows_per_page = sub {
    my $selected = $_[ 0 ]->rows_per_page;
    my $opts_t   = { container_class => 'radio-group', selected => TRUE };
@@ -177,41 +146,6 @@ sub about : Role(anon) {
    my $coder = $self->formatters->{markdown};
 
    p_tag $form, 'div', $coder->serialize( $req, { content => $path } );
-
-   return $stash;
-}
-
-sub activity : Role(anon) {
-   my ($self, $req) = @_;
-
-   my $stash = $self->dialog_stash( $req );
-   my $form  = $stash->{page}->{forms}->[ 0 ]
-             = blank_form { class => 'standard-form' };
-   my $dir   = $self->config->logsdir;
-   my $file  = $dir->catfile( 'activity.log' )->backwards->chomp;
-
-   $file->exists or return $self->get_stash( $req, $stash->{page} );
-
-   my $schema  = $self->schema;
-   my $data    = { cache => {}, person_rs => $schema->resultset( 'Person' ) };
-   my $users   = {};
-   my $u_count = 0;
-   my @rows;
-
-   while (defined (my $line = $file->getline)) {
-      my @cols = $_log_columns->( $data, $line ); my $user = $cols[ 0 ]->[ 0 ];
-
-      unless (exists $users->{ $user }) {
-         $u_count > 4 and last; $users->{ $user } = $u_count++;
-         push @rows, [ map { { class => $_->[ 1 ], value => $_->[ 0 ] } }
-                       $cols[ 0 ], $cols[ 1 ] ];
-      }
-   }
-
-   my $table = p_table $form, {
-      class => 'smaller-table', headers => $_activity_headers->( $req ) };
-
-   p_row $table, [ @rows ];
 
    return $stash;
 }
@@ -518,7 +452,8 @@ sub totp_secret : Role(anon) {
       my $auth  = $person->totp_authenticator;
 
       p_image $form, $label,      $auth->qr_code, { label => $label };
-      p_text  $form, 'totp_auth', $auth->otpauth, { class => 'info-field' };
+      p_text  $form, 'totp_auth', $auth->otpauth, {
+         class => 'field-text info-field' };
    }
 
    return $self->get_stash( $req, $page );

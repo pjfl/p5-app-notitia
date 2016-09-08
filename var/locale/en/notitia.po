@@ -1108,6 +1108,9 @@ msgstr "List privately owned vehicles"
 msgid "public_access"
 msgstr "Is this a publicly available asset?"
 
+msgid "recent_activity"
+msgstr "Recently Active:"
+
 msgid "region"
 msgstr "Region"
 

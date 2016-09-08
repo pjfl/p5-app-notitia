@@ -114,7 +114,8 @@ my $_add_participate_button = sub {
       and $event->max_participents
       and $event->count_of_participents >= $event->max_participents
       and $text = loc( $req, 'Maximum number of paticipants reached' )
-      and p_text $form, 'info', $text, { class => 'right-last', label => NUL }
+      and p_text $form, 'info', $text, {
+         class => 'field-text right-last', label => NUL }
       and return;
 
    p_button $form, "${action}_event", "${action}_event", {
