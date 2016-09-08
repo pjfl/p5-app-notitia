@@ -16,6 +16,8 @@ around 'execute' => sub {
 
    my $stash = $orig->( $self, $method, $req );
 
+   $req->authenticated and $self->activity_cache( $req->session->user_label );
+
    exists $stash->{redirect} and $req->authenticated and $req->referer
       and $stash->{redirect}->{location} //=
           new_uri $req->scheme, $req->referer;

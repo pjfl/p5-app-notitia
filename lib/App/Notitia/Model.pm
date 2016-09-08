@@ -4,7 +4,7 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_tag p_tag );
 use App::Notitia::Util      qw( locm uri_for_action );
-use Class::Usul::Functions  qw( exception throw );
+use Class::Usul::Functions  qw( exception is_member throw );
 use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Time       qw( time2str );
 use Class::Usul::Types      qw( Plinth );
@@ -20,6 +20,9 @@ with q(Web::Components::Role);
 # Public attributes
 has 'application' => is => 'ro', isa => Plinth,
    required       => TRUE,  weak_ref => TRUE;
+
+# Class attributes
+my $_activity_cache = [];
 
 # Private functions
 my $_debug_output = sub {
@@ -92,6 +95,17 @@ my $_auth_redirect = sub {
 };
 
 # Public methods
+sub activity_cache {
+   my ($self, $v) = @_;
+
+   defined $v and not is_member $v, $_activity_cache
+      and unshift @{ $_activity_cache }, $v;
+
+   scalar @{ $_activity_cache } > 3 and pop @{ $_activity_cache };
+
+   return join ', ', @{ $_activity_cache };
+}
+
 sub dialog_stash {
    my ($self, $req, $layout) = @_; my $stash = $self->initialise_stash( $req );
 

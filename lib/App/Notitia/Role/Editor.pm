@@ -289,7 +289,7 @@ sub get_dialog {
    elsif ($name eq 'rename') {
       p_hidden    $form, 'old_path', $val;
       p_textfield $form, 'pathname', NUL, { class => 'pathname', label => NUL };
-      p_text      $form, NUL, $val, { class => 'info-field' };
+      p_text      $form, NUL, $val, { class => 'field-text info-field' };
       p_button    $form, 'Rename', 'rename_file', $opts;
       $page->{literal_js} = set_element_focus "${name}-file", 'pathname';
    }

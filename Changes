@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #97. Display list of active users
           - Implements #97. Less information in activity link
           - Fixes last keeper in vehicle allocation key
           - Adds Config expire_session

@@ -5,7 +5,7 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE HASH_CHAR NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_button p_image p_item
-                                p_link p_list );
+                                p_link p_list p_text );
 use App::Notitia::Util      qw( dialog_anchor locm make_tip now_dt
                                 to_dt uri_for_action );
 use Class::Usul::Functions  qw( is_member );
@@ -442,15 +442,12 @@ sub credit_links {
    push @{ $page->{literal_js} }, dialog_anchor( 'about', $href, {
       name => 'about', title => locm( $req, 'About' ), useIcon => \1 } );
 
-   p_link $links, 'activity', '#', { class => 'windows', request => $req };
-
-   $href = uri_for_action $req, $places->{activity};
-
-   push @{ $page->{literal_js} }, dialog_anchor( 'activity', $href, {
-      name => 'activity', title => locm( $req, 'Activity' ), useIcon => \1 } );
-
    p_link $links, 'changes', uri_for_action( $req, $places->{changes} ), {
       request => $req };
+
+   p_text $links, 'recent_activity', $self->activity_cache, {
+      class => 'link-help', label_class => 'none',
+      label_field_class => 'link-help' };
 
    p_list $form, PIPE_SEP, $links;
 

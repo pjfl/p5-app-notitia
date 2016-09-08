@@ -230,7 +230,8 @@
 [%# -%]
 [% MACRO Text( f ) WRAPPER label -%]
 [%    IF f.tip; FieldHelp( f ); END -%]
-      <span class="field-text [% f.class %]">[% f.value %]</span>
+[%    IF f.class; class = f.class; ELSE; class = 'field-text'; END -%]
+      <span class="[% class %]">[% f.value %]</span>
 [% END -%]
 [%# -%]
 [% MACRO TextArea( f ) WRAPPER label -%]
