@@ -74,8 +74,12 @@ sub validation_attributes {
          package_other => { max_length => 64, min_length => 0, },
       },
       fields           => {
+         customer_id   => { validate => 'isMandatory' },
+         dropoff_id    => { validate => 'isMandatory' },
          notes         => { validate => 'isValidLength isValidText' },
          package_other => { validate => 'isValidLength isValidText' },
+         package_type_id => { validate => 'isMandatory' },
+         pickup_id     => { validate => 'isMandatory' },
       },
       level => 8,
    };

@@ -28,14 +28,14 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'call';
 
 register_action_paths
-   'call/accused'   => 'accused',
+   'call/accused'   => 'incident/*/accused',
    'call/customer'  => 'customer',
    'call/customers' => 'customers',
    'call/incident'  => 'incident',
    'call/incidents' => 'incidents',
-   'call/journey'   => 'journey',
-   'call/journeys'  => 'journeys',
-   'call/leg'       => 'leg',
+   'call/journey'   => 'delivery',
+   'call/journeys'  => 'deliveries',
+   'call/leg'       => 'delivery/*/stage',
    'call/location'  => 'location',
    'call/locations' => 'locations';
 
@@ -276,15 +276,17 @@ my $_bind_incident_fields = sub {
       'showIfNeeded', [ 'category', $other_type_id, 'category_other_field' ];
 
    return
-      [  title          => { disabled => $disabled, label => 'incident_title' },
-         controller     => $incident->id ? {
+      [  controller     => $incident->id ? {
             disabled    => TRUE,
             value       => $incident->controller->label } : FALSE,
          raised         => $incident->id ? {
             disabled    => TRUE, value => $incident->raised_label } : FALSE,
-         reporter       => { disabled => $disabled },
+         title          => {
+            class       => 'standard-field',
+            disabled    => $disabled, label => 'incident_title' },
+         reporter       => { class => 'standard-field', disabled => $disabled },
          reporter_phone => { disabled => $disabled },
-         category       => {
+         category_id    => {
             class       => 'standard-field windows',
             disabled    => $disabled, id => 'category',
             label       => 'call_category', type => 'select',
@@ -319,7 +321,8 @@ my $_bind_journey_fields = sub {
       'showIfNeeded', [ 'package_type', $other_type_id, 'package_other_field' ];
 
    return
-      [  customer      => {
+      [  customer_id   => {
+            class      => 'standard-field',
             disabled   => $journey->id ? TRUE : $disabled, type => 'select',
             value      => $_bind_customer->( $customers, $journey ) },
          controller    => $journey->id ? {
@@ -332,13 +335,15 @@ my $_bind_journey_fields = sub {
          orig_priority => $journey->priority eq $journey->original_priority
                        ?  FALSE : {
             disabled   => TRUE, value => $journey->original_priority },
-         pickup        => {
+         pickup_id     => {
+            class      => 'standard-field',
             disabled   => $disabled, type => 'select',
             value      => $_bind_pickup_location->( $locations, $journey ) },
-         dropoff       => {
+         dropoff_id    => {
+            class      => 'standard-field',
             disabled   => $disabled, type => 'select',
             value      => $_bind_dropoff_location->( $locations, $journey ) },
-         package_type  => {
+         package_type_id => {
             class      => 'standard-field windows',
             disabled   => $disabled, id => 'package_type', type => 'select',
             value      => $_bind_package_type->( $types, $journey ) },
@@ -370,18 +375,21 @@ my $_bind_leg_fields = sub {
        ? TRUE : FALSE;
 
    return
-      [  customer       => {
+      [  customer_id    => {
             disabled    => TRUE, value => $opts->{journey}->customer },
-         operator       => {
+         operator_id    => {
+            class       => 'standard-field',
             disabled    => $leg->id ? TRUE : $disabled, type => 'select',
             value       => $_bind_operator->( $leg, $opts ) },
          called         => $leg->id ? {
             disabled    => TRUE, value => $leg->called_label } : FALSE,
-         beginning      => {
+         beginning_id   => {
+            class       => 'standard-field',
             disabled    => $disabled, type => 'select',
             value       =>
                $self->$_bind_beginning_location( $leg, $opts ) },
-         ending         => {
+         ending_id      => {
+            class       => 'standard-field',
             disabled    => $disabled, type => 'select',
             value       =>
                $self->$_bind_ending_location( $leg, $opts ) },
@@ -572,7 +580,7 @@ my $_update_incident_from_request = sub {
 
    my $opts = { optional => TRUE };
 
-   for my $attr (qw( title reporter reporter_phone category_other
+   for my $attr (qw( category_id title reporter reporter_phone category_other
                      notes committee_informed )) {
       my $v = $params->( $attr, $opts ); defined $v or next;
 
@@ -587,38 +595,6 @@ my $_update_incident_from_request = sub {
 
    $incident->controller_id( $self->$_find_person( $req->username )->id );
 
-   my $v = $params->( 'category', $opts ); defined $v
-      and $incident->category_id( $v );
-
-   return;
-};
-
-my $_update_leg_from_request = sub {
-   my ($self, $req, $leg) = @_;  my $params = $req->body_params;
-
-   my $opts = { optional => TRUE };
-
-   for my $attr (qw( collection_eta collected delivered on_station )) {
-      my $v = $params->( $attr, $opts ); defined $v or next;
-
-      $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
-
-      if (length $v and is_member $attr,
-          [ qw( collection_eta collected delivered on_station ) ]) {
-         $v =~ s{ [@] }{}mx; $v = to_dt $v;
-      }
-
-      $leg->$attr( $v );
-   }
-
-   my $v = $params->( 'operator', $opts ); defined $v
-      and $leg->operator_id( $v );
-
-   $v = $params->( 'beginning', $opts ); defined $v
-      and $leg->beginning_id( $v );
-   $v = $params->( 'ending', $opts ); defined $v
-      and $leg->ending_id( $v );
-
    return;
 };
 
@@ -627,7 +603,8 @@ my $_update_journey_from_request = sub {
 
    my $opts = { optional => TRUE };
 
-   for my $attr (qw( notes package_other priority )) {
+   for my $attr (qw( customer_id dropoff_id notes package_other package_type_id
+                     pickup_id priority )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 
@@ -640,15 +617,27 @@ my $_update_journey_from_request = sub {
 
    $journey->controller_id( $self->$_find_person( $req->username )->id );
 
-   my $v = $params->( 'customer', $opts ); defined $v
-      and $journey->customer_id( $v );
+   return;
+};
 
-   $v = $params->( 'pickup', $opts ); defined $v
-      and $journey->pickup_id( $v );
-   $v = $params->( 'dropoff', $opts ); defined $v
-      and $journey->dropoff_id( $v );
-   $v = $params->( 'package_type', $opts ); defined $v
-      and $journey->package_type_id( $v );
+my $_update_leg_from_request = sub {
+   my ($self, $req, $leg) = @_;  my $params = $req->body_params;
+
+   my $opts = { optional => TRUE };
+
+   for my $attr (qw( beginning_id collection_eta collected delivered
+                     ending_id on_station operator_id )) {
+      my $v = $params->( $attr, $opts ); defined $v or next;
+
+      $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
+
+      if (length $v and is_member $attr,
+          [ qw( collection_eta collected delivered on_station ) ]) {
+         $v =~ s{ [@] }{}mx; $v = to_dt $v;
+      }
+
+      $leg->$attr( $v );
+   }
 
    return;
 };
@@ -758,7 +747,7 @@ sub create_journey_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $schema   = $self->schema;
-   my $cid      = $req->body_params->( 'customer' );
+   my $cid      = $req->body_params->( 'customer_id' );
    my $customer = $schema->resultset( 'Customer' )->find( $cid );
    my $journey  = $schema->resultset( 'Journey' )->new_result( {} );
 
@@ -940,21 +929,18 @@ sub incident : Role(controller) {
       forms => [ $form ], selected => 'incidents',
       title => locm $req, 'incident_title',
    };
-   my $links    = $self->$_incident_ops_links( $req, $iid );
+   my $links = $self->$_incident_ops_links( $req, $iid );
    my $incident = $self->$_maybe_find( 'Incident', $iid );
-   my $disabled = FALSE;
+   my $fopts = { disabled => FALSE };
 
    $iid and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Incident', $incident,
-      $self->$_bind_incident_fields
-         ( $page, $incident, { disabled => $disabled } );
+      $self->$_bind_incident_fields( $page, $incident, $fopts );
 
-   p_action $form, $action, [ 'incident', $iid ], {
-      request => $req };
+   p_action $form, $action, [ 'incident', $iid ], { request => $req };
 
-   $iid and p_action $form, 'delete', [ 'incident', $iid ], {
-      request => $req };
+   $iid and p_action $form, 'delete', [ 'incident', $iid ], { request => $req };
 
    return $self->get_stash( $req, $page );
 }
@@ -1075,7 +1061,7 @@ sub leg : Role(controller) {
    ($done and $leg->on_station) or p_action $form, $action, [ 'leg', $lid ], {
       request => $req };
 
-   $done or ($lid and
+   $disabled or ($lid and
       p_action $form, 'delete', [ 'leg', $lid ], { request => $req } );
 
    return $self->get_stash( $req, $page );

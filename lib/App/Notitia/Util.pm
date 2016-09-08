@@ -898,6 +898,16 @@ sub uri_for_action ($$;@) {
 
    my $uri = $action_path_uri_map->{ $action } // $action;
 
+   $uri =~ m{ \* }mx or return $req->uri_for( $uri, @args );
+
+   my $args = shift @args;
+
+   while ($uri =~ m{ \* }mx) {
+      my $arg = (shift @{ $args }) || q(); $uri =~ s{ \* }{$arg}mx;
+   }
+
+   unshift @args, $args;
+
    return $req->uri_for( $uri, @args );
 }
 

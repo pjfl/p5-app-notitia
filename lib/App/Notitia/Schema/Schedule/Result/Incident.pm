@@ -38,8 +38,52 @@ sub committee_informed_label {
    return datetime_label $_[ 0 ]->committee_informed;
 }
 
+sub insert {
+   my $self = shift;
+
+   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   return $self->next::method;
+}
+
 sub raised_label {
    return datetime_label $_[ 0 ]->raised;
+}
+
+sub update {
+   my ($self, $columns) = @_;
+
+   $columns and $self->set_inflated_columns( $columns );
+   $self->validate( TRUE );
+
+   return $self->next::method;
+}
+
+sub validation_attributes {
+   return { # Keys: constraints, fields, and filters (all hashes)
+      constraints       => {
+         category_other => { max_length => 16, min_length => 3, },
+         notes          => { max_length => VARCHAR_MAX_SIZE(),
+                             min_length => 0 },
+         reporter       => { max_length => 64, min_length => 3, },
+         reporter_phone => { max_length => 16, min_length => 6, },
+         title          => { max_length => 64, min_length => 3, },
+      },
+      fields                => {
+         category_id        => { validate => 'isMandatory' },
+         category_other     => { validate => 'isValidLength' },
+         committee_informed => { validate => 'isValidDate' },
+         notes              => { validate => 'isValidLength isValidText' },
+         reporter           => {
+            validate        => 'isMandatory isValidLength isValidText' },
+         reporter_phone     => {
+            filters         => 'filterNonNumeric',
+            validate        => 'isValidInteger' },
+         title              => {
+            validate        => 'isMandatory isValidLength isValidText' },
+      },
+      level => 8,
+   };
 }
 
 1;

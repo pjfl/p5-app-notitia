@@ -76,11 +76,14 @@ sub update {
 sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       fields            => {
+         beginning_id   => { validate => 'isMandatory' },
          called         => { validate => 'isValidDate' },
          collection_eta => { validate => 'isValidDate' },
          collected      => { validate => 'isValidDate' },
          delivered      => { validate => 'isValidDate' },
+         ending_id      => { validate => 'isMandatory' },
          on_station     => { validate => 'isValidDate' },
+         operator_id    => { validate => 'isMandatory' },
       },
       level => 8,
    };

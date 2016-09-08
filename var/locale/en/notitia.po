@@ -119,7 +119,7 @@ msgid "badge_id_field_tip"
 msgstr "Set this to 'next' and the next available badge id will be "
        "automatically selected"
 
-msgid "beginning"
+msgid "beginning_id"
 msgstr "Beginning Location"
 
 msgid "bike"
@@ -329,7 +329,7 @@ msgstr "Active People"
 msgid "current_people_list_tip"
 msgstr "List currently active members"
 
-msgid "customer"
+msgid "customer_id"
 msgstr "Customer"
 
 msgid "customer_name"
@@ -440,7 +440,7 @@ msgstr "Drivers"
 msgid "driver_list_tip"
 msgstr "List drivers"
 
-msgid "dropoff"
+msgid "dropoff_id"
 msgstr "Dropoff Location"
 
 msgid "earlier_page_link"
@@ -464,7 +464,7 @@ msgstr "Enable 2FA."
 msgid "end_time"
 msgstr "End Time"
 
-msgid "ending"
+msgid "ending_id"
 msgstr "Ending Location"
 
 msgid "endorsed"
@@ -660,7 +660,7 @@ msgid "journey_leg_heading_3"
 msgstr "Ending"
 
 msgid "journey_leg_title"
-msgstr "Leg"
+msgstr "Delivery Stage"
 
 msgid "journey_view_link"
 msgstr "Delivery Request"
@@ -705,13 +705,13 @@ msgid "later_page_tip"
 msgstr "Go to page [_1]"
 
 msgid "leg_create_link"
-msgstr "Add Leg"
+msgstr "Add Stage"
 
 msgid "leg_create_tip"
-msgstr "Add another leg to this journey"
+msgstr "Add another stage to this delivery request"
 
 msgid "leg_operator_tip"
-msgstr "View the leg for this operator"
+msgstr "View the stage for this operator"
 
 msgid "location"
 msgstr "Location"
@@ -936,7 +936,7 @@ msgstr "Old Password"
 msgid "on_station"
 msgstr "On Station"
 
-msgid "operator"
+msgid "operator_id"
 msgstr "Operator"
 
 msgid "orig_priority"
@@ -951,7 +951,7 @@ msgstr "Owner"
 msgid "package_other"
 msgstr "Package Description"
 
-msgid "package_type"
+msgid "package_type_id"
 msgstr "Package Type"
 
 msgid "package_type_create_link"
@@ -1053,7 +1053,7 @@ msgstr "View the summary record for [_1]"
 msgid "person_update_heading"
 msgstr "Edit Person"
 
-msgid "pickup"
+msgid "pickup_id"
 msgstr "Pickup Location"
 
 msgid "points"
