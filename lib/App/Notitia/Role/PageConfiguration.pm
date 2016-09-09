@@ -22,6 +22,9 @@ around 'execute' => sub {
       and $stash->{redirect}->{location} //=
           new_uri $req->scheme, $req->referer;
 
+   $req->authenticated and $stash->{page}->{activity}
+      = $self->activity_cache( $req->session->user_label );
+
    return $stash;
 };
 
