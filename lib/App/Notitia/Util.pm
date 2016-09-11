@@ -28,11 +28,11 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      dialog_anchor display_duration encrypted_attr enhance
                      enumerated_data_type foreign_key_data_type get_hashed_pw
                      get_salt is_access_authorised is_draft is_encrypted
-                     iterator js_config js_server_config js_submit_config
-                     js_togglers_config js_window_config lcm_for load_file_data
-                     loc localise_tree locm mail_domain make_id_from
-                     make_name_from make_tip management_link mtime new_salt
-                     now_dt nullable_foreign_key_data_type
+                     iterator js_config js_server_config js_slider_config
+                     js_submit_config js_togglers_config js_window_config
+                     lcm_for load_file_data loc localise_tree locm mail_domain
+                     make_id_from make_name_from make_tip management_link mtime
+                     new_salt now_dt nullable_foreign_key_data_type
                      nullable_numerical_id_data_type nullable_varchar_data_type
                      numerical_id_data_type page_link_set register_action_paths
                      serial_data_type set_element_focus
@@ -563,6 +563,13 @@ sub js_server_config ($$$$) {
           "      event     : '${event}',",
           "      method    : '${method}',",
           "      args      : ${args} };";
+}
+
+sub js_slider_config ($$$) {
+   my ($page, $k, $params) = @_; $params = $json_coder->encode( $params );
+
+   return push @{ $page->{literal_js} //= [] },
+        "   behaviour.config.slider[ '${k}' ] = ${params};";
 }
 
 sub js_submit_config ($$$$) {

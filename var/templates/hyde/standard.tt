@@ -4,7 +4,9 @@
 [%    plate = 'Default'; IF page.template.1; plate = page.template.1; END -%]
 <!-- Layout [% page.layout %] Template [% plate %] -->
 <section class="standard-section">
-[%    IF !page.off_grid %]<div class="grid">[% END -%]
+[%    IF !page.off_grid -%]
+   <div class="grid" style="max-width: [% session.grid_width %]px;">
+[%    END -%]
 [%    IF page.template.0 && page.template.0 != 'none' %]
 [%    path = page.template.0 _ '-mobile.tt'; INCLUDE $path -%]
 [%    END -%]

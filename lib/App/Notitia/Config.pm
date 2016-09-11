@@ -269,6 +269,7 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       display_cols    => [ PositiveInt, 7                   ],
       display_rows    => [ PositiveInt, 2                   ],
       first_name      => [ SimpleStr | Undef                ],
+      grid_width      => [ PositiveInt, 978                 ],
       query           => [ SimpleStr | Undef                ],
       roles           => [ ArrayRef, sub { [] }             ],
       roles_mtime     => [ PositiveInt, 0                   ],
@@ -307,7 +308,7 @@ has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
       config          => [ qw( description keywords ) ],
       links           => [ qw( assets css images js ) ],
       request         => [ qw( authenticated host language locale username ) ],
-      session         => [ qw( rota_date skin theme ) ], } };
+      session         => [ qw( grid_width rota_date skin theme ) ], } };
 
 has 'template_dir'    => is => 'ro',   isa => Directory, coerce => TRUE,
    builder            => sub { $_[ 0 ]->vardir->catdir( 'templates' ) };

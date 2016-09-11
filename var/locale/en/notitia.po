@@ -619,6 +619,9 @@ msgstr "List fund raisers"
 msgid "gmp"
 msgstr "GMP"
 
+msgid "grid_width"
+msgstr "Grid Width"
+
 msgid "Hint"
 msgstr "Information"
 

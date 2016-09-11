@@ -11,8 +11,8 @@ use Scalar::Util            qw( blessed );
 our @EXPORT_OK = qw( blank_form f_link f_tag p_action p_button p_cell
                      p_checkbox p_container p_date p_fields p_file p_hidden
                      p_image p_item p_label p_link p_list p_password p_radio
-                     p_row p_select p_span p_table p_tag p_text p_textarea
-                     p_textfield p_unordered );
+                     p_row p_select p_slider p_span p_table p_tag p_text
+                     p_textarea p_textfield p_unordered );
 
 # Private package variables
 my @ARG_NAMES = qw( name href opts );
@@ -305,6 +305,10 @@ sub p_row ($;$) {
 
 sub p_select ($@) {
    my $f = shift; return $_push_field->( $f, 'select', $_bind->( @_ ) );
+}
+
+sub p_slider ($@) {
+   my $f = shift; return $_push_field->( $f, 'slider', $_bind->( @_ ) );
 }
 
 sub p_span ($@) {

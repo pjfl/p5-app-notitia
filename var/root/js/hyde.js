@@ -7,6 +7,7 @@ var Behaviour = new Class( {
       inputs   : {},
       sidebars : {},
       server   : {},
+      slider   : {},
       submit   : {},
       togglers : {},
       window   : {}
@@ -83,6 +84,7 @@ var Behaviour = new Class( {
       this.noticeBoard  = new NoticeBoard( { context: this } );
       this.pickers      = new Pickers( { context: this } );
       this.replacements = new Replacements( { context: this } );
+      this.sliders      = new Sliders( { context: this } );
       this.server       = new ServerUtils( {
          context        : this,
          url            : opt.baseURL } );

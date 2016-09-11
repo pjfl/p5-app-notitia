@@ -1,13 +1,13 @@
 <!-- Footer -->
 <footer role="contentinfo">
 [% IF config.links.0 -%]
-   <div class="grid">
+   <div class="grid" style="max-width: [% session.grid_width %]px;">
       <div class="unit two-thirds center-on-mobiles">
 [%    Dispatch( navigation.external ) %]
       </div>
    </div>
 [% END -%]
-   <div class="grid">
+   <div class="grid" style="max-width: [% session.grid_width %]px;">
       <div class="unit two-thirds center-on-mobiles">
 [%       Dispatch( navigation.credits ) %]
       </div>
@@ -24,6 +24,7 @@
          cookiePath  : '[% config.mount_point %]',
          cookiePrefix: '[% config.prefix %]',
          firstField  : '[% page.first_field %]',
+         formName    : '[% page.forms.0.form_name %]',
          message     : "[% page.status_message %]"
       } );
 [% FOR line IN page.literal_js; -%]

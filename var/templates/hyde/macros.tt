@@ -18,6 +18,7 @@
 [%       CASE 'password'; PasswordField( f ); -%]
 [%       CASE 'radio'; RadioButtons( f ); -%]
 [%       CASE 'select'; Select( f ); -%]
+[%       CASE 'slider'; Slider( f ); -%]
 [%       CASE 'table'; Table( f ); -%]
 [%       CASE 'tag'; Tag( f ); -%]
 [%       CASE 'text'; Text( f ); -%]
@@ -82,7 +83,8 @@
 [%# -%]
 [% MACRO Form( f ) BLOCK -%]
 [%    IF f.class; class = f.class; ELSE; class = 'standard-form'; END -%]
-[%    IF f.enctype; enctype = f.enctype; ELSE; enctype = 'application/x-www-form-urlencoded'; END -%]
+[%    IF f.enctype; enctype = f.enctype; -%]
+[%    ELSE; enctype = 'application/x-www-form-urlencoded'; END -%]
 [%    IF f.method; method = f.method; ELSE; method = 'post'; END -%]
       <form action="[% f.href %]" class="[% class %]"
            enctype="[% enctype %]" [% IF f.id %]id="[% f.id %]"[% END -%]
@@ -180,6 +182,23 @@
       </select>
 [% END -%]
 [%# -%]
+[% MACRO Slider( f ) WRAPPER label -%]
+[%    IF f.tip; FieldHelp( f ); END -%]
+[%    IF f.class; class = f.class; -%]
+[%    ELSE; class = 'standard-field align-right'; END -%]
+      <input class="[% class %]" name="[% f.name %]"
+          size="[% f.fieldsize %]" type="textfield" value="[% f.value %]">
+      <span class="slider_group">
+[%    count = 0 -%]
+[%    WHILE count < 11 -%]
+[%       left = ( 20 * count ) - 1; count = count + 1 -%]
+         <span class="tick" style="left: [% left %]px;"></span>
+[%    END -%]
+         <span class="slider" id="[% f.id %]">
+            <span class="knob">🏍</span></span>
+      </span>
+[% END -%]
+[%# -%]
 [% MACRO Table( f ) WRAPPER label -%]
 [%    IF f.class; class = f.class; ELSE; class = 'standard-table'; END -%]
    <table class="[% class %]">
@@ -206,15 +225,15 @@
 [% END -%]
 [%# -%]
 [% MACRO TableRow( row ) BLOCK -%]
-   <tr>
+      <tr>
 [%    FOR cell IN row -%]
-      <td class="[% cell.class %]" id="[% cell.name %]"
-        colspan="[% cell.colspan %]" style="[% cell.style %]"
-          title="[% cell.title %]">
+         <td class="[% cell.class %]" id="[% cell.name %]"
+           colspan="[% cell.colspan %]" style="[% cell.style %]"
+             title="[% cell.title %]">
 [%       IF reference( cell.value ) == 'HASH'; Dispatch( cell.value ) %]
 [%       ELSE; cell.value; END %]</td>
 [%    END -%]
-   </tr>
+      </tr>
 [% END -%]
 [%# -%]
 [% MACRO Tag( f ) BLOCK -%]

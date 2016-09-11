@@ -3,10 +3,11 @@ package App::Notitia::Model::User;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form p_button p_checkbox p_image p_label
-                                p_password p_radio p_tag p_text p_textfield );
+                                p_password p_radio p_slider p_tag p_text
+                                p_textfield );
 use App::Notitia::Util      qw( check_form_field js_server_config
-                                locm register_action_paths set_element_focus
-                                to_msg uri_for_action );
+                                js_slider_config locm register_action_paths
+                                set_element_focus to_msg uri_for_action );
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Types      qw( ArrayRef HashRef Object );
@@ -70,6 +71,23 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_push_grid_width_js = sub {
+   my ($page, $range, $width) = @_;
+
+   js_slider_config $page, 'grid_width_slider', {
+      form_name => 'profile-user',
+      mode      => 'horizontal',
+      name      => 'grid_width',
+      offset    => 0,
+      range     => $range,
+      snap      => \0,
+      steps     => $range->[ 1 ] - $range->[ 0 ],
+      value     => $width,
+      wheel     => \1, };
+
+   return;
+};
+
 my $_rows_per_page = sub {
    my $selected = $_[ 0 ]->rows_per_page;
    my $opts_t   = { container_class => 'radio-group', selected => TRUE };
@@ -235,7 +253,7 @@ sub login : Role(anon) {
 
    p_textfield $form, 'username',  NUL, { class => 'standard-field server' };
    p_password  $form, 'password';
-   p_textfield $form, 'auth_code', NUL, { class => 'smallint-field',
+   p_textfield $form, 'auth_code', NUL, { class => 'mediumint-field',
                                           label_class => 'hidden',
                                           label_id    => 'auth_code_label', };
    p_button    $form, 'login', 'login', { class => 'save-button right' };
@@ -304,12 +322,24 @@ sub profile : Role(any) {
    p_textfield $form, 'email_address', $person->email_address;
    p_textfield $form, 'mobile_phone',  $person->mobile_phone;
    p_textfield $form, 'home_phone',    $person->home_phone;
-   p_radio     $form, 'rows_per_page', $_rows_per_page->( $person ), {
+
+   my $range = [ 978, 1180 ]; my $width = $req->session->grid_width;
+
+   $_push_grid_width_js->( $stash->{page}, $range, $width );
+
+   p_slider $form, 'grid_width', $width, {
+      class       => 'smallint-field',
+      fieldsize   => int( log( $range->[ 1 ] ) / log( 10 ) ) + 1,
+      id          => 'grid_width_slider',
+      label_class => 'clear' };
+
+   p_radio $form, 'rows_per_page', $_rows_per_page->( $person ), {
       label => 'Rows Per Page' };
-   p_checkbox  $form, 'enable_2fa',    TRUE, {
-      checked => $person->totp_secret ? TRUE : FALSE };
-   p_button    $form,  'update', 'update_profile', {
-      class => 'button right-last' };
+
+   p_checkbox $form, 'enable_2fa', TRUE, {
+      checked => $person->totp_secret ? TRUE : FALSE, };
+
+   p_button $form, 'update', 'update_profile', { class => 'button right-last' };
 
    return $stash;
 }
@@ -462,6 +492,7 @@ sub totp_secret : Role(anon) {
 sub update_profile_action : Role(any) {
    my ($self, $req) = @_;
 
+   my $sess   = $req->session;
    my $scode  = $req->username;
    my $schema = $self->schema;
    my $person = $schema->resultset( 'Person' )->find_by_shortcode( $scode );
@@ -472,9 +503,10 @@ sub update_profile_action : Role(any) {
 
    $person->set_totp_secret( $params->( 'enable_2fa', $opts ) ? TRUE : FALSE );
 
-   $req->session->enable_2fa( $person->totp_secret ? TRUE : FALSE );
-
-   $person->update; $req->session->rows_per_page( $person->rows_per_page );
+   $person->update;
+   $sess->enable_2fa( $person->totp_secret ? TRUE : FALSE );
+   $sess->grid_width( $params->( 'grid_width', $opts ) );
+   $sess->rows_per_page( $person->rows_per_page );
 
    my $message = [ to_msg '[_1] profile updated', $person->label ];
 

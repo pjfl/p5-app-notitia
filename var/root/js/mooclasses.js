@@ -2385,6 +2385,34 @@ var ServerUtils = new Class( {
    }
 } );
 
+var Sliders = new Class( {
+   Implements: [ Options ],
+
+   options: { config_attr: 'slider', selector: '.slider' },
+
+   initialize: function( options ) {
+      this.aroundSetOptions( options ); this.build();
+   },
+
+   attach: function( el ) {
+      var cfg, slider, submit = this.context.submit;
+
+      if (! (cfg = this.config[ el.id ])) return;
+
+      var form_name = cfg.form_name; delete cfg[ 'form_name' ];
+      var name      = cfg.name;      delete cfg[ 'name'      ];
+      var default_v = cfg.value;     delete cfg[ 'value'     ];
+      var knob      = el.getElement( 'span' );
+
+      cfg = Object.append( cfg, {
+         onChange: function( value ) {
+            submit.setField.call( submit, name, value, form_name ) }
+      } );
+
+      new Slider( el, knob, cfg ).set( default_v );
+   }
+} );
+
 var SubmitUtils = new Class( {
    Implements: [ Options ],
 
@@ -2516,8 +2544,9 @@ var SubmitUtils = new Class( {
       return false;
    },
 
-   setField: function( name, value ) {
-      var el; if (name && (el = this.form.elements[ name ])) el.value = value;
+   setField: function( name, value, form_name ) {
+      var form = form_name ? document.forms[ form_name ] : this.form;
+      var el; if (name && (el = form.elements[ name ])) el.value = value;
 
       return el ? el.value : null;
    },
