@@ -1195,6 +1195,12 @@ msgstr "Create a role type record"
 msgid "roles"
 msgstr "Roles"
 
+msgid "rota_link"
+msgstr "Month Rota"
+
+msgid "rota_link_tip"
+msgstr "Display this months rota"
+
 msgid "rota_manager"
 msgstr "Rota Manager"
 

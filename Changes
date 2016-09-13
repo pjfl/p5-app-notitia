@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #98. Makes month rota link more obvious
           - Adds user configurable grid width
           - Implements #97. Display list of active users
           - Implements #97. Less information in activity link

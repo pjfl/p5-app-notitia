@@ -10,6 +10,7 @@ use Class::Usul::Time       qw( time2str );
 use Class::Usul::Types      qw( Plinth );
 use HTTP::Status            qw( HTTP_NOT_FOUND HTTP_OK );
 use Scalar::Util            qw( blessed );
+use Try::Tiny;
 use Unexpected::Functions   qw( Authentication AuthenticationRequired
                                 IncorrectPassword IncorrectAuthCode
                                 ValidationErrors );
@@ -107,10 +108,16 @@ sub activity_cache {
 }
 
 sub dialog_stash {
-   my ($self, $req, $layout) = @_; my $stash = $self->initialise_stash( $req );
+   my ($self, $req, $layout) = @_;
+
+   my $stash = $self->initialise_stash( $req ); my $id;
+
+   try { $id = $req->query_params->( 'id' ) } catch { $self->log->error( $_ ) };
+
+   $id or return $stash;
 
    $stash->{page} = $self->load_page( $req, {
-      fields => {}, meta => { id => $req->query_params->( 'id' ), }, } );
+      fields => {}, meta => { id => $id, }, } );
    $stash->{template}->{layout} = $layout // 'dialog';
    $stash->{template}->{skin} = $req->session->skin || $self->config->skin;
    $stash->{view} = 'json';

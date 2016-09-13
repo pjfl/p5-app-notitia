@@ -71,6 +71,20 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_push_change_password_js = sub {
+   my $page = shift;
+
+   push @{ $page->{literal_js} },
+      "   behaviour.config.inputs[ 'again' ]",
+      "      = { event     : [ 'focus', 'blur' ],",
+      "          method    : [ 'show_password', 'hide_password' ] };",
+      "   behaviour.config.inputs[ 'password' ]",
+      "      = { event     : [ 'focus', 'blur' ],",
+      "          method    : [ 'show_password', 'hide_password' ] };";
+
+   return;
+};
+
 my $_push_grid_width_js = sub {
    my ($page, $range, $width) = @_;
 
@@ -111,21 +125,7 @@ my $_update_session = sub {
 };
 
 # Private methods
-my $_add_change_password_js = sub {
-   my ($self, $req, $page) = @_;
-
-   push @{ $page->{literal_js} },
-      "   behaviour.config.inputs[ 'again' ]",
-      "      = { event     : [ 'focus', 'blur' ],",
-      "          method    : [ 'show_password', 'hide_password' ] };",
-      "   behaviour.config.inputs[ 'password' ]",
-      "      = { event     : [ 'focus', 'blur' ],",
-      "          method    : [ 'show_password', 'hide_password' ] };";
-
-   return;
-};
-
-my $_add_login_js = sub {
+my $_push_login_js = sub {
    my ($self, $req, $page) = @_;
 
    my $uri = uri_for_action $req, $self->moniker.'/show_if_needed', [],
@@ -187,13 +187,12 @@ sub change_password : Role(anon) {
    p_textfield $form, 'username', $username;
    p_password  $form, 'oldpass',  NUL, { label => 'old_password' };
    p_password  $form, 'password', NUL, { autocomplete => 'off',
-                                         class => 'standard-field reveal',
-                                         label => 'new_password' };
+      class => 'standard-field reveal', label => 'new_password' };
    p_password  $form, 'again',    NUL, { class => 'standard-field reveal' };
-   p_button    $form, 'update', 'change_password',
-                                       { class => 'save-button right-last' };
+   p_button    $form, 'update', 'change_password', {
+      class => 'save-button right-last' };
 
-   $self->$_add_change_password_js( $req, $page );
+   $_push_change_password_js->( $page );
 
    return $self->get_stash( $req, $page );
 }
@@ -254,11 +253,10 @@ sub login : Role(anon) {
    p_textfield $form, 'username',  NUL, { class => 'standard-field server' };
    p_password  $form, 'password';
    p_textfield $form, 'auth_code', NUL, { class => 'mediumint-field',
-                                          label_class => 'hidden',
-                                          label_id    => 'auth_code_label', };
+      label_class => 'hidden', label_id => 'auth_code_label', };
    p_button    $form, 'login', 'login', { class => 'save-button right' };
 
-   $self->$_add_login_js( $req, $page );
+   $self->$_push_login_js( $req, $page );
 
    return $self->get_stash( $req, $page );
 }
@@ -327,11 +325,9 @@ sub profile : Role(any) {
 
    $_push_grid_width_js->( $stash->{page}, $range, $width );
 
-   p_slider $form, 'grid_width', $width, {
-      class       => 'smallint-field',
-      fieldsize   => int( log( $range->[ 1 ] ) / log( 10 ) ) + 1,
-      id          => 'grid_width_slider',
-      label_class => 'clear' };
+   p_slider $form, 'grid_width', $width, { class => 'smallint-field',
+      fieldsize => int( log( $range->[ 1 ] ) / log( 10 ) ) + 1,
+      id => 'grid_width_slider', label_class => 'clear' };
 
    p_radio $form, 'rows_per_page', $_rows_per_page->( $person ), {
       label => 'Rows Per Page' };
@@ -355,8 +351,8 @@ sub request_reset : Role(anon) {
    $stash->{page}->{literal_js} = set_element_focus 'request-reset', 'username';
 
    p_textfield $form, 'username';
-   p_button    $form, 'request_reset', 'request_reset', {
-      class => 'button right' };
+
+   p_button $form, 'request_reset', 'request_reset', { class => 'button right'};
 
    return $stash;
 }
@@ -502,8 +498,8 @@ sub update_profile_action : Role(any) {
    $person->$_( $params->( $_, $opts ) ) for (@{ $self->profile_keys });
 
    $person->set_totp_secret( $params->( 'enable_2fa', $opts ) ? TRUE : FALSE );
-
    $person->update;
+
    $sess->enable_2fa( $person->totp_secret ? TRUE : FALSE );
    $sess->grid_width( $params->( 'grid_width', $opts ) );
    $sess->rows_per_page( $person->rows_per_page );
