@@ -178,9 +178,6 @@ has 'layout'          => is => 'ro',   isa => NonEmptySimpleStr,
 has 'less'            => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'less';
 
-has 'less_files'      => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
-   builder            => sub { [ qw( dark light ) ] };
-
 has 'links'           => is => 'lazy', isa => ArrayRef[HashRef],
    builder            => $_build_links, init_arg => undef;
 
@@ -312,6 +309,9 @@ has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
 
 has 'template_dir'    => is => 'ro',   isa => Directory, coerce => TRUE,
    builder            => sub { $_[ 0 ]->vardir->catdir( 'templates' ) };
+
+has 'themes'          => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub { [ qw( dark light ) ] };
 
 has 'time_zone'       => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'Europe/London';
@@ -616,10 +616,6 @@ template will be wrapped by F<wrapper.tt>
 A non empty simple string that defaults to F<less>. Relative path that
 locates the LESS files
 
-=item C<less_files>
-
-The list of predefined colour schemes and feature specific LESS files
-
 =item C<links>
 
 A lazily evaluated array reference of hashes created automatically from the
@@ -852,6 +848,10 @@ URIs. Their values are persisted between requests stored in the session store
 
 A directory that contains the L</skin> used by the application. Defaults to
 F<var/templates>
+
+=item C<themes>
+
+The list of predefined colour schemes and feature specific LESS files
 
 =item C<time_zone>
 

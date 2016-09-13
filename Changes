@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #99. Can set theme from profile
           - Implements #98. Makes month rota link more obvious
           - Adds user configurable grid width
           - Implements #97. Display list of active users

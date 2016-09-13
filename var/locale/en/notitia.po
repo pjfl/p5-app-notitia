@@ -1343,6 +1343,9 @@ msgstr "TOTP Account Information"
 msgid "template"
 msgstr "Template"
 
+msgid "theme"
+msgstr "Theme"
+
 msgid "trailer"
 msgstr "Trailer"
 

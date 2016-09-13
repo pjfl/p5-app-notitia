@@ -162,7 +162,7 @@ sub make_css : method {
    my $cssd = $conf->root->catdir( $conf->css );
 
    if (my $file = $self->next_argv) { $self->$_write_theme( $cssd, $file ) }
-   else { $self->$_write_theme( $cssd, $_ ) for (@{ $conf->less_files }) }
+   else { $self->$_write_theme( $cssd, $_ ) for (@{ $conf->themes }) }
 
    return OK;
 }

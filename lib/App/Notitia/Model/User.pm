@@ -3,8 +3,8 @@ package App::Notitia::Model::User;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form p_button p_checkbox p_image p_label
-                                p_password p_radio p_slider p_tag p_text
-                                p_textfield );
+                                p_password p_radio p_select p_slider p_tag
+                                p_text p_textfield );
 use App::Notitia::Util      qw( check_form_field js_server_config
                                 js_slider_config locm register_action_paths
                                 set_element_focus to_msg uri_for_action );
@@ -151,6 +151,14 @@ my $_fetch_shortcode = sub {
    $scode eq 'unknown' and $req->authenticated and $scode = $req->username;
 
    return $scode;
+};
+
+my $_themes_list = sub {
+   my ($self, $req) = @_; my $selected = $req->session->theme;
+
+   return [ map { [ ucfirst $_, $_, {
+      selected => $_ eq $selected ? TRUE : FALSE } ] }
+            @{ $self->config->themes } ];
 };
 
 # Public methods
@@ -320,6 +328,7 @@ sub profile : Role(any) {
    p_textfield $form, 'email_address', $person->email_address;
    p_textfield $form, 'mobile_phone',  $person->mobile_phone;
    p_textfield $form, 'home_phone',    $person->home_phone;
+   p_select    $form, 'theme',         $self->$_themes_list( $req );
 
    my $range = [ 978, 1180 ]; my $width = $req->session->grid_width;
 
@@ -501,8 +510,9 @@ sub update_profile_action : Role(any) {
    $person->update;
 
    $sess->enable_2fa( $person->totp_secret ? TRUE : FALSE );
-   $sess->grid_width( $params->( 'grid_width', $opts ) );
+   $sess->grid_width( $params->( 'grid_width' ) );
    $sess->rows_per_page( $person->rows_per_page );
+   $sess->theme( $params->( 'theme' ) );
 
    my $message = [ to_msg '[_1] profile updated', $person->label ];
 
