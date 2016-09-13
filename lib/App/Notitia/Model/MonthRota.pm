@@ -234,6 +234,27 @@ my $_month_rota_page = sub {
       title    => $_month_rota_title->( $req, $rota_name, $rota_dt ), };
 };
 
+my $_rota_summary_date_style = sub {
+   my ($self, $local_dt, $data) = @_;
+
+   my $limits = $self->config->slot_limits;
+   my $day_max = sum( map { $limits->[ slot_limit_index 'day', $_ ] }
+                      'controller', 'rider', 'driver' );
+   my $night_max = sum( map { $limits->[ slot_limit_index 'night', $_ ] }
+                        'controller', 'rider', 'driver' );
+   my $wd = $night_max;
+   my $we = $day_max + $night_max;
+   my $ymd = $local_dt->ymd;
+   my $slots_claimed = grep { $_ =~ m{ \A $ymd _ }mx } keys %{ $data };
+   my $wanted = (0, $wd, $wd, $wd, $wd, $wd, $we, $we)[ $local_dt->day_of_week];
+   my $colour = 'red';
+
+   $slots_claimed > 0 and $colour = 'yellow';
+   $slots_claimed == $wanted and $colour = 'green';
+
+   return "background-color: ${colour};"
+};
+
 my $_rota_summary = sub {
    my ($self, $req, $page, $local_dt, $has_event, $data) = @_;
 
@@ -251,7 +272,9 @@ my $_rota_summary = sub {
    }
 
    push @{ $table->{rows} },
-      [ { colspan =>     $lcm / 4, value => $local_dt->day },
+      [ { colspan => $lcm / 4,
+          style   => $self->$_rota_summary_date_style( $local_dt, $data ),
+          value   => $local_dt->day },
         { colspan =>     $lcm / 4, value => $value, class => $class },
         { colspan => 2 * $lcm / 4, value => $label } ];
 
