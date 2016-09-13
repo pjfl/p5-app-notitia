@@ -273,10 +273,12 @@ my $_rota_month_links = sub {
       my $date   = $offset > 0 ? $f_dom->clone->add( months => $offset )
                  : $offset < 0 ? $f_dom->clone->subtract( months => -$offset )
                  :               $f_dom->clone;
+      my $last_week = $date->clone->add( months => 1 )->subtract( days => 1 );
       my $opts   = {
          class      => $date->month == $local_dt->month ? 'selected' : NUL,
          name       => lc 'month_'.$date->month_abbr,
-         tip_args   => [ $date->month_name ],
+         tip_args   => [ $date->month_name, $date->week_number,
+                         $last_week->week_number ],
          value_args => [ $date->year ], };
       my $args   = [ $name, $date->ymd ];
 
