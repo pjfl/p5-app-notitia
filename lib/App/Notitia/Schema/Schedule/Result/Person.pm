@@ -93,13 +93,6 @@ my $_list_slot_certs_for = sub {
    return [ map { $_->certification_type } $rs->search( $where, $opts )->all ];
 };
 
-my $_assert_membership_allowed = sub {
-   my ($self, $type) = @_;
-
-   # TODO: Add membership allowed rules
-   return;
-};
-
 my $_assert_yield_allowed = sub {
    my ($self, $slot) = @_;
 
@@ -238,8 +231,6 @@ sub add_member_to {
    $self->is_member_of( $role_name, $type )
       and throw 'Person [_1] already a member of role [_2]',
                 [ $self->label, $type ];
-
-   $self->$_assert_membership_allowed( $type );
 
    return $self->create_related( 'roles', { type_id => $type->id } );
 }
