@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #101. Fixes month rota on mobiles
           - Implements #103. Filled slots indicator
           - Implements #102. Week numbers on month navigation
           - Implements #99. Can set theme from profile
