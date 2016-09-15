@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - More subtle month rota day numbers
           - Implements #101. Fixes month rota on mobiles
           - Implements #103. Filled slots indicator
           - Implements #102. Week numbers on month navigation

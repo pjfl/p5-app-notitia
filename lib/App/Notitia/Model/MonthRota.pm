@@ -250,9 +250,9 @@ my $_rota_summary_date_style = sub {
    my $colour = 'red';
 
    $slots_claimed > 0 and $colour = 'yellow';
-   $slots_claimed == $wanted and $colour = 'green';
+   $slots_claimed == $wanted and $colour = '#47ff00';
 
-   return "background-color: ${colour}; color: black;"
+   return "color: ${colour}"
 };
 
 my $_rota_summary = sub {
@@ -272,7 +272,8 @@ my $_rota_summary = sub {
    }
 
    push @{ $table->{rows} },
-      [ { colspan => $lcm / 4,
+      [ { class   => 'month-rota-day-number',
+          colspan => $lcm / 4,
           style   => $self->$_rota_summary_date_style( $local_dt, $data ),
           value   => $local_dt->day },
         { colspan =>     $lcm / 4, value => $value, class => $class },
