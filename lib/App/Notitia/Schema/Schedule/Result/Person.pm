@@ -67,6 +67,7 @@ $class->add_unique_constraint( [ 'shortcode' ] );
 $class->belongs_to( next_of_kin => "${class}", 'next_of_kin_id', $left_join );
 
 $class->has_many( certs        => "${result}::Certification", 'recipient_id'  );
+$class->has_many( courses      => "${result}::Training",      'recipient_id'  );
 $class->has_many( endorsements => "${result}::Endorsement",   'recipient_id'  );
 $class->has_many( participents => "${result}::Participent",   'participent_id');
 $class->has_many( roles        => "${result}::Role",          'member_id'     );

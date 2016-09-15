@@ -39,7 +39,8 @@ sub TILDE     () { chr 126    }
 sub VARCHAR_MAX_SIZE () { 255 }
 sub SHIFT_TYPE_ENUM  () { [ qw( day night ) ] }
 sub SLOT_TYPE_ENUM   () { [ qw( controller rider driver ) ] }
-sub TYPE_CLASS_ENUM  () { [ qw( certification event role rota vehicle ) ] }
+sub TYPE_CLASS_ENUM  () {
+   [ qw( certification event role rota training vehicle ) ] }
 
 1;
 

@@ -41,6 +41,10 @@ sub find_rota_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'rota' );
 }
 
+sub find_training_by {
+   return $_[ 0 ]->$_find_by( $_[ 1 ], 'training' );
+}
+
 sub find_type_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], $_[ 2 ] );
 }
@@ -83,6 +87,13 @@ sub search_for_rota_types {
    my ($self, $opts) = @_; $opts //= {};
 
    return $self->search( { type_class => 'rota' },
+                         { columns    => [ 'id', 'name' ], %{ $opts } } );
+}
+
+sub search_for_training_types {
+   my ($self, $opts) = @_; $opts //= {};
+
+   return $self->search( { type_class => 'training' },
                          { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
