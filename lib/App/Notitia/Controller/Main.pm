@@ -33,6 +33,9 @@ sub dispatch_request {
    sub (POST + /slot-certs/*          + ?*) { [ 'admin/from_request',    @_ ] },
    sub (GET  + /slot-certs/*          + ?*) { [ 'admin/slot_certs',      @_ ] },
    sub (GET  + /slot-roles            + ?*) { [ 'admin/slot_roles',      @_ ] },
+   sub (POST + /training/*            + ?*) { [ 'train/from_request',    @_ ] },
+   sub (GET  + /training/*            + ?*) { [ 'train/training',        @_ ] },
+   sub (GET  + /training-summary      + ?*) { [ 'train/summary',         @_ ] },
    sub (GET  + /types                 + ?*) { [ 'admin/types',           @_ ] },
    sub (POST + /type/**               + ?*) { [ 'admin/from_request',    @_ ] },
    sub (GET  + /type/**  | /type/*    + ?*) { [ 'admin/type',            @_ ] };

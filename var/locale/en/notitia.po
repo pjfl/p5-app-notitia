@@ -316,6 +316,9 @@ msgstr "List controllers"
 msgid "coordinates"
 msgstr "Eastings/Northings"
 
+msgid "course_type_create_link"
+msgstr "Course"
+
 msgid "create"
 msgstr "Create"
 
@@ -974,6 +977,9 @@ msgid "people_heading_3"
 msgstr "Certs"
 
 msgid "people_heading_4"
+msgstr "Training"
+
+msgid "people_heading_5"
 msgstr "Endorsements"
 
 msgid "people_meta_report_heading_0"
@@ -1348,6 +1354,15 @@ msgstr "Theme"
 
 msgid "trailer"
 msgstr "Trailer"
+
+msgid "training_enrolement_title"
+msgstr "Course Enrolement"
+
+msgid "training_management_link"
+msgstr "Training"
+
+msgid "training_management_tip"
+msgstr "Add training courses for [_1]"
 
 msgid "training_manager"
 msgstr "Training Manager"

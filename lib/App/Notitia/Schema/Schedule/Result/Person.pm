@@ -119,6 +119,12 @@ my $_find_cert_type = sub {
    return $schema->resultset( 'Type' )->find_certification_by( $name );
 };
 
+my $_find_course_type = sub {
+   my ($self, $name) = @_; my $schema = $self->result_source->schema;
+
+   return $schema->resultset( 'Type' )->find_course_by( $name );
+};
+
 my $_find_role_type = sub {
    my ($self, $name) = @_; my $schema = $self->result_source->schema;
 
@@ -224,14 +230,24 @@ sub activate {
    my $self = shift; $self->active( TRUE ); return $self->update;
 }
 
+sub add_course {
+   my ($self, $course_name) = @_;
+
+   my $type = $self->$_find_course_type( $course_name );
+
+   $self->is_enroled_on( $course_name, $type )
+      and throw '[_1] already enroled on [_2]', [ $self->label, $type ];
+
+   return $self->create_related( 'courses', { course_type_id => $type->id } );
+}
+
 sub add_member_to {
    my ($self, $role_name) = @_;
 
    my $type = $self->$_find_role_type( $role_name );
 
    $self->is_member_of( $role_name, $type )
-      and throw 'Person [_1] already a member of role [_2]',
-                [ $self->label, $type ];
+      and throw '[_1] already a member of role [_2]', [ $self->label, $type ];
 
    return $self->create_related( 'roles', { type_id => $type->id } );
 }
@@ -399,6 +415,14 @@ sub is_endorsed_for {
         ? TRUE : FALSE;
 }
 
+sub is_enroled_on {
+   my ($self, $course_name, $type) = @_;
+
+   $type //= $self->$_find_course_type( $course_name );
+
+   return $type && $self->courses->find( $self->id, $type->id ) ? TRUE : FALSE;
+}
+
 sub is_member_of {
    my ($self, $role_name, $type) = @_;
 
@@ -419,6 +443,12 @@ sub is_participating_in {
 
 sub label {
    return ucfirst( $_[ 0 ]->first_name ).SPC.ucfirst( $_[ 0 ]->last_name );
+}
+
+sub list_courses {
+   my $self = shift; my $opts = { prefetch => 'course_type' };
+
+   return [ map { $_->type->name } $self->courses->search( {}, $opts )->all ];
 }
 
 sub list_roles {

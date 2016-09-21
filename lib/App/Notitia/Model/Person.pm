@@ -137,8 +137,8 @@ my $_people_headers = sub {
    }
    else {
       $header = 'people_heading';
-      $max    = (is_member $role, qw( rider driver )) ? 4
-              : (is_member $role, qw( controller rider driver )) ? 3
+      $max    = (is_member $role, qw( rider driver )) ? 5
+              : (is_member $role, qw( controller rider driver )) ? 4
               : 2;
    }
 
@@ -258,19 +258,17 @@ my $_people_links = sub {
    $params->{type} and $params->{type} eq 'contacts'
                    and return $_contact_links->( $req, $person );
 
-   my @links; my $scode = $person->shortcode;
-
-   my @paths = ( 'role/role' );
-
-   $role and is_member $role, qw( controller driver rider )
-      and push @paths, 'certs/certifications';
+   my @links; my $scode = $person->shortcode; my @paths = ( 'role/role' );
 
    unshift @paths, is_member( 'person_manager', $req->session->roles )
       ? "${moniker}/person" : "${moniker}/person_summary";
 
+   $role and is_member $role, qw( controller driver rider )
+      and push @paths, 'certs/certifications',
+      and push @paths, 'train/training';
+
    $role and ($role eq 'rider' or $role eq 'driver')
          and push @paths, 'blots/endorsements';
-
 
    for my $actionp ( @paths ) {
       push @links, { value => management_link( $req, $actionp, $scode ) };

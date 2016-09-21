@@ -40,7 +40,7 @@ sub VARCHAR_MAX_SIZE () { 255 }
 sub SHIFT_TYPE_ENUM  () { [ qw( day night ) ] }
 sub SLOT_TYPE_ENUM   () { [ qw( controller rider driver ) ] }
 sub TYPE_CLASS_ENUM  () {
-   [ qw( certification event role rota training vehicle ) ] }
+   [ qw( certification course event role rota vehicle ) ] }
 
 1;
 

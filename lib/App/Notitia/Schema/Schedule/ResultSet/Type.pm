@@ -29,6 +29,10 @@ sub find_certification_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'certification' );
 }
 
+sub find_course_by {
+   return $_[ 0 ]->$_find_by( $_[ 1 ], 'course' );
+}
+
 sub find_event_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'event' );
 }
@@ -39,10 +43,6 @@ sub find_role_by {
 
 sub find_rota_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'rota' );
-}
-
-sub find_training_by {
-   return $_[ 0 ]->$_find_by( $_[ 1 ], 'training' );
 }
 
 sub find_type_by {
@@ -90,10 +90,10 @@ sub search_for_rota_types {
                          { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
-sub search_for_training_types {
+sub search_for_course_types {
    my ($self, $opts) = @_; $opts //= {};
 
-   return $self->search( { type_class => 'training' },
+   return $self->search( { type_class => 'course' },
                          { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
