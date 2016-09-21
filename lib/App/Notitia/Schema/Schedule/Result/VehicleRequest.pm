@@ -25,6 +25,33 @@ sub _as_string {
    return $_[ 0 ]->type;
 }
 
+# Public methods
+sub insert {
+   my $self = shift;
+
+   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   return $self->next::method;
+}
+
+sub update {
+   my ($self, $columns) = @_;
+
+   $columns and $self->set_inflated_columns( $columns );
+   $self->validate( TRUE );
+
+   return $self->next::method;
+}
+
+sub validation_attributes {
+   return { # Keys: constraints, fields, and filters (all hashes)
+      fields => {
+         quantity => { validate => 'isMandatory isValidInteger' },
+      },
+      level => 8,
+   };
+}
+
 1;
 
 __END__

@@ -84,11 +84,12 @@ sub validation_attributes {
          notes       => { max_length => VARCHAR_MAX_SIZE(), min_length => 0, },
       },
       fields         => {
+         endorsed    => { validate => 'isMandatory isValidDate' },
+         notes       => { validate => 'isValidLength isValidText' },
+         points      => { validate => 'isValidInteger' },
          type_code   => {
             filters  => 'filterTitleCase',
             validate => 'isMandatory isValidLength isSimpleText' },
-         endorsed    => { validate => 'isMandatory isValidDate' },
-         notes       => { validate => 'isValidLength isValidText' },
       },
       level => 8,
    };

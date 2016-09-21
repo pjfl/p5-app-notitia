@@ -178,6 +178,7 @@ sub validation_attributes {
             validate => 'isMandatory isValidLength isValidText' },
          end_time    => {
             validate => 'isMandatory isValidLength isValidTime' },
+         max_participents => { validate => 'isValidInteger' },
          name        => {
             filters  => 'filterTitleCase',
             validate => 'isMandatory isValidLength isSimpleText' },

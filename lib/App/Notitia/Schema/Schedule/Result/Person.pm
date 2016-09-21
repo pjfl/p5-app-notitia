@@ -546,6 +546,7 @@ sub validation_attributes {
             filters    => 'filterUpperCase',
             validate   => 'isValidLength isSimpleText' },
          resigned      => { validate => 'isValidDate' },
+         rows_per_page => { validate => 'isValidInteger' },
          shortcode     => {
             validate   => 'isMandatory isValidLength isValidIdentifier' },
          subscription  => { validate => 'isValidDate' },

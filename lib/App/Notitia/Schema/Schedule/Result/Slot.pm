@@ -60,6 +60,14 @@ sub end_time {
    return $schema->config->shift_times->{ $self->shift->type_name.'_end' };
 }
 
+sub insert {
+   my $self = shift;
+
+   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   return $self->next::method;
+}
+
 sub key {
    return $_[ 0 ]->shift.'_'.$_[ 0 ]->type_name.'_'.$_[ 0 ]->subslot;
 }
@@ -84,6 +92,24 @@ sub start_time {
 
 sub rota_type {
    return $_[ 0 ]->shift->rota->type;
+}
+
+sub update {
+   my ($self, $columns) = @_;
+
+   $columns and $self->set_inflated_columns( $columns );
+   $self->validate( TRUE );
+
+   return $self->next::method;
+}
+
+sub validation_attributes {
+   return { # Keys: constraints, fields, and filters (all hashes)
+      fields => {
+         subslot => { validate => 'isMandatory isValidInteger' },
+      },
+      level => 8,
+   };
 }
 
 1;
