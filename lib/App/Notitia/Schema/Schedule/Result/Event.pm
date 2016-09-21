@@ -167,25 +167,23 @@ sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       constraints    => {
          description => { max_length => 128, min_length =>  5, },
-         end_time    => { max_length =>   5, min_length =>  0,
-                          pattern    => '\A \d\d : \d\d (?: : \d\d )? \z', },
+         end_time    => { max_length =>   5, min_length =>  0, },
          name        => { max_length =>  57, min_length =>  3, },
          notes       => { max_length =>  VARCHAR_MAX_SIZE(), min_length => 0, },
-         start_time  => { max_length =>   5, min_length =>  0,
-                          pattern    => '\A \d\d : \d\d (?: : \d\d )? \z', },
+         start_time  => { max_length =>   5, min_length =>  0, },
       },
       fields         => {
          description => {
             filters  => 'filterUCFirst',
             validate => 'isMandatory isValidLength isValidText' },
          end_time    => {
-            validate => 'isMandatory isValidLength isMatchingRegex' },
+            validate => 'isMandatory isValidLength isValidTime' },
          name        => {
             filters  => 'filterTitleCase',
             validate => 'isMandatory isValidLength isSimpleText' },
          notes       => { validate => 'isValidLength isValidText' },
          start_time  => {
-            validate => 'isMandatory isValidLength isMatchingRegex' },
+            validate => 'isMandatory isValidLength isValidTime' },
       },
       level => 8,
    };
