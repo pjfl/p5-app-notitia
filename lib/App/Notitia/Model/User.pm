@@ -516,7 +516,7 @@ sub update_profile_action : Role(any) {
 
    my $message = [ to_msg '[_1] profile updated', $person->label ];
 
-   return { redirect => { location => $req->base, message => $message } };
+   return { redirect => { message => $message } };
 }
 
 1;

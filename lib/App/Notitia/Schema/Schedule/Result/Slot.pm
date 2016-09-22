@@ -4,7 +4,7 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( FALSE SLOT_TYPE_ENUM );
+use App::Notitia::Constants qw( FALSE SLOT_TYPE_ENUM TRUE );
 use App::Notitia::Util      qw( bool_data_type enumerated_data_type
                                 foreign_key_data_type loc
                                 nullable_foreign_key_data_type
