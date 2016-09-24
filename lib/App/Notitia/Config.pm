@@ -275,6 +275,7 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       skin            => [ NonEmptySimpleStr, $_[ 0 ]->skin ],
       theme           => [ NonEmptySimpleStr, 'dark'        ],
       user_label      => [ SimpleStr | Undef                ],
+      version         => [ NonEmptySimpleStr, '0.0.0'       ],
       wanted          => [ SimpleStr | Undef                ], } };
 
 has 'shift_times'     => is => 'ro',   isa => HashRef,

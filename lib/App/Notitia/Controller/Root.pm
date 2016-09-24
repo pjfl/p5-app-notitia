@@ -4,7 +4,7 @@ use Web::Simple;
 
 with q(Web::Components::Role);
 
-has '+moniker' => default => 'z_root';
+has '+moniker' => default => 'z_root'; # Must sort to last place
 
 sub dispatch_request {
    sub (GET  + /about              + ?*) { [ 'user/about',             @_ ] },

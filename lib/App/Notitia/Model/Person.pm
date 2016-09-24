@@ -606,8 +606,8 @@ sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
 sub update_person_action : Role(person_manager) {
    my ($self, $req) = @_;
 
-   my $name   = $req->uri_params->( 0 );
-   my $person = $self->find_by_shortcode( $name );
+   my $scode  = $req->uri_params->( 0 );
+   my $person = $self->find_by_shortcode( $scode );
    my $pcode  = $person->postcode // NUL;
    my $label  = $person->label;
 
@@ -620,7 +620,7 @@ sub update_person_action : Role(person_manager) {
    catch { $self->rethrow_exception( $_, 'update', 'person', $label ) };
 
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:updateperson shortcode:${name}";
+                . "action:updateperson shortcode:${scode}";
 
    get_logger( 'activity' )->log( $message );
 

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds version to session
           - Implements #105. Profile updates redirect to referer
           - More subtle month rota day numbers
           - Implements #101. Fixes month rota on mobiles

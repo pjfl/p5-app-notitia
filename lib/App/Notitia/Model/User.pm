@@ -111,19 +111,6 @@ my $_rows_per_page = sub {
             10, 20, 50, 100 ];
 };
 
-my $_update_session = sub {
-   my ($session, $person) = @_;
-
-   $session->authenticated( TRUE );
-   $session->enable_2fa( $person->totp_secret ? TRUE : FALSE );
-   $session->first_name( $person->first_name );
-   $session->roles( $person->list_roles );
-   $session->rows_per_page( $person->rows_per_page );
-   $session->user_label( $person->label );
-   $session->username( $person->shortcode );
-   return;
-};
-
 # Private methods
 my $_push_login_js = sub {
    my ($self, $req, $page) = @_;
@@ -159,6 +146,20 @@ my $_themes_list = sub {
    return [ map { [ ucfirst $_, $_, {
       selected => $_ eq $selected ? TRUE : FALSE } ] }
             @{ $self->config->themes } ];
+};
+
+my $_update_session = sub {
+   my ($self, $session, $person) = @_;
+
+   $session->authenticated( TRUE );
+   $session->enable_2fa( $person->totp_secret ? TRUE : FALSE );
+   $session->first_name( $person->first_name );
+   $session->roles( $person->list_roles );
+   $session->rows_per_page( $person->rows_per_page );
+   $session->user_label( $person->label );
+   $session->username( $person->shortcode );
+   $session->version( $self->config->appclass->VERSION );
+   return;
 };
 
 # Public methods
@@ -218,7 +219,7 @@ sub change_password_action : Role(anon) {
 
    $password eq $again or throw 'Passwords do not match';
    $person->set_password( $oldpass, $password );
-   $_update_session->( $session, $person );
+   $self->$_update_session( $session, $person );
 
    my $location = uri_for_action $req, $self->config->places->{login_action};
    my $message  = [ to_msg '[_1] password changed', $person->label ];
@@ -282,7 +283,7 @@ sub login_action : Role(anon) {
    my $auth_code = $params->( 'auth_code', $opts );
 
    $person->authenticate_optional_2fa( $password, $auth_code );
-   $_update_session->( $session, $person );
+   $self->$_update_session( $session, $person );
 
    my $message   = [ to_msg '[_1] logged in', $person->label ];
    my $wanted    = $session->wanted; $session->wanted( NUL );
@@ -516,7 +517,7 @@ sub update_profile_action : Role(any) {
 
    my $message = [ to_msg '[_1] profile updated', $person->label ];
 
-   return { redirect => { message => $message } };
+   return { redirect => { message => $message } }; # location referer
 }
 
 1;
