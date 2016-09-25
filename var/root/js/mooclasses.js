@@ -1081,7 +1081,7 @@ var Picker = new Class( {
       }
 
       // oldContents and newContents are used to slide from the old content to a new one.
-      var slider = this.slider = new Element('div.slider', {
+      var slider = this.slider = new Element('div.dp_slider', {
          styles: {
             position: 'absolute',
             top: 0,

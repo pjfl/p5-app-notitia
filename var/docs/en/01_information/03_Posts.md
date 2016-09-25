@@ -5,6 +5,7 @@ roles:
    - any
 ---
 
-This menu item gives access to where system generated documentation appears. In particular, descriptions dates etc for events appears here.
+This menu item gives access to where system generated documentation appears. In
+particular, descriptions dates etc for events appears here.
 
 ![Posts]([%links.assets%]posts.png)
