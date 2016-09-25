@@ -5,11 +5,13 @@ use namespace::autoclean;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link f_tag p_button p_container
-                                p_list p_row p_select p_table p_textfield );
+                                p_date p_list p_row p_select
+                                p_table p_textfield );
 use App::Notitia::Util      qw( js_server_config js_submit_config
                                 locm make_tip register_action_paths
                                 to_dt to_msg uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
+use Class::Usul::Log        qw( get_logger );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -43,11 +45,50 @@ my $_subtract = sub {
    return [ grep { is_arrayref $_ or not is_member $_, $_[ 1 ] } @{ $_[ 0 ] } ];
 };
 
+my $_summary_cell = sub {
+   my ($tuple, $all_courses, $index) = @_;
+
+   exists $tuple->[ 1 ]->{ $all_courses->[ $index ] } or return {};
+
+   my $scode = $tuple->[ 0 ]->shortcode;
+   my $course = $tuple->[ 1 ]->{ $all_courses->[ $index ] };
+   my $completed = $course->completed // NUL;
+   my $field = p_date {}, "${scode}_".$course->course_type, $completed, {
+      label => NUL };
+
+   return { value => $field };
+};
+
 # Private methods
 my $_list_all_courses = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
    return [ $type_rs->search_for_course_types->all ];
+};
+
+my $_list_courses = sub {
+   my $self = shift;
+   my $rs = $self->schema->resultset( 'Training' );
+   my $prefetch = [ 'recipient', 'course_type' ];
+   my %courses = ();
+   my @courses = ();
+
+   for my $course ($rs->search( {}, { prefetch => $prefetch } )->all) {
+      my $person = $course->recipient;
+      my $index = $courses{ $person->shortcode } //= scalar @courses;
+
+      $courses[ $index ] //= [ $person, {} ];
+      $courses[ $index ]->[ 1 ]->{ $course->course_type } = $course;
+   }
+
+   return \@courses;
+};
+
+my $_summary_headers = sub {
+   my ($self, $req, $all_courses) = @_;
+
+   return [ { value => locm $req, 'training_header_0' },
+            map { { value => locm $req, $_ } } @{ $all_courses } ];
 };
 
 # Public methods
@@ -75,6 +116,30 @@ sub add_course_action : Role(training_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub remove_course_action : Role(training_manager) {
+   my ($self, $req) = @_;
+
+   my $scode = $req->uri_params->( 0 );
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person = $person_rs->find_by_shortcode( $scode );
+   my $courses = $req->body_params->( 'courses_taken', { multiple => TRUE } );
+
+   for my $course (@{ $courses }) {
+      $person->delete_course( $course );
+
+      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+                  . "action:removecourse shortcode:${scode} course:${course}";
+
+      get_logger( 'activity' )->log( $message );
+   }
+
+   my $message = [ to_msg '[_1] removed from course(s): [_2]',
+                   $person->label, join ', ', @{ $courses } ];
+   my $location = uri_for_action $req, $self->moniker.'/training', [ $scode ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub summary : Role(training_manager) {
    my ($self, $req) = @_;
 
@@ -84,6 +149,15 @@ sub summary : Role(training_manager) {
       selected => 'summary',
       title => locm $req, 'training_summary_title'
    };
+   my $all_courses = $self->$_list_all_courses;
+   my $table = p_table $form, {
+      headers => $self->$_summary_headers( $req, $all_courses ) };
+
+   for my $tuple (@{ $self->$_list_courses }) {
+      p_row $table, [     { value => $tuple->[ 0 ]->label },
+                      map { $_summary_cell->( $tuple, $all_courses, $_ ) }
+                         0 .. (scalar @{ $all_courses }) - 1 ];
+   }
 
    return $self->get_stash( $req, $page );
 }

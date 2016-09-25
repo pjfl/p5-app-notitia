@@ -4,7 +4,7 @@ use strictures;
 use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( FALSE TRUE );
-use App::Notitia::Util      qw( foreign_key_data_type );
+use App::Notitia::Util      qw( date_data_type foreign_key_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -12,7 +12,9 @@ $class->table( 'training' );
 
 $class->add_columns
    ( recipient_id   => foreign_key_data_type,
-     course_type_id => foreign_key_data_type, );
+     course_type_id => foreign_key_data_type,
+     completed => date_data_type,
+     );
 
 $class->set_primary_key( 'recipient_id', 'course_type_id' );
 

@@ -1358,6 +1358,9 @@ msgstr "Trailer"
 msgid "training_enrolement_title"
 msgstr "Course Enrolement"
 
+msgid "training_header_0"
+msgstr "Person"
+
 msgid "training_management_link"
 msgstr "Training"
 

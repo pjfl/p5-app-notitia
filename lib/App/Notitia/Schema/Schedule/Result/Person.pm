@@ -259,8 +259,7 @@ sub add_participent_for {
    my $event    = $event_rs->find_event_by( $event_uri );
 
    $self->is_participating_in( $event_uri, $event )
-      and throw 'Person [_1] already participating in [_2]',
-                [ $self->label, $event ];
+      and throw '[_1] already participating in [_2]', [ $self->label, $event ];
 
    if ($event->max_participents) {
       $event->max_participents > $event->count_of_participents
@@ -276,7 +275,7 @@ sub assert_certified_for {
    $type //= $self->$_find_cert_type( $cert_name );
 
    my $cert = $self->certs->find( $self->id, $type->id )
-      or throw 'Person [_1] has no certification for [_2]',
+      or throw '[_1] has no certification for [_2]',
                [ $self->label, $type ], level => 2;
 
    return $cert;
@@ -286,10 +285,22 @@ sub assert_endorsement_for {
    my ($self, $code_name) = @_;
 
    my $endorsement = $self->endorsements->find( $self->id, $code_name )
-      or throw 'Person [_1] has no endorsement for [_2]',
+      or throw '[_1] has no endorsement for [_2]',
                [ $self->label, $code_name ], level => 2;
 
    return $endorsement;
+}
+
+sub assert_enroled_on {
+   my ($self, $course_name, $type) = @_;
+
+   $type //= $self->$_find_course_type( $course_name );
+
+   my $course = $self->courses->find( $self->id, $type->id )
+      or throw '[_1] is not enroled on a [_2] course',
+               [ $self->label, $type ], level => 2;
+
+   return $course;
 }
 
 sub assert_member_of {
@@ -298,7 +309,7 @@ sub assert_member_of {
    $type //= $self->$_find_role_type( $role_name );
 
    my $role = $self->roles->find( $self->id, $type->id )
-      or throw 'Person [_1] is not a member of role [_2]',
+      or throw '[_1] is not a member of the [_2] role',
                [ $self->label, $type ], level => 2;
 
    return $role;
@@ -310,7 +321,7 @@ sub assert_participating_in {
    my $event_rs    = $self->result_source->schema->resultset( 'Event' );
    my $event       = $event_rs->find_event_by( $event_uri );
    my $participent = $self->participents->find( $event->id, $self->id )
-      or throw 'Person [_1] is not participating in [_2]',
+      or throw '[_1] is not participating in the [_2] event',
                [ $self->label, $event ], level => 2;
 
    return $participent;
@@ -361,6 +372,10 @@ sub claim_slot {
 
 sub deactivate {
    my $self = shift; $self->active( FALSE ); return $self->update;
+}
+
+sub delete_course {
+   return $_[ 0 ]->assert_enroled_on( $_[ 1 ] )->delete;
 }
 
 sub delete_member_from {
@@ -448,7 +463,8 @@ sub label {
 sub list_courses {
    my $self = shift; my $opts = { prefetch => 'course_type' };
 
-   return [ map { $_->type->name } $self->courses->search( {}, $opts )->all ];
+   return [ map { $_->course_type->name }
+            $self->courses->search( {}, $opts )->all ];
 }
 
 sub list_roles {
