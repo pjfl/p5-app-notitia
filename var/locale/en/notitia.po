@@ -307,6 +307,9 @@ msgstr "List contact information for current members"
 msgid "controller"
 msgstr "Controller"
 
+msgid "controller_course"
+msgstr "Controller"
+
 msgid "controller_list_link"
 msgstr "Controllers"
 
@@ -901,6 +904,9 @@ msgstr "NOK"
 msgid "nok_view_tip"
 msgstr "View this person's next of kin record"
 
+msgid "north_route"
+msgstr "N. Route"
+
 msgid "notes"
 msgstr "Notes"
 
@@ -1183,6 +1189,9 @@ msgstr "Riders"
 msgid "rider_list_tip"
 msgstr "List riders"
 
+msgid "road_assessment"
+msgstr "Road Ass."
+
 msgid "role_management_heading"
 msgstr "Manage Roles"
 
@@ -1298,6 +1307,9 @@ msgstr "Slot Name"
 msgid "sms_message"
 msgstr "Message text"
 
+msgid "south_route"
+msgstr "S. Route"
+
 msgid "spreadsheet"
 msgstr "Spreadsheet"
 
@@ -1345,6 +1357,9 @@ msgstr "TOTP"
 
 msgid "totp_secret_title"
 msgstr "TOTP Account Information"
+
+msgid "towing_assessment"
+msgstr "Towing Ass."
 
 msgid "template"
 msgstr "Template"

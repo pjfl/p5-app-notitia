@@ -35,6 +35,7 @@ sub dispatch_request {
    sub (GET  + /slot-roles            + ?*) { [ 'admin/slot_roles',      @_ ] },
    sub (POST + /training/*            + ?*) { [ 'train/from_request',    @_ ] },
    sub (GET  + /training/*            + ?*) { [ 'train/training',        @_ ] },
+   sub (POST + /training-summary/**   + ?*) { [ 'train/from_request',    @_ ] },
    sub (GET  + /training-summary      + ?*) { [ 'train/summary',         @_ ] },
    sub (GET  + /types                 + ?*) { [ 'admin/types',           @_ ] },
    sub (POST + /type/**               + ?*) { [ 'admin/from_request',    @_ ] },

@@ -63,8 +63,9 @@
 [% MACRO DateField( f ) WRAPPER label -%]
 [%    IF f.tip; FieldHelp( f ); END -%]
 [%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
+[%    IF f.id; id = f.id; ELSE; id = f.name; END -%]
       <input [% IF f.disabled %]disabled="disabled"[% END -%]
-             class="[% class %] pick-date" id="[% f.name %]"
+             class="[% class %] pick-date" id="[% id %]"
              name="[% f.name %]" value="[% f.value %]">
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>

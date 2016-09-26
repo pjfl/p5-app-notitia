@@ -41,25 +41,24 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_onchange_submit = sub {
+   my ($page, $id) = @_;
+
+   push @{ $page->{literal_js} },
+      js_submit_config $id, 'change', 'submitForm', [ 'update_training', $id ];
+
+   return;
+};
+
 my $_subtract = sub {
    return [ grep { is_arrayref $_ or not is_member $_, $_[ 1 ] } @{ $_[ 0 ] } ];
 };
 
-my $_summary_cell = sub {
-   my ($tuple, $all_courses, $index) = @_;
-
-   exists $tuple->[ 1 ]->{ $all_courses->[ $index ] } or return {};
-
-   my $scode = $tuple->[ 0 ]->shortcode;
-   my $course = $tuple->[ 1 ]->{ $all_courses->[ $index ] };
-   my $completed = $course->completed // NUL;
-   my $field = p_date {}, "${scode}_".$course->course_type, $completed, {
-      label => NUL };
-
-   return { value => $field };
+# Private methods
+my $_find_course_type = sub {
+   return $_[ 0 ]->schema->resultset( 'Type' )->find_course_by( $_[ 1 ] );
 };
 
-# Private methods
 my $_list_all_courses = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
@@ -82,6 +81,28 @@ my $_list_courses = sub {
    }
 
    return \@courses;
+};
+
+my $_summary_cell = sub {
+   my ($self, $req, $page, $all_courses, $tuple, $index) = @_;
+
+   exists $tuple->[ 1 ]->{ $all_courses->[ $index ] } or return {};
+
+   my $scode = $tuple->[ 0 ]->shortcode;
+   my $course = $tuple->[ 1 ]->{ $all_courses->[ $index ] };
+   my $completed = $course->completed // NUL;
+   my $id = "${scode}_".$course->course_type;
+   my $args = [ $scode, $course->course_type ];
+   my $href = uri_for_action $req, $self->moniker.'/summary', $args;
+   my $form = blank_form $id, $href, {
+      class => 'spreadsheet-fixed-form align-center' };
+
+   p_date $form, 'completed', $completed, {
+      class => 'date-field submit', id => $id, label => NUL };
+
+   $_onchange_submit->( $page, $id );
+
+   return { class => 'spreadsheet-fixed-date', value => $form };
 };
 
 my $_summary_headers = sub {
@@ -154,9 +175,10 @@ sub summary : Role(training_manager) {
       headers => $self->$_summary_headers( $req, $all_courses ) };
 
    for my $tuple (@{ $self->$_list_courses }) {
-      p_row $table, [     { value => $tuple->[ 0 ]->label },
-                      map { $_summary_cell->( $tuple, $all_courses, $_ ) }
-                         0 .. (scalar @{ $all_courses }) - 1 ];
+      p_row $table,
+         [ { value => $tuple->[ 0 ]->label },
+       map { $self->$_summary_cell( $req, $page, $all_courses, $tuple, $_ ) }
+           0 .. (scalar @{ $all_courses }) - 1 ];
    }
 
    return $self->get_stash( $req, $page );
@@ -196,6 +218,27 @@ sub training : Role(training_manager) {
       tip => make_tip $req, 'add_course_tip', [ 'course', $person->label ] };
 
    return $self->get_stash( $req, $page );
+}
+
+sub update_training_action : Role(training_manager) {
+   my ($self, $req) = @_;
+
+   my $scode = $req->uri_params->( 0 );
+   my $course_name = $req->uri_params->( 1 );
+   my $completed = $req->body_params->( 'completed' );
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person = $person_rs->find_by_shortcode( $scode );
+   my $course_type = $self->$_find_course_type( $course_name );
+   my $course_rs = $self->schema->resultset( 'Training' );
+   my $course = $course_rs->find( $person->id, $course_type->id );
+
+   $course->completed( to_dt $completed ); $course->update;
+
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Training for [_1] updated by [_2]',
+                   $person->label, $who ];
+
+   return { redirect => { message => $message} }; # location referer
 }
 
 1;
