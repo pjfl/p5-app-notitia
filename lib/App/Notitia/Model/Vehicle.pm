@@ -13,7 +13,6 @@ use App::Notitia::Util      qw( assign_link bind check_field_js
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
-use Class::Usul::Log        qw( get_logger );
 use Try::Tiny;
 use Moo;
 
@@ -21,8 +20,6 @@ extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
-with    q(Class::Usul::TraitFor::ConnectInfo);
-with    q(App::Notitia::Role::Schema);
 
 # Public attributes
 has '+moniker' => default => 'asset';
@@ -334,9 +331,9 @@ my $_toggle_event_assignment = sub {
    my $prep = $action eq 'assign' ? 'to' : 'from';
    my $key  = "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]";
    my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:vehicle${action}ment event:${uri} vehicle:${vrn}";
+               . "action:vehicle$-{action}ment event:${uri} vehicle:${vrn}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg $key, $vrn, $uri, $req->session->user_label ];
 
    return { redirect => { message => $message } }; # location referer
@@ -363,9 +360,10 @@ my $_toggle_slot_assignment = sub {
    my $label = slot_identifier
       ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
    my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:vehicle${action}ment slot:${slot_name} vehicle:${vrn}";
+               . "action:vehicle-${action}ment slot:${slot_name} "
+               . "vehicle:${vrn}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg $key, $vrn, $label, $req->session->user_label ];
 
    return { redirect => { message => $message } }; # location referer
@@ -560,9 +558,9 @@ sub create_vehicle_action : Role(rota_manager) {
    my $who = $req->session->user_label;
    my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];
    my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:createvehicle vehicle:${vrn}";
+               . "action:create-vehicle vehicle:${vrn}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg 'Vehicle [_1] created by [_2]', $vrn, $who ];
 
    return { redirect => { location => $location, message => $message } };
@@ -579,9 +577,9 @@ sub delete_vehicle_action : Role(rota_manager) {
    my $who = $req->session->user_label;
    my $location = uri_for_action $req, $self->moniker.'/vehicles';
    my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:deletevehicle vehicle:${vrn}";
+               . "action:delete-vehicle vehicle:${vrn}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg 'Vehicle [_1] deleted by [_2]', $vrn, $who ];
 
    return { redirect => { location => $location, message => $message } };
@@ -680,10 +678,10 @@ sub request_vehicle_action : Role(event_manager) {
 
       my $quantity = $vreq->quantity // 0;
       my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                   . "action:requestvehicle event:${uri} "
+                   . "action:request-vehicle event:${uri} "
                    . "vehicletype:${vehicle_type} quantity:${quantity}";
 
-      $quantity > 0 and get_logger( 'activity' )->log( $message );
+      $quantity > 0 and $self->send_event( $req, $message );
    }
 
    my $actionp  = $self->moniker.'/request_vehicle';
@@ -712,9 +710,9 @@ sub update_vehicle_action : Role(rota_manager) {
    my $who      = $req->session->user_label; $vrn = $vehicle->vrn;
    my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:updatevehicle vehicle:${vrn}";
+                . "action:update-vehicle vehicle:${vrn}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg 'Vehicle [_1] updated by [_2]', $vrn, $who ];
 
    return { redirect => { location => $location, message => $message } };

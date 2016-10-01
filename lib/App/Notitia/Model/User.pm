@@ -9,7 +9,6 @@ use App::Notitia::Util      qw( check_form_field js_server_config
                                 js_slider_config locm register_action_paths
                                 set_element_focus to_msg uri_for_action );
 use Class::Usul::Functions  qw( create_token throw );
-use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Types      qw( ArrayRef HashRef Object );
 use HTTP::Status            qw( HTTP_OK );
 use Try::Tiny;
@@ -20,9 +19,6 @@ extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::Navigation);
 with    q(App::Notitia::Role::WebAuthorisation);
-with    q(Class::Usul::TraitFor::ConnectInfo);
-with    q(App::Notitia::Role::Schema);
-with    q(App::Notitia::Role::Messaging);
 
 # Public attributes
 has '+moniker' => default => 'user';
@@ -290,9 +286,8 @@ sub login_action : Role(anon) {
    my $location  = $wanted ? $req->uri_for( $wanted )
                  : uri_for_action $req, $self->config->places->{login_action};
 
-   get_logger( 'activity' )->log( 'user:'.$req->username.SPC.
-                                  'client:'.$req->address.SPC.
-                                  'action:logged-in' );
+   $self->send_event( $req, 'user:'.$req->username.SPC.
+                      'client:'.$req->address.' action:logged-in' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -303,9 +298,8 @@ sub logout_action : Role(any) {
    if ($req->authenticated) {
       $self->config->expire_session->( $req->session );
       $message = [ to_msg '[_1] logged out', $req->session->user_label ];
-      get_logger( 'activity' )->log( 'user:'.$req->username.SPC.
-                                     'client:'.$req->address.SPC.
-                                     'action:logged-out' );
+      $self->send_event( $req, 'user:'.$req->username.SPC.
+                         'client:'.$req->address.'action:logged-out' );
    }
 
    return { redirect => { location => $req->base, message => $message } };

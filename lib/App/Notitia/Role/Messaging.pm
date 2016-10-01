@@ -8,11 +8,11 @@ use App::Notitia::Constants qw( C_DIALOG NUL SPC TRUE );
 use App::Notitia::Util      qw( js_config locm mail_domain set_element_focus
                                 to_msg uri_for_action );
 use Class::Usul::File;
+use Class::Usul::Functions  qw( create_token throw trim );
 use Class::Usul::Log        qw( get_logger );
-use Class::Usul::Functions  qw( create_token throw );
 use Moo::Role;
 
-requires qw( components config dialog_stash moniker );
+requires qw( components config dialog_stash moniker schema );
 
 # Private functions
 my $_plate_label = sub {
@@ -32,16 +32,6 @@ my $_flatten_stash = sub {
    Class::Usul::File->data_dump( $params );
 
    return "-o stash=${path} ";
-};
-
-my $_create_send_email_job = sub {
-   my ($self, $stash, $template) = @_; my $conf = $self->config;
-
-   my $cmd = $conf->binsdir->catfile( 'notitia-schema' ).SPC
-           . $self->$_flatten_stash( $stash )."send_message email ${template}";
-   my $rs  = $self->schema->resultset( 'Job' );
-
-   return $rs->create( { command => $cmd, name => 'send_message' } );
 };
 
 my $_flatten = sub {
@@ -87,7 +77,7 @@ my $_list_message_templates = sub {
 my $_make_template = sub {
    my ($self, $message) = @_;
 
-   my $path = $self->$_session_file; $path->println( $message );
+   my $path = $self->$_session_file; $path->println( trim $message );
 
    return $path;
 };
@@ -113,13 +103,23 @@ sub create_person_email {
    my $template = $self->$_template_path( 'user_email' );
    my $subject  = locm $req, $key, $conf->title, $person->name;
    my $link     = uri_for_action $req, $self->moniker.'/activate', [ $token ];
-   my $stash    = { app_name => $conf->title, link      => $link,
-                    password => $password,    shortcode => $scode,
+   my $stash    = { app_name => $conf->title, link => $link,
+                    password => $password, shortcode => $scode,
                     subject  => $subject, };
 
    $conf->sessdir->catfile( $token )->println( $scode );
 
-   return $self->$_create_send_email_job( $stash, $template )->id;
+   return $self->create_email_job( $stash, $template )->id;
+}
+
+sub create_email_job {
+   my ($self, $stash, $template) = @_; my $conf = $self->config;
+
+   my $cmd = $conf->binsdir->catfile( 'notitia-schema' ).SPC
+           . $self->$_flatten_stash( $stash )."send_message email ${template}";
+   my $rs  = $self->schema->resultset( 'Job' );
+
+   return $rs->create( { command => $cmd, name => 'send_message' } );
 }
 
 sub create_reset_email {
@@ -132,13 +132,13 @@ sub create_reset_email {
    my $template = $self->$_template_path( 'password_email' );
    my $subject  = locm $req, $key, $conf->title, $person->name;
    my $link     = uri_for_action $req, $self->moniker.'/reset', [ $token ];
-   my $stash    = { app_name => $conf->title, link      => $link,
-                    password => $password,    shortcode => $scode,
+   my $stash    = { app_name => $conf->title, link => $link,
+                    password => $password, shortcode => $scode,
                     subject  => $subject, };
 
    $conf->sessdir->catfile( $token )->println( "${scode}/${password}" );
 
-   return $self->$_create_send_email_job( $stash, $template )->id;
+   return $self->create_email_job( $stash, $template )->id;
 }
 
 sub create_totp_request_email {
@@ -151,12 +151,12 @@ sub create_totp_request_email {
    my $template = $self->$_template_path( 'totp_request_email' );
    my $subject  = locm $req, $key, $conf->title, $person->name;
    my $link     = uri_for_action $req, $self->moniker.'/totp_secret', [ $token];
-   my $stash    = { app_name  => $conf->title, link    => $link,
-                    shortcode => $scode,       subject => $subject, };
+   my $stash    = { app_name => $conf->title, link => $link,
+                    shortcode => $scode, subject => $subject, };
 
    $conf->sessdir->catfile( $token )->println( $scode );
 
-   return $self->$_create_send_email_job( $stash, $template )->id;
+   return $self->create_email_job( $stash, $template )->id;
 }
 
 sub jobdaemon {
@@ -173,7 +173,7 @@ sub message_create {
    if ($sink eq 'adhoc_email') {
       my $message = $req->body_params->( 'email_message', { raw => TRUE } );
 
-      $message =~ s{ \r\n }{\n}gmx; $message =~ s{ \s+ \z }{}mx;
+      $message =~ s{ \r\n }{\n}gmx;
       $template = $self->$_make_template( $message ); $sink = 'email';
    }
    elsif ($sink eq 'template_email') {
@@ -192,7 +192,7 @@ sub message_create {
    my $job      = $job_rs->create( { command => $cmd, name => 'send_message' });
    my $location = uri_for_action $req, $self->moniker.'/'.$opts->{action};
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:createjob job:send_message-".$job->id;
+                . "action:create-job job:send_message-".$job->id;
 
    get_logger( 'activity' )->log( $message );
    $message = [ to_msg 'Job send_message-[_1] created', $job->id ];

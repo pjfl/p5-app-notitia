@@ -7,15 +7,12 @@ use App::Notitia::Form      qw( blank_form f_tag p_button p_container
 use App::Notitia::Util      qw( loc make_tip register_action_paths
                                 to_msg uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
-use Class::Usul::Log        qw( get_logger );
 use Moo;
 
 extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
-with    q(Class::Usul::TraitFor::ConnectInfo);
-with    q(App::Notitia::Role::Schema);
 
 # Public attributes
 has '+moniker' => default => 'role';
@@ -57,9 +54,9 @@ sub add_role_action : Role(administrator) Role(person_manager) {
       $person->add_member_to( $role );
 
       my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-                  . "action:addrole shortcode:${name} role:${role}";
+                  . "action:add-role shortcode:${name} role:${role}";
 
-      get_logger( 'activity' )->log( $message );
+      $self->send_event( $req, $message );
    }
 
    $self->config->roles_mtime->touch;
@@ -83,9 +80,9 @@ sub remove_role_action : Role(administrator) Role(person_manager) {
       $person->delete_member_from( $role );
 
       my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-                  . "action:deleterole shortcode:${name} role:${role}";
+                  . "action:delete-role shortcode:${name} role:${role}";
 
-      get_logger( 'activity' )->log( $message );
+      $self->send_event( $req, $message );
    }
 
    $self->config->roles_mtime->touch;

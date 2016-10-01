@@ -5,6 +5,7 @@ use namespace::autoclean;
 use App::Notitia::Constants qw( AS_PASSWORD COMMA EXCEPTION_CLASS FALSE NUL
                                 OK QUOTED_RE SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::GeoLocation;
+use App::Notitia::Markdown;
 use App::Notitia::SMS;
 use App::Notitia::Util      qw( encrypted_attr load_file_data
                                 mail_domain now_dt to_dt );
@@ -12,13 +13,14 @@ use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
                                 io is_member squeeze throw trim );
 use Class::Usul::File;
-use Class::Usul::Types      qw( NonEmptySimpleStr );
+use Class::Usul::Types      qw( LoadableClass NonEmptySimpleStr Object );
 use Data::Record;
 use Data::Validation;
 use Scalar::Util            qw( blessed );
 use Text::CSV;
 use Try::Tiny;
 use Unexpected::Functions   qw( PathNotFound Unspecified ValidationErrors );
+use Web::ComposableRequest;
 use Moo;
 
 extends q(Class::Usul::Schema);
@@ -44,11 +46,40 @@ has '+config_class'   => default => 'App::Notitia::Config';
 
 has '+database'       => default => sub { $_[ 0 ]->config->database };
 
+has 'formatter'       => is => 'lazy', isa => Object, builder => sub {
+   App::Notitia::Markdown->new( tab_width => $_[ 0 ]->config->mdn_tab_width ) };
+
+has 'jobdaemon'       => is => 'lazy', isa => Object, builder => sub {
+   $_[ 0 ]->jobdaemon_class->new( {
+      appclass => $_[ 0 ]->config->appclass,
+      config   => { name => 'jobdaemon' },
+      noask    => TRUE } ) };
+
+has 'jobdaemon_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
+   default => 'App::Notitia::JobDaemon';
+
+has 'moniker'         => is => 'ro', isa => NonEmptySimpleStr, default => 'cli';
+
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
 has '+schema_version' => default => sub { App::Notitia->schema_version.NUL };
 
+# Requires moniker components dialog_stash
+with q(App::Notitia::Role::Messaging);
+with q(App::Notitia::Role::EventStream);
+
 # Construction
+sub BUILD {
+   my $self = shift;
+   my $conf = $self->config;
+   my $file = $conf->logsdir->catfile( 'activity.log' );
+   my $opts = { appclass => 'activity', builder => $self, logfile => $file, };
+
+   $self->log_class->new( $opts );
+
+   return;
+}
+
 around 'deploy_file' => sub {
    my ($orig, $self, @args) = @_;
 
@@ -323,12 +354,22 @@ my $_list_recipients = sub {
 };
 
 my $_load_from_stash = sub {
-   my ($self, $stash) = @_;
+   my ($self, $stash) = @_; my ($person, $role, $scode);
 
-   my $rs     = $self->schema->resultset( 'Person' );
-   my $person = $rs->find_by_shortcode( $stash->{shortcode} );
+   my $person_rs = $self->schema->resultset( 'Person' );
 
-   return [ [ $person->label, $person ] ];
+   $scode = $stash->{shortcode}
+      and $person = $person_rs->find_by_shortcode( $scode )
+      and return [ [ $person->label, $person ] ];
+
+   my $opts = { columns => [ 'email_address', 'mobile_phone' ] };
+
+   $stash->{status} and $opts->{status} = $stash->{status};
+
+   $role = $stash->{role}
+     and return $person_rs->list_people( $role, $opts );
+
+   return $person_rs->list_all_people( $opts );
 };
 
 my $_load_stash = sub {
@@ -337,11 +378,16 @@ my $_load_stash = sub {
    ($path->exists and $path->is_file) or throw PathNotFound, [ $path ];
 
    my $stash = Class::Usul::File->data_load
-      ( paths => [ $path ], storage_class => 'JSON' ) // {};
-   my $template = io( $plate_name )->all;
+      ( paths => [ $path ], storage_class => 'JSON' ) // {}; $path->unlink;
 
-   $stash->{quote} = $quote;
-   $path->unlink;
+   $stash->{app_name} = $self->config->title;
+   $stash->{path} = io $plate_name;
+   $stash->{sms_attributes} = { quote => $quote };
+
+   my $template = load_file_data( $stash );
+
+   $plate_name =~ m{ \.md \z }mx
+      and $template = $self->formatter->markdown( $template );
 
    return $stash, $template;
 };
@@ -349,9 +395,13 @@ my $_load_stash = sub {
 my $_load_template = sub {
    my ($self, $plate_name, $quote) = @_;
 
-   my $stash    = { app_name => $self->config->title, path => io( $plate_name ),
-                    sms_attributes => { quote => $quote }, };
+   my $stash = { app_name => $self->config->title,
+                 path => io( $plate_name ),
+                 sms_attributes => { quote => $quote }, };
    my $template = load_file_data( $stash );
+
+   $plate_name =~ m{ \.md \z }mx
+      and $template = $self->formatter->markdown( $template );
 
    return $stash, $template;
 };
@@ -671,10 +721,18 @@ sub backup_data : method {
    return OK;
 }
 
+sub components {
+   # Dummy method whick allows Role::EventStream to be applied
+}
+
 sub create_ddl : method {
    my $self = shift; $self->db_attr->{ignore_version} = TRUE;
 
    return $self->SUPER::create_ddl;
+}
+
+sub dialog_stash {
+   # Dummy method whick allows Role::EventStream to be applied
 }
 
 sub dump_connect_attr : method {
@@ -836,6 +894,22 @@ sub upgrade_schema : method {
    return OK;
 }
 
+sub vacant_slots : method {
+   my $self = shift;
+   my $scheme = $self->next_argv // 'https';
+   my $hostport = $self->next_argv // 'localhost:5000';
+   my $env = { HTTP_ACCEPT_LANGUAGE => $self->locale,
+               HTTP_HOST => $hostport,
+               SCRIPT_NAME => $self->config->mount_point,
+               'psgi.url_scheme' => $scheme, };
+   my $factory = Web::ComposableRequest->new( config => $self->config );
+   my $req = $factory->new_from_simple_request( {}, '', {}, $env );
+
+   $self->send_event( $req, 'user:admin client:localhost action:vacant-slots' );
+
+   return OK;
+}
+
 1;
 
 __END__
@@ -886,6 +960,12 @@ Creates the DDL for multiple RDBMs
 =head2 C<restore_data> - Restore a backup of the database and documents
 
 =head2 C<upgrade_schema> - Upgrade the database schema
+
+=head2 C<vacant_slots> - Generates the vacant slots email
+
+   bin/notitia-schema -q vacant-slots [scheme] [hostport]
+
+Run this from cron(8) to periodically trigger the vacant slots email
 
 =head1 Diagnostics
 

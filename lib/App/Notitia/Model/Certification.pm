@@ -10,7 +10,6 @@ use App::Notitia::Util      qw( check_field_js dialog_anchor loc locm
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
-use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Time       qw( time2str );
 use Try::Tiny;
 use Moo;
@@ -19,8 +18,6 @@ extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
-with    q(Class::Usul::TraitFor::ConnectInfo);
-with    q(App::Notitia::Role::Schema);
 
 # Public attributes
 has '+moniker' => default => 'certs';
@@ -303,9 +300,9 @@ sub create_certification_action : Role(person_manager) Role(training_manager) {
    my $key      = 'Cert. [_1] for [_2] added by [_3]';
    my $location = uri_for_action $req, $action, [ $name ];
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:createcert shortcode:${name} type:${type}";
+                . "action:create-certification shortcode:${name} type:${type}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg $key, $type, $name, $who ];
 
    return { redirect => { location => $location, message => $message } };
@@ -322,9 +319,9 @@ sub delete_certification_action : Role(person_manager) Role(training_manager) {
    my $key      = 'Cert. [_1] for [_2] deleted by [_3]';
    my $location = uri_for_action $req, $action, [ $name ];
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:deletecert shortcode:${name} type:${type}";
+                . "action:delete-certification shortcode:${name} type:${type}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg $key, $type, $name, $who ];
 
    return { redirect => { location => $location, message => $message } };
@@ -368,9 +365,9 @@ sub update_certification_action : Role(person_manager) Role(training_manager) {
    my $who     = $req->session->user_label;
    my $key     = 'Cert. [_1] for [_2] updated by [_3]';
    my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:updatecert shortcode:${name} type:${type}";
+               . "action:update-certification shortcode:${name} type:${type}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg $key, $type, $name, $who ];
 
    return { redirect => { location => $req->uri, message => $message } };
