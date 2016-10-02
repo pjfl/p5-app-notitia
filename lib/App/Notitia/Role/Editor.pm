@@ -51,7 +51,7 @@ my $_add_editing_js = sub {
       my $opts = { title => locm( $req, $map->{ $name } ), useIcon => \1 };
 
       $name eq 'rename'and $opts->{value} = $page->{url};
-      $self->$_add_dialog_js( $req, $page, $name, $opts);
+      $self->$_add_dialog_js( $req, $page, $name, $opts );
    }
 
    $page->{form_name} = 'editing';
@@ -310,8 +310,7 @@ sub rename_file {
 
    my $conf     = $self->config;
    my $params   = $req->body_params;
-   my $old_path = $self->rename_file_path_fix
-      ( [ split m{ / }mx, $params->( 'old_path' ) ] );
+   my $old_path = [ split m{ / }mx, $params->( 'old_path' ) ];
    my $node     = $self->find_node( $req->locale, $old_path )
       or throw 'Cannot find document tree node to rename';
    my $new_node = $self->$_new_node( $req->locale, $params->( 'pathname' ) );

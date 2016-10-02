@@ -8,10 +8,10 @@ use App::Notitia::GeoLocation;
 use App::Notitia::Markdown;
 use App::Notitia::SMS;
 use App::Notitia::Util      qw( encrypted_attr load_file_data
-                                mail_domain now_dt to_dt );
+                                mail_domain now_dt slot_limit_index to_dt );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
-                                io is_member squeeze throw trim );
+                                io is_member squeeze sum throw trim );
 use Class::Usul::File;
 use Class::Usul::Types      qw( LoadableClass NonEmptySimpleStr Object );
 use Data::Record;
@@ -89,6 +89,10 @@ around 'deploy_file' => sub {
 };
 
 # Private functions
+my $_local_dt = sub {
+   return $_[ 0 ]->clone->set_time_zone( 'local' );
+};
+
 my $_extend_column_map = sub {
    my ($cmap, $ncols) = @_; my $count = 0;
 
@@ -111,6 +115,19 @@ my $_natatime = sub {
    return sub { return $_[ 0 ] ? unshift @list, @_ : splice @list, 0, $n };
 };
 
+my $_slots_wanted = sub {
+   my ($limits, $rota_dt, $role) = @_;
+
+   my $day_max = sum( map { $limits->[ slot_limit_index 'day', $_ ] }
+                      $role );
+   my $night_max = sum( map { $limits->[ slot_limit_index 'night', $_ ] }
+                        $role );
+   my $wd = $night_max;
+   my $we = $day_max + $night_max;
+
+   return (0, $wd, $wd, $wd, $wd, $wd, $we, $we)[ $rota_dt->day_of_week ];
+};
+
 my $_word_iter = sub {
    my ($n, $field) = @_; $field =~ s{[\(\)]}{\"}gmx;
 
@@ -120,6 +137,27 @@ my $_word_iter = sub {
 };
 
 # Private methods
+my $_find_rota_type = sub {
+   return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
+};
+
+my $_assigned_slots = sub {
+   my ($self, $rota_name, $rota_dt) = @_;
+
+   my $slot_rs  =  $self->schema->resultset( 'Slot' );
+   my $opts     =  {
+      after     => $rota_dt->clone->subtract( days => 1 ),
+      before    => $rota_dt->clone->add( days => 1 ),
+      rota_type => $self->$_find_rota_type( $rota_name )->id };
+   my $data     =  {};
+
+   for my $slot ($slot_rs->search_for_slots( $opts )->all) {
+      $data->{ $_local_dt->( $slot->start_date )->ymd.'_'.$slot->key } = TRUE;
+   }
+
+   return $data;
+};
+
 my $_connect_attr = sub {
    return { %{ $_[ 0 ]->connect_info->[ 3 ] }, %{ $_[ 0 ]->db_attr } };
 };
@@ -898,14 +936,30 @@ sub vacant_slots : method {
    my $self = shift;
    my $scheme = $self->next_argv // 'https';
    my $hostport = $self->next_argv // 'localhost:5000';
+   my $days = $self->next_argv // 7;
+   my $rota_name = $self->next_argv // 'main';
    my $env = { HTTP_ACCEPT_LANGUAGE => $self->locale,
                HTTP_HOST => $hostport,
                SCRIPT_NAME => $self->config->mount_point,
                'psgi.url_scheme' => $scheme, };
    my $factory = Web::ComposableRequest->new( config => $self->config );
    my $req = $factory->new_from_simple_request( {}, '', {}, $env );
+   my $rota_dt = now_dt->add( days => $days );
+   my $data = $self->$_assigned_slots( $rota_name, $rota_dt );
+   my $limits = $self->config->slot_limits;
+   my $ymd = $rota_dt->ymd;
+   my $dmy = $rota_dt->dmy( '/' );
 
-   $self->send_event( $req, 'user:admin client:localhost action:vacant-slots' );
+   for my $slot_type (@{ SLOT_TYPE_ENUM() }) {
+      my $wanted = $_slots_wanted->( $limits, $rota_dt, $slot_type );
+      my $slots_claimed = grep { $_ =~ m{ _ $slot_type _ }mx }
+                          grep { $_ =~ m{ \A $ymd _ }mx } keys %{ $data };
+      my $action = "vacant-${slot_type}-slots";
+      my $message = "user:admin client:localhost action:${action} date:${dmy} "
+                  . "days_in_advance:${days}";
+
+      $slots_claimed == $wanted or $self->send_event( $req, $message );
+   }
 
    return OK;
 }

@@ -70,9 +70,11 @@ my $_event_email = sub {
 my $_slots_email = sub {
    my ($self, $req, $stash) = @_;
 
-   my $template = $self->$_template_dir( $req )->catfile( 'slots_email.md' );
+   my ($role) = $stash->{action} =~ m{ vacant_ ([^_]+) _slots }mx;
+   my $file = "${role}_slots_email.md";
+   my $template = $self->$_template_dir( $req )->catfile( $file );
 
-   $stash->{role} = 'rider'; $stash->{status} = 'current';
+   $stash->{role} = $role; $stash->{status} = 'current';
 
    return $self->create_email_job( $stash, $template );
 };
@@ -89,7 +91,8 @@ sub send_event {
    ($stash->{action} eq 'create_event' or $stash->{action} eq 'update_event')
       and $self->$_event_email( $req, $stash );
 
-   $stash->{action} eq 'vacant_slots' and $self->$_slots_email( $req, $stash );
+   $stash->{action} =~ m{ vacant_ (?: controller|driver|rider ) _slots }mx
+      and $self->$_slots_email( $req, $stash );
 
    return;
 }
