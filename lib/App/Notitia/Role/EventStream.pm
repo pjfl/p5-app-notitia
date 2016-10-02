@@ -2,7 +2,7 @@ package App::Notitia::Role::EventStream;
 
 use namespace::autoclean;
 
-use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
+use App::Notitia::Constants qw( FALSE NUL SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::Util      qw( locm uri_for_action );
 use Class::Usul::Log        qw( get_logger );
 use Moo::Role;
@@ -25,6 +25,7 @@ my $_inflate = sub {
    }
 
    $stash->{action} =~ s{ [\-] }{_}gmx;
+   $stash->{status} = 'current';
    $stash->{subject} = locm $req, $stash->{action}.'_email_subject';
 
    return $stash;
@@ -61,8 +62,7 @@ my $_event_email = sub {
    $stash->{owner} = $event->owner->label;
    $stash->{start_date} = $_local_dt->( $event->start_date )->dmy( '/' );
    $stash->{uri} = uri_for_action $req, 'event/event_summary', [ $event->uri ];
-
-   $stash->{role} = 'fund_raiser'; $stash->{status} = 'current';
+   $stash->{role} = 'fund_raiser';
 
    return $self->create_email_job( $stash, $template );
 };
@@ -74,7 +74,7 @@ my $_slots_email = sub {
    my $file = "${role}_slots_email.md";
    my $template = $self->$_template_dir( $req )->catfile( $file );
 
-   $stash->{role} = $role; $stash->{status} = 'current';
+   $stash->{role} = $role;
 
    return $self->create_email_job( $stash, $template );
 };
@@ -91,7 +91,9 @@ sub send_event {
    ($stash->{action} eq 'create_event' or $stash->{action} eq 'update_event')
       and $self->$_event_email( $req, $stash );
 
-   $stash->{action} =~ m{ vacant_ (?: controller|driver|rider ) _slots }mx
+   my $slot_types = join '|', @{ SLOT_TYPE_ENUM() };
+
+   $stash->{action} =~ m{ vacant_ (?: $slot_types ) _slots }mx
       and $self->$_slots_email( $req, $stash );
 
    return;

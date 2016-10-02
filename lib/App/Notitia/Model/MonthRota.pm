@@ -248,7 +248,7 @@ my $_rota_summary_date_style = sub {
    my $colour = 'red';
 
    $slots_claimed > 0 and $colour = 'yellow';
-   $slots_claimed == $wanted and $colour = '#47ff00';
+   $slots_claimed >= $wanted and $colour = '#47ff00';
 
    return "color: ${colour}"
 };

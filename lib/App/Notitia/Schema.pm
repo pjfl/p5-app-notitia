@@ -405,7 +405,7 @@ my $_load_from_stash = sub {
    $stash->{status} and $opts->{status} = $stash->{status};
 
    $role = $stash->{role}
-     and return $person_rs->list_people( $role, $opts );
+      and return $person_rs->list_people( $role, $opts );
 
    return $person_rs->list_all_people( $opts );
 };
@@ -759,8 +759,8 @@ sub backup_data : method {
    return OK;
 }
 
-sub components {
-   # Dummy method whick allows Role::EventStream to be applied
+sub components { # Dummy method whick allows Role::Messaging to be applied
+   throw 'Components method should not be called';
 }
 
 sub create_ddl : method {
@@ -769,8 +769,8 @@ sub create_ddl : method {
    return $self->SUPER::create_ddl;
 }
 
-sub dialog_stash {
-   # Dummy method whick allows Role::EventStream to be applied
+sub dialog_stash { # Dummy method whick allows Role::Messaging to be applied
+   throw 'Dialog stash method should not be called';
 }
 
 sub dump_connect_attr : method {
@@ -947,8 +947,8 @@ sub vacant_slots : method {
    my $rota_dt = now_dt->add( days => $days );
    my $data = $self->$_assigned_slots( $rota_name, $rota_dt );
    my $limits = $self->config->slot_limits;
-   my $ymd = $rota_dt->ymd;
    my $dmy = $rota_dt->dmy( '/' );
+   my $ymd = $rota_dt->ymd;
 
    for my $slot_type (@{ SLOT_TYPE_ENUM() }) {
       my $wanted = $_slots_wanted->( $limits, $rota_dt, $slot_type );
@@ -958,7 +958,7 @@ sub vacant_slots : method {
       my $message = "user:admin client:localhost action:${action} date:${dmy} "
                   . "days_in_advance:${days}";
 
-      $slots_claimed == $wanted or $self->send_event( $req, $message );
+      $slots_claimed >= $wanted or $self->send_event( $req, $message );
    }
 
    return OK;
