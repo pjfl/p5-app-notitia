@@ -60,7 +60,7 @@ my $_event_email = sub {
    }
 
    $stash->{owner} = $event->owner->label;
-   $stash->{start_date} = $_local_dt->( $event->start_date )->dmy( '/' );
+   $stash->{date} = $_local_dt->( $event->start_date )->dmy( '/' );
    $stash->{uri} = uri_for_action $req, 'event/event_summary', [ $event->uri ];
    $stash->{role} = 'fund_raiser';
 
