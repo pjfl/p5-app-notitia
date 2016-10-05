@@ -158,7 +158,7 @@ my $_update_session = sub {
    $session->rows_per_page( $person->rows_per_page );
    $session->user_label( $person->label );
    $session->username( $person->shortcode );
-   $session->version( $self->config->appclass->VERSION );
+   $session->version( $self->config->session_version );
    return;
 };
 
