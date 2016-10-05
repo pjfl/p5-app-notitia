@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Form      qw( blank_form f_link p_button p_radio
                                 p_select p_textarea );
-use App::Notitia::Constants qw( C_DIALOG NUL SPC TRUE );
+use App::Notitia::Constants qw( C_DIALOG NUL SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::Util      qw( js_config locm mail_domain set_element_focus
                                 to_msg uri_for_action );
 use Class::Usul::File;
@@ -15,6 +15,9 @@ use Moo::Role;
 requires qw( components config dialog_stash moniker schema );
 
 # Private functions
+my $_local_dt = sub {
+   return  $_[ 0 ]->clone->set_time_zone( 'local' );
+};
 my $_plate_label = sub {
    my $v = ucfirst $_[ 0 ]->basename( '.md' ); $v =~ s{[_\-]}{ }gmx; return $v;
 };
@@ -61,6 +64,22 @@ my $_flatten = sub {
    return $r;
 };
 
+my $_inflate = sub {
+   my ($self, $req, $message) = @_;
+
+   my $stash = { app_name => $self->config->title };
+
+   for my $pair (split SPC, $message) {
+      my ($k, $v) = split m{ : }mx, $pair; $stash->{ $k } = $v;
+   }
+
+   $stash->{action} =~ s{ [\-] }{_}gmx;
+   $stash->{status} = 'current';
+   $stash->{subject} = locm $req, $stash->{action}.'_email_subject';
+
+   return $stash;
+};
+
 my $_list_message_templates = sub {
    my ($self, $req) = @_;
 
@@ -82,6 +101,12 @@ my $_make_template = sub {
    return $path;
 };
 
+my $_template_dir = sub {
+   my ($self, $req) = @_; my $conf = $self->config; my $root = $conf->docs_root;
+
+   return $root->catdir( $req->locale, $conf->posts, $conf->email_templates );
+};
+
 my $_template_path = sub {
    my ($self, $name) = @_; my $conf = $self->config;
 
@@ -90,6 +115,48 @@ my $_template_path = sub {
    $file->exists and return $file;
 
    return $conf->template_dir->catfile( $conf->skin."/${name}.tt" );
+};
+
+my $_certification_email = sub {
+   my ($self, $req, $stash) = @_;
+
+   my $template =
+      $self->$_template_dir( $req )->catfile( 'certification_email.md' );
+
+   $stash->{type} = locm $req, $stash->{type};
+
+   return $self->create_email_job( $stash, $template );
+};
+
+my $_event_email = sub {
+   my ($self, $req, $stash) = @_;
+
+   my $rs = $self->schema->resultset( 'Event' );
+   my $event = $rs->find_event_by( $stash->{event} );
+   my $template = $self->$_template_dir( $req )->catfile( 'event_email.md' );
+
+   for my $k ( qw( description end_time name start_time ) ) {
+      $stash->{ $k } = $event->$k();
+   }
+
+   $stash->{owner} = $event->owner->label;
+   $stash->{date} = $_local_dt->( $event->start_date )->dmy( '/' );
+   $stash->{uri} = uri_for_action $req, 'event/event_summary', [ $event->uri ];
+   $stash->{role} = 'fund_raiser';
+
+   return $self->create_email_job( $stash, $template );
+};
+
+my $_slots_email = sub {
+   my ($self, $req, $stash) = @_;
+
+   my ($role) = $stash->{action} =~ m{ vacant_ ([^_]+) _slots }mx;
+   my $file = "${role}_slots_email.md";
+   my $template = $self->$_template_dir( $req )->catfile( $file );
+
+   $stash->{role} = $role;
+
+   return $self->create_email_job( $stash, $template );
 };
 
 # Public methods
@@ -194,7 +261,7 @@ sub message_create {
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
                 . "action:create-job job:send_message-".$job->id;
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg 'Job send_message-[_1] created', $job->id ];
 
    return { redirect => { location => $location, message => $message } };
@@ -268,6 +335,24 @@ sub message_stash {
    return $stash;
 }
 
+sub send_event {
+   my ($self, $req, $message) = @_; get_logger( 'activity' )->log( $message );
+
+   my $stash = $self->$_inflate( $req, $message );
+
+   $stash->{action} eq 'create_certification'
+      and $self->$_certification_email( $req, $stash );
+
+   ($stash->{action} eq 'create_event' or $stash->{action} eq 'update_event')
+      and $self->$_event_email( $req, $stash );
+
+   my $slot_types = join '|', @{ SLOT_TYPE_ENUM() };
+
+   $stash->{action} =~ m{ vacant_ (?: $slot_types ) _slots }mx
+      and $self->$_slots_email( $req, $stash );
+
+   return;
+}
 1;
 
 __END__

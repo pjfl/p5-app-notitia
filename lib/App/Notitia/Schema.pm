@@ -5,7 +5,6 @@ use namespace::autoclean;
 use App::Notitia::Constants qw( AS_PASSWORD COMMA EXCEPTION_CLASS FALSE NUL
                                 OK QUOTED_RE SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::GeoLocation;
-use App::Notitia::Markdown;
 use App::Notitia::SMS;
 use App::Notitia::Util      qw( encrypted_attr load_file_data
                                 mail_domain now_dt slot_limit_index to_dt );
@@ -47,7 +46,11 @@ has '+config_class'   => default => 'App::Notitia::Config';
 has '+database'       => default => sub { $_[ 0 ]->config->database };
 
 has 'formatter'       => is => 'lazy', isa => Object, builder => sub {
-   App::Notitia::Markdown->new( tab_width => $_[ 0 ]->config->mdn_tab_width ) };
+   $_[ 0 ]->formatter_class->new
+      ( tab_width => $_[ 0 ]->config->mdn_tab_width ) };
+
+has 'formatter_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
+   default            => 'App::Notitia::Markdown';
 
 has 'jobdaemon'       => is => 'lazy', isa => Object, builder => sub {
    $_[ 0 ]->jobdaemon_class->new( {
@@ -56,9 +59,10 @@ has 'jobdaemon'       => is => 'lazy', isa => Object, builder => sub {
       noask    => TRUE } ) };
 
 has 'jobdaemon_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
-   default => 'App::Notitia::JobDaemon';
+   default            => 'App::Notitia::JobDaemon';
 
-has 'moniker'         => is => 'ro', isa => NonEmptySimpleStr, default => 'cli';
+has 'moniker'         => is => 'ro',   isa => NonEmptySimpleStr,
+   default            => 'schema';
 
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
@@ -66,7 +70,6 @@ has '+schema_version' => default => sub { App::Notitia->schema_version.NUL };
 
 # Requires moniker components dialog_stash
 with q(App::Notitia::Role::Messaging);
-with q(App::Notitia::Role::EventStream);
 
 # Construction
 sub BUILD {
@@ -857,6 +860,33 @@ sub import_vehicles : method {
    return OK;
 }
 
+sub restore_data : method {
+   my $self = shift; my $conf = $self->config;
+
+   my $path = $self->next_argv or throw Unspecified, [ 'file name' ];
+
+   $path = io $path; $path->exists or throw PathNotFound, [ $path ];
+
+   ensure_class_loaded 'Archive::Tar'; my $arc = Archive::Tar->new;
+
+   chdir $conf->appldir; $arc->read( $path->pathname ); $arc->extract();
+
+   my (undef, $date) = split m{ - }mx, $path->basename( '.tgz' ), 2;
+   my $bdir = $conf->vardir->catdir( 'backups' );
+   my $sql  = $conf->tempdir->catfile( $conf->database."-${date}.sql" );
+
+   if ($sql->exists and lc $self->driver eq 'mysql') {
+      $self->run_cmd
+         ( [ 'mysql', '--host', $self->host,
+             '--password='.$self->admin_password, '--user',
+             $self->db_admin_ids->{mysql}, $self->database ],
+           { in => $sql } );
+      $sql->unlink;
+   }
+
+   return OK;
+}
+
 sub send_message : method {
    my $self       = shift;
    my $conf       = $self->config;
@@ -884,33 +914,6 @@ sub send_message : method {
 
    $conf->sessdir eq substr $plate_name, 0, length $conf->sessdir
       and unlink $plate_name;
-
-   return OK;
-}
-
-sub restore_data : method {
-   my $self = shift; my $conf = $self->config;
-
-   my $path = $self->next_argv or throw Unspecified, [ 'file name' ];
-
-   $path = io $path; $path->exists or throw PathNotFound, [ $path ];
-
-   ensure_class_loaded 'Archive::Tar'; my $arc = Archive::Tar->new;
-
-   chdir $conf->appldir; $arc->read( $path->pathname ); $arc->extract();
-
-   my (undef, $date) = split m{ - }mx, $path->basename( '.tgz' ), 2;
-   my $bdir = $conf->vardir->catdir( 'backups' );
-   my $sql  = $conf->tempdir->catfile( $conf->database."-${date}.sql" );
-
-   if ($sql->exists and lc $self->driver eq 'mysql') {
-      $self->run_cmd
-         ( [ 'mysql', '--host', $self->host,
-             '--password='.$self->admin_password, '--user',
-             $self->db_admin_ids->{mysql}, $self->database ],
-           { in => $sql } );
-      $sql->unlink;
-   }
 
    return OK;
 }

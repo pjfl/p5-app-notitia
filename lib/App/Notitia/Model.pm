@@ -19,7 +19,6 @@ with q(Web::Components::Role);
 with q(Class::Usul::TraitFor::ConnectInfo);
 with q(App::Notitia::Role::Schema);
 with q(App::Notitia::Role::Messaging);
-with q(App::Notitia::Role::EventStream);
 
 # Public attributes
 has 'application' => is => 'ro', isa => Plinth,
