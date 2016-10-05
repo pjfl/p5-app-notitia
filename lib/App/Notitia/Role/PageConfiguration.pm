@@ -4,6 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( TRUE );
 use App::Notitia::Util      qw( loc );
+use Class::Usul::Functions  qw( throw );
 use Try::Tiny;
 use Web::ComposableRequest::Util qw( new_uri );
 use Moo::Role;
@@ -12,11 +13,23 @@ requires qw( config initialise_stash load_page log );
 
 # Construction
 around 'execute' => sub {
-   my ($orig, $self, $method, $req) = @_;
+   my ($orig, $self, $method, $req) = @_; my $conf = $self->config;
+
+   my $session = $req->session; my $sess_version = $session->version;
+
+   unless ($sess_version eq $conf->session_version) {
+      my $psgix_sess = $req->_env->{ 'psgix.session' };
+
+      delete $psgix_sess->{ $_ } for (keys %{ $psgix_sess });
+
+      $req->clear_session;
+      throw 'Session version mismatch [_1] vs. [_2]. Reload page',
+            [ $sess_version, $conf->session_version ];
+   }
 
    my $stash = $orig->( $self, $method, $req );
 
-   $req->authenticated and $self->activity_cache( $req->session->user_label );
+   $req->authenticated and $self->activity_cache( $session->user_label );
 
    exists $stash->{redirect} and $req->authenticated and $req->referer
       and $stash->{redirect}->{location} //=

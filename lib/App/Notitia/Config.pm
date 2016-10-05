@@ -261,7 +261,10 @@ has 'server'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'FCGI';
 
 has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
-   builder            => sub { {
+   builder            => sub {
+      my $sess_version = $_[ 0 ]->session_version;
+
+      return {
       enable_2fa      => [ Bool, FALSE                      ],
       display_cols    => [ PositiveInt, 7                   ],
       display_rows    => [ PositiveInt, 2                   ],
@@ -275,8 +278,10 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       skin            => [ NonEmptySimpleStr, $_[ 0 ]->skin ],
       theme           => [ NonEmptySimpleStr, 'dark'        ],
       user_label      => [ SimpleStr | Undef                ],
-      version         => [ NonEmptySimpleStr, '0.0.0'       ],
+      version         => [ NonEmptySimpleStr, $sess_version ],
       wanted          => [ SimpleStr | Undef                ], } };
+
+has 'session_version' => is => 'ro',   isa => NonZeroPositiveInt, default => 1;
 
 has 'shift_times'     => is => 'ro',   isa => HashRef,
    builder            => sub { {
@@ -775,6 +780,12 @@ A non empty simple string that defaults to C<dark>. The name of the
 default colour scheme
 
 =back
+
+=item C<session_version>
+
+A non zero positive integer. Incrementing this causes the the current session
+object to be discarded and a new one is minted. Increment this when the
+C<session_attr> is changed
 
 =item C<shift_times>
 

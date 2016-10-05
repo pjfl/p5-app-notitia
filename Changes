@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds session version number
           - Fixes regressions in document markdown and date picker style
           - Adds version to session
           - Implements #105. Profile updates redirect to referer
