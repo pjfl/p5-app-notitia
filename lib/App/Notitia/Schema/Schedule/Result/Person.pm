@@ -238,7 +238,8 @@ sub add_course {
    $self->is_enroled_on( $course_name, $type )
       and throw '[_1] already enroled on [_2]', [ $self->label, $type ];
 
-   return $self->create_related( 'courses', { course_type_id => $type->id } );
+   return $self->create_related( 'courses', {
+      course_type_id => $type->id, status => 'enroled' } );
 }
 
 sub add_member_to {

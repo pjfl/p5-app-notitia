@@ -3,13 +3,12 @@ package App::Notitia::Model::Training;
 use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link f_tag p_button p_container
-                                p_date p_list p_row p_select
-                                p_table p_textfield );
-use App::Notitia::Util      qw( js_server_config js_submit_config
-                                locm make_tip register_action_paths
-                                to_dt to_msg uri_for_action );
+use App::Notitia::Constants qw( FALSE NUL SPC TRAINING_STATUS_ENUM TRUE );
+use App::Notitia::Form      qw( blank_form f_tag p_button p_container p_date
+                                p_link p_row p_select p_table p_textfield );
+use App::Notitia::Util      qw( dialog_anchor locm make_tip
+                                register_action_paths to_dt to_msg
+                                uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Class::Usul::Log        qw( get_logger );
 use Moo;
@@ -25,6 +24,7 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'train';
 
 register_action_paths
+   'train/dialog' => 'training-dialog',
    'train/summary' => 'training-summary',
    'train/training' => 'training';
 
@@ -41,13 +41,8 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_onchange_submit = sub {
-   my ($page, $id) = @_;
-
-   push @{ $page->{literal_js} },
-      js_submit_config $id, 'change', 'submitForm', [ 'update_training', $id ];
-
-   return;
+my $_local_dt = sub {
+   return $_[ 0 ]->clone->set_time_zone( 'local' );
 };
 
 my $_subtract = sub {
@@ -57,6 +52,17 @@ my $_subtract = sub {
 # Private methods
 my $_find_course_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_course_by( $_[ 1 ] );
+};
+
+my $_find_course = sub {
+   my ($self, $req, $scode, $course_name) = @_;
+
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person = $person_rs->find_by_shortcode( $scode );
+   my $course_type = $self->$_find_course_type( $course_name );
+   my $course_rs = $self->schema->resultset( 'Training' );
+
+   return $course_rs->find( $person->id, $course_type->id ), $person;
 };
 
 my $_list_all_courses = sub {
@@ -83,6 +89,15 @@ my $_list_courses = sub {
    return \@courses;
 };
 
+my $_summary_cell_js = sub {
+   my ($page, $id, $href, $title) = @_;
+
+   push @{ $page->{literal_js} }, dialog_anchor( $id, $href, {
+      name => $id, title => $title, useIcon => \1 } );
+
+   return;
+};
+
 my $_summary_cell = sub {
    my ($self, $req, $page, $all_courses, $tuple, $index) = @_;
 
@@ -90,19 +105,27 @@ my $_summary_cell = sub {
 
    my $scode = $tuple->[ 0 ]->shortcode;
    my $course = $tuple->[ 1 ]->{ $all_courses->[ $index ] };
-   my $completed = $course->completed // NUL;
-   my $id = "${scode}_".$course->course_type;
-   my $args = [ $scode, $course->course_type ];
-   my $href = uri_for_action $req, $self->moniker.'/summary', $args;
+   my $status = $course->status;
+   my $date = $_local_dt->( $course->$status() )->dmy( '/' );
+   my $course_type = $course->course_type;
+   my $actionp = $self->moniker.'/dialog';
+   my $href = uri_for_action $req, $actionp, [ $scode, $course_type ];
+   my $id = "${scode}_${course_type}";
    my $form = blank_form $id, $href, {
       class => 'spreadsheet-fixed-form align-center' };
+   my $colours = { completed => 'green', enroled => 'blue',
+                   expired => 'red', started => 'yellow' };
+   my $title = locm $req, '[_1] Training For [_2]',
+                    locm( $req, $course_type ), $tuple->[ 0 ]->label;
 
-   p_date $form, 'completed', $completed, {
-      class => 'date-field submit', id => $id, label => NUL };
+   p_link $form, $id, '#', {
+      class => 'windows', label => NUL, request => $req, value => $date };
 
-   $_onchange_submit->( $page, $id );
+   $_summary_cell_js->( $page, $id, $href, $title );
 
-   return { class => 'spreadsheet-fixed-date', value => $form };
+   return { class => 'spreadsheet-fixed-date',
+            style => 'background-color: '.$colours->{ $status },
+            value => $form };
 };
 
 my $_summary_headers = sub {
@@ -159,6 +182,34 @@ sub remove_course_action : Role(training_manager) {
    my $location = uri_for_action $req, $self->moniker.'/training', [ $scode ];
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub dialog : Role(training_manager) {
+   my ($self, $req) = @_;
+
+   my $scode = $req->uri_params->( 0 );
+   my $course_name = $req->uri_params->( 1 );
+   my ($course) = $self->$_find_course( $req, $scode, $course_name );
+   my $stash = $self->dialog_stash( $req );
+   my $actionp = $self->moniker.'/training';
+   my $href = uri_for_action $req, $actionp, [ $scode, $course_name ];
+   my $form = $stash->{page}->{forms}->[ 0 ]
+            = blank_form 'user-training', $href, { class => 'dialog-form' };
+
+   for my $status (@{ TRAINING_STATUS_ENUM() }) {
+      my $date = $course->$status() // NUL;
+
+      $date and $date = $_local_dt->( $date )->dmy( '/' );
+
+      p_date $form, "${course_name}_${status}_date", $date, {
+         class => 'narrow-field',
+         disabled => $status eq 'enroled' ? TRUE : FALSE,
+         label => "${status}_date", label_class => 'right-last' };
+   }
+
+   p_button $form, 'update', 'update_training', { class => 'button right-last'};
+
+   return $stash;
 }
 
 sub summary : Role(training_manager) {
@@ -225,14 +276,27 @@ sub update_training_action : Role(training_manager) {
 
    my $scode = $req->uri_params->( 0 );
    my $course_name = $req->uri_params->( 1 );
-   my $completed = $req->body_params->( 'completed' );
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $person = $person_rs->find_by_shortcode( $scode );
-   my $course_type = $self->$_find_course_type( $course_name );
-   my $course_rs = $self->schema->resultset( 'Training' );
-   my $course = $course_rs->find( $person->id, $course_type->id );
+   my ($course, $person) = $self->$_find_course( $req, $scode, $course_name );
+   my $prev = [];
 
-   $course->completed( to_dt $completed ); $course->update;
+   for my $status (@{ TRAINING_STATUS_ENUM() }) {
+      my $date = $req->body_params->( "${course_name}_${status}_date",
+                                      { optional => TRUE} ) // NUL;
+
+      $prev->[ 0 ] or ($prev = [ $status, $course->$status() ] and next);
+
+      $date and $date = to_dt $date;
+      $date and not $prev->[ 1 ]
+            and throw 'Cannot skip [_1] state', [ $prev->[ 0 ] ];
+      $date and $date < $prev->[ 1 ]
+            and throw '[_1] date cannot be before the [_2] date',
+                      { args => [ ucfirst $status, $prev->[ 0 ] ],
+                        no_quote_bind_values => TRUE };
+      $date and $course->status( $status ) and $course->$status( $date );
+      $prev = [ $status, $date ];
+   }
+
+   $course->update;
 
    my $who = $req->session->user_label;
    my $message = [ to_msg 'Training for [_1] updated by [_2]',
