@@ -172,6 +172,7 @@ footer {
    display: inline-block; position: relative;
 }
 .control-label { font-size: 0.75em; line-height: 17px; }
+.cuddles { display: inline-block; }
 .date-field { max-width: 95px; }
 .dialog {
    background-color: @dialog-background; border: 2px solid @divider;
@@ -259,6 +260,7 @@ footer {
 .fake-disabled, .mediumint-field[disabled], .smallint-field[disabled] {
    background-color: @subtle-bg; color: @darker-fg;
 }
+.person-column { vertical-align: top; }
 .prev-rota:before { content: '\2039'; left: 10px; }
 .prev-rota, .prev-rota:hover { margin-left: 10px; padding-left: 30px; }
 .radio-group {
@@ -327,6 +329,7 @@ footer {
 .wide-form {
    display: block; margin: auto; overflow: hidden; width: 100%;
 }
+.wide-table { max-width: 548px; overflow-x: scroll; }
 .hidden { display: none; }
 /* Notice board */
 .notice-board { position: fixed; width: 20%; z-index: 9999; }
@@ -755,8 +758,8 @@ h5, h6 {
 hr.subtle { display: none; }
 /* Tables */
 .key-table, .smaller-table, .standard-table, table.embeded { width: 100%; }
-.embeded-spreadsheet-table, .key-table, .smaller-table, .spreadsheet-table,
-.standard-table, table.embeded {
+.embeded-spreadsheet-table, .inline-table, .key-table, .smaller-table,
+.spreadsheet-table, .standard-table, table.embeded {
    background-color: @table-bg; .border-radius;
    .box-shadow;
    caption, thead {

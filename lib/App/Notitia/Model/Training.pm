@@ -50,6 +50,16 @@ my $_subtract = sub {
 };
 
 # Private methods
+my $_cell_colours = sub {
+   my ($self, $status) = @_;
+
+   my $bg_colours = { completed => 'green', enroled => 'blue',
+                      expired => 'red', started => 'yellow' };
+   my $fg_colours = { started => 'black' };
+
+   return $bg_colours->{ $status }, $fg_colours->{ $status };
+};
+
 my $_find_course_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_course_by( $_[ 1 ] );
 };
@@ -113,26 +123,31 @@ my $_summary_cell = sub {
    my $id = "${scode}_${course_type}";
    my $form = blank_form $id, $href, {
       class => 'spreadsheet-fixed-form align-center' };
-   my $colours = { completed => 'green', enroled => 'blue',
-                   expired => 'red', started => 'yellow' };
    my $title = locm $req, '[_1] Training For [_2]',
                     locm( $req, $course_type ), $tuple->[ 0 ]->label;
+   my $link = { class => 'windows', label => NUL,
+                request => $req, value => $date };
+   my ($bg_colour, $fg_colour) = $self->$_cell_colours( $status );
 
-   p_link $form, $id, '#', {
-      class => 'windows', label => NUL, request => $req, value => $date };
+   $fg_colour and $link->{style} = "color: ${fg_colour}";
+
+   p_link $form, $id, '#', $link;
 
    $_summary_cell_js->( $page, $id, $href, $title );
 
-   return { class => 'spreadsheet-fixed-date',
-            style => 'background-color: '.$colours->{ $status },
-            value => $form };
+   return { style => "background-color: ${bg_colour}", value => $form };
 };
 
 my $_summary_headers = sub {
    my ($self, $req, $all_courses) = @_;
 
-   return [ { value => locm $req, 'training_header_0' },
-            map { { value => locm $req, $_ } } @{ $all_courses } ];
+   return [ map { { value => locm $req, $_ } } @{ $all_courses } ];
+};
+
+my $_user_header = sub {
+   my ($self, $req) = @_;
+
+   return [ { value => locm $req, 'training_header_0' } ];
 };
 
 # Public methods
@@ -222,14 +237,23 @@ sub summary : Role(training_manager) {
       title => locm $req, 'training_summary_title'
    };
    my $all_courses = $self->$_list_all_courses;
-   my $table = p_table $form, {
+   my $user_table = p_table {}, {
+      class => 'embeded', headers => $self->$_user_header( $req ) };
+   my $summary_table = p_table {}, {
+      class => 'embeded',
       headers => $self->$_summary_headers( $req, $all_courses ) };
+   my $container = p_container {}, $summary_table, { class => 'wide-table' };
+   my $outer_table = p_table $form, {};
+
+   p_row $outer_table, [ { class => 'embeded person-column',
+                           value => $user_table },
+                         { class => 'embeded', value => $container } ];
 
    for my $tuple (@{ $self->$_list_courses }) {
-      p_row $table,
-         [ { value => $tuple->[ 0 ]->label },
-       map { $self->$_summary_cell( $req, $page, $all_courses, $tuple, $_ ) }
-           0 .. (scalar @{ $all_courses }) - 1 ];
+      p_row $user_table, [ { value => $tuple->[ 0 ]->label } ];
+      p_row $summary_table,
+        [ map { $self->$_summary_cell( $req, $page, $all_courses, $tuple, $_ ) }
+          0 .. (scalar @{ $all_courses }) - 1 ];
    }
 
    return $self->get_stash( $req, $page );
@@ -298,11 +322,10 @@ sub update_training_action : Role(training_manager) {
 
    $course->update;
 
-   my $who = $req->session->user_label;
    my $message = [ to_msg 'Training for [_1] updated by [_2]',
-                   $person->label, $who ];
+                   $person->label, $req->session->user_label ];
 
-   return { redirect => { message => $message} }; # location referer
+   return { redirect => { message => $message } }; # location referer
 }
 
 1;

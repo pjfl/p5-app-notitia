@@ -124,7 +124,8 @@
            title="[% f.hint _ ' ~ ' _ f.tip %]">[% END %]
       <a class="[% f.class %]" href="[% f.href %]" [% IF f.download -%]
       download="[% f.download %]"[% END; IF f.target -%]
-        target="[% f.target%]"[% END; IF f.name -%] id="[% f.name %]"[% END -%]>
+        target="[% f.target%]"[% END; IF f.name -%] id="[% f.name %]"[% END -%]
+[%    IF f.style -%] style="[% f.style %]"[% END %]>
 [%    IF reference( f.value ) == 'HASH'; Dispatch( f.value ) -%]
 [%    ELSE; f.value; END %]</a>[% IF f.tip %]</span>[% END -%]
 [% END -%]
