@@ -5,12 +5,14 @@ use namespace::autoclean;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRAINING_STATUS_ENUM TRUE );
 use App::Notitia::Form      qw( blank_form f_tag p_button p_container p_date
-                                p_link p_row p_select p_table p_textfield );
-use App::Notitia::Util      qw( dialog_anchor locm make_tip
+                                p_link p_list p_row p_select p_table
+                                p_textfield );
+use App::Notitia::Util      qw( dialog_anchor locm make_tip page_link_set
                                 register_action_paths to_dt to_msg
                                 uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Class::Usul::Log        qw( get_logger );
+use Data::Page;
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -82,13 +84,13 @@ my $_list_all_courses = sub {
 };
 
 my $_list_courses = sub {
-   my $self = shift;
-   my $rs = $self->schema->resultset( 'Training' );
-   my $prefetch = [ 'recipient', 'course_type' ];
-   my %courses = ();
-   my @courses = ();
+   my $self = shift; my %courses = (); my @courses = ();
 
-   for my $course ($rs->search( {}, { prefetch => $prefetch } )->all) {
+   my $rs = $self->schema->resultset( 'Training' );
+   my $opts = { order_by => [ 'recipient.name' ],
+                prefetch => [ 'recipient', 'course_type' ] };
+
+   for my $course ($rs->search( {}, $opts )->all) {
       my $person = $course->recipient;
       my $index = $courses{ $person->shortcode } //= scalar @courses;
 
@@ -96,7 +98,7 @@ my $_list_courses = sub {
       $courses[ $index ]->[ 1 ]->{ $course->course_type } = $course;
    }
 
-   return \@courses;
+   return @courses;
 };
 
 my $_summary_cell_js = sub {
@@ -142,6 +144,16 @@ my $_summary_headers = sub {
    my ($self, $req, $all_courses) = @_;
 
    return [ map { { value => locm $req, $_ } } @{ $all_courses } ];
+};
+
+my $_summary_ops_links = sub {
+   my ($self, $req, $max_rows, $opts) = @_;
+
+   my $dp = Data::Page->new( $max_rows, $opts->{rows}, $opts->{page} );
+   my $link_opts = { class => 'log-links right-last' };
+   my $actionp = $self->moniker.'/summary';
+
+   return page_link_set $req, $actionp, [], $opts, $dp, $link_opts;
 };
 
 my $_user_header = sub {
@@ -230,28 +242,39 @@ sub dialog : Role(training_manager) {
 sub summary : Role(training_manager) {
    my ($self, $req) = @_;
 
+   my $params = $req->query_params->( { optional => TRUE } );
+   my $opts = { page => delete $params->{page} // 1,
+                rows => $req->session->rows_per_page, };
    my $form = blank_form;
    my $page = {
       forms => [ $form ],
-      selected => 'summary',
+      selected => 'training',
       title => locm $req, 'training_summary_title'
    };
    my $all_courses = $self->$_list_all_courses;
    my $user_table = p_table {}, {
       class => 'embeded', headers => $self->$_user_header( $req ) };
-   my $summary_table = p_table {}, {
-      class => 'embeded',
+   my $course_table = p_table {}, {
+      class => 'embeded no-header-wrap',
       headers => $self->$_summary_headers( $req, $all_courses ) };
-   my $container = p_container {}, $summary_table, { class => 'wide-table' };
+   my $container = p_container {}, $course_table, { class => 'wide-table' };
+   my @courses = $self->$_list_courses;
+   my $page_links = $self->$_summary_ops_links( $req, scalar @courses, $opts );
+
+   p_list $form, NUL, [ $page_links ], { class => 'operation-links' };
+
    my $outer_table = p_table $form, {};
+   my $start_row = $opts->{rows} * ($opts->{page} - 1);
+
+   @courses = splice @courses, $start_row, $opts->{rows};
 
    p_row $outer_table, [ { class => 'embeded person-column',
                            value => $user_table },
                          { class => 'embeded', value => $container } ];
 
-   for my $tuple (@{ $self->$_list_courses }) {
+   for my $tuple (@courses) {
       p_row $user_table, [ { value => $tuple->[ 0 ]->label } ];
-      p_row $summary_table,
+      p_row $course_table,
         [ map { $self->$_summary_cell( $req, $page, $all_courses, $tuple, $_ ) }
           0 .. (scalar @{ $all_courses }) - 1 ];
    }

@@ -418,8 +418,8 @@ sub admin_navigation_links {
    $self->$_allowed( $req, 'train/summary' ) and push @{ $list },
       $nav_folder->( $req, 'training', { tip => 'Training Menu' } ),
       $nav_linkto->( $req, {
-         class => $page->{selected} eq 'summary' ? 'selected' : NUL,
-         name => 'training' }, 'train/summary', [] );
+         class => $page->{selected} eq 'training' ? 'selected' : NUL,
+         name => 'training_summary' }, 'train/summary', [] );
 
    return $nav;
 }
