@@ -195,7 +195,7 @@ msgid "called"
 msgstr "Called"
 
 msgid "call_category"
-msgstr "Category"
+msgstr "Call Category"
 
 msgid "calls_management_heading"
 msgstr "Calls"

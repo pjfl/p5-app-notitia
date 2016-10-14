@@ -29,11 +29,11 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      encrypted_attr enhance enumerated_data_type
                      foreign_key_data_type get_hashed_pw get_salt
                      is_access_authorised is_draft is_encrypted iterator
-                     js_config js_server_config js_submit_config
-                     js_togglers_config js_window_config lcm_for load_file_data
-                     loc localise_tree locm mail_domain make_id_from
-                     make_name_from make_tip management_link mtime new_salt
-                     now_dt nullable_foreign_key_data_type
+                     js_config js_slider_config js_server_config
+                     js_submit_config js_togglers_config js_window_config
+                     lcm_for load_file_data loc localise_tree locm mail_domain
+                     make_id_from make_name_from make_tip management_link mtime
+                     new_salt now_dt nullable_foreign_key_data_type
                      nullable_numerical_id_data_type nullable_varchar_data_type
                      numerical_id_data_type page_link_set register_action_paths
                      serial_data_type set_element_focus

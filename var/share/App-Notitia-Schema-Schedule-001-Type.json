@@ -39,6 +39,9 @@
       "trailer, vehicle",
       "person, event",
       "vehicle, event",
+      "blood, package",
+      "drugs, package",
+      "milk, package",
       "other, package",
       "main, rota"
    ]

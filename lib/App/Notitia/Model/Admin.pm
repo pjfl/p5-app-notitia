@@ -192,7 +192,7 @@ my $_types_links = sub {
 
    my $opts = { args => [ $type->type_class, $name ] };
 
-   return [ { value => ucfirst $type->type_class },
+   return [ { value => ucfirst locm $req, $type->type_class },
             { value => loc( $req, $type->name ) },
             { value => management_link( $req, 'admin/type', $name, $opts ) } ];
 };
@@ -437,7 +437,7 @@ sub type : Role(administrator) {
    my $href       =  uri_for_action $req, $actionp, $args;
    my $form       =  blank_form 'type-admin', $href;
    my $disabled   =  $name ? TRUE : FALSE;
-   my $class_name =  ucfirst $type_class;
+   my $class_name =  ucfirst locm $req, $type_class;
    my $page       =  {
       first_field => 'name',
       forms       => [ $form ],
