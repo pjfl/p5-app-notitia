@@ -128,7 +128,7 @@ my $_summary_cell = sub {
    my $title = locm $req, '[_1] Training For [_2]',
                     locm( $req, $course_type ), $tuple->[ 0 ]->label;
    my $link = { class => 'windows', label => NUL,
-                request => $req, value => $date };
+                request => $req, tip => "${course_type}_tip", value => $date };
    my ($bg_colour, $fg_colour) = $self->$_cell_colours( $status );
 
    $fg_colour and $link->{style} = "color: ${fg_colour}";
@@ -252,21 +252,21 @@ sub summary : Role(training_manager) {
       title => locm $req, 'training_summary_title'
    };
    my $all_courses = $self->$_list_all_courses;
+   my @courses = $self->$_list_courses;
+   my $page_links = $self->$_summary_ops_links( $req, scalar @courses, $opts );
+   my $start_row = $opts->{rows} * ($opts->{page} - 1);
+
+   @courses = splice @courses, $start_row, $opts->{rows};
+   p_list $form, NUL, [ $page_links ], { class => 'operation-links' };
+
+   my $outer_table = p_table $form, {
+      caption => locm $req, 'training_summary_caption' };
    my $user_table = p_table {}, {
       class => 'embeded', headers => $self->$_user_header( $req ) };
    my $course_table = p_table {}, {
       class => 'embeded no-header-wrap',
       headers => $self->$_summary_headers( $req, $all_courses ) };
    my $container = p_container {}, $course_table, { class => 'wide-table' };
-   my @courses = $self->$_list_courses;
-   my $page_links = $self->$_summary_ops_links( $req, scalar @courses, $opts );
-
-   p_list $form, NUL, [ $page_links ], { class => 'operation-links' };
-
-   my $outer_table = p_table $form, {};
-   my $start_row = $opts->{rows} * ($opts->{page} - 1);
-
-   @courses = splice @courses, $start_row, $opts->{rows};
 
    p_row $outer_table, [ { class => 'embeded person-column',
                            value => $user_table },

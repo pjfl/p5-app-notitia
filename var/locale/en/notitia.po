@@ -60,6 +60,12 @@ msgstr "Add Certification"
 msgid "add_certification_tip"
 msgstr "Add these certificates to the required list for this slot role"
 
+msgid "add_course"
+msgstr "Add Course"
+
+msgid "add_course_tip"
+msgstr "Enrole this person on the selected courses"
+
 msgid "add_role"
 msgstr "Add Role"
 
@@ -262,6 +268,9 @@ msgstr "Members of The Committee"
 msgid "completed"
 msgstr "Date Completed"
 
+msgid "completed_date"
+msgstr "Completed"
+
 msgid "confirm"
 msgstr "Confirm"
 
@@ -321,6 +330,12 @@ msgstr "Eastings/Northings"
 
 msgid "course_type_create_link"
 msgstr "Course"
+
+msgid "courses"
+msgstr "All Courses"
+
+msgid "courses_taken"
+msgstr "Courses Taken"
 
 msgid "create"
 msgstr "Create"
@@ -517,6 +532,9 @@ msgstr "Endorsements"
 msgid "endorsements_management_tip"
 msgstr "Administer endorsement records for [_1]"
 
+msgid "enroled_date"
+msgstr "Enroled"
+
 msgid "event_blog_link"
 msgstr "Follow this [link]([_1]) to participate in the event"
 
@@ -588,6 +606,9 @@ msgstr "Displays 'event' records"
 
 msgid "events_management_heading"
 msgstr "Events"
+
+msgid "expired_date"
+msgstr "Expired"
 
 msgid "external_link_tip"
 msgstr "View this external link in another tab"
@@ -1144,6 +1165,12 @@ msgstr "Remove Certification"
 msgid "remove_certification_tip"
 msgstr "Remove these certificates from the required list for this slot role"
 
+msgid "remove_course"
+msgstr "Remove Course"
+
+msgid "remove_course_tip"
+msgstr "Remove this person from the selected training courses"
+
 msgid "remove_role"
 msgstr "Remove Role"
 
@@ -1328,6 +1355,9 @@ msgstr "Start"
 msgid "start_jobdaemon_tip"
 msgstr "Start the job daemon process"
 
+msgid "started_date"
+msgstr "Started"
+
 msgid "stop_jobdaemon"
 msgstr "Stop"
 
@@ -1376,6 +1406,9 @@ msgstr "Course Enrolement"
 msgid "training_header_0"
 msgstr "Person"
 
+msgid "training_management_heading"
+msgstr "Training"
+
 msgid "training_management_link"
 msgstr "Training"
 
@@ -1384,6 +1417,18 @@ msgstr "Add training courses for [_1]"
 
 msgid "training_manager"
 msgstr "Training Manager"
+
+msgid "training_summary_caption"
+msgstr "Blue - Enroled | Yellow - Started | Green - Completed | Red - Expired"
+
+msgid "training_summary_link"
+msgstr "Training Summary"
+
+msgid "training_summary_tip"
+msgstr "View and update people training records"
+
+msgid "training_summary_title"
+msgstr "Training Summary"
 
 msgid "trigger_jobdaemon"
 msgstr "Trigger"
