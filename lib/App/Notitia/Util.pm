@@ -25,14 +25,15 @@ use YAML::Tiny;
 our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      bool_data_type build_navigation build_tree button
                      check_field_js check_form_field clone date_data_type
-                     dialog_anchor display_duration encrypted_attr enhance
-                     enumerated_data_type foreign_key_data_type get_hashed_pw
-                     get_salt is_access_authorised is_draft is_encrypted
-                     iterator js_config js_server_config js_slider_config
-                     js_submit_config js_togglers_config js_window_config
-                     lcm_for load_file_data loc localise_tree locm mail_domain
-                     make_id_from make_name_from make_tip management_link mtime
-                     new_salt now_dt nullable_foreign_key_data_type
+                     datetime_label dialog_anchor display_duration
+                     encrypted_attr enhance enumerated_data_type
+                     foreign_key_data_type get_hashed_pw get_salt
+                     is_access_authorised is_draft is_encrypted iterator
+                     js_config js_server_config js_submit_config
+                     js_togglers_config js_window_config lcm_for load_file_data
+                     loc localise_tree locm mail_domain make_id_from
+                     make_name_from make_tip management_link mtime new_salt
+                     now_dt nullable_foreign_key_data_type
                      nullable_numerical_id_data_type nullable_varchar_data_type
                      numerical_id_data_type page_link_set register_action_paths
                      serial_data_type set_element_focus
@@ -402,6 +403,14 @@ sub date_data_type () {
             is_nullable   => TRUE,
             datetime_undef_if_invalid => TRUE,
             timezone      => 'GMT', };
+}
+
+sub datetime_label ($) {
+   my $dt = shift; $dt or return NUL;
+
+   $dt = $dt->clone->set_time_zone( 'local' );
+
+   return sprintf '%s @ %.2d:%.2d', $dt->dmy( '/' ), $dt->hour, $dt->minute;
 }
 
 sub dialog_anchor ($$$) {
@@ -905,6 +914,16 @@ sub uri_for_action ($$;@) {
 
    my $uri = $action_path_uri_map->{ $action } // $action;
 
+   $uri =~ m{ \* }mx or return $req->uri_for( $uri, @args );
+
+   my $args = shift @args;
+
+   while ($uri =~ m{ \* }mx) {
+      my $arg = (shift @{ $args }) || q(); $uri =~ s{ \* }{$arg}mx;
+   }
+
+   unshift @args, $args;
+
    return $req->uri_for( $uri, @args );
 }
 
@@ -966,6 +985,8 @@ Defines no attributes
 =item C<clone>
 
 =item C<date_data_type>
+
+=item C<datetime_label>
 
 =item C<dialog_anchor>
 

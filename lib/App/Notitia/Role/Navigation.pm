@@ -432,6 +432,34 @@ sub application_logo {
    return f_link 'logo', uri_for_action( $req, $places->{logo} ), $opts;
 }
 
+sub call_navigation_links {
+   my ($self, $req, $page) = @_; $page->{selected} //= NUL;
+
+   my $nav  = $self->navigation_links( $req, $page );
+   my $list = $nav->{menu}->{list} //= [];
+
+   push @{ $list },
+      $nav_folder->( $req, 'calls' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'journeys' ? 'selected' : NUL,
+         name => 'journeys' }, 'call/journeys', [], ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'completed' ? 'selected' : NUL,
+         name => 'completed' }, 'call/journeys', [], { status => 'completed' }),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'incidents' ? 'selected' : NUL,
+         name => 'incidents' }, 'call/incidents', [], ),
+      $nav_folder->( $req, 'setup' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'customers' ? 'selected' : NUL,
+         name => 'customers_list' }, 'call/customers', [], ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'locations' ? 'selected' : NUL,
+         name => 'locations_list' }, 'call/locations', [], );
+
+   return $nav;
+}
+
 sub credit_links {
    my ($self, $req, $page) = @_; my $form = blank_form { type => 'list' };
 
@@ -518,6 +546,13 @@ sub primary_navigation_links {
    p_item $nav, $nav_linkto->( $req, {
       class => $class, tip => 'admin_index_title',
       value => 'admin_index_link', }, $index, [], after => $after );
+
+   $class = $location eq 'calls' ? 'current' : NUL;
+
+   $self->$_allowed( $req, 'call/journeys' ) and
+      p_item $nav, $nav_linkto->( $req, {
+         class => $class, tip => 'calls_tip',
+         value => 'calls', }, 'call/journeys', [] );
 
    return $nav;
 }

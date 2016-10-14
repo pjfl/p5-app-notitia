@@ -33,12 +33,12 @@ my $_debug_output = sub {
    my $when  = time2str 'on %Y-%m-%d at %H:%M hours', $e->time;
 
    if ($leader) {
-      $line1 .= "from ${leader}"; p_tag $form, 'h5', "${line1}<br>${when}";
+      $line1 .= "from ${leader}"; p_tag $form, 'p', "${line1}<br>${when}";
    }
-   else { p_tag $form, 'h5', "${line1} ${when}" }
+   else { p_tag $form, 'p', "${line1} ${when}" }
 
-   p_tag $form, 'h5', 'HTTP status code&nbsp;'.$e->rv;
-   p_tag $form, 'h5', 'Have a nice day...';
+   p_tag $form, 'h6', 'HTTP status code&nbsp;'.$e->rv;
+   p_tag $form, 'h6', 'Have a nice day...';
    return;
 };
 

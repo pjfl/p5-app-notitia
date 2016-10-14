@@ -150,7 +150,7 @@ sub f_link (@) {
    $action and $action .= '_';
 
    my $tkey   = "${name}_${action}tip";
-   my $tip    = $req ? locm( $req, $tkey, @{ $args } ) : $tkey;
+   my $tip    = $req ? locm( $req, $tkey, @{ $args // [] } ) : $tkey;
    my $vkey   = "${name}_${action}link";
    my $value  = $req ? locm( $req, $vkey ) : $dvalue;
    my $hint   = $req ? locm( $req, 'Hint' ) : 'Hint';
@@ -226,7 +226,7 @@ sub p_fields ($$$$$) {
 
       if    ($type eq 'checkbox') { $opts = $_bind->( $k, TRUE, $opts ) }
       elsif ($type eq 'image') {}
-      elsif ($type eq 'select') {
+      elsif ($type eq 'radio' or $type eq 'select') {
          $opts = $_field_options->( $schema, $result, $k, $opts );
          $opts = $_bind->( $k, delete $opts->{value}, $opts );
       }

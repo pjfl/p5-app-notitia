@@ -15,6 +15,13 @@
       "committee, role",
       "staff, role",
       "trustee, role",
+      "missed_call, call_category",
+      "controller_issue, call_category",
+      "rider_issue, call_category",
+      "nhsbt_issue, call_category",
+      "equipment_issue, call_category",
+      "hospital_issue,  call_category",
+      "other, call_category",
       "assessment, certification",
       "bluelight, certification",
       "c_advanced, certification",
@@ -32,6 +39,7 @@
       "trailer, vehicle",
       "person, event",
       "vehicle, event",
+      "other, package",
       "main, rota"
    ]
 }

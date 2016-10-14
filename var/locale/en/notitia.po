@@ -21,6 +21,18 @@ msgstr "About"
 msgid "about_tip"
 msgstr "View the credits information for this application"
 
+msgid "accused_create_link"
+msgstr "Manage Accused"
+
+msgid "accused_create_tip"
+msgstr "Manage the list of people accused of this incident"
+
+msgid "accused_people"
+msgstr "Accused"
+
+msgid "accused_title"
+msgstr "Accused"
+
 msgid "active"
 msgstr "Active"
 
@@ -53,6 +65,13 @@ msgstr "Detail"
 
 msgid "activity_tip"
 msgstr "Recent activity"
+
+msgid "add_accused"
+msgstr "Add Accusation"
+
+msgid "add_accused_tip"
+msgstr "Add the selected people to the list of the accused for "
+       "this incident"
 
 msgid "add_certification"
 msgstr "Add Certification"
@@ -139,7 +158,11 @@ msgid "badge_id"
 msgstr "Badge Id."
 
 msgid "badge_id_field_tip"
-msgstr "Set this to 'next' and the next available badge id wil be automatically selected"
+msgstr "Set this to 'next' and the next available badge id will be "
+       "automatically selected"
+
+msgid "beginning_id"
+msgstr "Beginning Location"
 
 msgid "before_date"
 msgstr "To"
@@ -165,17 +188,35 @@ msgstr "Bluelight"
 msgid "c_advanced"
 msgstr "Advanced Car"
 
+msgid "call_category_type_create_link"
+msgstr "Call Category"
+
+msgid "called"
+msgstr "Called"
+
+msgid "call_category"
+msgstr "Category"
+
+msgid "calls_management_heading"
+msgstr "Calls"
+
+msgid "calls_tip"
+msgstr "Log incomming calls from other agencies"
+
 msgid "car"
 msgstr "Car"
 
 msgid "catagory_a"
-msgstr "Catagory A"
+msgstr "Category A"
 
 msgid "catagory_b"
-msgstr "Catagory B"
+msgstr "Category B"
 
 msgid "catagory_e"
-msgstr "Catagory E"
+msgstr "Category E"
+
+msgid "category_other"
+msgstr "Description"
 
 msgid "cert_type"
 msgstr "Cert. Type"
@@ -193,7 +234,7 @@ msgid "certification_create_heading"
 msgstr "Add Certification"
 
 msgid "certification_type_create_link"
-msgstr "Add Cert. Type"
+msgstr "Certification"
 
 msgid "certification_type_create_tip"
 msgstr "Create a new certification type record"
@@ -247,6 +288,12 @@ msgstr "Command Line"
 msgid "cli_log_link"
 msgstr "Command Line"
 
+msgid "collected"
+msgstr "Collected"
+
+msgid "collection_eta"
+msgstr "Collection ETA"
+
 msgid "colour"
 msgstr "Colour"
 
@@ -259,8 +306,20 @@ msgstr "The Committee"
 msgid "committee_list_tip"
 msgstr "Members of The Committee"
 
+msgid "committee_informed"
+msgstr "Committed Informed"
+
 msgid "completed"
 msgstr "Date Completed"
+
+msgid "completed_link"
+msgstr "Completed Deliveries"
+
+msgid "completed_tip"
+msgstr "List and view call records that lead to package delivery"
+
+msgid "completed_title"
+msgstr "Completed Deliveries"
 
 msgid "confirm"
 msgstr "Confirm"
@@ -346,6 +405,33 @@ msgstr "List currently active members"
 msgid "daemon_pid"
 msgstr "Process Id."
 
+msgid "customer_id"
+msgstr "Customer"
+
+msgid "customer_name"
+msgstr "Customer Name"
+
+msgid "customer_setup_title"
+msgstr "Customer"
+
+msgid "customer_create_link"
+msgstr "Add Customer"
+
+msgid "customer_create_tip"
+msgstr "Add a named customer for deliveries"
+
+msgid "customers_heading_0"
+msgstr "Customer Name"
+
+msgid "customers_list_link"
+msgstr "Customers"
+
+msgid "customers_list_tip"
+msgstr "Setup customers for deliveries"
+
+msgid "customers_list_title"
+msgstr "Customers"
+
 msgid "day_controller_0"
 msgstr "Ctrl. AM"
 
@@ -399,6 +485,12 @@ msgstr "Delete the selected document"
 
 msgid "delete_tip"
 msgstr "Delete the [_1] record for [_2]"
+
+msgid "delivered"
+msgstr "Delivered"
+
+msgid "delivery_request_tip"
+msgstr "Select this existing delivery request"
 
 msgid "description"
 msgstr "Description"
@@ -460,6 +552,9 @@ msgstr "Drivers"
 msgid "driver_list_tip"
 msgstr "List drivers"
 
+msgid "dropoff_id"
+msgstr "Dropoff Location"
+
 msgid "earlier_page_link"
 msgstr "[_1]"
 
@@ -480,6 +575,9 @@ msgstr "Enable 2FA."
 
 msgid "end_time"
 msgstr "End Time"
+
+msgid "ending_id"
+msgstr "Ending Location"
 
 msgid "endorsed"
 msgstr "Endorsed"
@@ -551,7 +649,7 @@ msgid "event_summary_management_tip"
 msgstr "View the summary for the [_1] event and participte"
 
 msgid "event_type_create_link"
-msgstr "Add Event Type"
+msgstr "Event"
 
 msgid "event_type_create_tip"
 msgstr "Create a new event type record"
@@ -628,6 +726,42 @@ msgstr "Information"
 msgid "home_phone"
 msgstr "Home Phone"
 
+msgid "incident_create_link"
+msgstr "Add Incident"
+
+msgid "incident_create_tip"
+msgstr "Create a new incident record"
+
+msgid "incident_record_tip"
+msgstr "View this incident record"
+
+msgid "incident_title"
+msgstr "Incident"
+
+msgid "incident_view_link"
+msgstr "View Incident"
+
+msgid "incident_view_tip"
+msgstr "View the incident for which these people stand accused"
+
+msgid "incidents_heading_0"
+msgstr "Title"
+
+msgid "incidents_heading_1"
+msgstr "Raised"
+
+msgid "incidents_heading_2"
+msgstr "Category"
+
+msgid "incidents_link"
+msgstr "Incidents"
+
+msgid "incidents_tip"
+msgstr "List, create, and update incident call records"
+
+msgid "incidents_title"
+msgstr "Incidents"
+
 msgid "is_running"
 msgstr "Running"
 
@@ -663,6 +797,57 @@ msgstr "Job Daemon Status"
 msgid "joined"
 msgstr "Joined"
 
+msgid "journey_call_title"
+msgstr "Delivery Request"
+
+msgid "journey_create_link"
+msgstr "Add Request"
+
+msgid "journey_create_tip"
+msgstr "Create a new delivery request record"
+
+msgid "journey_leg_heading_0"
+msgstr "Operator"
+
+msgid "journey_leg_heading_1"
+msgstr "Called"
+
+msgid "journey_leg_heading_2"
+msgstr "Beginning"
+
+msgid "journey_leg_heading_3"
+msgstr "Ending"
+
+msgid "journey_leg_title"
+msgstr "Delivery Stage"
+
+msgid "journey_view_link"
+msgstr "Delivery Request"
+
+msgid "journey_view_tip"
+msgstr "View the package delivery request details"
+
+msgid "journeys_heading_0"
+msgstr "Customer"
+
+msgid "journeys_heading_1"
+msgstr "Requested"
+
+msgid "journeys_heading_2"
+msgstr "Priority"
+
+msgid "journeys_heading_3"
+msgstr "Package Type"
+
+msgid "journeys_link"
+msgstr "Deliveries"
+
+msgid "journeys_tip"
+msgstr "List, create, and update call records leading to package delivery"
+
+msgid "journeys_title"
+msgstr "Package Deliveries"
+
 msgid "last_page_link"
 msgstr "&nbsp;…&nbsp;Last"
 
@@ -681,8 +866,41 @@ msgstr "[_1]"
 msgid "later_page_tip"
 msgstr "Go to page [_1]"
 
+msgid "leg_create_link"
+msgstr "Add Stage"
+
+msgid "leg_create_tip"
+msgstr "Add another stage to this delivery request"
+
+msgid "leg_operator_tip"
+msgstr "View the stage for this operator"
+
 msgid "location"
 msgstr "Location"
+
+msgid "location_address"
+msgstr "Location Address"
+
+msgid "location_create_link"
+msgstr "Add Location"
+
+msgid "location_create_tip"
+msgstr "Add a pickup or drop-off location for deliveries"
+
+msgid "location_setup_title"
+msgstr "Location"
+
+msgid "locations_heading_0"
+msgstr "Location Address"
+
+msgid "locations_list_link"
+msgstr "Locations"
+
+msgid "locations_list_tip"
+msgstr "Setup locations for deliveries"
+
+msgid "locations_list_title"
+msgstr "Locations"
 
 msgid "lock_table_header_0"
 msgstr "Lock Name"
@@ -904,11 +1122,29 @@ msgstr "Notes"
 msgid "old_password"
 msgstr "Old Password"
 
+msgid "on_station"
+msgstr "On Station"
+
+msgid "operator_id"
+msgstr "Operator"
+
+msgid "orig_priority"
+msgstr "Original Priority"
+
 msgid "owner"
 msgstr "Owner"
 
 msgid "owner_id"
 msgstr "Owner"
+
+msgid "package_other"
+msgstr "Package Description"
+
+msgid "package_type_id"
+msgstr "Package Type"
+
+msgid "package_type_create_link"
+msgstr "Package"
 
 msgid "Parameter [_1] is not a valid email address"
 msgstr "Not a valid email address"
@@ -945,6 +1181,9 @@ msgstr "Password"
 
 msgid "password_expired"
 msgstr "Password Expired"
+
+msgid "people"
+msgstr "All People"
 
 msgid "people_by_type_management_heading"
 msgstr "People By Role"
@@ -1078,6 +1317,9 @@ msgstr "View the summary record for [_1]"
 msgid "person_update_heading"
 msgstr "Edit Person"
 
+msgid "pickup_id"
+msgstr "Pickup Location"
+
 msgid "points"
 msgstr "Points"
 
@@ -1102,6 +1344,9 @@ msgstr "Goto page [_1]"
 msgid "primary_role"
 msgstr "Primary Role"
 
+msgid "priority"
+msgstr "Priority"
+
 msgid "private_vehicles_link"
 msgstr "Private Vehicles"
 
@@ -1110,6 +1355,9 @@ msgstr "List privately owned vehicles"
 
 msgid "public_access"
 msgstr "Is this a publicly available asset?"
+
+msgid "raised"
+msgstr "Raised"
 
 msgid "recent_activity"
 msgstr "Recently Active:"
@@ -1125,6 +1373,13 @@ msgstr "Vehicles"
 
 msgid "request_vehicle_management_tip"
 msgstr "Request vehicles for the [_1] event"
+
+msgid "remove_accused"
+msgstr "Remove Accusation"
+
+msgid "remove_accused_tip"
+msgstr "Remove the selected people from the list of the accused for "
+       "this incident"
 
 msgid "remove_certification"
 msgstr "Remove Certification"
@@ -1144,6 +1399,12 @@ msgstr "Remove Type"
 msgid "remove_type_tip"
 msgstr "Remove this type record"
 
+msgid "reporter"
+msgstr "Reported By"
+
+msgid "reporter_phone"
+msgstr "Contact Phone"
+
 msgid "request_bike"
 msgstr "Do you want a bike?"
 
@@ -1155,6 +1416,9 @@ msgstr "Request Vehicles"
 
 msgid "request_vehicle_tip"
 msgstr "Request vehicles for the [_1] event"
+
+msgid "requested"
+msgstr "Requested"
 
 msgid "Reset Password"
 msgstr "Password Reset Request"
@@ -1187,7 +1451,7 @@ msgid "role_management_tip"
 msgstr "Add and remove roles for [_1]"
 
 msgid "role_type_create_link"
-msgstr "Add Role Type"
+msgstr "Role"
 
 msgid "role_type_create_tip"
 msgstr "Create a role type record"
@@ -1205,7 +1469,7 @@ msgid "rota_manager"
 msgstr "Rota Manager"
 
 msgid "rota_type_create_link"
-msgstr "Add Rota Type"
+msgstr "Rota"
 
 msgid "rota_type_create_tip"
 msgstr "Create a rota type record"
@@ -1227,6 +1491,9 @@ msgstr "Service Vehicles"
 
 msgid "service_vehicles_tip"
 msgstr "List the service vehicles"
+
+msgid "setup_management_heading"
+msgstr "Setup"
 
 msgid "Site Description"
 msgstr "People and resource scheduling"
@@ -1551,7 +1818,7 @@ msgid "vehicle_type"
 msgstr "Type"
 
 msgid "vehicle_type_create_link"
-msgstr "Add Vehicle Type"
+msgstr "Vehicle"
 
 msgid "vehicle_type_create_tip"
 msgstr "Create a vehicle type record"

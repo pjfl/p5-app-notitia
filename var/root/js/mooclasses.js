@@ -1,5 +1,7 @@
 // Perl Artistic license except where stated otherwise
 
+Date.defineParser( '%d/%m/%Y @ %H:%M' );
+
 Date.extend( 'nowMET', function() { // Calculate Middle European Time UTC + 1
    var now = new Date();
 
@@ -882,6 +884,7 @@ var Navigation = new Class( {
       return;
    }
 } );
+
 
 /* Formally jquery-notification 1.1
  * Dual licensed under the MIT or GPL Version 2 licenses.
@@ -2181,7 +2184,7 @@ var Pickers = new Class( {
 
    options       : {
       pickerClass: 'datepicker_vista',
-      selector   : [ '.pick-date', '.pick-time' ]
+      selector   : [ '.pick-date', '.pick-datetime', '.pick-time' ]
    },
 
    initialize: function( options ) {
@@ -2200,6 +2203,12 @@ var Pickers = new Class( {
 
                if (el.hasClass( 'pick-date')) {
                   opts[ 'format' ] = '%d/%m/%Y';
+               }
+
+               if (el.hasClass( 'pick-datetime')) {
+                  opts[ 'format' ] = '%d/%m/%Y @ %H:%M';
+                  opts[ 'timePicker' ] = true;
+                  opts[ 'timeWheelStep' ] = 5;
                }
 
                if (el.hasClass( 'pick-time')) {
@@ -3008,5 +3017,12 @@ var WindowUtils = new Class( {
 
    openWindow: function( href, options ) {
       return new Browser.Popup( href, this.mergeOptions( options ) );
+   },
+
+   showIfNeeded: function( id, value, target, display ) {
+      display = display || 'inline-block';
+
+      if ($( id ).value == value) { $( target ).show( display ) }
+      else { $( target ).hide() }
    }
 } );

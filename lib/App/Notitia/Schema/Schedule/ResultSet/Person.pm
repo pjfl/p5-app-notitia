@@ -215,6 +215,12 @@ sub search_for_people {
       $where->{ 'roles.type_id' } = $self->$_find_role_type( $role )->id;
    }
 
+   if (my $roles = delete $opts->{roles}) {
+      push @{ $opts->{prefetch} }, 'roles';
+      $where->{ 'roles.type_id' }
+         = [ map { $self->$_find_role_type( $_ )->id } @{ $roles } ];
+   }
+
    return $self->search
       ( $where, { columns  => $columns, order_by => [ $self->me( 'name' ) ],
                %{ $opts } } );
