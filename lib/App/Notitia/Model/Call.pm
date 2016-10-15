@@ -27,7 +27,7 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'call';
 
 register_action_paths
-   'call/incident_party' => 'incident/*/party',
+   'call/incident_party' => 'incident/*/parties',
    'call/customer'       => 'customer',
    'call/customers'      => 'customers',
    'call/incident'       => 'incident',
