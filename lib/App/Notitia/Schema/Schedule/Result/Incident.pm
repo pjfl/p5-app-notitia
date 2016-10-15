@@ -31,7 +31,7 @@ $class->set_primary_key( 'id' );
 $class->belongs_to( category => "${result}::Type", 'category_id' );
 $class->belongs_to( controller => "${result}::Person", 'controller_id' );
 
-$class->has_many( accused => "${result}::Accused", 'incident_id' );
+$class->has_many( parties => "${result}::IncidentParty", 'incident_id' );
 
 # Public methods
 sub committee_informed_label {

@@ -7,24 +7,24 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'call';
 
 sub dispatch_request {
-   sub (POST + /customer  | /customer/* + ?*) { [ 'call/from_request', @_ ] },
-   sub (GET  + /customer  | /customer/* + ?*) { [ 'call/customer',     @_ ] },
-   sub (GET  + /customers               + ?*) { [ 'call/customers',    @_ ] },
-   sub (POST + /delivery/*/stage/*      + ?*) { [ 'call/from_request', @_ ] },
-   sub (POST + /delivery/*/stage        + ?*) { [ 'call/from_request', @_ ] },
-   sub (GET  + /delivery/*/stage/*      + ?*) { [ 'call/leg',          @_ ] },
-   sub (GET  + /delivery/*/stage        + ?*) { [ 'call/leg',          @_ ] },
-   sub (POST + /delivery  | /delivery/* + ?*) { [ 'call/from_request', @_ ] },
-   sub (GET  + /delivery  | /delivery/* + ?*) { [ 'call/journey',      @_ ] },
-   sub (GET  + /deliveries              + ?*) { [ 'call/journeys',     @_ ] },
-   sub (POST + /incident/*/accused      + ?*) { [ 'call/from_request', @_ ] },
-   sub (GET  + /incident/*/accused      + ?*) { [ 'call/accused',      @_ ] },
-   sub (POST + /incident  | /incident/* + ?*) { [ 'call/from_request', @_ ] },
-   sub (GET  + /incident  | /incident/* + ?*) { [ 'call/incident',     @_ ] },
-   sub (GET  + /incidents               + ?*) { [ 'call/incidents',    @_ ] },
-   sub (POST + /location  | /location/* + ?*) { [ 'call/from_request', @_ ] },
-   sub (GET  + /location  | /location/* + ?*) { [ 'call/location',     @_ ] },
-   sub (GET  + /locations               + ?*) { [ 'call/locations',    @_ ] };
+   sub (POST + /customer  | /customer/* + ?*) { [ 'call/from_request',   @_ ] },
+   sub (GET  + /customer  | /customer/* + ?*) { [ 'call/customer',       @_ ] },
+   sub (GET  + /customers               + ?*) { [ 'call/customers',      @_ ] },
+   sub (POST + /delivery/*/stage/*      + ?*) { [ 'call/from_request',   @_ ] },
+   sub (POST + /delivery/*/stage        + ?*) { [ 'call/from_request',   @_ ] },
+   sub (GET  + /delivery/*/stage/*      + ?*) { [ 'call/leg',            @_ ] },
+   sub (GET  + /delivery/*/stage        + ?*) { [ 'call/leg',            @_ ] },
+   sub (POST + /delivery  | /delivery/* + ?*) { [ 'call/from_request',   @_ ] },
+   sub (GET  + /delivery  | /delivery/* + ?*) { [ 'call/journey',        @_ ] },
+   sub (GET  + /deliveries              + ?*) { [ 'call/journeys',       @_ ] },
+   sub (POST + /incident/*/party        + ?*) { [ 'call/from_request',   @_ ] },
+   sub (GET  + /incident/*/party        + ?*) { [ 'call/incident_party', @_ ] },
+   sub (POST + /incident  | /incident/* + ?*) { [ 'call/from_request',   @_ ] },
+   sub (GET  + /incident  | /incident/* + ?*) { [ 'call/incident',       @_ ] },
+   sub (GET  + /incidents               + ?*) { [ 'call/incidents',      @_ ] },
+   sub (POST + /location  | /location/* + ?*) { [ 'call/from_request',   @_ ] },
+   sub (GET  + /location  | /location/* + ?*) { [ 'call/location',       @_ ] },
+   sub (GET  + /locations               + ?*) { [ 'call/locations',      @_ ] };
 }
 
 1;

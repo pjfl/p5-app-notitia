@@ -27,16 +27,16 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'call';
 
 register_action_paths
-   'call/accused'   => 'incident/*/accused',
-   'call/customer'  => 'customer',
-   'call/customers' => 'customers',
-   'call/incident'  => 'incident',
-   'call/incidents' => 'incidents',
-   'call/journey'   => 'delivery',
-   'call/journeys'  => 'deliveries',
-   'call/leg'       => 'delivery/*/stage',
-   'call/location'  => 'location',
-   'call/locations' => 'locations';
+   'call/incident_party' => 'incident/*/party',
+   'call/customer'       => 'customer',
+   'call/customers'      => 'customers',
+   'call/incident'       => 'incident',
+   'call/incidents'      => 'incidents',
+   'call/journey'        => 'delivery',
+   'call/journeys'       => 'deliveries',
+   'call/leg'            => 'delivery/*/stage',
+   'call/location'       => 'location',
+   'call/locations'      => 'locations';
 
 # Construction
 around 'get_stash' => sub {
@@ -217,7 +217,7 @@ my $_subtract = sub {
 };
 
 # Private methods
-my $_accused_ops_links = sub {
+my $_incident_party_ops_links = sub {
    my ($self, $req, $page, $iid) = @_; my $links = [];
 
    my $actionp = $self->moniker.'/incident';
@@ -450,9 +450,10 @@ my $_find_person = sub {
 my $_incident_ops_links = sub {
    my ($self, $req, $iid) = @_; my $links = [];
 
-   my $actionp = $self->moniker.'/accused';
+   my $actionp = $self->moniker.'/incident_party';
+   my $href = uri_for_action $req, $actionp, [ $iid ];
 
-   p_link $links, 'accused', uri_for_action( $req, $actionp, [ $iid ] ), {
+   p_link $links, 'incident_party', $href, {
       action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
@@ -642,22 +643,22 @@ my $_update_leg_from_request = sub {
 };
 
 # Public methods
-sub accused : Role(controller) {
+sub incident_party : Role(controller) {
    my ($self, $req) = @_;
 
    my $iid  = $req->uri_params->( 0 );
-   my $href = uri_for_action $req, $self->moniker.'/accused', [ $iid ];
-   my $form = blank_form 'accused', $href;
+   my $href = uri_for_action $req, $self->moniker.'/incident_party', [ $iid ];
+   my $form = blank_form 'incident_party', $href;
    my $page = {
       forms => [ $form ], selected => 'incidents',
-      title => locm $req, 'accused_title'
+      title => locm $req, 'incident_party_title'
    };
    my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
    my $title = $incident->title;
-   my $accused = [ map { [ $_->person->label, $_->person->shortcode ] }
-                   $incident->accused->all ];
-   my $people = $_subtract->( $self->$_list_all_people, $accused );
-   my $links = $self->$_accused_ops_links( $req, $page, $iid );
+   my $parties = [ map { [ $_->person->label, $_->person->shortcode ] }
+                   $incident->parties->all ];
+   my $people = $_subtract->( $self->$_list_all_people, $parties );
+   my $links = $self->$_incident_party_ops_links( $req, $page, $iid );
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
@@ -665,44 +666,47 @@ sub accused : Role(controller) {
       disabled => TRUE, label => 'incident_title' };
    p_textfield $form, 'raised', $incident->raised_label, { disabled => TRUE };
 
-   p_select $form, 'accused', $accused, {
-      label => 'accused_people', multiple => TRUE, size => 5 };
+   p_select $form, 'incident_party', $parties, {
+      label => 'incident_party_people', multiple => TRUE, size => 5 };
 
-   p_button $form, 'remove_accused', 'remove_accused', {
-      class => 'delete-button', container_class => 'right-last',
-      tip   => make_tip $req, 'remove_accused_tip', [ 'person', $title ] };
+   my $tip = make_tip $req, 'remove_incident_party_tip', [ 'person', $title ];
+
+   p_button $form, 'remove_incident_party', 'remove_incident_party', {
+      class => 'delete-button', container_class => 'right-last', tip => $tip };
 
    p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
 
    p_select $form, 'people', $people, { multiple => TRUE, size => 5 };
 
-   p_button $form, 'add_accused', 'add_accused', {
+   p_button $form, 'add_incident_party', 'add_incident_party', {
       class => 'save-button', container_class => 'right-last',
-      tip   => make_tip $req, 'add_accused_tip', [ 'person', $title ] };
+      tip   => make_tip $req, 'add_incident_party_tip', [ 'person', $title ] };
 
    return $self->get_stash( $req, $page );
 }
 
-sub add_accused_action : Role(controller) {
+sub add_incident_party_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $iid = $req->uri_params->( 0 );
    my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
-   my $accused = $req->body_params->( 'people', { multiple => TRUE } );
-   my $accused_rs = $self->schema->resultset( 'Accused' );
+   my $parties = $req->body_params->( 'people', { multiple => TRUE } );
+   my $incident_party_rs = $self->schema->resultset( 'IncidentParty' );
 
-   for my $scode (@{ $accused }) {
+   for my $scode (@{ $parties }) {
       my $person = $self->$_find_person( $scode );
 
-      $accused_rs->create( { accused_id => $person->id, incident_id => $iid } );
+      $incident_party_rs->create( {
+         incident_party_id => $person->id, incident_id => $iid } );
 
-      my $message = "action:add-accused shortcode:${scode} incident:${iid}";
+      my $message = "action:add-incident_party shortcode:${scode} "
+                  . "incident:${iid}";
 
       $self->send_event( $req, $message );
    }
 
    my $who = $req->session->user_label;
-   my $message = [ to_msg '[_1] incident accused added by [_2]',
+   my $message = [ to_msg '[_1] incident incident_party added by [_2]',
                    $incident->title, $who ];
 
    return { redirect => { location => $req->uri, message => $message } };
@@ -1110,26 +1114,27 @@ sub locations : Role(controller) {
    return $self->get_stash( $req, $page );
 }
 
-sub remove_accused_action : Role(controller) {
+sub remove_incident_party_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $iid = $req->uri_params->( 0 );
    my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
-   my $people = $req->body_params->( 'accused', { multiple => TRUE } );
-   my $accused_rs = $self->schema->resultset( 'Accused' );
+   my $parties = $req->body_params->( 'incident_party', { multiple => TRUE } );
+   my $incident_party_rs = $self->schema->resultset( 'IncidentParty' );
 
-   for my $scode (@{ $people }) {
+   for my $scode (@{ $parties }) {
       my $person = $self->$_find_person( $scode );
 
-      $accused_rs->find( $iid, $person->id )->delete;
+      $incident_party_rs->find( $iid, $person->id )->delete;
 
-      my $message = "action:remove-accused shortcode:${scode} incident:${iid}";
+      my $message = "action:remove-incident_party shortcode:${scode} "
+                  . "incident:${iid}";
 
       $self->send_event( $req, $message );
    }
 
    my $who = $req->session->user_label;
-   my $message = [ to_msg '[_1] incident accused removed by [_2]',
+   my $message = [ to_msg '[_1] incident incident_party removed by [_2]',
                    $incident->title, $who ];
 
    return { redirect => { location => $req->uri, message => $message } };
