@@ -100,6 +100,8 @@ has 'assetdir'        => is => 'lazy', isa => Path, coerce => TRUE,
 has 'assets'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'assets';
 
+has 'auto_emails'     => is => 'ro',   isa => Bool, default => FALSE;
+
 has 'badge_excludes'  => is => 'ro',   isa => ArrayRef[PositiveInt],
    builder            => sub { [ 0, 0 ] };
 
@@ -429,6 +431,11 @@ containing user uploaded files
 
 A non empty simple string that defaults to F<assets>. Relative URI
 that locates the asset files uploaded by users
+
+=item C<auto_emails>
+
+A boolean that defaults to false. If true automatic emails a sent for
+certain events
 
 =item C<badge_excludes>
 

@@ -18,6 +18,7 @@ requires qw( components config dialog_stash moniker schema );
 my $_local_dt = sub {
    return  $_[ 0 ]->clone->set_time_zone( 'local' );
 };
+
 my $_plate_label = sub {
    my $v = ucfirst $_[ 0 ]->basename( '.md' ); $v =~ s{[_\-]}{ }gmx; return $v;
 };
@@ -336,7 +337,11 @@ sub message_stash {
 }
 
 sub send_event {
-   my ($self, $req, $message) = @_; get_logger( 'activity' )->log( $message );
+   my ($self, $req, $message) = @_;
+
+   get_logger( 'activity' )->log( $message );
+
+   $self->config->auto_emails or return;
 
    my $stash = $self->$_inflate( $req, $message );
 
@@ -353,6 +358,7 @@ sub send_event {
 
    return;
 }
+
 1;
 
 __END__

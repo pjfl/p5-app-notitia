@@ -13,7 +13,6 @@ use App::Notitia::Util      qw( js_window_config locm make_tip now_dt
                                 to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref is_member );
-use Class::Usul::Log        qw( get_logger );
 use Try::Tiny;
 use Moo;
 
@@ -700,7 +699,7 @@ sub add_accused_action : Role(controller) {
       my $message = 'user:'.$req->username.' client:'.$req->address.SPC
                   . "action:addaccused shortcode:${scode} incident:${iid}";
 
-      get_logger( 'activity' )->log( $message );
+      $self->send_event( $req, $message );
    }
 
    my $who = $req->session->user_label;
@@ -1128,7 +1127,7 @@ sub remove_accused_action : Role(controller) {
       my $message = 'user:'.$req->username.' client:'.$req->address.SPC
                   . "action:removeaccused shortcode:${scode} incident:${iid}";
 
-      get_logger( 'activity' )->log( $message );
+      $self->send_event( $req, $message );
    }
 
    my $who = $req->session->user_label;
