@@ -1,4 +1,4 @@
-package App::Notitia::Schema::Schedule::Result::Accused;
+package App::Notitia::Schema::Schedule::Result::IncidentParty;
 
 use strictures;
 use parent 'App::Notitia::Schema::Base';
@@ -8,17 +8,17 @@ use App::Notitia::Util      qw( foreign_key_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
-$class->table( 'accused' );
+$class->table( 'incident_party' );
 
 $class->add_columns
    ( incident_id => foreign_key_data_type,
-     accused_id  => foreign_key_data_type,
+     incident_party_id  => foreign_key_data_type,
      );
 
-$class->set_primary_key( 'incident_id', 'accused_id' );
+$class->set_primary_key( 'incident_id', 'incident_party_id' );
 
 $class->belongs_to( incident => "${result}::Incident", 'incident_id' );
-$class->belongs_to( person   => "${result}::Person",   'accused_id'  );
+$class->belongs_to( person   => "${result}::Person",   'incident_party_id'  );
 
 1;
 
@@ -30,11 +30,11 @@ __END__
 
 =head1 Name
 
-App::Notitia::Schema::Schedule::Result::Accused - People and resource scheduling
+App::Notitia::Schema::Schedule::Result::IncidentParty - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia::Schema::Schedule::Result::Accused;
+   use App::Notitia::Schema::Schedule::Result::IncidentParty;
    # Brief but working code examples
 
 =head1 Description

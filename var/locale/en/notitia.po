@@ -21,17 +21,17 @@ msgstr "About"
 msgid "about_tip"
 msgstr "View the credits information for this application"
 
-msgid "accused_create_link"
-msgstr "Manage Accused"
+msgid "incident_party_create_link"
+msgstr "Parties Involved"
 
-msgid "accused_create_tip"
-msgstr "Manage the list of people accused of this incident"
+msgid "incident_party_create_tip"
+msgstr "Manage the parties involved in this incident"
 
-msgid "accused_people"
-msgstr "Accused"
+msgid "incident_party_people"
+msgstr "Parties"
 
-msgid "accused_title"
-msgstr "Accused"
+msgid "incident_party_title"
+msgstr "Parties"
 
 msgid "active"
 msgstr "Active"
@@ -66,11 +66,11 @@ msgstr "Detail"
 msgid "activity_tip"
 msgstr "Recent activity"
 
-msgid "add_accused"
-msgstr "Add Accusation"
+msgid "add_incident_party"
+msgstr "Add Party"
 
-msgid "add_accused_tip"
-msgstr "Add the selected people to the list of the accused for "
+msgid "add_incident_party_tip"
+msgstr "Add the selected people to the list involved in "
        "this incident"
 
 msgid "add_certification"
@@ -307,7 +307,7 @@ msgid "committee_list_tip"
 msgstr "Members of The Committee"
 
 msgid "committee_informed"
-msgstr "Committed Informed"
+msgstr "Committee Informed"
 
 msgid "completed"
 msgstr "Date Completed"
@@ -742,7 +742,7 @@ msgid "incident_view_link"
 msgstr "View Incident"
 
 msgid "incident_view_tip"
-msgstr "View the incident for which these people stand accused"
+msgstr "View the incident in which these people are involved"
 
 msgid "incidents_heading_0"
 msgstr "Title"
@@ -1377,11 +1377,11 @@ msgstr "Vehicles"
 msgid "request_vehicle_management_tip"
 msgstr "Request vehicles for the [_1] event"
 
-msgid "remove_accused"
-msgstr "Remove Accusation"
+msgid "remove_incident_party"
+msgstr "Remove Party"
 
-msgid "remove_accused_tip"
-msgstr "Remove the selected people from the list of the accused for "
+msgid "remove_incident_party_tip"
+msgstr "Remove the selected people from the list of those involved in "
        "this incident"
 
 msgid "remove_certification"
