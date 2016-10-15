@@ -288,7 +288,7 @@ sub logs : Role(administrator) {
    my $page = {
       selected => $logname,
       forms => [ $form ],
-      title => locm $req, 'logs_title', locm $req, ucfirst $logname,
+      title => locm $req, 'logs_title', ucfirst locm $req, $logname,
    };
    my $dir = $self->config->logsdir;
    my $file = $dir->catfile( "${logname}.log" )->backwards->chomp;
@@ -382,6 +382,7 @@ sub slot_certs : Role(administrator) {
    my $form       =  blank_form 'role-certs-admin', $href;
    my $page       =  {
       forms       => [ $form ],
+      selected    => 'slot_roles_list',
       title       => loc( $req, 'slot_certs_management_heading' ), };
    my $slot_certs =  $_list_slot_certs->( $self->schema, $slot_type );
    my $available  =  $_subtract->( $self->$_list_all_certs, $slot_certs );
@@ -441,6 +442,7 @@ sub type : Role(administrator) {
    my $page       =  {
       first_field => 'name',
       forms       => [ $form ],
+      selected    => 'types_list',
       title       => locm $req, 'type_management_heading', $class_name };
 
    p_textfield $form, 'name', loc( $req, $type->name ), {

@@ -282,7 +282,7 @@ msgid "clear_jobdaemon_tip"
 msgstr "With the job daemon stopped there should be no locks left in the "
        "lock table. Use this button to remove any left over locks"
 
-msgid "Cli"
+msgid "cli"
 msgstr "Command Line"
 
 msgid "cli_log_link"
@@ -773,6 +773,9 @@ msgstr "Job Identity"
 
 msgid "job_table_header_1"
 msgstr "Command"
+
+msgid "jobdaemon"
+msgstr "Job Daemon"
 
 msgid "jobdaemon_log_link"
 msgstr "Job Daemon"
