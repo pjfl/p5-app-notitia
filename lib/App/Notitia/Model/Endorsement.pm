@@ -150,8 +150,7 @@ sub create_endorsement_action : Role(person_manager) {
    my $action   = $self->moniker.'/endorsements';
    my $location = uri_for_action $req, $action, [ $name ];
    my $key      = 'Endorsement [_1] for [_2] added by [_3]';
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:create-endorsement shortcode:${name} type:${type}";
+   my $message  = "action:create-endorsement shortcode:${name} type:${type}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $type, $name, $who ];
@@ -168,8 +167,7 @@ sub delete_endorsement_action : Role(person_manager) {
    my $action   = $self->moniker.'/endorsements';
    my $location = uri_for_action $req, $action, [ $name ];
    my $key      = 'Endorsement [_1] for [_2] deleted by [_3]';
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:delete-endorsement shortcode:${name} blot:${uri}";
+   my $message  = "action:delete-endorsement shortcode:${name} blot:${uri}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $uri, $name, $req->session->user_label ];
@@ -244,8 +242,7 @@ sub update_endorsement_action : Role(person_manager) {
    $self->$_update_endorsement_from_request( $req, $blot ); $blot->update;
 
    my $key     = 'Endorsement [_1] for [_2] updated by [_3]';
-   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:update-endorsement shortcode:${name} blot:${uri}";
+   my $message = "action:update-endorsement shortcode:${name} blot:${uri}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $uri, $name, $req->session->user_label ];

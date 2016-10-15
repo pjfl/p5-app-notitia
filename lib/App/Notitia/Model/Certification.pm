@@ -299,8 +299,7 @@ sub create_certification_action : Role(person_manager) Role(training_manager) {
    my $action   = $self->moniker.'/certifications';
    my $key      = 'Cert. [_1] for [_2] added by [_3]';
    my $location = uri_for_action $req, $action, [ $name ];
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:create-certification shortcode:${name} type:${type}";
+   my $message  = "action:create-certification shortcode:${name} type:${type}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $type, $name, $who ];
@@ -318,8 +317,7 @@ sub delete_certification_action : Role(person_manager) Role(training_manager) {
    my $action   = $self->moniker.'/certifications';
    my $key      = 'Cert. [_1] for [_2] deleted by [_3]';
    my $location = uri_for_action $req, $action, [ $name ];
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:delete-certification shortcode:${name} type:${type}";
+   my $message  = "action:delete-certification shortcode:${name} type:${type}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $type, $name, $who ];
@@ -364,8 +362,7 @@ sub update_certification_action : Role(person_manager) Role(training_manager) {
 
    my $who     = $req->session->user_label;
    my $key     = 'Cert. [_1] for [_2] updated by [_3]';
-   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:update-certification shortcode:${name} type:${type}";
+   my $message = "action:update-certification shortcode:${name} type:${type}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $type, $name, $who ];

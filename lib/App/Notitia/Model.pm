@@ -75,8 +75,7 @@ my $_auth_redirect = sub {
    my $location = uri_for_action $req, $self->config->places->{login};
 
    if ($class eq IncorrectPassword->() or $class eq IncorrectAuthCode->()) {
-      $self->send_event( $req, 'user:'.$req->username.SPC.
-                         'client:'.$req->address.' action:failed-login' );
+      $self->send_event( $req, 'action:failed-login' );
    }
 
    if ($e->class eq AuthenticationRequired->()) {

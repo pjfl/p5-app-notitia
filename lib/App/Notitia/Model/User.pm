@@ -286,8 +286,7 @@ sub login_action : Role(anon) {
    my $location  = $wanted ? $req->uri_for( $wanted )
                  : uri_for_action $req, $self->config->places->{login_action};
 
-   $self->send_event( $req, 'user:'.$req->username.SPC.
-                      'client:'.$req->address.' action:logged-in' );
+   $self->send_event( $req, 'action:logged-in' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -298,8 +297,7 @@ sub logout_action : Role(any) {
    if ($req->authenticated) {
       $self->config->expire_session->( $req->session );
       $message = [ to_msg '[_1] logged out', $req->session->user_label ];
-      $self->send_event( $req, 'user:'.$req->username.SPC.
-                         'client:'.$req->address.'action:logged-out' );
+      $self->send_event( $req, 'action:logged-out' );
    }
 
    return { redirect => { location => $req->base, message => $message } };

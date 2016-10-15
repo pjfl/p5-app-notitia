@@ -420,17 +420,13 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
    $person->claim_slot( $rota_name, to_dt( $rota_date ), $shift_type,
                         $slot_type, $subslot, $bike );
 
-   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:slot-claim slot:${name}";
-
-   $self->send_event( $req, $message );
+   $self->send_event( $req, "action:slot-claim slot:${name}" );
 
    my $args     = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;
    my $label    = slot_identifier
                      $rota_name, $rota_date, $shift_type, $slot_type, $subslot;
-
-   $message = [ to_msg '[_1] claimed slot [_2]', $person->label, $label ];
+   my $message  = [ to_msg '[_1] claimed slot [_2]', $person->label, $label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -533,17 +529,13 @@ sub yield_slot_action : Role(rota_manager) Role(rider) Role(controller)
    $person->yield_slot( $rota_name, to_dt( $rota_date ), $shift_type,
                         $slot_type, $subslot );
 
-   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:slot-yield slot:${slot_name}";
-
-   $self->send_event( $req, $message );
+   $self->send_event( $req, "action:slot-yield slot:${slot_name}" );
 
    my $args = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;
    my $label = slot_identifier
                   $rota_name, $rota_date,$shift_type, $slot_type, $subslot;
-
-   $message = [ to_msg '[_1] yielded slot [_2]', $person->label, $label ];
+   my $message = [ to_msg '[_1] yielded slot [_2]', $person->label, $label ];
 
    return { redirect => { location => $location, message => $message } };
 }

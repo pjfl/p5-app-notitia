@@ -403,9 +403,7 @@ sub activate : Role(anon) {
       my $person = $self->find_by_shortcode( $name ); $person->activate;
       my $places = $self->config->places;
 
-      $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:activate-person shortcode:${name}";
-      $self->send_event( $req, $message );
+      $self->send_event( $req, "action:activate-person shortcode:${name}" );
       $location = uri_for_action $req, $places->{password}, [ $name ];
       $message  = [ to_msg '[_1] account activated', $person->label ];
    }
@@ -442,8 +440,7 @@ sub create_person_action : Role(person_manager) {
    catch { $self->rethrow_exception( $_, 'create', 'person', $person->name ) };
 
    my $id       = $self->create_person_email( $req, $person, $password );
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . 'action:create-person shortcode:'.$person->shortcode;
+   my $message  = 'action:create-person shortcode:'.$person->shortcode;
 
    $self->send_event( $req, $message );
 
@@ -465,15 +462,11 @@ sub delete_person_action : Role(person_manager) {
 
    $name eq 'admin' and throw 'Cannot delete the admin user'; $person->delete;
 
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:delete-person shortcode:${name}";
-
-   $self->send_event( $req, $message );
+   $self->send_event( $req, "action:delete-person shortcode:${name}" );
 
    my $who      = $req->session->user_label;
    my $location = uri_for_action $req, $self->moniker.'/people';
-
-   $message = [ to_msg '[_1] deleted by [_2]', $label, $who ];
+   my $message  = [ to_msg '[_1] deleted by [_2]', $label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -615,15 +608,11 @@ sub update_person_action : Role(person_manager) {
    }
    catch { $self->rethrow_exception( $_, 'update', 'person', $label ) };
 
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:update-person shortcode:${scode}";
-
-   $self->send_event( $req, $message );
+   $self->send_event( $req, "action:update-person shortcode:${scode}" );
 
    my $who      = $req->session->user_label;
    my $location = uri_for_action $req, $self->moniker.'/people';
-
-   $message = [ to_msg '[_1] updated by [_2]', $label, $who ];
+   my $message  = [ to_msg '[_1] updated by [_2]', $label, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }

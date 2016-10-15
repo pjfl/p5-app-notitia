@@ -259,11 +259,9 @@ sub message_create {
    my $job_rs   = $self->schema->resultset( 'Job' );
    my $job      = $job_rs->create( { command => $cmd, name => 'send_message' });
    my $location = uri_for_action $req, $self->moniker.'/'.$opts->{action};
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:create-job job:send_message-".$job->id;
+   my $message  = [ to_msg 'Job send_message-[_1] created', $job->id ];
 
-   $self->send_event( $req, $message );
-   $message = [ to_msg 'Job send_message-[_1] created', $job->id ];
+   $self->send_event( $req, "action:create-job job:send_message-".$job->id );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -338,6 +336,8 @@ sub message_stash {
 
 sub send_event {
    my ($self, $req, $message) = @_;
+
+   $message = 'user:'.$req->username.' client:'.$req->address." ${message}";
 
    get_logger( 'activity' )->log( $message );
 

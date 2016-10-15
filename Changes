@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Better coding for activity logging
           - Implements #87. Automatic messages
           - Merges call logging branch
           - Adds session version number

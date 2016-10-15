@@ -229,11 +229,9 @@ sub create_file {
    my $who      = $req->session->user_label;
    my $rel_path = $path->abs2rel( $conf->docs_root );
    my $location = $self->base_uri( $req, [ $new_node->{url} ] );
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:create-file file:${rel_path}";
+   my $message  = [ to_msg 'File [_1] created by [_2]', $rel_path, $who ];
 
-   $self->send_event( $req, $message );
-   $message = [ to_msg 'File [_1] created by [_2]', $rel_path, $who ];
+   $self->send_event( $req, "action:create-file file:${rel_path}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -251,11 +249,9 @@ sub delete_file {
    my $location = $self->base_uri( $req );
    my $who      = $req->session->user_label;
    my $rel_path = $path->abs2rel( $self->config->docs_root );
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:delete-file file:${rel_path}";
+   my $message  = [ to_msg 'File [_1] deleted by [_2]', $rel_path, $who ];
 
-   $self->send_event( $req, $message );
-   $message = [ to_msg 'File [_1] deleted by [_2]', $rel_path, $who ];
+   $self->send_event( $req, "action:delete-file file:${rel_path}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -322,11 +318,9 @@ sub rename_file {
    my $who      = $req->session->user_label;
    my $rel_path = $node->{path}->abs2rel( $conf->docs_root );
    my $location = $self->base_uri( $req, [ $new_node->{url} ] );
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:rename-file file:${rel_path}";
+   my $message  = [ to_msg 'File [_1] renamed by [_2]', $rel_path, $who ];
 
-   $self->send_event( $req, $message );
-   $message = [ to_msg 'File [_1] renamed by [_2]', $rel_path, $who ];
+   $self->send_event( $req, "action:rename-file file:${rel_path}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -345,11 +339,9 @@ sub save_file {
    my $who      =  $req->session->user_label;
    my $rel_path =  $path->abs2rel( $self->config->docs_root );
    my $location =  $self->base_uri( $req, [ $node->{url} ] );
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:update-file file:${rel_path}";
+   my $message  = [ to_msg 'File [_1] updated by [_2]', $rel_path, $who ];
 
-   $self->send_event( $req, $message );
-   $message = [ to_msg 'File [_1] updated by [_2]', $rel_path, $who ];
+   $self->send_event( $req, "action:update-file file:${rel_path}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -420,11 +412,9 @@ sub upload_file {
 
    my $who      = $req->session->user_label;
    my $rel_path = $dest->abs2rel( $conf->assetdir );
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:upload-file file:${rel_path}";
+   my $message  = [ to_msg 'File [_1] uploaded by [_2]', $rel_path, $who ];
 
-   $self->send_event( $req, $message );
-   $message = [ to_msg 'File [_1] uploaded by [_2]', $rel_path, $who ];
+   $self->send_event( $req, "action:upload-file file:${rel_path}" );
 
    return { redirect => { message => $message } }; # location referer
 }

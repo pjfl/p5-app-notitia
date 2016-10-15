@@ -330,8 +330,7 @@ my $_toggle_event_assignment = sub {
 
    my $prep = $action eq 'assign' ? 'to' : 'from';
    my $key  = "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]";
-   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:vehicle$-{action}ment event:${uri} vehicle:${vrn}";
+   my $message = "action:vehicle$-{action}ment event:${uri} vehicle:${vrn}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $vrn, $uri, $req->session->user_label ];
@@ -359,8 +358,7 @@ my $_toggle_slot_assignment = sub {
    my $key = "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]";
    my $label = slot_identifier
       ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
-   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:vehicle-${action}ment slot:${slot_name} "
+   my $message = "action:vehicle-${action}ment slot:${slot_name} "
                . "vehicle:${vrn}";
 
    $self->send_event( $req, $message );
@@ -557,11 +555,9 @@ sub create_vehicle_action : Role(rota_manager) {
    my $vrn = $vehicle->vrn;
    my $who = $req->session->user_label;
    my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];
-   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:create-vehicle vehicle:${vrn}";
+   my $message = [ to_msg 'Vehicle [_1] created by [_2]', $vrn, $who ];
 
-   $self->send_event( $req, $message );
-   $message = [ to_msg 'Vehicle [_1] created by [_2]', $vrn, $who ];
+   $self->send_event( $req, "action:create-vehicle vehicle:${vrn}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -576,11 +572,9 @@ sub delete_vehicle_action : Role(rota_manager) {
 
    my $who = $req->session->user_label;
    my $location = uri_for_action $req, $self->moniker.'/vehicles';
-   my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:delete-vehicle vehicle:${vrn}";
+   my $message = [ to_msg 'Vehicle [_1] deleted by [_2]', $vrn, $who ];
 
-   $self->send_event( $req, $message );
-   $message = [ to_msg 'Vehicle [_1] deleted by [_2]', $vrn, $who ];
+   $self->send_event( $req, "action:delete-vehicle vehicle:${vrn}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -677,8 +671,7 @@ sub request_vehicle_action : Role(event_manager) {
       if ($vreq->in_storage) { $vreq->update } else { $vreq->insert }
 
       my $quantity = $vreq->quantity // 0;
-      my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                   . "action:request-vehicle event:${uri} "
+      my $message  = "action:request-vehicle event:${uri} "
                    . "vehicletype:${vehicle_type} quantity:${quantity}";
 
       $quantity > 0 and $self->send_event( $req, $message );
@@ -709,11 +702,9 @@ sub update_vehicle_action : Role(rota_manager) {
 
    my $who      = $req->session->user_label; $vrn = $vehicle->vrn;
    my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];
-   my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:update-vehicle vehicle:${vrn}";
+   my $message  = [ to_msg 'Vehicle [_1] updated by [_2]', $vrn, $who ];
 
-   $self->send_event( $req, $message );
-   $message = [ to_msg 'Vehicle [_1] updated by [_2]', $vrn, $who ];
+   $self->send_event( $req, "action:update-vehicle vehicle:${vrn}" );
 
    return { redirect => { location => $location, message => $message } };
 }

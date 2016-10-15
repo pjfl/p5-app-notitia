@@ -696,8 +696,7 @@ sub add_accused_action : Role(controller) {
 
       $accused_rs->create( { accused_id => $person->id, incident_id => $iid } );
 
-      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-                  . "action:addaccused shortcode:${scode} incident:${iid}";
+      my $message = "action:add-accused shortcode:${scode} incident:${iid}";
 
       $self->send_event( $req, $message );
    }
@@ -1124,8 +1123,7 @@ sub remove_accused_action : Role(controller) {
 
       $accused_rs->find( $iid, $person->id )->delete;
 
-      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-                  . "action:removeaccused shortcode:${scode} incident:${iid}";
+      my $message = "action:remove-accused shortcode:${scode} incident:${iid}";
 
       $self->send_event( $req, $message );
    }

@@ -53,8 +53,7 @@ sub add_role_action : Role(administrator) Role(person_manager) {
    for my $role (@{ $roles }) {
       $person->add_member_to( $role );
 
-      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-                  . "action:add-role shortcode:${name} role:${role}";
+      my $message = "action:add-role shortcode:${name} role:${role}";
 
       $self->send_event( $req, $message );
    }
@@ -79,8 +78,7 @@ sub remove_role_action : Role(administrator) Role(person_manager) {
       $role eq 'administrator' and $name eq 'admin' and next;
       $person->delete_member_from( $role );
 
-      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-                  . "action:delete-role shortcode:${name} role:${role}";
+      my $message = "action:delete-role shortcode:${name} role:${role}";
 
       $self->send_event( $req, $message );
    }

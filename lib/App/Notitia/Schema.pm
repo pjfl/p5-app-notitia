@@ -944,7 +944,8 @@ sub vacant_slots : method {
    my $env = { HTTP_ACCEPT_LANGUAGE => $self->locale,
                HTTP_HOST => $hostport,
                SCRIPT_NAME => $self->config->mount_point,
-               'psgi.url_scheme' => $scheme, };
+               'psgi.url_scheme' => $scheme,
+               'psgix.session' => { username => 'admin' } };
    my $factory = Web::ComposableRequest->new( config => $self->config );
    my $req = $factory->new_from_simple_request( {}, '', {}, $env );
    my $rota_dt = now_dt->add( days => $days );
@@ -958,8 +959,7 @@ sub vacant_slots : method {
       my $slots_claimed = grep { $_ =~ m{ _ $slot_type _ }mx }
                           grep { $_ =~ m{ \A $ymd _ }mx } keys %{ $data };
       my $action = "vacant-${slot_type}-slots";
-      my $message = "user:admin client:localhost action:${action} date:${dmy} "
-                  . "days_in_advance:${days}";
+      my $message = "action:${action} date:${dmy} days_in_advance:${days}";
 
       $slots_claimed >= $wanted or $self->send_event( $req, $message );
    }
