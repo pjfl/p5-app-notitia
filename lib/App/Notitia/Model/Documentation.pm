@@ -148,10 +148,6 @@ sub rename_file_action : Role(editor) {
    return $_[ 0 ]->rename_file( $_[ 1 ] );
 }
 
-sub rename_file_path_fix {
-   return $_[ 1 ];
-}
-
 sub save_file_action : Role(editor) {
    return $_[ 0 ]->save_file( $_[ 1 ] );
 }

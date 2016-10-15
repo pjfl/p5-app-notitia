@@ -12,7 +12,6 @@ use App::Notitia::Util      qw( assign_link dialog_anchor js_submit_config
                                 slot_identifier slot_limit_index to_dt to_msg
                                 uri_for_action );
 use Class::Usul::Functions  qw( is_member );
-use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Time       qw( time2str );
 use Moo;
 
@@ -20,8 +19,6 @@ extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
-with    q(Class::Usul::TraitFor::ConnectInfo);
-with    q(App::Notitia::Role::Schema);
 
 # Public attributes
 has '+moniker' => default => 'day';
@@ -424,9 +421,9 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
                         $slot_type, $subslot, $bike );
 
    my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:slotclaim slot:${name}";
+               . "action:slot-claim slot:${name}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
 
    my $args     = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;
@@ -537,9 +534,9 @@ sub yield_slot_action : Role(rota_manager) Role(rider) Role(controller)
                         $slot_type, $subslot );
 
    my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-               . "action:slotyield slot:${slot_name}";
+               . "action:slot-yield slot:${slot_name}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
 
    my $args = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;

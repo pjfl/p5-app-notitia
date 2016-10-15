@@ -7,18 +7,19 @@ use App::Notitia::Constants qw( AS_PASSWORD COMMA EXCEPTION_CLASS FALSE NUL
 use App::Notitia::GeoLocation;
 use App::Notitia::SMS;
 use App::Notitia::Util      qw( encrypted_attr load_file_data
-                                mail_domain now_dt to_dt );
+                                mail_domain now_dt slot_limit_index to_dt );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
-                                io is_member squeeze throw trim );
+                                io is_member squeeze sum throw trim );
 use Class::Usul::File;
-use Class::Usul::Types      qw( NonEmptySimpleStr );
+use Class::Usul::Types      qw( LoadableClass NonEmptySimpleStr Object );
 use Data::Record;
 use Data::Validation;
 use Scalar::Util            qw( blessed );
 use Text::CSV;
 use Try::Tiny;
 use Unexpected::Functions   qw( PathNotFound Unspecified ValidationErrors );
+use Web::ComposableRequest;
 use Moo;
 
 extends q(Class::Usul::Schema);
@@ -44,11 +45,44 @@ has '+config_class'   => default => 'App::Notitia::Config';
 
 has '+database'       => default => sub { $_[ 0 ]->config->database };
 
+has 'formatter'       => is => 'lazy', isa => Object, builder => sub {
+   $_[ 0 ]->formatter_class->new
+      ( tab_width => $_[ 0 ]->config->mdn_tab_width ) };
+
+has 'formatter_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
+   default            => 'App::Notitia::Markdown';
+
+has 'jobdaemon'       => is => 'lazy', isa => Object, builder => sub {
+   $_[ 0 ]->jobdaemon_class->new( {
+      appclass => $_[ 0 ]->config->appclass,
+      config   => { name => 'jobdaemon' },
+      noask    => TRUE } ) };
+
+has 'jobdaemon_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
+   default            => 'App::Notitia::JobDaemon';
+
+has 'moniker'         => is => 'ro',   isa => NonEmptySimpleStr,
+   default            => 'schema';
+
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
 has '+schema_version' => default => sub { App::Notitia->schema_version.NUL };
 
+# Requires moniker components dialog_stash
+with q(App::Notitia::Role::Messaging);
+
 # Construction
+sub BUILD {
+   my $self = shift;
+   my $conf = $self->config;
+   my $file = $conf->logsdir->catfile( 'activity.log' );
+   my $opts = { appclass => 'activity', builder => $self, logfile => $file, };
+
+   $self->log_class->new( $opts );
+
+   return;
+}
+
 around 'deploy_file' => sub {
    my ($orig, $self, @args) = @_;
 
@@ -58,6 +92,10 @@ around 'deploy_file' => sub {
 };
 
 # Private functions
+my $_local_dt = sub {
+   return $_[ 0 ]->clone->set_time_zone( 'local' );
+};
+
 my $_extend_column_map = sub {
    my ($cmap, $ncols) = @_; my $count = 0;
 
@@ -80,6 +118,19 @@ my $_natatime = sub {
    return sub { return $_[ 0 ] ? unshift @list, @_ : splice @list, 0, $n };
 };
 
+my $_slots_wanted = sub {
+   my ($limits, $rota_dt, $role) = @_;
+
+   my $day_max = sum( map { $limits->[ slot_limit_index 'day', $_ ] }
+                      $role );
+   my $night_max = sum( map { $limits->[ slot_limit_index 'night', $_ ] }
+                        $role );
+   my $wd = $night_max;
+   my $we = $day_max + $night_max;
+
+   return (0, $wd, $wd, $wd, $wd, $wd, $we, $we)[ $rota_dt->day_of_week ];
+};
+
 my $_word_iter = sub {
    my ($n, $field) = @_; $field =~ s{[\(\)]}{\"}gmx;
 
@@ -89,6 +140,27 @@ my $_word_iter = sub {
 };
 
 # Private methods
+my $_find_rota_type = sub {
+   return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
+};
+
+my $_assigned_slots = sub {
+   my ($self, $rota_name, $rota_dt) = @_;
+
+   my $slot_rs  =  $self->schema->resultset( 'Slot' );
+   my $opts     =  {
+      after     => $rota_dt->clone->subtract( days => 1 ),
+      before    => $rota_dt->clone->add( days => 1 ),
+      rota_type => $self->$_find_rota_type( $rota_name )->id };
+   my $data     =  {};
+
+   for my $slot ($slot_rs->search_for_slots( $opts )->all) {
+      $data->{ $_local_dt->( $slot->start_date )->ymd.'_'.$slot->key } = TRUE;
+   }
+
+   return $data;
+};
+
 my $_connect_attr = sub {
    return { %{ $_[ 0 ]->connect_info->[ 3 ] }, %{ $_[ 0 ]->db_attr } };
 };
@@ -323,12 +395,22 @@ my $_list_recipients = sub {
 };
 
 my $_load_from_stash = sub {
-   my ($self, $stash) = @_;
+   my ($self, $stash) = @_; my ($person, $role, $scode);
 
-   my $rs     = $self->schema->resultset( 'Person' );
-   my $person = $rs->find_by_shortcode( $stash->{shortcode} );
+   my $person_rs = $self->schema->resultset( 'Person' );
 
-   return [ [ $person->label, $person ] ];
+   $scode = $stash->{shortcode}
+      and $person = $person_rs->find_by_shortcode( $scode )
+      and return [ [ $person->label, $person ] ];
+
+   my $opts = { columns => [ 'email_address', 'mobile_phone' ] };
+
+   $stash->{status} and $opts->{status} = $stash->{status};
+
+   $role = $stash->{role}
+      and return $person_rs->list_people( $role, $opts );
+
+   return $person_rs->list_all_people( $opts );
 };
 
 my $_load_stash = sub {
@@ -337,11 +419,16 @@ my $_load_stash = sub {
    ($path->exists and $path->is_file) or throw PathNotFound, [ $path ];
 
    my $stash = Class::Usul::File->data_load
-      ( paths => [ $path ], storage_class => 'JSON' ) // {};
-   my $template = io( $plate_name )->all;
+      ( paths => [ $path ], storage_class => 'JSON' ) // {}; $path->unlink;
 
-   $stash->{quote} = $quote;
-   $path->unlink;
+   $stash->{app_name} = $self->config->title;
+   $stash->{path} = io $plate_name;
+   $stash->{sms_attributes} = { quote => $quote };
+
+   my $template = load_file_data( $stash );
+
+   $plate_name =~ m{ \.md \z }mx
+      and $template = $self->formatter->markdown( $template );
 
    return $stash, $template;
 };
@@ -349,9 +436,13 @@ my $_load_stash = sub {
 my $_load_template = sub {
    my ($self, $plate_name, $quote) = @_;
 
-   my $stash    = { app_name => $self->config->title, path => io( $plate_name ),
-                    sms_attributes => { quote => $quote }, };
+   my $stash = { app_name => $self->config->title,
+                 path => io( $plate_name ),
+                 sms_attributes => { quote => $quote }, };
    my $template = load_file_data( $stash );
+
+   $plate_name =~ m{ \.md \z }mx
+      and $template = $self->formatter->markdown( $template );
 
    return $stash, $template;
 };
@@ -671,10 +762,18 @@ sub backup_data : method {
    return OK;
 }
 
+sub components { # Dummy method whick allows Role::Messaging to be applied
+   throw 'Components method should not be called';
+}
+
 sub create_ddl : method {
    my $self = shift; $self->db_attr->{ignore_version} = TRUE;
 
    return $self->SUPER::create_ddl;
+}
+
+sub dialog_stash { # Dummy method whick allows Role::Messaging to be applied
+   throw 'Dialog stash method should not be called';
 }
 
 sub dump_connect_attr : method {
@@ -761,6 +860,33 @@ sub import_vehicles : method {
    return OK;
 }
 
+sub restore_data : method {
+   my $self = shift; my $conf = $self->config;
+
+   my $path = $self->next_argv or throw Unspecified, [ 'file name' ];
+
+   $path = io $path; $path->exists or throw PathNotFound, [ $path ];
+
+   ensure_class_loaded 'Archive::Tar'; my $arc = Archive::Tar->new;
+
+   chdir $conf->appldir; $arc->read( $path->pathname ); $arc->extract();
+
+   my (undef, $date) = split m{ - }mx, $path->basename( '.tgz' ), 2;
+   my $bdir = $conf->vardir->catdir( 'backups' );
+   my $sql  = $conf->tempdir->catfile( $conf->database."-${date}.sql" );
+
+   if ($sql->exists and lc $self->driver eq 'mysql') {
+      $self->run_cmd
+         ( [ 'mysql', '--host', $self->host,
+             '--password='.$self->admin_password, '--user',
+             $self->db_admin_ids->{mysql}, $self->database ],
+           { in => $sql } );
+      $sql->unlink;
+   }
+
+   return OK;
+}
+
 sub send_message : method {
    my $self       = shift;
    my $conf       = $self->config;
@@ -792,33 +918,6 @@ sub send_message : method {
    return OK;
 }
 
-sub restore_data : method {
-   my $self = shift; my $conf = $self->config;
-
-   my $path = $self->next_argv or throw Unspecified, [ 'file name' ];
-
-   $path = io $path; $path->exists or throw PathNotFound, [ $path ];
-
-   ensure_class_loaded 'Archive::Tar'; my $arc = Archive::Tar->new;
-
-   chdir $conf->appldir; $arc->read( $path->pathname ); $arc->extract();
-
-   my (undef, $date) = split m{ - }mx, $path->basename( '.tgz' ), 2;
-   my $bdir = $conf->vardir->catdir( 'backups' );
-   my $sql  = $conf->tempdir->catfile( $conf->database."-${date}.sql" );
-
-   if ($sql->exists and lc $self->driver eq 'mysql') {
-      $self->run_cmd
-         ( [ 'mysql', '--host', $self->host,
-             '--password='.$self->admin_password, '--user',
-             $self->db_admin_ids->{mysql}, $self->database ],
-           { in => $sql } );
-      $sql->unlink;
-   }
-
-   return OK;
-}
-
 sub upgrade_schema : method {
    my $self = shift;
 
@@ -833,6 +932,38 @@ sub upgrade_schema : method {
    $schema->storage->ensure_connected;
    $schema->upgrade_directory( $self->config->sharedir );
    $schema->upgrade;
+   return OK;
+}
+
+sub vacant_slots : method {
+   my $self = shift;
+   my $scheme = $self->next_argv // 'https';
+   my $hostport = $self->next_argv // 'localhost:5000';
+   my $days = $self->next_argv // 7;
+   my $rota_name = $self->next_argv // 'main';
+   my $env = { HTTP_ACCEPT_LANGUAGE => $self->locale,
+               HTTP_HOST => $hostport,
+               SCRIPT_NAME => $self->config->mount_point,
+               'psgi.url_scheme' => $scheme, };
+   my $factory = Web::ComposableRequest->new( config => $self->config );
+   my $req = $factory->new_from_simple_request( {}, '', {}, $env );
+   my $rota_dt = now_dt->add( days => $days );
+   my $data = $self->$_assigned_slots( $rota_name, $rota_dt );
+   my $limits = $self->config->slot_limits;
+   my $dmy = $rota_dt->dmy( '/' );
+   my $ymd = $rota_dt->ymd;
+
+   for my $slot_type (@{ SLOT_TYPE_ENUM() }) {
+      my $wanted = $_slots_wanted->( $limits, $rota_dt, $slot_type );
+      my $slots_claimed = grep { $_ =~ m{ _ $slot_type _ }mx }
+                          grep { $_ =~ m{ \A $ymd _ }mx } keys %{ $data };
+      my $action = "vacant-${slot_type}-slots";
+      my $message = "user:admin client:localhost action:${action} date:${dmy} "
+                  . "days_in_advance:${days}";
+
+      $slots_claimed >= $wanted or $self->send_event( $req, $message );
+   }
+
    return OK;
 }
 
@@ -886,6 +1017,12 @@ Creates the DDL for multiple RDBMs
 =head2 C<restore_data> - Restore a backup of the database and documents
 
 =head2 C<upgrade_schema> - Upgrade the database schema
+
+=head2 C<vacant_slots> - Generates the vacant slots email
+
+   bin/notitia-schema -q vacant-slots [scheme] [hostport]
+
+Run this from cron(8) to periodically trigger the vacant slots email
 
 =head1 Diagnostics
 

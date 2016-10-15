@@ -11,7 +11,6 @@ use App::Notitia::Util      qw( check_field_js dialog_anchor loc make_tip
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
-use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Types      qw( ArrayRef );
 use Try::Tiny;
 use Moo;
@@ -20,9 +19,6 @@ extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
-with    q(Class::Usul::TraitFor::ConnectInfo);
-with    q(App::Notitia::Role::Schema);
-with    q(App::Notitia::Role::Messaging);
 
 # Public attributes
 has '+moniker' => default => 'person';
@@ -408,8 +404,8 @@ sub activate : Role(anon) {
       my $places = $self->config->places;
 
       $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:activateperson shortcode:${name}";
-      get_logger( 'activity' )->log( $message );
+                . "action:activate-person shortcode:${name}";
+      $self->send_event( $req, $message );
       $location = uri_for_action $req, $places->{password}, [ $name ];
       $message  = [ to_msg '[_1] account activated', $person->label ];
    }
@@ -447,9 +443,9 @@ sub create_person_action : Role(person_manager) {
 
    my $id       = $self->create_person_email( $req, $person, $password );
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . 'action:createperson shortcode:'.$person->shortcode;
+                . 'action:create-person shortcode:'.$person->shortcode;
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
 
    my $who      = $req->session->user_label;
    my $key      = '[_1] created by [_2] ref. [_3]';
@@ -470,9 +466,9 @@ sub delete_person_action : Role(person_manager) {
    $name eq 'admin' and throw 'Cannot delete the admin user'; $person->delete;
 
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:deleteperson shortcode:${name}";
+                . "action:delete-person shortcode:${name}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
 
    my $who      = $req->session->user_label;
    my $location = uri_for_action $req, $self->moniker.'/people';
@@ -620,9 +616,9 @@ sub update_person_action : Role(person_manager) {
    catch { $self->rethrow_exception( $_, 'update', 'person', $label ) };
 
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:updateperson shortcode:${scode}";
+                . "action:update-person shortcode:${scode}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
 
    my $who      = $req->session->user_label;
    my $location = uri_for_action $req, $self->moniker.'/people';

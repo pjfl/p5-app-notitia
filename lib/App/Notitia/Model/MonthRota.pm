@@ -17,8 +17,6 @@ extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
-with    q(Class::Usul::TraitFor::ConnectInfo);
-with    q(App::Notitia::Role::Schema);
 
 # Public attributes
 has '+moniker' => default => 'month';
@@ -250,7 +248,7 @@ my $_rota_summary_date_style = sub {
    my $colour = 'red';
 
    $slots_claimed > 0 and $colour = 'yellow';
-   $slots_claimed == $wanted and $colour = '#47ff00';
+   $slots_claimed >= $wanted and $colour = '#47ff00';
 
    return "color: ${colour}"
 };

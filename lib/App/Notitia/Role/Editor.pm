@@ -11,7 +11,6 @@ use App::Notitia::Util     qw( dialog_anchor locm make_id_from
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::Functions qw( io is_member throw trim untaint_path );
 use Class::Usul::IPC;
-use Class::Usul::Log       qw( get_logger );
 use Class::Usul::Time      qw( time2str );
 use Class::Usul::Types     qw( ProcCommer );
 use List::Util             qw( first );
@@ -20,7 +19,7 @@ use Unexpected::Functions  qw( Unspecified );
 use Moo::Role;
 
 requires qw( application components config find_node initialise_stash
-             invalidate_docs_cache load_page log make_draft );
+             invalidate_docs_cache load_page log make_draft send_event );
 
 with q(Web::Components::Role::TT);
 
@@ -52,7 +51,7 @@ my $_add_editing_js = sub {
       my $opts = { title => locm( $req, $map->{ $name } ), useIcon => \1 };
 
       $name eq 'rename'and $opts->{value} = $page->{url};
-      $self->$_add_dialog_js( $req, $page, $name, $opts);
+      $self->$_add_dialog_js( $req, $page, $name, $opts );
    }
 
    $page->{form_name} = 'editing';
@@ -231,9 +230,9 @@ sub create_file {
    my $rel_path = $path->abs2rel( $conf->docs_root );
    my $location = $self->base_uri( $req, [ $new_node->{url} ] );
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:createfile file:${rel_path}";
+                . "action:create-file file:${rel_path}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg 'File [_1] created by [_2]', $rel_path, $who ];
 
    return { redirect => { location => $location, message => $message } };
@@ -253,9 +252,9 @@ sub delete_file {
    my $who      = $req->session->user_label;
    my $rel_path = $path->abs2rel( $self->config->docs_root );
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:deletefile file:${rel_path}";
+                . "action:delete-file file:${rel_path}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg 'File [_1] deleted by [_2]', $rel_path, $who ];
 
    return { redirect => { location => $location, message => $message } };
@@ -311,8 +310,7 @@ sub rename_file {
 
    my $conf     = $self->config;
    my $params   = $req->body_params;
-   my $old_path = $self->rename_file_path_fix
-      ( [ split m{ / }mx, $params->( 'old_path' ) ] );
+   my $old_path = [ split m{ / }mx, $params->( 'old_path' ) ];
    my $node     = $self->find_node( $req->locale, $old_path )
       or throw 'Cannot find document tree node to rename';
    my $new_node = $self->$_new_node( $req->locale, $params->( 'pathname' ) );
@@ -325,9 +323,9 @@ sub rename_file {
    my $rel_path = $node->{path}->abs2rel( $conf->docs_root );
    my $location = $self->base_uri( $req, [ $new_node->{url} ] );
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:renamefile file:${rel_path}";
+                . "action:rename-file file:${rel_path}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg 'File [_1] renamed by [_2]', $rel_path, $who ];
 
    return { redirect => { location => $location, message => $message } };
@@ -348,9 +346,9 @@ sub save_file {
    my $rel_path =  $path->abs2rel( $self->config->docs_root );
    my $location =  $self->base_uri( $req, [ $node->{url} ] );
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:updatefile file:${rel_path}";
+                . "action:update-file file:${rel_path}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg 'File [_1] updated by [_2]', $rel_path, $who ];
 
    return { redirect => { location => $location, message => $message } };
@@ -423,9 +421,9 @@ sub upload_file {
    my $who      = $req->session->user_label;
    my $rel_path = $dest->abs2rel( $conf->assetdir );
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:uploadfile file:${rel_path}";
+                . "action:upload-file file:${rel_path}";
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg 'File [_1] uploaded by [_2]', $rel_path, $who ];
 
    return { redirect => { message => $message } }; # location referer

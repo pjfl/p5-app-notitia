@@ -4,17 +4,20 @@ use namespace::autoclean;
 
 use App::Notitia::Form      qw( blank_form f_link p_button p_radio
                                 p_select p_textarea );
-use App::Notitia::Constants qw( C_DIALOG NUL SPC TRUE );
+use App::Notitia::Constants qw( C_DIALOG NUL SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::Util      qw( js_config locm mail_domain set_element_focus
                                 to_msg uri_for_action );
 use Class::Usul::File;
+use Class::Usul::Functions  qw( create_token throw trim );
 use Class::Usul::Log        qw( get_logger );
-use Class::Usul::Functions  qw( create_token throw );
 use Moo::Role;
 
-requires qw( components config dialog_stash moniker );
+requires qw( components config dialog_stash moniker schema );
 
 # Private functions
+my $_local_dt = sub {
+   return  $_[ 0 ]->clone->set_time_zone( 'local' );
+};
 my $_plate_label = sub {
    my $v = ucfirst $_[ 0 ]->basename( '.md' ); $v =~ s{[_\-]}{ }gmx; return $v;
 };
@@ -32,16 +35,6 @@ my $_flatten_stash = sub {
    Class::Usul::File->data_dump( $params );
 
    return "-o stash=${path} ";
-};
-
-my $_create_send_email_job = sub {
-   my ($self, $stash, $template) = @_; my $conf = $self->config;
-
-   my $cmd = $conf->binsdir->catfile( 'notitia-schema' ).SPC
-           . $self->$_flatten_stash( $stash )."send_message email ${template}";
-   my $rs  = $self->schema->resultset( 'Job' );
-
-   return $rs->create( { command => $cmd, name => 'send_message' } );
 };
 
 my $_flatten = sub {
@@ -71,6 +64,22 @@ my $_flatten = sub {
    return $r;
 };
 
+my $_inflate = sub {
+   my ($self, $req, $message) = @_;
+
+   my $stash = { app_name => $self->config->title };
+
+   for my $pair (split SPC, $message) {
+      my ($k, $v) = split m{ : }mx, $pair; $stash->{ $k } = $v;
+   }
+
+   $stash->{action} =~ s{ [\-] }{_}gmx;
+   $stash->{status} = 'current';
+   $stash->{subject} = locm $req, $stash->{action}.'_email_subject';
+
+   return $stash;
+};
+
 my $_list_message_templates = sub {
    my ($self, $req) = @_;
 
@@ -87,9 +96,15 @@ my $_list_message_templates = sub {
 my $_make_template = sub {
    my ($self, $message) = @_;
 
-   my $path = $self->$_session_file; $path->println( $message );
+   my $path = $self->$_session_file; $path->println( trim $message );
 
    return $path;
+};
+
+my $_template_dir = sub {
+   my ($self, $req) = @_; my $conf = $self->config; my $root = $conf->docs_root;
+
+   return $root->catdir( $req->locale, $conf->posts, $conf->email_templates );
 };
 
 my $_template_path = sub {
@@ -100,6 +115,48 @@ my $_template_path = sub {
    $file->exists and return $file;
 
    return $conf->template_dir->catfile( $conf->skin."/${name}.tt" );
+};
+
+my $_certification_email = sub {
+   my ($self, $req, $stash) = @_;
+
+   my $template =
+      $self->$_template_dir( $req )->catfile( 'certification_email.md' );
+
+   $stash->{type} = locm $req, $stash->{type};
+
+   return $self->create_email_job( $stash, $template );
+};
+
+my $_event_email = sub {
+   my ($self, $req, $stash) = @_;
+
+   my $rs = $self->schema->resultset( 'Event' );
+   my $event = $rs->find_event_by( $stash->{event} );
+   my $template = $self->$_template_dir( $req )->catfile( 'event_email.md' );
+
+   for my $k ( qw( description end_time name start_time ) ) {
+      $stash->{ $k } = $event->$k();
+   }
+
+   $stash->{owner} = $event->owner->label;
+   $stash->{date} = $_local_dt->( $event->start_date )->dmy( '/' );
+   $stash->{uri} = uri_for_action $req, 'event/event_summary', [ $event->uri ];
+   $stash->{role} = 'fund_raiser';
+
+   return $self->create_email_job( $stash, $template );
+};
+
+my $_slots_email = sub {
+   my ($self, $req, $stash) = @_;
+
+   my ($role) = $stash->{action} =~ m{ vacant_ ([^_]+) _slots }mx;
+   my $file = "${role}_slots_email.md";
+   my $template = $self->$_template_dir( $req )->catfile( $file );
+
+   $stash->{role} = $role;
+
+   return $self->create_email_job( $stash, $template );
 };
 
 # Public methods
@@ -113,13 +170,23 @@ sub create_person_email {
    my $template = $self->$_template_path( 'user_email' );
    my $subject  = locm $req, $key, $conf->title, $person->name;
    my $link     = uri_for_action $req, $self->moniker.'/activate', [ $token ];
-   my $stash    = { app_name => $conf->title, link      => $link,
-                    password => $password,    shortcode => $scode,
+   my $stash    = { app_name => $conf->title, link => $link,
+                    password => $password, shortcode => $scode,
                     subject  => $subject, };
 
    $conf->sessdir->catfile( $token )->println( $scode );
 
-   return $self->$_create_send_email_job( $stash, $template )->id;
+   return $self->create_email_job( $stash, $template )->id;
+}
+
+sub create_email_job {
+   my ($self, $stash, $template) = @_; my $conf = $self->config;
+
+   my $cmd = $conf->binsdir->catfile( 'notitia-schema' ).SPC
+           . $self->$_flatten_stash( $stash )."send_message email ${template}";
+   my $rs  = $self->schema->resultset( 'Job' );
+
+   return $rs->create( { command => $cmd, name => 'send_message' } );
 }
 
 sub create_reset_email {
@@ -132,13 +199,13 @@ sub create_reset_email {
    my $template = $self->$_template_path( 'password_email' );
    my $subject  = locm $req, $key, $conf->title, $person->name;
    my $link     = uri_for_action $req, $self->moniker.'/reset', [ $token ];
-   my $stash    = { app_name => $conf->title, link      => $link,
-                    password => $password,    shortcode => $scode,
+   my $stash    = { app_name => $conf->title, link => $link,
+                    password => $password, shortcode => $scode,
                     subject  => $subject, };
 
    $conf->sessdir->catfile( $token )->println( "${scode}/${password}" );
 
-   return $self->$_create_send_email_job( $stash, $template )->id;
+   return $self->create_email_job( $stash, $template )->id;
 }
 
 sub create_totp_request_email {
@@ -151,12 +218,12 @@ sub create_totp_request_email {
    my $template = $self->$_template_path( 'totp_request_email' );
    my $subject  = locm $req, $key, $conf->title, $person->name;
    my $link     = uri_for_action $req, $self->moniker.'/totp_secret', [ $token];
-   my $stash    = { app_name  => $conf->title, link    => $link,
-                    shortcode => $scode,       subject => $subject, };
+   my $stash    = { app_name => $conf->title, link => $link,
+                    shortcode => $scode, subject => $subject, };
 
    $conf->sessdir->catfile( $token )->println( $scode );
 
-   return $self->$_create_send_email_job( $stash, $template )->id;
+   return $self->create_email_job( $stash, $template )->id;
 }
 
 sub jobdaemon {
@@ -173,7 +240,7 @@ sub message_create {
    if ($sink eq 'adhoc_email') {
       my $message = $req->body_params->( 'email_message', { raw => TRUE } );
 
-      $message =~ s{ \r\n }{\n}gmx; $message =~ s{ \s+ \z }{}mx;
+      $message =~ s{ \r\n }{\n}gmx;
       $template = $self->$_make_template( $message ); $sink = 'email';
    }
    elsif ($sink eq 'template_email') {
@@ -192,9 +259,9 @@ sub message_create {
    my $job      = $job_rs->create( { command => $cmd, name => 'send_message' });
    my $location = uri_for_action $req, $self->moniker.'/'.$opts->{action};
    my $message  = 'user:'.$req->username.' client:'.$req->address.SPC
-                . "action:createjob job:send_message-".$job->id;
+                . "action:create-job job:send_message-".$job->id;
 
-   get_logger( 'activity' )->log( $message );
+   $self->send_event( $req, $message );
    $message = [ to_msg 'Job send_message-[_1] created', $job->id ];
 
    return { redirect => { location => $location, message => $message } };
@@ -268,6 +335,24 @@ sub message_stash {
    return $stash;
 }
 
+sub send_event {
+   my ($self, $req, $message) = @_; get_logger( 'activity' )->log( $message );
+
+   my $stash = $self->$_inflate( $req, $message );
+
+   $stash->{action} eq 'create_certification'
+      and $self->$_certification_email( $req, $stash );
+
+   ($stash->{action} eq 'create_event' or $stash->{action} eq 'update_event')
+      and $self->$_event_email( $req, $stash );
+
+   my $slot_types = join '|', @{ SLOT_TYPE_ENUM() };
+
+   $stash->{action} =~ m{ vacant_ (?: $slot_types ) _slots }mx
+      and $self->$_slots_email( $req, $stash );
+
+   return;
+}
 1;
 
 __END__

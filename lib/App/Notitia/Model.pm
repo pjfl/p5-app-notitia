@@ -5,7 +5,6 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_tag p_tag );
 use App::Notitia::Util      qw( locm uri_for_action );
 use Class::Usul::Functions  qw( exception is_member throw );
-use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Time       qw( time2str );
 use Class::Usul::Types      qw( Plinth );
 use HTTP::Status            qw( HTTP_NOT_FOUND HTTP_OK );
@@ -17,6 +16,9 @@ use Unexpected::Functions   qw( Authentication AuthenticationRequired
 use Moo;
 
 with q(Web::Components::Role);
+with q(Class::Usul::TraitFor::ConnectInfo);
+with q(App::Notitia::Role::Schema);
+with q(App::Notitia::Role::Messaging);
 
 # Public attributes
 has 'application' => is => 'ro', isa => Plinth,
@@ -73,9 +75,8 @@ my $_auth_redirect = sub {
    my $location = uri_for_action $req, $self->config->places->{login};
 
    if ($class eq IncorrectPassword->() or $class eq IncorrectAuthCode->()) {
-      get_logger( 'activity' )->log( 'user:'.$req->username.SPC.
-                                     'client:'.$req->address.SPC.
-                                     'action:failed-login' );
+      $self->send_event( $req, 'user:'.$req->username.SPC.
+                         'client:'.$req->address.' action:failed-login' );
    }
 
    if ($e->class eq AuthenticationRequired->()) {

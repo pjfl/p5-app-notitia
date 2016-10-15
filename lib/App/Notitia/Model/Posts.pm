@@ -127,10 +127,6 @@ sub rename_file_action : Role(editor) Role(event_manager) Role(person_manager) {
    return $_[ 0 ]->rename_file( $_[ 1 ] );
 }
 
-sub rename_file_path_fix {
-   my ($self, $path) = @_; shift @{ $path }; return $path;
-}
-
 sub rss_feed : Role(anon) {
    return $_[ 0 ]->get_rss_feed( $_[ 1 ] );
 }

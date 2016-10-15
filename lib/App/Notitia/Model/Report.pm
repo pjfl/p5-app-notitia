@@ -14,8 +14,6 @@ extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
-with    q(Class::Usul::TraitFor::ConnectInfo);
-with    q(App::Notitia::Role::Schema);
 
 # Public attributes
 has '+moniker' => default => 'report';
