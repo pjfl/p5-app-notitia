@@ -12,7 +12,7 @@ use App::Notitia::Util      qw( js_window_config locm make_tip now_dt
                                 page_link_set register_action_paths to_dt
                                 to_msg uri_for_action );
 use Class::Null;
-use Class::Usul::Functions  qw( is_arrayref is_member );
+use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Try::Tiny;
 use Moo;
 
@@ -51,19 +51,20 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_category_tuple = sub {
+   my ($selected, $category) = @_;
+
+   my $opts = { selected => $selected == $category->id ? TRUE : FALSE };
+
+   return [ $category->name, $category->id, $opts ];
+};
+
 my $_customer_tuple = sub {
    my ($selected, $customer) = @_;
 
    my $opts = { selected => $customer->id == $selected ? TRUE : FALSE };
 
    return [ $customer->name, $customer->id, $opts ];
-};
-
-my $_bind_customer = sub {
-   my ($customers, $journey) = @_; my $selected = $journey->customer_id;
-
-   return [ [ NUL, 0 ],
-            map { $_customer_tuple->( $selected, $_ ) } $customers->all ];
 };
 
 my $_customers_headers = sub {
@@ -105,14 +106,6 @@ my $_locations_headers = sub {
    return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 0 ];
 };
 
-my $_category_tuple = sub {
-   my ($selected, $category) = @_;
-
-   my $opts = { selected => $selected == $category->id ? TRUE : FALSE };
-
-   return [ $category->name, $category->id, $opts ];
-};
-
 my $_bind_call_category = sub {
    my ($categories, $incident) = @_;
 
@@ -122,6 +115,13 @@ my $_bind_call_category = sub {
             (map  { $_category_tuple->( $selected, $_ ) }
              grep { $_->name eq 'other' and $other = $_; $_->name ne 'other' }
              $categories->all), $_category_tuple->( $selected, $other ) ];
+};
+
+my $_bind_customer = sub {
+   my ($customers, $journey) = @_; my $selected = $journey->customer_id;
+
+   return [ [ NUL, 0 ],
+            map { $_customer_tuple->( $selected, $_ ) } $customers->all ];
 };
 
 my $_bind_dropoff_location = sub {
@@ -243,6 +243,18 @@ my $_bind_beginning_location = sub {
                @{ $opts->{locations} } ];
 };
 
+my $_bind_committee_member = sub {
+   my ($self, $incident) = @_;
+
+   my $selected = $incident->committee_member_id || 0;
+   my $rs = $self->schema->resultset( 'Person' );
+   my $opts = { role => 'committee', status => 'current', };
+
+   return [ [ NUL, undef ],
+            map { $_person_tuple->( $selected, $_ ) }
+            $rs->search_for_people( $opts ) ];
+};
+
 my $_bind_customer_fields = sub {
    my ($self, $custer, $opts) = @_; $opts //= {};
 
@@ -301,6 +313,10 @@ my $_bind_incident_fields = sub {
          committee_informed => $incident->id ? {
             disabled    => $disabled, type => 'datetime',
             value       => $incident->committee_informed_label } : FALSE,
+         committee_member_id => $incident->id ? {
+            disabled    => $disabled,
+            label       => 'committee_member', type => 'select',
+            value       => $self->$_bind_committee_member( $incident )} : FALSE,
        ];
 };
 
@@ -464,12 +480,18 @@ my $_incident_ops_links = sub {
 };
 
 my $_incidents_ops_links = sub {
-   my ($self, $req, $page) = @_; my $links = [];
+   my ($self, $req, $page, $params, $pager) = @_; my $links = [];
 
    my $actionp = $self->moniker.'/incident';
 
    p_link $links, 'incident', uri_for_action( $req, $actionp ), {
       action => 'create', container_class => 'add-link', request => $req };
+
+   $actionp = $self->moniker.'/incidents';
+
+   my $page_links = page_link_set $req, $actionp, [], $params, $pager;
+
+   $page_links and push @{ $links }, $page_links;
 
    return $links;
 };
@@ -568,21 +590,13 @@ my $_maybe_find = sub {
    return $self->schema->resultset( $class )->find( $id );
 };
 
-my $_search_for_incidents = sub {
-   my $self = shift; my $rs = $self->schema->resultset( 'Incident' );
-
-   my $opts = { prefetch => [ 'category', 'controller' ] };
-
-   return $rs->search( {}, $opts );
-};
-
 my $_update_incident_from_request = sub {
    my ($self, $req, $incident) = @_; my $params = $req->body_params;
 
    my $opts = { optional => TRUE };
 
    for my $attr (qw( category_id title reporter reporter_phone category_other
-                     notes committee_informed )) {
+                     notes committee_informed committee_member_id )) {
       my $v = $params->( $attr, $opts ); defined $v or next;
 
       $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
@@ -592,6 +606,11 @@ my $_update_incident_from_request = sub {
       }
 
       $incident->$attr( $v );
+   }
+
+   if ($incident->committee_informed or $incident->committee_member_id) {
+      ($incident->committee_informed and $incident->committee_member_id)
+         or throw 'Must set date and member if committee informed';
    }
 
    $incident->controller_id( $self->$_find_person( $req->username )->id );
@@ -966,19 +985,30 @@ sub incident_party : Role(controller) {
 sub incidents : Role(controller) {
    my ($self, $req) = @_;
 
+   my $params = $req->query_params->( { optional => TRUE } );
    my $form = blank_form;
    my $page = {
       forms => [ $form ], selected => 'incidents',
       title => locm $req, 'incidents_title',
    };
-   my $links = $self->$_incidents_ops_links( $req, $page );
+   my $is_viewer = is_member 'incident_viewer', $req->session->roles;
+   my $opts      =  {
+      controller => $req->username,
+      is_viewer  => $is_viewer,
+      page       => delete $params->{page} // 1,
+      rows       => $req->session->rows_per_page,
+   };
+   my $rs = $self->schema->resultset( 'Incident' );
+   my $incidents = $rs->search_for_incidents( $opts );
+   my $links = $self->$_incidents_ops_links
+      ( $req, $page, $params, $incidents->pager );
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
-   my $incidents = $self->$_search_for_incidents;
    my $table = p_table $form, { headers => $_incidents_headers->( $req ) };
 
-   p_row $table, [ map { $self->$_incidents_row( $req, $_ ) } $incidents->all ];
+   p_row $table, [ map { $self->$_incidents_row( $req, $_ ) }
+                   $incidents->all ];
 
    return $self->get_stash( $req, $page );
 }
@@ -1041,6 +1071,7 @@ sub journeys : Role(controller) {
    };
    my $is_viewer =  is_member 'call_viewer', $req->session->roles;
    my $opts      =  {
+      controller => $req->username,
       done       => $done,
       is_viewer  => $is_viewer,
       page       => delete $params->{page} // 1,
@@ -1056,7 +1087,6 @@ sub journeys : Role(controller) {
    my $table = p_table $form, { headers => $_journeys_headers->( $req ) };
 
    p_row $table, [ map  { $self->$_journeys_row( $req, $_ ) }
-                   grep { $is_viewer or $req->username eq $_->controller }
                    $journeys->all ];
 
    return $self->get_stash( $req, $page );
@@ -1068,7 +1098,7 @@ sub leg : Role(controller) {
    my $jid     =  $req->uri_params->( 0 );
    my $lid     =  $req->uri_params->( 1, { optional => TRUE } );
    my $journey =  $self->$_maybe_find( 'Journey', $jid );
-   my $leg      = $self->$_maybe_find( 'Leg', $lid );
+   my $leg     =  $self->$_maybe_find( 'Leg', $lid );
    my $done    =  $lid && $leg->delivered ? TRUE : FALSE;
    my $href    =  uri_for_action $req, $self->moniker.'/leg', [ $jid, $lid ];
    my $action  =  $lid ? 'update' : 'create';

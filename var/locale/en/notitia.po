@@ -306,14 +306,17 @@ msgstr "Colour"
 msgid "committee"
 msgstr "Committee"
 
+msgid "committee_informed"
+msgstr "Committee Informed"
+
 msgid "committee_list_link"
 msgstr "The Committee"
 
 msgid "committee_list_tip"
 msgstr "Members of The Committee"
 
-msgid "committee_informed"
-msgstr "Committee Informed"
+msgid "committee_member"
+msgstr "Committee Member"
 
 msgid "completed"
 msgstr "Date Completed"
@@ -764,6 +767,9 @@ msgstr "View Incident"
 
 msgid "incident_view_tip"
 msgstr "View the incident in which these people are involved"
+
+msgid "incident_viewer"
+msgstr "Incident Viewer"
 
 msgid "incidents_heading_0"
 msgstr "Title"

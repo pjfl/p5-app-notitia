@@ -16,6 +16,7 @@
       "staff, role",
       "trustee, role",
       "call_viewer, role",
+      "incident_viewer, role",
       "missed_call, call_category",
       "controller_issue, call_category",
       "rider_issue, call_category",

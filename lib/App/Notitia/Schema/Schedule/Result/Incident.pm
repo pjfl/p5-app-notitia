@@ -5,7 +5,8 @@ use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( FALSE TRUE );
 use App::Notitia::Util      qw( date_data_type datetime_label
-                                foreign_key_data_type serial_data_type
+                                foreign_key_data_type
+                                nullable_foreign_key_data_type serial_data_type
                                 set_on_create_datetime_data_type
                                 varchar_data_type );
 
@@ -14,21 +15,24 @@ my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 $class->table( 'incident' );
 
 $class->add_columns
-   (  id                 => serial_data_type,
-      raised             => set_on_create_datetime_data_type,
-      controller_id      => foreign_key_data_type,
-      category_id        => foreign_key_data_type,
-      committee_informed => date_data_type,
-      title              => varchar_data_type( 64 ),
-      reporter           => varchar_data_type( 64 ),
-      reporter_phone     => varchar_data_type( 16 ),
-      category_other     => varchar_data_type( 16 ),
-      notes              => varchar_data_type,
+   (  id                  => serial_data_type,
+      raised              => set_on_create_datetime_data_type,
+      controller_id       => foreign_key_data_type,
+      category_id         => foreign_key_data_type,
+      committee_member_id => nullable_foreign_key_data_type,
+      committee_informed  => date_data_type,
+      title               => varchar_data_type( 64 ),
+      reporter            => varchar_data_type( 64 ),
+      reporter_phone      => varchar_data_type( 16 ),
+      category_other      => varchar_data_type( 16 ),
+      notes               => varchar_data_type,
       );
 
 $class->set_primary_key( 'id' );
 
 $class->belongs_to( category => "${result}::Type", 'category_id' );
+$class->belongs_to
+   ( committee_member => "${result}::Person", 'committee_member_id' );
 $class->belongs_to( controller => "${result}::Person", 'controller_id' );
 
 $class->has_many( parties => "${result}::IncidentParty", 'incident_id' );

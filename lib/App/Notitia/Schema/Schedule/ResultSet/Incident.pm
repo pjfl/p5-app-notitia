@@ -1,4 +1,4 @@
-package App::Notitia::Schema::Schedule::ResultSet::Journey;
+package App::Notitia::Schema::Schedule::ResultSet::Incident;
 
 use strictures;
 use parent 'DBIx::Class::ResultSet';
@@ -14,30 +14,22 @@ my $_find_by_shortcode = sub {
    return $rs->find_by_shortcode( $scode );
 };
 
-sub search_for_journeys {
+sub search_for_incidents {
    my ($self, $opts) = @_; $opts = { %{ $opts // () } };
 
-   my $done = delete $opts->{done};
-   my $is_viewer = delete $opts->{is_viewer};
    my $scode = delete $opts->{controller};
-   my $where = { completed => $done };
+   my $is_viewer = delete $opts->{is_viewer};
+   my $where = {};
 
-   $is_viewer
-      or $where->{controller_id} = $self->$_find_by_shortcode( $scode )->id;
+   unless ($is_viewer) {
+      my $parser = $self->result_source->schema->datetime_parser;
 
-   if ($done) {
-      unless ($is_viewer) {
-         my $parser = $self->result_source->schema->datetime_parser;
-
-         $opts->{after} = now_dt->subtract( hours => 24 );
-         set_rota_date $parser, $where, 'delivered', $opts;
-      }
-
-      $opts->{order_by} = { -desc => 'delivered' };
+      $where->{controller_id} = $self->$_find_by_shortcode( $scode )->id;
+      $opts->{after} = now_dt->subtract( hours => 24 );
+      set_rota_date $parser, $where, 'raised', $opts;
    }
-   else { $opts->{order_by} = 'requested' }
 
-   $opts->{prefetch} //= [ 'controller', 'customer' ];
+   $opts->{prefetch} //= [ 'controller', 'category' ];
 
    return $self->search( $where, $opts );
 }
@@ -52,11 +44,11 @@ __END__
 
 =head1 Name
 
-App::Notitia::Schema::Schedule::ResultSet::Journey - People and resource scheduling
+App::Notitia::Schema::Schedule::ResultSet::Incident - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia::Schema::Schedule::ResultSet::Journey;
+   use App::Notitia::Schema::Schedule::ResultSet::Incident;
    # Brief but working code examples
 
 =head1 Description
