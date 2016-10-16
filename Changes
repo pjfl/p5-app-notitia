@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #77. Delivery request calls
           - Better coding for activity logging
           - Implements #87. Automatic messages
           - Merges call logging branch

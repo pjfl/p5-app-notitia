@@ -22,7 +22,7 @@ msgid "about_tip"
 msgstr "View the credits information for this application"
 
 msgid "incident_party_create_link"
-msgstr "Parties Involved"
+msgstr "Involved Parties"
 
 msgid "incident_party_create_tip"
 msgstr "Manage the parties involved in this incident"
@@ -31,7 +31,7 @@ msgid "incident_party_people"
 msgstr "Parties"
 
 msgid "incident_party_title"
-msgstr "Parties"
+msgstr "Involved Parties"
 
 msgid "active"
 msgstr "Active"
@@ -176,6 +176,9 @@ msgstr "All Bikes"
 msgid "bike_list_tip"
 msgstr "List only bikes"
 
+msgid "blood"
+msgstr "Blood"
+
 msgid "blots_heading_0"
 msgstr "Endorsement"
 
@@ -191,17 +194,20 @@ msgstr "Advanced Car"
 msgid "call_category_type_create_link"
 msgstr "Call Category"
 
-msgid "called"
-msgstr "Called"
-
 msgid "call_category"
 msgstr "Call Category"
+
+msgid "call_viewer"
+msgstr "Call Viewer"
 
 msgid "calls_management_heading"
 msgstr "Calls"
 
 msgid "calls_tip"
 msgstr "Log incomming calls from other agencies"
+
+msgid "called"
+msgstr "Called"
 
 msgid "car"
 msgstr "Car"
@@ -318,7 +324,7 @@ msgstr "Completed Deliveries"
 msgid "completed_tip"
 msgstr "List and view call records that lead to package delivery"
 
-msgid "completed_title"
+msgid "completed_journeys_title"
 msgstr "Completed Deliveries"
 
 msgid "confirm"
@@ -366,6 +372,9 @@ msgstr "List contact information for current members"
 msgid "controller"
 msgstr "Controller"
 
+msgid "controller_issue"
+msgstr "Controller Issue"
+
 msgid "controller_list_link"
 msgstr "Controllers"
 
@@ -404,6 +413,9 @@ msgstr "List currently active members"
 
 msgid "daemon_pid"
 msgstr "Process Id."
+
+msgid "drugs"
+msgstr "Drugs"
 
 msgid "customer_id"
 msgstr "Customer"
@@ -570,6 +582,9 @@ msgstr "Email Address"
 msgid "email_message"
 msgstr "Message text"
 
+msgid "emergency"
+msgstr "Emergency"
+
 msgid "enable_2fa"
 msgstr "Enable 2FA."
 
@@ -608,6 +623,9 @@ msgstr "Endorsements"
 
 msgid "endorsements_management_tip"
 msgstr "Administer endorsement records for [_1]"
+
+msgid "equipment_issue"
+msgstr "Equipment Issue"
 
 msgid "event_blog_link"
 msgstr "Follow this [link]([_1]) to participate in the event"
@@ -725,6 +743,9 @@ msgstr "Information"
 
 msgid "home_phone"
 msgstr "Home Phone"
+
+msgid "hospital_issue"
+msgstr "Hospital Issue"
 
 msgid "incident_create_link"
 msgstr "Add Incident"
@@ -962,6 +983,15 @@ msgstr "Welcome to [_1]"
 msgid "max_participents"
 msgstr "Max. Participants"
 
+msgid "max_participents"
+msgstr "Max. Participants"
+
+msgid "milk"
+msgstr "Milk"
+
+msgid "missed_call"
+msgstr "Missed Call"
+
 msgid "mobile_phone"
 msgstr "Mobile Phone"
 
@@ -1089,6 +1119,9 @@ msgstr "»"
 msgid "next_page_tip"
 msgstr "Goto page [_1]"
 
+msgid "nhsbt_issue"
+msgstr "NHSBT Issue"
+
 msgid "night_controller_0"
 msgstr "Ctrl. Night"
 
@@ -1133,6 +1166,9 @@ msgstr "Operator"
 
 msgid "orig_priority"
 msgstr "Original Priority"
+
+msgid "other"
+msgstr "Other"
 
 msgid "owner"
 msgstr "Owner"
@@ -1287,6 +1323,9 @@ msgstr "View the leaderboard of slots claimed by people"
 msgid "people_report_title"
 msgstr "People Report"
 
+msgid "person"
+msgstr "Person"
+
 msgid "person_create_heading"
 msgstr "Add Person"
 
@@ -1438,6 +1477,9 @@ msgstr "Restart the job daemon process"
 msgid "rider"
 msgstr "Rider"
 
+msgid "rider_issue"
+msgstr "Rider Issue"
+
 msgid "rider_list_link"
 msgstr "Riders"
 
@@ -1461,6 +1503,9 @@ msgstr "Create a role type record"
 
 msgid "roles"
 msgstr "Roles"
+
+msgid "routine"
+msgstr "Routine"
 
 msgid "rota_link"
 msgstr "Month Rota"
@@ -1690,6 +1735,9 @@ msgstr "Update"
 
 msgid "update_tip"
 msgstr "Update the [_1] record for [_2]"
+
+msgid "urgent"
+msgstr "Urgent"
 
 msgid "username"
 msgstr "Username"

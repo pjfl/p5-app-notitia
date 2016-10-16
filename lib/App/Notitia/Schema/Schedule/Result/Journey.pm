@@ -5,7 +5,7 @@ use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( FALSE PRIORITY_TYPE_ENUM SPC
                                 TRUE VARCHAR_MAX_SIZE );
-use App::Notitia::Util      qw( bool_data_type datetime_label
+use App::Notitia::Util      qw( bool_data_type datetime_label date_data_type
                                 enumerated_data_type foreign_key_data_type
                                 serial_data_type
                                 set_on_create_datetime_data_type
@@ -21,6 +21,7 @@ $class->add_columns
      priority          => enumerated_data_type( PRIORITY_TYPE_ENUM, 'routine' ),
      original_priority => enumerated_data_type( PRIORITY_TYPE_ENUM, 'routine' ),
      requested         => set_on_create_datetime_data_type,
+     delivered         => date_data_type,
      controller_id     => foreign_key_data_type,
      customer_id       => foreign_key_data_type,
      pickup_id         => foreign_key_data_type,
@@ -41,6 +42,10 @@ $class->belongs_to( pickup       => "${result}::Location", 'pickup_id' );
 $class->has_many( legs => "${result}::Leg", 'journey_id' );
 
 # Public methods
+sub delivered_label {
+   return datetime_label $_[ 0 ]->delivered;
+}
+
 sub insert {
    my $self    = shift;
    my $columns = { $self->get_inflated_columns };

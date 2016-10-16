@@ -444,7 +444,7 @@ sub call_navigation_links {
          class => $page->{selected} eq 'journeys' ? 'selected' : NUL,
          name => 'journeys' }, 'call/journeys', [], ),
       $nav_linkto->( $req, {
-         class => $page->{selected} eq 'completed' ? 'selected' : NUL,
+         class => $page->{selected} eq 'completed_journeys' ? 'selected' : NUL,
          name => 'completed' }, 'call/journeys', [], { status => 'completed' }),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'incidents' ? 'selected' : NUL,
