@@ -1,9 +1,48 @@
+DROP TABLE "trainer" CASCADE;
+CREATE TABLE "trainer" (
+  "trainer_id" integer NOT NULL,
+  "course_type_id" integer NOT NULL,
+  PRIMARY KEY ("trainer_id", "course_type_id")
+);
+CREATE INDEX "trainer_idx_course_type_id" on "trainer" ("course_type_id");
+CREATE INDEX "trainer_idx_trainer_id" on "trainer" ("trainer_id");
+
+DROP TABLE "customer" CASCADE;
+CREATE TABLE "customer" (
+  "id" serial NOT NULL,
+  "name" character varying(64) DEFAULT '' NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "customer_name" UNIQUE ("name")
+);
+
+DROP TABLE "training" CASCADE;
+CREATE TABLE "training" (
+  "recipient_id" integer NOT NULL,
+  "course_type_id" integer NOT NULL,
+  "status" character varying DEFAULT 'enroled' NOT NULL,
+  "enroled" timestamp,
+  "started" timestamp,
+  "completed" timestamp,
+  "expired" timestamp,
+  PRIMARY KEY ("recipient_id", "course_type_id")
+);
+CREATE INDEX "training_idx_course_type_id" on "training" ("course_type_id");
+CREATE INDEX "training_idx_recipient_id" on "training" ("recipient_id");
+
 DROP TABLE "job" CASCADE;
 CREATE TABLE "job" (
   "id" serial NOT NULL,
   "name" character varying(32) DEFAULT '' NOT NULL,
   "command" character varying(1024),
   PRIMARY KEY ("id")
+);
+
+DROP TABLE "location" CASCADE;
+CREATE TABLE "location" (
+  "id" serial NOT NULL,
+  "address" character varying(64) DEFAULT '' NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "location_address" UNIQUE ("address")
 );
 
 DROP TABLE "person" CASCADE;
@@ -94,6 +133,25 @@ CREATE TABLE "certification" (
 CREATE INDEX "certification_idx_recipient_id" on "certification" ("recipient_id");
 CREATE INDEX "certification_idx_type_id" on "certification" ("type_id");
 
+DROP TABLE "incident" CASCADE;
+CREATE TABLE "incident" (
+  "id" serial NOT NULL,
+  "raised" timestamp,
+  "controller_id" integer NOT NULL,
+  "category_id" integer NOT NULL,
+  "committee_member_id" integer,
+  "committee_informed" timestamp,
+  "title" character varying(64) DEFAULT '' NOT NULL,
+  "reporter" character varying(64) DEFAULT '' NOT NULL,
+  "reporter_phone" character varying(16) DEFAULT '' NOT NULL,
+  "category_other" character varying(16) DEFAULT '' NOT NULL,
+  "notes" character varying(255) DEFAULT '' NOT NULL,
+  PRIMARY KEY ("id")
+);
+CREATE INDEX "incident_idx_category_id" on "incident" ("category_id");
+CREATE INDEX "incident_idx_committee_member_id" on "incident" ("committee_member_id");
+CREATE INDEX "incident_idx_controller_id" on "incident" ("controller_id");
+
 DROP TABLE "role" CASCADE;
 CREATE TABLE "role" (
   "member_id" integer NOT NULL,
@@ -129,6 +187,15 @@ CREATE TABLE "vehicle" (
 CREATE INDEX "vehicle_idx_owner_id" on "vehicle" ("owner_id");
 CREATE INDEX "vehicle_idx_type_id" on "vehicle" ("type_id");
 
+DROP TABLE "incident_party" CASCADE;
+CREATE TABLE "incident_party" (
+  "incident_id" integer NOT NULL,
+  "incident_party_id" integer NOT NULL,
+  PRIMARY KEY ("incident_id", "incident_party_id")
+);
+CREATE INDEX "incident_party_idx_incident_id" on "incident_party" ("incident_id");
+CREATE INDEX "incident_party_idx_incident_party_id" on "incident_party" ("incident_party_id");
+
 DROP TABLE "event" CASCADE;
 CREATE TABLE "event" (
   "id" serial NOT NULL,
@@ -152,6 +219,29 @@ CREATE INDEX "event_idx_event_type_id" on "event" ("event_type_id");
 CREATE INDEX "event_idx_owner_id" on "event" ("owner_id");
 CREATE INDEX "event_idx_start_rota_id" on "event" ("start_rota_id");
 CREATE INDEX "event_idx_vehicle_id" on "event" ("vehicle_id");
+
+DROP TABLE "journey" CASCADE;
+CREATE TABLE "journey" (
+  "id" serial NOT NULL,
+  "completed" boolean DEFAULT '0' NOT NULL,
+  "priority" character varying DEFAULT 'routine' NOT NULL,
+  "original_priority" character varying DEFAULT 'routine' NOT NULL,
+  "requested" timestamp,
+  "delivered" timestamp,
+  "controller_id" integer NOT NULL,
+  "customer_id" integer NOT NULL,
+  "pickup_id" integer NOT NULL,
+  "dropoff_id" integer NOT NULL,
+  "package_type_id" integer NOT NULL,
+  "package_other" character varying(64) DEFAULT '' NOT NULL,
+  "notes" character varying(255) DEFAULT '' NOT NULL,
+  PRIMARY KEY ("id")
+);
+CREATE INDEX "journey_idx_controller_id" on "journey" ("controller_id");
+CREATE INDEX "journey_idx_customer_id" on "journey" ("customer_id");
+CREATE INDEX "journey_idx_dropoff_id" on "journey" ("dropoff_id");
+CREATE INDEX "journey_idx_package_type_id" on "journey" ("package_type_id");
+CREATE INDEX "journey_idx_pickup_id" on "journey" ("pickup_id");
 
 DROP TABLE "participent" CASCADE;
 CREATE TABLE "participent" (
@@ -199,6 +289,39 @@ CREATE TABLE "vehicle_request" (
 CREATE INDEX "vehicle_request_idx_event_id" on "vehicle_request" ("event_id");
 CREATE INDEX "vehicle_request_idx_type_id" on "vehicle_request" ("type_id");
 
+DROP TABLE "leg" CASCADE;
+CREATE TABLE "leg" (
+  "id" serial NOT NULL,
+  "journey_id" integer NOT NULL,
+  "operator_id" integer NOT NULL,
+  "beginning_id" integer NOT NULL,
+  "ending_id" integer NOT NULL,
+  "vehicle_id" integer,
+  "called" timestamp,
+  "collection_eta" timestamp,
+  "collected" timestamp,
+  "delivered" timestamp,
+  "on_station" timestamp,
+  PRIMARY KEY ("id")
+);
+CREATE INDEX "leg_idx_beginning_id" on "leg" ("beginning_id");
+CREATE INDEX "leg_idx_ending_id" on "leg" ("ending_id");
+CREATE INDEX "leg_idx_journey_id" on "leg" ("journey_id");
+CREATE INDEX "leg_idx_operator_id" on "leg" ("operator_id");
+CREATE INDEX "leg_idx_vehicle_id" on "leg" ("vehicle_id");
+
+ALTER TABLE "trainer" ADD CONSTRAINT "trainer_fk_course_type_id" FOREIGN KEY ("course_type_id")
+  REFERENCES "type" ("id") DEFERRABLE;
+
+ALTER TABLE "trainer" ADD CONSTRAINT "trainer_fk_trainer_id" FOREIGN KEY ("trainer_id")
+  REFERENCES "person" ("id") DEFERRABLE;
+
+ALTER TABLE "training" ADD CONSTRAINT "training_fk_course_type_id" FOREIGN KEY ("course_type_id")
+  REFERENCES "type" ("id") DEFERRABLE;
+
+ALTER TABLE "training" ADD CONSTRAINT "training_fk_recipient_id" FOREIGN KEY ("recipient_id")
+  REFERENCES "person" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
+
 ALTER TABLE "person" ADD CONSTRAINT "person_fk_next_of_kin_id" FOREIGN KEY ("next_of_kin_id")
   REFERENCES "person" ("id") DEFERRABLE;
 
@@ -217,6 +340,15 @@ ALTER TABLE "certification" ADD CONSTRAINT "certification_fk_recipient_id" FOREI
 ALTER TABLE "certification" ADD CONSTRAINT "certification_fk_type_id" FOREIGN KEY ("type_id")
   REFERENCES "type" ("id") DEFERRABLE;
 
+ALTER TABLE "incident" ADD CONSTRAINT "incident_fk_category_id" FOREIGN KEY ("category_id")
+  REFERENCES "type" ("id") DEFERRABLE;
+
+ALTER TABLE "incident" ADD CONSTRAINT "incident_fk_committee_member_id" FOREIGN KEY ("committee_member_id")
+  REFERENCES "person" ("id") DEFERRABLE;
+
+ALTER TABLE "incident" ADD CONSTRAINT "incident_fk_controller_id" FOREIGN KEY ("controller_id")
+  REFERENCES "person" ("id") DEFERRABLE;
+
 ALTER TABLE "role" ADD CONSTRAINT "role_fk_member_id" FOREIGN KEY ("member_id")
   REFERENCES "person" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
@@ -232,6 +364,12 @@ ALTER TABLE "vehicle" ADD CONSTRAINT "vehicle_fk_owner_id" FOREIGN KEY ("owner_i
 ALTER TABLE "vehicle" ADD CONSTRAINT "vehicle_fk_type_id" FOREIGN KEY ("type_id")
   REFERENCES "type" ("id") DEFERRABLE;
 
+ALTER TABLE "incident_party" ADD CONSTRAINT "incident_party_fk_incident_id" FOREIGN KEY ("incident_id")
+  REFERENCES "incident" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
+
+ALTER TABLE "incident_party" ADD CONSTRAINT "incident_party_fk_incident_party_id" FOREIGN KEY ("incident_party_id")
+  REFERENCES "person" ("id") DEFERRABLE;
+
 ALTER TABLE "event" ADD CONSTRAINT "event_fk_end_rota_id" FOREIGN KEY ("end_rota_id")
   REFERENCES "rota" ("id") DEFERRABLE;
 
@@ -246,6 +384,21 @@ ALTER TABLE "event" ADD CONSTRAINT "event_fk_start_rota_id" FOREIGN KEY ("start_
 
 ALTER TABLE "event" ADD CONSTRAINT "event_fk_vehicle_id" FOREIGN KEY ("vehicle_id")
   REFERENCES "vehicle" ("id") DEFERRABLE;
+
+ALTER TABLE "journey" ADD CONSTRAINT "journey_fk_controller_id" FOREIGN KEY ("controller_id")
+  REFERENCES "person" ("id") DEFERRABLE;
+
+ALTER TABLE "journey" ADD CONSTRAINT "journey_fk_customer_id" FOREIGN KEY ("customer_id")
+  REFERENCES "customer" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
+
+ALTER TABLE "journey" ADD CONSTRAINT "journey_fk_dropoff_id" FOREIGN KEY ("dropoff_id")
+  REFERENCES "location" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
+
+ALTER TABLE "journey" ADD CONSTRAINT "journey_fk_package_type_id" FOREIGN KEY ("package_type_id")
+  REFERENCES "type" ("id") DEFERRABLE;
+
+ALTER TABLE "journey" ADD CONSTRAINT "journey_fk_pickup_id" FOREIGN KEY ("pickup_id")
+  REFERENCES "location" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE "participent" ADD CONSTRAINT "participent_fk_event_id" FOREIGN KEY ("event_id")
   REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
@@ -279,4 +432,19 @@ ALTER TABLE "vehicle_request" ADD CONSTRAINT "vehicle_request_fk_event_id" FOREI
 
 ALTER TABLE "vehicle_request" ADD CONSTRAINT "vehicle_request_fk_type_id" FOREIGN KEY ("type_id")
   REFERENCES "type" ("id") DEFERRABLE;
+
+ALTER TABLE "leg" ADD CONSTRAINT "leg_fk_beginning_id" FOREIGN KEY ("beginning_id")
+  REFERENCES "location" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
+
+ALTER TABLE "leg" ADD CONSTRAINT "leg_fk_ending_id" FOREIGN KEY ("ending_id")
+  REFERENCES "location" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
+
+ALTER TABLE "leg" ADD CONSTRAINT "leg_fk_journey_id" FOREIGN KEY ("journey_id")
+  REFERENCES "journey" ("id") ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
+
+ALTER TABLE "leg" ADD CONSTRAINT "leg_fk_operator_id" FOREIGN KEY ("operator_id")
+  REFERENCES "person" ("id") DEFERRABLE;
+
+ALTER TABLE "leg" ADD CONSTRAINT "leg_fk_vehicle_id" FOREIGN KEY ("vehicle_id")
+  REFERENCES "vehicle" ("id") DEFERRABLE;
 

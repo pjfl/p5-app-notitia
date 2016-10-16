@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+0.7.1     2016-10-16 23:24:14
+          - Implements #104. Training courses
           - Implements #87. Automated messages
           - Fixes #108. Spreadsheet next/prev controls
           - Implements #78. Incident calls

@@ -64,8 +64,9 @@
 [% MACRO DateField( f ) WRAPPER label -%]
 [%    IF f.tip; FieldHelp( f ); END -%]
 [%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
+[%    IF f.id; id = f.id; ELSE; id = f.name; END -%]
       <input [% IF f.disabled %]disabled="disabled"[% END -%]
-             class="[% class %] pick-date" id="[% f.name %]"
+             class="[% class %] pick-date" id="[% id %]"
              name="[% f.name %]" value="[% f.value %]">
       <div class="field-group">
          <span class="hidden" id="[% f.name %]_ajax"></span></div>
@@ -132,7 +133,8 @@
            title="[% f.hint _ ' ~ ' _ f.tip %]">[% END %]
       <a class="[% f.class %]" href="[% f.href %]" [% IF f.download -%]
       download="[% f.download %]"[% END; IF f.target -%]
-        target="[% f.target%]"[% END; IF f.name -%] id="[% f.name %]"[% END -%]>
+        target="[% f.target%]"[% END; IF f.name -%] id="[% f.name %]"[% END -%]
+[%    IF f.style -%] style="[% f.style %]"[% END %]>
 [%    IF reference( f.value ) == 'HASH'; Dispatch( f.value ) -%]
 [%    ELSE; f.value; END %]</a>[% IF f.tip %]</span>[% END -%]
 [% END -%]

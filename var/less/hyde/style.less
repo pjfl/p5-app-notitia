@@ -172,7 +172,8 @@ footer {
    display: inline-block; position: relative;
 }
 .control-label { font-size: 0.75em; line-height: 17px; }
-.date-field { max-width: 100px; }
+.cuddles { display: inline-block; }
+.date-field { max-width: 95px; }
 .dialog {
    background-color: @dialog-background; border: 2px solid @divider;
    .border-radius; color: @darker-fg; padding: 0.5em 1em;
@@ -264,6 +265,7 @@ footer {
 .fake-disabled, .mediumint-field[disabled], .smallint-field[disabled] {
    background-color: @subtle-bg; color: @darker-fg;
 }
+.person-column { vertical-align: top; }
 .prev-rota:before { content: '\2039'; left: 10px; }
 .prev-rota, .prev-rota:hover { margin-left: 10px; padding-left: 30px; }
 .radio-group {
@@ -289,6 +291,7 @@ footer {
    overflow: hidden; padding-bottom: 0; padding-top: 0;
 }
 .spreadsheet-fixed-cell { max-width: 100px; min-width: 100px; }
+.spreadsheet-fixed-date { padding: 0 !important; }
 .spreadsheet-fixed-select {
    max-width: 90px; min-width: 90px; padding: 0 !important;
 }
@@ -331,6 +334,7 @@ footer {
 .wide-form {
    display: block; margin: auto; overflow: hidden; width: 100%;
 }
+.wide-table { max-width: 548px; overflow-x: scroll; }
 .hidden { display: none; }
 /* Notice board */
 .notice-board { position: fixed; width: 20%; z-index: 9999; }
@@ -504,9 +508,8 @@ footer {
 }
 /* Article - Used for both docs and news */
 article {
-   background-color: @lighter; .border-radius(10px);
-   .box-shadow;
-   font-size: 12px; margin: 0 10px; padding: 20px;
+   background-color: @lighter; .border-radius(10px); .box-shadow;
+   font-size: 12px; margin: 0 10px; overflow-x: auto; padding: 20px;
 }
 @media (max-width: 480px) {
    article ul { padding-left: 20px; }
@@ -760,8 +763,8 @@ h6 {
 hr.subtle { display: none; }
 /* Tables */
 .key-table, .smaller-table, .standard-table, table.embeded { width: 100%; }
-.embeded-spreadsheet-table, .key-table, .smaller-table, .spreadsheet-table,
-.standard-table, table.embeded {
+.embeded-spreadsheet-table, .inline-table, .key-table, .smaller-table,
+.spreadsheet-table, .standard-table, table.embeded {
    background-color: @table-bg; .border-radius;
    .box-shadow;
    caption, thead {

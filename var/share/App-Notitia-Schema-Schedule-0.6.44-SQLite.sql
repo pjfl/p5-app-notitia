@@ -1,5 +1,47 @@
 BEGIN TRANSACTION;
 
+DROP TABLE "trainer";
+
+CREATE TABLE "trainer" (
+  "trainer_id" integer NOT NULL,
+  "course_type_id" integer NOT NULL,
+  PRIMARY KEY ("trainer_id", "course_type_id"),
+  FOREIGN KEY ("course_type_id") REFERENCES "type"("id"),
+  FOREIGN KEY ("trainer_id") REFERENCES "person"("id")
+);
+
+CREATE INDEX "trainer_idx_course_type_id" ON "trainer" ("course_type_id");
+
+CREATE INDEX "trainer_idx_trainer_id" ON "trainer" ("trainer_id");
+
+DROP TABLE "customer";
+
+CREATE TABLE "customer" (
+  "id" INTEGER PRIMARY KEY NOT NULL,
+  "name" varchar(64) NOT NULL DEFAULT ''
+);
+
+CREATE UNIQUE INDEX "customer_name" ON "customer" ("name");
+
+DROP TABLE "training";
+
+CREATE TABLE "training" (
+  "recipient_id" integer NOT NULL,
+  "course_type_id" integer NOT NULL,
+  "status" enum NOT NULL DEFAULT 'enroled',
+  "enroled" datetime,
+  "started" datetime,
+  "completed" datetime,
+  "expired" datetime,
+  PRIMARY KEY ("recipient_id", "course_type_id"),
+  FOREIGN KEY ("course_type_id") REFERENCES "type"("id"),
+  FOREIGN KEY ("recipient_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX "training_idx_course_type_id" ON "training" ("course_type_id");
+
+CREATE INDEX "training_idx_recipient_id" ON "training" ("recipient_id");
+
 DROP TABLE "job";
 
 CREATE TABLE "job" (
@@ -7,6 +49,15 @@ CREATE TABLE "job" (
   "name" varchar(32) NOT NULL DEFAULT '',
   "command" varchar(1024)
 );
+
+DROP TABLE "location";
+
+CREATE TABLE "location" (
+  "id" INTEGER PRIMARY KEY NOT NULL,
+  "address" varchar(64) NOT NULL DEFAULT ''
+);
+
+CREATE UNIQUE INDEX "location_address" ON "location" ("address");
 
 DROP TABLE "person";
 
@@ -119,6 +170,31 @@ CREATE INDEX "certification_idx_recipient_id" ON "certification" ("recipient_id"
 
 CREATE INDEX "certification_idx_type_id" ON "certification" ("type_id");
 
+DROP TABLE "incident";
+
+CREATE TABLE "incident" (
+  "id" INTEGER PRIMARY KEY NOT NULL,
+  "raised" datetime,
+  "controller_id" integer NOT NULL,
+  "category_id" integer NOT NULL,
+  "committee_member_id" integer,
+  "committee_informed" datetime,
+  "title" varchar(64) NOT NULL DEFAULT '',
+  "reporter" varchar(64) NOT NULL DEFAULT '',
+  "reporter_phone" varchar(16) NOT NULL DEFAULT '',
+  "category_other" varchar(16) NOT NULL DEFAULT '',
+  "notes" varchar(255) NOT NULL DEFAULT '',
+  FOREIGN KEY ("category_id") REFERENCES "type"("id"),
+  FOREIGN KEY ("committee_member_id") REFERENCES "person"("id"),
+  FOREIGN KEY ("controller_id") REFERENCES "person"("id")
+);
+
+CREATE INDEX "incident_idx_category_id" ON "incident" ("category_id");
+
+CREATE INDEX "incident_idx_committee_member_id" ON "incident" ("committee_member_id");
+
+CREATE INDEX "incident_idx_controller_id" ON "incident" ("controller_id");
+
 DROP TABLE "role";
 
 CREATE TABLE "role" (
@@ -166,6 +242,20 @@ CREATE INDEX "vehicle_idx_type_id" ON "vehicle" ("type_id");
 
 CREATE UNIQUE INDEX "vehicle_vrn" ON "vehicle" ("vrn");
 
+DROP TABLE "incident_party";
+
+CREATE TABLE "incident_party" (
+  "incident_id" integer NOT NULL,
+  "incident_party_id" integer NOT NULL,
+  PRIMARY KEY ("incident_id", "incident_party_id"),
+  FOREIGN KEY ("incident_id") REFERENCES "incident"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("incident_party_id") REFERENCES "person"("id")
+);
+
+CREATE INDEX "incident_party_idx_incident_id" ON "incident_party" ("incident_id");
+
+CREATE INDEX "incident_party_idx_incident_party_id" ON "incident_party" ("incident_party_id");
+
 DROP TABLE "event";
 
 CREATE TABLE "event" (
@@ -200,6 +290,39 @@ CREATE INDEX "event_idx_start_rota_id" ON "event" ("start_rota_id");
 CREATE INDEX "event_idx_vehicle_id" ON "event" ("vehicle_id");
 
 CREATE UNIQUE INDEX "event_uri" ON "event" ("uri");
+
+DROP TABLE "journey";
+
+CREATE TABLE "journey" (
+  "id" INTEGER PRIMARY KEY NOT NULL,
+  "completed" boolean NOT NULL DEFAULT 0,
+  "priority" enum NOT NULL DEFAULT 'routine',
+  "original_priority" enum NOT NULL DEFAULT 'routine',
+  "requested" datetime,
+  "delivered" datetime,
+  "controller_id" integer NOT NULL,
+  "customer_id" integer NOT NULL,
+  "pickup_id" integer NOT NULL,
+  "dropoff_id" integer NOT NULL,
+  "package_type_id" integer NOT NULL,
+  "package_other" varchar(64) NOT NULL DEFAULT '',
+  "notes" varchar(255) NOT NULL DEFAULT '',
+  FOREIGN KEY ("controller_id") REFERENCES "person"("id"),
+  FOREIGN KEY ("customer_id") REFERENCES "customer"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("dropoff_id") REFERENCES "location"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("package_type_id") REFERENCES "type"("id"),
+  FOREIGN KEY ("pickup_id") REFERENCES "location"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX "journey_idx_controller_id" ON "journey" ("controller_id");
+
+CREATE INDEX "journey_idx_customer_id" ON "journey" ("customer_id");
+
+CREATE INDEX "journey_idx_dropoff_id" ON "journey" ("dropoff_id");
+
+CREATE INDEX "journey_idx_package_type_id" ON "journey" ("package_type_id");
+
+CREATE INDEX "journey_idx_pickup_id" ON "journey" ("pickup_id");
 
 DROP TABLE "participent";
 
@@ -272,5 +395,36 @@ CREATE TABLE "vehicle_request" (
 CREATE INDEX "vehicle_request_idx_event_id" ON "vehicle_request" ("event_id");
 
 CREATE INDEX "vehicle_request_idx_type_id" ON "vehicle_request" ("type_id");
+
+DROP TABLE "leg";
+
+CREATE TABLE "leg" (
+  "id" INTEGER PRIMARY KEY NOT NULL,
+  "journey_id" integer NOT NULL,
+  "operator_id" integer NOT NULL,
+  "beginning_id" integer NOT NULL,
+  "ending_id" integer NOT NULL,
+  "vehicle_id" integer,
+  "called" datetime,
+  "collection_eta" datetime,
+  "collected" datetime,
+  "delivered" datetime,
+  "on_station" datetime,
+  FOREIGN KEY ("beginning_id") REFERENCES "location"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("ending_id") REFERENCES "location"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("journey_id") REFERENCES "journey"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("operator_id") REFERENCES "person"("id"),
+  FOREIGN KEY ("vehicle_id") REFERENCES "vehicle"("id")
+);
+
+CREATE INDEX "leg_idx_beginning_id" ON "leg" ("beginning_id");
+
+CREATE INDEX "leg_idx_ending_id" ON "leg" ("ending_id");
+
+CREATE INDEX "leg_idx_journey_id" ON "leg" ("journey_id");
+
+CREATE INDEX "leg_idx_operator_id" ON "leg" ("operator_id");
+
+CREATE INDEX "leg_idx_vehicle_id" ON "leg" ("vehicle_id");
 
 COMMIT;

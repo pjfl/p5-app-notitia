@@ -79,6 +79,12 @@ msgstr "Add Certification"
 msgid "add_certification_tip"
 msgstr "Add these certificates to the required list for this slot role"
 
+msgid "add_course"
+msgstr "Add Course"
+
+msgid "add_course_tip"
+msgstr "Enrole this person on the selected courses"
+
 msgid "add_role"
 msgstr "Add Role"
 
@@ -321,6 +327,9 @@ msgstr "Committee Member"
 msgid "completed"
 msgstr "Date Completed"
 
+msgid "completed_date"
+msgstr "Completed"
+
 msgid "completed_link"
 msgstr "Completed Deliveries"
 
@@ -375,6 +384,9 @@ msgstr "List contact information for current members"
 msgid "controller"
 msgstr "Controller"
 
+msgid "controller_course"
+msgstr "Controller"
+
 msgid "controller_issue"
 msgstr "Controller Issue"
 
@@ -386,6 +398,15 @@ msgstr "List controllers"
 
 msgid "coordinates"
 msgstr "Eastings/Northings"
+
+msgid "course_type_create_link"
+msgstr "Course"
+
+msgid "courses"
+msgstr "All Courses"
+
+msgid "courses_taken"
+msgstr "Courses Taken"
 
 msgid "create"
 msgstr "Create"
@@ -627,6 +648,9 @@ msgstr "Endorsements"
 msgid "endorsements_management_tip"
 msgstr "Administer endorsement records for [_1]"
 
+msgid "enroled_date"
+msgstr "Enroled"
+
 msgid "equipment_issue"
 msgstr "Equipment Issue"
 
@@ -701,6 +725,9 @@ msgstr "Displays 'event' records"
 
 msgid "events_management_heading"
 msgstr "Events"
+
+msgid "expired_date"
+msgstr "Expired"
 
 msgid "external_link_tip"
 msgstr "View this external link in another tab"
@@ -1158,6 +1185,9 @@ msgstr "NOK"
 msgid "nok_view_tip"
 msgstr "View this person's next of kin record"
 
+msgid "north_route"
+msgstr "N. Route"
+
 msgid "notes"
 msgstr "Notes"
 
@@ -1258,6 +1288,9 @@ msgid "people_heading_3"
 msgstr "Certs"
 
 msgid "people_heading_4"
+msgstr "Training"
+
+msgid "people_heading_5"
 msgstr "Endorsements"
 
 msgid "people_meta_report_heading_0"
@@ -1435,6 +1468,12 @@ msgstr "Remove Certification"
 msgid "remove_certification_tip"
 msgstr "Remove these certificates from the required list for this slot role"
 
+msgid "remove_course"
+msgstr "Remove Course"
+
+msgid "remove_course_tip"
+msgstr "Remove this person from the selected training courses"
+
 msgid "remove_role"
 msgstr "Remove Role"
 
@@ -1491,6 +1530,9 @@ msgstr "Riders"
 
 msgid "rider_list_tip"
 msgstr "List riders"
+
+msgid "road_assessment"
+msgstr "Road Ass."
 
 msgid "role_management_heading"
 msgstr "Manage Roles"
@@ -1613,6 +1655,9 @@ msgstr "Slot Name"
 msgid "sms_message"
 msgstr "Message text"
 
+msgid "south_route"
+msgstr "S. Route"
+
 msgid "spreadsheet"
 msgstr "Spreadsheet"
 
@@ -1630,6 +1675,9 @@ msgstr "Start"
 
 msgid "start_jobdaemon_tip"
 msgstr "Start the job daemon process"
+
+msgid "started_date"
+msgstr "Started"
 
 msgid "stop_jobdaemon"
 msgstr "Stop"
@@ -1661,6 +1709,9 @@ msgstr "TOTP"
 msgid "totp_secret_title"
 msgstr "TOTP Account Information"
 
+msgid "towing_assessment"
+msgstr "Towing Ass."
+
 msgid "template"
 msgstr "Template"
 
@@ -1670,8 +1721,35 @@ msgstr "Theme"
 msgid "trailer"
 msgstr "Trailer"
 
+msgid "training_enrolement_title"
+msgstr "Course Enrolement"
+
+msgid "training_header_0"
+msgstr "Person"
+
+msgid "training_management_heading"
+msgstr "Training"
+
+msgid "training_management_link"
+msgstr "Training"
+
+msgid "training_management_tip"
+msgstr "Add training courses for [_1]"
+
 msgid "training_manager"
 msgstr "Training Manager"
+
+msgid "training_summary_caption"
+msgstr "Blue - Enroled | Yellow - Started | Green - Completed | Red - Expired"
+
+msgid "training_summary_link"
+msgstr "Training Summary"
+
+msgid "training_summary_tip"
+msgstr "View and update people training records"
+
+msgid "training_summary_title"
+msgstr "Training Summary"
 
 msgid "trigger_jobdaemon"
 msgstr "Trigger"
