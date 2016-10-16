@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #108. Spreadsheet next/prev controls
           - Implements #78. Incident calls
           - Implements #77. Delivery request calls
           - Better coding for activity logging

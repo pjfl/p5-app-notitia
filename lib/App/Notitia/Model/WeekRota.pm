@@ -555,7 +555,8 @@ my $_next_week_uri = sub {
 
    my $actionp = $self->moniker."/${method}";
 
-   $date = $_local_dt->( $date )->truncate( to => 'day' )->add( weeks => 1 );
+   $date = $_local_dt->( $date )->truncate( to => 'day' )
+                                ->add( days => $params->{cols} );
 
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ], $params;
 };
@@ -575,7 +576,7 @@ my $_prev_week_uri = sub {
    my $actionp = $self->moniker."/${method}";
 
    $date = $_local_dt->( $date )->truncate( to => 'day' )
-                                ->subtract( weeks => 1 );
+                                ->subtract( days => $params->{cols} );
 
    return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ], $params;
 };
@@ -899,9 +900,9 @@ sub week_rota : Role(any) {
       fields      => { nav => {
          lshift   => $self->$_left_shift( $req, $rota_name, $rota_dt ),
          next     => $self->$_next_week_uri
-            ( $req, 'week_rota', $rota_name, $rota_dt ),
+            ( $req, 'week_rota', $rota_name, $rota_dt, { cols => 7 } ),
          prev     => $self->$_prev_week_uri
-            ( $req, 'week_rota', $rota_name, $rota_dt ),
+            ( $req, 'week_rota', $rota_name, $rota_dt, { cols => 7 } ),
          rshift   => $self->$_right_shift( $req, $rota_name, $rota_dt ), }, },
       rota        => { headers => $_week_rota_headers->( $req, $rota_dt ),
                        name    => $rota_name,
