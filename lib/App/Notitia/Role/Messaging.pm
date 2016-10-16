@@ -8,7 +8,7 @@ use App::Notitia::Constants qw( C_DIALOG NUL SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::Util      qw( js_config locm mail_domain set_element_focus
                                 to_msg uri_for_action );
 use Class::Usul::File;
-use Class::Usul::Functions  qw( create_token throw trim );
+use Class::Usul::Functions  qw( create_token is_member throw trim );
 use Class::Usul::Log        qw( get_logger );
 use Moo::Role;
 
@@ -341,19 +341,20 @@ sub send_event {
 
    get_logger( 'activity' )->log( $message );
 
-   $self->config->auto_emails or return;
-
-   my $stash = $self->$_inflate( $req, $message );
+   my $conf = $self->config; my $stash = $self->$_inflate( $req, $message );
 
    $stash->{action} eq 'create_certification'
+      and is_member( 'certification', $conf->auto_emails )
       and $self->$_certification_email( $req, $stash );
 
    ($stash->{action} eq 'create_event' or $stash->{action} eq 'update_event')
+      and is_member( 'event', $conf->auto_emails )
       and $self->$_event_email( $req, $stash );
 
    my $slot_types = join '|', @{ SLOT_TYPE_ENUM() };
 
    $stash->{action} =~ m{ vacant_ (?: $slot_types ) _slots }mx
+      and is_member( 'vacant_slot', $conf->auto_emails )
       and $self->$_slots_email( $req, $stash );
 
    return;

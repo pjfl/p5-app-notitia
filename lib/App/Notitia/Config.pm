@@ -100,7 +100,8 @@ has 'assetdir'        => is => 'lazy', isa => Path, coerce => TRUE,
 has 'assets'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'assets';
 
-has 'auto_emails'     => is => 'ro',   isa => Bool, default => FALSE;
+has 'auto_emails'     => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub { [] };
 
 has 'badge_excludes'  => is => 'ro',   isa => ArrayRef[PositiveInt],
    builder            => sub { [ 0, 0 ] };
@@ -434,8 +435,9 @@ that locates the asset files uploaded by users
 
 =item C<auto_emails>
 
-A boolean that defaults to false. If true automatic emails a sent for
-certain events
+An array reference of non empty simple strings that defaults to an empty
+list. If the list contains one or more of; C<certification>, C<event> and
+C<vacant_slot> then the coresponding automated notifiction email will be sent
 
 =item C<badge_excludes>
 

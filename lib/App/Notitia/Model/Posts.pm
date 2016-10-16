@@ -28,6 +28,19 @@ register_action_paths
    'posts/rss_feed' => 'posts/rss';
 
 # Construction
+around 'get_stash' => sub {
+   my ($orig, $self, $req, @args) = @_;
+
+   my $stash = $orig->( $self, $req, @args );
+
+   for my $k (qw( date description end_time first_name label
+                  name owner start_time type uri )) {
+      $stash->{ $k } //= "_dummy_${k}_";
+   }
+
+   return $stash;
+};
+
 around 'initialise_stash' => sub {
    my ($orig, $self, $req, @args) = @_;
 
