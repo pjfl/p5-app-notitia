@@ -503,7 +503,8 @@ sub slot : Role(rota_manager) Role(rider) Role(controller) Role(driver) {
          p_select $form, 'assignee', [ [ NUL, NUL ], @{ $people } ];
       }
 
-      $slot_type eq 'rider' and p_checkbox $form, 'request_bike', TRUE;
+      $slot_type eq 'rider' and p_checkbox $form, 'request_bike', TRUE, {
+         checked => TRUE };
    }
 
    p_button $form, 'confirm', "${action}_slot", {
