@@ -36,6 +36,7 @@ sub dispatch_request {
    sub (POST + /training/**           + ?*) { [ 'train/from_request',    @_ ] },
    sub (GET  + /training/*            + ?*) { [ 'train/training',        @_ ] },
    sub (GET  + /training-dialog/**    + ?*) { [ 'train/dialog',          @_ ] },
+   sub (POST + /training-summary      + ?*) { [ 'train/from_request',    @_ ] },
    sub (GET  + /training-summary      + ?*) { [ 'train/summary',         @_ ] },
    sub (GET  + /types                 + ?*) { [ 'admin/types',           @_ ] },
    sub (POST + /type/**               + ?*) { [ 'admin/from_request',    @_ ] },

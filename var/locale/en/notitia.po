@@ -1455,6 +1455,9 @@ msgstr "Vehicles"
 msgid "request_vehicle_management_tip"
 msgstr "Request vehicles for the [_1] event"
 
+msgid "remove"
+msgstr "Remove"
+
 msgid "remove_incident_party"
 msgstr "Remove Party"
 
@@ -1593,6 +1596,9 @@ msgstr "Setup"
 
 msgid "Site Description"
 msgstr "People and resource scheduling"
+
+msgid "show_completed_training"
+msgstr "Completed"
 
 msgid "slot_certs"
 msgstr "Required Certificates"
@@ -1740,7 +1746,7 @@ msgid "training_manager"
 msgstr "Training Manager"
 
 msgid "training_summary_caption"
-msgstr "Blue - Enroled | Yellow - Started | Green - Completed | Red - Expired"
+msgstr "[_1] - Enroled | [_2] - Started | [_3] - Completed | [_4] - Expired"
 
 msgid "training_summary_link"
 msgstr "Training Summary"

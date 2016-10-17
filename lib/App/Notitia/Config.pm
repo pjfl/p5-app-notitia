@@ -268,9 +268,9 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       my $sess_version = $_[ 0 ]->session_version;
 
       return {
-      enable_2fa      => [ Bool, FALSE                      ],
       display_cols    => [ PositiveInt, 7                   ],
       display_rows    => [ PositiveInt, 2                   ],
+      enable_2fa      => [ Bool, FALSE                      ],
       first_name      => [ SimpleStr | Undef                ],
       grid_width      => [ PositiveInt, 978                 ],
       query           => [ SimpleStr | Undef                ],
@@ -278,13 +278,14 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       roles_mtime     => [ PositiveInt, 0                   ],
       rota_date       => [ SimpleStr | Undef                ],
       rows_per_page   => [ PositiveInt, 20                  ],
+      show_training   => [ Bool, FALSE                      ],
       skin            => [ NonEmptySimpleStr, $_[ 0 ]->skin ],
       theme           => [ NonEmptySimpleStr, 'dark'        ],
       user_label      => [ SimpleStr | Undef                ],
       version         => [ NonEmptySimpleStr, $sess_version ],
       wanted          => [ SimpleStr | Undef                ], } };
 
-has 'session_version' => is => 'ro',   isa => NonZeroPositiveInt, default => 1;
+has 'session_version' => is => 'ro',   isa => NonZeroPositiveInt, default => 2;
 
 has 'shift_times'     => is => 'ro',   isa => HashRef,
    builder            => sub { {

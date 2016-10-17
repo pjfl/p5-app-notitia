@@ -5,10 +5,10 @@ use namespace::autoclean;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRAINING_STATUS_ENUM TRUE );
 use App::Notitia::Form      qw( blank_form f_tag p_button p_container p_date
-                                p_link p_list p_row p_select p_table
-                                p_textfield );
-use App::Notitia::Util      qw( dialog_anchor locm make_tip page_link_set
-                                register_action_paths to_dt to_msg
+                                p_hidden p_link p_list p_row p_select
+                                p_table p_textfield );
+use App::Notitia::Util      qw( dialog_anchor js_submit_config locm make_tip
+                                page_link_set register_action_paths to_dt to_msg
                                 uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Class::Usul::Log        qw( get_logger );
@@ -47,8 +47,34 @@ my $_local_dt = sub {
    return $_[ 0 ]->clone->set_time_zone( 'local' );
 };
 
+my $_onchange_submit = sub {
+   my ($page, $k) = @_;
+
+   push @{ $page->{literal_js} },
+      js_submit_config $k, 'change', 'submitForm',
+                       [ 'toggle_suppress', 'training-summary' ];
+
+   return;
+};
+
 my $_subtract = sub {
    return [ grep { is_arrayref $_ or not is_member $_, $_[ 1 ] } @{ $_[ 0 ] } ];
+};
+
+my $_suppress_summary_row = sub {
+   my ($all_courses, $tuple) = @_; my $suppress = TRUE;
+
+   for my $index (0 .. (scalar @{ $all_courses }) - 1) {
+      my $course = $all_courses->[ $index ];
+
+      exists $tuple->[ 1 ]->{ $course } or next;
+
+      if ($tuple->[ 1 ]->{ $course }->status ne 'completed') {
+         $suppress = FALSE; last;
+      }
+   }
+
+   return $suppress;
 };
 
 # Private methods
@@ -60,6 +86,33 @@ my $_cell_colours = sub {
    my $fg_colours = { started => 'black' };
 
    return $bg_colours->{ $status }, $fg_colours->{ $status };
+};
+
+my $_summary_caption = sub {
+   my ($self, $req) = @_;
+
+   return locm $req, 'training_summary_caption',
+      map { "<span style=\"color: ${_};\">${_}</span>" }
+      map { my ($colour) = $self->$_cell_colours( $_ ); $colour }
+      qw( enroled started completed expired );
+};
+
+my $_enrole_link = sub {
+   my ($self, $req, $person, $course_name) = @_;
+
+   my $href = uri_for_action $req, $self->moniker.'/training', [ "${person}" ];
+   my $form = blank_form 'training', $href;
+   my $text = 'Enrole [_1] on the [_2]';
+
+   $course_name !~ m{ course \z }mx and $text .= ' course';
+
+   my $tip = make_tip $req, $text, [ $person->label, $course_name ];
+
+   p_button $form, 'enrole', 'add_course', {
+      class => 'table-link', label => locm( $req, 'Enrole' ), tip => $tip };
+   p_hidden $form, 'courses', $course_name;
+
+   return $form;
 };
 
 my $_find_course_type = sub {
@@ -113,10 +166,14 @@ my $_summary_cell_js = sub {
 my $_summary_cell = sub {
    my ($self, $req, $page, $all_courses, $tuple, $index) = @_;
 
-   exists $tuple->[ 1 ]->{ $all_courses->[ $index ] } or return {};
+   my $person = $tuple->[ 0 ];
+   my $course_name = $all_courses->[ $index ];
 
-   my $scode = $tuple->[ 0 ]->shortcode;
-   my $course = $tuple->[ 1 ]->{ $all_courses->[ $index ] };
+   exists $tuple->[ 1 ]->{ $course_name }
+      or return { value => $self->$_enrole_link( $req, $person, $course_name )};
+
+   my $scode = $person->shortcode;
+   my $course = $tuple->[ 1 ]->{ $course_name };
    my $status = $course->status;
    my $date = $_local_dt->( $course->$status() )->dmy( '/' );
    my $course_type = $course->course_type;
@@ -141,25 +198,37 @@ my $_summary_cell = sub {
 };
 
 my $_summary_headers = sub {
-   my ($self, $req, $all_courses) = @_;
-
-   return [ map { { value => locm $req, $_ } } @{ $all_courses } ];
+   return [ map { { value => locm $_[ 1 ], $_ } } @{ $_[ 2 ] } ];
 };
 
 my $_summary_ops_links = sub {
-   my ($self, $req, $max_rows, $opts) = @_;
+   my ($self, $req, $page, $max_rows, $opts) = @_;
 
-   my $dp = Data::Page->new( $max_rows, $opts->{rows}, $opts->{page} );
-   my $link_opts = { class => 'log-links right-last' };
    my $actionp = $self->moniker.'/summary';
+   my $link_opts = { class => 'log-links' };
+   my $dp = Data::Page->new( $max_rows, $opts->{rows}, $opts->{page} );
+   my $page_links = page_link_set $req, $actionp, [], $opts, $dp, $link_opts;
+   my $form = blank_form 'training-summary', uri_for_action( $req, $actionp ), {
+      class => 'none' };
+   my $show_training = $req->session->show_training;
+   my $select_opts =
+      [ [ 'Hide', FALSE, { selected => $show_training } ],
+        [ 'Show', TRUE,  { selected => $show_training } ] ];
 
-   return page_link_set $req, $actionp, [], $opts, $dp, $link_opts;
+   p_select $form, 'show_completed_training', $select_opts, {
+      class => 'single-character filter-column submit',
+      id => 'show_completed_training', label_class => 'right',
+      label_field_class => 'control-label' };
+
+   $_onchange_submit->( $page, 'show_completed_training' );
+
+   my $links = [ $form ]; $page_links and push @{ $links }, $page_links;
+
+   return $links;
 };
 
 my $_user_header = sub {
-   my ($self, $req) = @_;
-
-   return [ { value => locm $req, 'training_header_0' } ];
+   return [ { value => locm $_[ 1 ], 'training_header_0' } ];
 };
 
 # Public methods
@@ -175,7 +244,7 @@ sub add_course_action : Role(training_manager) {
       $person->add_course( $course );
 
       my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-                  . "action:addcourse shortcode:${scode} course:${course}";
+                  . "action:add-course shortcode:${scode} course:${course}";
 
       get_logger( 'activity' )->log( $message );
    }
@@ -184,31 +253,7 @@ sub add_course_action : Role(training_manager) {
                    $person->label, join ', ', @{ $courses } ];
    my $location = uri_for_action $req, $self->moniker.'/training', [ $scode ];
 
-   return { redirect => { location => $location, message => $message } };
-}
-
-sub remove_course_action : Role(training_manager) {
-   my ($self, $req) = @_;
-
-   my $scode = $req->uri_params->( 0 );
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $person = $person_rs->find_by_shortcode( $scode );
-   my $courses = $req->body_params->( 'courses_taken', { multiple => TRUE } );
-
-   for my $course (@{ $courses }) {
-      $person->delete_course( $course );
-
-      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-                  . "action:removecourse shortcode:${scode} course:${course}";
-
-      get_logger( 'activity' )->log( $message );
-   }
-
-   my $message = [ to_msg '[_1] removed from course(s): [_2]',
-                   $person->label, join ', ', @{ $courses } ];
-   my $location = uri_for_action $req, $self->moniker.'/training', [ $scode ];
-
-   return { redirect => { location => $location, message => $message } };
+   return { redirect => { message => $message } }; # location referer
 }
 
 sub dialog : Role(training_manager) {
@@ -235,8 +280,34 @@ sub dialog : Role(training_manager) {
    }
 
    p_button $form, 'update', 'update_training', { class => 'button right-last'};
+   p_button $form, 'remove', 'remove_course', { class => 'button right' };
+   p_hidden $form, 'courses_taken', $course_name;
 
    return $stash;
+}
+
+sub remove_course_action : Role(training_manager) {
+   my ($self, $req) = @_;
+
+   my $scode = $req->uri_params->( 0 );
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person = $person_rs->find_by_shortcode( $scode );
+   my $courses = $req->body_params->( 'courses_taken', { multiple => TRUE } );
+
+   for my $course (@{ $courses }) {
+      $person->delete_course( $course );
+
+      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
+                  . "action:remove-course shortcode:${scode} course:${course}";
+
+      get_logger( 'activity' )->log( $message );
+   }
+
+   my $message = [ to_msg '[_1] removed from course(s): [_2]',
+                   $person->label, join ', ', @{ $courses } ];
+   my $location = uri_for_action $req, $self->moniker.'/training', [ $scode ];
+
+   return { redirect => { message => $message } }; # location referer
 }
 
 sub summary : Role(training_manager) {
@@ -247,32 +318,34 @@ sub summary : Role(training_manager) {
                 rows => $req->session->rows_per_page, };
    my $form = blank_form;
    my $page = {
-      forms => [ $form ],
-      selected => 'training',
+      forms => [ $form ], selected => 'training',
       title => locm $req, 'training_summary_title'
    };
    my $all_courses = $self->$_list_all_courses;
    my @courses = $self->$_list_courses;
-   my $page_links = $self->$_summary_ops_links( $req, scalar @courses, $opts );
+   my $page_links = $self->$_summary_ops_links
+      ( $req, $page, scalar @courses, $opts );
    my $start_row = $opts->{rows} * ($opts->{page} - 1);
 
    @courses = splice @courses, $start_row, $opts->{rows};
-   p_list $form, NUL, [ $page_links ], { class => 'operation-links' };
+   p_list $form, NUL, $page_links, { class => 'operation-links align-right' };
 
    my $outer_table = p_table $form, {
-      caption => locm $req, 'training_summary_caption' };
+      caption => $self->$_summary_caption( $req ) };
    my $user_table = p_table {}, {
       class => 'embeded', headers => $self->$_user_header( $req ) };
    my $course_table = p_table {}, {
       class => 'embeded no-header-wrap',
       headers => $self->$_summary_headers( $req, $all_courses ) };
    my $container = p_container {}, $course_table, { class => 'wide-table' };
+   my $suppress = not $req->session->show_training;
 
    p_row $outer_table, [ { class => 'embeded person-column',
                            value => $user_table },
                          { class => 'embeded', value => $container } ];
 
    for my $tuple (@courses) {
+      $suppress and $_suppress_summary_row->( $all_courses, $tuple ) and next;
       p_row $user_table, [ { value => $tuple->[ 0 ]->label } ];
       p_row $course_table,
         [ map { $self->$_summary_cell( $req, $page, $all_courses, $tuple, $_ ) }
@@ -280,6 +353,17 @@ sub summary : Role(training_manager) {
    }
 
    return $self->get_stash( $req, $page );
+}
+
+sub toggle_suppress_action : Role(training_manager) {
+   my ($self, $req) = @_;
+
+   $req->session->show_training
+      ( $req->body_params->( 'show_completed_training' ) );
+
+   my $location = uri_for_action $req, $self->moniker.'/summary';
+
+   return { redirect => { location => $location } };
 }
 
 sub training : Role(training_manager) {
@@ -330,7 +414,10 @@ sub update_training_action : Role(training_manager) {
       my $date = $req->body_params->( "${course_name}_${status}_date",
                                       { optional => TRUE} ) // NUL;
 
-      $prev->[ 0 ] or ($prev = [ $status, $course->$status() ] and next);
+      $prev->[ 0 ] or
+         ($prev = [ $status,
+                    $_local_dt->( $course->$status() )->truncate( to => 'day' )]
+          and next);
 
       $date and $date = to_dt $date;
       $date and not $prev->[ 1 ]
