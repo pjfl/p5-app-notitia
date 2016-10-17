@@ -14,6 +14,7 @@ lib/App/Notitia/CLI.pm
 lib/App/Notitia/Config.pm
 lib/App/Notitia/Constants.pm
 lib/App/Notitia/Controller/CMS.pm
+lib/App/Notitia/Controller/Call.pm
 lib/App/Notitia/Controller/Event.pm
 lib/App/Notitia/Controller/Main.pm
 lib/App/Notitia/Controller/Report.pm
@@ -28,6 +29,7 @@ lib/App/Notitia/JobDaemon.pm
 lib/App/Notitia/Markdown.pm
 lib/App/Notitia/Model.pm
 lib/App/Notitia/Model/Admin.pm
+lib/App/Notitia/Model/Call.pm
 lib/App/Notitia/Model/Certification.pm
 lib/App/Notitia/Model/DayRota.pm
 lib/App/Notitia/Model/Documentation.pm
@@ -39,6 +41,7 @@ lib/App/Notitia/Model/Person.pm
 lib/App/Notitia/Model/Posts.pm
 lib/App/Notitia/Model/Report.pm
 lib/App/Notitia/Model/Role.pm
+lib/App/Notitia/Model/Training.pm
 lib/App/Notitia/Model/User.pm
 lib/App/Notitia/Model/Vehicle.pm
 lib/App/Notitia/Model/WeekRota.pm
@@ -55,9 +58,15 @@ lib/App/Notitia/Schema.pm
 lib/App/Notitia/Schema/Base.pm
 lib/App/Notitia/Schema/Schedule.pm
 lib/App/Notitia/Schema/Schedule/Result/Certification.pm
+lib/App/Notitia/Schema/Schedule/Result/Customer.pm
 lib/App/Notitia/Schema/Schedule/Result/Endorsement.pm
 lib/App/Notitia/Schema/Schedule/Result/Event.pm
+lib/App/Notitia/Schema/Schedule/Result/Incident.pm
+lib/App/Notitia/Schema/Schedule/Result/IncidentParty.pm
 lib/App/Notitia/Schema/Schedule/Result/Job.pm
+lib/App/Notitia/Schema/Schedule/Result/Journey.pm
+lib/App/Notitia/Schema/Schedule/Result/Leg.pm
+lib/App/Notitia/Schema/Schedule/Result/Location.pm
 lib/App/Notitia/Schema/Schedule/Result/Participent.pm
 lib/App/Notitia/Schema/Schedule/Result/Person.pm
 lib/App/Notitia/Schema/Schedule/Result/Role.pm
@@ -65,6 +74,8 @@ lib/App/Notitia/Schema/Schedule/Result/Rota.pm
 lib/App/Notitia/Schema/Schedule/Result/Shift.pm
 lib/App/Notitia/Schema/Schedule/Result/Slot.pm
 lib/App/Notitia/Schema/Schedule/Result/SlotCriteria.pm
+lib/App/Notitia/Schema/Schedule/Result/Trainer.pm
+lib/App/Notitia/Schema/Schedule/Result/Training.pm
 lib/App/Notitia/Schema/Schedule/Result/Transport.pm
 lib/App/Notitia/Schema/Schedule/Result/Type.pm
 lib/App/Notitia/Schema/Schedule/Result/Vehicle.pm
@@ -72,6 +83,8 @@ lib/App/Notitia/Schema/Schedule/Result/VehicleRequest.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Certification.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Endorsement.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Event.pm
+lib/App/Notitia/Schema/Schedule/ResultSet/Incident.pm
+lib/App/Notitia/Schema/Schedule/ResultSet/Journey.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Participent.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Person.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Rota.pm
@@ -133,9 +146,9 @@ var/root/img/hyde/icons.png
 var/root/img/logo.png
 var/root/js/hyde.js
 var/root/js/mooclasses.js
-var/share/App-Notitia-Schema-Schedule-0.3.258-MySQL.sql
-var/share/App-Notitia-Schema-Schedule-0.3.258-PostgreSQL.sql
-var/share/App-Notitia-Schema-Schedule-0.3.258-SQLite.sql
+var/share/App-Notitia-Schema-Schedule-0.6.44-MySQL.sql
+var/share/App-Notitia-Schema-Schedule-0.6.44-PostgreSQL.sql
+var/share/App-Notitia-Schema-Schedule-0.6.44-SQLite.sql
 var/share/App-Notitia-Schema-Schedule-001-Type.json
 var/share/App-Notitia-Schema-Schedule-002-Person.json
 var/share/App-Notitia-Schema-Schedule-003-Role.json
