@@ -983,6 +983,9 @@ msgstr "Detail"
 msgid "login"
 msgstr "Login"
 
+msgid "login_management_heading"
+msgstr "Account Management"
+
 msgid "login_title"
 msgstr "Please Login"
 

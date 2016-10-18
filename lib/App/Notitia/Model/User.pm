@@ -61,7 +61,9 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{navigation} = $self->navigation_links( $req, $stash->{page} );
+   $stash->{navigation} = $req->authenticated
+                        ? $self->navigation_links( $req, $stash->{page} )
+                        : $self->login_navigation_links( $req, $stash->{page} );
 
    return $stash;
 };
@@ -186,7 +188,8 @@ sub change_password : Role(anon) {
    my $page       =  {
       first_field => $username ? 'oldpass' : 'username',
       forms       => [ $form ],
-      location    => 'change_password',
+      location    => $req->authenticated ? 'change_password' : 'login',
+      selected    => 'change_password',
       title       => locm $req, 'change_password_title', $self->config->title };
 
    p_textfield $form, 'username', $username;
@@ -253,6 +256,7 @@ sub login : Role(anon) {
       first_field => 'username',
       forms       => [ $form ],
       location    => 'login',
+      selected    => 'login',
       title       => locm $req, 'login_title', $self->config->title };
 
    p_textfield $form, 'username',  NUL, { class => 'standard-field server' };

@@ -313,6 +313,11 @@ my $_secondary_authenticated_links = sub {
    my ($self, $req, $nav, $js, $location) = @_;
 
    p_item $nav, $nav_linkto->( $req, {
+      class => $location eq 'change_password' ? 'current' : NUL,
+      tip   => 'Change the password used to access the application',
+      value => 'Change Password', }, $self->config->places->{password} );
+
+   p_item $nav, $nav_linkto->( $req, {
       class => 'windows', name => 'profile-user',
       tip   => 'Update personal details', value => 'Profile', }, '#' );
 
@@ -322,10 +327,9 @@ my $_secondary_authenticated_links = sub {
    push @{ $js }, dialog_anchor( 'profile-user', $href, {
       name => 'profile-user', title => $title, useIcon => \1 } );
 
-   my $class = $location eq 'totp_secret' ? 'current' : NUL;
-
    $req->session->enable_2fa and p_item $nav, $nav_linkto->( $req, {
-      class => $class, tip => 'View the TOTP account information',
+      class => $location eq 'totp_secret' ? 'current' : NUL,
+      tip   => 'View the TOTP account information',
       value => 'TOTP', }, 'user/totp_secret' );
 
    $href = uri_for_action $req, 'user/logout_action';
@@ -338,33 +342,6 @@ my $_secondary_authenticated_links = sub {
       tip   => make_tip $req, 'Logout from [_1]', [ $self->config->title ] };
 
    p_item $nav, $form;
-   return;
-};
-
-my $_secondary_unauthenticated_links = sub {
-   my ($self, $req, $nav, $js) = @_;
-
-   p_item $nav, $nav_linkto->( $req, {
-      class => 'windows', name => 'totp-request',
-      tip   => 'Request viewing of the TOTP account information',
-      value => 'TOTP', }, '#' );
-
-   my $href  = uri_for_action $req, 'user/totp_request';
-   my $title = locm $req, 'TOTP Information Request';
-
-   push @{ $js }, dialog_anchor( 'totp-request', $href, {
-      name => 'totp-request', title => $title, useIcon => \1 } );
-
-   p_item $nav, $nav_linkto->( $req, {
-      class => 'windows', name => 'request-reset',
-      tip   => 'Follow the link to reset your password',
-      value => 'Forgot Password?', }, '#' );
-
-   $href  = uri_for_action $req, 'user/reset';
-   $title = locm $req, 'Reset Password';
-
-   push @{ $js }, dialog_anchor( 'request-reset', $href, {
-      name => 'request-reset', title => $title, useIcon => \1 } );
    return;
 };
 
@@ -506,6 +483,50 @@ sub external_links {
    return $form;
 }
 
+sub login_navigation_links {
+   my ($self, $req, $page) = @_; $page->{selected} //= NUL;
+
+   my $nav  = $self->navigation_links( $req, $page );
+   my $js = $page->{literal_js} //= [];
+   my $list = $nav->{menu}->{list} //= [];
+   my $places = $self->config->places;
+
+   push @{ $list },
+      $nav_folder->( $req, 'login' ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'login' ? 'selected' : NUL,
+         tip   => 'Login to the application',
+         value => 'Login', }, $places->{login} ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'change_password' ? 'selected' : NUL,
+         tip   => 'Change the password used to access the application',
+         value => 'Change Password', }, $places->{password} ),
+      { depth  => 1, type => 'link',
+        value  => $nav_linkto->( $req, {
+           class => 'windows', name => 'totp-request',
+           tip   => 'Request a TOTP recovery email',
+           value => 'Lost TOTP?', }, '#' ) },
+      { depth  => 1, type => 'link',
+        value  => $nav_linkto->( $req, {
+           class => 'windows', name => 'request-reset',
+           tip   => 'Request a password reset email',
+           value => 'Forgot Password?', }, '#' ) };
+
+   my $href  = uri_for_action $req, 'user/totp_request';
+   my $title = locm $req, 'TOTP Information Request';
+
+   push @{ $js }, dialog_anchor( 'totp-request', $href, {
+      name => 'totp-request', title => $title, useIcon => \1 } );
+
+   $href  = uri_for_action $req, 'user/reset';
+   $title = locm $req, 'Reset Password';
+
+   push @{ $js }, dialog_anchor( 'request-reset', $href, {
+      name => 'request-reset', title => $title, useIcon => \1 } );
+
+   return $nav;
+}
+
 sub navigation_links {
    my ($self, $req, $page) = @_; my $nav = {};
 
@@ -523,42 +544,41 @@ sub primary_navigation_links {
 
    my $nav = blank_form { type => 'unordered' };
    my $location = $page->{location} // NUL;
-   my $class = $location eq 'documentation' ? 'current' : NUL;
    my $places = $self->config->places;
 
    p_item $nav, $nav_linkto->( $req, {
-      class => $class, tip => 'Documentation pages for the application',
+      class => $location eq 'documentation' ? 'current' : NUL,
+      tip   => 'Documentation pages for the application',
       value => 'Documentation', }, 'docs/index' );
 
-   $class = $location eq 'posts' ? 'current' : NUL;
-
    p_item $nav, $nav_linkto->( $req, {
-      class => $class, tip => 'Posts about upcoming events',
+      class => $location eq 'posts' ? 'current' : NUL,
+      tip   => 'Posts about upcoming events',
       value => 'Posts', }, 'posts/index' );
+
+   $req->authenticated or p_item $nav, $nav_linkto->( $req, {
+      class => $location eq 'login' ? 'current' : NUL,
+      tip   => 'Login to the application',
+      value => 'Login', }, $places->{login} );
 
    $req->authenticated or return $nav;
 
-   $class = $location eq 'schedule' ? 'current' : NUL;
-
    p_item $nav, $nav_linkto->( $req, {
-      class => $class, name => 'rota', tip => 'rota_link_tip' },
-      $places->{rota} );
-
-   $class = $location eq 'admin' ? 'current' : NUL;
+      class => $location eq 'schedule' ? 'current' : NUL,
+      name => 'rota', tip => 'rota_link_tip' }, $places->{rota} );
 
    my $after = now_dt->subtract( days => 1 )->ymd;
    my $index = $places->{admin_index};
 
    p_item $nav, $nav_linkto->( $req, {
-      class => $class, tip => 'admin_index_title',
+      class => $location eq 'admin' ? 'current' : NUL,
+      tip   => 'admin_index_title',
       value => 'admin_index_link', }, $index, [], after => $after );
-
-   $class = $location eq 'calls' ? 'current' : NUL;
 
    $self->$_allowed( $req, 'call/journeys' ) and
       p_item $nav, $nav_linkto->( $req, {
-         class => $class, tip => 'calls_tip',
-         value => 'calls', }, 'call/journeys', [] );
+         class => $location eq 'calls' ? 'current' : NUL,
+         tip => 'calls_tip', value => 'calls', }, 'call/journeys', [] );
 
    return $nav;
 }
@@ -601,26 +621,11 @@ sub secondary_navigation_links {
    my ($self, $req, $page) = @_;
 
    my $nav = blank_form { type => 'unordered' };
-   my $location = $page->{location} // NUL;
-   my $class = $location eq 'login' ? 'current' : NUL;
-   my $places = $self->config->places;
    my $js = $page->{literal_js} //= [];
+   my $location = $page->{location} // NUL;
 
-   $req->authenticated or p_item $nav, $nav_linkto->( $req, {
-      class => $class, tip => 'Login to the application',
-      value => 'Login', }, $places->{login} );
-
-   $class = $location eq 'change_password' ? 'current' : NUL;
-
-   p_item $nav, $nav_linkto->( $req, {
-      class => $class,
-      tip   => 'Change the password used to access the application',
-      value => 'Change Password', }, $places->{password} );
-
-   if ($req->authenticated) {
-      $self->$_secondary_authenticated_links( $req, $nav, $js, $location );
-   }
-   else { $self->$_secondary_unauthenticated_links( $req, $nav, $js ) }
+   $req->authenticated
+      and $self->$_secondary_authenticated_links( $req, $nav, $js, $location );
 
    return $nav;
 }

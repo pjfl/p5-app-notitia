@@ -21,7 +21,10 @@
             <ul class="submenu">
 [%       END -%]
 [%    ELSE -%]
+[%       IF reference( node.value ) == 'HASH'; Dispatch( node.value ) %]
+[%       ELSE -%]
 [%       LinkWithTips( node.href, 'fade', node.value, file_title, node.tip ) -%]
+[%       END -%]
          </li>
 [%    END -%]
 [% END -%]
