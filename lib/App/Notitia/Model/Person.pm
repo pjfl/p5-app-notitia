@@ -401,6 +401,7 @@ sub activate : Role(anon) {
       my $person = $self->find_by_shortcode( $name ); $person->activate;
       my $places = $self->config->places;
 
+      $req->session->username( $name );
       $self->send_event( $req, "action:activate-person shortcode:${name}" );
       $location = uri_for_action $req, $places->{password}, [ $name ];
       $message  = [ to_msg '[_1] account activated', $person->label ];

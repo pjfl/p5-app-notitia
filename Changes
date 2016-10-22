@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes activate-person activity log error
           - Fixes #113. Field width slightly larger
           - Adds training events
           - Implements #107. Moves login menu items
