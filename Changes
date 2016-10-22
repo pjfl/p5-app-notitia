@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds training events
           - Implements #107. Moves login menu items
           - Implements #109. Defaults bike request to true
           - Completes #104. Training courses

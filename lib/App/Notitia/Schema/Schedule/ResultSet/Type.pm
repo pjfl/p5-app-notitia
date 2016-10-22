@@ -3,7 +3,8 @@ package App::Notitia::Schema::Schedule::ResultSet::Type;
 use strictures;
 use parent 'DBIx::Class::ResultSet';
 
-use Class::Usul::Functions qw( throw );
+use App::Notitia::Constants qw( FALSE NUL TRUE );
+use Class::Usul::Functions  qw( throw );
 
 # Private class attributes
 my $_types = {};
@@ -22,6 +23,15 @@ my $_find_by = sub {
    defined $type or throw "${label} type [_1] not found", [ $name ], level => 3;
 
    return $_types->{ $k } = $type;
+};
+
+my $_type_tuple = sub {
+   my ($type, $opts) = @_; $opts = { %{ $opts // {} } }; $type = "${type}";
+
+   $opts->{selected} //= NUL;
+   $opts->{selected} = $opts->{selected} =~ m{ \A $type \z }imx ? TRUE : FALSE;
+
+   return [ "${type}", $type, $opts ];
 };
 
 # Public methods
@@ -53,6 +63,16 @@ sub find_vehicle_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'vehicle' );
 }
 
+sub list_types {
+   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   my $fields = delete $opts->{fields};
+   my $types = $self->search( { type_class => delete $opts->{type} },
+                              { columns => [ 'id', 'name' ], %{ $opts } } );
+
+   return [ map { $_type_tuple->( $_, $fields ) } $types->all ];
+}
+
 sub search_for_all_types {
    my ($self, $opts) = @_; $opts //= {};
 
@@ -73,6 +93,13 @@ sub search_for_certification_types {
    my ($self, $opts) = @_; $opts //= {};
 
    return $self->search( { type_class => 'certification' },
+                         { columns    => [ 'id', 'name' ], %{ $opts } } );
+}
+
+sub search_for_course_types {
+   my ($self, $opts) = @_; $opts //= {};
+
+   return $self->search( { type_class => 'course' },
                          { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
@@ -101,13 +128,6 @@ sub search_for_rota_types {
    my ($self, $opts) = @_; $opts //= {};
 
    return $self->search( { type_class => 'rota' },
-                         { columns    => [ 'id', 'name' ], %{ $opts } } );
-}
-
-sub search_for_course_types {
-   my ($self, $opts) = @_; $opts //= {};
-
-   return $self->search( { type_class => 'course' },
                          { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 

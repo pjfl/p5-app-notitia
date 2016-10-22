@@ -212,7 +212,8 @@ has 'no_index'        => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
 has 'no_message_send' => is => 'ro',   isa => Bool, default => FALSE;
 
 has 'no_redirect'     => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
-   builder            => sub { [ 'check_field', 'profile', 'totp_secret', ] };
+   builder            => sub {
+      [ qw( check_field logout profile totp_secret ) ] };
 
 has 'owner'           => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => sub { $_[ 0 ]->prefix };

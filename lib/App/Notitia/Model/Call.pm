@@ -1038,8 +1038,11 @@ sub journey : Role(controller) {
    $disabled or p_action $jform, $action, [ 'journey', $jid ], {
       request => $req };
 
-   $disabled or ($jid and
-      p_action $jform, 'delete', [ 'journey', $jid ], { request => $req } );
+   my $is_call_viewer = is_member( 'call_viewer', $req->session->roles );
+
+   (not $is_call_viewer and $disabled) or $done
+      or ($jid and p_action $jform, 'delete', [ 'journey', $jid ], {
+         request => $req } );
 
    $jid or return $self->get_stash( $req, $page );
 
@@ -1118,8 +1121,8 @@ sub leg : Role(controller) {
       disabled => $disabled, done => $done,
       journey_id => $jid, leg_count => $count, request => $req } );
 
-   ($done and $leg->on_station) or p_action $form, $action, [ 'leg', $lid ], {
-      request => $req };
+   ($done and $leg->on_station)
+      or p_action $form, $action, [ 'leg', $lid ], { request => $req };
 
    $disabled or ($lid and
       p_action $form, 'delete', [ 'leg', $lid ], { request => $req } );

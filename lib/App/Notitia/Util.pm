@@ -680,9 +680,9 @@ sub make_name_from ($) {
 sub make_tip ($$;$) {
    my ($req, $k, $args) = @_;
 
-   $args = [ map { s{_}{ }gmx; $_ } grep { defined } @{ $args // [] } ];
-
-   return loc( $req, 'Hint' ).SPC.TILDE.SPC.locm( $req, $k, @{ $args } );
+   return loc( $req, 'Hint' ).SPC.TILDE.SPC
+        . locm( $req, $k, map  { my $x = $_; $x =~ s{_}{ }gmx; $x }
+                          grep { defined } @{ $args // [] } );
 }
 
 sub management_link ($$$;$) {

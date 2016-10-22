@@ -5,7 +5,7 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( VARCHAR_MAX_SIZE TRUE );
-use App::Notitia::Util      qw( foreign_key_data_type
+use App::Notitia::Util      qw( foreign_key_data_type locm
                                 nullable_foreign_key_data_type
                                 nullable_numerical_id_data_type
                                 serial_data_type varchar_data_type );
@@ -133,6 +133,13 @@ sub label {
    my $self = shift; my $date = $self->start_date;
 
    return $self->name.' ('.$date->set_time_zone( 'local' )->dmy( '/' ).')';
+}
+
+sub localised_label {
+   my ($self, $req) = @_;
+
+   return locm( $req, lc $self->name ).' ('
+          . $self->start_date->set_time_zone( 'local' )->dmy( '/' ).')';
 }
 
 sub post_filename {

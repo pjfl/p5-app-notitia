@@ -24,15 +24,16 @@ with    q(App::Notitia::Role::Navigation);
 has '+moniker' => default => 'event';
 
 register_action_paths
-   'event/event'         => 'event',
-   'event/event_info'    => 'event-info',
-   'event/event_summary' => 'event-summary',
-   'event/events'        => 'events',
-   'event/message'       => 'message-participents',
-   'event/participate'   => 'participate',
-   'event/participents'  => 'participents',
-   'event/vehicle_event' => 'vehicle-event',
-   'event/vehicle_info'  => 'vehicle-event-info';
+   'event/event'          => 'event',
+   'event/event_info'     => 'event-info',
+   'event/event_summary'  => 'event-summary',
+   'event/events'         => 'events',
+   'event/message'        => 'message-participants',
+   'event/participate'    => 'participate',
+   'event/participents'   => 'participants',
+   'event/training_event' => 'training-event',
+   'event/vehicle_event'  => 'vehicle-event',
+   'event/vehicle_info'   => 'vehicle-event-info';
 
 # Construction
 around 'get_stash' => sub {
@@ -261,16 +262,37 @@ my $_update_event_post = sub {
    return;
 };
 
+my $_bind_event_name = sub {
+   my ($self, $event, $opts) = @_;
+
+   my $disabled = $opts->{disabled} || ($event->uri ? TRUE : FALSE);
+
+   if ($opts->{training_event}) {
+      $opts = { fields => { selected => lc $event->name }, type => 'course' };
+
+      my $courses = $self->schema->resultset( 'Type' )->list_types( $opts );
+
+      $opts = { class => 'standard-field required',
+                label => 'training_event_name', type => 'select',
+                value => [ [ NUL, NUL ], @{ $courses } ] };
+
+      $disabled and $opts->{disabled} = TRUE;
+
+      return $opts;
+   }
+
+   return { class    => 'standard-field server',
+            disabled => $disabled, label => 'event_name' };
+};
+
 my $_bind_event_fields = sub {
    my ($self, $event, $opts) = @_; $opts //= {};
 
    my $disabled = $opts->{disabled} // FALSE;
-   my $editing  = $disabled ? $disabled : $event->uri ? TRUE : FALSE;
    my $no_maxp  = $disabled || $opts->{vehicle_event} ? TRUE : FALSE;
 
    return
-   [  name             => { class    => 'standard-field server',
-                            disabled => $editing, label => 'event_name' },
+   [  name             => $self->$_bind_event_name( $event, $opts ),
       event_date       => $_bind_event_date->( $event, $opts ),
       owner            => $self->$_bind_owner( $event, $disabled ),
       description      => { class    => 'standard-field autosize server',
@@ -361,6 +383,22 @@ sub create_event_action : Role(event_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub create_training_event_action : Role(training_manager) {
+   my ($self, $req) = @_;
+
+   my $date = to_dt $req->body_params->( 'event_date' );
+   my $event = $self->$_create_event( $req, $date, 'training', $req->username );
+   my $label = $event->localised_label( $req );
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Training event [_1] created by [_2]', $label, $who ];
+   my $actionp = $self->moniker.'/training_event';
+   my $location = uri_for_action $req, $actionp, [ $event->uri ];
+
+   $self->send_event( $req, 'action:create-training-event event:'.$event->uri );
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub create_vehicle_event_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
@@ -392,6 +430,21 @@ sub delete_event_action : Role(event_manager) {
    my $message  = [ to_msg 'Event [_1] deleted by [_2]', $label, $who ];
 
    $self->send_event( $req, "action:delete-event event:${uri}" );
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub delete_training_event_action : Role(training_manager) {
+   my ($self, $req) = @_;
+
+   my $uri = $req->uri_params->( 0 );
+   my $event = $self->$_delete_event( $uri );
+   my $label = $event->localised_label( $req );
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Training event [_1] deleted by [_2]', $label, $who ];
+   my $location = uri_for_action $req, 'train/events';
+
+   $self->send_event( $req, "action:delete-training-event event:${uri}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -551,6 +604,16 @@ sub participate_event_action : Role(any) {
    return { redirect => { location => $location, message => $message } };
 }
 
+my $_participents_title = sub {
+   my ($req, $event) = @_; my $label = $event->name;
+
+   if ($event->event_type eq 'training') {
+      $label = locm $req, lc $event->name;
+   }
+
+   return locm $req, 'participents_management_heading', $label;
+};
+
 sub participents : Role(any) {
    my ($self, $req) = @_;
 
@@ -564,8 +627,7 @@ sub participents : Role(any) {
       class      => 'wider-table', id => 'message-participents' };
    my $page      =  {
       forms      => [ $form ],
-      title      =>
-         locm $req, 'participents_management_heading', $event->name };
+      title      => $_participents_title->( $req, $event ) };
    my $links     =  $self->$_participent_ops_links( $req, $page, $params );
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
@@ -576,6 +638,32 @@ sub participents : Role(any) {
                       @{ $person_rs->list_participents( $event ) } ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
+
+   return $self->get_stash( $req, $page );
+}
+
+sub training_event : Role(training_manager) {
+   my ($self, $req) = @_;
+
+   my $uri  = $req->uri_params->( 0, { optional => TRUE } );
+   my $date = $req->query_params->( 'date', { optional => TRUE } );
+   my $href = uri_for_action $req, $self->moniker.'/training_event', [ $uri ];
+   my $form = blank_form 'training-event', $href;
+   my $action = $uri ? 'update' : 'create';
+   my $page = {
+      forms => [ $form ], selected => 'training_events',
+      title => locm $req, 'training_event_title',
+   };
+   my $event = $self->$_maybe_find_event( $uri );
+   my $args = [ 'training_event', $uri ];
+
+   p_fields $form, $self->schema, 'Event', $event,
+      $self->$_bind_event_fields( $event, {
+         date => $date, training_event => TRUE } );
+
+   p_action $form, $action, $args, { request => $req };
+
+   $uri and p_action $form, 'delete', $args, { request => $req };
 
    return $self->get_stash( $req, $page );
 }
@@ -615,6 +703,22 @@ sub update_event_action : Role(event_manager) {
    my $message  = [ to_msg 'Event [_1] updated by [_2]', $event->label, $who ];
 
    $self->send_event( $req, "action:update-event event:${uri}" );
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub update_training_event_action : Role(training_manager) {
+   my ($self, $req) = @_;
+
+   my $uri = $req->uri_params->( 0 );
+   my $event = $self->$_update_event( $req, $uri );
+   my $who = $req->session->user_label;
+   my $label = $event->localised_label( $req );
+   my $message = [ to_msg 'Training event [_1] updated by [_2]', $label, $who ];
+   my $actionp = $self->moniker.'/training_event';
+   my $location = uri_for_action $req, $actionp, [ $uri ];
+
+   $self->send_event( $req, "action:update-training-event event:${uri}" );
 
    return { redirect => { location => $location, message => $message } };
 }

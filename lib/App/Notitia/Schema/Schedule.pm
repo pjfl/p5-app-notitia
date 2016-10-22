@@ -13,6 +13,7 @@ __PACKAGE__->load_namespaces;
 __PACKAGE__->load_components( qw( Schema::Versioned ) );
 
 #TODO: Work a plan for row life
+my $_config;
 
 sub deploy {
    my ($self, @args) = @_;
@@ -35,9 +36,8 @@ sub application {
 }
 
 sub config {
-   return $_[ 0 ]->{_context} ? $_[ 0 ]->{_context}->config
-        :     defined $_[ 1 ] ? $_[ 0 ]->{_config} = $_[ 1 ]
-                              : $_[ 0 ]->{_config};
+   return ref $_[ 0 ] && $_[ 0 ]->{_context} ? $_[ 0 ]->{_context}->config
+        :                    defined $_[ 1 ] ? $_config = $_[ 1 ] : $_config;
 }
 
 sub ddl_filename {

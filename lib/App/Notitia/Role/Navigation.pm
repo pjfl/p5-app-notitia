@@ -379,24 +379,27 @@ sub admin_navigation_links {
       $nav_folder->( $req, 'events', { tip => 'Event Menu' } ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'current_events' ? 'selected' : NUL,
-         name => 'current_events' }, 'event/events', [],
+         name  => 'current_events' }, 'event/events', [],
                      after  => $now->clone->subtract( days => 1 )->ymd ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'previous_events' ? 'selected' : NUL,
-         name => 'previous_events' }, 'event/events', [], before => $now->ymd );
+         name  => 'previous_events' }, 'event/events', [], before => $now->ymd);
 
    $self->$_people_links( $req, $page, $nav );
 
    $self->$_report_links( $req, $page, $nav );
 
-   $self->$_allowed( $req, 'asset/vehicles' )
-      and $self->$_vehicle_links( $req, $page, $nav );
-
    $self->$_allowed( $req, 'train/summary' ) and push @{ $list },
       $nav_folder->( $req, 'training', { tip => 'Training Menu' } ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'training' ? 'selected' : NUL,
-         name => 'training_summary' }, 'train/summary', [] );
+         name  => 'training_summary' }, 'train/summary', [] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'training_events' ? 'selected' : NUL,
+         name  => 'training_events' }, 'train/events', [] );
+
+   $self->$_allowed( $req, 'asset/vehicles' )
+      and $self->$_vehicle_links( $req, $page, $nav );
 
    return $nav;
 }
@@ -503,14 +506,14 @@ sub login_navigation_links {
          value => 'Change Password', }, $places->{password} ),
       { depth  => 1, type => 'link',
         value  => $nav_linkto->( $req, {
-           class => 'windows', name => 'totp-request',
-           tip   => 'Request a TOTP recovery email',
-           value => 'Lost TOTP?', }, '#' ) },
-      { depth  => 1, type => 'link',
-        value  => $nav_linkto->( $req, {
            class => 'windows', name => 'request-reset',
            tip   => 'Request a password reset email',
-           value => 'Forgot Password?', }, '#' ) };
+           value => 'Forgot Password?', }, '#' ) },
+      { depth  => 1, type => 'link',
+        value  => $nav_linkto->( $req, {
+           class => 'windows', name => 'totp-request',
+           tip   => 'Request a TOTP recovery email',
+           value => 'Lost TOTP?', }, '#' ) };
 
    my $href  = uri_for_action $req, 'user/totp_request';
    my $title = locm $req, 'TOTP Information Request';

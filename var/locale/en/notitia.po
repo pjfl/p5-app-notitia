@@ -724,7 +724,7 @@ msgid "events_list_tip"
 msgstr "Displays 'event' records"
 
 msgid "events_management_heading"
-msgstr "Events"
+msgstr "Fund Raising Events"
 
 msgid "expired_date"
 msgstr "Expired"
@@ -1730,8 +1730,35 @@ msgstr "Theme"
 msgid "trailer"
 msgstr "Trailer"
 
+msgid "training"
+msgstr "Training"
+
 msgid "training_enrolement_title"
 msgstr "Course Enrolement"
+
+msgid "training_event_name"
+msgstr "Course Name"
+
+msgid "training_event_title"
+msgstr "Training Event"
+
+msgid "training_events_heading_0"
+msgstr "Course"
+
+msgid "training_events_heading_1"
+msgstr "Participants"
+
+msgid "training_events_heading_2"
+msgstr "View"
+
+msgid "training_events_link"
+msgstr "Training Events"
+
+msgid "training_events_tip"
+msgstr "Create and view training events"
+
+msgid "training_events_title"
+msgstr "Training Events"
 
 msgid "training_header_0"
 msgstr "Person"

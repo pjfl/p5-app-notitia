@@ -4,14 +4,14 @@ use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRAINING_STATUS_ENUM TRUE );
-use App::Notitia::Form      qw( blank_form f_tag p_button p_container p_date
-                                p_hidden p_link p_list p_row p_select
+use App::Notitia::Form      qw( blank_form f_link f_tag p_button p_container
+                                p_date p_hidden p_link p_list p_row p_select
                                 p_table p_textfield );
 use App::Notitia::Util      qw( dialog_anchor js_submit_config locm make_tip
-                                page_link_set register_action_paths to_dt to_msg
+                                management_link page_link_set
+                                register_action_paths to_dt to_msg
                                 uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
-use Class::Usul::Log        qw( get_logger );
 use Data::Page;
 use Moo;
 
@@ -27,6 +27,7 @@ has '+moniker' => default => 'train';
 
 register_action_paths
    'train/dialog' => 'training-dialog',
+   'train/events' => 'training-events',
    'train/summary' => 'training-summary',
    'train/training' => 'training';
 
@@ -43,6 +44,11 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_events_headers = sub {
+   return [ map { { value => locm( $_[ 0 ], "training_events_heading_${_}" ) } }
+            0 .. 2 ];
+};
+
 my $_local_dt = sub {
    return $_[ 0 ]->clone->set_time_zone( 'local' );
 };
@@ -88,6 +94,23 @@ my $_cell_colours = sub {
    return $bg_colours->{ $status }, $fg_colours->{ $status };
 };
 
+my $_event_links = sub {
+   my ($self, $req, $event) = @_;
+
+   my $uri = $event->uri;
+   my $href = uri_for_action $req, 'event/training_event', [ $uri ];
+   my $value = $event->localised_label( $req );
+   my $event_link = f_link 'training_event', $href, { value => $value };
+   my $links = [ { value => $event_link } ];
+   my @actions = qw( event/participents event/event_summary );
+
+   for my $actionp (@actions) {
+      push @{ $links }, { value => management_link( $req, $actionp, $uri ) };
+   }
+
+   return $links;
+};
+
 my $_summary_caption = sub {
    my ($self, $req) = @_;
 
@@ -113,6 +136,20 @@ my $_enrole_link = sub {
    p_hidden $form, 'courses', $course_name;
 
    return $form;
+};
+
+my $_events_ops_links = sub {
+   my ($self, $req, $params, $pager) = @_; my $links = [];
+
+   p_link $links, 'event', uri_for_action( $req, 'event/training_event' ), {
+      action => 'create', container_class => 'add-link', request => $req };
+
+   my $actionp = $self->moniker.'/events';
+   my $page_links = page_link_set $req, $actionp, [], $params, $pager;
+
+   $page_links and unshift @{ $links }, $page_links;
+
+   return $links;
 };
 
 my $_find_course_type = sub {
@@ -243,10 +280,9 @@ sub add_course_action : Role(training_manager) {
    for my $course (@{ $courses }) {
       $person->add_course( $course );
 
-      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-                  . "action:add-course shortcode:${scode} course:${course}";
+      my $message = "action:add-course shortcode:${scode} course:${course}";
 
-      get_logger( 'activity' )->log( $message );
+      $self->send_event( $req, $message );
    }
 
    my $message = [ to_msg '[_1] enroled on course(s): [_2]',
@@ -286,6 +322,36 @@ sub dialog : Role(training_manager) {
    return $stash;
 }
 
+sub events : Role(training_manager) {
+   my ($self, $req) = @_;
+
+   my $params = $req->query_params->( { optional => TRUE } );
+   my $after = $params->{after} ? to_dt( $params->{after} ) : FALSE;
+   my $before = $params->{before} ? to_dt( $params->{before} ) : FALSE;
+   my $opts = { after      => $after,
+                before     => $before,
+                event_type => 'training',
+                page       => $params->{page} // 1,
+                rows       => $req->session->rows_per_page };
+   my $event_rs = $self->schema->resultset( 'Event' );
+   my $events = $event_rs->search_for_events( $opts );
+   my $pager = $events->pager;
+   my $form = blank_form;
+   my $page = {
+      forms => [ $form ], selected => 'training_events',
+      title => locm $req, 'training_events_title',
+   };
+   my $page_links = $self->$_events_ops_links( $req, $params, $pager );
+
+   p_list $form, NUL, $page_links, { class => 'operation-links align-right' };
+
+   my $table = p_table $form, { headers => $_events_headers->( $req ) };
+
+   p_row $table, [ map { $self->$_event_links( $req, $_ ) } $events->all ];
+
+   return $self->get_stash( $req, $page );
+}
+
 sub remove_course_action : Role(training_manager) {
    my ($self, $req) = @_;
 
@@ -297,10 +363,9 @@ sub remove_course_action : Role(training_manager) {
    for my $course (@{ $courses }) {
       $person->delete_course( $course );
 
-      my $message = 'user:'.$req->username.' client:'.$req->address.SPC
-                  . "action:remove-course shortcode:${scode} course:${course}";
+      my $message = "action:remove-course shortcode:${scode} course:${course}";
 
-      get_logger( 'activity' )->log( $message );
+      $self->send_event( $req, $message );
    }
 
    my $message = [ to_msg '[_1] removed from course(s): [_2]',
@@ -375,8 +440,7 @@ sub training : Role(training_manager) {
    my $href = uri_for_action $req, $self->moniker.'/training', [ $scode ];
    my $form = blank_form 'training', $href;
    my $page = {
-      forms => [ $form ],
-      selected => 'summary',
+      forms => [ $form ], selected => 'summary',
       title => locm $req, 'training_enrolement_title'
       };
    my $courses_taken = $person->list_courses;
