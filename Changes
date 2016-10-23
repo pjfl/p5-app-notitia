@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Cli post install preserves existing profile file
           - Adds field help for login auth code
           - Better messages for call logging
           - Fixes #115. Better validation for delivery stage

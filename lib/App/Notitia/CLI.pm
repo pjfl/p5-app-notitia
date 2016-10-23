@@ -70,7 +70,11 @@ my $_create_profile = sub {
       $profile = $self->config->vardir->catfile( 'etc', 'profile' );
    }
 
-   $self->run_cmd( $cmd, { err => 'stderr', out => $profile } );
+   unless ($profile->exists) {
+      delete $ENV{PERL5LIB}; delete $ENV{PERL_LOCAL_LIB_ROOT};
+      $self->run_cmd( $cmd, { err => 'stderr', out => $profile } );
+   }
+
    return;
 };
 
