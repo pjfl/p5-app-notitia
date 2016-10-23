@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes missing address field in activity log
           - Fixes missing user field in activity log
           - Adds change password to activity log
           - Fixes #114. Fund raisers get certs and training
