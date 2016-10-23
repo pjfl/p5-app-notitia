@@ -337,7 +337,9 @@ sub message_stash {
 sub send_event {
    my ($self, $req, $message) = @_;
 
-   $message = 'user:'.$req->username.' client:'.$req->address." ${message}";
+   my $user = $req->username // 'admin';
+
+   $message = "user:${user} client:".$req->address." ${message}";
 
    get_logger( 'activity' )->log( $message );
 
