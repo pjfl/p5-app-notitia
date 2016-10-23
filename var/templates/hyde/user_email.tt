@@ -1,16 +1,28 @@
 [% WRAPPER 'hyde/email_layout.tt' -%]
    <!-- User Email -->
-   <p>Welcome [% first_name %].</p>
+   <p>Welcome [% first_name %],</p>
 
-   <p>An account has been created using your email address on the [% app_name %]
-      application with a login id of [% username %] password [% password %]</p>
+   <p>An account has been created using this email address on the [% app_name %]
+      application.</p>
+
+   <p>User name: [% username %]<br/>
+      Password: [% password %]</p>
+
+   <p>Follow the link provided in this email to activate your account. Once
+      activated you will only be able to change your password from this
+      machine generated one to one of your own choosing.</p>
+
+   <p>You will not be able to use the account until you have successfully
+      changed your password.</p>
+
+   <p>The change password screen is not the same as the login screen.</p>
+
+   <p>The user name and password are case sensitive.</p>
 
    <p>Click on this
    <a class="link" href="[% link %]" target ="_blank" title="Activate Account">
       link</a> to activate your account</p>
 
-   <p>Then change the password provided in this email for one of your own
-      choosing. You will not be able to use the account until you do</p>
 [% END %]
 [%#
 # Local Variables:

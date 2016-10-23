@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - ELI5 version of user email
           - Cli post install preserves existing profile file
           - Adds field help for login auth code
           - Better messages for call logging
