@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Better messages for call logging
           - Fixes #115. Better validation for delivery stage
           - Activity log viewer more tolerant of bad log lines
           - Fixes missing address field in activity log

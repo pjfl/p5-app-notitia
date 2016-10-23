@@ -111,7 +111,7 @@ my $_bind_call_category = sub {
 
    my $selected = $incident->category_id; my $other;
 
-   return [ [ NUL, 0 ],
+   return [ [ NUL, undef ],
             (map  { $_category_tuple->( $selected, $_ ) }
              grep { $_->name eq 'other' and $other = $_; $_->name ne 'other' }
              $categories->all), $_category_tuple->( $selected, $other ) ];
@@ -120,21 +120,21 @@ my $_bind_call_category = sub {
 my $_bind_customer = sub {
    my ($customers, $journey) = @_; my $selected = $journey->customer_id;
 
-   return [ [ NUL, 0 ],
+   return [ [ NUL, undef ],
             map { $_customer_tuple->( $selected, $_ ) } $customers->all ];
 };
 
 my $_bind_dropoff_location = sub {
    my ($locations, $journey) = @_; my $selected = $journey->dropoff_id;
 
-   return [ [ NUL, 0 ],
+   return [ [ NUL, undef ],
             map { $_location_tuple->( $selected, $_ ) } @{ $locations } ];
 };
 
 my $_bind_pickup_location = sub {
    my ($locations, $journey) = @_; my $selected = $journey->pickup_id;
 
-   return [ [ NUL, 0 ],
+   return [ [ NUL, undef ],
             map { $_location_tuple->( $selected, $_ ) } @{ $locations } ];
 };
 
@@ -173,7 +173,7 @@ my $_person_tuple = sub {
 my $_bind_operator = sub {
    my ($leg, $opts) = @_; my $selected = $leg->operator_id;
 
-   return [ [ NUL, 0 ],
+   return [ [ NUL, undef ],
             map { $_person_tuple->( $selected, $_ ) } $opts->{people}->all ];
 };
 
@@ -238,7 +238,7 @@ my $_bind_beginning_location = sub {
       : $opts->{leg_count} ? ($leg_rs->search( $where )->all)[ -1 ]->ending_id
       :                      $opts->{journey}->pickup_id;
 
-   return [ [ NUL, 0 ],
+   return [ [ NUL, undef ],
             map { $_location_tuple->( $selected, $_ ) }
                @{ $opts->{locations} } ];
 };
@@ -268,7 +268,7 @@ my $_bind_ending_location = sub {
 
    my $selected = $leg->ending_id || $opts->{journey}->dropoff_id;
 
-   return [ [ NUL, 0 ],
+   return [ [ NUL, undef ],
             map { $_location_tuple->( $selected, $_ ) }
                @{ $opts->{locations} } ];
 };
@@ -705,29 +705,7 @@ sub create_customer_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_incident_action : Role(controller) {
-   my ($self, $req) = @_;
-
-   my $incident = $self->schema->resultset( 'Incident' )->new_result( {} );
-
-   $self->$_update_incident_from_request( $req, $incident );
-
-   try { $incident->insert }
-   catch {
-      $self->rethrow_exception( $_, 'create', 'incident', $incident->title );
-   };
-
-   $self->send_event( $req, 'action:create-incident title:'.$incident->title );
-
-   my $iid = $incident->id;
-   my $who = $req->session->user_label;
-   my $message = [ to_msg 'Incident [_1] created by [_2]', $iid, $who ];
-   my $location = uri_for_action $req, $self->moniker.'/incident', [ $iid ];
-
-   return { redirect => { location => $location, message => $message } };
-}
-
-sub create_journey_action : Role(controller) {
+sub create_delivery_request_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $schema   = $self->schema;
@@ -754,7 +732,7 @@ sub create_journey_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_leg_action : Role(controller) {
+sub create_delivery_stage_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $jid = $req->uri_params->( 0 );
@@ -771,6 +749,28 @@ sub create_leg_action : Role(controller) {
                     'Stage [_1] of delivery request [_2] created by [_3]',
                     $leg->id, $jid, $who ];
    my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub create_incident_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $incident = $self->schema->resultset( 'Incident' )->new_result( {} );
+
+   $self->$_update_incident_from_request( $req, $incident );
+
+   try { $incident->insert }
+   catch {
+      $self->rethrow_exception( $_, 'create', 'incident', $incident->title );
+   };
+
+   $self->send_event( $req, 'action:create-incident title:'.$incident->title );
+
+   my $iid = $incident->id;
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Incident [_1] created by [_2]', $iid, $who ];
+   my $location = uri_for_action $req, $self->moniker.'/incident', [ $iid ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -848,25 +848,7 @@ sub delete_customer_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_incident_action : Role(controller) {
-   my ($self, $req) = @_;
-
-   my $iid      = $req->uri_params->( 0 );
-   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
-   my $title    = $incident->title;
-
-   $incident->delete;
-
-   $self->send_event( $req, "action:delete-incident title:${title}" );
-
-   my $who      = $req->session->user_label;
-   my $message  = [ to_msg 'Incident [_1] deleted by [_2]', $iid, $who ];
-   my $location = uri_for_action $req, $self->moniker.'/incidents';
-
-   return { redirect => { location => $location, message => $message } };
-}
-
-sub delete_journey_action : Role(controller) {
+sub delete_delivery_request_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $jid      = $req->uri_params->( 0 );
@@ -887,7 +869,7 @@ sub delete_journey_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_leg_action : Role(controller) {
+sub delete_delivery_stage_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $jid      = $req->uri_params->( 0 );
@@ -914,6 +896,24 @@ sub delete_location_action : Role(controller) {
    my $message = [ to_msg 'Location [_1] deleted by [_2]', $lid, $who ];
 
    $location = uri_for_action $req, $self->moniker.'/locations';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub delete_incident_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $iid      = $req->uri_params->( 0 );
+   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
+   my $title    = $incident->title;
+
+   $incident->delete;
+
+   $self->send_event( $req, "action:delete-incident title:${title}" );
+
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg 'Incident [_1] deleted by [_2]', $iid, $who ];
+   my $location = uri_for_action $req, $self->moniker.'/incidents';
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -1035,18 +1035,19 @@ sub journey : Role(controller) {
    };
    my $links    = $self->$_journey_ops_links( $req, $jid );
    my $disabled = $_is_disabled->( $req, $journey, $done );
+   my $label    = locm( $req, 'delivery request' ).SPC.($jid // NUL);
 
    p_fields $jform, $self->schema, 'Journey', $journey,
       $self->$_bind_journey_fields( $req, $page, $journey, {
          disabled => $disabled, done => $done } );
 
-   $disabled or p_action $jform, $action, [ 'journey', $jid ], {
+   $disabled or p_action $jform, $action, [ 'delivery_request', $label ], {
       request => $req };
 
    my $is_call_viewer = is_member( 'call_viewer', $req->session->roles );
 
    (not $is_call_viewer and $disabled) or $done
-      or ($jid and p_action $jform, 'delete', [ 'journey', $jid ], {
+      or ($jid and p_action $jform, 'delete', [ 'delivery_request', $label ], {
          request => $req } );
 
    $jid or return $self->get_stash( $req, $page );
@@ -1119,6 +1120,7 @@ sub leg : Role(controller) {
    my $links    = $self->$_leg_ops_links( $req, $page, $jid );
    my $count    = !$lid ? $self->$_count_legs( $jid ) : undef;
    my $disabled = $_is_disabled->( $req, $journey, $done );
+   my $label    = locm( $req, 'stage' ).SPC.($lid // NUL);
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
@@ -1127,10 +1129,12 @@ sub leg : Role(controller) {
       journey_id => $jid, leg_count => $count, request => $req } );
 
    ($done and $leg->on_station)
-      or p_action $form, $action, [ 'leg', $lid ], { request => $req };
+      or p_action $form, $action, [ 'delivery_stage', $label ], {
+         request => $req };
 
    $disabled or ($lid and
-      p_action $form, 'delete', [ 'leg', $lid ], { request => $req } );
+      p_action $form, 'delete', [ 'delivery_stage', $label ], {
+         request => $req } );
 
    return $self->get_stash( $req, $page );
 }
@@ -1221,27 +1225,7 @@ sub update_customer_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub update_incident_action : Role(controller) {
-   my ($self, $req) = @_;
-
-   my $iid = $req->uri_params->( 0 );
-   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
-   my $title = $incident->title;
-
-   $self->$_update_incident_from_request( $req, $incident );
-
-   try   { $incident->update }
-   catch { $self->rethrow_exception( $_, 'update', 'incident', $iid ) };
-
-   $self->send_event( $req, "action:update-incident title:${title}" );
-
-   my $who = $req->session->user_label;
-   my $message = [ to_msg 'Incident [_1] updated by [_2]', $iid, $who ];
-
-   return { redirect => { location => $req->uri, message => $message } };
-}
-
-sub update_journey_action : Role(controller) {
+sub update_delivery_request_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $jid     = $req->uri_params->( 0 );
@@ -1264,7 +1248,7 @@ sub update_journey_action : Role(controller) {
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub update_leg_action : Role(controller) {
+sub update_delivery_stage_action : Role(controller) {
    my ($self, $req) = @_;
 
    my $schema    = $self->schema;
@@ -1292,6 +1276,26 @@ sub update_leg_action : Role(controller) {
    my $who     = $req->session->user_label;
    my $message = [ to_msg 'Stage [_1] of delivery request [_2] updated by [_3]',
                    $lid, $jid, $who ];
+
+   return { redirect => { location => $req->uri, message => $message } };
+}
+
+sub update_incident_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $iid = $req->uri_params->( 0 );
+   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
+   my $title = $incident->title;
+
+   $self->$_update_incident_from_request( $req, $incident );
+
+   try   { $incident->update }
+   catch { $self->rethrow_exception( $_, 'update', 'incident', $iid ) };
+
+   $self->send_event( $req, "action:update-incident title:${title}" );
+
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Incident [_1] updated by [_2]', $iid, $who ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
