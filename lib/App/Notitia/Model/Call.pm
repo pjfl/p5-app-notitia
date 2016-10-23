@@ -651,6 +651,8 @@ my $_update_leg_from_request = sub {
 
       $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
+      $attr eq 'operator_id' and not $v and next;
+
       if (length $v and is_member $attr,
           [ qw( collection_eta collected delivered on_station ) ]) {
          $v =~ s{ [@] }{}mx; $v = to_dt $v;
@@ -736,7 +738,8 @@ sub create_journey_action : Role(controller) {
    $self->$_update_journey_from_request( $req, $journey );
 
    try   { $journey->insert }
-   catch { $self->rethrow_exception( $_, 'create', 'journey', $customer->name)};
+   catch { $self->rethrow_exception
+              ( $_, 'create', 'delivery request', $customer->name) };
 
    my $jid      = $journey->id;
    my $message  = "action:create-delivery id:${jid} customer:".$customer->name;
@@ -745,7 +748,7 @@ sub create_journey_action : Role(controller) {
 
    my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
 
-   $message = [ to_msg 'Journey [_1] for [_2] created by [_3]',
+   $message = [ to_msg 'Delivery request [_1] for [_2] created by [_3]',
                 $jid, $customer->name, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
@@ -761,10 +764,11 @@ sub create_leg_action : Role(controller) {
    $self->$_update_leg_from_request( $req, $leg );
 
    try   { $leg->insert }
-   catch { $self->rethrow_exception( $_, 'create', 'leg', $jid ) };
+   catch { $self->rethrow_exception( $_, 'create', 'delivery stage', $jid ) };
 
    my $who      = $req->session->user_label;
-   my $message  = [ to_msg 'Leg [_1] of journey [_2] created by [_3]',
+   my $message  = [ to_msg
+                    'Stage [_1] of delivery request [_2] created by [_3]',
                     $leg->id, $jid, $who ];
    my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
 
@@ -878,7 +882,7 @@ sub delete_journey_action : Role(controller) {
    my $who      = $req->session->user_label;
    my $location = uri_for_action $req, $self->moniker.'/journeys';
 
-   $message = [ to_msg 'Journey [_1] deleted by [_2]', $jid, $who ];
+   $message = [ to_msg 'Delivery request [_1] deleted by [_2]', $jid, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -890,7 +894,8 @@ sub delete_leg_action : Role(controller) {
    my $lid      = $req->uri_params->( 1 );
    my $leg      = $self->schema->resultset( 'Leg' )->find( $lid ); $leg->delete;
    my $who      = $req->session->user_label;
-   my $message  = [ to_msg 'Leg [_1] of journey [_2] deleted by [_3]',
+   my $message  = [ to_msg
+                    'Stage [_1] of delivery request [_2] deleted by [_3]',
                     $lid, $jid, $who ];
    my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
 
@@ -1246,13 +1251,14 @@ sub update_journey_action : Role(controller) {
    $self->$_update_journey_from_request( $req, $journey );
 
    try   { $journey->update }
-   catch { $self->rethrow_exception( $_, 'update', 'journey', $c_name ) };
+   catch { $self->rethrow_exception
+              ( $_, 'update', 'delivery request', $c_name ) };
 
    my $message = "action:update-delivery id:${jid} customer:${c_name}";
 
    $self->send_event( $req, $message );
 
-   $message = [ to_msg 'Journey [_1] for [_2] updated by [_3]',
+   $message = [ to_msg 'Delivery request [_1] for [_2] updated by [_3]',
                 $jid, $c_name, $req->session->user_label ];
 
    return { redirect => { location => $req->uri, message => $message } };
@@ -1281,10 +1287,10 @@ sub update_leg_action : Role(controller) {
    };
 
    try   { $self->schema->txn_do( $update ) }
-   catch { $self->rethrow_exception( $_, 'update', 'leg', $jid ) };
+   catch { $self->rethrow_exception( $_, 'update', 'delivery stage', $lid ) };
 
    my $who     = $req->session->user_label;
-   my $message = [ to_msg 'Leg [_1] of journey [_2] updated by [_3]',
+   my $message = [ to_msg 'Stage [_1] of delivery request [_2] updated by [_3]',
                    $lid, $jid, $who ];
 
    return { redirect => { location => $req->uri, message => $message } };
