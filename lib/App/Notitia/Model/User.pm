@@ -6,8 +6,9 @@ use App::Notitia::Form      qw( blank_form p_button p_checkbox p_image p_label
                                 p_password p_radio p_select p_slider p_tag
                                 p_text p_textfield );
 use App::Notitia::Util      qw( check_form_field js_server_config
-                                js_slider_config locm register_action_paths
-                                set_element_focus to_msg uri_for_action );
+                                js_slider_config locm make_tip
+                                register_action_paths set_element_focus
+                                to_msg uri_for_action );
 use Class::Usul::Functions  qw( create_token throw );
 use Class::Usul::Types      qw( ArrayRef HashRef Object );
 use HTTP::Status            qw( HTTP_OK );
@@ -263,8 +264,9 @@ sub login : Role(anon) {
 
    p_textfield $form, 'username',  NUL, { class => 'standard-field server' };
    p_password  $form, 'password';
-   p_textfield $form, 'auth_code', NUL, { class => 'mediumint-field',
-      label_class => 'hidden', label_id => 'auth_code_label', };
+   p_textfield $form, 'auth_code', NUL, {
+      class => 'mediumint-field', label_class => 'hidden',
+      label_id => 'auth_code_label', tip => make_tip $req, 'auth_code_tip' };
    p_button    $form, 'login', 'login', { class => 'save-button right' };
 
    $self->$_push_login_js( $req, $page );

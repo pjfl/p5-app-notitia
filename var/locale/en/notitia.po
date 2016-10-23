@@ -157,6 +157,10 @@ msgstr "Assign To"
 msgid "auth_code"
 msgstr "Auth. Code"
 
+msgid "auth_code_tip"
+msgstr "If you can see this and you have not enabled TOTP then the value "
+       "in the user name field has not been recognised"
+
 msgid "badge_expires"
 msgstr "Badge Expires"
 
@@ -1860,7 +1864,7 @@ msgid "urgent"
 msgstr "Urgent"
 
 msgid "username"
-msgstr "Username"
+msgstr "User name"
 
 msgid "username_field_tip"
 msgstr "If left blank a username will be generated from the "
