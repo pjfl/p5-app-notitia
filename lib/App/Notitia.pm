@@ -12,7 +12,7 @@ sub env_var {
 
 #TODO: Automate incrementing of schema versions
 sub schema_version {
-   return qv( '0.6.44' );
+   return qv( '0.7.10' );
 }
 
 1;

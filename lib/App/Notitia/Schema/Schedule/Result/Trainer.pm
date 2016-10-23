@@ -11,14 +11,14 @@ my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 $class->table( 'trainer' );
 
 $class->add_columns
-   ( trainer_id     => foreign_key_data_type,
-     course_type_id => foreign_key_data_type,
+   ( trainer_id => foreign_key_data_type,
+     event_id   => foreign_key_data_type,
      );
 
-$class->set_primary_key( 'trainer_id', 'course_type_id' );
+$class->set_primary_key( 'trainer_id', 'event_id' );
 
-$class->belongs_to( trainer     => "${result}::Person", 'trainer_id'   );
-$class->belongs_to( course_type => "${result}::Type", 'course_type_id' );
+$class->belongs_to( trainer => "${result}::Person", 'trainer_id' );
+$class->belongs_to( event   => "${result}::Event",  'event_id'   );
 
 1;
 

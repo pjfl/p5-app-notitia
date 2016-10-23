@@ -130,11 +130,9 @@ sub list_people {
 
    $opts->{prefetch} //= []; push @{ $opts->{prefetch} }, 'roles';
 
-   # TODO: Inefficient query not processing restriction on data server
-   my $people = $self->list_all_people( $opts );
-   my $type   = $self->$_find_role_type( $role );
+   $opts->{role} = $role; $opts->{status} //= 'current';
 
-   return [ grep { $_->[ 1 ]->is_member_of( $role, $type ) } @{ $people } ];
+   return $self->list_all_people( $opts );
 }
 
 sub max_badge_id {

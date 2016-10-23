@@ -127,6 +127,16 @@ my $_participent_headers = sub {
             0 .. 2 ];
 };
 
+my $_participents_title = sub {
+   my ($req, $event) = @_; my $label = $event->name;
+
+   if ($event->event_type eq 'training') {
+      $label = locm $req, lc $event->name;
+   }
+
+   return locm $req, 'participents_management_heading', $label;
+};
+
 my $_vehicle_events_uri = sub {
    my ($req, $vrn) = @_; my $after = now_dt->subtract( days => 1 )->ymd;
 
@@ -158,15 +168,13 @@ my $_add_event_js = sub {
 my $_bind_owner = sub {
    my ($self, $event, $disabled) = @_; $event->uri or return FALSE;
 
-   my $schema = $self->schema;
-   my $opts   = { fields => { selected => $event->owner } };
-   my $people = $schema->resultset( 'Person' )->list_all_people( $opts );
+   my $rs = $self->schema->resultset( 'Person' );
+   my $opts = { fields => { selected => $event->owner } };
+   my $people = $rs->list_people( 'event_manager', $opts );
 
-   $opts = { class => 'standard-field required', numify => TRUE,
-             type  => 'select', value => [ [ NUL, NUL ], @{ $people } ] };
-   $disabled and $opts->{disabled} = TRUE;
-
-   return $opts;
+   return {
+      class => 'standard-field required', disabled => $disabled, numify => TRUE,
+      type  => 'select', value => [ [ NUL, NUL ], @{ $people } ] };
 };
 
 my $_format_as_markdown = sub {
@@ -218,9 +226,9 @@ my $_participent_ops_links = sub {
 };
 
 my $_update_event_from_request = sub {
-   my ($self, $req, $event) = @_; my $params = $req->body_params;
+   my ($self, $req, $event) = @_;
 
-   my $opts = { optional => TRUE };
+   my $params = $req->body_params; my $opts = { optional => TRUE };
 
    for my $attr (qw( description end_time max_participents
                      name notes start_time )) {
@@ -272,17 +280,24 @@ my $_bind_event_name = sub {
 
       my $courses = $self->schema->resultset( 'Type' )->list_types( $opts );
 
-      $opts = { class => 'standard-field required',
-                label => 'training_event_name', type => 'select',
-                value => [ [ NUL, NUL ], @{ $courses } ] };
-
-      $disabled and $opts->{disabled} = TRUE;
-
-      return $opts;
+      return { class => 'standard-field required', disabled => $disabled,
+               label => 'training_event_name', type => 'select',
+               value => [ [ NUL, NUL ], @{ $courses } ] };
    }
 
    return { class    => 'standard-field server',
             disabled => $disabled, label => 'event_name' };
+};
+
+my $_bind_trainer = sub {
+   my ($self, $event, $opts) = @_; $opts->{training_event} or return FALSE;
+
+   my $disabled = $opts->{disabled} // FALSE;
+   my $trainers = $self->schema->resultset( 'Person' )->list_people( 'trainer');
+
+   return {
+      class => 'standard-field', disabled => $disabled, type => 'select',
+      value => [ [ NUL, undef ], @{ $trainers } ], };
 };
 
 my $_bind_event_fields = sub {
@@ -301,6 +316,7 @@ my $_bind_event_fields = sub {
                             disabled => $disabled, type => 'time' },
       end_time         => { class    => 'standard-field',
                             disabled => $disabled, type => 'time' },
+      trainer          => $self->$_bind_trainer( $event, $opts ),
       max_participents => $no_maxp  ? FALSE : { class => 'standard-field' },
       notes            => $disabled ? FALSE : {
          class         => 'standard-field autosize', type => 'textarea' },
@@ -323,7 +339,11 @@ my $_create_event = sub {
 
    my $event = $self->schema->resultset( 'Event' )->new_result( $attr );
 
-   $self->$_update_event_from_request( $req, $event );
+   $self->$_update_event_from_request( $req, $event, $event_type );
+
+   my $v; $event_type eq 'training'
+      and defined $v = $req->body_params->( 'trainer', { optional => TRUE } )
+      and ;
 
    try   { $event->insert }
    catch {
@@ -603,16 +623,6 @@ sub participate_event_action : Role(any) {
 
    return { redirect => { location => $location, message => $message } };
 }
-
-my $_participents_title = sub {
-   my ($req, $event) = @_; my $label = $event->name;
-
-   if ($event->event_type eq 'training') {
-      $label = locm $req, lc $event->name;
-   }
-
-   return locm $req, 'participents_management_heading', $label;
-};
 
 sub participents : Role(any) {
    my ($self, $req) = @_;

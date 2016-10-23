@@ -1730,6 +1730,9 @@ msgstr "Theme"
 msgid "trailer"
 msgstr "Trailer"
 
+msgid "trainer"
+msgstr "Trainer"
+
 msgid "training"
 msgstr "Training"
 
