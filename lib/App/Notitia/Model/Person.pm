@@ -133,8 +133,8 @@ my $_people_headers = sub {
    }
    else {
       $header = 'people_heading';
-      $max    = (is_member $role, qw( rider driver )) ? 5
-              : (is_member $role, qw( controller rider driver )) ? 4
+      $max    = (is_member $role, qw( driver rider )) ? 5
+              : (is_member $role, qw( controller fund_raiser )) ? 4
               : 2;
    }
 
@@ -259,7 +259,7 @@ my $_people_links = sub {
    unshift @paths, is_member( 'person_manager', $req->session->roles )
       ? "${moniker}/person" : "${moniker}/person_summary";
 
-   $role and is_member $role, qw( controller driver rider )
+   $role and is_member $role, qw( controller driver fund_raiser rider )
       and push @paths, 'certs/certifications',
       and push @paths, 'train/training';
 
