@@ -11,6 +11,7 @@ use App::Notitia::Util      qw( loc locm make_tip management_link
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Data::Page;
+use Try::Tiny;
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -52,70 +53,6 @@ my $_list_slot_certs = sub {
    return  [ map { $_->certification_type }
              $rs->search( { 'slot_type' => $slot_type },
                           { prefetch    => 'certification_type' } )->all ];
-};
-
-my $_log_user_label = sub {
-   my ($data, $field) = @_; (my $scode = $field) =~ s{ \A .+ : }{}mx;
-
-   exists $data->{cache}->{ $scode } and return $data->{cache}->{ $scode };
-
-   my $label = $data->{person_rs}->find_by_shortcode( $scode )->label;
-
-   return $data->{cache}->{ $scode } = $label;
-};
-
-my $_log_columns = sub {
-   my ($data, $logname, $line) = @_; my @fields = split SPC, $line, 5;
-
-   my $date = join SPC, @fields[ 0 .. 2 ];
-
-   $data->{filter_column} eq 'date' and $date !~ $data->{filter_pattern}
-      and return ();
-
-   my @cols = [ $date, 'log-date' ]; my $detail;
-
-   if ($logname eq 'activity') {
-      my @subfields = split SPC, $fields[ 4 ], 4;
-      my $label = $_log_user_label->( $data, $subfields[ 0 ] );
-
-      $data->{filter_column} eq 'user' and $label !~ $data->{filter_pattern}
-         and return ();
-
-      push @cols, [ $label, 'log-user' ];
-
-      (my $client = $subfields[ 1 ]) =~ s{ \A .+ : }{}mx;
-
-      $data->{filter_column} eq 'client' and $client !~ $data->{filter_pattern}
-         and return ();
-
-      push @cols, [ $client, 'log-client' ];
-
-      (my $action = $subfields[ 2 ]) =~ s{ \A .+ : }{}mx;
-
-      $data->{filter_column} eq 'action' and $action !~ $data->{filter_pattern}
-         and return ();
-
-      push @cols, [ $action, 'log-action' ];
-
-      $detail = $subfields[ 3 ];
-   }
-   else {
-      my $value = $fields[ 3 ]; $value =~ s{ [\[\]] }{}gmx;
-      my $level = lc $value;
-
-      $data->{filter_column} eq 'level' and $level !~ $data->{filter_pattern}
-         and return ();
-
-      push @cols, [ $value, "log-${level}-level" ];
-      $detail = $fields[ 4 ];
-   }
-
-   $data->{filter_column} eq 'detail' and $detail !~ $data->{filter_pattern}
-         and return ();
-
-   push @cols, [ $detail, 'log-detail' ];
-
-   return @cols;
 };
 
 my $_log_headers = sub {
@@ -229,6 +166,73 @@ my $_list_all_certs = sub {
    return [ $type_rs->search_for_certification_types->all ];
 };
 
+my $_log_user_label = sub {
+   my ($self, $data, $field) = @_; (my $scode = $field) =~ s{ \A .+ : }{}mx;
+
+   exists $data->{cache}->{ $scode } and return $data->{cache}->{ $scode };
+
+   my $label;
+
+   try { $label = $data->{person_rs}->find_by_shortcode( $scode )->label }
+   catch { $self->log->warn( $_ ) };
+
+   return $label ? $data->{cache}->{ $scode } = $label : NUL;
+};
+
+my $_log_columns = sub {
+   my ($self, $data, $logname, $line) = @_; my @fields = split SPC, $line, 5;
+
+   my $date = join SPC, @fields[ 0 .. 2 ];
+
+   $data->{filter_column} eq 'date' and $date !~ $data->{filter_pattern}
+      and return ();
+
+   my @cols = [ $date, 'log-date' ]; my $detail;
+
+   if ($logname eq 'activity') {
+      my @subfields = split SPC, $fields[ 4 ], 4;
+      my $label = $self->$_log_user_label( $data, $subfields[ 0 ] );
+
+      $data->{filter_column} eq 'user' and $label !~ $data->{filter_pattern}
+         and return ();
+
+      push @cols, [ $label, 'log-user' ];
+
+      (my $client = $subfields[ 1 ]) =~ s{ \A .+ : }{}mx;
+
+      $data->{filter_column} eq 'client' and $client !~ $data->{filter_pattern}
+         and return ();
+
+      push @cols, [ $client, 'log-client' ];
+
+      (my $action = $subfields[ 2 ]) =~ s{ \A .+ : }{}mx;
+
+      $data->{filter_column} eq 'action' and $action !~ $data->{filter_pattern}
+         and return ();
+
+      push @cols, [ $action, 'log-action' ];
+
+      $detail = $subfields[ 3 ];
+   }
+   else {
+      my $value = $fields[ 3 ]; $value =~ s{ [\[\]] }{}gmx;
+      my $level = lc $value;
+
+      $data->{filter_column} eq 'level' and $level !~ $data->{filter_pattern}
+         and return ();
+
+      push @cols, [ $value, "log-${level}-level" ];
+      $detail = $fields[ 4 ];
+   }
+
+   $data->{filter_column} eq 'detail' and $detail !~ $data->{filter_pattern}
+         and return ();
+
+   push @cols, [ $detail, 'log-detail' ];
+
+   return @cols;
+};
+
 # Public methods
 sub add_certification_action : Role(administrator) {
    my ($self, $req) = @_;
@@ -309,7 +313,7 @@ sub logs : Role(administrator) {
    while (defined (my $line = $file->getline)) {
       $line =~ m{ \A [a-zA-z]{3} [ ] \d+ [ ] \d+ : }mx or next;
 
-      my @cols = $_log_columns->( $data, $logname, $line ); @cols or next;
+      my @cols = $self->$_log_columns( $data, $logname, $line ); @cols or next;
 
       $lno < $first and ++$lno and next; $lno > $last and ++$lno and next;
 
