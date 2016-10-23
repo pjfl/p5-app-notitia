@@ -1,5 +1,6 @@
 requires "App::Ack" => "2.12";
 requires "Auth::GoogleAuth" => "1.01";
+requires "Authen::SASL" => "2.16";
 requires "Class::Null" => "2.110730";
 requires "Class::Usul" => "v0.77.0";
 requires "Cpanel::JSON::XS" => "3.0115";
@@ -22,6 +23,7 @@ requires "HTML::GenerateUtil" => "1.20";
 requires "HTTP::Message" => "6.06";
 requires "JSON::MaybeXS" => "1.003005";
 requires "List::Util" => "1.42";
+requires "MIME::Base64" => "3.13";
 requires "MIME::Types" => "2.11";
 requires "Moo" => "2.000001";
 requires "Plack" => "1.0036";
