@@ -223,6 +223,8 @@ sub change_password_action : Role(anon) {
    my $location = uri_for_action $req, $self->config->places->{login_action};
    my $message  = [ to_msg '[_1] password changed', $person->label ];
 
+   $self->send_event( $req, 'action:change-password' );
+
    return { redirect => { location => $location, message => $message } };
 }
 

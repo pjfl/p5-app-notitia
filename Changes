@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds change password to activity log
           - Fixes #114. Fund raisers get certs and training
           - Fixes activate-person activity log error
           - Fixes #113. Field width slightly larger
