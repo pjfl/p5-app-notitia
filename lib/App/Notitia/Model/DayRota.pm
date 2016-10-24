@@ -282,7 +282,8 @@ my $_event_link = sub {
    }
 
    my $href = uri_for_action $req, 'event/event_summary', [ $event->uri ];
-   my $tip  = locm $req, 'Click to view the [_1] event', $event->label;
+   my $tip  = locm $req, 'Click to view the [_1] event',
+      ucfirst $event->localised_label( $req );
 
    return {
       colspan  => $_max_rota_cols - 2,
@@ -290,7 +291,7 @@ my $_event_link = sub {
          class => 'table-link', hint => locm( $req, 'Hint' ),
          href  => $href,        name => $event->name,
          tip   => $tip,         type => 'link',
-         value => $event->name, }, };
+         value => ucfirst locm $req, lc $event->name, }, };
 };
 
 my $_events = sub {
@@ -442,7 +443,8 @@ sub day_rota : Role(any) {
    my $type_id   = $self->$_find_rota_type( $name )->id;
    my $slot_rs   = $self->schema->resultset( 'Slot' );;
    my $event_rs  = $self->schema->resultset( 'Event' );
-   my $events    = $event_rs->search_for_a_days_events( $type_id, $rota_dt );
+   my $events    = $event_rs->search_for_a_days_events
+      ( $type_id, $rota_dt, { event_type => [ qw( person training ) ] } );
    my $opts      = { rota_type => $type_id, on => $rota_dt };
    my $slot_data = {};
 
