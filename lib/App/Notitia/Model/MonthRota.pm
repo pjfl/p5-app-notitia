@@ -23,6 +23,7 @@ has '+moniker' => default => 'month';
 
 register_action_paths
    'month/assign_summary' => 'assignment-summary',
+   'month/events_summary' => 'events-summary',
    'month/month_rota' => 'month-rota';
 
 # Construction
@@ -202,19 +203,26 @@ my $_summary_cells = sub {
    return $cells;
 };
 
-my $_vreqs_for_event = sub {
-   my ($schema, $event) = @_;
+my $_vreqs_for_events = sub {
+   my ($schema, $events) = @_;
 
    my $tport_rs = $schema->resultset( 'Transport' );
-   my $assigned = $tport_rs->assigned_vehicle_count( $event->id );
    my $vreq_rs  = $schema->resultset( 'VehicleRequest' );
-   my $vreqs    = $vreq_rs->search( { event_id => $event->id } );
 
-   $vreqs->count or return FALSE;
+   my $total_assigned = 0; my $total_requested = 0;
 
-   my $requested = $vreqs->get_column( 'quantity' )->sum;
+   for my $event (@{ $events }) {
+      my $vreqs = $vreq_rs->search( { event_id => $event->id } );
 
-   return { vehicle     => ($assigned == $requested ? TRUE : FALSE),
+      $vreqs->count or next;
+
+      $total_assigned += $tport_rs->assigned_vehicle_count( $event->id );
+      $total_requested += $vreqs->get_column( 'quantity' )->sum;
+   }
+
+   $total_requested or return FALSE;
+
+   return { vehicle     => ($total_assigned == $total_requested ? TRUE : FALSE),
             vehicle_req => TRUE };
 };
 
@@ -258,15 +266,22 @@ my $_rota_summary = sub {
 
    my $lcm   = $page->{rota}->{lcm};
    my $name  = $page->{rota}->{name};
+   my $id    = $local_dt->ymd.'_events';
    my $table = { class => 'month-rota', rows => [], type => 'table' };
 
    my $class = NUL; my $label = NUL; my $value = NUL;
 
-   if (my $event = $has_event->{ $local_dt->ymd }) {
-      my $opts = $_vreqs_for_event->( $self->schema, $event );
+   if (my $events = $has_event->{ $local_dt->ymd }) {
+      my $opts = $_vreqs_for_events->( $self->schema, $events );
 
       $opts and ($class, $value) = $_summary_link_value->( $opts );
       $label = locm $req, 'Events';
+
+      my $actionp = $self->moniker.'/events_summary';
+      my $href = uri_for_action $req, $actionp, [ "${name}_${id}" ];
+
+      push @{ $page->{literal_js} }, js_server_config
+         $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    }
 
    push @{ $table->{rows} },
@@ -274,8 +289,9 @@ my $_rota_summary = sub {
           colspan => $lcm / 4,
           style   => $self->$_rota_summary_date_style( $local_dt, $data ),
           value   => $local_dt->day },
-        { colspan =>     $lcm / 4, value => $value, class => $class },
-        { colspan => 2 * $lcm / 4, value => $label } ];
+        { colspan =>     $lcm / 4, class => $class, value => $value },
+        { colspan => 2 * $lcm / 4, class => 'server tips', name => $id,
+          title   => locm( $req, 'Events Summary' ), value => $label } ];
 
    push @{ $table->{rows} }, $self->$_summary_cells
       ( $req, $page, $local_dt, [ 'day', 'night' ], [ 'controller' ], $data, 0);
@@ -287,9 +303,8 @@ my $_rota_summary = sub {
       ( $req, $page, $local_dt, [ 'night' ], [ 'rider', 'driver' ], $data, 2 );
 
    my $href = uri_for_action $req, 'day/day_rota', [ $name, $local_dt->ymd ];
-   my $id   = "${name}_".$local_dt->ymd;
 
-   $_onclick_relocate->( $page, $id, $href );
+   $id = "${name}_".$local_dt->ymd; $_onclick_relocate->( $page, $id, $href );
 
    return { class => 'month-rota submit', name => $id, value => $table };
 };
@@ -344,6 +359,32 @@ sub assign_summary : Role(any) {
    return $stash;
 }
 
+sub events_summary : Role(any) {
+   my ($self, $req) = @_;
+
+   my ($rota_name, $rota_date, $extra)
+      = split m{ _ }mx, $req->uri_params->( 0 ), 3;
+   my $rota_dt = to_dt $rota_date;
+   my $stash = $self->dialog_stash( $req );
+   my $form = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $rota_type_id = $self->$_find_rota_type( $rota_name )->id;
+   my $event_rs = $self->schema->resultset( 'Event' );
+   my $opts = { class => 'label-column' };
+
+   for my $event_type (qw( person training )) {
+      my $first = TRUE;
+
+      for my $event ($event_rs->search_for_a_days_events
+         ( $rota_type_id, $rota_dt, { event_type => $event_type } )->all) {
+         $first and p_tag $form, 'h6', locm $req, "${event_type}_event_type";
+         p_tag $form, 'p', ucfirst $event->localised_label( $req ), $opts;
+         $first = FALSE;
+      }
+   }
+
+   return $stash;
+}
+
 sub month_rota : Role(any) {
    my ($self, $req) = @_;
 
@@ -356,7 +397,8 @@ sub month_rota : Role(any) {
       after      => $rota_dt->clone->subtract( days => 1 ),
       before     => $rota_dt->clone->add( days => 31 ),
       rota_type  => $self->$_find_rota_type( $rota_name )->id };
-   my $events    =  $self->schema->resultset( 'Event' )->has_events_for( $opts);
+   my $events    =  $self->schema->resultset( 'Event' )->has_events_for
+      ( { %{ $opts }, event_type => [ qw( person training ) ] } );
    my $assigned  =  $self->$_slot_assignments( $opts );
    my $first     =  $self->$_first_day_of_table( $req, $rota_dt );
 

@@ -330,7 +330,7 @@ my $_toggle_event_assignment = sub {
 
    my $prep = $action eq 'assign' ? 'to' : 'from';
    my $key  = "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]";
-   my $message = "action:vehicle$-{action}ment event:${uri} vehicle:${vrn}";
+   my $message = "action:vehicle-${action}ment event:${uri} vehicle:${vrn}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $vrn, $uri, $req->session->user_label ];

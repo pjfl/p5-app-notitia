@@ -13,6 +13,7 @@ sub dispatch_request {
    sub (POST + /day-rota             + ?*) { [ 'day/from_request',     @_ ] },
    sub (GET  + /day-rota/**          + ?*) { [ 'day/day_rota',         @_ ] },
    sub (GET  + /day-rota             + ?*) { [ 'day/day_rota',         @_ ] },
+   sub (GET  + /events-summary/*     + ?*) { [ 'month/events_summary', @_ ] },
    sub (GET  + /month-rota/**        + ?*) { [ 'month/month_rota',     @_ ] },
    sub (GET  + /month-rota           + ?*) { [ 'month/month_rota',     @_ ] },
    sub (POST + /slot/**              + ?*) { [ 'day/from_request',     @_ ] },

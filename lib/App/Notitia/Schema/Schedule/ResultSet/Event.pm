@@ -8,6 +8,12 @@ use App::Notitia::Util      qw( set_rota_date );
 use Class::Usul::Functions  qw( is_member throw );
 
 # Private methods
+my $_find_course_type = sub {
+   my ($self, $course_name) = @_; my $schema = $self->result_source->schema;
+
+   return $schema->resultset( 'Type' )->find_course_by( $course_name );
+};
+
 my $_find_event_type = sub {
    my ($self, $type_name) = @_; my $schema = $self->result_source->schema;
 
@@ -59,6 +65,11 @@ sub new_result {
 
    $vrn and $columns->{vehicle_id} = $self->$_find_vehicle( $vrn )->id;
 
+   my $course = delete $columns->{course};
+
+   $course
+      and $columns->{course_type_id} = $self->$_find_course_type( $course )->id;
+
    return $self->next::method( $columns );
 }
 
@@ -85,22 +96,21 @@ sub has_events_for {
    set_rota_date $parser, $where, 'start_rota.date', $opts;
 
    for my $event ($self->search( $where, { prefetch => $prefetch } )->all) {
-      $has_event->{ $event->start_date->set_time_zone( 'local' )->ymd }
-         = $event;
+      my $key = $event->start_date->set_time_zone( 'local' )->ymd;
+
+      $has_event->{ $key } //= []; push @{ $has_event->{ $key } }, $event;
    }
 
    return $has_event;
 }
 
 sub search_for_a_days_events {
-   my ($self, $rota_type_id, $start_date, $event_type) = @_;
+   my ($self, $rota_type_id, $start_date, $opts) = @_; $opts //= {};
 
    my $parser = $self->result_source->schema->datetime_parser;
 
-   $event_type //= 'person';
-
    return $self->search
-      ( { 'event_type.name'    => $event_type,
+      ( { 'event_type.name'    => $opts->{event_type} // 'person',
           'start_rota.type_id' => $rota_type_id,
           'start_rota.date'    => $parser->format_datetime( $start_date ) },
         { columns => [ 'id', 'name', 'start_rota.date',

@@ -24,6 +24,7 @@ $class->add_columns
      start_rota_id    => foreign_key_data_type,
      end_rota_id      => nullable_foreign_key_data_type,
      vehicle_id       => nullable_foreign_key_data_type,
+     course_type_id   => nullable_foreign_key_data_type,
      max_participents => nullable_numerical_id_data_type,
      start_time       => varchar_data_type(   5 ),
      end_time         => varchar_data_type(   5 ),
@@ -43,9 +44,12 @@ $class->belongs_to( end_rota   =>
                     "${result}::Rota", 'end_rota_id', $left_join );
 $class->belongs_to( vehicle    =>
                     "${result}::Vehicle", 'vehicle_id', $left_join );
+$class->belongs_to( course_type =>
+                    "${result}::Type", 'course_type_id', $left_join );
 
 $class->has_many( participents     => "${result}::Participent",    'event_id' );
 $class->has_many( vehicle_requests => "${result}::VehicleRequest", 'event_id' );
+$class->has_many( trainers         => "${result}::Trainer",        'event_id' );
 $class->has_many( transports       => "${result}::Transport",      'event_id' );
 
 # Private methods
@@ -92,6 +96,15 @@ my $_assert_event_allowed = sub {
 };
 
 # Public methods
+sub add_trainer {
+   my ($self, $scode) = @_;
+
+   my $schema = $self->result_source->schema;
+   my $trainer = $schema->resultset( 'Person' )->find_by_shortcode( $scode );
+
+   return $self->create_related( 'trainers', { trainer_id => $trainer->id } );
+}
+
 sub count_of_participents {
    my $self = shift;
    my $rs   = $self->result_source->schema->resultset( 'Participent' );
@@ -144,6 +157,15 @@ sub localised_label {
 
 sub post_filename {
    return $_[ 0 ]->start_date->set_time_zone( 'local' )->ymd.'_'.$_[ 0 ]->uri;
+}
+
+sub remove_trainer {
+   my ($self, $scode) = @_;
+
+   my $schema = $self->result_source->schema;
+   my $trainer = $schema->resultset( 'Person' )->find_by_shortcode( $scode );
+
+   return $self->delete_related( 'trainers', { trainer_id => $trainer->id } );
 }
 
 sub sqlt_deploy_hook {
