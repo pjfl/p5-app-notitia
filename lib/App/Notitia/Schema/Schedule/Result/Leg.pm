@@ -20,7 +20,8 @@ $class->add_columns
       beginning_id   => foreign_key_data_type,
       ending_id      => foreign_key_data_type,
       vehicle_id     => nullable_foreign_key_data_type,
-      called         => set_on_create_datetime_data_type,
+      created        => set_on_create_datetime_data_type,
+      called         => date_data_type,
       collection_eta => date_data_type,
       collected      => date_data_type,
       delivered      => date_data_type,
@@ -38,6 +39,10 @@ $class->belongs_to( vehicle   => "${result}::Vehicle",  'vehicle_id'   );
 # Public methods
 sub called_label {
    return datetime_label $_[ 0 ]->called;
+}
+
+sub created_label {
+   return datetime_label $_[ 0 ]->created;
 }
 
 sub collection_eta_label {

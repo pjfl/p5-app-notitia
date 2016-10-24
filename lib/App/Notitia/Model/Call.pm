@@ -8,8 +8,9 @@ use App::Notitia::Constants qw( FALSE NUL PRIORITY_TYPE_ENUM
 use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
                                 p_container p_fields p_link p_list p_row
                                 p_select p_table p_tag p_textfield );
-use App::Notitia::Util      qw( dialog_anchor js_window_config locm make_tip
-                                now_dt page_link_set register_action_paths to_dt
+use App::Notitia::Util      qw( datetime_label dialog_anchor js_window_config
+                                locm make_tip now_dt page_link_set
+                                register_action_paths to_dt
                                 to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
@@ -84,7 +85,7 @@ my $_is_disabled = sub {
    my ($req, $journey, $done) = @_; $journey->id or return $done;
 
    $req->username ne $journey->controller and return TRUE;
-   now_dt > $journey->requested->clone->add( minutes => 30 ) and return TRUE;
+   now_dt > $journey->created->clone->add( minutes => 30 ) and return TRUE;
 
    return $done;
 };
@@ -331,8 +332,10 @@ my $_bind_journey_fields = sub {
             value      => $_bind_customer->( $customers, $journey ) },
          controller    => $journey->id ? {
             disabled   => TRUE, value => $journey->controller->label } : FALSE,
-         requested     => $journey->id ? {
-            disabled   => TRUE, value => $journey->requested_label } : FALSE,
+         requested     => {
+            disabled   => $disabled, type => 'datetime',
+            value      => $journey->id
+                        ? $journey->requested_label : datetime_label now_dt },
          delivered     => $opts->{done} ? {
             disabled   => TRUE, value => $journey->delivered_label } : FALSE,
          priority      => {
@@ -379,8 +382,10 @@ my $_bind_leg_fields = sub {
             class       => 'standard-field',
             disabled    => $leg->id ? TRUE : $disabled, type => 'select',
             value       => $_bind_operator->( $leg, $opts ) },
-         called         => $leg->id ? {
-            disabled    => TRUE, value => $leg->called_label } : FALSE,
+         called         => {
+            disabled    => $disabled,
+            value       => $leg->id
+                         ? $leg->called_label : datetime_label now_dt },
          beginning_id   => {
             class       => 'standard-field',
             disabled    => $disabled, type => 'select',
@@ -667,13 +672,18 @@ my $_update_journey_from_request = sub {
 
    my $opts = { optional => TRUE };
 
-   for my $attr (qw( customer_id dropoff_id notes pickup_id priority )) {
+   for my $attr (qw( customer_id dropoff_id notes
+                     pickup_id priority requested )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 
       my $v = $params->( $attr, $opts ); defined $v or next;
 
       $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
+
+      if (length $v and is_member $attr, [ qw( requested ) ]) {
+         $v =~ s{ [@] }{}mx; $v = to_dt $v;
+      }
 
       $journey->$attr( $v );
    }
@@ -688,7 +698,7 @@ my $_update_leg_from_request = sub {
 
    my $opts = { optional => TRUE };
 
-   for my $attr (qw( beginning_id collection_eta collected delivered
+   for my $attr (qw( beginning_id called collection_eta collected delivered
                      ending_id on_station operator_id )) {
       my $v = $params->( $attr, $opts ); defined $v or next;
 
@@ -697,7 +707,7 @@ my $_update_leg_from_request = sub {
       $attr eq 'operator_id' and not $v and next;
 
       if (length $v and is_member $attr,
-          [ qw( collection_eta collected delivered on_station ) ]) {
+          [ qw( called collection_eta collected delivered on_station ) ]) {
          $v =~ s{ [@] }{}mx; $v = to_dt $v;
       }
 

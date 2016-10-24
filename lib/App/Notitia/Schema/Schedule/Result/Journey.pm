@@ -20,7 +20,8 @@ $class->add_columns
      completed         => bool_data_type( FALSE ),
      priority          => enumerated_data_type( PRIORITY_TYPE_ENUM, 'routine' ),
      original_priority => enumerated_data_type( PRIORITY_TYPE_ENUM, 'routine' ),
-     requested         => set_on_create_datetime_data_type,
+     created           => set_on_create_datetime_data_type,
+     requested         => date_data_type,
      delivered         => date_data_type,
      controller_id     => foreign_key_data_type,
      customer_id       => foreign_key_data_type,
@@ -40,6 +41,10 @@ $class->has_many( legs => "${result}::Leg", 'journey_id' );
 $class->has_many( packages => "${result}::Package", 'journey_id' );
 
 # Public methods
+sub created_label {
+   return datetime_label $_[ 0 ]->created;
+}
+
 sub delivered_label {
    return datetime_label $_[ 0 ]->delivered;
 }
@@ -74,7 +79,6 @@ sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       constraints      => {
          notes         => { max_length => VARCHAR_MAX_SIZE(), min_length => 0 },
-         package_other => { max_length => 64, min_length => 0, },
       },
       fields           => {
          customer_id   => { validate => 'isMandatory' },
