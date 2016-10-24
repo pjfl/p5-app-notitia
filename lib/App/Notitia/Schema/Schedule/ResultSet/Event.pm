@@ -96,8 +96,9 @@ sub has_events_for {
    set_rota_date $parser, $where, 'start_rota.date', $opts;
 
    for my $event ($self->search( $where, { prefetch => $prefetch } )->all) {
-      $has_event->{ $event->start_date->set_time_zone( 'local' )->ymd }
-         = $event;
+      my $key = $event->start_date->set_time_zone( 'local' )->ymd;
+
+      $has_event->{ $key } //= []; push @{ $has_event->{ $key } }, $event;
    }
 
    return $has_event;

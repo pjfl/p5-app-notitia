@@ -203,19 +203,26 @@ my $_summary_cells = sub {
    return $cells;
 };
 
-my $_vreqs_for_event = sub {
-   my ($schema, $event) = @_;
+my $_vreqs_for_events = sub {
+   my ($schema, $events) = @_;
 
    my $tport_rs = $schema->resultset( 'Transport' );
-   my $assigned = $tport_rs->assigned_vehicle_count( $event->id );
    my $vreq_rs  = $schema->resultset( 'VehicleRequest' );
-   my $vreqs    = $vreq_rs->search( { event_id => $event->id } );
 
-   $vreqs->count or return FALSE;
+   my $total_assigned = 0; my $total_requested = 0;
 
-   my $requested = $vreqs->get_column( 'quantity' )->sum;
+   for my $event (@{ $events }) {
+      my $vreqs = $vreq_rs->search( { event_id => $event->id } );
 
-   return { vehicle     => ($assigned == $requested ? TRUE : FALSE),
+      $vreqs->count or next;
+
+      $total_assigned += $tport_rs->assigned_vehicle_count( $event->id );
+      $total_requested += $vreqs->get_column( 'quantity' )->sum;
+   }
+
+   $total_requested or return FALSE;
+
+   return { vehicle     => ($total_assigned == $total_requested ? TRUE : FALSE),
             vehicle_req => TRUE };
 };
 
@@ -264,8 +271,8 @@ my $_rota_summary = sub {
 
    my $class = NUL; my $label = NUL; my $value = NUL;
 
-   if (my $event = $has_event->{ $local_dt->ymd }) {
-      my $opts = $_vreqs_for_event->( $self->schema, $event );
+   if (my $events = $has_event->{ $local_dt->ymd }) {
+      my $opts = $_vreqs_for_events->( $self->schema, $events );
 
       $opts and ($class, $value) = $_summary_link_value->( $opts );
       $label = locm $req, 'Events';
@@ -365,11 +372,13 @@ sub events_summary : Role(any) {
    my $opts = { class => 'label-column' };
 
    for my $event_type (qw( person training )) {
-      p_tag $form, 'h6', locm $req, "${event_type}_event_type";
+      my $first = TRUE;
 
       for my $event ($event_rs->search_for_a_days_events
          ( $rota_type_id, $rota_dt, { event_type => $event_type } )->all) {
-         p_tag $form, 'p', $event->label, $opts;
+         $first and p_tag $form, 'h6', locm $req, "${event_type}_event_type";
+         p_tag $form, 'p', ucfirst $event->localised_label( $req ), $opts;
+         $first = FALSE;
       }
    }
 
@@ -388,7 +397,8 @@ sub month_rota : Role(any) {
       after      => $rota_dt->clone->subtract( days => 1 ),
       before     => $rota_dt->clone->add( days => 31 ),
       rota_type  => $self->$_find_rota_type( $rota_name )->id };
-   my $events    =  $self->schema->resultset( 'Event' )->has_events_for( $opts);
+   my $events    =  $self->schema->resultset( 'Event' )->has_events_for
+      ( { %{ $opts }, event_type => [ qw( person training ) ] } );
    my $assigned  =  $self->$_slot_assignments( $opts );
    my $first     =  $self->$_first_day_of_table( $req, $rota_dt );
 
