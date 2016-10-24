@@ -307,7 +307,9 @@ my $_bind_event_name = sub {
 };
 
 my $_bind_trainer = sub {
-   my ($self, $event, $opts) = @_; $opts->{training_event} or return FALSE;
+   my ($self, $event, $opts) = @_;
+
+   $opts->{training_event} or $event->event_type eq 'training' or return FALSE;
 
    my $disabled = $opts->{disabled} // FALSE;
    my $trainer  = ($event->trainers->all)[ 0 ];
