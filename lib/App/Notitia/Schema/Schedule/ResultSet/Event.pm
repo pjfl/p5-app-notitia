@@ -104,14 +104,12 @@ sub has_events_for {
 }
 
 sub search_for_a_days_events {
-   my ($self, $rota_type_id, $start_date, $event_type) = @_;
+   my ($self, $rota_type_id, $start_date, $opts) = @_; $opts //= {};
 
    my $parser = $self->result_source->schema->datetime_parser;
 
-   $event_type //= 'person';
-
    return $self->search
-      ( { 'event_type.name'    => $event_type,
+      ( { 'event_type.name'    => $opts->{event_type} // 'person',
           'start_rota.type_id' => $rota_type_id,
           'start_rota.date'    => $parser->format_datetime( $start_date ) },
         { columns => [ 'id', 'name', 'start_rota.date',

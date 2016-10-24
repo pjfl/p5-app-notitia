@@ -1377,6 +1377,9 @@ msgstr "Add Person"
 msgid "person_create_tip"
 msgstr "Create a new person record"
 
+msgid "person_event_type"
+msgstr "Fund Raisers"
+
 msgid "person_management_link"
 msgstr "Edit"
 
@@ -1744,6 +1747,9 @@ msgstr "Course Name"
 
 msgid "training_event_title"
 msgstr "Training Event"
+
+msgid "training_event_type"
+msgstr "Training"
 
 msgid "training_events_heading_0"
 msgstr "Course"
