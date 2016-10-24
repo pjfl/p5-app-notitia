@@ -8,6 +8,12 @@ use App::Notitia::Util      qw( set_rota_date );
 use Class::Usul::Functions  qw( is_member throw );
 
 # Private methods
+my $_find_course_type = sub {
+   my ($self, $course_name) = @_; my $schema = $self->result_source->schema;
+
+   return $schema->resultset( 'Type' )->find_course_by( $course_name );
+};
+
 my $_find_event_type = sub {
    my ($self, $type_name) = @_; my $schema = $self->result_source->schema;
 
@@ -58,6 +64,11 @@ sub new_result {
    my $vrn = delete $columns->{vehicle};
 
    $vrn and $columns->{vehicle_id} = $self->$_find_vehicle( $vrn )->id;
+
+   my $course = delete $columns->{course};
+
+   $course
+      and $columns->{course_type_id} = $self->$_find_course_type( $course )->id;
 
    return $self->next::method( $columns );
 }

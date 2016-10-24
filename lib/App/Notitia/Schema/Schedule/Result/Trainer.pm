@@ -1,6 +1,7 @@
 package App::Notitia::Schema::Schedule::Result::Trainer;
 
 use strictures;
+use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( TRUE );
@@ -19,6 +20,11 @@ $class->set_primary_key( 'trainer_id', 'event_id' );
 
 $class->belongs_to( trainer => "${result}::Person", 'trainer_id' );
 $class->belongs_to( event   => "${result}::Event",  'event_id'   );
+
+# Private methods
+sub _as_string {
+   return $_[ 0 ]->trainer;
+}
 
 1;
 
