@@ -26,20 +26,18 @@ $class->add_columns
      customer_id       => foreign_key_data_type,
      pickup_id         => foreign_key_data_type,
      dropoff_id        => foreign_key_data_type,
-     package_type_id   => foreign_key_data_type,
-     package_other     => varchar_data_type( 64 ),
      notes             => varchar_data_type,
      );
 
 $class->set_primary_key( 'id' );
 
-$class->belongs_to( controller   => "${result}::Person",   'controller_id' );
-$class->belongs_to( customer     => "${result}::Customer", 'customer_id' );
-$class->belongs_to( dropoff      => "${result}::Location", 'dropoff_id' );
-$class->belongs_to( package_type => "${result}::Type",     'package_type_id' );
-$class->belongs_to( pickup       => "${result}::Location", 'pickup_id' );
+$class->belongs_to( controller => "${result}::Person",   'controller_id' );
+$class->belongs_to( customer   => "${result}::Customer", 'customer_id' );
+$class->belongs_to( dropoff    => "${result}::Location", 'dropoff_id' );
+$class->belongs_to( pickup     => "${result}::Location", 'pickup_id' );
 
 $class->has_many( legs => "${result}::Leg", 'journey_id' );
+$class->has_many( packages => "${result}::Package", 'journey_id' );
 
 # Public methods
 sub delivered_label {
@@ -82,8 +80,6 @@ sub validation_attributes {
          customer_id   => { validate => 'isMandatory' },
          dropoff_id    => { validate => 'isMandatory' },
          notes         => { validate => 'isValidLength isValidText' },
-         package_other => { validate => 'isValidLength isValidText' },
-         package_type_id => { validate => 'isMandatory' },
          pickup_id     => { validate => 'isMandatory' },
       },
       level => 8,

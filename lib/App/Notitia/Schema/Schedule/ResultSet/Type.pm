@@ -47,6 +47,10 @@ sub find_event_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'event' );
 }
 
+sub find_package_by {
+   return $_[ 0 ]->$_find_by( $_[ 1 ], 'package' );
+}
+
 sub find_role_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'role' );
 }

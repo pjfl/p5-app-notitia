@@ -8,8 +8,8 @@ use App::Notitia::Constants qw( FALSE NUL PRIORITY_TYPE_ENUM
 use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
                                 p_container p_fields p_link p_list p_row
                                 p_select p_table p_tag p_textfield );
-use App::Notitia::Util      qw( js_window_config locm make_tip now_dt
-                                page_link_set register_action_paths to_dt
+use App::Notitia::Util      qw( dialog_anchor js_window_config locm make_tip
+                                now_dt page_link_set register_action_paths to_dt
                                 to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
@@ -36,7 +36,8 @@ register_action_paths
    'call/journeys'       => 'deliveries',
    'call/leg'            => 'delivery/*/stage',
    'call/location'       => 'location',
-   'call/locations'      => 'locations';
+   'call/locations'      => 'locations',
+   'call/package'        => 'delivery/*/package';
 
 # Construction
 around 'get_stash' => sub {
@@ -144,22 +145,17 @@ my $_journey_leg_headers = sub {
    return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 3 ];
 };
 
+my $_journey_package_headers = sub {
+   my $req = shift; my $header = 'journey_package_heading';
+
+   return [ map { { class => $_ == 1 ? 'narrow' : undef,
+                    value => locm $req, "${header}_${_}" } } 0 .. 2 ];
+};
+
 my $_journeys_headers = sub {
    my $req = shift; my $header = 'journeys_heading';
 
    return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 3 ];
-};
-
-my $_journeys_row = sub {
-   my ($self, $req, $journey) = @_;
-
-   my $href = uri_for_action $req, $self->moniker.'/journey', [ $journey->id ];
-
-   return [ { value => f_link 'delivery_request', $href, {
-      request => $req, value => $journey->customer, } },
-            { value => $journey->requested_label },
-            { value => locm $req, $journey->priority },
-            { value => locm $req, $journey->package_type }, ];
 };
 
 my $_person_tuple = sub {
@@ -186,9 +182,9 @@ my $_package_tuple = sub {
 };
 
 my $_bind_package_type = sub {
-   my ($types, $journey) = @_;
+   my ($types, $package) = @_;
 
-   my $selected = $journey->package_type_id; my $other;
+   my $selected = $package ? $package->package_type_id : 0; my $other;
 
    return [ [ NUL, undef ],
             (map  { $_package_tuple->( $selected, $_ ) }
@@ -325,15 +321,8 @@ my $_bind_journey_fields = sub {
 
    my $schema    = $self->schema;
    my $disabled  = $opts->{disabled} // FALSE;
-   my $type_rs   = $schema->resultset( 'Type' );
-   my $types     = $type_rs->search_for_package_types;
    my $customers = $schema->resultset( 'Customer' )->search( {} );
    my $locations = [ $schema->resultset( 'Location' )->search( {} )->all ];
-   my $other_type_id = $type_rs->search( {
-      name => 'other', type_class => 'package', } )->first->id;
-
-   push @{ $page->{literal_js} }, js_window_config 'package_type', 'change',
-      'showIfNeeded', [ 'package_type', $other_type_id, 'package_other_field' ];
 
    return
       [  customer_id   => {
@@ -349,10 +338,9 @@ my $_bind_journey_fields = sub {
          priority      => {
             disabled   => $disabled, type => 'radio',
             value      => $_bind_priority->( $journey ) },
-         orig_priority => $journey->priority eq $journey->original_priority
-                       ?  FALSE : {
+         orig_priority => $journey->priority ne $journey->original_priority ? {
             disabled   => TRUE,
-            value      => locm $req, $journey->original_priority },
+            value      => locm $req, $journey->original_priority } : FALSE,
          pickup_id     => {
             class      => 'standard-field',
             disabled   => $disabled, type => 'select',
@@ -361,15 +349,6 @@ my $_bind_journey_fields = sub {
             class      => 'standard-field',
             disabled   => $disabled, type => 'select',
             value      => $_bind_dropoff_location->( $locations, $journey ) },
-         package_type_id => {
-            class      => 'standard-field windows',
-            disabled   => $disabled, id => 'package_type', type => 'select',
-            value      => $_bind_package_type->( $types, $journey ) },
-         package_other => {
-            disabled   => $disabled,
-            label_class => $journey->id && $journey->package_type eq 'other'
-                        ? NUL : 'hidden',
-            label_id => 'package_other_field' },
          notes         => {
             class      => 'standard-field autosize',
             disabled   => $disabled, type => 'textarea' },
@@ -519,13 +498,54 @@ my $_journey_leg_row = sub {
             { value => $leg->ending }, ];
 };
 
-my $_journey_ops_links = sub {
+my $_journey_package_row = sub {
+   my ($self, $req, $page, $done, $jid, $package) = @_;
+
+   my $actionp = $self->moniker.'/package';
+   my $package_type = $package->package_type;
+   my $href = uri_for_action $req, $actionp, [ $jid, $package_type ];
+   my $title = locm $req, 'Update Package Details';
+   my $id = "update_${package_type}_package";
+   my $value = locm $req, $package_type;
+
+   push @{ $page->{literal_js} }, dialog_anchor( $id, $href, {
+      name => $id, title => $title, useIcon => \1 } );
+
+   return
+      [ { class  => 'narrow', value => $package->quantity },
+        { value  => $done ? $value : f_link $id, '#', {
+           class => 'windows', request => $req,
+           value => $value } },
+        { value  => $package->description }, ];
+};
+
+my $_journey_leg_ops_links = sub {
    my ($self, $req, $jid) = @_; my $links = []; $jid or return $links;
 
    my $actionp = $self->moniker.'/leg';
 
    p_link $links, 'leg', uri_for_action( $req, $actionp, [ $jid ] ), {
       action => 'create', container_class => 'add-link', request => $req };
+
+   return $links;
+};
+
+my $_journey_package_ops_links = sub {
+   my ($self, $req, $page, $jid) = @_; my $links = []; $jid or return $links;
+
+   my $actionp = $self->moniker.'/package';
+   my $tip = locm $req, 'journey_package_add_tip';
+   my $value = locm $req, 'Add Package';
+   my $title = locm $req, 'Add Package Details';
+
+   p_link $links, 'package', '#', {
+      action => 'create', class => 'windows', container_class => 'add-link',
+      request => $req, tip => $tip, value => $value };
+
+   my $href = uri_for_action $req, $actionp, [ $jid ];
+
+   push @{ $page->{literal_js} }, dialog_anchor( 'create_package', $href, {
+      name => 'create_package', title => $title, useIcon => \1 } );
 
    return $links;
 };
@@ -545,6 +565,19 @@ my $_journeys_ops_links = sub {
    $page_links and push @{ $links }, $page_links;
 
    return $links;
+};
+
+my $_journeys_row = sub {
+   my ($self, $req, $journey) = @_;
+
+   my $href = uri_for_action $req, $self->moniker.'/journey', [ $journey->id ];
+   my $package = ($journey->packages->all)[ 0 ];
+
+   return [ { value => f_link 'delivery_request', $href, {
+      request => $req, value => $journey->customer, } },
+            { value => $journey->requested_label },
+            { value => locm $req, $journey->priority },
+            { value => locm $req, $package ? $package->package_type : NUL }, ];
 };
 
 my $_leg_ops_links = sub {
@@ -590,6 +623,17 @@ my $_maybe_find = sub {
    return $self->schema->resultset( $class )->find( $id );
 };
 
+my $_maybe_find_package = sub {
+   my ($self, $type_rs, $journey_id, $package_type) = @_;
+
+   $package_type or return Class::Null->new;
+
+   my $package_rs = $self->schema->resultset( 'Package' );
+   my $package_type_id = $type_rs->find_package_by( $package_type )->id;
+
+   return $package_rs->find( $journey_id, $package_type_id );
+};
+
 my $_update_incident_from_request = sub {
    my ($self, $req, $incident) = @_; my $params = $req->body_params;
 
@@ -623,8 +667,7 @@ my $_update_journey_from_request = sub {
 
    my $opts = { optional => TRUE };
 
-   for my $attr (qw( customer_id dropoff_id notes package_other package_type_id
-                     pickup_id priority )) {
+   for my $attr (qw( customer_id dropoff_id notes pickup_id priority )) {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 
@@ -659,6 +702,22 @@ my $_update_leg_from_request = sub {
       }
 
       $leg->$attr( $v );
+   }
+
+   return;
+};
+
+my $_update_package_from_request = sub {
+   my ($self, $req, $package) = @_; my $params = $req->body_params;
+
+   for my $attr (qw( description package_type quantity )) {
+      my $v = $params->( $attr, { optional => TRUE } ); defined $v or next;
+
+      $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
+
+      my $method = $attr; $attr eq 'package_type' and $method .= '_id';
+
+      $package->$method( $v );
    }
 
    return;
@@ -787,6 +846,32 @@ sub create_location_action : Role(controller) {
 
    return { redirect => { location => $location, message => $message } };
 }
+
+sub create_package_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $journey_id = $req->uri_params->( 0 );
+   my $package = $self->schema->resultset( 'Package' )->new_result( {
+      journey_id => $journey_id } );
+
+   $self->$_update_package_from_request( $req, $package );
+
+   my $type = $package->package_type || NUL;
+
+   try   { $package->insert }
+   catch { $self->rethrow_exception( $_, 'create', 'package', $type ) };
+
+   $self->send_event( $req, "action:create-package type:${type}" );
+
+   my $actionp = $self->moniker.'/journey';
+   my $location = uri_for_action $req, $actionp, [ $journey_id ];
+   my $who = $req->session->user_label;
+   my $message = [ to_msg
+      'Package type [_1] for delivery request [_2] created by [_3]',
+                   $type, $journey_id, $who ];
+
+   return { redirect => { location => $location, message => $message } };
+};
 
 sub customer : Role(controller) {
    my ($self, $req) = @_;
@@ -918,6 +1003,29 @@ sub delete_incident_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub delete_package_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $journey_id = $req->uri_params->( 0 );
+   my $package_type = $req->uri_params->( 1 );
+   my $type_rs = $self->schema->resultset( 'Type' );
+   my $package = $self->$_maybe_find_package
+      ( $type_rs, $journey_id, $package_type );
+
+   $package->delete;
+
+   $self->send_event( $req, "action:delete-package type:${package_type}" );
+
+   my $who = $req->session->user_label;
+   my $actionp = $self->moniker.'/journey';
+   my $location = uri_for_action $req, $actionp, [ $journey_id ];
+   my $message = [ to_msg
+      'Package type [_1] for delivery request [_2] deleted by [_3]',
+                   $package_type, $journey_id, $who ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub incident : Role(controller) {
    my ($self, $req) = @_;
 
@@ -1024,16 +1132,16 @@ sub journey : Role(controller) {
    my $jid     =  $req->uri_params->( 0, { optional => TRUE } );
    my $href    =  uri_for_action $req, $self->moniker.'/journey', [ $jid ];
    my $jform   =  blank_form 'journey', $href;
+   my $pform   =  blank_form { class => 'wide-form' };
    my $lform   =  blank_form { class => 'wide-form' };
    my $action  =  $jid ? 'update' : 'create';
    my $journey =  $self->$_maybe_find( 'Journey', $jid );
    my $done    =  $jid && $journey->completed ? TRUE : FALSE;
    my $page    =  {
-      forms    => [ $jform, $lform ],
+      forms    => [ $jform, $pform, $lform ],
       selected => $done ? 'completed_journeys' : 'journeys',
       title    => locm $req, 'journey_call_title'
    };
-   my $links    = $self->$_journey_ops_links( $req, $jid );
    my $disabled = $_is_disabled->( $req, $journey, $done );
    my $label    = locm( $req, 'delivery request' ).SPC.($jid // NUL);
 
@@ -1052,16 +1160,33 @@ sub journey : Role(controller) {
 
    $jid or return $self->get_stash( $req, $page );
 
+   p_tag $pform, 'h5', locm $req, 'journey_package_title';
+
+   my $links = $self->$_journey_package_ops_links( $req, $page, $jid );
+
+   $disabled or p_list $pform, PIPE_SEP, $links, $_link_opts->();
+
+   my $package_rs = $self->schema->resultset( 'Package' );
+   my $packages = $package_rs->search( { journey_id => $jid } );
+   my $p_table = p_table $pform, {
+      headers => $_journey_package_headers->( $req ) };
+
+   p_row $p_table, [ map {
+      $self->$_journey_package_row( $req, $page, $done, $jid, $_ ) }
+                     $packages->all ];
+
    p_tag $lform, 'h5', locm $req, 'journey_leg_title';
+
+   $links = $self->$_journey_leg_ops_links( $req, $jid );
 
    $disabled or p_list $lform, PIPE_SEP, $links, $_link_opts->();
 
-   my $rs    = $self->schema->resultset( 'Leg' );
-   my $legs  = $rs->search( { journey_id => $jid } );
-   my $table = p_table $lform, { headers => $_journey_leg_headers->( $req ) };
+   my $leg_rs  = $self->schema->resultset( 'Leg' );
+   my $legs    = $leg_rs->search( { journey_id => $jid } );
+   my $l_table = p_table $lform, { headers => $_journey_leg_headers->( $req ) };
 
-   p_row $table, [ map { $self->$_journey_leg_row( $req, $jid, $_ ) }
-                   $legs->all ];
+   p_row $l_table, [ map { $self->$_journey_leg_row( $req, $jid, $_ ) }
+                     $legs->all ];
 
    return $self->get_stash( $req, $page );
 }
@@ -1182,6 +1307,40 @@ sub locations : Role(controller) {
    p_row $table, [ map { $self->$_locations_row( $req, $_ ) } $locations->all ];
 
    return $self->get_stash( $req, $page );
+}
+
+sub package : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $journey_id = $req->uri_params->( 0 );
+   my $package_type = $req->uri_params->( 1, { optional => TRUE } );
+   my $action = $package_type ? 'update' : 'create';
+   my $stash = $self->dialog_stash( $req );
+   my $actionp = $self->moniker.'/package';
+   my $href = uri_for_action $req, $actionp, [ $journey_id, $package_type ];
+   my $form = $stash->{page}->{forms}->[ 0 ] = blank_form 'package', $href;
+   my $type_rs = $self->schema->resultset( 'Type' );
+   my $types = $type_rs->search_for_package_types;
+   my $label = locm( $req, 'delivery request' )." ${journey_id}";
+   my $package = $self->$_maybe_find_package
+      ( $type_rs, $journey_id, $package_type );
+   my $disabled = $package_type ? TRUE : FALSE;
+
+   p_select $form, 'quantity', [ map { [ $_, $_, {
+      selected => $_ == $package->quantity ? TRUE : FALSE } ] } 1 .. 9 ], {
+         class => 'single-digit', };
+
+   p_select $form, 'package_type', $_bind_package_type->( $types, $package ), {
+      class => 'standard-field', disabled => $disabled, };
+
+   p_textfield $form, 'description', $package->description;
+
+   p_action $form, $action, [ 'package', $label ], { request => $req };
+
+   $package_type and p_action $form, 'delete', [ 'package', $label ], {
+      request => $req };
+
+   return $stash;
 }
 
 sub remove_incident_party_action : Role(controller) {
@@ -1312,6 +1471,30 @@ sub update_location_action : Role(controller) {
    my $message = [ to_msg 'Location [_1] updated by [_2]', $lid, $who ];
 
    $location = uri_for_action $req, $self->moniker.'/locations';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub update_package_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $journey_id = $req->uri_params->( 0 );
+   my $package_type = $req->uri_params->( 1 );
+   my $type_rs = $self->schema->resultset( 'Type' );
+   my $package = $self->$_maybe_find_package
+      ( $type_rs, $journey_id, $package_type );
+
+   $self->$_update_package_from_request( $req, $package );
+   $package->update;
+
+   $self->send_event( $req, "action:update-package type:${package_type}" );
+
+   my $who = $req->session->user_label;
+   my $actionp = $self->moniker.'/journey';
+   my $location = uri_for_action $req, $actionp, [ $journey_id ];
+   my $message = [ to_msg
+      'Package type [_1] for delivery request [_2] updated by [_3]',
+                   $package_type, $journey_id, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }

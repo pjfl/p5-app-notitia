@@ -882,6 +882,18 @@ msgstr "Ending"
 msgid "journey_leg_title"
 msgstr "Delivery Stage"
 
+msgid "journey_package_heading_0"
+msgstr "Quantity"
+
+msgid "journey_package_heading_1"
+msgstr "Package Type"
+
+msgid "journey_package_heading_2"
+msgstr "Description"
+
+msgid "journey_package_title"
+msgstr "Packages"
+
 msgid "journey_view_link"
 msgstr "Delivery Request"
 
@@ -1219,10 +1231,7 @@ msgstr "Owner"
 msgid "owner_id"
 msgstr "Owner"
 
-msgid "package_other"
-msgstr "Package Description"
-
-msgid "package_type_id"
+msgid "package_type"
 msgstr "Package Type"
 
 msgid "package_type_create_link"
@@ -1443,6 +1452,9 @@ msgstr "List privately owned vehicles"
 
 msgid "public_access"
 msgstr "Is this a publicly available asset?"
+
+msgid "quantity"
+msgstr "Quantity"
 
 msgid "raised"
 msgstr "Raised"
