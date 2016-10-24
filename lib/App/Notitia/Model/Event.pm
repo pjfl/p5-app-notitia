@@ -115,6 +115,22 @@ my $_add_participate_button = sub {
          class => 'field-text right-last', label => NUL }
       and return;
 
+   if ($action eq 'participate' and $event->event_type eq 'training') {
+      my $course; $person->is_enroled_on( $event->course_type )
+         and $course = $person->assert_enroled_on( $event->course_type );
+
+      not $course
+         and p_text $form, 'info', locm( $req, 'Not enroled on this course' ), {
+            class => 'field-text right-last', label => NUL }
+         and return;
+
+      $course->status ne 'enroled'
+         and $text = locm $req, 'Current course status: [_1]', $course->status
+         and p_text $form, 'info', $text, {
+            class => 'field-text right-last', label => NUL }
+         and return;
+   }
+
    p_button $form, "${action}_event", "${action}_event", {
       class => 'save-button', container_class => 'right-last',
       tip => make_tip( $req, "${action}_event_tip", [ $uri ] ) };
