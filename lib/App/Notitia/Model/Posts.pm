@@ -34,7 +34,8 @@ around 'get_stash' => sub {
    my $stash = $orig->( $self, $req, @args );
 
    for my $k (qw( date days_in_advance description end_time first_name label
-                  name owner shift_type slot_type start_time type uri )) {
+                  name owner rota_date rota_name shift_type slot_type
+                  start_time type uri vehicle )) {
       $stash->{ $k } //= "_dummy_${k}_";
    }
 

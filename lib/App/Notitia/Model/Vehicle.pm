@@ -6,7 +6,7 @@ use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
                                 p_date p_fields p_hidden p_list
                                 p_row p_select p_table p_tag p_textfield );
 use App::Notitia::Util      qw( assign_link bind check_field_js
-                                display_duration loc now_dt make_tip
+                                display_duration loc local_dt now_dt make_tip
                                 management_link page_link_set
                                 register_action_paths set_element_focus
                                 slot_identifier time2int to_dt to_msg
@@ -348,18 +348,21 @@ my $_toggle_slot_assignment = sub {
    my $schema = $self->schema;
    my $vehicle = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
    my $method = "${action}_slot";
+   my $rota_dt = to_dt( $rota_date );
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
 
-   $vehicle->$method( $rota_name, to_dt( $rota_date ), $shift_type,
-                      $slot_type, $subslot, $req->username );
+   my $slot = $vehicle->$method( $rota_name, $rota_dt, $shift_type,
+                                 $slot_type, $subslot, $req->username );
 
    my $prep = $action eq 'assign' ? 'to' : 'from';
    my $key = "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]";
    my $label = slot_identifier
       ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
-   my $message = "action:vehicle-${action}ment slot:${slot_name} "
-               . "vehicle:${vrn}";
+   my $operator = $slot->operator;
+   my $dmy = local_dt( $rota_dt )->dmy( '/' );
+   my $message = "action:vehicle-${action}ment date:${dmy} "
+               . "shortcode:${operator} slot_key:${slot_name} vehicle:${vrn}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $vrn, $label, $req->session->user_label ];

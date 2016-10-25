@@ -127,6 +127,16 @@ my $_template_path = sub {
    return $conf->template_dir->catfile( $conf->skin."/${name}.tt" );
 };
 
+my $_create_email_job = sub {
+   my ($self, $stash, $template) = @_; my $conf = $self->config;
+
+   my $cmd = $conf->binsdir->catfile( 'notitia-schema' ).SPC
+           . $self->$_flatten_stash( $stash )."send_message email ${template}";
+   my $rs  = $self->schema->resultset( 'Job' );
+
+   return $rs->create( { command => $cmd, name => 'send_message' } );
+};
+
 my $_certification_email = sub {
    my ($self, $req, $stash) = @_;
 
@@ -135,7 +145,7 @@ my $_certification_email = sub {
 
    $stash->{type} = locm $req, $stash->{type};
 
-   return $self->create_email_job( $stash, $template );
+   return $self->$_create_email_job( $stash, $template )->id;
 };
 
 my $_event_email = sub {
@@ -154,7 +164,7 @@ my $_event_email = sub {
    $stash->{uri} = uri_for_action $req, 'event/event_summary', [ $event->uri ];
    $stash->{role} = 'fund_raiser';
 
-   return $self->create_email_job( $stash, $template );
+   return $self->$_create_email_job( $stash, $template )->id;
 };
 
 my $_impending_slot_email = sub {
@@ -167,7 +177,7 @@ my $_impending_slot_email = sub {
    $stash->{shift_type} = $shift_type;
    $stash->{slot_type} = $slot_type;
 
-   return $self->create_email_job( $stash, $template );
+   return $self->$_create_email_job( $stash, $template )->id;
 };
 
 my $_vacant_slot_email = sub {
@@ -177,7 +187,20 @@ my $_vacant_slot_email = sub {
    my $file = "${slot_type}_slots_email.md";
    my $template = $self->$_template_dir( $req )->catfile( $file );
 
-   return $self->create_email_job( $stash, $template );
+   return $self->$_create_email_job( $stash, $template )->id;
+};
+
+my $_vehicle_assignment_email = sub {
+   my ($self, $req, $stash) = @_;
+
+   my $file = 'vehicle_assignment_email.md';
+   my $template = $self->$_template_dir( $req )->catfile( $file );
+   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $stash->{slot_key};
+
+   $stash->{shift_type} = $shift_type;
+   $stash->{slot_type} = $slot_type;
+
+   return $self->$_create_email_job( $stash, $template )->id;
 };
 
 # Public methods
@@ -197,17 +220,7 @@ sub create_person_email {
 
    $conf->sessdir->catfile( $token )->println( $scode );
 
-   return $self->create_email_job( $stash, $template )->id;
-}
-
-sub create_email_job {
-   my ($self, $stash, $template) = @_; my $conf = $self->config;
-
-   my $cmd = $conf->binsdir->catfile( 'notitia-schema' ).SPC
-           . $self->$_flatten_stash( $stash )."send_message email ${template}";
-   my $rs  = $self->schema->resultset( 'Job' );
-
-   return $rs->create( { command => $cmd, name => 'send_message' } );
+   return $self->$_create_email_job( $stash, $template )->id;
 }
 
 sub create_reset_email {
@@ -226,7 +239,7 @@ sub create_reset_email {
 
    $conf->sessdir->catfile( $token )->println( "${scode}/${password}" );
 
-   return $self->create_email_job( $stash, $template )->id;
+   return $self->$_create_email_job( $stash, $template )->id;
 }
 
 sub create_totp_request_email {
@@ -244,7 +257,7 @@ sub create_totp_request_email {
 
    $conf->sessdir->catfile( $token )->println( $scode );
 
-   return $self->create_email_job( $stash, $template )->id;
+   return $self->$_create_email_job( $stash, $template )->id;
 }
 
 sub jobdaemon {
@@ -379,6 +392,11 @@ sub send_event {
    $stash->{action} eq 'vacant_slot'
       and is_member( 'vacant_slot', $conf->auto_emails )
       and $self->$_vacant_slot_email( $req, $stash )
+      and return;
+
+   $stash->{action} eq 'vehicle_assignment'
+      and is_member( 'vehicle_assignment', $conf->auto_emails )
+      and $self->$_vehicle_assignment_email( $req, $stash )
       and return;
 
    return;
