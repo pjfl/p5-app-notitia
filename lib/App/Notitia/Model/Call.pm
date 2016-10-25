@@ -655,6 +655,7 @@ my $_update_incident_from_request = sub {
          $v =~ s{ [@] }{}mx; $v = to_dt $v;
       }
 
+      $attr eq 'committee_member_id' and (length $v or $v = undef);
       $incident->$attr( $v );
    }
 
