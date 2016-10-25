@@ -333,7 +333,7 @@ my $_bind_journey_fields = sub {
          controller    => $journey->id ? {
             disabled   => TRUE, value => $journey->controller->label } : FALSE,
          requested     => {
-            disabled   => $disabled, type => 'datetime',
+            disabled   => $journey->id ? TRUE : $disabled, type => 'datetime',
             value      => $journey->id
                         ? $journey->requested_label : datetime_label now_dt },
          delivered     => $opts->{done} ? {
@@ -383,7 +383,7 @@ my $_bind_leg_fields = sub {
             disabled    => $leg->id ? TRUE : $disabled, type => 'select',
             value       => $_bind_operator->( $leg, $opts ) },
          called         => {
-            disabled    => $disabled,
+            disabled    => $leg->id ? TRUE : $disabled,
             value       => $leg->id
                          ? $leg->called_label : datetime_label now_dt },
          beginning_id   => {
