@@ -312,7 +312,7 @@ my $_bind_trainer = sub {
    $opts->{training_event} or $event->event_type eq 'training' or return FALSE;
 
    my $disabled = $opts->{disabled} // FALSE;
-   my $trainer  = ($event->trainers->all)[ 0 ];
+   my $trainer  = ($event->trainers->all)[ 0 ] // NUL;
    my $trainers = $self->schema->resultset( 'Person' )->list_people
       ( 'trainer', { fields => { selected => "${trainer}" } } );
 

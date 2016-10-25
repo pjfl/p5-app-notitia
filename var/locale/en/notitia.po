@@ -1887,6 +1887,21 @@ msgstr "Urgent"
 msgid "username"
 msgstr "User name"
 
+msgid "user_slots_heading_0"
+msgstr "Slot Link"
+
+msgid "user_slots_link"
+msgstr "My Slots"
+
+msgid "user_slots_row_link_tip"
+msgstr "Link to the day rota page for the slot"
+
+msgid "user_slots_tip"
+msgstr "List of current slots claimed by you"
+
+msgid "user_slots_title"
+msgstr "Claimed Slots"
+
 msgid "username_field_tip"
 msgstr "If left blank a username will be generated from the "
        "person's first and last name"

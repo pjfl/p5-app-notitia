@@ -31,9 +31,10 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      is_access_authorised is_draft is_encrypted iterator
                      js_config js_slider_config js_server_config
                      js_submit_config js_togglers_config js_window_config
-                     lcm_for load_file_data loc localise_tree locm mail_domain
-                     make_id_from make_name_from make_tip management_link mtime
-                     new_salt now_dt nullable_foreign_key_data_type
+                     lcm_for load_file_data loc local_dt localise_tree locm
+                     mail_domain make_id_from make_name_from make_tip
+                     management_link mtime new_salt now_dt
+                     nullable_foreign_key_data_type
                      nullable_numerical_id_data_type nullable_varchar_data_type
                      numerical_id_data_type page_link_set register_action_paths
                      serial_data_type set_element_focus
@@ -406,9 +407,7 @@ sub date_data_type () {
 }
 
 sub datetime_label ($) {
-   my $dt = shift; $dt or return NUL;
-
-   $dt = $dt->clone->set_time_zone( 'local' );
+   my $dt = shift; $dt or return NUL; $dt = local_dt( $dt );
 
    return sprintf '%s @ %.2d:%.2d', $dt->dmy( '/' ), $dt->hour, $dt->minute;
 }
@@ -638,6 +637,10 @@ sub loc ($@) {
    return exists $translations->{ $locale }->{ $k }
                ? $translations->{ $locale }->{ $k }
                : $translations->{ $locale }->{ $k } = $req->loc( $k, @args );
+}
+
+sub local_dt ($) {
+   return $_[ 0 ]->clone->set_time_zone( 'local' );
 }
 
 sub localise_tree ($$) {
@@ -1037,6 +1040,8 @@ LCM for a list of integers
 =item C<load_file_data>
 
 =item C<loc>
+
+=item C<local_dt>
 
 =item C<localise_tree>
 

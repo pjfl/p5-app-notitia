@@ -38,6 +38,9 @@ sub search_for_slots {
                   'operator.shortcode', 'vehicle.colour', 'vehicle.name',
                   'vehicle.vrn' ];
    my $where  = { 'rota.type_id' => $opts->{rota_type} };
+
+   $opts->{operator} and $where->{ 'operator.shortcode' } = $opts->{operator};
+
    my $parser = $self->result_source->schema->datetime_parser;
    my $order  = $opts->{order_by} // 'shift.type_name';
 
