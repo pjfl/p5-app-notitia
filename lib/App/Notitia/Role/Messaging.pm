@@ -4,9 +4,9 @@ use namespace::autoclean;
 
 use App::Notitia::Form      qw( blank_form f_link p_button p_radio
                                 p_select p_textarea );
-use App::Notitia::Constants qw( C_DIALOG NUL SLOT_TYPE_ENUM SPC TRUE );
-use App::Notitia::Util      qw( js_config locm mail_domain set_element_focus
-                                to_msg uri_for_action );
+use App::Notitia::Constants qw( C_DIALOG NUL SPC TRUE );
+use App::Notitia::Util      qw( js_config local_dt locm mail_domain
+                                set_element_focus to_msg uri_for_action );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token is_member throw trim );
 use Class::Usul::Log        qw( get_logger );
@@ -15,8 +15,17 @@ use Moo::Role;
 requires qw( components config dialog_stash moniker schema );
 
 # Private functions
-my $_local_dt = sub {
-   return  $_[ 0 ]->clone->set_time_zone( 'local' );
+my $_clean_and_log = sub {
+   my ($req, $message) = @_; $message ||= 'action:unknown';
+
+   my $user = $req->username || 'admin';
+   my $address = $req->address || 'localhost';
+
+   $message = "user:${user} client:${address} ${message}";
+
+   get_logger( 'activity' )->log( $message );
+
+   return $message;
 };
 
 my $_plate_label = sub {
@@ -141,21 +150,32 @@ my $_event_email = sub {
    }
 
    $stash->{owner} = $event->owner->label;
-   $stash->{date} = $_local_dt->( $event->start_date )->dmy( '/' );
+   $stash->{date} = local_dt( $event->start_date )->dmy( '/' );
    $stash->{uri} = uri_for_action $req, 'event/event_summary', [ $event->uri ];
    $stash->{role} = 'fund_raiser';
 
    return $self->create_email_job( $stash, $template );
 };
 
-my $_slots_email = sub {
+my $_impending_slot_email = sub {
    my ($self, $req, $stash) = @_;
 
-   my ($role) = $stash->{action} =~ m{ vacant_ ([^_]+) _slots }mx;
-   my $file = "${role}_slots_email.md";
+   my $file = 'impending_slot_email.md';
    my $template = $self->$_template_dir( $req )->catfile( $file );
+   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $stash->{slot_key};
 
-   $stash->{role} = $role;
+   $stash->{shift_type} = $shift_type;
+   $stash->{slot_type} = $slot_type;
+
+   return $self->create_email_job( $stash, $template );
+};
+
+my $_vacant_slot_email = sub {
+   my ($self, $req, $stash) = @_;
+
+   my $slot_type = $stash->{role} = $stash->{slot_type};
+   my $file = "${slot_type}_slots_email.md";
+   my $template = $self->$_template_dir( $req )->catfile( $file );
 
    return $self->create_email_job( $stash, $template );
 };
@@ -337,28 +357,29 @@ sub message_stash {
 sub send_event {
    my ($self, $req, $message) = @_;
 
-   my $user = $req->username || 'admin';
-   my $address = $req->address || 'unknown';
-
-   $message = "user:${user} client:${address} ${message}";
-
-   get_logger( 'activity' )->log( $message );
+   $message = $_clean_and_log->( $req, $message );
 
    my $conf = $self->config; my $stash = $self->$_inflate( $req, $message );
 
    $stash->{action} eq 'create_certification'
       and is_member( 'certification', $conf->auto_emails )
-      and $self->$_certification_email( $req, $stash );
+      and $self->$_certification_email( $req, $stash )
+      and return;
 
    ($stash->{action} eq 'create_event' or $stash->{action} eq 'update_event')
       and is_member( 'event', $conf->auto_emails )
-      and $self->$_event_email( $req, $stash );
+      and $self->$_event_email( $req, $stash )
+      and return;
 
-   my $slot_types = join '|', @{ SLOT_TYPE_ENUM() };
+   $stash->{action} eq 'impending_slot'
+      and is_member( 'impending_slot', $conf->auto_emails )
+      and $self->$_impending_slot_email( $req, $stash )
+      and return;
 
-   $stash->{action} =~ m{ vacant_ (?: $slot_types ) _slots }mx
+   $stash->{action} eq 'vacant_slot'
       and is_member( 'vacant_slot', $conf->auto_emails )
-      and $self->$_slots_email( $req, $stash );
+      and $self->$_vacant_slot_email( $req, $stash )
+      and return;
 
    return;
 }

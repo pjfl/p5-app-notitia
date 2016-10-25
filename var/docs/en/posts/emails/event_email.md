@@ -1,8 +1,8 @@
 ---
 author: admin
 created: 2016-09-29 12:16:49 +0000
-subject: Upcomming event
-title: Event Email
+subject: Upcoming event
+title: Upcoming Event
 roles:
    - editor
 ---

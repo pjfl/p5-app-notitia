@@ -6,7 +6,7 @@ use App::Notitia::Constants qw( AS_PASSWORD COMMA EXCEPTION_CLASS FALSE NUL
                                 OK QUOTED_RE SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::GeoLocation;
 use App::Notitia::SMS;
-use App::Notitia::Util      qw( encrypted_attr load_file_data
+use App::Notitia::Util      qw( encrypted_attr load_file_data local_dt
                                 mail_domain now_dt slot_limit_index to_dt );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
@@ -92,10 +92,6 @@ around 'deploy_file' => sub {
 };
 
 # Private functions
-my $_local_dt = sub {
-   return $_[ 0 ]->clone->set_time_zone( 'local' );
-};
-
 my $_extend_column_map = sub {
    my ($cmap, $ncols) = @_; my $count = 0;
 
@@ -155,7 +151,7 @@ my $_assigned_slots = sub {
    my $data     =  {};
 
    for my $slot ($slot_rs->search_for_slots( $opts )->all) {
-      $data->{ $_local_dt->( $slot->start_date )->ymd.'_'.$slot->key } = TRUE;
+      $data->{ local_dt( $slot->start_date )->ymd.'_'.$slot->key } = $slot;
    }
 
    return $data;
@@ -445,6 +441,19 @@ my $_load_template = sub {
       and $template = $self->formatter->markdown( $template );
 
    return $stash, $template;
+};
+
+my $_new_request = sub {
+   my ($self, $scheme, $hostport) = @_;
+
+   my $env = { HTTP_ACCEPT_LANGUAGE => $self->locale,
+               HTTP_HOST => $hostport,
+               SCRIPT_NAME => $self->config->mount_point,
+               'psgi.url_scheme' => $scheme,
+               'psgix.session' => { username => 'admin' } };
+   my $factory = Web::ComposableRequest->new( config => $self->config );
+
+   return $factory->new_from_simple_request( {}, '', {}, $env );
 };
 
 my $_prepare_csv = sub {
@@ -821,6 +830,30 @@ sub geolocation : method {
    return OK;
 }
 
+sub impending_slot : method {
+   my $self = shift;
+   my $scheme = $self->next_argv // 'https';
+   my $hostport = $self->next_argv // 'localhost:5000';
+   my $days = $self->next_argv // 3;
+   my $rota_name = $self->next_argv // 'main';
+   my $rota_dt = now_dt->add( days => $days );
+   my $data = $self->$_assigned_slots( $rota_name, $rota_dt );
+   my $req = $self->$_new_request( $scheme, $hostport );
+   my $dmy = local_dt( $rota_dt )->dmy( '/' );
+   my $ymd = local_dt( $rota_dt )->ymd;
+
+   for my $key (grep { $_ =~ m{ \A $ymd _ }mx } sort keys %{ $data }) {
+      my $slot_key = $data->{ $key }->key;
+      my $scode = $data->{ $key }->operator;
+      my $message = "action:impending-slot date:${dmy} days_in_advance:${days} "
+                  . "shortcode:${scode} rota_date:${ymd} slot_key:${slot_key}";
+
+      $self->send_event( $req, $message );
+   }
+
+   return OK;
+}
+
 sub import_people : method {
    my $self  = shift;
    my $opts  = $self->$_prepare_csv;
@@ -935,31 +968,25 @@ sub upgrade_schema : method {
    return OK;
 }
 
-sub vacant_slots : method {
+sub vacant_slot : method {
    my $self = shift;
    my $scheme = $self->next_argv // 'https';
    my $hostport = $self->next_argv // 'localhost:5000';
    my $days = $self->next_argv // 7;
    my $rota_name = $self->next_argv // 'main';
-   my $env = { HTTP_ACCEPT_LANGUAGE => $self->locale,
-               HTTP_HOST => $hostport,
-               SCRIPT_NAME => $self->config->mount_point,
-               'psgi.url_scheme' => $scheme,
-               'psgix.session' => { username => 'admin' } };
-   my $factory = Web::ComposableRequest->new( config => $self->config );
-   my $req = $factory->new_from_simple_request( {}, '', {}, $env );
    my $rota_dt = now_dt->add( days => $days );
    my $data = $self->$_assigned_slots( $rota_name, $rota_dt );
+   my $req = $self->$_new_request( $scheme, $hostport );
    my $limits = $self->config->slot_limits;
-   my $dmy = $rota_dt->dmy( '/' );
-   my $ymd = $rota_dt->ymd;
+   my $dmy = local_dt( $rota_dt )->dmy( '/' );
+   my $ymd = local_dt( $rota_dt )->ymd;
 
    for my $slot_type (@{ SLOT_TYPE_ENUM() }) {
       my $wanted = $_slots_wanted->( $limits, $rota_dt, $slot_type );
       my $slots_claimed = grep { $_ =~ m{ _ $slot_type _ }mx }
                           grep { $_ =~ m{ \A $ymd _ }mx } keys %{ $data };
-      my $action = "vacant-${slot_type}-slots";
-      my $message = "action:${action} date:${dmy} days_in_advance:${days}";
+      my $message = "action:vacant-slot date:${dmy} days_in_advance:${days} "
+                  . "rota_date:${ymd} slot_type:${slot_type}";
 
       $slots_claimed >= $wanted or $self->send_event( $req, $message );
    }
@@ -1008,6 +1035,12 @@ Creates the DDL for multiple RDBMs
 
 =head2 C<geolocation> - Lookup geolocation information
 
+=head2 C<impending_slot> - Generates the impending slots email
+
+   bin/notitia-schema -q impending-slot [scheme] [hostport]
+
+Run this from cron(8) to periodically trigger the impending slots email
+
 =head2 C<import_people> - Import person objects from a CSV file
 
 =head2 C<import_vehicles> - Import vehicle objects from a CSV file
@@ -1018,9 +1051,9 @@ Creates the DDL for multiple RDBMs
 
 =head2 C<upgrade_schema> - Upgrade the database schema
 
-=head2 C<vacant_slots> - Generates the vacant slots email
+=head2 C<vacant_slot> - Generates the vacant slots email
 
-   bin/notitia-schema -q vacant-slots [scheme] [hostport]
+   bin/notitia-schema -q vacant-slot [scheme] [hostport]
 
 Run this from cron(8) to periodically trigger the vacant slots email
 

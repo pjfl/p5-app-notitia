@@ -2,7 +2,7 @@
 author: admin
 created: 2016-10-01 21:56:24 +0000
 subject: Certification Notice
-title: Certification Email
+title: Certification Notice
 roles:
    - editor
 ---
