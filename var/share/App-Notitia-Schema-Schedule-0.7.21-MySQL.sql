@@ -173,18 +173,6 @@ CREATE TABLE `shift` (
   CONSTRAINT `shift_fk_rota_id` FOREIGN KEY (`rota_id`) REFERENCES `rota` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `trainer`;
-
-CREATE TABLE `trainer` (
-  `trainer_id` integer unsigned NOT NULL,
-  `course_type_id` integer unsigned NOT NULL,
-  INDEX `trainer_idx_course_type_id` (`course_type_id`),
-  INDEX `trainer_idx_trainer_id` (`trainer_id`),
-  PRIMARY KEY (`trainer_id`, `course_type_id`),
-  CONSTRAINT `trainer_fk_course_type_id` FOREIGN KEY (`course_type_id`) REFERENCES `type` (`id`),
-  CONSTRAINT `trainer_fk_trainer_id` FOREIGN KEY (`trainer_id`) REFERENCES `person` (`id`)
-) ENGINE=InnoDB;
-
 DROP TABLE IF EXISTS `training`;
 
 CREATE TABLE `training` (
@@ -234,6 +222,32 @@ CREATE TABLE `incident_party` (
   CONSTRAINT `incident_party_fk_incident_party_id` FOREIGN KEY (`incident_party_id`) REFERENCES `person` (`id`)
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS `journey`;
+
+CREATE TABLE `journey` (
+  `id` integer unsigned NOT NULL auto_increment,
+  `completed` enum('0','1') NOT NULL DEFAULT '0',
+  `priority` enum('routine', 'urgent', 'emergency') NOT NULL DEFAULT 'routine',
+  `original_priority` enum('routine', 'urgent', 'emergency') NOT NULL DEFAULT 'routine',
+  `created` datetime NULL,
+  `requested` datetime NULL,
+  `delivered` datetime NULL,
+  `controller_id` integer unsigned NOT NULL,
+  `customer_id` integer unsigned NOT NULL,
+  `pickup_id` integer unsigned NOT NULL,
+  `dropoff_id` integer unsigned NOT NULL,
+  `notes` varchar(255) NOT NULL DEFAULT '',
+  INDEX `journey_idx_controller_id` (`controller_id`),
+  INDEX `journey_idx_customer_id` (`customer_id`),
+  INDEX `journey_idx_dropoff_id` (`dropoff_id`),
+  INDEX `journey_idx_pickup_id` (`pickup_id`),
+  PRIMARY KEY (`id`),
+  CONSTRAINT `journey_fk_controller_id` FOREIGN KEY (`controller_id`) REFERENCES `person` (`id`),
+  CONSTRAINT `journey_fk_customer_id` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `journey_fk_dropoff_id` FOREIGN KEY (`dropoff_id`) REFERENCES `location` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `journey_fk_pickup_id` FOREIGN KEY (`pickup_id`) REFERENCES `location` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS `event`;
 
 CREATE TABLE `event` (
@@ -243,6 +257,7 @@ CREATE TABLE `event` (
   `start_rota_id` integer unsigned NOT NULL,
   `end_rota_id` integer unsigned NULL,
   `vehicle_id` integer unsigned NULL,
+  `course_type_id` integer unsigned NULL,
   `max_participents` smallint NULL,
   `start_time` varchar(5) NOT NULL DEFAULT '',
   `end_time` varchar(5) NOT NULL DEFAULT '',
@@ -250,6 +265,7 @@ CREATE TABLE `event` (
   `uri` varchar(64) NOT NULL DEFAULT '',
   `description` varchar(128) NOT NULL DEFAULT '',
   `notes` varchar(255) NOT NULL DEFAULT '',
+  INDEX `event_idx_course_type_id` (`course_type_id`),
   INDEX `event_idx_end_rota_id` (`end_rota_id`),
   INDEX `event_idx_event_type_id` (`event_type_id`),
   INDEX `event_idx_owner_id` (`owner_id`),
@@ -257,6 +273,7 @@ CREATE TABLE `event` (
   INDEX `event_idx_vehicle_id` (`vehicle_id`),
   PRIMARY KEY (`id`),
   UNIQUE `event_uri` (`uri`),
+  CONSTRAINT `event_fk_course_type_id` FOREIGN KEY (`course_type_id`) REFERENCES `type` (`id`),
   CONSTRAINT `event_fk_end_rota_id` FOREIGN KEY (`end_rota_id`) REFERENCES `rota` (`id`),
   CONSTRAINT `event_fk_event_type_id` FOREIGN KEY (`event_type_id`) REFERENCES `type` (`id`),
   CONSTRAINT `event_fk_owner_id` FOREIGN KEY (`owner_id`) REFERENCES `person` (`id`),
@@ -264,33 +281,18 @@ CREATE TABLE `event` (
   CONSTRAINT `event_fk_vehicle_id` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicle` (`id`)
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `journey`;
+DROP TABLE IF EXISTS `package`;
 
-CREATE TABLE `journey` (
-  `id` integer unsigned NOT NULL auto_increment,
-  `completed` enum('0','1') NOT NULL DEFAULT '0',
-  `priority` enum('routine', 'urgent', 'emergency') NOT NULL DEFAULT 'routine',
-  `original_priority` enum('routine', 'urgent', 'emergency') NOT NULL DEFAULT 'routine',
-  `requested` datetime NULL,
-  `delivered` datetime NULL,
-  `controller_id` integer unsigned NOT NULL,
-  `customer_id` integer unsigned NOT NULL,
-  `pickup_id` integer unsigned NOT NULL,
-  `dropoff_id` integer unsigned NOT NULL,
+CREATE TABLE `package` (
+  `journey_id` integer unsigned NOT NULL,
   `package_type_id` integer unsigned NOT NULL,
-  `package_other` varchar(64) NOT NULL DEFAULT '',
-  `notes` varchar(255) NOT NULL DEFAULT '',
-  INDEX `journey_idx_controller_id` (`controller_id`),
-  INDEX `journey_idx_customer_id` (`customer_id`),
-  INDEX `journey_idx_dropoff_id` (`dropoff_id`),
-  INDEX `journey_idx_package_type_id` (`package_type_id`),
-  INDEX `journey_idx_pickup_id` (`pickup_id`),
-  PRIMARY KEY (`id`),
-  CONSTRAINT `journey_fk_controller_id` FOREIGN KEY (`controller_id`) REFERENCES `person` (`id`),
-  CONSTRAINT `journey_fk_customer_id` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `journey_fk_dropoff_id` FOREIGN KEY (`dropoff_id`) REFERENCES `location` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `journey_fk_package_type_id` FOREIGN KEY (`package_type_id`) REFERENCES `type` (`id`),
-  CONSTRAINT `journey_fk_pickup_id` FOREIGN KEY (`pickup_id`) REFERENCES `location` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  `quantity` smallint NOT NULL DEFAULT 0,
+  `description` varchar(64) NOT NULL DEFAULT '',
+  INDEX `package_idx_journey_id` (`journey_id`),
+  INDEX `package_idx_package_type_id` (`package_type_id`),
+  PRIMARY KEY (`journey_id`, `package_type_id`),
+  CONSTRAINT `package_fk_journey_id` FOREIGN KEY (`journey_id`) REFERENCES `journey` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `package_fk_package_type_id` FOREIGN KEY (`package_type_id`) REFERENCES `type` (`id`)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `participent`;
@@ -324,6 +326,18 @@ CREATE TABLE `slot` (
   CONSTRAINT `slot_fk_shift_id` FOREIGN KEY (`shift_id`) REFERENCES `shift` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `slot_fk_vehicle_id` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicle` (`id`),
   CONSTRAINT `slot_fk_vehicle_assigner_id` FOREIGN KEY (`vehicle_assigner_id`) REFERENCES `person` (`id`)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `trainer`;
+
+CREATE TABLE `trainer` (
+  `trainer_id` integer unsigned NOT NULL,
+  `event_id` integer unsigned NOT NULL,
+  INDEX `trainer_idx_event_id` (`event_id`),
+  INDEX `trainer_idx_trainer_id` (`trainer_id`),
+  PRIMARY KEY (`trainer_id`, `event_id`),
+  CONSTRAINT `trainer_fk_event_id` FOREIGN KEY (`event_id`) REFERENCES `event` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `trainer_fk_trainer_id` FOREIGN KEY (`trainer_id`) REFERENCES `person` (`id`)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `transport`;
@@ -363,6 +377,7 @@ CREATE TABLE `leg` (
   `beginning_id` integer unsigned NOT NULL,
   `ending_id` integer unsigned NOT NULL,
   `vehicle_id` integer unsigned NULL,
+  `created` datetime NULL,
   `called` datetime NULL,
   `collection_eta` datetime NULL,
   `collected` datetime NULL,

@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+0.8.1     2016-10-25 01:05:53
+          - Implements #116 and #112. Training events and packages
           - ELI5 version of password email
           - ELI5 version of user email
           - Cli post install preserves existing profile file

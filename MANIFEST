@@ -67,6 +67,7 @@ lib/App/Notitia/Schema/Schedule/Result/Job.pm
 lib/App/Notitia/Schema/Schedule/Result/Journey.pm
 lib/App/Notitia/Schema/Schedule/Result/Leg.pm
 lib/App/Notitia/Schema/Schedule/Result/Location.pm
+lib/App/Notitia/Schema/Schedule/Result/Package.pm
 lib/App/Notitia/Schema/Schedule/Result/Participent.pm
 lib/App/Notitia/Schema/Schedule/Result/Person.pm
 lib/App/Notitia/Schema/Schedule/Result/Role.pm
@@ -146,9 +147,9 @@ var/root/img/hyde/icons.png
 var/root/img/logo.png
 var/root/js/hyde.js
 var/root/js/mooclasses.js
-var/share/App-Notitia-Schema-Schedule-0.6.44-MySQL.sql
-var/share/App-Notitia-Schema-Schedule-0.6.44-PostgreSQL.sql
-var/share/App-Notitia-Schema-Schedule-0.6.44-SQLite.sql
+var/share/App-Notitia-Schema-Schedule-0.7.21-MySQL.sql
+var/share/App-Notitia-Schema-Schedule-0.7.21-PostgreSQL.sql
+var/share/App-Notitia-Schema-Schedule-0.7.21-SQLite.sql
 var/share/App-Notitia-Schema-Schedule-001-Type.json
 var/share/App-Notitia-Schema-Schedule-002-Person.json
 var/share/App-Notitia-Schema-Schedule-003-Role.json

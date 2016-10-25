@@ -1,18 +1,20 @@
 BEGIN TRANSACTION;
 
-DROP TABLE "trainer";
+DROP TABLE "package";
 
-CREATE TABLE "trainer" (
-  "trainer_id" integer NOT NULL,
-  "course_type_id" integer NOT NULL,
-  PRIMARY KEY ("trainer_id", "course_type_id"),
-  FOREIGN KEY ("course_type_id") REFERENCES "type"("id"),
-  FOREIGN KEY ("trainer_id") REFERENCES "person"("id")
+CREATE TABLE "package" (
+  "journey_id" integer NOT NULL,
+  "package_type_id" integer NOT NULL,
+  "quantity" smallint NOT NULL DEFAULT 0,
+  "description" varchar(64) NOT NULL DEFAULT '',
+  PRIMARY KEY ("journey_id", "package_type_id"),
+  FOREIGN KEY ("journey_id") REFERENCES "journey"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("package_type_id") REFERENCES "type"("id")
 );
 
-CREATE INDEX "trainer_idx_course_type_id" ON "trainer" ("course_type_id");
+CREATE INDEX "package_idx_journey_id" ON "package" ("journey_id");
 
-CREATE INDEX "trainer_idx_trainer_id" ON "trainer" ("trainer_id");
+CREATE INDEX "package_idx_package_type_id" ON "package" ("package_type_id");
 
 DROP TABLE "customer";
 
@@ -22,25 +24,6 @@ CREATE TABLE "customer" (
 );
 
 CREATE UNIQUE INDEX "customer_name" ON "customer" ("name");
-
-DROP TABLE "training";
-
-CREATE TABLE "training" (
-  "recipient_id" integer NOT NULL,
-  "course_type_id" integer NOT NULL,
-  "status" enum NOT NULL DEFAULT 'enroled',
-  "enroled" datetime,
-  "started" datetime,
-  "completed" datetime,
-  "expired" datetime,
-  PRIMARY KEY ("recipient_id", "course_type_id"),
-  FOREIGN KEY ("course_type_id") REFERENCES "type"("id"),
-  FOREIGN KEY ("recipient_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
-CREATE INDEX "training_idx_course_type_id" ON "training" ("course_type_id");
-
-CREATE INDEX "training_idx_recipient_id" ON "training" ("recipient_id");
 
 DROP TABLE "job";
 
@@ -220,6 +203,25 @@ CREATE TABLE "shift" (
 
 CREATE INDEX "shift_idx_rota_id" ON "shift" ("rota_id");
 
+DROP TABLE "training";
+
+CREATE TABLE "training" (
+  "recipient_id" integer NOT NULL,
+  "course_type_id" integer NOT NULL,
+  "status" enum NOT NULL DEFAULT 'enroled',
+  "enroled" datetime,
+  "started" datetime,
+  "completed" datetime,
+  "expired" datetime,
+  PRIMARY KEY ("recipient_id", "course_type_id"),
+  FOREIGN KEY ("course_type_id") REFERENCES "type"("id"),
+  FOREIGN KEY ("recipient_id") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX "training_idx_course_type_id" ON "training" ("course_type_id");
+
+CREATE INDEX "training_idx_recipient_id" ON "training" ("recipient_id");
+
 DROP TABLE "vehicle";
 
 CREATE TABLE "vehicle" (
@@ -256,6 +258,35 @@ CREATE INDEX "incident_party_idx_incident_id" ON "incident_party" ("incident_id"
 
 CREATE INDEX "incident_party_idx_incident_party_id" ON "incident_party" ("incident_party_id");
 
+DROP TABLE "journey";
+
+CREATE TABLE "journey" (
+  "id" INTEGER PRIMARY KEY NOT NULL,
+  "completed" boolean NOT NULL DEFAULT 0,
+  "priority" enum NOT NULL DEFAULT 'routine',
+  "original_priority" enum NOT NULL DEFAULT 'routine',
+  "created" datetime,
+  "requested" datetime,
+  "delivered" datetime,
+  "controller_id" integer NOT NULL,
+  "customer_id" integer NOT NULL,
+  "pickup_id" integer NOT NULL,
+  "dropoff_id" integer NOT NULL,
+  "notes" varchar(255) NOT NULL DEFAULT '',
+  FOREIGN KEY ("controller_id") REFERENCES "person"("id"),
+  FOREIGN KEY ("customer_id") REFERENCES "customer"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("dropoff_id") REFERENCES "location"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("pickup_id") REFERENCES "location"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX "journey_idx_controller_id" ON "journey" ("controller_id");
+
+CREATE INDEX "journey_idx_customer_id" ON "journey" ("customer_id");
+
+CREATE INDEX "journey_idx_dropoff_id" ON "journey" ("dropoff_id");
+
+CREATE INDEX "journey_idx_pickup_id" ON "journey" ("pickup_id");
+
 DROP TABLE "event";
 
 CREATE TABLE "event" (
@@ -265,6 +296,7 @@ CREATE TABLE "event" (
   "start_rota_id" integer NOT NULL,
   "end_rota_id" integer,
   "vehicle_id" integer,
+  "course_type_id" integer,
   "max_participents" smallint,
   "start_time" varchar(5) NOT NULL DEFAULT '',
   "end_time" varchar(5) NOT NULL DEFAULT '',
@@ -272,12 +304,15 @@ CREATE TABLE "event" (
   "uri" varchar(64) NOT NULL DEFAULT '',
   "description" varchar(128) NOT NULL DEFAULT '',
   "notes" varchar(255) NOT NULL DEFAULT '',
+  FOREIGN KEY ("course_type_id") REFERENCES "type"("id"),
   FOREIGN KEY ("end_rota_id") REFERENCES "rota"("id"),
   FOREIGN KEY ("event_type_id") REFERENCES "type"("id"),
   FOREIGN KEY ("owner_id") REFERENCES "person"("id"),
   FOREIGN KEY ("start_rota_id") REFERENCES "rota"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY ("vehicle_id") REFERENCES "vehicle"("id")
 );
+
+CREATE INDEX "event_idx_course_type_id" ON "event" ("course_type_id");
 
 CREATE INDEX "event_idx_end_rota_id" ON "event" ("end_rota_id");
 
@@ -290,39 +325,6 @@ CREATE INDEX "event_idx_start_rota_id" ON "event" ("start_rota_id");
 CREATE INDEX "event_idx_vehicle_id" ON "event" ("vehicle_id");
 
 CREATE UNIQUE INDEX "event_uri" ON "event" ("uri");
-
-DROP TABLE "journey";
-
-CREATE TABLE "journey" (
-  "id" INTEGER PRIMARY KEY NOT NULL,
-  "completed" boolean NOT NULL DEFAULT 0,
-  "priority" enum NOT NULL DEFAULT 'routine',
-  "original_priority" enum NOT NULL DEFAULT 'routine',
-  "requested" datetime,
-  "delivered" datetime,
-  "controller_id" integer NOT NULL,
-  "customer_id" integer NOT NULL,
-  "pickup_id" integer NOT NULL,
-  "dropoff_id" integer NOT NULL,
-  "package_type_id" integer NOT NULL,
-  "package_other" varchar(64) NOT NULL DEFAULT '',
-  "notes" varchar(255) NOT NULL DEFAULT '',
-  FOREIGN KEY ("controller_id") REFERENCES "person"("id"),
-  FOREIGN KEY ("customer_id") REFERENCES "customer"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY ("dropoff_id") REFERENCES "location"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY ("package_type_id") REFERENCES "type"("id"),
-  FOREIGN KEY ("pickup_id") REFERENCES "location"("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
-CREATE INDEX "journey_idx_controller_id" ON "journey" ("controller_id");
-
-CREATE INDEX "journey_idx_customer_id" ON "journey" ("customer_id");
-
-CREATE INDEX "journey_idx_dropoff_id" ON "journey" ("dropoff_id");
-
-CREATE INDEX "journey_idx_package_type_id" ON "journey" ("package_type_id");
-
-CREATE INDEX "journey_idx_pickup_id" ON "journey" ("pickup_id");
 
 DROP TABLE "participent";
 
@@ -362,6 +364,20 @@ CREATE INDEX "slot_idx_shift_id" ON "slot" ("shift_id");
 CREATE INDEX "slot_idx_vehicle_id" ON "slot" ("vehicle_id");
 
 CREATE INDEX "slot_idx_vehicle_assigner_id" ON "slot" ("vehicle_assigner_id");
+
+DROP TABLE "trainer";
+
+CREATE TABLE "trainer" (
+  "trainer_id" integer NOT NULL,
+  "event_id" integer NOT NULL,
+  PRIMARY KEY ("trainer_id", "event_id"),
+  FOREIGN KEY ("event_id") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY ("trainer_id") REFERENCES "person"("id")
+);
+
+CREATE INDEX "trainer_idx_event_id" ON "trainer" ("event_id");
+
+CREATE INDEX "trainer_idx_trainer_id" ON "trainer" ("trainer_id");
 
 DROP TABLE "transport";
 
@@ -405,6 +421,7 @@ CREATE TABLE "leg" (
   "beginning_id" integer NOT NULL,
   "ending_id" integer NOT NULL,
   "vehicle_id" integer,
+  "created" datetime,
   "called" datetime,
   "collection_eta" datetime,
   "collected" datetime,
