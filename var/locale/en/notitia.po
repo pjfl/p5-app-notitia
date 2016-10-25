@@ -882,6 +882,9 @@ msgstr "Ending"
 msgid "journey_leg_title"
 msgstr "Delivery Stage"
 
+msgid "journey_package_add_tip"
+msgstr "Add another package to this delivery request"
+
 msgid "journey_package_heading_0"
 msgstr "Quantity"
 
@@ -946,7 +949,7 @@ msgid "leg_create_tip"
 msgstr "Add another stage to this delivery request"
 
 msgid "leg_operator_tip"
-msgstr "View the stage for this operator"
+msgstr "Edit the delivery stage for this operator"
 
 msgid "location"
 msgstr "Location"
@@ -1877,6 +1880,9 @@ msgstr "Cancel participation in the [_1] event"
 
 msgid "update"
 msgstr "Update"
+
+msgid "update_package_tip"
+msgstr "Edit the details for this package"
 
 msgid "update_tip"
 msgstr "Update the [_1] record for [_2]"

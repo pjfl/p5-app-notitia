@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Better call logging help text
           - Implements #117. My slots
 
 0.8.1     2016-10-25 01:05:53

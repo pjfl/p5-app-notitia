@@ -512,6 +512,7 @@ my $_journey_package_row = sub {
    my $title = locm $req, 'Update Package Details';
    my $id = "update_${package_type}_package";
    my $value = locm $req, $package_type;
+   my $tip = locm $req, 'update_package_tip';
 
    push @{ $page->{literal_js} }, dialog_anchor( $id, $href, {
       name => $id, title => $title, useIcon => \1 } );
@@ -519,7 +520,7 @@ my $_journey_package_row = sub {
    return
       [ { class  => 'narrow', value => $package->quantity },
         { value  => $done ? $value : f_link $id, '#', {
-           class => 'windows', request => $req,
+           class => 'windows', request => $req, tip => $tip,
            value => $value } },
         { value  => $package->description }, ];
 };
@@ -1177,7 +1178,8 @@ sub journey : Role(controller) {
    $disabled or p_list $pform, PIPE_SEP, $links, $_link_opts->();
 
    my $package_rs = $self->schema->resultset( 'Package' );
-   my $packages = $package_rs->search( { journey_id => $jid } );
+   my $packages = $package_rs->search( { journey_id => $jid }, {
+      order_by => { -desc => 'quantity' } } );
    my $p_table = p_table $pform, {
       headers => $_journey_package_headers->( $req ) };
 
