@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Splits out Controller::Training from ::Main
           - Better management navigation menu indication
           - Splits out Model::Incident from Model::Call
           - Better call activity log attributes
