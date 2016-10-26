@@ -84,7 +84,9 @@ my $_certs_ops_links = sub {
       label_field_class => 'label' };
 
    my $scode = $person->shortcode;
-   my $href  = uri_for_action $req, $self->moniker.'/certification', [ $scode ];
+   my $actionp = $self->moniker.'/certification';
+   my $params = $req->query_params->( { optional => TRUE } );
+   my $href  = uri_for_action $req, $actionp, [ $scode ], $params;
    my $opts  = { action => 'add', args => [ $person->label ],
                  container_class => 'ops-links right', request => $req };
 
@@ -212,13 +214,14 @@ sub certification : Role(person_manager) Role(training_manager) {
    my $actionp   =  $self->moniker.'/certification';
    my $name      =  $req->uri_params->( 0 );
    my $type      =  $req->uri_params->( 1, { optional => TRUE } );
+   my $role      =  $req->query_params->( 'role', { optional => TRUE } );
    my $href      =  uri_for_action $req, $actionp, [ $name, $type ];
    my $form      =  blank_form 'certification-admin', $href;
    my $action    =  $type ? 'update' : 'create';
    my $page      =  {
       forms      => [ $form ],
       literal_js => $self->$_certification_js(),
-      selected   => 'people_list',
+      selected   => $role ? "${role}_list" : 'people_list',
       title      => loc $req, "certification_${action}_heading" };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $name );
@@ -242,11 +245,12 @@ sub certifications : Role(person_manager) Role(training_manager) {
 
    my $moniker =  $self->moniker;
    my $scode   =  $req->uri_params->( 0 );
+   my $role    =  $req->query_params->( 'role', { optional => TRUE } );
    my $href    =  uri_for_action $req, "${moniker}/certifications", [ $scode ];
    my $form    =  blank_form 'certifications', $href, { class => 'wide-form' };
    my $page    =  {
       forms    => [ $form ],
-      selected => 'people_list',
+      selected => $role ? "${role}_list" : 'people_list',
       title    => loc $req, 'certificates_management_heading' };
    my $schema  =  $self->schema;
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );

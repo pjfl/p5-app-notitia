@@ -488,6 +488,45 @@ my $_maybe_find_package = sub {
    return $package_rs->find( $journey_id, $package_type_id );
 };
 
+my $_packages_and_stages = sub {
+   my ($self, $req, $page, $disabled, $done, $jid) = @_;
+
+   my $pform = $page->{forms}->[ 1 ];
+
+   p_tag $pform, 'h5', locm $req, 'journey_package_title';
+
+   my $links = $self->$_journey_package_ops_links( $req, $page, $jid );
+
+   $disabled or p_list $pform, PIPE_SEP, $links, $_link_opts->();
+
+   my $package_rs = $self->schema->resultset( 'Package' );
+   my $packages = $package_rs->search( { journey_id => $jid }, {
+      order_by => { -desc => 'quantity' } } );
+   my $p_table = p_table $pform, {
+      headers => $_journey_package_headers->( $req ) };
+
+   p_row $p_table, [ map {
+      $self->$_journey_package_row( $req, $page, $done, $jid, $_ ) }
+                     $packages->all ];
+
+   my $lform = $page->{forms}->[ 2 ];
+
+   p_tag $lform, 'h5', locm $req, 'journey_leg_title';
+
+   $links = $self->$_journey_leg_ops_links( $req, $jid );
+
+   $disabled or p_list $lform, PIPE_SEP, $links, $_link_opts->();
+
+   my $leg_rs  = $self->schema->resultset( 'Leg' );
+   my $legs    = $leg_rs->search( { journey_id => $jid } );
+   my $l_table = p_table $lform, { headers => $_journey_leg_headers->( $req ) };
+
+   p_row $l_table, [ map { $self->$_journey_leg_row( $req, $jid, $_ ) }
+                     $legs->all ];
+
+   return;
+};
+
 my $_update_journey_from_request = sub {
    my ($self, $req, $journey) = @_; my $params = $req->body_params;
 
@@ -827,36 +866,7 @@ sub journey : Role(controller) {
       or ($jid and p_action $jform, 'delete', [ 'delivery_request', $label ], {
          request => $req } );
 
-   $jid or return $self->get_stash( $req, $page );
-
-   p_tag $pform, 'h5', locm $req, 'journey_package_title';
-
-   my $links = $self->$_journey_package_ops_links( $req, $page, $jid );
-
-   $disabled or p_list $pform, PIPE_SEP, $links, $_link_opts->();
-
-   my $package_rs = $self->schema->resultset( 'Package' );
-   my $packages = $package_rs->search( { journey_id => $jid }, {
-      order_by => { -desc => 'quantity' } } );
-   my $p_table = p_table $pform, {
-      headers => $_journey_package_headers->( $req ) };
-
-   p_row $p_table, [ map {
-      $self->$_journey_package_row( $req, $page, $done, $jid, $_ ) }
-                     $packages->all ];
-
-   p_tag $lform, 'h5', locm $req, 'journey_leg_title';
-
-   $links = $self->$_journey_leg_ops_links( $req, $jid );
-
-   $disabled or p_list $lform, PIPE_SEP, $links, $_link_opts->();
-
-   my $leg_rs  = $self->schema->resultset( 'Leg' );
-   my $legs    = $leg_rs->search( { journey_id => $jid } );
-   my $l_table = p_table $lform, { headers => $_journey_leg_headers->( $req ) };
-
-   p_row $l_table, [ map { $self->$_journey_leg_row( $req, $jid, $_ ) }
-                     $legs->all ];
+   $jid and $self->$_packages_and_stages( $req, $page, $disabled, $done, $jid );
 
    return $self->get_stash( $req, $page );
 }

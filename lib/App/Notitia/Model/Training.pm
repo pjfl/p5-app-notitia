@@ -435,12 +435,13 @@ sub training : Role(training_manager) {
    my ($self, $req) = @_;
 
    my $scode = $req->uri_params->( 0 );
+   my $role = $req->query_params->( 'role', { optional => TRUE } );
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person = $person_rs->find_by_shortcode( $scode );
    my $href = uri_for_action $req, $self->moniker.'/training', [ $scode ];
    my $form = blank_form 'training', $href;
    my $page = {
-      forms => [ $form ], selected => 'summary',
+      forms => [ $form ], selected => $role ? "${role}_list" : 'summary',
       title => locm $req, 'training_enrolement_title'
       };
    my $courses_taken = $person->list_courses;

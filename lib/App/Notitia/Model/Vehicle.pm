@@ -470,7 +470,8 @@ my $_vehicle_links = sub {
    push @{ $links }, { value => loc $req, $vehicle->type };
 
    push @{ $links },
-      { value => management_link( $req, "${moniker}/vehicle", $vrn ) };
+      { value => management_link( $req, "${moniker}/vehicle", $vrn, {
+         params => $req->query_params->( { optional => TRUE } ) } ) };
 
    $service or return $links;
 
@@ -639,6 +640,8 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
       event_uri => $uri,
       forms     => [ $form ],
       moniker   => $self->moniker,
+      selected  => now_dt > $event->start_date ? 'previous_events'
+                :  'current_events',
       title     => loc $req, 'vehicle_request_heading' };
    my $type_rs  =  $schema->resultset( 'Type' );
 
@@ -652,8 +655,9 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    p_row $table, [ map { $_vreq_row->( $schema, $req, $page, $event, $_ ) }
                    $type_rs->search_for_vehicle_types->all ];
 
-   p_button $form, 'request_vehicle', 'request_vehicle', {
-      class => 'save-button right-last' };
+   $page->{selected} eq 'current_events'
+      and p_button $form, 'request_vehicle', 'request_vehicle', {
+         class => 'save-button right-last' };
 
    return $self->get_stash( $req, $page );
 }
@@ -717,6 +721,8 @@ sub vehicle : Role(rota_manager) {
 
    my $actionp    =  $self->moniker.'/vehicle';
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
+   my $service    =  $req->query_params->( 'service', { optional => TRUE } );
+   my $private    =  $req->query_params->( 'private', { optional => TRUE } );
    my $href       =  uri_for_action $req, $actionp, [ $vrn ];
    my $form       =  blank_form 'vehicle-admin', $href;
    my $action     =  $vrn ? 'update' : 'create';
@@ -724,6 +730,8 @@ sub vehicle : Role(rota_manager) {
       first_field => 'vrn',
       forms       => [ $form ],
       literal_js  => $_vehicle_js->( $vrn ),
+      selected    => $service ? 'service_vehicles'
+                  :  $private ? 'private_vehicles' : 'vehicles_list',
       title       => loc $req, "vehicle_${action}_heading" };
    my $schema     =  $self->schema;
    my $vehicle    =  $_maybe_find_vehicle->( $schema, $vrn );
@@ -757,7 +765,7 @@ sub vehicle_events : Role(rota_manager) {
                    vehicle    => $vrn, };
    my $form   =  blank_form { class => 'wide-form no-header-wrap' };
    my $page   =  {
-      forms   => [ $form ],
+      forms   => [ $form ], selected => 'service_vehicles',
       title   => loc $req, 'vehicle_events_management_heading' };
 
    p_textfield $form, 'vehicle', $vrn, { disabled => TRUE };

@@ -10,3 +10,5 @@ roles:
 Dear [% first_name %]
 
 [% label %] has been awarded a [% type %] certification
+
+Regards

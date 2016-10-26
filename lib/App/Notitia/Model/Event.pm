@@ -80,7 +80,8 @@ my $_event_links = sub {
                      asset/request_vehicle event/event_summary );
 
    for my $actionp (@actions) {
-      push @{ $links }, { value => management_link( $req, $actionp, $uri ) };
+      push @{ $links }, { value => management_link( $req, $actionp, $uri, {
+         params => $req->query_params->( { optional => TRUE } ) } ) };
    }
 
    return [ { value => $event->label }, @{ $links } ];
@@ -130,6 +131,8 @@ my $_add_participate_button = sub {
             class => 'field-text right-last', label => NUL }
          and return;
    }
+
+   now_dt > $event->start_date and return;
 
    p_button $form, "${action}_event", "${action}_event", {
       class => 'save-button', container_class => 'right-last',
@@ -220,13 +223,17 @@ my $_maybe_find_event = sub {
 };
 
 my $_participent_links = sub {
-   my ($self, $req, $event, $tuple) = @_; my $name = $tuple->[ 1 ]->shortcode;
+   my ($self, $req, $page, $event, $tuple) = @_;
+
+   my $name = $tuple->[ 1 ]->shortcode; my $disabled = $page->{disabled};
 
    return
    [ { value => $tuple->[ 0 ] },
      { value => management_link( $req, 'person/person_summary', $name ) },
-     { value => management_link( $req, 'event/event', 'unparticipate',
-                { args => [ $event->uri ], type => 'form_button' } ) }
+     { value => $disabled
+              ? locm $req, 'Unparticipate'
+              : management_link( $req, 'event/event', 'unparticipate', {
+                 args => [ $event->uri ], type => 'form_button' } ) }
      ];
 };
 
@@ -535,8 +542,9 @@ sub event : Role(event_manager) {
    my ($self, $req) = @_;
 
    my $actionp    =  $self->moniker.'/event';
-   my $uri        =  $req->uri_params->( 0, { optional => TRUE } );
-   my $date       =  $req->query_params->( 'date', { optional => TRUE } );
+   my $opts       =  { optional => TRUE };
+   my $uri        =  $req->uri_params->( 0, $opts );
+   my $date       =  $req->query_params->( 'date', $opts );
    my $href       =  uri_for_action $req, $actionp, [ $uri ];
    my $form       =  blank_form 'event-admin', $href;
    my $action     =  $uri ? 'update' : 'create';
@@ -544,16 +552,21 @@ sub event : Role(event_manager) {
       first_field => 'name',
       forms       => [ $form ],
       literal_js  => $self->$_add_event_js(),
+      selected    => $req->query_params->( 'before', $opts ) ? 'previous_events'
+                  :  'current_events',
       title       => loc $req, "event_${action}_heading" };
    my $event      =  $self->$_maybe_find_event( $uri );
    my $links      =  $uri ? $_event_ops_links->( $req, $actionp, $uri ) : [];
+   my $disabled   =  $page->{selected} ne 'current_events' ? TRUE : FALSE;
 
    $uri and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Event', $event,
-      $self->$_bind_event_fields( $event, { date => $date } );
+      $self->$_bind_event_fields( $event, {
+         date => $date, disabled => $disabled } );
 
-   p_action $form, $action, [ 'event', $uri ], { request => $req };
+   $disabled
+      or p_action $form, $action, [ 'event', $uri ], { request => $req };
 
    $uri and p_action $form, 'delete', [ 'event', $uri ], { request => $req };
 
@@ -592,8 +605,12 @@ sub event_summary : Role(any) {
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $user );
    my $href    =  uri_for_action $req, $actionp, [ $uri ];
    my $form    =  blank_form 'event-admin', $href;
+   my $opts    =  { optional => TRUE };
    my $page    =  {
       forms    => [ $form ],
+      selected => $event->event_type eq 'training' ? 'training_events'
+               :  now_dt > $event->start_date ? 'previous_events'
+               :  'current_events',
       title    => loc $req, 'event_summary_heading' };
    my $links   =  $_event_ops_links->( $req, $actionp, $uri );
 
@@ -674,22 +691,27 @@ sub participents : Role(any) {
 
    my $uri       =  $req->uri_params->( 0 );
    my $event     =  $self->schema->resultset( 'Event' )->find_event_by( $uri );
-   my $person_rs =  $self->schema->resultset( 'Person' );
+   my $disabled  =  now_dt > $event->start_date ? TRUE : FALSE;
    my $params    =  { event => $uri };
    my $actionp   =  $self->moniker.'/participents';
    my $href      =  uri_for_action $req, $actionp, [ $uri ], $params;
    my $form      =  blank_form 'message-participents', $href, {
       class      => 'wider-table', id => 'message-participents' };
    my $page      =  {
+      disabled   => $disabled,
       forms      => [ $form ],
+      selected   => $event->event_type eq 'training' ? 'training_events'
+                 :  $disabled ? 'previous_events'
+                 :  'current_events',
       title      => $_participents_title->( $req, $event ) };
    my $links     =  $self->$_participent_ops_links( $req, $page, $params );
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $table = p_table $form, { headers => $_participent_headers->( $req ) };
+   my $person_rs = $self->schema->resultset( 'Person' );
 
-   p_row $table, [ map { $self->$_participent_links( $req, $event, $_ ) }
+   p_row $table, [ map { $self->$_participent_links( $req, $page, $event, $_ ) }
                       @{ $person_rs->list_participents( $event ) } ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
@@ -809,6 +831,7 @@ sub vehicle_event : Role(rota_manager) {
       first_field => 'name',
       forms       => [ $form ],
       literal_js  => $self->$_add_event_js(),
+      selected    => 'service_vehicles',
       title       => loc $req, "vehicle_event_${action}_heading" };
    my $event      =  $self->$_maybe_find_event( $uri );
    my $label      =  $uri ? $event->vehicle->label : $vrn;

@@ -17,3 +17,5 @@ to [% end_time %]
 You can participate in the event by following this [link]([%uri%])
 
 The event orgainiser is [% owner %]
+
+Regards

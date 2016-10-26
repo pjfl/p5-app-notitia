@@ -267,7 +267,9 @@ my $_people_links = sub {
          and push @paths, 'blots/endorsements';
 
    for my $actionp ( @paths ) {
-      push @links, { value => management_link( $req, $actionp, $scode ) };
+      push @links, {
+         value => management_link
+            ( $req, $actionp, $scode, { params => $params } ) };
    }
 
    return [ { value => $person->label }, @links ];
@@ -502,12 +504,17 @@ sub person : Role(person_manager) {
 
    my $moniker    =  $self->moniker;
    my $name       =  $req->uri_params->( 0, { optional => TRUE } );
+   my $role       =  $req->query_params->( 'role', { optional => TRUE } );
+   my $status     =  $req->query_params->( 'status', { optional => TRUE } );
    my $href       =  uri_for_action $req, "${moniker}/person", [ $name ];
    my $form       =  blank_form 'person-admin', $href;
    my $action     =  $name ? 'update' : 'create';
    my $page       =  {
       first_field => 'first_name',
       forms       => [ $form ],
+      selected    => $role ? "${role}_list"
+                   : $status && $status eq 'current' ? 'current_people_list'
+                   : 'people_list',
       title       => loc $req,  "person_${action}_heading" };
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $_maybe_find_person->( $person_rs, $name );

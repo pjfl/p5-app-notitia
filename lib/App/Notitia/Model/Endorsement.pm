@@ -4,11 +4,11 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_list p_fields
                                 p_row p_table p_textfield );
-use App::Notitia::Util      qw( check_field_js loc locm register_action_paths
-                                to_dt to_msg uri_for_action );
+use App::Notitia::Util      qw( check_field_js loc local_dt locm now_dt
+                                register_action_paths to_dt to_msg
+                                uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
-use Class::Usul::Time       qw( time2str );
 use Try::Tiny;
 use Unexpected::Functions   qw( ValidationErrors );
 use Moo;
@@ -38,19 +38,41 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_endorsements_headers = sub {
-   my $req = shift;
+my $_bind_endorsement_fields = sub {
+   my ($blot, $opts) = @_; $opts //= {};
 
-   return [ map { { value => loc( $req, "blots_heading_${_}" ) } } 0 .. 1 ];
+   my $disabled = $opts->{action} eq 'update' ? TRUE : FALSE;
+
+   return
+   [  type_code => { class => 'standard-field server', disabled => $disabled },
+      endorsed  => { class => 'standard-field server', type => 'date',
+                     value => local_dt( $disabled ? $blot->endorsed : now_dt )},
+      points    => {},
+      notes     => { class => 'standard-field autosize', type => 'textarea' },
+      ];
+};
+
+my $_endorsement_js = sub {
+   my $opts = { domain => 'schedule', form => 'Endorsement' };
+
+   return [ check_field_js( 'type_code', $opts ),
+            check_field_js( 'endorsed',  $opts ), ];
 };
 
 my $_endorsement_ops_links = sub {
    my ($req, $actionp, $person) = @_;
 
-   my $href = uri_for_action $req, $actionp, [ $person->shortcode ];
+   my $params = $req->query_params->( { optional => TRUE } );
+   my $href = uri_for_action $req, $actionp, [ $person->shortcode ], $params;
    my $opts = { action => 'add', args => [ $person->label ], request => $req };
 
    return [ f_link 'endorsement', $href, $opts ];
+};
+
+my $_endorsements_headers = sub {
+   my $req = shift;
+
+   return [ map { { value => loc( $req, "blots_heading_${_}" ) } } 0 .. 1 ];
 };
 
 my $_link_opts = sub {
@@ -58,30 +80,6 @@ my $_link_opts = sub {
 };
 
 # Private methods
-my $_endorsement_js = sub {
-   my $self = shift;
-   my $opts = { domain => 'schedule', form => 'Endorsement' };
-
-   return [ check_field_js( 'type_code', $opts ),
-            check_field_js( 'endorsed',  $opts ), ];
-};
-
-my $_bind_endorsement_fields = sub {
-   my ($self, $blot, $opts) = @_; $opts //= {};
-
-   my $today    = to_dt time2str '%Y-%m-%d';
-   my $updating = $opts->{action} eq 'update' ? TRUE : FALSE;
-   my $endorsed = $updating ? $blot->endorsed : $today;
-
-   return
-   [  type_code => { class => 'standard-field server', disabled => $updating },
-      endorsed  => { class => 'standard-field server', type => 'date',
-                     value => $endorsed },
-      points    => {},
-      notes     => { class => 'standard-field autosize', type => 'textarea' },
-      ];
-};
-
 my $_endorsement_links = sub {
    my ($self, $req, $scode, $blot) = @_;
 
@@ -145,15 +143,16 @@ sub create_endorsement_action : Role(person_manager) {
          ( $_, 'create', 'endorsement', $blot->label( $req ) );
    };
 
+   my $uri      = $blot->uri;
    my $type     = $blot->type_code;
-   my $who      = $req->session->user_label;
    my $action   = $self->moniker.'/endorsements';
    my $location = uri_for_action $req, $action, [ $name ];
    my $key      = 'Endorsement [_1] for [_2] added by [_3]';
-   my $message  = "action:create-endorsement shortcode:${name} type:${type}";
+   my $message  = "action:create-endorsement endorsement_uri:${uri} "
+                . "shortcode:${name}";
 
    $self->send_event( $req, $message );
-   $message = [ to_msg $key, $type, $name, $who ];
+   $message = [ to_msg $key, $type, $name, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -167,7 +166,8 @@ sub delete_endorsement_action : Role(person_manager) {
    my $action   = $self->moniker.'/endorsements';
    my $location = uri_for_action $req, $action, [ $name ];
    my $key      = 'Endorsement [_1] for [_2] deleted by [_3]';
-   my $message  = "action:delete-endorsement shortcode:${name} blot:${uri}";
+   my $message  = "action:delete-endorsement endorsement_uri:${uri} "
+                . "shortcode:${name}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $uri, $name, $req->session->user_label ];
@@ -181,13 +181,15 @@ sub endorsement : Role(person_manager) {
    my $actionp    =  $self->moniker.'/endorsement';
    my $name       =  $req->uri_params->( 0 );
    my $uri        =  $req->uri_params->( 1, { optional => TRUE } );
+   my $role       =  $req->query_params->( 'role', { optional => TRUE } );
    my $action     =  $uri ? 'update' : 'create';
    my $href       =  uri_for_action $req, $actionp, [ $name, $uri ];
    my $form       =  blank_form 'endorsement-admin', $href;
    my $page       =  {
       first_field => $uri ? 'endorsed' : 'type_code',
       forms       => [ $form ],
-      literal_js  => $self->$_endorsement_js(),
+      literal_js  => $_endorsement_js->(),
+      selected    => $role ? "${role}_list" : undef,
       title       => loc $req, "endorsement_${action}_heading" };
    my $blot       =  $self->$_maybe_find_endorsement( $name, $uri );
    my $person_rs  =  $self->schema->resultset( 'Person' );
@@ -197,7 +199,7 @@ sub endorsement : Role(person_manager) {
    p_textfield $form, 'username', $person->label, { disabled => TRUE };
 
    p_fields $form, $self->schema, 'Endorsement', $blot,
-      $self->$_bind_endorsement_fields( $blot, { action => $action } );
+      $_bind_endorsement_fields->( $blot, { action => $action } );
 
    p_action $form, $action, $args, { request => $req };
 
@@ -211,9 +213,11 @@ sub endorsements : Role(person_manager) {
 
    my $actionp =  $self->moniker.'/endorsement';
    my $scode   =  $req->uri_params->( 0 );
+   my $role    =  $req->query_params->( 'role', { optional => TRUE } );
    my $form    =  blank_form;
    my $page    =  {
       forms    => [ $form ],
+      selected => $role ? "${role}_list" : NUL,
       title    => loc $req, 'endorsements_management_heading' };
    my $schema  =  $self->schema;
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );
@@ -242,7 +246,8 @@ sub update_endorsement_action : Role(person_manager) {
    $self->$_update_endorsement_from_request( $req, $blot ); $blot->update;
 
    my $key     = 'Endorsement [_1] for [_2] updated by [_3]';
-   my $message = "action:update-endorsement shortcode:${name} blot:${uri}";
+   my $message = "action:update-endorsement endorsement_uri:${uri} "
+               . "shortcode:${name}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $uri, $name, $req->session->user_label ];

@@ -96,12 +96,17 @@ sub role : Role(administrator) Role(person_manager) {
    my ($self, $req) = @_;
 
    my $name      =  $req->uri_params->( 0 );
+   my $role      =  $req->query_params->( 'role', { optional => TRUE } );
+   my $status    =  $req->query_params->( 'status', { optional => TRUE } );
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $name );
    my $href      =  uri_for_action $req, $self->moniker.'/role', [ $name ];
    my $form      =  blank_form 'role-admin', $href;
    my $page      =  {
       forms      => [ $form ],
+      selected   => $role ? "${role}_list"
+                  : $status && $status eq 'current' ? 'current_people_list'
+                  : 'people_list',
       title      => loc $req, 'role_management_heading' };
 
    my $person_roles = $person->list_roles;
