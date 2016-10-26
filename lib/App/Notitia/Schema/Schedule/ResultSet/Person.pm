@@ -61,12 +61,14 @@ my $_set_max_badge_id = sub {
 sub find_by_key {
    my ($self, $key) = @_; my $person;
 
-   defined( $person = $self->search( { name => $key } )->single )
-       and  return $person;
-   defined( $person = $self->search( { shortcode => $key } )->single )
-       and  return $person;
-   defined( $person = $self->search( { email_address => $key } )->single )
-       and  return $person;
+   for my $guess ($key, lc $key) {
+      defined( $person = $self->search( { name => $guess } )->single )
+         and return $person;
+      defined( $person = $self->search( { shortcode => $guess } )->single )
+         and return $person;
+      defined( $person = $self->search( { email_address => $guess } )->single )
+         and return $person;
+   }
 
    throw 'Person [_1] unknown', [ $key ], level => 2;
 }

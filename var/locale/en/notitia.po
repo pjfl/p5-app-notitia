@@ -922,7 +922,7 @@ msgid "journeys_tip"
 msgstr "List, create, and update call records leading to package delivery"
 
 msgid "journeys_title"
-msgstr "Package Deliveries"
+msgstr "Deliveries"
 
 msgid "last_page_link"
 msgstr "&nbsp;…&nbsp;Last"
