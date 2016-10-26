@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Better call activity log attributes
           - Login username field now even more forgiving
           - Implements #119. Automated vehicle assignment emails
           - Implements #118. Impending slot automated emails

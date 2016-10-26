@@ -750,8 +750,8 @@ sub add_incident_party_action : Role(controller) {
       $incident_party_rs->create( {
          incident_party_id => $person->id, incident_id => $iid } );
 
-      my $message = "action:add-incident_party shortcode:${scode} "
-                  . "incident:${iid}";
+      my $message = "action:add-incident_party incident_id:${iid} "
+                  . "shortcode:${scode}";
 
       $self->send_event( $req, $message );
    }
@@ -783,15 +783,18 @@ sub create_delivery_request_action : Role(controller) {
    my $cid      = $req->body_params->( 'customer_id' );
    my $customer = $schema->resultset( 'Customer' )->find( $cid );
    my $journey  = $schema->resultset( 'Journey' )->new_result( {} );
+   my $c_name   = $customer->name;
 
    $self->$_update_journey_from_request( $req, $journey );
 
    try   { $journey->insert }
    catch { $self->rethrow_exception
-              ( $_, 'create', 'delivery request', $customer->name) };
+              ( $_, 'create', 'delivery request', $c_name ) };
 
-   my $jid      = $journey->id;
-   my $message  = "action:create-delivery id:${jid} customer:".$customer->name;
+   my $jid = $journey->id; $c_name =~ s{ [ ] }{_}gmx; $c_name = lc $c_name;
+
+   my $message  = "action:create-delivery delivery_id:${jid} "
+                . "customer:${c_name}";
 
    $self->send_event( $req, $message );
 
@@ -831,17 +834,21 @@ sub create_incident_action : Role(controller) {
 
    $self->$_update_incident_from_request( $req, $incident );
 
-   try { $incident->insert }
-   catch {
-      $self->rethrow_exception( $_, 'create', 'incident', $incident->title );
-   };
+   my $title = $incident->title;
 
-   $self->send_event( $req, 'action:create-incident title:'.$incident->title );
+   try   { $incident->insert }
+   catch { $self->rethrow_exception( $_, 'create', 'incident', $title ) };
 
-   my $iid = $incident->id;
+   my $iid = $incident->id; $title =~ s{ [ ] }{_}gmx; $title = lc $title;
+   my $message = "action:create-incident incident_id:${iid} "
+               . "incident_title:${title}";
+
+   $self->send_event( $req, $message );
+
    my $who = $req->session->user_label;
-   my $message = [ to_msg 'Incident [_1] created by [_2]', $iid, $who ];
    my $location = uri_for_action $req, $self->moniker.'/incident', [ $iid ];
+
+   $message = [ to_msg 'Incident [_1] created by [_2]', $iid, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -873,14 +880,17 @@ sub create_package_action : Role(controller) {
    try   { $package->insert }
    catch { $self->rethrow_exception( $_, 'create', 'package', $type ) };
 
-   $self->send_event( $req, "action:create-package type:${type}" );
+   my $message = "action:create-package delivery_id:${journey_id} "
+               . "package_type:${type}";
+
+   $self->send_event( $req, $message );
 
    my $actionp = $self->moniker.'/journey';
    my $location = uri_for_action $req, $actionp, [ $journey_id ];
-   my $who = $req->session->user_label;
-   my $message = [ to_msg
+
+   $message = [ to_msg
       'Package type [_1] for delivery request [_2] created by [_3]',
-                   $type, $journey_id, $who ];
+                $type, $journey_id, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 };
@@ -954,7 +964,9 @@ sub delete_delivery_request_action : Role(controller) {
 
    $journey->delete;
 
-   my $message  = "action:delete-delivery id:${jid} customer:${c_name}";
+   $c_name =~ s{ [ ] }{_}gmx; $c_name = lc $c_name;
+
+   my $message = "action:delete-delivery delivery_id:${jid} customer:${c_name}";
 
    $self->send_event( $req, $message );
 
@@ -981,6 +993,28 @@ sub delete_delivery_stage_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub delete_incident_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $iid      = $req->uri_params->( 0 );
+   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
+   my $title    = $incident->title;
+
+   $incident->delete; $title =~ s{ [ ] }{_}gmx; $title = lc $title;
+
+   my $message  = "action:delete-incident incident_id:${iid} "
+                . "incident_title:${title}";
+
+   $self->send_event( $req, $message );
+
+   my $who      = $req->session->user_label;
+   my $location = uri_for_action $req, $self->moniker.'/incidents';
+
+   $message = [ to_msg 'Incident [_1] deleted by [_2]', $iid, $who ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub delete_location_action : Role(controller) {
    my ($self, $req) = @_;
 
@@ -997,24 +1031,6 @@ sub delete_location_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_incident_action : Role(controller) {
-   my ($self, $req) = @_;
-
-   my $iid      = $req->uri_params->( 0 );
-   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
-   my $title    = $incident->title;
-
-   $incident->delete;
-
-   $self->send_event( $req, "action:delete-incident title:${title}" );
-
-   my $who      = $req->session->user_label;
-   my $message  = [ to_msg 'Incident [_1] deleted by [_2]', $iid, $who ];
-   my $location = uri_for_action $req, $self->moniker.'/incidents';
-
-   return { redirect => { location => $location, message => $message } };
-}
-
 sub delete_package_action : Role(controller) {
    my ($self, $req) = @_;
 
@@ -1026,14 +1042,17 @@ sub delete_package_action : Role(controller) {
 
    $package->delete;
 
-   $self->send_event( $req, "action:delete-package type:${package_type}" );
+   my $message = "action:delete-package delivery_id:${journey_id} "
+               . "package_type:${package_type}";
 
-   my $who = $req->session->user_label;
+   $self->send_event( $req, $message );
+
    my $actionp = $self->moniker.'/journey';
    my $location = uri_for_action $req, $actionp, [ $journey_id ];
-   my $message = [ to_msg
+
+   $message = [ to_msg
       'Package type [_1] for delivery request [_2] deleted by [_3]',
-                   $package_type, $journey_id, $who ];
+                $package_type, $journey_id, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -1369,8 +1388,8 @@ sub remove_incident_party_action : Role(controller) {
 
       $incident_party_rs->find( $iid, $person->id )->delete;
 
-      my $message = "action:remove-incident_party shortcode:${scode} "
-                  . "incident:${iid}";
+      my $message = "action:remove-incident_party incident_id:${iid} "
+                  . "shortcode:${scode}";
 
       $self->send_event( $req, $message );
    }
@@ -1410,7 +1429,9 @@ sub update_delivery_request_action : Role(controller) {
    catch { $self->rethrow_exception
               ( $_, 'update', 'delivery request', $c_name ) };
 
-   my $message = "action:update-delivery id:${jid} customer:${c_name}";
+   $c_name =~ s{ [ ] }{_}gmx; $c_name = lc $c_name;
+
+   my $message = "action:update-delivery delivery_id:${jid} customer:${c_name}";
 
    $self->send_event( $req, $message );
 
@@ -1445,9 +1466,19 @@ sub update_delivery_stage_action : Role(controller) {
    try   { $self->schema->txn_do( $update ) }
    catch { $self->rethrow_exception( $_, 'update', 'delivery stage', $lid ) };
 
-   my $who     = $req->session->user_label;
+   if ($completed) {
+      my $c_name = $journey->customer->name;
+
+      $c_name =~ s{ [ ] }{_}gmx; $c_name = lc $c_name;
+
+      my $message = "action:delivery-complete delivery_id:${jid} "
+                  . "customer:${c_name}";
+
+      $self->send_event( $req, $message );
+   }
+
    my $message = [ to_msg 'Stage [_1] of delivery request [_2] updated by [_3]',
-                   $lid, $jid, $who ];
+                   $lid, $jid, $req->session->user_label ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
@@ -1464,10 +1495,16 @@ sub update_incident_action : Role(controller) {
    try   { $incident->update }
    catch { $self->rethrow_exception( $_, 'update', 'incident', $iid ) };
 
-   $self->send_event( $req, "action:update-incident title:${title}" );
+   $title =~ s{ [ ] }{_}gmx; $title = lc $title;
+
+   my $message = "action:update-incident incident_id:${iid} "
+               . "incident_title:${title}";
+
+   $self->send_event( $req, $message );
 
    my $who = $req->session->user_label;
-   my $message = [ to_msg 'Incident [_1] updated by [_2]', $iid, $who ];
+
+   $message = [ to_msg 'Incident [_1] updated by [_2]', $iid, $who ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
@@ -1500,14 +1537,17 @@ sub update_package_action : Role(controller) {
    $self->$_update_package_from_request( $req, $package );
    $package->update;
 
-   $self->send_event( $req, "action:update-package type:${package_type}" );
+   my $message = "action:update-package delivery_id:${journey_id} "
+               . "package_type:${package_type}";
 
-   my $who = $req->session->user_label;
+   $self->send_event( $req, $message );
+
    my $actionp = $self->moniker.'/journey';
    my $location = uri_for_action $req, $actionp, [ $journey_id ];
-   my $message = [ to_msg
+
+   $message = [ to_msg
       'Package type [_1] for delivery request [_2] updated by [_3]',
-                   $package_type, $journey_id, $who ];
+                $package_type, $journey_id, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
