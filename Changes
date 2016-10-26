@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Splits out Model::Incident from Model::Call
           - Better call activity log attributes
           - Login username field now even more forgiving
           - Implements #119. Automated vehicle assignment emails
