@@ -400,20 +400,25 @@ sub insert {
    my $columns  = { $self->get_inflated_columns };
    my $first    = $columns->{first_name};
    my $last     = $columns->{last_name};
-   my $password = $columns->{password};
 
    unless ($columns->{name}) {
       $columns->{name} = lc "${first}.${last}";
-      $columns->{name} =~ s{[\'\-\+]}{}gmx;
+      $columns->{name} =~ s{[ \'\-\+]}{}gmx;
    }
 
    $columns->{shortcode} or $columns->{shortcode}
       = $self->$_new_shortcode( $first, $last );
-   $password and not is_encrypted( $password ) and $columns->{password}
-      = $self->$_encrypt_password( $columns->{shortcode}, $password );
    $self->set_inflated_columns( $columns );
 
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   $columns = { $self->get_inflated_columns };
+
+   my $password = $columns->{password};
+
+   $password and not is_encrypted( $password ) and $columns->{password}
+      = $self->$_encrypt_password( $columns->{shortcode}, $password )
+         and $self->set_inflated_columns( $columns );
 
    return $self->next::method;
 }
@@ -527,14 +532,14 @@ sub update {
    my ($self, $columns) = @_;
 
    $columns and $self->set_inflated_columns( $columns );
+   $self->validate( TRUE );
    $columns = { $self->get_inflated_columns };
 
    my $password = $columns->{password};
 
    $password and not is_encrypted( $password ) and $columns->{password}
-      = $self->$_encrypt_password( $columns->{shortcode}, $password );
-
-   $self->set_inflated_columns( $columns ); $self->validate( TRUE );
+      = $self->$_encrypt_password( $columns->{shortcode}, $password )
+         and $self->set_inflated_columns( $columns );
 
    return $self->next::method;
 }
