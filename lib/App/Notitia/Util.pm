@@ -23,20 +23,16 @@ use Unexpected::Functions      qw( ValidationErrors );
 use YAML::Tiny;
 
 our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
-                     build_navigation build_tree button
-                     check_field_js check_form_field clone
-                     datetime_label dialog_anchor display_duration
-                     encrypted_attr enhance
-                     get_hashed_pw get_salt
-                     is_access_authorised is_draft is_encrypted iterator
-                     js_config js_slider_config js_server_config
+                     build_navigation build_tree button check_field_js
+                     check_form_field clone datetime_label dialog_anchor
+                     display_duration encrypted_attr enhance get_hashed_pw
+                     get_salt is_access_authorised is_draft is_encrypted
+                     iterator js_config js_slider_config js_server_config
                      js_submit_config js_togglers_config js_window_config
                      lcm_for load_file_data loc local_dt localise_tree locm
                      mail_domain make_id_from make_name_from make_tip
-                     management_link mtime new_salt now_dt
-                     page_link_set register_action_paths
-                     set_element_focus
-                     set_rota_date
+                     management_link mtime new_salt now_dt page_link_set
+                     register_action_paths set_element_focus set_rota_date
                      slot_claimed slot_identifier slot_limit_index show_node
                      stash_functions time2int to_dt to_msg uri_for_action );
 

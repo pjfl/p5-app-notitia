@@ -24,7 +24,6 @@ $class->belongs_to( type   => "${result}::Type",  'type_id' );
 $class->has_many  ( events => "${result}::Event", 'start_rota_id' );
 $class->has_many  ( shifts => "${result}::Shift", 'rota_id' );
 
-# TODO: Remove rota and shift from schema!
 # Private methods
 sub _as_string {
    return $_[ 0 ]->date;

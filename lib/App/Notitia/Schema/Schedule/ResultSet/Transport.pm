@@ -12,15 +12,17 @@ sub assigned_vehicle_count {
 sub search_for_assigned_vehicles {
    my ($self, $opts) = @_; my $where = {}; $opts = { %{ $opts } };
 
-   my $parser   = $self->result_source->schema->datetime_parser;
-   my $prefetch = delete $opts->{prefetch}
-               // [ { 'event' => 'start_rota' }, 'vehicle' ];
-
+   delete $opts->{event_type}; delete $opts->{rota_type};
    exists $opts->{vehicle}
       and $where->{ 'vehicle.vrn' } = delete $opts->{vehicle};
+
+   my $parser = $self->result_source->schema->datetime_parser;
+
    set_rota_date( $parser, $where, 'start_rota.date', $opts );
    $opts->{order_by} //= { -desc => 'start_rota.date' };
-   delete $opts->{event_type}; delete $opts->{rota_type};
+
+   my $prefetch = delete $opts->{prefetch}
+               // [ { 'event' => 'start_rota' }, 'vehicle' ];
 
    return $self->search( $where, { prefetch => $prefetch, %{ $opts } } );
 }
@@ -31,6 +33,39 @@ sub search_for_vehicle_by_type {
    return $self->search
       ( { event_id => $event_id, 'vehicle.type_id' => $vehicle_type_id },
         { prefetch => 'vehicle' } );
+}
+
+sub search_by_event_date {
+   my ($self, $opts) = @_; my $where = {}; $opts = { %{ $opts } };
+
+   delete $opts->{event_type}; delete $opts->{rota_type};
+   exists $opts->{vehicle}
+      and $where->{ 'vehicle.vrn' } = delete $opts->{vehicle};
+
+   my $parser = $self->result_source->schema->datetime_parser;
+
+   if (my $after = delete $opts->{after}) {
+      $where->{ 'end_rota.date' }->{ '>=' }
+         = $parser->format_datetime( $after );
+      $opts->{order_by} //= 'start_rota.date';
+   }
+
+   if (my $before = delete $opts->{before}) {
+      $where->{ 'start_rota.date' }->{ '=<' }
+         = $parser->format_datetime( $before );
+   }
+
+   if (my $ondate = delete $opts->{on}) {
+      $where->{ 'start_rota.date' } = $parser->format_datetime( $ondate );
+      delete $where->{ 'end_rota.date' };
+   }
+
+   $opts->{order_by} //= { -desc => 'start_rota.date' };
+
+   my $prefetch = delete $opts->{prefetch}
+               // [ { 'event' => [ 'start_rota', 'end_rota' ] }, 'vehicle' ];
+
+   return $self->search( $where, { prefetch => $prefetch, %{ $opts } } );
 }
 
 1;

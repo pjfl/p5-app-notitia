@@ -3,10 +3,10 @@
    <p>Welcome [% first_name %],</p>
 
    <p>An account has been created using this email address on the [% app_name %]
-      application.</p>
+      application. Your user name and machine generated password are;</p>
 
    <p>User name: [% username %]<br/>
-      Password: [% password %]</p>
+      Old Password: [% password %]</p>
 
    <p>Follow the link provided in this email to activate your account. Once
       activated you will only be able to change your password from this
