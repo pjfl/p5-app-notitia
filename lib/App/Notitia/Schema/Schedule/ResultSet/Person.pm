@@ -5,6 +5,7 @@ use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::Functions  qw( throw );
+use Unexpected::Functions   qw( Unspecified );
 
 # Private package variables
 my $_max_badge_id = [ 0, 0 ];
@@ -60,6 +61,12 @@ my $_set_max_badge_id = sub {
 # Public methods
 sub find_by_key {
    my ($self, $key) = @_; my $person;
+
+   $key or throw Unspecified, [ 'user name' ], level => 2;
+
+   $key =~ m{ \A \d+ \z }mx
+      and defined( $person = $self->search( { badge_id => $key } )->single )
+      and return $person;
 
    for my $guess ($key, lc $key) {
       defined( $person = $self->search( { name => $guess } )->single )
