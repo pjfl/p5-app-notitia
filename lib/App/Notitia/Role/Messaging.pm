@@ -4,9 +4,10 @@ use namespace::autoclean;
 
 use App::Notitia::Form      qw( blank_form f_link p_button p_radio
                                 p_select p_textarea );
-use App::Notitia::Constants qw( C_DIALOG NUL SPC TRUE );
+use App::Notitia::Constants qw( C_DIALOG FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( js_config local_dt locm mail_domain
                                 set_element_focus to_msg uri_for_action );
+use Class::Null;
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token is_member throw trim );
 use Class::Usul::Log        qw( get_logger );
@@ -90,19 +91,6 @@ my $_inflate = sub {
    return $stash;
 };
 
-my $_list_message_templates = sub {
-   my ($self, $req) = @_;
-
-   my $conf   = $self->config;
-   my $dir    = $conf->docs_root->catdir
-      ( $req->locale, $conf->posts, $conf->email_templates );
-   my $plates = $dir->filter( sub { m{ \.md \z }mx } );
-
-   $dir->exists or return [ [ NUL, NUL ] ];
-
-   return [ map { [ $_plate_label->( $_ ), "${_}" ] } $plates->all_files ];
-};
-
 my $_make_template = sub {
    my ($self, $message) = @_;
 
@@ -127,6 +115,16 @@ my $_template_path = sub {
    return $conf->template_dir->catfile( $conf->skin."/${name}.tt" );
 };
 
+my $_list_message_templates = sub {
+   my ($self, $req) = @_; my $dir = $self->$_template_dir( $req );
+
+   $dir->exists or return [ [ NUL, NUL ] ];
+
+   my $plates = $dir->filter( sub { m{ \.md \z }mx } );
+
+   return [ map { [ $_plate_label->( $_ ), "${_}" ] } $plates->all_files ];
+};
+
 my $_create_email_job = sub {
    my ($self, $stash, $template) = @_; my $conf = $self->config;
 
@@ -137,23 +135,29 @@ my $_create_email_job = sub {
    return $rs->create( { command => $cmd, name => 'send_message' } );
 };
 
-my $_certification_email = sub {
-   my ($self, $req, $stash) = @_;
+my $_maybe_create_email = sub {
+   my ($self, $stash, $template) = @_; $template or return Class::Null->new;
 
-   my $template =
-      $self->$_template_dir( $req )->catfile( 'certification_email.md' );
+   $template->exists and return $self->$_create_email_job( $stash, $template );
+
+   $self->log->warn( "Email template ${template} does not exist" );
+
+   return Class::Null->new;
+};
+
+my $_certification_email = sub {
+   my ($self, $req, $stash) = @_; my $file = 'certification_email.md';
 
    $stash->{type} = locm $req, $stash->{type};
 
-   return $self->$_create_email_job( $stash, $template )->id;
+   return $stash, $self->$_template_dir( $req )->catfile( $file );
 };
 
 my $_event_email = sub {
    my ($self, $req, $stash) = @_;
 
    my $rs = $self->schema->resultset( 'Event' );
-   my $event = $rs->find_event_by( $stash->{event} );
-   my $template = $self->$_template_dir( $req )->catfile( 'event_email.md' );
+   my $event = $rs->find_event_by( $stash->{event_uri} );
 
    for my $k ( qw( description end_time name start_time ) ) {
       $stash->{ $k } = $event->$k();
@@ -164,20 +168,18 @@ my $_event_email = sub {
    $stash->{uri} = uri_for_action $req, 'event/event_summary', [ $event->uri ];
    $stash->{role} = 'fund_raiser';
 
-   return $self->$_create_email_job( $stash, $template )->id;
+   return $stash, $self->$_template_dir( $req )->catfile( 'event_email.md' );
 };
 
 my $_impending_slot_email = sub {
-   my ($self, $req, $stash) = @_;
+   my ($self, $req, $stash) = @_; my $file = 'impending_slot_email.md';
 
-   my $file = 'impending_slot_email.md';
-   my $template = $self->$_template_dir( $req )->catfile( $file );
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $stash->{slot_key};
 
    $stash->{shift_type} = $shift_type;
    $stash->{slot_type} = $slot_type;
 
-   return $self->$_create_email_job( $stash, $template )->id;
+   return $stash, $self->$_template_dir( $req )->catfile( $file );
 };
 
 my $_vacant_slot_email = sub {
@@ -185,22 +187,36 @@ my $_vacant_slot_email = sub {
 
    my $slot_type = $stash->{role} = $stash->{slot_type};
    my $file = "${slot_type}_slots_email.md";
-   my $template = $self->$_template_dir( $req )->catfile( $file );
 
-   return $self->$_create_email_job( $stash, $template )->id;
+   return $stash, $self->$_template_dir( $req )->catfile( $file );
 };
 
 my $_vehicle_assignment_email = sub {
-   my ($self, $req, $stash) = @_;
+   my ($self, $req, $stash) = @_; my $file = 'vehicle_assignment_email.md';
 
-   my $file = 'vehicle_assignment_email.md';
-   my $template = $self->$_template_dir( $req )->catfile( $file );
-   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $stash->{slot_key};
+   if ($stash->{slot_key}) {
+      my ($shift_type, $slot_type, $subslot)
+         = split m{ _ }mx, $stash->{slot_key};
 
-   $stash->{shift_type} = $shift_type;
-   $stash->{slot_type} = $slot_type;
+      $stash->{shift_type} = $shift_type;
+      $stash->{slot_type} = $slot_type;
+      $file = 'vehicle_assignment_email.md';
+   }
+   elsif ($stash->{event_uri}) {
+      $file = 'vehicle_assignment_event_email.md';
+   }
+   else { return $stash, FALSE }
 
-   return $self->$_create_email_job( $stash, $template )->id;
+   return $stash, $self->$_template_dir( $req )->catfile( $file );
+};
+
+my $_emailers_cache = {
+   create_certification => $_certification_email,
+   create_event => $_event_email,
+   update_event => $_event_email,
+   impending_slot => $_impending_slot_email,
+   vacant_slot => $_vacant_slot_email,
+   vehicle_assignment => $_vehicle_assignment_email,
 };
 
 # Public methods
@@ -259,6 +275,13 @@ sub create_totp_request_email {
 
    return $self->$_create_email_job( $stash, $template )->id;
 }
+
+sub email_handler {
+   my ($self, $action, $handler) = @_;
+
+   return defined $handler ? $_emailers_cache->{ $action } = $handler
+                           : $_emailers_cache->{ $action };
+};
 
 sub jobdaemon {
    return $_[ 0 ]->components->{daemon}->jobdaemon;
@@ -372,32 +395,11 @@ sub send_event {
 
    $message = $_clean_and_log->( $req, $message );
 
-   my $conf = $self->config; my $stash = $self->$_inflate( $req, $message );
+   my $stash = $self->$_inflate( $req, $message );
 
-   $stash->{action} eq 'create_certification'
-      and is_member( 'certification', $conf->auto_emails )
-      and $self->$_certification_email( $req, $stash )
-      and return;
-
-   ($stash->{action} eq 'create_event' or $stash->{action} eq 'update_event')
-      and is_member( 'event', $conf->auto_emails )
-      and $self->$_event_email( $req, $stash )
-      and return;
-
-   $stash->{action} eq 'impending_slot'
-      and is_member( 'impending_slot', $conf->auto_emails )
-      and $self->$_impending_slot_email( $req, $stash )
-      and return;
-
-   $stash->{action} eq 'vacant_slot'
-      and is_member( 'vacant_slot', $conf->auto_emails )
-      and $self->$_vacant_slot_email( $req, $stash )
-      and return;
-
-   $stash->{action} eq 'vehicle_assignment'
-      and is_member( 'vehicle_assignment', $conf->auto_emails )
-      and $self->$_vehicle_assignment_email( $req, $stash )
-      and return;
+   my $code; is_member $stash->{action}, $self->config->auto_emails
+      and $code = $self->email_handler( $stash->{action} )
+      and $self->$_maybe_create_email( $code->( $self, $req, $stash ) );
 
    return;
 }

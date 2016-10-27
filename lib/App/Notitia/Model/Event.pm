@@ -5,9 +5,9 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_button p_list
                                 p_fields p_row p_table p_tag p_text
                                 p_textfield );
-use App::Notitia::Util      qw( check_field_js display_duration loc locm
-                                make_tip management_link now_dt page_link_set
-                                register_action_paths to_dt to_msg
+use App::Notitia::Util      qw( check_field_js display_duration loc local_dt
+                                locm make_tip management_link now_dt
+                                page_link_set register_action_paths to_dt to_msg
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
@@ -48,20 +48,23 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_bind_event_date = sub {
-   my ($event, $opts) = @_;
+my $_bind_date = sub {
+   my ($name, $date, $event, $opts) = @_;
 
    my $disabled = $opts->{disabled} || $event->uri ? TRUE : FALSE;
-   my $date     = $event->uri ? $event->start_date
-                              : to_dt $opts->{date} ? $opts->{date}
-                                                    : time2str '%Y-%m-%d';
+   my $dt = $event->uri ? $date : $opts->{date} ? to_dt $opts->{date} : now_dt;
 
-   return { class => 'standard-field required',
-            disabled => $disabled,
-            label => 'event_date',
-            name => 'event_date',
-            type => 'date',
-            value =>  $date->set_time_zone( 'local' )->dmy( '/' ) };
+   return { class => 'standard-field required', disabled => $disabled,
+            label => $name, name => $name,
+            type => 'date', value => local_dt( $dt )->dmy( '/' ) };
+};
+
+my $_bind_end_date = sub {
+   return $_bind_date->( 'end_date', $_[ 0 ]->end_date, $_[ 0 ], $_[ 1 ] );
+};
+
+my $_bind_start_date = sub {
+   return $_bind_date->( 'start_date', $_[ 0 ]->start_date, $_[ 0 ], $_[ 1 ] );
 };
 
 my $_create_action = sub {
@@ -337,12 +340,13 @@ my $_bind_event_fields = sub {
 
    return
    [  name             => $self->$_bind_event_name( $event, $opts ),
-      event_date       => $_bind_event_date->( $event, $opts ),
+      start_date       => $_bind_start_date->( $event, $opts ),
       owner            => $self->$_bind_owner( $event, $disabled ),
       description      => { class    => 'standard-field autosize server',
                             disabled => $disabled, type => 'textarea' },
       start_time       => { class    => 'standard-field',
                             disabled => $disabled, type => 'time' },
+#      end_date         => $_bind_end_date->( $event, $opts ),
       end_time         => { class    => 'standard-field',
                             disabled => $disabled, type => 'time' },
       trainer          => $self->$_bind_trainer( $event, $opts ),
@@ -364,8 +368,11 @@ my $_create_event = sub {
                  event_type => $event_type,
                  owner      => $req->username, };
 
+   my $end_date = $req->body_params->( 'end_date', { optional => TRUE } );
+
+   $end_date and $attr->{end_date} = to_dt $end_date;
    $opts->{vrn} and $attr->{vehicle} = $opts->{vrn};
-   $opts->{course} and $attr->{course} = $opts->{course};
+   $opts->{course} and $attr->{course_type} = $opts->{course};
 
    my $event = $self->schema->resultset( 'Event' )->new_result( $attr );
 
@@ -438,7 +445,7 @@ my $_update_event = sub {
 sub create_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $date  = to_dt $req->body_params->( 'event_date' );
+   my $date  = to_dt $req->body_params->( 'start_date' );
    my $event = $self->$_create_event( $req, $date, 'person' );
 
    $self->$_create_event_post( $req, $event->post_filename, $event );
@@ -448,7 +455,7 @@ sub create_event_action : Role(event_manager) {
    my $location = uri_for_action $req, $actionp, [ $event->uri ];
    my $message  = [ to_msg 'Event [_1] created by [_2]', $event->label, $who ];
 
-   $self->send_event( $req, 'action:create-event event:'.$event->uri );
+   $self->send_event( $req, 'action:create-event event_uri:'.$event->uri );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -456,17 +463,18 @@ sub create_event_action : Role(event_manager) {
 sub create_training_event_action : Role(training_manager) {
    my ($self, $req) = @_;
 
-   my $date = to_dt $req->body_params->( 'event_date' );
+   my $date = to_dt $req->body_params->( 'start_date' );
    my $course_name = $req->body_params->( 'name' );
    my $event = $self->$_create_event
       ( $req, $date, 'training', { course => $course_name } );
+   my $uri = $event->uri;
    my $label = $event->localised_label( $req );
    my $who = $req->session->user_label;
    my $message = [ to_msg 'Training event [_1] created by [_2]', $label, $who ];
    my $actionp = $self->moniker.'/training_event';
-   my $location = uri_for_action $req, $actionp, [ $event->uri ];
+   my $location = uri_for_action $req, $actionp, [ $uri ];
 
-   $self->send_event( $req, 'action:create-training-event event:'.$event->uri );
+   $self->send_event( $req, "action:create-training-event event_uri:${uri}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -475,15 +483,16 @@ sub create_vehicle_event_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $vrn      = $req->uri_params->( 0 );
-   my $date     = to_dt $req->body_params->( 'event_date' );
+   my $date     = to_dt $req->body_params->( 'start_date' );
    my $event    = $self->$_create_event
       ( $req, $date, 'vehicle', { vrn => $vrn } );
+   my $uri      = $event->uri;
    my $label    = $event->label;
    my $who      = $req->session->user_label;
    my $location = $_vehicle_events_uri->( $req, $vrn );
    my $message  = [ to_msg 'Vehicle event [_1] created by [_2]', $label, $who ];
 
-   $self->send_event( $req, 'action:create-vehicle-event event:'.$event->uri );
+   $self->send_event( $req, "action:create-vehicle-event event_uri:${uri}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -501,7 +510,7 @@ sub delete_event_action : Role(event_manager) {
    my $location = uri_for_action $req, $self->moniker.'/events';
    my $message  = [ to_msg 'Event [_1] deleted by [_2]', $label, $who ];
 
-   $self->send_event( $req, "action:delete-event event:${uri}" );
+   $self->send_event( $req, "action:delete-event event_uri:${uri}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -516,7 +525,7 @@ sub delete_training_event_action : Role(training_manager) {
    my $message = [ to_msg 'Training event [_1] deleted by [_2]', $label, $who ];
    my $location = uri_for_action $req, 'train/events';
 
-   $self->send_event( $req, "action:delete-training-event event:${uri}" );
+   $self->send_event( $req, "action:delete-training-event event_uri:${uri}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -530,7 +539,7 @@ sub delete_vehicle_event_action : Role(rota_manager) {
    my $label    = $event->label;
    my $who      = $req->session->user_label;
    my $location = $_vehicle_events_uri->( $req, $vrn );
-   my $message  = "action:delete-vehicle-event event:${uri} vehicle:${vrn}";
+   my $message  = "action:delete-vehicle-event event_uri:${uri} vehicle:${vrn}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg 'Vehicle event [_1] deleted by [_2]', $label, $who ];
@@ -681,7 +690,7 @@ sub participate_event_action : Role(any) {
    my $location  = uri_for_action $req, $actionp, [ $uri ];
    my $message   = [ to_msg 'Event [_1] attendee [_2]', $uri, $person->label ];
 
-   $self->send_event( $req, "action:participate-in-event event:${uri}" );
+   $self->send_event( $req, "action:participate-in-event event_uri:${uri}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -761,7 +770,7 @@ sub unparticipate_event_action : Role(any) {
    my $message   = [ to_msg 'Event [_1] attendence cancelled for [_2]',
                      $uri, $who ];
 
-   $self->send_event( $req, "action:unparticipate-in-event event:${uri}" );
+   $self->send_event( $req, "action:unparticipate-in-event event_uri:${uri}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -779,7 +788,7 @@ sub update_event_action : Role(event_manager) {
    my $location = uri_for_action $req, $actionp, [ $uri ];
    my $message  = [ to_msg 'Event [_1] updated by [_2]', $event->label, $who ];
 
-   $self->send_event( $req, "action:update-event event:${uri}" );
+   $self->send_event( $req, "action:update-event event_uri:${uri}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -795,7 +804,7 @@ sub update_training_event_action : Role(training_manager) {
    my $actionp = $self->moniker.'/training_event';
    my $location = uri_for_action $req, $actionp, [ $uri ];
 
-   $self->send_event( $req, "action:update-training-event event:${uri}" );
+   $self->send_event( $req, "action:update-training-event event_uri:${uri}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -807,7 +816,7 @@ sub update_vehicle_event_action : Role(rota_manager) {
    my $uri      = $req->uri_params->( 1 );
    my $event    = $self->$_update_event( $req, $uri );
    my $location = $_vehicle_events_uri->( $req, $vrn );
-   my $message  = "action:update-vehicle-event event:${uri} vehicle:${vrn}";
+   my $message  = "action:update-vehicle-event event_uri:${uri} vehicle:${vrn}";
 
    $self->send_event( $req, $message );
 

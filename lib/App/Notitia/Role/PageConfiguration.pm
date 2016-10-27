@@ -18,11 +18,7 @@ around 'execute' => sub {
    my $session = $req->session; my $sess_version = $session->version;
 
    unless ($sess_version eq $conf->session_version) {
-      my $psgix_sess = $req->_env->{ 'psgix.session' };
-
-      delete $psgix_sess->{ $_ } for (keys %{ $psgix_sess });
-
-      $req->clear_session;
+      $req->reset_session;
       throw 'Session version mismatch [_1] vs. [_2]. Reload page',
             [ $sess_version, $conf->session_version ];
    }

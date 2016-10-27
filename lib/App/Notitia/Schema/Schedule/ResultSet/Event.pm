@@ -65,7 +65,7 @@ sub new_result {
 
    $vrn and $columns->{vehicle_id} = $self->$_find_vehicle( $vrn )->id;
 
-   my $course = delete $columns->{course};
+   my $course = delete $columns->{course_type};
 
    $course
       and $columns->{course_type_id} = $self->$_find_course_type( $course )->id;

@@ -13,7 +13,7 @@ has '+moniker' => default => 'posts';
 
 has 'depth_offset' => is => 'ro', isa => PositiveInt, default => 3;
 
-has 'max_navigation' => is => 'ro', isa => NonZeroPositiveInt, default => 20;
+has 'max_navigation' => is => 'ro', isa => NonZeroPositiveInt, default => 1000;
 
 with q(App::Notitia::Role::PageConfiguration);
 with q(App::Notitia::Role::Navigation);

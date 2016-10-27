@@ -670,9 +670,6 @@ msgstr "Add Event"
 msgid "event_create_tip"
 msgstr "Create new a event record"
 
-msgid "event_date"
-msgstr "Event Date"
-
 msgid "event_create_heading"
 msgstr "Add Event"
 
@@ -1700,6 +1697,9 @@ msgstr "Staff"
 
 msgid "staff_list_tip"
 msgstr "Members of staff"
+
+msgid "start_date"
+msgstr "Start Date"
 
 msgid "start_jobdaemon"
 msgstr "Start"

@@ -330,7 +330,11 @@ my $_toggle_event_assignment = sub {
 
    my $prep = $action eq 'assign' ? 'to' : 'from';
    my $key  = "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]";
-   my $message = "action:vehicle-${action}ment event:${uri} vehicle:${vrn}";
+   my $event = $schema->resultset( 'Event' )->find_event_by( $uri );
+   my $scode = $event->owner;
+   my $dmy = local_dt( $event->start_date )->dmy( '/' );
+   my $message = "action:vehicle-${action}ment event_uri:${uri} "
+               . "shortcode:${scode} date:${dmy} vehicle:${vrn}";
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $vrn, $uri, $req->session->user_label ];
@@ -640,7 +644,8 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
       event_uri => $uri,
       forms     => [ $form ],
       moniker   => $self->moniker,
-      selected  => now_dt > $event->start_date ? 'previous_events'
+      selected  => $event->event_type eq 'training' ? 'training_events'
+                :  now_dt > $event->start_date ? 'previous_events'
                 :  'current_events',
       title     => loc $req, 'vehicle_request_heading' };
    my $type_rs  =  $schema->resultset( 'Type' );
@@ -648,7 +653,7 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    p_textfield $form, 'name', $event->name, {
       disabled => TRUE, label => 'event_name' };
 
-   p_date $form, 'event_date', $event->start_date, { disabled => TRUE };
+   p_date $form, 'start_date', $event->start_date, { disabled => TRUE };
 
    my $table = p_table $form, { headers => $_vehicle_request_headers->( $req )};
 
@@ -678,7 +683,7 @@ sub request_vehicle_action : Role(event_manager) {
       if ($vreq->in_storage) { $vreq->update } else { $vreq->insert }
 
       my $quantity = $vreq->quantity // 0;
-      my $message  = "action:request-vehicle event:${uri} "
+      my $message  = "action:request-vehicle event_uri:${uri} "
                    . "vehicletype:${vehicle_type} quantity:${quantity}";
 
       $quantity > 0 and $self->send_event( $req, $message );

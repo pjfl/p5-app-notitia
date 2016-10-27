@@ -147,7 +147,7 @@ my $_admin_links = sub {
       $nav_folder->( $req, 'types', {
          class => $page->{selected} eq 'types_list'
                || $page->{selected} eq 'slot_roles_list' ? 'open' : NUL,
-         depth => 1, tip => 'Tyes Menu' } ),
+         depth => 1, tip => 'Types Menu' } ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'types_list' ? 'selected' : NUL,
          depth => 2, name => 'types_list' }, 'admin/types', [] ),
