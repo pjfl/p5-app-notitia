@@ -4,11 +4,11 @@ use strictures;
 use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( FALSE TRUE );
-use App::Notitia::Util      qw( date_data_type datetime_label
-                                foreign_key_data_type
+use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type
                                 nullable_foreign_key_data_type serial_data_type
                                 set_on_create_datetime_data_type
                                 varchar_data_type );
+use App::Notitia::Util      qw( datetime_label );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 

@@ -5,10 +5,11 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( VARCHAR_MAX_SIZE TRUE );
-use App::Notitia::Util      qw( foreign_key_data_type locm
+use App::Notitia::DataTypes qw( foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 nullable_numerical_id_data_type
                                 serial_data_type varchar_data_type );
+use App::Notitia::Util      qw( local_dt locm );
 use Class::Usul::Functions  qw( create_token throw );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -143,20 +144,19 @@ sub insert {
 }
 
 sub label {
-   my $self = shift; my $date = $self->start_date;
+   my $self = shift;
 
-   return $self->name.' ('.$date->set_time_zone( 'local' )->dmy( '/' ).')';
+   return $self->name.' ('.local_dt( $self->start_date )->dmy( '/' ).')';
 }
 
 sub localised_label {
-   my ($self, $req) = @_;
+   my ($self, $req) = @_; my $name = locm $req, lc $self->name;
 
-   return locm( $req, lc $self->name ).' ('
-          . $self->start_date->set_time_zone( 'local' )->dmy( '/' ).')';
+   return $name.' ('.local_dt( $self->start_date )->dmy( '/' ).')';
 }
 
 sub post_filename {
-   return $_[ 0 ]->start_date->set_time_zone( 'local' )->ymd.'_'.$_[ 0 ]->uri;
+   return local_dt( $_[ 0 ]->start_date )->ymd.'_'.$_[ 0 ]->uri;
 }
 
 sub remove_trainer {

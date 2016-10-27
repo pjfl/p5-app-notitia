@@ -4,7 +4,7 @@ use strictures;
 use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( FALSE TRAINING_STATUS_ENUM TRUE );
-use App::Notitia::Util      qw( date_data_type enumerated_data_type
+use App::Notitia::DataTypes qw( date_data_type enumerated_data_type
                                 foreign_key_data_type
                                 set_on_create_datetime_data_type );
 

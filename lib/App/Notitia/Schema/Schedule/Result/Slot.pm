@@ -5,10 +5,11 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( FALSE SLOT_TYPE_ENUM TRUE );
-use App::Notitia::Util      qw( bool_data_type enumerated_data_type
-                                foreign_key_data_type loc
+use App::Notitia::DataTypes qw( bool_data_type enumerated_data_type
+                                foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 numerical_id_data_type );
+use App::Notitia::Util      qw( local_dt locm );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -38,9 +39,9 @@ $class->has_many  ( operator_vehicles  => "${result}::Vehicle",
 
 # Private methods
 sub _as_string {
-   my $self = shift; my $date = $self->date->clone->set_time_zone( 'local' );
+   my $self = shift;
 
-   return $self->rota_type.'_'.$date->ymd.'_'.$self->key;
+   return $self->rota_type.'_'.local_dt( $self->date )->ymd.'_'.$self->key;
 }
 
 # Public methods
@@ -75,9 +76,7 @@ sub key {
 sub label {
    my ($self, $req) = @_;
 
-   my $date = $self->date->clone->set_time_zone( 'local' );
-
-   return loc( $req, $self->key ).' ('.$date->dmy( '/' ).')';
+   return locm( $req, $self->key ).' ('.local_dt( $self->date )->dmy( '/' ).')';
 }
 
 sub start_date {

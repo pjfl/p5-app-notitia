@@ -6,7 +6,7 @@ use overload '""' => sub { $_[ 0 ]->_as_string },
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( FALSE TRUE TYPE_CLASS_ENUM );
-use App::Notitia::Util      qw( enumerated_data_type serial_data_type
+use App::Notitia::DataTypes qw( enumerated_data_type serial_data_type
                                 varchar_data_type );
 use Class::Usul::Functions  qw( throw );
 

@@ -4,7 +4,7 @@ use strictures;
 use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( SLOT_TYPE_ENUM );
-use App::Notitia::Util      qw( enumerated_data_type foreign_key_data_type );
+use App::Notitia::DataTypes qw( enumerated_data_type foreign_key_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 

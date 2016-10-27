@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Splits out ::DataTypes from ::Util
           - Adds change password field help and checking
           - Fixes password validation
           - Can login by badge id

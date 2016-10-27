@@ -5,8 +5,9 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( TRUE VARCHAR_MAX_SIZE );
-use App::Notitia::Util      qw( foreign_key_data_type loc
+use App::Notitia::DataTypes qw( foreign_key_data_type
                                 numerical_id_data_type varchar_data_type );
+use App::Notitia::Util      qw( local_dt locm );
 use Class::Usul::Functions  qw( create_token );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -39,7 +40,7 @@ my $_set_uri = sub {
    my $columns  = { $self->get_inflated_columns };
    my $recip_id = $columns->{recipient_id};
    my $tcode    = lc $columns->{type_code}; $tcode =~ s{ [ \-] }{_}gmx;
-   my $endorsed = $columns->{endorsed}->clone->set_time_zone( 'local' )->ymd;
+   my $endorsed = local_dt( $columns->{endorsed} )->ymd;
    my $token    = lc substr create_token( $tcode.$recip_id.$endorsed ), 0, 6;
 
    $columns->{uri} = "${tcode}-${token}";
@@ -61,10 +62,9 @@ sub insert {
 sub label {
    my ($self, $req) = @_;
 
-   my $code = $req ? loc( $req, $self->type_code ) : $self->type_code;
-   my $date = $self->endorsed->clone->set_time_zone( 'local' );
+   my $type = $req ? locm( $req, $self->type_code ) : $self->type_code;
 
-   return $code.' ('.$date->dmy( '/' ).')';
+   return $type.' ('.local_dt( $self->endorsed )->dmy( '/' ).')';
 }
 
 sub update {

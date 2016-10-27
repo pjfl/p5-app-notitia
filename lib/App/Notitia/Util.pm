@@ -5,7 +5,7 @@ use strictures;
 use parent 'Exporter::Tiny';
 
 use App::Notitia::Constants    qw( EXCEPTION_CLASS FALSE HASH_CHAR NUL SPC
-                                   TILDE TRUE VARCHAR_MAX_SIZE );
+                                   TILDE TRUE );
 use Class::Usul::Crypt::Util   qw( decrypt_from_config encrypt_for_config );
 use Class::Usul::File;
 use Class::Usul::Functions     qw( class2appdir create_token
@@ -23,25 +23,22 @@ use Unexpected::Functions      qw( ValidationErrors );
 use YAML::Tiny;
 
 our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
-                     bool_data_type build_navigation build_tree button
-                     check_field_js check_form_field clone date_data_type
+                     build_navigation build_tree button
+                     check_field_js check_form_field clone
                      datetime_label dialog_anchor display_duration
-                     encrypted_attr enhance enumerated_data_type
-                     foreign_key_data_type get_hashed_pw get_salt
+                     encrypted_attr enhance
+                     get_hashed_pw get_salt
                      is_access_authorised is_draft is_encrypted iterator
                      js_config js_slider_config js_server_config
                      js_submit_config js_togglers_config js_window_config
                      lcm_for load_file_data loc local_dt localise_tree locm
                      mail_domain make_id_from make_name_from make_tip
                      management_link mtime new_salt now_dt
-                     nullable_foreign_key_data_type
-                     nullable_numerical_id_data_type nullable_varchar_data_type
-                     numerical_id_data_type page_link_set register_action_paths
-                     serial_data_type set_element_focus
-                     set_on_create_datetime_data_type set_rota_date
+                     page_link_set register_action_paths
+                     set_element_focus
+                     set_rota_date
                      slot_claimed slot_identifier slot_limit_index show_node
-                     stash_functions time2int to_dt to_msg uri_for_action
-                     varchar_data_type );
+                     stash_functions time2int to_dt to_msg uri_for_action );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -262,12 +259,6 @@ sub bind ($;$$) {
    return $params;
 }
 
-sub bool_data_type (;$) {
-   return { data_type     => 'boolean',
-            default_value => $_[ 0 ] // FALSE,
-            is_nullable   => FALSE, };
-}
-
 sub build_navigation ($$) {
    my ($req, $opts) = @_; my $count = 0; my @nav = ();
 
@@ -399,13 +390,6 @@ sub clone (;$) {
    return $v;
 }
 
-sub date_data_type () {
-   return { data_type     => 'datetime',
-            is_nullable   => TRUE,
-            datetime_undef_if_invalid => TRUE,
-            timezone      => 'GMT', };
-}
-
 sub datetime_label ($) {
    my $dt = shift; $dt or return NUL; $dt = local_dt( $dt );
 
@@ -456,25 +440,6 @@ sub enhance ($) {
    $conf->{cfgfiles    } //= get_cfgfiles $conf->{appclass}, $conf->{home};
 
    return $attr;
-}
-
-sub enumerated_data_type ($;$) {
-   return { data_type     => 'enum',
-            default_value => $_[ 1 ],
-            extra         => { list => $_[ 0 ] },
-            is_enum       => TRUE, };
-}
-
-sub foreign_key_data_type (;$$) {
-   my $type_info = { data_type     => 'integer',
-                     default_value => $_[ 0 ],
-                     extra         => { unsigned => TRUE },
-                     is_nullable   => FALSE,
-                     is_numeric    => TRUE, };
-
-   defined $_[ 1 ] and $type_info->{accessor} = $_[ 1 ];
-
-   return $type_info;
 }
 
 sub gcf ($$) {
@@ -729,35 +694,6 @@ sub now_dt () {
    return to_dt( time2str );
 }
 
-sub nullable_foreign_key_data_type () {
-   return { data_type         => 'integer',
-            default_value     => undef,
-            extra             => { unsigned => TRUE },
-            is_nullable       => TRUE,
-            is_numeric        => TRUE, };
-}
-
-sub nullable_numerical_id_data_type () {
-   return { data_type         => 'smallint',
-            default_value     => undef,
-            is_nullable       => TRUE,
-            is_numeric        => TRUE, };
-}
-
-sub nullable_varchar_data_type (;$$) {
-   return { data_type         => 'varchar',
-            default_value     => $_[ 1 ],
-            is_nullable       => TRUE,
-            size              => $_[ 0 ] || VARCHAR_MAX_SIZE, };
-}
-
-sub numerical_id_data_type (;$) {
-   return { data_type         => 'smallint',
-            default_value     => $_[ 0 ],
-            is_nullable       => FALSE,
-            is_numeric        => TRUE, };
-}
-
 sub page_link_set ($$$$$;$) {
    my ($req, $actionp, $args, $params, $pager, $opts) = @_;
 
@@ -805,25 +741,12 @@ sub register_action_paths (;@) {
    return;
 }
 
-sub serial_data_type () {
-   return { data_type         => 'integer',
-            default_value     => undef,
-            extra             => { unsigned => TRUE },
-            is_auto_increment => TRUE,
-            is_nullable       => FALSE,
-            is_numeric        => TRUE, };
-}
-
 sub set_element_focus ($$) {
    my ($form, $name) = @_;
 
    return [ "var form = document.forms[ '${form}' ];",
             "var f = function() { behaviour.rebuild(); form.${name}.focus() };",
             'f.delay( 100 );', ];
-}
-
-sub set_on_create_datetime_data_type () {
-   return { %{ date_data_type() }, set_on_create => TRUE };
 }
 
 sub set_rota_date ($$$$) {
@@ -930,13 +853,6 @@ sub uri_for_action ($$;@) {
    return $req->uri_for( $uri, @args );
 }
 
-sub varchar_data_type (;$$) {
-   return { data_type         => 'varchar',
-            default_value     => $_[ 1 ] // NUL,
-            is_nullable       => FALSE,
-            size              => $_[ 0 ] || VARCHAR_MAX_SIZE, };
-}
-
 1;
 
 __END__
@@ -973,8 +889,6 @@ Defines no attributes
 
 =item C<bind>
 
-=item C<bool_data_type>
-
 =item C<build_navigation>
 
 =item C<build_tree>
@@ -987,8 +901,6 @@ Defines no attributes
 
 =item C<clone>
 
-=item C<date_data_type>
-
 =item C<datetime_label>
 
 =item C<dialog_anchor>
@@ -998,10 +910,6 @@ Defines no attributes
 =item C<encrypted_attr>
 
 =item C<enhance>
-
-=item C<enumerated_data_type>
-
-=item C<foreign_key_data_type>
 
 =item C<gcf>
 
@@ -1061,14 +969,6 @@ LCM for a list of integers
 
 =item C<now_dt>
 
-=item C<nullable_foreign_key_data_type>
-
-=item C<nullable_numerical_id_data_type>
-
-=item C<nullable_varchar_data_type>
-
-=item C<numerical_id_data_type>
-
 =item C<page_link_set>
 
 =item C<register_action_paths>
@@ -1078,11 +978,7 @@ LCM for a list of integers
 Used by L</uri_for_action> to lookup the partial URI for the action path
 prior to calling L<uri_for|Web::ComposableRequest::Base/uri_for>
 
-=item C<serial_data_type>
-
 =item C<set_element_focus>
-
-=item C<set_on_create_datetime_data_type>
 
 =item C<set_rota_date>
 
@@ -1109,8 +1005,6 @@ prior to calling L<uri_for|Web::ComposableRequest::Base/uri_for>
 Looks up the action path in the map created by call to L</register_action_path>
 then calls L<uri_for|Web::ComposableRequest::Base/uri_for> which is a method
 provided by the request object. Returns a L<URI> object reference
-
-=item C<varchar_data_type>
 
 =head1 Diagnostics
 

@@ -6,7 +6,7 @@ use overload '""' => sub { $_[ 0 ]->_as_string },
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( VARCHAR_MAX_SIZE SPC TRUE );
-use App::Notitia::Util      qw( date_data_type foreign_key_data_type
+use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 serial_data_type varchar_data_type );
 use Class::Usul::Functions  qw( throw );

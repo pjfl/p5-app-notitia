@@ -8,13 +8,13 @@ use parent   'App::Notitia::Schema::Base';
 use App::Notitia;
 use App::Notitia::Constants    qw( EXCEPTION_CLASS SPC TRUE
                                    FALSE NUL VARCHAR_MAX_SIZE );
-use App::Notitia::Util         qw( bool_data_type date_data_type get_salt
-                                   is_encrypted new_salt now_dt
+use App::Notitia::DataTypes    qw( bool_data_type date_data_type
                                    nullable_foreign_key_data_type
                                    nullable_numerical_id_data_type
                                    numerical_id_data_type
-                                   serial_data_type slot_limit_index
-                                   varchar_data_type );
+                                   serial_data_type varchar_data_type );
+use App::Notitia::Util         qw( get_salt is_encrypted new_salt now_dt
+                                   slot_limit_index );
 use Auth::GoogleAuth;
 use Class::Usul::Functions     qw( digest is_member throw urandom );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );

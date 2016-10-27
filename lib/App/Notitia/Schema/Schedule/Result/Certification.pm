@@ -5,8 +5,9 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( VARCHAR_MAX_SIZE );
-use App::Notitia::Util      qw( date_data_type foreign_key_data_type loc
+use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type
                                 varchar_data_type );
+use App::Notitia::Util      qw( local_dt locm );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -39,10 +40,9 @@ sub insert {
 sub label {
    my ($self, $req) = @_;
 
-   my $type = $req ? loc( $req, $self->type ) : $self->type;
-   my $date = $self->completed->clone->set_time_zone( 'local' );
+   my $type = $req ? locm( $req, $self->type ) : $self->type;
 
-   return $type.' ('.$date->dmy( '/' ).')';
+   return $type.' ('.local_dt( $self->completed )->dmy( '/' ).')';
 }
 
 sub update {
