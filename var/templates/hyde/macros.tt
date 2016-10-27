@@ -163,6 +163,8 @@
       <input class="[% class %]" id="[% f.name %]" name="[% f.name %]"
 [%    IF f.autocomplete %]autocomplete="[% f.autocomplete %]"[% END -%]
               type="password">
+      <div class="field-group">
+         <span class="hidden" id="[% f.name %]_ajax"></span></div>
 [% END -%]
 [%# -%]
 [% MACRO RadioButtons( f ) WRAPPER label -%]

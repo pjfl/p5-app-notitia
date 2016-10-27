@@ -21,7 +21,8 @@ use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use Try::Tiny;
 use Unexpected::Functions      qw( AccountInactive FailedSecurityCheck
                                    IncorrectAuthCode IncorrectPassword
-                                   PasswordExpired SlotFree SlotTaken );
+                                   PasswordExpired SlotFree SlotTaken
+                                   Unspecified );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -348,8 +349,10 @@ sub authenticate {
 sub authenticate_optional_2fa {
    my ($self, $passwd, $auth_code) = @_; $self->authenticate( $passwd );
 
-   $auth_code and ($self->totp_authenticator->verify( $auth_code )
-                   or throw IncorrectAuthCode, [ $self ]);
+   not $auth_code and $self->totp_secret and throw Unspecified, [ 'auth code' ];
+
+   $auth_code and not $self->totp_authenticator->verify( $auth_code )
+              and throw IncorrectAuthCode, [ $self ];
 
    return;
 }

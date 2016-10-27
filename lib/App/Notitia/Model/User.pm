@@ -5,7 +5,7 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form p_button p_checkbox p_image p_label
                                 p_password p_radio p_select p_slider p_tag
                                 p_text p_textfield );
-use App::Notitia::Util      qw( check_form_field js_server_config
+use App::Notitia::Util      qw( check_field_js check_form_field js_server_config
                                 js_slider_config locm make_tip
                                 register_action_paths set_element_focus
                                 to_msg uri_for_action );
@@ -71,7 +71,7 @@ around 'get_stash' => sub {
 
 # Private functions
 my $_push_change_password_js = sub {
-   my $page = shift;
+   my $page = shift; my $opts = { domain => 'update', form => 'Person' };
 
    push @{ $page->{literal_js} },
       "   behaviour.config.inputs[ 'again' ]",
@@ -79,7 +79,8 @@ my $_push_change_password_js = sub {
       "          method    : [ 'show_password', 'hide_password' ] };",
       "   behaviour.config.inputs[ 'password' ]",
       "      = { event     : [ 'focus', 'blur' ],",
-      "          method    : [ 'show_password', 'hide_password' ] };";
+      "          method    : [ 'show_password', 'hide_password' ] };",
+      check_field_js( 'password',  $opts );
 
    return;
 };
@@ -195,8 +196,9 @@ sub change_password : Role(anon) {
 
    p_textfield $form, 'username', $username;
    p_password  $form, 'oldpass',  NUL, { label => 'old_password' };
-   p_password  $form, 'password', NUL, { autocomplete => 'off',
-      class => 'standard-field reveal', label => 'new_password' };
+   p_password  $form, 'password', NUL, {
+      autocomplete => 'off', class => 'standard-field reveal server',
+      label => 'new_password', tip => make_tip $req, 'new_password_tip' };
    p_password  $form, 'again',    NUL, { class => 'standard-field reveal' };
    p_button    $form, 'update', 'change_password', {
       class => 'save-button right-last' };
@@ -246,7 +248,7 @@ sub changes : Role(anon) {
    return $self->get_stash( $req, $page );
 }
 
-sub check_field : Role(any) {
+sub check_field : Role(anon) {
    return check_form_field $_[ 0 ]->schema, $_[ 1 ], $_[ 0 ]->log;
 }
 

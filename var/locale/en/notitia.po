@@ -1162,6 +1162,10 @@ msgstr "Upload the mugshot image file for this person"
 msgid "new_password"
 msgstr "New Password"
 
+msgid "new_password_tip"
+msgstr "A password must be at least 8 characters long and contain at least "
+       "one non alpha character. Numeric passwords are not allowed"
+
 msgid "next_of_kin"
 msgstr "Next of Kin"
 

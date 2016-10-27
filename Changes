@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds change password field help and checking
           - Fixes password validation
           - Can login by badge id
           - Better vehicle assignment activity log messages
