@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Splits ::Role::EventStream from ::Role::Messaging
           - Adds an application event loop plugin system
           - Implements #122 . My deliveries
           - Splits out ::DataTypes from ::Util

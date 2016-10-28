@@ -24,6 +24,7 @@ use Moo;
 
 extends q(Class::Usul::Schema);
 with    q(App::Notitia::Role::Schema);
+with    q(App::Notitia::Role::EventStream);
 with    q(Web::Components::Role::Email);
 with    q(Web::Components::Role::TT);
 
@@ -61,15 +62,9 @@ has 'jobdaemon'       => is => 'lazy', isa => Object, builder => sub {
 has 'jobdaemon_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
    default            => 'App::Notitia::JobDaemon';
 
-has 'moniker'         => is => 'ro',   isa => NonEmptySimpleStr,
-   default            => 'schema';
-
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
 has '+schema_version' => default => sub { App::Notitia->schema_version.NUL };
-
-# Requires moniker components dialog_stash
-with q(App::Notitia::Role::Messaging);
 
 # Construction
 sub BUILD {
@@ -771,18 +766,10 @@ sub backup_data : method {
    return OK;
 }
 
-sub components { # Dummy method whick allows Role::Messaging to be applied
-   throw 'Components method should not be called';
-}
-
 sub create_ddl : method {
    my $self = shift; $self->db_attr->{ignore_version} = TRUE;
 
    return $self->SUPER::create_ddl;
-}
-
-sub dialog_stash { # Dummy method whick allows Role::Messaging to be applied
-   throw 'Dialog stash method should not be called';
 }
 
 sub dump_connect_attr : method {

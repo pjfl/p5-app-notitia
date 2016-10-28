@@ -18,8 +18,9 @@ use Moo;
 
 extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
-with    q(App::Notitia::Role::Navigation);
 with    q(App::Notitia::Role::WebAuthorisation);
+with    q(App::Notitia::Role::Navigation);
+with    q(App::Notitia::Role::Messaging);
 
 # Public attributes
 has '+moniker' => default => 'user';

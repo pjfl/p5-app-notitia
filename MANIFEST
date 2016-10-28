@@ -50,6 +50,7 @@ lib/App/Notitia/Model/Vehicle.pm
 lib/App/Notitia/Model/WeekRota.pm
 lib/App/Notitia/Plugin/Core.pm
 lib/App/Notitia/Role/Editor.pm
+lib/App/Notitia/Role/EventStream.pm
 lib/App/Notitia/Role/Messaging.pm
 lib/App/Notitia/Role/Navigation.pm
 lib/App/Notitia/Role/PageConfiguration.pm

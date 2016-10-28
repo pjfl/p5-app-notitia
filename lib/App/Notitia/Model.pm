@@ -18,7 +18,7 @@ use Moo;
 with q(Web::Components::Role);
 with q(Class::Usul::TraitFor::ConnectInfo);
 with q(App::Notitia::Role::Schema);
-with q(App::Notitia::Role::Messaging);
+with q(App::Notitia::Role::EventStream);
 
 # Public attributes
 has 'application' => is => 'ro', isa => Plinth,
@@ -175,6 +175,10 @@ sub get_stash {
 
 sub initialise_stash {
    return { code => HTTP_OK, view => $_[ 0 ]->config->default_view, };
+}
+
+sub jobdaemon {
+   return $_[ 0 ]->components->{daemon}->jobdaemon;
 }
 
 sub load_page {

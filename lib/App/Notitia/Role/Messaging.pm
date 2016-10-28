@@ -2,47 +2,18 @@ package App::Notitia::Role::Messaging;
 
 use namespace::autoclean;
 
-use App::Notitia::Form      qw( blank_form f_link p_button p_radio
-                                p_select p_textarea );
-use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS
-                                FALSE NUL OK SPC TRUE );
-use App::Notitia::Util      qw( event_handler event_handler_cache js_config
-                                locm mail_domain set_element_focus to_msg
-                                uri_for_action );
+use App::Notitia::Form      qw( blank_form f_link p_button
+                                p_radio p_select p_textarea );
+use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE NUL SPC TRUE );
+use App::Notitia::Util      qw( js_config locm mail_domain
+                                set_element_focus to_msg uri_for_action );
 use Class::Usul::File;
-use Class::Usul::Functions  qw( create_token is_member throw trim );
-use Class::Usul::Log        qw( get_logger );
-use Class::Usul::Types      qw( HashRef Object );
-use Try::Tiny;
-use Unexpected::Functions   qw( catch_class Disabled );
-use Web::Components::Util   qw( load_components );
+use Class::Usul::Functions  qw( create_token throw trim );
 use Moo::Role;
 
-requires qw( components config dialog_stash moniker schema );
-
-my $_plugins_cache;
-
-has 'plugins' => is => 'lazy', isa => HashRef[Object], builder => sub {
-   my $self = shift; defined $_plugins_cache and return $_plugins_cache;
-
-   return $_plugins_cache = load_components 'Plugin',
-      application => $self->can( 'application' ) ? $self->application : $self;
-};
+requires qw( config create_email_job dialog_stash moniker schema );
 
 # Private functions
-my $_clean_and_log = sub {
-   my ($req, $message) = @_; $message ||= 'action:unknown';
-
-   my $user = $req->username || 'admin';
-   my $address = $req->address || 'localhost';
-
-   $message = "user:${user} client:${address} ${message}";
-
-   get_logger( 'activity' )->log( $message );
-
-   return $message;
-};
-
 my $_plate_label = sub {
    my $v = ucfirst $_[ 0 ]->basename( '.md' ); $v =~ s{[_\-]}{ }gmx; return $v;
 };
@@ -50,16 +21,6 @@ my $_plate_label = sub {
 # Private methods
 my $_session_file = sub {
    return $_[ 0 ]->config->sessdir->catfile( substr create_token, 0, 32 );
-};
-
-my $_flatten_stash = sub {
-   my ($self, $v) = @_; my $path = $self->$_session_file;
-
-   my $params = { data => $v, path => $path->assert, storage_class => 'JSON' };
-
-   Class::Usul::File->data_dump( $params );
-
-   return "-o stash=${path} ";
 };
 
 my $_flatten = sub {
@@ -87,25 +48,6 @@ my $_flatten = sub {
    }
 
    return $r;
-};
-
-my $_inflate = sub {
-   my ($self, $req, $message, $sink) = @_;
-
-   my $stash = {
-      app_name => $self->config->title, message => $message, sink => $sink };
-
-   for my $pair (split SPC, $message) {
-      my ($k, $v) = split m{ : }mx, $pair;
-
-      exists $stash->{ $k } or $stash->{ $k } = $v;
-   }
-
-   $stash->{action}
-      or throw 'Message contains no action: [_1]', [ $message ], level => 2;
-   $stash->{action} =~ s{ [\-] }{_}gmx;
-
-   return $stash;
 };
 
 my $_make_template = sub {
@@ -143,16 +85,6 @@ my $_list_message_templates = sub {
 };
 
 # Public methods
-sub create_email_job {
-   my ($self, $stash, $template) = @_; my $conf = $self->config;
-
-   my $cmd = $conf->binsdir->catfile( 'notitia-schema' ).SPC
-           . $self->$_flatten_stash( $stash )."send_message email ${template}";
-   my $rs  = $self->schema->resultset( 'Job' );
-
-   return $rs->create( { command => $cmd, name => 'send_message' } );
-}
-
 sub create_person_email {
    my ($self, $req, $person, $password) = @_;
 
@@ -207,18 +139,6 @@ sub create_totp_request_email {
    $conf->sessdir->catfile( $token )->println( $scode );
 
    return $self->create_email_job( $stash, $template )->id;
-}
-
-sub dump_event_attr : method {
-   my $self = shift; $self->plugins;
-
-   $self->dumper( event_handler_cache );
-
-   return OK;
-}
-
-sub jobdaemon {
-   return $_[ 0 ]->components->{daemon}->jobdaemon;
 }
 
 sub message_create {
@@ -324,35 +244,6 @@ sub message_stash {
    return $stash;
 }
 
-sub send_event {
-   my ($self, $req, $message) = @_; $self->plugins;
-
-   $message = $_clean_and_log->( $req, $message ); my $conf = $self->config;
-
-   for my $sink_name (keys %{ $conf->automated }) {
-      try {
-         my $stash = $self->$_inflate( $req, $message, $sink_name );
-         my $buildargs = event_handler( 'buildargs', $sink_name )->[ 0 ];
-
-         $buildargs and $stash = $buildargs->( $self, $req, $stash );
-         is_member $stash->{action}, $conf->automated->{ $sink_name }
-            or throw Disabled, [ $sink_name, $stash->{action} ];
-
-         for my $args (@{ event_handler( $sink_name, $stash->{action} ) }) {
-            for my $sink (@{ event_handler( 'sink', $sink_name ) }) {
-               $sink->( $self, $req, $args->( $self, $req, { %{ $stash } } ) );
-            }
-         }
-      }
-      catch_class [
-         Disabled => sub { $self->log->debug( $_ ) },
-         '*'      => sub { $self->log->error( $_ ) },
-      ];
-   }
-
-   return;
-}
-
 1;
 
 __END__
@@ -381,8 +272,6 @@ Defines the following attributes;
 =back
 
 =head1 Subroutines/Methods
-
-=head2 C<dump_event_attr> - Dumps the event handling attribute data
 
 =head1 Diagnostics
 
