@@ -25,9 +25,10 @@ use YAML::Tiny;
 our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
                      build_navigation build_tree button check_field_js
                      check_form_field clone datetime_label dialog_anchor
-                     display_duration encrypted_attr enhance get_hashed_pw
-                     get_salt is_access_authorised is_draft is_encrypted
-                     iterator js_config js_slider_config js_server_config
+                     display_duration encrypted_attr enhance event_handler
+                     event_handler_cache get_hashed_pw get_salt
+                     is_access_authorised is_draft is_encrypted iterator
+                     js_config js_slider_config js_server_config
                      js_submit_config js_togglers_config js_window_config
                      lcm_for load_file_data loc local_dt localise_tree locm
                      mail_domain make_id_from make_name_from make_tip
@@ -38,6 +39,7 @@ our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
+my $handler_cache       = {};
 my $json_coder          = JSON::MaybeXS->new( utf8 => FALSE );
 my $result_class_cache  = {};
 my $translations        = {};
@@ -436,6 +438,21 @@ sub enhance ($) {
    $conf->{cfgfiles    } //= get_cfgfiles $conf->{appclass}, $conf->{home};
 
    return $attr;
+}
+
+sub event_handler ($$;&) {
+   my ($sink, $action, $handler) = @_;
+
+   $handler_cache->{ $sink }->{ $action } //= [];
+
+   defined $handler
+       and push @{ $handler_cache->{ $sink }->{ $action } }, $handler;
+
+   return $handler_cache->{ $sink }->{ $action };
+};
+
+sub event_handler_cache () {
+   return $handler_cache;
 }
 
 sub gcf ($$) {
@@ -906,6 +923,10 @@ Defines no attributes
 =item C<encrypted_attr>
 
 =item C<enhance>
+
+=item C<event_handler>
+
+=item C<event_handler_cache>
 
 =item C<gcf>
 

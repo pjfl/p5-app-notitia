@@ -4,6 +4,9 @@
       "Model::Posts": {
          "feed_subtitle": "Recent news and events",
          "feed_title": "Blood Bike Events"
+      },
+      "Plugin::Core": {
+         "certifiable_courses": [ "GMP" ]
       }
    },
    "description": "People and resource scheduling",

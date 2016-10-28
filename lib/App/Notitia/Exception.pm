@@ -31,6 +31,9 @@ has_exception 'IncorrectPassword' => parents => [ 'Authentication' ],
 has_exception 'PasswordExpired' => parents => [ 'Authentication' ],
    error   => 'User [_1] authentication failed';
 
+has_exception 'Disabled' => parents => [ $class ],
+   error   => 'Event sink [_1] action [_2] is disabled';
+
 has_exception 'SlotFree' => parents => [ $class ],
    error   => 'Slot [_1] is free';
 
