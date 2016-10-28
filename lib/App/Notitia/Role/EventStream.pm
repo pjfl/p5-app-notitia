@@ -13,7 +13,7 @@ use Unexpected::Functions   qw( catch_class Disabled );
 use Web::Components::Util   qw( load_components );
 use Moo::Role;
 
-requires qw( config schema );
+requires qw( components config schema );
 
 my $_plugins_cache;
 
@@ -89,6 +89,19 @@ sub dump_event_attr : method {
    $self->dumper( event_handler_cache );
 
    return OK;
+}
+
+sub event_model_update {
+   my ($self, $req, $stash, $moniker, $method) = @_;
+
+   my $compo = $self->components->{ $moniker }
+      or throw 'Model moniker [_1] unknown', [ $moniker ], level => 2;
+
+   $compo->can( $method ) or
+      throw 'Model [_1] has no method [_2]', [ $moniker, $method ], level => 2;
+
+   $compo->$method( $req, $stash );
+   return;
 }
 
 sub send_event {

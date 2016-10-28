@@ -2,6 +2,8 @@ package App::Notitia::Schema;
 
 use namespace::autoclean;
 
+use App::Notitia; our $VERSION = $App::Notitia::VERSION;
+
 use App::Notitia::Constants qw( AS_PASSWORD COMMA EXCEPTION_CLASS FALSE NUL
                                 OK QUOTED_RE SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::GeoLocation;
@@ -12,7 +14,8 @@ use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
                                 io is_member squeeze sum throw trim );
 use Class::Usul::File;
-use Class::Usul::Types      qw( LoadableClass NonEmptySimpleStr Object );
+use Class::Usul::Types      qw( HashRef LoadableClass
+                                NonEmptySimpleStr Object );
 use Data::Record;
 use Data::Validation;
 use Scalar::Util            qw( blessed );
@@ -24,11 +27,13 @@ use Moo;
 
 extends q(Class::Usul::Schema);
 with    q(App::Notitia::Role::Schema);
-with    q(App::Notitia::Role::EventStream);
 with    q(Web::Components::Role::Email);
 with    q(Web::Components::Role::TT);
 
-use App::Notitia; our $VERSION = $App::Notitia::VERSION;
+# TODO: This should be the models
+has 'components' => is => 'lazy', isa => HashRef, builder => sub { {} };
+
+with q(App::Notitia::Role::EventStream);
 
 # Attribute constructors
 my $_build_admin_password = sub {
