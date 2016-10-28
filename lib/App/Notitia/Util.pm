@@ -618,6 +618,8 @@ sub loc ($@) {
 }
 
 sub local_dt ($) {
+   defined $_[ 0 ] or throw 'Datetime object undefined', level => 2;
+
    return $_[ 0 ]->clone->set_time_zone( 'local' );
 }
 

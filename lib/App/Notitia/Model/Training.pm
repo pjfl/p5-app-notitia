@@ -501,8 +501,8 @@ sub update_training_action : Role(training_manager) {
 
    $course->update;
 
-   my $message = [ to_msg 'Training for [_1] updated by [_2]',
-                   $person->label, $req->session->user_label ];
+   my $key = 'Training for [_1] updated by [_2]';
+   my $message = [ to_msg $key, $person->label, $req->session->user_label ];
 
    return { redirect => { message => $message } }; # location referer
 }

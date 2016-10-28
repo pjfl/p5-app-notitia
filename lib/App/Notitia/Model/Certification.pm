@@ -212,10 +212,10 @@ sub certification : Role(person_manager) Role(training_manager) {
    my ($self, $req) = @_;
 
    my $actionp   =  $self->moniker.'/certification';
-   my $name      =  $req->uri_params->( 0 );
+   my $scode     =  $req->uri_params->( 0 );
    my $type      =  $req->uri_params->( 1, { optional => TRUE } );
    my $role      =  $req->query_params->( 'role', { optional => TRUE } );
-   my $href      =  uri_for_action $req, $actionp, [ $name, $type ];
+   my $href      =  uri_for_action $req, $actionp, [ $scode, $type ];
    my $form      =  blank_form 'certification-admin', $href;
    my $action    =  $type ? 'update' : 'create';
    my $page      =  {
@@ -224,8 +224,8 @@ sub certification : Role(person_manager) Role(training_manager) {
       selected   => $role ? "${role}_list" : 'people_list',
       title      => loc $req, "certification_${action}_heading" };
    my $person_rs =  $self->schema->resultset( 'Person' );
-   my $person    =  $person_rs->find_by_shortcode( $name );
-   my $cert      =  $self->$_maybe_find_cert( $name, $type );
+   my $person    =  $person_rs->find_by_shortcode( $scode );
+   my $cert      =  $self->$_maybe_find_cert( $scode, $type );
    my $args      =  [ 'certification', $person->label ];
 
    p_textfield $form, 'username', $person->label, { disabled => TRUE };
@@ -286,45 +286,46 @@ sub certifications : Role(person_manager) Role(training_manager) {
 sub create_certification_action : Role(person_manager) Role(training_manager) {
    my ($self, $req, $params) = @_;
 
-   my $name    = $params->{recipient} // $req->uri_params->( 0 );
+   my $scode   = $params->{recipient} // $req->uri_params->( 0 );
    my $type    = $params->{type} // $req->body_params->( 'cert_types' );
    my $cert_rs = $self->schema->resultset( 'Certification' );
-   my $cert    = $cert_rs->new_result( { recipient => $name, type => $type } );
+   my $cert    = $cert_rs->new_result( { recipient => $scode, type => $type } );
 
    $self->$_update_cert_from_request( $req, $cert, $params );
 
-   try   { $cert->insert }
-   catch {
-      $self->rethrow_exception
-         ( $_, 'create', 'certification', $cert->label( $req ) );
-   };
+   my $label   = $cert->label( $req );
 
-   my $who      = $req->session->user_label;
-   my $action   = $self->moniker.'/certifications';
-   my $key      = 'Certertification [_1] for [_2] added by [_3]';
-   my $location = uri_for_action $req, $action, [ $name ];
-   my $message  = "action:create-certification shortcode:${name} type:${type}";
+   try   { $cert->insert }
+   catch { $self->rethrow_exception( $_, 'create', 'certification', $label ) };
+
+   my $message  = "action:create-certification shortcode:${scode} type:${type}";
 
    $self->send_event( $req, $message );
-   $message = [ to_msg $key, $type, $name, $who ];
+
+   my $action   = $self->moniker.'/certifications';
+   my $key      = 'Certertification [_1] for [_2] added by [_3]';
+   my $location = uri_for_action $req, $action, [ $scode ];
+
+   $message = [ to_msg $key, $type, $scode, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
 
 sub delete_certification_action : Role(person_manager) Role(training_manager) {
-   my ($self, $req) = @_;
+   my ($self, $req, $params) = @_;
 
-   my $name     = $req->uri_params->( 0 );
-   my $type     = $req->uri_params->( 1 );
-   my $cert     = $self->find_cert_by( $name, $type ); $cert->delete;
-   my $who      = $req->session->user_label;
-   my $action   = $self->moniker.'/certifications';
-   my $key      = 'Certification [_1] for [_2] deleted by [_3]';
-   my $location = uri_for_action $req, $action, [ $name ];
-   my $message  = "action:delete-certification shortcode:${name} type:${type}";
+   my $scode    = $params->{recipient} // $req->uri_params->( 0 );
+   my $type     = $params->{type} // $req->uri_params->( 1 );
+   my $cert     = $self->find_cert_by( $scode, $type ); $cert->delete;
+   my $message  = "action:delete-certification shortcode:${scode} type:${type}";
 
    $self->send_event( $req, $message );
-   $message = [ to_msg $key, $type, $name, $who ];
+
+   my $action   = $self->moniker.'/certifications';
+   my $key      = 'Certification [_1] for [_2] deleted by [_3]';
+   my $location = uri_for_action $req, $action, [ $scode ];
+
+   $message = [ to_msg $key, $type, $scode, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -358,18 +359,19 @@ sub find_cert_by {
 sub update_certification_action : Role(person_manager) Role(training_manager) {
    my ($self, $req, $params) = @_;
 
-   my $name = $params->{recipient} // $req->uri_params->( 0 );
-   my $type = $params->{type} // $req->uri_params->( 1 );
-   my $cert = $self->find_cert_by( $name, $type );
+   my $scode = $params->{recipient} // $req->uri_params->( 0 );
+   my $type  = $params->{type} // $req->uri_params->( 1 );
+   my $cert  = $self->find_cert_by( $scode, $type );
 
    $self->$_update_cert_from_request( $req, $cert, $params ); $cert->update;
 
-   my $who     = $req->session->user_label;
-   my $key     = 'Certification [_1] for [_2] updated by [_3]';
-   my $message = "action:update-certification shortcode:${name} type:${type}";
+   my $message = "action:update-certification shortcode:${scode} type:${type}";
 
    $self->send_event( $req, $message );
-   $message = [ to_msg $key, $type, $name, $who ];
+
+   my $key  = 'Certification [_1] for [_2] updated by [_3]';
+
+   $message = [ to_msg $key, $type, $scode, $req->session->user_label ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }

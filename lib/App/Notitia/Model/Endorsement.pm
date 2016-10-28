@@ -107,7 +107,7 @@ my $_maybe_find_endorsement = sub {
 };
 
 my $_update_endorsement_from_request = sub {
-   my ($self, $req, $blot) = @_;
+   my ($self, $req, $blot, $supplied) = @_; $supplied //= {};
 
    my $params = $req->body_params; my $opts = { optional => TRUE };
 
@@ -115,7 +115,7 @@ my $_update_endorsement_from_request = sub {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 
-      my $v = $params->( $attr, $opts );
+      my $v = $supplied->{ $attr } // $params->( $attr, $opts );
 
       defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
@@ -129,48 +129,51 @@ my $_update_endorsement_from_request = sub {
 
 # Public methods
 sub create_endorsement_action : Role(person_manager) {
-   my ($self, $req) = @_;
+   my ($self, $req, $params) = @_;
 
-   my $name    = $req->uri_params->( 0 );
+   my $scode   = $params->{recipient} // $req->uri_params->( 0 );
    my $blot_rs = $self->schema->resultset( 'Endorsement' );
-   my $blot    = $blot_rs->new_result( { recipient => $name } );
+   my $blot    = $blot_rs->new_result( { recipient => $scode } );
 
-   $self->$_update_endorsement_from_request( $req, $blot );
+   $self->$_update_endorsement_from_request( $req, $blot, $params );
+
+   my $label   = $blot->label( $req );
 
    try   { $blot->insert }
-   catch {
-      $self->rethrow_exception
-         ( $_, 'create', 'endorsement', $blot->label( $req ) );
-   };
+   catch { $self->rethrow_exception( $_, 'create', 'endorsement', $label ) };
 
    my $uri      = $blot->uri;
    my $type     = $blot->type_code;
-   my $action   = $self->moniker.'/endorsements';
-   my $location = uri_for_action $req, $action, [ $name ];
-   my $key      = 'Endorsement [_1] for [_2] added by [_3]';
    my $message  = "action:create-endorsement endorsement_uri:${uri} "
-                . "shortcode:${name}";
+                . "shortcode:${scode} endorsement_type:${type}";
 
    $self->send_event( $req, $message );
-   $message = [ to_msg $key, $type, $name, $req->session->user_label ];
+
+   my $action   = $self->moniker.'/endorsements';
+   my $location = uri_for_action $req, $action, [ $scode ];
+   my $key      = 'Endorsement [_1] for [_2] added by [_3]';
+
+   $message = [ to_msg $key, $type, $scode, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
 
 sub delete_endorsement_action : Role(person_manager) {
-   my ($self, $req) = @_;
+   my ($self, $req, $params) = @_;
 
-   my $name     = $req->uri_params->( 0 );
-   my $uri      = $req->uri_params->( 1 );
-   my $blot     = $self->$_find_endorsement_by( $name, $uri ); $blot->delete;
-   my $action   = $self->moniker.'/endorsements';
-   my $location = uri_for_action $req, $action, [ $name ];
-   my $key      = 'Endorsement [_1] for [_2] deleted by [_3]';
+   my $scode    = $params->{recipient} // $req->uri_params->( 0 );
+   my $uri      = $params->{uri} // $req->uri_params->( 1 );
+   my $blot     = $self->$_find_endorsement_by( $scode, $uri ); $blot->delete;
    my $message  = "action:delete-endorsement endorsement_uri:${uri} "
-                . "shortcode:${name}";
+                . "shortcode:${scode} endorsement_type:".$blot->type_code;
 
    $self->send_event( $req, $message );
-   $message = [ to_msg $key, $uri, $name, $req->session->user_label ];
+
+   my $actionp  = $self->moniker.'/endorsements';
+   my $location = uri_for_action $req, $actionp, [ $scode ];
+   my $key      = 'Endorsement [_1] for [_2] deleted by [_3]';
+
+   $message = [ to_msg $key, $uri, $scode, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -179,21 +182,21 @@ sub endorsement : Role(person_manager) {
    my ($self, $req) = @_;
 
    my $actionp    =  $self->moniker.'/endorsement';
-   my $name       =  $req->uri_params->( 0 );
+   my $scode      =  $req->uri_params->( 0 );
    my $uri        =  $req->uri_params->( 1, { optional => TRUE } );
    my $role       =  $req->query_params->( 'role', { optional => TRUE } );
    my $action     =  $uri ? 'update' : 'create';
-   my $href       =  uri_for_action $req, $actionp, [ $name, $uri ];
+   my $href       =  uri_for_action $req, $actionp, [ $scode, $uri ];
    my $form       =  blank_form 'endorsement-admin', $href;
    my $page       =  {
       first_field => $uri ? 'endorsed' : 'type_code',
       forms       => [ $form ],
       literal_js  => $_endorsement_js->(),
-      selected    => $role ? "${role}_list" : undef,
+      selected    => $role ? "${role}_list" : 'people_list',
       title       => loc $req, "endorsement_${action}_heading" };
-   my $blot       =  $self->$_maybe_find_endorsement( $name, $uri );
+   my $blot       =  $self->$_maybe_find_endorsement( $scode, $uri );
    my $person_rs  =  $self->schema->resultset( 'Person' );
-   my $person     =  $person_rs->find_by_shortcode( $name );
+   my $person     =  $person_rs->find_by_shortcode( $scode );
    my $args       =  [ 'endorsement', $person->label ];
 
    p_textfield $form, 'username', $person->label, { disabled => TRUE };
@@ -237,20 +240,23 @@ sub endorsements : Role(person_manager) {
 }
 
 sub update_endorsement_action : Role(person_manager) {
-   my ($self, $req) = @_;
+   my ($self, $req, $params) = @_;
 
-   my $name = $req->uri_params->( 0 );
-   my $uri  = $req->uri_params->( 1 );
-   my $blot = $self->$_find_endorsement_by( $name, $uri );
+   my $scode = $params->{recipient} // $req->uri_params->( 0 );
+   my $uri   = $params->{uri} // $req->uri_params->( 1 );
+   my $blot  = $self->$_find_endorsement_by( $scode, $uri );
 
-   $self->$_update_endorsement_from_request( $req, $blot ); $blot->update;
+   $self->$_update_endorsement_from_request( $req, $blot, $params );
+   $blot->update;
 
-   my $key     = 'Endorsement [_1] for [_2] updated by [_3]';
    my $message = "action:update-endorsement endorsement_uri:${uri} "
-               . "shortcode:${name}";
+               . "shortcode:${scode} endorsement_type:".$blot->type_code;
 
    $self->send_event( $req, $message );
-   $message = [ to_msg $key, $uri, $name, $req->session->user_label ];
+
+   my $key = 'Endorsement [_1] for [_2] updated by [_3]';
+
+   $message = [ to_msg $key, $uri, $scode, $req->session->user_label ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
