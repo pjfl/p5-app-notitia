@@ -3,12 +3,12 @@ package App::Notitia::Model::Call;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PRIORITY_TYPE_ENUM
                                 PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_action p_fields p_link
-                                p_list p_row p_select p_table p_tag
-                                p_textfield );
-use App::Notitia::Util      qw( datetime_label dialog_anchor locm now_dt
-                                page_link_set register_action_paths to_dt
-                                to_msg uri_for_action );
+use App::Notitia::Form      qw( blank_form f_link p_action p_button p_fields
+                                p_link p_list p_row p_select p_table
+                                p_tag p_textfield );
+use App::Notitia::Util      qw( datetime_label dialog_anchor locm make_tip
+                                now_dt page_link_set register_action_paths
+                                to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member );
 use Try::Tiny;
@@ -27,6 +27,7 @@ has '+moniker' => default => 'call';
 register_action_paths
    'call/customer'  => 'customer',
    'call/customers' => 'customers',
+   'call/delivery_stages' => 'delivery-stages',
    'call/journey'   => 'delivery',
    'call/journeys'  => 'deliveries',
    'call/leg'       => 'delivery/*/stage',
@@ -122,10 +123,18 @@ my $_journey_package_headers = sub {
                     value => locm $req, "${header}_${_}" } } 0 .. 2 ];
 };
 
-my $_journeys_headers = sub {
-   my $req = shift; my $header = 'journeys_heading';
+my $_journeys_header_label = sub {
+   my ($req, $done, $index) = @_; my $header = 'journeys_heading';
 
-   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 3 ];
+   $done and $index == 1 and $header = "completed_${header}";
+
+   return { value => locm $req, "${header}_${index}" };
+};
+
+my $_journeys_headers = sub {
+   my ($req, $done) = @_;
+
+   return [ map { $_journeys_header_label->( $req, $done, $_ ) } 0 .. 3 ];
 };
 
 my $_person_tuple = sub {
@@ -175,6 +184,12 @@ my $_bind_priority = sub {
 
    return [ map { $_priority_tuple->( $selected, $_ ) }
                @{ PRIORITY_TYPE_ENUM() } ];
+};
+
+my $_stages_headers = sub {
+   my $req = shift; my $header = 'delivery_stages_heading';
+
+   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 1 ];
 };
 
 # Private methods
@@ -345,6 +360,17 @@ my $_find_person = sub {
    return $rs->find_by_shortcode( $scode );
 };
 
+my $_delivery_stages = sub {
+   my ($self, $scode) = @_;
+
+   my $schema = $self->schema;
+   my $where  = { 'delivered'   => { '=' => undef },
+                  'operator_id' => $self->$_find_person( $scode )->id };
+   my $opts   = { order_by => 'created', prefetch => 'beginning' };
+
+   return [ $schema->resultset( 'Leg' )->search( $where, $opts )->all ];
+};
+
 my $_journey_leg_row = sub {
    my ($self, $req, $jid, $leg) = @_;
 
@@ -364,16 +390,16 @@ my $_journey_package_row = sub {
    my $package_type = $package->package_type;
    my $href = uri_for_action $req, $actionp, [ $jid, $package_type ];
    my $title = locm $req, 'Update Package Details';
-   my $id = "update_${package_type}_package";
+   my $name = "update_${package_type}_package";
    my $value = locm $req, $package_type;
    my $tip = locm $req, 'update_package_tip';
 
-   push @{ $page->{literal_js} }, dialog_anchor( $id, $href, {
-      name => $id, title => $title, useIcon => \1 } );
+   push @{ $page->{literal_js} }, dialog_anchor( $name, $href, {
+      name => $name, title => $title, useIcon => \1 } );
 
    return
       [ { class  => 'narrow', value => $package->quantity },
-        { value  => $done ? $value : f_link $id, '#', {
+        { value  => $done ? $value : f_link $name, '#', {
            class => 'windows', request => $req, tip => $tip,
            value => $value } },
         { value  => $package->description }, ];
@@ -413,29 +439,39 @@ my $_journey_package_ops_links = sub {
 my $_journeys_ops_links = sub {
    my ($self, $req, $page, $params, $pager, $done) = @_; my $links = [];
 
-   my $actionp = $self->moniker.'/journey';
-
-   $done or p_link $links, 'journey', uri_for_action( $req, $actionp ), {
-      action => 'create', container_class => 'add-link', request => $req };
-
-   $actionp = $self->moniker.'/journeys';
-
+   my $actionp = $self->moniker.'/journeys';
    my $page_links = page_link_set $req, $actionp, [], $params, $pager;
 
    $page_links and push @{ $links }, $page_links;
+
+   unless ($done) {
+      my $name = 'delivery_stages';
+      my $actionp = $self->moniker."/${name}";
+      my $href = uri_for_action $req, $actionp, [ $req->username ];
+      my $title = locm( $req, "${name}_title" );
+
+      p_link $links, $name, '#', { class => 'windows', request => $req };
+      push @{ $page->{literal_js} }, dialog_anchor( $name, $href, {
+         name => $name, title => $title, useIcon => \1 } );
+
+      $actionp = $self->moniker.'/journey';
+      p_link $links, 'journey', uri_for_action( $req, $actionp ), {
+         action => 'create', container_class => 'add-link', request => $req };
+   }
 
    return $links;
 };
 
 my $_journeys_row = sub {
-   my ($self, $req, $journey) = @_;
+   my ($self, $req, $done, $journey) = @_;
 
    my $href = uri_for_action $req, $self->moniker.'/journey', [ $journey->id ];
    my $package = ($journey->packages->all)[ 0 ];
 
    return [ { value => f_link 'delivery_request', $href, {
       request => $req, value => $journey->customer, } },
-            { value => $journey->requested_label },
+            { value => $done ? $journey->delivered_label
+                             : $journey->requested_label },
             { value => locm $req, $journey->priority },
             { value => locm $req, $package ? $package->package_type : NUL }, ];
 };
@@ -527,6 +563,28 @@ my $_packages_and_stages = sub {
    return;
 };
 
+my $_stages_row = sub {
+   my ($self, $req, $stage) = @_;
+
+   my $jid = $stage->journey_id;
+   my $actionp = $self->moniker.'/leg';
+   my $href = uri_for_action $req, $actionp, [ $jid, $stage->id ];
+   my $tip  = locm $req, 'stages_row_link_tip';
+   my $cell0 = {};
+
+   p_link $cell0, 'stage_'.$stage->id, $href, {
+      request => $req, tip => $tip, value => $stage->label( $req ) };
+
+   my $form = blank_form 'leg', $href;
+   my $collected = $stage->collected ? TRUE : FALSE;
+   my $name = $collected ? 'update_stage_delivered' : 'update_stage_collected';
+
+   $tip = make_tip $req, "${name}_tip";
+   p_button $form, $name, $name, { class => 'save-button', tip => $tip };
+
+   return [ $cell0, { value => $form } ];
+};
+
 my $_update_journey_from_request = sub {
    my ($self, $req, $journey) = @_; my $params = $req->body_params;
 
@@ -554,15 +612,15 @@ my $_update_journey_from_request = sub {
 };
 
 my $_update_leg_from_request = sub {
-   my ($self, $req, $leg) = @_;  my $params = $req->body_params;
+   my ($self, $req, $leg, $supplied) = @_; $supplied //= {};
 
-   my $opts = { optional => TRUE };
+   my $params = $req->body_params; my $opts = { optional => TRUE };
 
    for my $attr (qw( beginning_id called collection_eta collected delivered
                      ending_id on_station operator_id )) {
-      my $v = $params->( $attr, $opts ); defined $v or next;
+      my $v = $params->( $attr, $opts ) // $supplied->{ $attr };
 
-      $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
+      defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
       $attr eq 'operator_id' and not $v and next;
 
@@ -834,6 +892,21 @@ sub delete_package_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub delivery_stages : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $scode = $req->uri_params->( 0 );
+   my $stash = $self->dialog_stash( $req );
+   my $form  = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $table = p_table $form, { headers => $_stages_headers->( $req ) };
+
+   for my $stage (@{ $self->$_delivery_stages( $scode ) }) {
+      p_row $table, $self->$_stages_row( $req, $stage );
+   }
+
+   return $stash;
+}
+
 sub journey : Role(controller) {
    my ($self, $req) = @_;
 
@@ -898,9 +971,9 @@ sub journeys : Role(controller) {
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
-   my $table = p_table $form, { headers => $_journeys_headers->( $req ) };
+   my $table = p_table $form, { headers => $_journeys_headers->( $req, $done )};
 
-   p_row $table, [ map { $self->$_journeys_row( $req, $_ ) }
+   p_row $table, [ map { $self->$_journeys_row( $req, $done, $_ ) }
                    $journeys->all ];
 
    return $self->get_stash( $req, $page );
@@ -1063,7 +1136,7 @@ sub update_delivery_request_action : Role(controller) {
 }
 
 sub update_delivery_stage_action : Role(controller) {
-   my ($self, $req) = @_;
+   my ($self, $req, $params) = @_;
 
    my $schema    = $self->schema;
    my $jid       = $req->uri_params->( 0 );
@@ -1072,7 +1145,7 @@ sub update_delivery_stage_action : Role(controller) {
    my $leg       = $schema->resultset( 'Leg' )->find( $lid );
    my $delivered = $leg->delivered;
 
-   $self->$_update_leg_from_request( $req, $leg );
+   $self->$_update_leg_from_request( $req, $leg, $params );
 
    my $completed = FALSE; not $delivered and $leg->delivered
       and $leg->ending_id == $journey->dropoff_id
@@ -1081,7 +1154,8 @@ sub update_delivery_stage_action : Role(controller) {
    my $update = sub {
       $leg->update;
       $completed and $journey->completed( TRUE )
-         and $journey->delivered( $leg->delivered ) and $journey->update;
+                 and $journey->delivered( $leg->delivered )
+                 and $journey->update;
    };
 
    try   { $self->schema->txn_do( $update ) }
@@ -1145,6 +1219,24 @@ sub update_package_action : Role(controller) {
                 $package_type, $journey_id, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub update_stage_collected_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $stash = $self->update_delivery_stage_action
+      ( $req, { collected => datetime_label now_dt } );
+
+   return $stash;
+}
+
+sub update_stage_delivered_action : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $stash = $self->update_delivery_stage_action
+      ( $req, { delivered => datetime_label now_dt } );
+
+   return $stash;
 }
 
 1;

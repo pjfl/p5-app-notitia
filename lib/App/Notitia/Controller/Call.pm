@@ -20,6 +20,7 @@ sub dispatch_request {
    sub (GET  + /delivery/*/stage        + ?*) { [ 'call/leg',            @_ ] },
    sub (POST + /delivery  | /delivery/* + ?*) { [ 'call/from_request',   @_ ] },
    sub (GET  + /delivery  | /delivery/* + ?*) { [ 'call/journey',        @_ ] },
+   sub (GET  + /delivery-stages/*       + ?*) { [ 'call/delivery_stages',@_ ] },
    sub (GET  + /deliveries              + ?*) { [ 'call/journeys',       @_ ] },
    sub (POST + /incident/*/parties      + ?*) { [ 'inc/from_request',    @_ ] },
    sub (GET  + /incident/*/parties      + ?*) { [ 'inc/incident_party',  @_ ] },

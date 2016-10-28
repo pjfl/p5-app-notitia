@@ -334,6 +334,9 @@ msgstr "Date Completed"
 msgid "completed_date"
 msgstr "Completed"
 
+msgid "completed_journeys_heading_1"
+msgstr "Delivered"
+
 msgid "completed_link"
 msgstr "Completed Deliveries"
 
@@ -531,6 +534,21 @@ msgstr "Delivered"
 
 msgid "delivery_request_tip"
 msgstr "Select this existing delivery request"
+
+msgid "delivery_stages_heading_0"
+msgstr "Delivery Stage"
+
+msgid "delivery_stages_heading_1"
+msgstr "Instant Update"
+
+msgid "delivery_stages_link"
+msgstr "My Deliveries"
+
+msgid "delivery_stages_tip"
+msgstr "Links to your delivery stages and instant update buttons"
+
+msgid "delivery_stages_title"
+msgstr "Your Uncompleted Deliveries"
 
 msgid "description"
 msgstr "Description"
@@ -1888,6 +1906,18 @@ msgstr "Update"
 msgid "update_package_tip"
 msgstr "Edit the details for this package"
 
+msgid "update_stage_collected"
+msgstr "Collected"
+
+msgid "update_stage_collected_tip"
+msgstr "Update the delivery stage record setting the collected time to now"
+
+msgid "update_stage_delivered"
+msgstr "Delivered"
+
+msgid "update_stage_delivered_tip"
+msgstr "Update the delivery stage record setting the delivered time to now"
+
 msgid "update_tip"
 msgstr "Update the [_1] record for [_2]"
 
@@ -1907,7 +1937,7 @@ msgid "user_slots_row_link_tip"
 msgstr "Link to the day rota page for the slot"
 
 msgid "user_slots_tip"
-msgstr "List of current slots claimed by you"
+msgstr "Links to your currently claimed upcoming slots"
 
 msgid "user_slots_title"
 msgstr "Claimed Slots"

@@ -7,7 +7,7 @@ use App::Notitia::Constants qw( TRUE );
 use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type
                                 nullable_foreign_key_data_type serial_data_type
                                 set_on_create_datetime_data_type );
-use App::Notitia::Util      qw( datetime_label );
+use App::Notitia::Util      qw( datetime_label locm );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -63,6 +63,12 @@ sub insert {
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
 
    return $self->next::method;
+}
+
+sub label {
+   my ($self, $req) = @_;
+
+   return locm( $req, $self->beginning ).' ('.$self->called_label.')';
 }
 
 sub on_station_label {

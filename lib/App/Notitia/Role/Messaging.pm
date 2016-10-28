@@ -395,9 +395,9 @@ sub send_event {
 
    $message = $_clean_and_log->( $req, $message );
 
-   my $stash = $self->$_inflate( $req, $message );
+   my $stash = $self->$_inflate( $req, $message ); my $code;
 
-   my $code; is_member $stash->{action}, $self->config->auto_emails
+   is_member $stash->{action}, $self->config->auto_emails
       and $code = $self->email_handler( $stash->{action} )
       and $self->$_maybe_create_email( $code->( $self, $req, $stash ) );
 
