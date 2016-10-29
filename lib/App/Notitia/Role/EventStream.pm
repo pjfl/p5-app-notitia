@@ -128,7 +128,7 @@ sub send_event {
       try {
          my $stash = { %{ $inflated } };
          my $level = delete $stash->{level}; $stash->{sink} = $sink_name;
-         my $buildargs = event_handler( '_buildargs_', $sink_name )->[ 0 ];
+         my $buildargs = event_handler( $sink_name, '_buildargs_' )->[ 0 ];
 
          $buildargs and $stash = $buildargs->( $self, $req, $stash );
 
@@ -140,7 +140,7 @@ sub send_event {
          for my $handler (@{ event_handler( $sink_name, $action ) }) {
             my $processed = $handler->( $self, $req, { %{ $stash } } ) or next;
 
-            for my $sink (@{ event_handler( '_sink_', $sink_name ) }) {
+            for my $sink (@{ event_handler( $sink_name, '_sink_' ) }) {
                my $chained = $sink->( $self, $req, { %{ $processed } } );
 
                $chained and $chained->{level} = $level

@@ -26,16 +26,16 @@ my $_template_dir = sub {
 
 # Event callbacks
 # Condition
-event_handler '_sink_', condition => sub {
+event_handler 'condition', '_sink_' => sub {
    my ($self, $req, $stash) = @_; return $stash->{message_sink1};
 };
 
-event_handler '_sink_', condition => sub {
+event_handler 'condition', '_sink_' => sub {
    my ($self, $req, $stash) = @_; return $stash->{message_sink2};
 };
 
 # Email
-event_handler '_buildargs_', email => sub {
+event_handler 'email', '_buildargs_' => sub {
    my ($self, $req, $stash) = @_;
 
    $stash->{status} = 'current';
@@ -119,7 +119,7 @@ event_handler 'email', vehicle_assignment => sub {
    return $stash;
 };
 
-event_handler '_sink_', email => sub {
+event_handler 'email', '_sink_' => sub {
    my ($self, $req, $stash) = @_;
 
    my $template = delete $stash->{template} or return;
@@ -133,23 +133,49 @@ event_handler '_sink_', email => sub {
 };
 
 # Update
+my $_maybe_delete_cert = sub {
+   my ($self, $stash) = @_;
+
+   is_member $stash->{course}, $self->plugins->{core}->certifiable_courses
+      and return {
+         action_path => 'certs/delete_certification_action',
+         recipient   => $stash->{shortcode},
+         type        => $stash->{course},
+      };
+
+   return;
+};
+
+event_handler 'update', remove_course => sub {
+   my ($self, $req, $stash) = @_; return $self->$_maybe_delete_cert( $stash );
+};
+
 event_handler 'update', update_course => sub {
    my ($self, $req, $stash) = @_;
 
-   ($stash->{status} eq 'completed' and
-    is_member $stash->{course}, $self->plugins->{core}->certifiable_courses)
-      or return;
+   $stash->{status} eq 'completed' and
+      is_member $stash->{course}, $self->plugins->{core}->certifiable_courses
+      and return {
+         action_path => 'certs/create_certification_action',
+         recipient   => $stash->{shortcode},
+         type        => $stash->{course},
+         completed   => $stash->{date},
+         notes       => 'Automatically awarded by '.$self->config->title,
+      };
 
-   return {
-      action_path => 'certs/create_certification_action',
-      recipient   => $stash->{shortcode},
-      type        => $stash->{course},
-      completed   => $stash->{date},
-      notes       => 'Automatically awarded by '.$self->config->title,
-   };
+   return;
 };
 
-event_handler '_sink_', update => sub {
+event_handler 'update', update_course => sub {
+   my ($self, $req, $stash) = @_;
+
+   $stash->{status} eq 'expired'
+      and return $self->$_maybe_delete_cert( $stash );
+
+   return;
+};
+
+event_handler 'update', '_sink_' => sub {
    my ($self, $req, $stash) = @_;
 
    my $actionp = delete $stash->{action_path} or return;
@@ -168,7 +194,7 @@ event_handler '_sink_', update => sub {
    return;
 };
 
-event_handler '_sink_', update => sub {
+event_handler 'update', '_sink_' => sub {
    my ($self, $req, $stash) = @_;
 
    my $class = delete $stash->{class} or return;
