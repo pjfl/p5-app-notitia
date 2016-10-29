@@ -9,7 +9,7 @@ use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Types      qw( HashRef Object );
 use Try::Tiny;
-use Unexpected::Functions   qw( catch_class Disabled );
+use Unexpected::Functions   qw( catch_class Disabled Unspecified );
 use Web::Components::Util   qw( load_components );
 use Moo::Role;
 
@@ -110,11 +110,64 @@ sub create_email_job {
 }
 
 sub dump_event_attr : method {
-   my $self = shift; $self->plugins;
+   my $self = shift; $self->plugins; my $cache = event_handler_cache;
 
-   $self->dumper( event_handler_cache );
+   if ($self->options->{not_enabled}) {
+      for my $sink_name (keys %{ $cache }) {
+         my $allowed = $self->config->automated->{ $sink_name };
+         my @keys = keys %{ $cache->{ $sink_name } };
 
+         for my $action (@keys) {
+            ($action =~ m{ \A _ }mx or is_member $action, $allowed)
+               and delete $cache->{ $sink_name }->{ $action };
+         }
+      }
+   }
+
+   $self->dumper( $cache );
    return OK;
+}
+
+sub event_component_update {
+   my ($self, $req, $stash, $actionp) = @_;
+
+   my ($moniker, $method) = split m{ / }mx, $actionp;
+
+   $method or throw Unspecified, [ 'update method' ];
+
+   my $component = $self->components->{ $moniker }
+      or throw 'Model moniker [_1] unknown', [ $moniker ];
+
+   $component->can( $method ) or
+      throw 'Model [_1] has no method [_2]', [ $moniker, $method ];
+
+   $component->$method( $req, $stash );
+   return;
+}
+
+sub event_schema_update {
+   my ($self, $req, $stash, $resultp) = @_;
+
+   my ($class, $method) = split m{ / }mx, $resultp;
+
+   $method or throw Unspecified, [ 'update method' ];
+
+   my $rs = $self->schema->resultset( $class );
+   my $message = delete $stash->{message};
+
+   if    ($method eq 'create') { $rs->create( $stash ) }
+   elsif ($method eq 'delete' or $method eq 'update') {
+      my $key = delete $stash->{key} or throw Unspecified, [ 'key' ];
+      my $row = $rs->find( $key );
+
+      defined $row or throw 'Class [_1] key [_2] not found', [ $class, $key ];
+
+      if ($method eq 'delete') { $row->delete }
+      else { $row->update( $stash ) }
+   }
+   else { throw 'Method [_1] unknown', [ $method ] }
+
+   return $message;
 }
 
 sub send_event {

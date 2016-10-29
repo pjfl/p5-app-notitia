@@ -452,7 +452,7 @@ sub event_handler ($$;&) {
 };
 
 sub event_handler_cache () {
-   return $handler_cache;
+   return { %{ $handler_cache } };
 }
 
 sub gcf ($$) {

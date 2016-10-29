@@ -6,7 +6,6 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( event_handler local_dt locm uri_for_action );
 use Class::Usul::Functions  qw( is_member throw trim );
 use Class::Usul::Types      qw( ArrayRef NonEmptySimpleStr );
-use Unexpected::Functions   qw( Unspecified );
 use Moo;
 
 with q(Web::Components::Role);
@@ -124,11 +123,9 @@ event_handler 'email', '_sink_' => sub {
 
    my $template = delete $stash->{template} or return;
 
-   unless ($template->exists) {
-      $self->log->warn( "Email template ${template} does not exist" ); return;
-   }
+   if ($template->exists) { $self->create_email_job( $stash, $template ) }
+   else { $self->log->warn( "Email template ${template} does not exist" ) }
 
-   $self->create_email_job( $stash, $template );
    return;
 };
 
@@ -178,18 +175,8 @@ event_handler 'update', update_course => sub {
 event_handler 'update', '_sink_' => sub {
    my ($self, $req, $stash) = @_;
 
-   my $actionp = delete $stash->{action_path} or return;
-   my ($moniker, $method) = split m{ / }mx, $actionp;
-
-   $method or throw Unspecified, [ 'update method' ];
-
-   my $component = $self->components->{ $moniker }
-      or throw 'Model moniker [_1] unknown', [ $moniker ];
-
-   $component->can( $method ) or
-      throw 'Model [_1] has no method [_2]', [ $moniker, $method ];
-
-   $component->$method( $req, $stash );
+   my $actionp = delete $stash->{action_path}; $actionp
+      and return $self->event_component_update( $req, $stash, $actionp );
 
    return;
 };
@@ -197,24 +184,10 @@ event_handler 'update', '_sink_' => sub {
 event_handler 'update', '_sink_' => sub {
    my ($self, $req, $stash) = @_;
 
-   my $class = delete $stash->{class} or return;
-   my $method = delete $stash->{method} or throw Unspecified, [ 'method' ];
-   my $message = delete $stash->{message};
-   my $rs = $self->schema->resultset( $class );
+   my $resultp = delete $stash->{result_path}; $resultp
+      and return $self->event_schema_update( $req, $stash, $resultp );
 
-   if    ($method eq 'create') { $rs->create( $stash ) }
-   elsif ($method eq 'delete' or $method eq 'update') {
-      my $key = delete $stash->{key} or throw Unspecified, [ 'key' ];
-      my $row = $rs->find( $key );
-
-      defined $row or throw 'Class [_1] key [_2] not found', [ $class, $key ];
-
-      if ($method eq 'delete') { $row->delete }
-      else { $row->update( $stash ) }
-   }
-   else { throw 'Method [_1] unknown', [ $method ] }
-
-   return $message;
+   return;
 };
 
 1;
