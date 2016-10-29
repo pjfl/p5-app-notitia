@@ -284,7 +284,7 @@ sub certifications : Role(person_manager) Role(training_manager) {
 }
 
 sub create_certification_action : Role(person_manager) Role(training_manager) {
-   my ($self, $req, $params) = @_;
+   my ($self, $req, $params) = @_; $params //= {};
 
    my $scode   = $params->{recipient} // $req->uri_params->( 0 );
    my $type    = $params->{type} // $req->body_params->( 'cert_types' );
@@ -312,7 +312,7 @@ sub create_certification_action : Role(person_manager) Role(training_manager) {
 }
 
 sub delete_certification_action : Role(person_manager) Role(training_manager) {
-   my ($self, $req, $params) = @_;
+   my ($self, $req, $params) = @_; $params //= {};
 
    my $scode    = $params->{recipient} // $req->uri_params->( 0 );
    my $type     = $params->{type} // $req->uri_params->( 1 );
@@ -357,7 +357,7 @@ sub find_cert_by {
 }
 
 sub update_certification_action : Role(person_manager) Role(training_manager) {
-   my ($self, $req, $params) = @_;
+   my ($self, $req, $params) = @_; $params //= {};
 
    my $scode = $params->{recipient} // $req->uri_params->( 0 );
    my $type  = $params->{type} // $req->uri_params->( 1 );

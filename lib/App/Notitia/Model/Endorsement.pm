@@ -129,7 +129,7 @@ my $_update_endorsement_from_request = sub {
 
 # Public methods
 sub create_endorsement_action : Role(person_manager) {
-   my ($self, $req, $params) = @_;
+   my ($self, $req, $params) = @_; $params //= {};
 
    my $scode   = $params->{recipient} // $req->uri_params->( 0 );
    my $blot_rs = $self->schema->resultset( 'Endorsement' );
@@ -159,7 +159,7 @@ sub create_endorsement_action : Role(person_manager) {
 }
 
 sub delete_endorsement_action : Role(person_manager) {
-   my ($self, $req, $params) = @_;
+   my ($self, $req, $params) = @_; $params //= {};
 
    my $scode    = $params->{recipient} // $req->uri_params->( 0 );
    my $uri      = $params->{uri} // $req->uri_params->( 1 );
@@ -240,7 +240,7 @@ sub endorsements : Role(person_manager) {
 }
 
 sub update_endorsement_action : Role(person_manager) {
-   my ($self, $req, $params) = @_;
+   my ($self, $req, $params) = @_; $params //= {};
 
    my $scode = $params->{recipient} // $req->uri_params->( 0 );
    my $uri   = $params->{uri} // $req->uri_params->( 1 );

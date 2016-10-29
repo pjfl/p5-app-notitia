@@ -618,7 +618,7 @@ my $_update_leg_from_request = sub {
 
    for my $attr (qw( beginning_id called collection_eta collected delivered
                      ending_id on_station operator_id )) {
-      my $v = $params->( $attr, $opts ) // $supplied->{ $attr };
+      my $v = $supplied->{ $attr } // $params->( $attr, $opts );
 
       defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
@@ -1136,7 +1136,7 @@ sub update_delivery_request_action : Role(controller) {
 }
 
 sub update_delivery_stage_action : Role(controller) {
-   my ($self, $req, $params) = @_;
+   my ($self, $req, $params) = @_; $params //= {};
 
    my $schema    = $self->schema;
    my $jid       = $req->uri_params->( 0 );

@@ -2,9 +2,9 @@ package App::Notitia::Plugin::Core;
 
 use namespace::autoclean;
 
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use App::Notitia::Util      qw( event_handler local_dt locm uri_for_action );
-use Class::Usul::Functions  qw( is_member throw );
+use Class::Usul::Functions  qw( is_member throw trim );
 use Class::Usul::Types      qw( ArrayRef NonEmptySimpleStr );
 use Unexpected::Functions   qw( Unspecified );
 use Moo;
@@ -26,38 +26,22 @@ my $_template_dir = sub {
 
 # Event callbacks
 # Condition
-event_handler 'sink', condition => sub {
-   exists $_[ 2 ]->{condition_branch1}
-      and $_[ 0 ]->send_event( $_[ 1 ], $_[ 2 ]->{condition_branch1} );
-   return;
+event_handler '_sink_', condition => sub {
+   my ($self, $req, $stash) = @_; return $stash->{message_sink1};
 };
 
-event_handler 'sink', condition => sub {
-   exists $_[ 2 ]->{condition_branch2}
-      and $_[ 0 ]->send_event( $_[ 1 ], $_[ 2 ]->{condition_branch2} );
-   return;
+event_handler '_sink_', condition => sub {
+   my ($self, $req, $stash) = @_; return $stash->{message_sink2};
 };
 
 # Email
-event_handler 'buildargs', email => sub {
+event_handler '_buildargs_', email => sub {
    my ($self, $req, $stash) = @_;
 
    $stash->{status} = 'current';
    $stash->{subject} = locm $req, $stash->{action}.'_email_subject';
 
    return $stash;
-};
-
-event_handler 'sink', email => sub {
-   my ($self, $req, $stash) = @_;
-
-   my $template = delete $stash->{template} or return;
-
-   $template->exists and return $self->create_email_job( $stash, $template );
-
-   $self->log->warn( "Email template ${template} does not exist" );
-
-   return;
 };
 
 event_handler 'email', create_certification => sub {
@@ -135,8 +119,37 @@ event_handler 'email', vehicle_assignment => sub {
    return $stash;
 };
 
+event_handler '_sink_', email => sub {
+   my ($self, $req, $stash) = @_;
+
+   my $template = delete $stash->{template} or return;
+
+   unless ($template->exists) {
+      $self->log->warn( "Email template ${template} does not exist" ); return;
+   }
+
+   $self->create_email_job( $stash, $template );
+   return;
+};
+
 # Update
-event_handler 'sink', update => sub {
+event_handler 'update', update_course => sub {
+   my ($self, $req, $stash) = @_;
+
+   ($stash->{status} eq 'completed' and
+    is_member $stash->{course}, $self->plugins->{core}->certifiable_courses)
+      or return;
+
+   return {
+      action_path => 'certs/create_certification_action',
+      recipient   => $stash->{shortcode},
+      type        => $stash->{course},
+      completed   => $stash->{date},
+      notes       => 'Automatically awarded by '.$self->config->title,
+   };
+};
+
+event_handler '_sink_', update => sub {
    my ($self, $req, $stash) = @_;
 
    my $actionp = delete $stash->{action_path} or return;
@@ -147,21 +160,27 @@ event_handler 'sink', update => sub {
    return;
 };
 
-event_handler 'update', update_course => sub {
-   my ($self, $req, $stash) = @_; delete $stash->{action_path};
+event_handler '_sink_', update => sub {
+   my ($self, $req, $stash) = @_;
 
-   $stash->{status} eq 'completed' or return $stash;
+   my $class = delete $stash->{class} or return;
+   my $method = delete $stash->{method} or throw Unspecified, [ 'method' ];
+   my $message = delete $stash->{message};
+   my $rs = $self->schema->resultset( $class );
 
-   is_member $stash->{course}, $self->plugins->{core}->certifiable_courses
-      and return {
-         action_path => 'certs/create_certification_action',
-         recipient   => $stash->{shortcode},
-         type        => $stash->{course},
-         completed   => $stash->{date},
-         notes       => 'Automatically awarded by '.$self->config->title,
-      };
+   if    ($method eq 'create') { $rs->create( $stash ) }
+   elsif ($method eq 'delete' or $method eq 'update') {
+      my $key = delete $stash->{key} or throw Unspecified, [ 'key' ];
+      my $row = $rs->find( $key );
 
-   return $stash;
+      defined $row or throw 'Class [_1] key [_2] not found', [ $class, $key ];
+
+      if ($method eq 'delete') { $row->delete }
+      else { $row->update( $stash ) }
+   }
+   else { throw 'Method [_1] unknown', [ $method ] }
+
+   return $message;
 };
 
 1;

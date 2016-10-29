@@ -2,7 +2,7 @@ package App::Notitia::Role::EventStream;
 
 use namespace::autoclean;
 
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE OK SPC TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL OK SPC TRUE );
 use App::Notitia::Util      qw( event_handler event_handler_cache );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token is_member throw );
@@ -26,7 +26,7 @@ has 'plugins' => is => 'lazy', isa => HashRef[Object], builder => sub {
 
 # Private functions
 my $_clean_and_log = sub {
-   my ($req, $message) = @_; $message ||= 'action:unknown';
+   my ($req, $message) = @_; $message ||= 'message:blank';
 
    my $user = $req->username || 'admin';
    my $address = $req->address || 'localhost';
@@ -36,6 +36,14 @@ my $_clean_and_log = sub {
    get_logger( 'activity' )->log( $message );
 
    return $message;
+};
+
+my $_flatten = sub {
+   my $stash = shift; my $message = NUL;
+
+   for my $k (sort keys %{ $stash }) { $message .= " ${k}:".$stash->{ $k } }
+
+   return trim $message;
 };
 
 # Private methods
@@ -54,10 +62,9 @@ my $_flatten_stash = sub {
 };
 
 my $_inflate = sub {
-   my ($self, $req, $message, $sink) = @_;
+   my ($self, $req, $message) = @_;
 
-   my $stash = {
-      app_name => $self->config->title, message => $message, sink => $sink };
+   my $stash = { app_name => $self->config->title, message => $message };
 
    for my $pair (split SPC, $message) {
       my ($k, $v) = split m{ : }mx, $pair;
@@ -65,11 +72,30 @@ my $_inflate = sub {
       exists $stash->{ $k } or $stash->{ $k } = $v;
    }
 
-   $stash->{action}
-      or throw 'Message contains no action: [_1]', [ $message ], level => 2;
-   $stash->{action} =~ s{ [\-] }{_}gmx;
+   $stash->{action} and $stash->{action} =~ s{ [\-] }{_}gmx;
+   $stash->{level} ||= 0; $stash->{level}++;
 
    return $stash;
+};
+
+my $_is_valid_message = sub {
+   my ($self, $req, $message) = @_;
+
+   my $inflated = $self->$_inflate( $req, $message );
+
+   unless ($inflated->{action}) {
+      $self->log->error( "Message contains no action: ${message}" ); return;
+   }
+
+   my $max_levels = $self->config->automated->{_max_levels} // 10;
+
+   if ($inflated->{level} > $max_levels) {
+      $self->log->error
+         ( "Maximum send_event recursion levels ${max_levels} reached" );
+      return;
+   }
+
+   return $inflated;
 };
 
 # Public methods
@@ -105,22 +131,33 @@ sub event_model_update {
 }
 
 sub send_event {
-   my ($self, $req, $message) = @_; $self->plugins;
+   my ($self, $req, $message) = @_; my $conf = $self->config;
 
-   $message = $_clean_and_log->( $req, $message ); my $conf = $self->config;
+   $self->plugins; $message = $_clean_and_log->( $req, $message );
 
-   for my $sink_name (keys %{ $conf->automated }) {
+   my $inflated = $self->$_is_valid_message( $req, $message ) or return;
+
+   for my $sink_name (grep { not m{ \A _ }mx } keys %{ $conf->automated }) {
       try {
-         my $stash = $self->$_inflate( $req, $message, $sink_name );
-         my $buildargs = event_handler( 'buildargs', $sink_name )->[ 0 ];
+         my $stash = { %{ $inflated } };
+         my $level = delete $stash->{level}; $stash->{sink} = $sink_name;
+         my $buildargs = event_handler( '_buildargs_', $sink_name )->[ 0 ];
 
          $buildargs and $stash = $buildargs->( $self, $req, $stash );
-         is_member $stash->{action}, $conf->automated->{ $sink_name }
-            or throw Disabled, [ $sink_name, $stash->{action} ];
 
-         for my $args (@{ event_handler( $sink_name, $stash->{action} ) }) {
-            for my $sink (@{ event_handler( 'sink', $sink_name ) }) {
-               $sink->( $self, $req, $args->( $self, $req, { %{ $stash } } ) );
+         my $action = $stash->{action};
+
+         is_member $action, $conf->automated->{ $sink_name }
+            or throw Disabled, [ $sink_name, $action ];
+
+         for my $handler (@{ event_handler( $sink_name, $action ) }) {
+            my $processed = $handler->( $self, $req, { %{ $stash } } ) or next;
+
+            for my $sink (@{ event_handler( '_sink_', $sink_name ) }) {
+               my $chained = $sink->( $self, $req, { %{ $processed } } );
+
+               $chained and $chained->{level} = $level
+                  and $self->send_event( $req, $_flatten->{ $chained } )
             }
          }
       }
