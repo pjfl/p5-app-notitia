@@ -22,6 +22,7 @@ use Scalar::Util            qw( blessed );
 use Text::CSV;
 use Try::Tiny;
 use Unexpected::Functions   qw( PathNotFound Unspecified ValidationErrors );
+use Web::Components::Util   qw( load_components );
 use Web::ComposableRequest;
 use Moo;
 
@@ -30,8 +31,9 @@ with    q(App::Notitia::Role::Schema);
 with    q(Web::Components::Role::Email);
 with    q(Web::Components::Role::TT);
 
-# TODO: This should be the models
-has 'components' => is => 'lazy', isa => HashRef, builder => sub { {} };
+has 'components' => is => 'lazy', isa => HashRef[Object], builder => sub {
+   return load_components 'Model', application => $_[ 0 ];
+};
 
 with q(App::Notitia::Role::EventStream);
 

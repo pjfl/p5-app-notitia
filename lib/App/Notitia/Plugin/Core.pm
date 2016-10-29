@@ -156,7 +156,15 @@ event_handler '_sink_', update => sub {
    my ($moniker, $method) = split m{ / }mx, $actionp;
 
    $method or throw Unspecified, [ 'update method' ];
-   $self->event_model_update( $req, $stash, $moniker, $method );
+
+   my $component = $self->components->{ $moniker }
+      or throw 'Model moniker [_1] unknown', [ $moniker ];
+
+   $component->can( $method ) or
+      throw 'Model [_1] has no method [_2]', [ $moniker, $method ];
+
+   $component->$method( $req, $stash );
+
    return;
 };
 
