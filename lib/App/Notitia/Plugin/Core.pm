@@ -25,6 +25,7 @@ my $_template_dir = sub {
 
 # Event callbacks
 # Condition
+# There are no condition event handlers defined at this time
 event_handler 'condition', '_sink_' => sub {
    my ($self, $req, $stash) = @_; return $stash->{message_sink1};
 };

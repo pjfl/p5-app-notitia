@@ -2,14 +2,15 @@ package App::Notitia::Model::User;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_button p_checkbox p_image p_label
-                                p_password p_radio p_select p_slider p_tag
-                                p_text p_textfield );
-use App::Notitia::Util      qw( check_field_js check_form_field js_server_config
+use App::Notitia::Form      qw( blank_form f_tag p_button p_checkbox p_container
+                                p_image p_label p_password p_radio p_select
+                                p_slider p_tag p_text p_textfield );
+use App::Notitia::Util      qw( check_field_js check_form_field
+                                event_handler_cache js_server_config
                                 js_slider_config locm make_tip
                                 register_action_paths set_element_focus
                                 to_msg uri_for_action );
-use Class::Usul::Functions  qw( create_token throw );
+use Class::Usul::Functions  qw( is_arrayref is_member create_token throw );
 use Class::Usul::Types      qw( ArrayRef HashRef Object );
 use HTTP::Status            qw( HTTP_OK );
 use Try::Tiny;
@@ -44,7 +45,8 @@ register_action_paths
    'user/profile'         => 'user/profile',
    'user/request_reset'   => 'user/reset',
    'user/totp_request'    => 'user/totp-request',
-   'user/totp_secret'     => 'user/totp-secret';
+   'user/totp_secret'     => 'user/totp-secret',
+   'user/unsubscribe'     => 'user/email-subscription';
 
 # Construction
 around 'BUILDARGS' => sub {
@@ -63,14 +65,17 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{navigation} = $req->authenticated
-                        ? $self->navigation_links( $req, $stash->{page} )
-                        : $self->login_navigation_links( $req, $stash->{page} );
+   $stash->{navigation} = $self->login_navigation_links( $req, $stash->{page} );
 
    return $stash;
 };
 
 # Private functions
+my $_listify = sub {
+   return [ map { my $x = ucfirst $_; $x =~ s{ _ }{ }gmx; [ $x, $_ ] }
+               @{ $_[ 0 ] } ];
+};
+
 my $_push_change_password_js = sub {
    my $page = shift; my $opts = { domain => 'update', form => 'Person' };
 
@@ -110,6 +115,10 @@ my $_rows_per_page = sub {
 
    return [ map { [ $_, $_, ($_ == $selected) ? $opts_t : $opts_f ] }
             10, 20, 50, 100 ];
+};
+
+my $_subtract = sub {
+   return [ grep { is_arrayref $_ or not is_member $_, $_[ 1 ] } @{ $_[ 0 ] } ];
 };
 
 # Private methods
@@ -191,7 +200,7 @@ sub change_password : Role(anon) {
    my $page       =  {
       first_field => $username ? 'oldpass' : 'username',
       forms       => [ $form ],
-      location    => $req->authenticated ? 'change_password' : 'login',
+      location    => $req->authenticated ? 'account_management' : 'login',
       selected    => 'change_password',
       title       => locm $req, 'change_password_title', $self->config->title };
 
@@ -429,6 +438,30 @@ sub show_if_needed : Role(anon) {
             view => 'json' };
 }
 
+sub subscribe_email_action : Role(any) {
+   my ($self, $req) = @_;
+
+   my $scode = $req->username;
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person = $person_rs->find_by_shortcode( $scode );
+   my $actions = $req->body_params->( 'unsubscribed_emails', {
+      multiple => TRUE } );
+
+   for my $action (@{ $actions }) {
+      $person->subscribe_to_email( $action );
+
+      my $message = "action:subscribe-email shortcode:${scode} email:${action}";
+
+      $self->send_event( $req, $message );
+   }
+
+   my $message  = [ to_msg 'Email subscription list for [_1] updated',
+                    $req->session->user_label ];
+   my $location = uri_for_action $req, $self->moniker.'/unsubscribe';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub totp_request : Role(anon) {
    my ($self, $req) = @_;
 
@@ -481,7 +514,7 @@ sub totp_secret : Role(anon) {
    my $form      =  blank_form 'totp-secret', $href;
    my $page      =  {
       forms      => [ $form ],
-      location   => 'totp_secret',
+      location   => 'account_management', selected => 'totp_secret',
       title      => locm $req, 'totp_secret_title', $conf->title };
 
    p_textfield $form, 'username', $person->label, { disabled => TRUE };
@@ -496,6 +529,70 @@ sub totp_secret : Role(anon) {
    }
 
    return $self->get_stash( $req, $page );
+}
+
+sub unsubscribe : Role(any) {
+   my ($self, $req) = @_; $self->plugins;
+
+   my $href = uri_for_action $req, $self->moniker.'/unsubscribe';
+   my $form = blank_form 'email-subscription', $href;
+   my $page = {
+      forms    => [ $form ],
+      location => 'account_management', selected => 'unsubscribe',
+      title    => locm $req, 'email_subscription_title' };
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person = $person_rs->find_by_shortcode( $req->username );
+   my $where = { recipient_id => $person->id, sink => 'email' };
+   my $unsubscribed_rs = $self->schema->resultset( 'Unsubscribe' );
+   my $unsubscribed = [ $unsubscribed_rs->search( $where )->all ];
+   my $all_email_actions = [ sort grep { not m{ \A _ }mx }
+                             keys %{ event_handler_cache->{email} } ];
+   my $email_actions = $_subtract->( $all_email_actions, $unsubscribed );
+
+   p_textfield $form, 'username', $person->label, { disabled => TRUE };
+
+   p_select $form, 'unsubscribed_emails', $_listify->( $unsubscribed ), {
+      multiple => TRUE, size => 5 };
+
+   p_button $form, 'subscribe_email', 'subscribe_email', {
+      class => 'delete-button', container_class => 'right-last',
+      tip   => make_tip( $req, 'subscribe_email_tip', [] ) };
+
+   p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
+
+   p_select $form, 'subscribed_emails', $_listify->( $email_actions ), {
+      multiple => TRUE, size => 5 };
+
+   p_button $form, 'unsubscribe_email', 'unsubscribe_email', {
+      class => 'save-button', container_class => 'right-last',
+      tip   => make_tip( $req, 'unsubscribe_email_tip', [] ) };
+
+   return $self->get_stash( $req, $page );
+}
+
+sub unsubscribe_email_action : Role(any) {
+   my ($self, $req) = @_;
+
+   my $scode = $req->username;
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person = $person_rs->find_by_shortcode( $scode );
+   my $actions = $req->body_params->( 'subscribed_emails', {
+      multiple => TRUE } );
+
+   for my $action (@{ $actions }) {
+      $person->unsubscribe_from_email( $action );
+
+      my $message = "action:unsubscribe-email shortcode:${scode} "
+                  . "email:${action}";
+
+      $self->send_event( $req, $message );
+   }
+
+   my $message  = [ to_msg 'Email subscription list for [_1] updated',
+                    $req->session->user_label ];
+   my $location = uri_for_action $req, $self->moniker.'/unsubscribe';
+
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub update_profile_action : Role(any) {

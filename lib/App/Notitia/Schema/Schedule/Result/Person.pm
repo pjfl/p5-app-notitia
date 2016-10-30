@@ -69,6 +69,7 @@ $class->belongs_to( next_of_kin => "${class}", 'next_of_kin_id', $left_join );
 
 $class->has_many( certs        => "${result}::Certification", 'recipient_id'  );
 $class->has_many( courses      => "${result}::Training",      'recipient_id'  );
+$class->has_many( deactivated  => "${result}::Unsubscribe",   'recipient_id'  );
 $class->has_many( endorsements => "${result}::Endorsement",   'recipient_id'  );
 $class->has_many( participents => "${result}::Participent",   'participent_id');
 $class->has_many( roles        => "${result}::Role",          'member_id'     );
@@ -398,6 +399,13 @@ sub execute {
    return $self->$method();
 }
 
+sub has_stopped_email {
+   my ($self, $action) = @_;
+
+   return $self->find_related
+      ( 'deactivated', { sink => 'email', action => $action } ) ? TRUE : FALSE;
+}
+
 sub insert {
    my $self     = shift;
    my $columns  = { $self->get_inflated_columns };
@@ -521,6 +529,13 @@ sub set_totp_secret {
    return $self->totp_secret;
 }
 
+sub subscribe_to_email {
+   my ($self, $action) = @_;
+
+   return $self->delete_related
+      ( 'deactivated', { sink => 'email', action => $action } );
+}
+
 sub totp_authenticator {
    my $self = shift;
 
@@ -529,6 +544,13 @@ sub totp_authenticator {
       key_id => $self->name,
       secret => $self->totp_secret,
    } );
+}
+
+sub unsubscribe_from_email {
+   my ($self, $action) = @_;
+
+   return $self->create_related
+      ( 'deactivated', { sink => 'email', action => $action } );
 }
 
 sub update {

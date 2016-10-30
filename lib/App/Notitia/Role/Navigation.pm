@@ -312,36 +312,25 @@ my $_rota_week_links = sub {
 my $_secondary_authenticated_links = sub {
    my ($self, $req, $nav, $js, $location) = @_;
 
-   p_item $nav, $nav_linkto->( $req, {
-      class => $location eq 'change_password' ? 'current' : NUL,
-      tip   => 'Change the password used to access the application',
-      value => 'Change Password', }, $self->config->places->{password} );
+   my $places = $self->config->places;
 
    p_item $nav, $nav_linkto->( $req, {
-      class => 'windows', name => 'profile-user',
-      tip   => 'Update personal details', value => 'Profile', }, '#' );
+      class => $location eq 'schedule' ? 'current' : NUL,
+      name => 'rota', tip => 'rota_link_tip' }, $places->{rota} );
 
-   my $href  = uri_for_action $req, 'user/profile';
-   my $title = locm $req, 'Person Profile';
+   my $after = now_dt->subtract( days => 1 )->ymd;
+   my $index = $places->{admin_index};
 
-   push @{ $js }, dialog_anchor( 'profile-user', $href, {
-      name => 'profile-user', title => $title, useIcon => \1 } );
+   p_item $nav, $nav_linkto->( $req, {
+      class => $location eq 'admin' ? 'current' : NUL,
+      tip   => 'admin_index_title',
+      value => 'admin_index_link', }, $index, [], after => $after );
 
-   $req->session->enable_2fa and p_item $nav, $nav_linkto->( $req, {
-      class => $location eq 'totp_secret' ? 'current' : NUL,
-      tip   => 'View the TOTP account information',
-      value => 'TOTP', }, 'user/totp_secret' );
+   $self->$_allowed( $req, 'call/journeys' ) and
+      p_item $nav, $nav_linkto->( $req, {
+         class => $location eq 'calls' ? 'current' : NUL,
+         tip => 'calls_tip', value => 'calls', }, 'call/journeys', [] );
 
-   $href = uri_for_action $req, 'user/logout_action';
-
-   my $form = blank_form  'authentication', $href, { class => 'none' };
-
-   p_button $form, 'logout-user', 'logout', {
-      class => 'none',
-      label => locm( $req, 'Logout' ).' ('.$req->session->user_label.')',
-      tip   => make_tip $req, 'Logout from [_1]', [ $self->config->title ] };
-
-   p_item $nav, $form;
    return;
 };
 
@@ -494,16 +483,44 @@ sub login_navigation_links {
    my $list = $nav->{menu}->{list} //= [];
    my $places = $self->config->places;
 
+   push @{ $list }, $nav_folder->( $req, 'login' );
+
+   $req->authenticated or push @{ $list }, $nav_linkto->( $req, {
+      class => $page->{selected} eq 'login' ? 'selected' : NUL,
+      tip   => 'Login to the application',
+      value => 'Login', }, $places->{login} );
+
+   push @{ $list }, $nav_linkto->( $req, {
+      class => $page->{selected} eq 'change_password' ? 'selected' : NUL,
+      tip   => 'Change the password used to access the application',
+      value => 'Change Password', }, $places->{password} );
+
+   if ($req->authenticated) {
+      push @{ $list }, $nav_linkto->( $req, {
+         class => $page->{selected} eq 'unsubscribe' ? 'selected' : NUL,
+         tip   => 'Manage automanted email subscription',
+         value => 'Email Subscription' }, 'user/unsubscribe' );
+
+      push @{ $list }, {
+         depth => 1, type => 'link', value => $nav_linkto->( $req, {
+            class => 'windows', name => 'profile-user',
+            tip   => 'Update personal details', value => 'Profile', }, '#' ) };
+
+      my $href  = uri_for_action $req, 'user/profile';
+      my $title = locm $req, 'Person Profile';
+
+      push @{ $js }, dialog_anchor( 'profile-user', $href, {
+         name => 'profile-user', title => $title, useIcon => \1 } );
+
+      $req->session->enable_2fa and push @{ $list }, $nav_linkto->( $req, {
+         class => $page->{selected} eq 'totp_secret' ? 'selected' : NUL,
+         tip   => 'View the TOTP account information',
+         value => 'TOTP', }, 'user/totp_secret' );
+
+      return $nav;
+   }
+
    push @{ $list },
-      $nav_folder->( $req, 'login' ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'login' ? 'selected' : NUL,
-         tip   => 'Login to the application',
-         value => 'Login', }, $places->{login} ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'change_password' ? 'selected' : NUL,
-         tip   => 'Change the password used to access the application',
-         value => 'Change Password', }, $places->{password} ),
       { depth  => 1, type => 'link',
         value  => $nav_linkto->( $req, {
            class => 'windows', name => 'request-reset',
@@ -567,21 +584,19 @@ sub primary_navigation_links {
    $req->authenticated or return $nav;
 
    p_item $nav, $nav_linkto->( $req, {
-      class => $location eq 'schedule' ? 'current' : NUL,
-      name => 'rota', tip => 'rota_link_tip' }, $places->{rota} );
+      class => $location eq 'account_management' ? 'current' : NUL,
+      tip   => 'Manage account profile and email subscription',
+      value => 'Account', }, $places->{password} );
 
-   my $after = now_dt->subtract( days => 1 )->ymd;
-   my $index = $places->{admin_index};
+   my $href = uri_for_action $req, 'user/logout_action';
+   my $form = blank_form  'authentication', $href, { class => 'none' };
 
-   p_item $nav, $nav_linkto->( $req, {
-      class => $location eq 'admin' ? 'current' : NUL,
-      tip   => 'admin_index_title',
-      value => 'admin_index_link', }, $index, [], after => $after );
+   p_button $form, 'logout-user', 'logout', {
+      class => 'none',
+      label => locm( $req, 'Logout' ).' ('.$req->session->user_label.')',
+      tip   => make_tip $req, 'Logout from [_1]', [ $self->config->title ] };
 
-   $self->$_allowed( $req, 'call/journeys' ) and
-      p_item $nav, $nav_linkto->( $req, {
-         class => $location eq 'calls' ? 'current' : NUL,
-         tip => 'calls_tip', value => 'calls', }, 'call/journeys', [] );
+   p_item $nav, $form;
 
    return $nav;
 }

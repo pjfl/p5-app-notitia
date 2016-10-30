@@ -628,6 +628,9 @@ msgstr "Email Address"
 msgid "email_message"
 msgstr "Message text"
 
+msgid "email_subscription_title"
+msgstr "Email Subscriptions"
+
 msgid "emergency"
 msgstr "Emergency"
 
@@ -1744,6 +1747,15 @@ msgstr "Start Time"
 msgid "submarine"
 msgstr "Submarine"
 
+msgid "subscribe_email"
+msgstr "Subscribe"
+
+msgid "subscribe_email_tip"
+msgstr "Subscribe to the selected automated emails"
+
+msgid "subscribed_emails"
+msgstr "Subscribed Emails"
+
 msgid "subscription"
 msgstr "Subscription"
 
@@ -1899,6 +1911,15 @@ msgstr "Cancel participation in the [_1] event"
 
 msgid "unparticipate_tip"
 msgstr "Cancel participation in the [_1] event"
+
+msgid "unsubscribe_email"
+msgstr "Unsubscribe"
+
+msgid "unsubscribe_email_tip"
+msgstr "Unsubscribe from the selected automated emails"
+
+msgid "unsubscribed_emails"
+msgstr "Unsubscribed Emails"
 
 msgid "update"
 msgstr "Update"

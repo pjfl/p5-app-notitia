@@ -498,12 +498,19 @@ my $_template_path = sub {
 };
 
 my $_send_email = sub {
-   my ($self, $template, $person, $stash, $attaches) = @_;
+   my ($self, $stash, $template, $person, $attaches) = @_;
 
    $self->config->no_message_send and $self->info
-      ( 'Would email [_1]', { args => [ $person->shortcode ] } ) and return;
+      ( 'Would email [_1]', { args => [ $person->label ] } ) and return;
 
-   $person->email_address =~ m{ \@ example\.com \z }imx and return;
+   $person->email_address =~ m{ \@ example\.com \z }imx and $self->info
+      ( 'Would not email [_1] example address', {
+         args => [ $person->label ] } ) and return;
+
+   my $action; $action = $stash->{action}
+      and $person->has_stopped_email( $action ) and $self->info
+         ( 'Would email [_1] [_2]', { args => [ $person->label, $action ] } )
+         and return;
 
    my $layout = $self->$_template_path( 'email_layout' );
 
@@ -514,7 +521,7 @@ my $_send_email = sub {
    $stash->{last_name } = $person->last_name;
    $stash->{username  } = $person->name;
 
-   my $post   = {
+   my $post = {
       attributes      => {
          charset      => $self->config->encoding,
          content_type => 'text/html', },
@@ -535,7 +542,7 @@ my $_send_email = sub {
 };
 
 my $_send_sms = sub {
-   my ($self, $template, $tuples, $stash) = @_; my $conf = $self->config;
+   my ($self, $stash, $template, $tuples) = @_; my $conf = $self->config;
 
    my $attr = { %{ $conf->sms_attributes }, %{ $stash->{sms_attributes} } };
 
@@ -934,10 +941,10 @@ sub send_message : method {
 
    if ($sink eq 'email') {
       for my $person (map { $_->[ 1 ] } @{ $tuples }) {
-         $self->$_send_email( $template, $person, $stash, $attaches );
+         $self->$_send_email( $stash, $template, $person, $attaches );
       }
    }
-   else { $self->$_send_sms( $template, $tuples, $stash ) }
+   else { $self->$_send_sms( $stash, $template, $tuples ) }
 
    $conf->sessdir eq substr $plate_name, 0, length $conf->sessdir
       and unlink $plate_name;
