@@ -147,7 +147,7 @@ sub create_endorsement_action : Role(person_manager) {
    my $message  = "action:create-endorsement endorsement_uri:${uri} "
                 . "shortcode:${scode} endorsement_type:${type}";
 
-   $self->send_event( $req, $message );
+   $self->send_event( $req, $message, $params );
 
    my $action   = $self->moniker.'/endorsements';
    my $location = uri_for_action $req, $action, [ $scode ];
@@ -167,7 +167,7 @@ sub delete_endorsement_action : Role(person_manager) {
    my $message  = "action:delete-endorsement endorsement_uri:${uri} "
                 . "shortcode:${scode} endorsement_type:".$blot->type_code;
 
-   $self->send_event( $req, $message );
+   $self->send_event( $req, $message, $params );
 
    my $actionp  = $self->moniker.'/endorsements';
    my $location = uri_for_action $req, $actionp, [ $scode ];
@@ -252,7 +252,7 @@ sub update_endorsement_action : Role(person_manager) {
    my $message = "action:update-endorsement endorsement_uri:${uri} "
                . "shortcode:${scode} endorsement_type:".$blot->type_code;
 
-   $self->send_event( $req, $message );
+   $self->send_event( $req, $message, $params );
 
    my $key = 'Endorsement [_1] for [_2] updated by [_3]';
 

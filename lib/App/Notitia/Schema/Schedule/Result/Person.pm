@@ -406,6 +406,13 @@ sub has_stopped_email {
       ( 'deactivated', { sink => 'email', action => $action } ) ? TRUE : FALSE;
 }
 
+sub has_stopped_sms {
+   my ($self, $action) = @_;
+
+   return $self->find_related
+      ( 'deactivated', { sink => 'sms', action => $action } ) ? TRUE : FALSE;
+}
+
 sub insert {
    my $self     = shift;
    my $columns  = { $self->get_inflated_columns };
@@ -536,6 +543,13 @@ sub subscribe_to_email {
       ( 'deactivated', { sink => 'email', action => $action } );
 }
 
+sub subscribe_to_sms {
+   my ($self, $action) = @_;
+
+   return $self->delete_related
+      ( 'deactivated', { sink => 'sms', action => $action } );
+}
+
 sub totp_authenticator {
    my $self = shift;
 
@@ -551,6 +565,13 @@ sub unsubscribe_from_email {
 
    return $self->create_related
       ( 'deactivated', { sink => 'email', action => $action } );
+}
+
+sub unsubscribe_from_sms {
+   my ($self, $action) = @_;
+
+   return $self->create_related
+      ( 'deactivated', { sink => 'sms', action => $action } );
 }
 
 sub update {

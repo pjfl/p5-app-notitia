@@ -497,9 +497,14 @@ sub login_navigation_links {
 
    if ($req->authenticated) {
       push @{ $list }, $nav_linkto->( $req, {
-         class => $page->{selected} eq 'unsubscribe' ? 'selected' : NUL,
-         tip   => 'Manage automanted email subscription',
-         value => 'Email Subscription' }, 'user/unsubscribe' );
+         class => $page->{selected} eq 'email_subscription' ? 'selected' : NUL,
+         tip   => 'Manage automated email subscriptions',
+         value => 'Email Subscriptions' }, 'user/email_subs' );
+
+      push @{ $list }, $nav_linkto->( $req, {
+         class => $page->{selected} eq 'sms_subscription' ? 'selected' : NUL,
+         tip   => 'Manage automated SMS subscriptions',
+         value => 'SMS Subscriptions' }, 'user/sms_subs' );
 
       push @{ $list }, {
          depth => 1, type => 'link', value => $nav_linkto->( $req, {

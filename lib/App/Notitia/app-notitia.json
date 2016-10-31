@@ -5,7 +5,7 @@
          "feed_subtitle": "Recent news and events",
          "feed_title": "Blood Bike Events"
       },
-      "Plugin::Core": {
+      "Plugin::Update": {
          "certifiable_courses": [ "GMP" ]
       }
    },

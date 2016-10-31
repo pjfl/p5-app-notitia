@@ -38,15 +38,16 @@ register_action_paths
    'user/change_password' => 'user/password',
    'user/changes'         => 'changes',
    'user/check_field'     => 'check-field',
-   'user/show_if_needed'  => 'show-if-needed',
+   'user/email_subs'      => 'user/email-subscription',
    'user/login'           => 'user/login',
    'user/login_action'    => 'user/login',
    'user/logout_action'   => 'user/logout',
    'user/profile'         => 'user/profile',
    'user/request_reset'   => 'user/reset',
+   'user/show_if_needed'  => 'show-if-needed',
+   'user/sms_subs'        => 'user/sms-subscription',
    'user/totp_request'    => 'user/totp-request',
-   'user/totp_secret'     => 'user/totp-secret',
-   'user/unsubscribe'     => 'user/email-subscription';
+   'user/totp_secret'     => 'user/totp-secret';
 
 # Construction
 around 'BUILDARGS' => sub {
@@ -204,12 +205,15 @@ sub change_password : Role(anon) {
       selected    => 'change_password',
       title       => locm $req, 'change_password_title', $self->config->title };
 
-   p_textfield $form, 'username', $username;
-   p_password  $form, 'oldpass',  NUL, { label => 'old_password' };
+   p_textfield $form, 'username', $username, {
+      class => 'standard-field required' };
+   p_password  $form, 'oldpass',  NUL, {
+      class => 'standard-field required', label => 'old_password' };
    p_password  $form, 'password', NUL, {
-      autocomplete => 'off', class => 'standard-field reveal server',
+      autocomplete => 'off', class => 'standard-field reveal server required',
       label => 'new_password', tip => make_tip $req, 'new_password_tip' };
-   p_password  $form, 'again',    NUL, { class => 'standard-field reveal' };
+   p_password  $form, 'again',    NUL, {
+      class => 'standard-field reveal required' };
    p_button    $form, 'update', 'change_password', {
       class => 'save-button right-last' };
 
@@ -262,6 +266,45 @@ sub check_field : Role(anon) {
    return check_form_field $_[ 0 ]->schema, $_[ 1 ], $_[ 0 ]->log;
 }
 
+sub email_subs : Role(any) {
+   my ($self, $req) = @_; $self->plugins;
+
+   my $href = uri_for_action $req, $self->moniker.'/email_subs';
+   my $form = blank_form 'email-subscription', $href;
+   my $page = {
+      forms    => [ $form ],
+      location => 'account_management', selected => 'email_subscription',
+      title    => locm $req, 'email_subscription_title' };
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person = $person_rs->find_by_shortcode( $req->username );
+   my $where = { recipient_id => $person->id, sink => 'email' };
+   my $unsubscribed_rs = $self->schema->resultset( 'Unsubscribe' );
+   my $unsubscribed = [ $unsubscribed_rs->search( $where )->all ];
+   my $all_email_actions = [ sort grep { not m{ \A _ }mx }
+                             keys %{ event_handler_cache->{email} } ];
+   my $email_actions = $_subtract->( $all_email_actions, $unsubscribed );
+
+   p_textfield $form, 'username', $person->label, { disabled => TRUE };
+
+   p_select $form, 'unsubscribed_emails', $_listify->( $unsubscribed ), {
+      multiple => TRUE, size => 5 };
+
+   p_button $form, 'subscribe_email', 'subscribe_email', {
+      class => 'delete-button', container_class => 'right-last',
+      tip   => make_tip( $req, 'subscribe_email_tip', [] ) };
+
+   p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
+
+   p_select $form, 'subscribed_emails', $_listify->( $email_actions ), {
+      multiple => TRUE, size => 5 };
+
+   p_button $form, 'unsubscribe_email', 'unsubscribe_email', {
+      class => 'save-button', container_class => 'right-last',
+      tip   => make_tip( $req, 'unsubscribe_email_tip', [] ) };
+
+   return $self->get_stash( $req, $page );
+}
+
 sub login : Role(anon) {
    my ($self, $req) = @_;
 
@@ -274,8 +317,9 @@ sub login : Role(anon) {
       selected    => 'login',
       title       => locm $req, 'login_title', $self->config->title };
 
-   p_textfield $form, 'username',  NUL, { class => 'standard-field server' };
-   p_password  $form, 'password';
+   p_textfield $form, 'username',  NUL, {
+      class => 'standard-field server required' };
+   p_password  $form, 'password',  NUL, { class => 'standard-field required' };
    p_textfield $form, 'auth_code', NUL, {
       class => 'mediumint-field', label_class => 'hidden',
       label_id => 'auth_code_label', tip => make_tip $req, 'auth_code_tip' };
@@ -438,26 +482,91 @@ sub show_if_needed : Role(anon) {
             view => 'json' };
 }
 
-sub subscribe_email_action : Role(any) {
-   my ($self, $req) = @_;
+sub sms_subs : Role(any) {
+   my ($self, $req) = @_; $self->plugins;
 
-   my $scode = $req->username;
+   my $href = uri_for_action $req, $self->moniker.'/sms_subs';
+   my $form = blank_form 'sms-subscription', $href;
+   my $page = {
+      forms    => [ $form ],
+      location => 'account_management', selected => 'sms_subscription',
+      title    => locm $req, 'sms_subscription_title' };
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person = $person_rs->find_by_shortcode( $req->username );
+   my $where = { recipient_id => $person->id, sink => 'sms' };
+   my $unsubscribed_rs = $self->schema->resultset( 'Unsubscribe' );
+   my $unsubscribed = [ $unsubscribed_rs->search( $where )->all ];
+   my $all_sms_actions = [ sort grep { not m{ \A _ }mx }
+                           keys %{ event_handler_cache->{sms} } ];
+   my $sms_actions = $_subtract->( $all_sms_actions, $unsubscribed );
+
+   p_textfield $form, 'username', $person->label, { disabled => TRUE };
+
+   p_select $form, 'unsubscribed_messages', $_listify->( $unsubscribed ), {
+      multiple => TRUE, size => 5 };
+
+   p_button $form, 'subscribe_sms', 'subscribe_sms', {
+      class => 'delete-button', container_class => 'right-last',
+      tip   => make_tip $req, 'subscribe_sms_tip', [] };
+
+   p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
+
+   p_select $form, 'subscribed_messages', $_listify->( $sms_actions ), {
+      multiple => TRUE, size => 5 };
+
+   p_button $form, 'unsubscribe_sms', 'unsubscribe_sms', {
+      class => 'save-button', container_class => 'right-last',
+      tip   => make_tip $req, 'unsubscribe_sms_tip', [] };
+
+   return $self->get_stash( $req, $page );
+}
+
+sub subscribe_email_action : Role(any) {
+   my ($self, $req, $params) = @_; $params //= {};
+
+   my $scode = $params->{shortcode} // $req->username;
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person = $person_rs->find_by_shortcode( $scode );
-   my $actions = $req->body_params->( 'unsubscribed_emails', {
-      multiple => TRUE } );
+   my $actions = $params->{unsubscribed_emails}
+      // $req->body_params->( 'unsubscribed_emails', { multiple => TRUE } );
 
    for my $action (@{ $actions }) {
       $person->subscribe_to_email( $action );
 
-      my $message = "action:subscribe-email shortcode:${scode} email:${action}";
+      my $message = "action:subscribe-email shortcode:${scode} "
+                  . "event_action:${action}";
 
-      $self->send_event( $req, $message );
+      $self->send_event( $req, $message, $params );
    }
 
    my $message  = [ to_msg 'Email subscription list for [_1] updated',
                     $req->session->user_label ];
-   my $location = uri_for_action $req, $self->moniker.'/unsubscribe';
+   my $location = uri_for_action $req, $self->moniker.'/email_subs';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub subscribe_sms_action : Role(any) {
+   my ($self, $req, $params) = @_; $params //= {};
+
+   my $scode = $params->{shortcode} // $req->username;
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person = $person_rs->find_by_shortcode( $scode );
+   my $actions = $params->{unsubscribed_messages}
+      // $req->body_params->( 'unsubscribed_messages', { multiple => TRUE } );
+
+   for my $action (@{ $actions }) {
+      $person->subscribe_to_sms( $action );
+
+      my $message = "action:subscribe-sms shortcode:${scode} "
+                  . "event_action:${action}";
+
+      $self->send_event( $req, $message, $params );
+   }
+
+   my $message  = [ to_msg 'SMS subscription list for [_1] updated',
+                    $req->session->user_label ];
+   my $location = uri_for_action $req, $self->moniker.'/sms_subs';
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -531,66 +640,52 @@ sub totp_secret : Role(anon) {
    return $self->get_stash( $req, $page );
 }
 
-sub unsubscribe : Role(any) {
-   my ($self, $req) = @_; $self->plugins;
-
-   my $href = uri_for_action $req, $self->moniker.'/unsubscribe';
-   my $form = blank_form 'email-subscription', $href;
-   my $page = {
-      forms    => [ $form ],
-      location => 'account_management', selected => 'unsubscribe',
-      title    => locm $req, 'email_subscription_title' };
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $person = $person_rs->find_by_shortcode( $req->username );
-   my $where = { recipient_id => $person->id, sink => 'email' };
-   my $unsubscribed_rs = $self->schema->resultset( 'Unsubscribe' );
-   my $unsubscribed = [ $unsubscribed_rs->search( $where )->all ];
-   my $all_email_actions = [ sort grep { not m{ \A _ }mx }
-                             keys %{ event_handler_cache->{email} } ];
-   my $email_actions = $_subtract->( $all_email_actions, $unsubscribed );
-
-   p_textfield $form, 'username', $person->label, { disabled => TRUE };
-
-   p_select $form, 'unsubscribed_emails', $_listify->( $unsubscribed ), {
-      multiple => TRUE, size => 5 };
-
-   p_button $form, 'subscribe_email', 'subscribe_email', {
-      class => 'delete-button', container_class => 'right-last',
-      tip   => make_tip( $req, 'subscribe_email_tip', [] ) };
-
-   p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
-
-   p_select $form, 'subscribed_emails', $_listify->( $email_actions ), {
-      multiple => TRUE, size => 5 };
-
-   p_button $form, 'unsubscribe_email', 'unsubscribe_email', {
-      class => 'save-button', container_class => 'right-last',
-      tip   => make_tip( $req, 'unsubscribe_email_tip', [] ) };
-
-   return $self->get_stash( $req, $page );
-}
-
 sub unsubscribe_email_action : Role(any) {
-   my ($self, $req) = @_;
+   my ($self, $req, $params) = @_; $params //= {};
 
-   my $scode = $req->username;
+   my $scode = $params->{shortcode} // $req->username;
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person = $person_rs->find_by_shortcode( $scode );
-   my $actions = $req->body_params->( 'subscribed_emails', {
-      multiple => TRUE } );
+   my $actions = $params->{subscribed_emails}
+      // $req->body_params->( 'subscribed_emails', { multiple => TRUE } );
 
    for my $action (@{ $actions }) {
       $person->unsubscribe_from_email( $action );
 
       my $message = "action:unsubscribe-email shortcode:${scode} "
-                  . "email:${action}";
+                  . "event_action:${action}";
 
-      $self->send_event( $req, $message );
+      $self->send_event( $req, $message, $params );
    }
 
    my $message  = [ to_msg 'Email subscription list for [_1] updated',
                     $req->session->user_label ];
-   my $location = uri_for_action $req, $self->moniker.'/unsubscribe';
+   my $location = uri_for_action $req, $self->moniker.'/email_subs';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub unsubscribe_sms_action : Role(any) {
+   my ($self, $req, $params) = @_; $params //= {};
+
+   my $scode = $params->{shortcode} // $req->username;
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person = $person_rs->find_by_shortcode( $scode );
+   my $actions = $params->{subscribed_messages}
+      // $req->body_params->( 'subscribed_messages', { multiple => TRUE } );
+
+   for my $action (@{ $actions }) {
+      $person->unsubscribe_from_sms( $action );
+
+      my $message = "action:unsubscribe-sms shortcode:${scode} "
+                  . "event_action:${action}";
+
+      $self->send_event( $req, $message, $params );
+   }
+
+   my $message  = [ to_msg 'SMS subscription list for [_1] updated',
+                    $req->session->user_label ];
+   my $location = uri_for_action $req, $self->moniker.'/sms_subs';
 
    return { redirect => { location => $location, message => $message } };
 }

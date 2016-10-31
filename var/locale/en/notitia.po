@@ -1708,6 +1708,9 @@ msgstr "Slot Name"
 msgid "sms_message"
 msgstr "Message text"
 
+msgid "sms_subscription_title"
+msgstr "SMS Subscriptions"
+
 msgid "south_route"
 msgstr "S. Route"
 
@@ -1753,8 +1756,17 @@ msgstr "Subscribe"
 msgid "subscribe_email_tip"
 msgstr "Subscribe to the selected automated emails"
 
+msgid "subscribe_sms"
+msgstr "Subscribe"
+
+msgid "subscribe_sms_tip"
+msgstr "Subscribe to the selected automated messages"
+
 msgid "subscribed_emails"
 msgstr "Subscribed Emails"
+
+msgid "subscribed_messages"
+msgstr "Subscribed SMS"
 
 msgid "subscription"
 msgstr "Subscription"
@@ -1918,8 +1930,17 @@ msgstr "Unsubscribe"
 msgid "unsubscribe_email_tip"
 msgstr "Unsubscribe from the selected automated emails"
 
+msgid "unsubscribe_sms"
+msgstr "Unsubscribe"
+
+msgid "unsubscribe_sms_tip"
+msgstr "Unsubscribe from the selected automated messages"
+
 msgid "unsubscribed_emails"
 msgstr "Unsubscribed Emails"
+
+msgid "unsubscribed_messages"
+msgstr "Unsubscribed SMS"
 
 msgid "update"
 msgstr "Update"

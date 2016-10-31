@@ -300,7 +300,7 @@ sub create_certification_action : Role(person_manager) Role(training_manager) {
 
    my $message  = "action:create-certification shortcode:${scode} type:${type}";
 
-   $self->send_event( $req, $message );
+   $self->send_event( $req, $message, $params );
 
    my $action   = $self->moniker.'/certifications';
    my $key      = 'Certertification [_1] for [_2] added by [_3]';
@@ -319,7 +319,7 @@ sub delete_certification_action : Role(person_manager) Role(training_manager) {
    my $cert     = $self->find_cert_by( $scode, $type ); $cert->delete;
    my $message  = "action:delete-certification shortcode:${scode} type:${type}";
 
-   $self->send_event( $req, $message );
+   $self->send_event( $req, $message, $params );
 
    my $action   = $self->moniker.'/certifications';
    my $key      = 'Certification [_1] for [_2] deleted by [_3]';
@@ -367,7 +367,7 @@ sub update_certification_action : Role(person_manager) Role(training_manager) {
 
    my $message = "action:update-certification shortcode:${scode} type:${type}";
 
-   $self->send_event( $req, $message );
+   $self->send_event( $req, $message, $params );
 
    my $key  = 'Certification [_1] for [_2] updated by [_3]';
 

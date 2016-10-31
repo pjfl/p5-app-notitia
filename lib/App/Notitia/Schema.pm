@@ -550,15 +550,19 @@ my $_send_sms = sub {
 
    my $message = $self->render_template( $stash ); my @recipients;
 
-   $self->info( 'SMS message: '.$message );
+   $self->info( "SMS message: ${message}" ); my $action = $stash->{action};
 
    for my $person (map { $_->[ 1 ] } @{ $tuples }) {
+      $action and $person->has_stopped_sms( $action ) and $self->info
+         ( 'Would SMS [_1] [_2]', { args => [ $person->label, $action ] } )
+         and next;
+      $self->log->debug( 'SMS recipient: '.$person->shortcode );
       $person->mobile_phone and push @recipients,
          map { s{ \A 07 }{447}mx; $_ } $person->mobile_phone;
-      $self->log->debug( 'SMS recipient: '.$person->shortcode );
    }
 
-   $conf->no_message_send and return;
+   $conf->no_message_send and $self->info( 'SMS turned off in config' )
+      and return;
 
    $attr->{log     } //= $self->log;
    $attr->{password} //= 'unknown';

@@ -171,8 +171,6 @@ sub message_create {
    my $location = uri_for_action $req, $self->moniker.'/'.$opts->{action};
    my $message  = [ to_msg 'Job send_message-[_1] created', $job->id ];
 
-   $self->send_event( $req, "action:create-job job:send_message-".$job->id );
-
    return { redirect => { location => $location, message => $message } };
 }
 

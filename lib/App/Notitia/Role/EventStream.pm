@@ -5,7 +5,7 @@ use namespace::autoclean;
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL OK SPC TRUE );
 use App::Notitia::Util      qw( event_handler event_handler_cache );
 use Class::Usul::File;
-use Class::Usul::Functions  qw( create_token is_member throw );
+use Class::Usul::Functions  qw( create_token is_member throw trim );
 use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Types      qw( HashRef Object );
 use Try::Tiny;
@@ -26,13 +26,15 @@ has 'plugins' => is => 'lazy', isa => HashRef[Object], builder => sub {
 
 # Private functions
 my $_clean_and_log = sub {
-   my ($req, $message) = @_; $message ||= 'message:blank';
+   my ($req, $message, $params) = @_;
+
+   $message ||= 'message:blank'; $params //= {};
 
    my $user = $req->username || 'admin';
    my $address = $req->address || 'localhost';
 
    $message = "user:${user} client:${address} ${message}";
-
+   exists $params->{level} and $message .= ' level:'.$params->{level};
    get_logger( 'activity' )->log( $message );
 
    return $message;
@@ -98,6 +100,14 @@ my $_is_valid_message = sub {
    return $inflated;
 };
 
+my $_make_template = sub {
+   my ($self, $message) = @_;
+
+   my $path = $self->$_session_file; $path->println( trim $message );
+
+   return $path;
+};
+
 # Public methods
 sub create_email_job {
    my ($self, $stash, $template) = @_; my $conf = $self->config;
@@ -105,6 +115,17 @@ sub create_email_job {
    my $cmd = $conf->binsdir->catfile( 'notitia-schema' ).SPC
            . $self->$_flatten_stash( $stash )."send_message email ${template}";
    my $rs  = $self->schema->resultset( 'Job' );
+
+   return $rs->create( { command => $cmd, name => 'send_message' } );
+}
+
+sub create_sms_job {
+   my ($self, $stash, $message) = @_; my $conf = $self->config;
+
+   my $path = $self->$_make_template( $message );
+   my $cmd  = $conf->binsdir->catfile( 'notitia-schema' ).SPC
+            . $self->$_flatten_stash( $stash )."send_message sms ${path}";
+   my $rs   = $self->schema->resultset( 'Job' );
 
    return $rs->create( { command => $cmd, name => 'send_message' } );
 }
@@ -171,9 +192,9 @@ sub event_schema_update {
 }
 
 sub send_event {
-   my ($self, $req, $message) = @_; my $conf = $self->config;
+   my ($self, $req, $message, $params) = @_; my $conf = $self->config;
 
-   $self->plugins; $message = $_clean_and_log->( $req, $message );
+   $self->plugins; $message = $_clean_and_log->( $req, $message, $params );
 
    my $inflated = $self->$_is_valid_message( $req, $message ) or return;
 
@@ -197,7 +218,7 @@ sub send_event {
                my $chained = $sink->( $self, $req, { %{ $processed } } );
 
                $chained and $chained->{level} = $level
-                  and $self->send_event( $req, $_flatten->{ $chained } )
+                  and $self->send_event( $req, $_flatten->{ $chained } );
             }
          }
       }
