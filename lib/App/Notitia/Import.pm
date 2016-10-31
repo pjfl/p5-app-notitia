@@ -434,7 +434,7 @@ my $_create_vehicle = sub {
 };
 
 # Public methods
-sub import_people : method {
+sub people : method {
    my $self  = shift;
    my $opts  = $self->$_prepare_csv;
    my $cmap  = $opts->{cmap};
@@ -456,7 +456,7 @@ sub import_people : method {
    return OK;
 }
 
-sub import_vehicles : method {
+sub vehicles : method {
    my $self  = shift;
    my $opts  = $self->$_prepare_csv;
    my $cmap  = $opts->{cmap};
@@ -502,9 +502,9 @@ Defines the following attributes;
 
 =head1 Subroutines/Methods
 
-=head2 C<import_people> - Import person objects from a CSV file
+=head2 C<people> - Import person objects from a CSV file
 
-=head2 C<import_vehicles> - Import vehicle objects from a CSV file
+=head2 C<vehicles> - Import vehicle objects from a CSV file
 
 =head1 Diagnostics
 
