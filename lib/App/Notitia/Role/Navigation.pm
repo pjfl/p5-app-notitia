@@ -158,8 +158,42 @@ my $_admin_links = sub {
    return;
 };
 
+my $_authenticated_login_links = sub {
+   my ($self, $req, $page, $nav) = @_;
+
+   my $js = $page->{literal_js} //= []; my $list = $nav->{menu}->{list} //= [];
+
+   push @{ $list }, $nav_linkto->( $req, {
+      class => $page->{selected} eq 'email_subscription' ? 'selected' : NUL,
+      tip   => 'Manage automated email subscriptions',
+      value => 'Email Subscriptions' }, 'user/email_subs' );
+
+   push @{ $list }, $nav_linkto->( $req, {
+      class => $page->{selected} eq 'sms_subscription' ? 'selected' : NUL,
+      tip   => 'Manage automated SMS subscriptions',
+      value => 'SMS Subscriptions' }, 'user/sms_subs' );
+
+   push @{ $list }, {
+      depth => 1, type => 'link', value => $nav_linkto->( $req, {
+         class => 'windows', name => 'profile-user',
+         tip   => 'Update personal details', value => 'Profile', }, '#' ) };
+
+   my $href  = uri_for_action $req, 'user/profile';
+   my $title = locm $req, 'Person Profile';
+
+   push @{ $js }, dialog_anchor( 'profile-user', $href, {
+      name => 'profile-user', title => $title, useIcon => \1 } );
+
+   $req->session->enable_2fa and push @{ $list }, $nav_linkto->( $req, {
+      class => $page->{selected} eq 'totp_secret' ? 'selected' : NUL,
+      tip   => 'View the TOTP account information',
+      value => 'TOTP', }, 'user/totp_secret' );
+
+   return;
+};
+
 my $_people_by_role_links = sub {
-   my ($req, $page, $list) = @_;
+   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
    push @{ $list },
       $nav_folder->( $req, 'people_by_type', {
@@ -225,7 +259,7 @@ my $_people_links = sub {
          class => $page->{selected} eq 'contacts_list' ? 'selected' : NUL,
          name => 'contacts_list' }, 'person/contacts', [], status => 'current');
 
-   $is_allowed_people and $_people_by_role_links->( $req, $page, $list );
+   $is_allowed_people and $self->$_people_by_role_links( $req, $page, $nav );
 
    return;
 };
@@ -310,9 +344,9 @@ my $_rota_week_links = sub {
 };
 
 my $_secondary_authenticated_links = sub {
-   my ($self, $req, $nav, $js, $location) = @_;
+   my ($self, $req, $page, $nav) = @_; my $places = $self->config->places;
 
-   my $places = $self->config->places;
+   my $js = $page->{literal_js} //= []; my $location = $page->{location} // NUL;
 
    p_item $nav, $nav_linkto->( $req, {
       class => $location eq 'schedule' ? 'current' : NUL,
@@ -330,6 +364,38 @@ my $_secondary_authenticated_links = sub {
       p_item $nav, $nav_linkto->( $req, {
          class => $location eq 'calls' ? 'current' : NUL,
          tip => 'calls_tip', value => 'calls', }, 'call/journeys', [] );
+
+   return;
+};
+
+my $_unauthenticated_login_links = sub {
+   my ($self, $req, $page, $nav) = @_;
+
+   my $js = $page->{literal_js} //= []; my $list = $nav->{menu}->{list} //= [];
+
+   push @{ $list },
+      { depth  => 1, type => 'link',
+        value  => $nav_linkto->( $req, {
+           class => 'windows', name => 'request-reset',
+           tip   => 'Request a password reset email',
+           value => 'Forgot Password?', }, '#' ) },
+      { depth  => 1, type => 'link',
+        value  => $nav_linkto->( $req, {
+           class => 'windows', name => 'totp-request',
+           tip   => 'Request a TOTP recovery email',
+           value => 'Lost TOTP?', }, '#' ) };
+
+   my $href  = uri_for_action $req, 'user/totp_request';
+   my $title = locm $req, 'TOTP Information Request';
+
+   push @{ $js }, dialog_anchor( 'totp-request', $href, {
+      name => 'totp-request', title => $title, useIcon => \1 } );
+
+   $href  = uri_for_action $req, 'user/reset';
+   $title = locm $req, 'Reset Password';
+
+   push @{ $js }, dialog_anchor( 'request-reset', $href, {
+      name => 'request-reset', title => $title, useIcon => \1 } );
 
    return;
 };
@@ -460,9 +526,9 @@ sub credit_links {
 }
 
 sub external_links {
-   my ($self, $req) = @_; my $links = [];
+   my ($self, $req) = @_; my $form = blank_form { type => 'list' };
 
-   my $form = blank_form { type => 'list' };
+   my $links = [];
 
    for my $link (@{ $self->config->links }) {
       p_link $links, $link->{name}, $link->{url}, {
@@ -479,7 +545,6 @@ sub login_navigation_links {
    my ($self, $req, $page) = @_; $page->{selected} //= NUL;
 
    my $nav  = $self->navigation_links( $req, $page );
-   my $js = $page->{literal_js} //= [];
    my $list = $nav->{menu}->{list} //= [];
    my $places = $self->config->places;
 
@@ -496,58 +561,9 @@ sub login_navigation_links {
       value => 'Change Password', }, $places->{password} );
 
    if ($req->authenticated) {
-      push @{ $list }, $nav_linkto->( $req, {
-         class => $page->{selected} eq 'email_subscription' ? 'selected' : NUL,
-         tip   => 'Manage automated email subscriptions',
-         value => 'Email Subscriptions' }, 'user/email_subs' );
-
-      push @{ $list }, $nav_linkto->( $req, {
-         class => $page->{selected} eq 'sms_subscription' ? 'selected' : NUL,
-         tip   => 'Manage automated SMS subscriptions',
-         value => 'SMS Subscriptions' }, 'user/sms_subs' );
-
-      push @{ $list }, {
-         depth => 1, type => 'link', value => $nav_linkto->( $req, {
-            class => 'windows', name => 'profile-user',
-            tip   => 'Update personal details', value => 'Profile', }, '#' ) };
-
-      my $href  = uri_for_action $req, 'user/profile';
-      my $title = locm $req, 'Person Profile';
-
-      push @{ $js }, dialog_anchor( 'profile-user', $href, {
-         name => 'profile-user', title => $title, useIcon => \1 } );
-
-      $req->session->enable_2fa and push @{ $list }, $nav_linkto->( $req, {
-         class => $page->{selected} eq 'totp_secret' ? 'selected' : NUL,
-         tip   => 'View the TOTP account information',
-         value => 'TOTP', }, 'user/totp_secret' );
-
-      return $nav;
+      $self->$_authenticated_login_links( $req, $page, $nav );
    }
-
-   push @{ $list },
-      { depth  => 1, type => 'link',
-        value  => $nav_linkto->( $req, {
-           class => 'windows', name => 'request-reset',
-           tip   => 'Request a password reset email',
-           value => 'Forgot Password?', }, '#' ) },
-      { depth  => 1, type => 'link',
-        value  => $nav_linkto->( $req, {
-           class => 'windows', name => 'totp-request',
-           tip   => 'Request a TOTP recovery email',
-           value => 'Lost TOTP?', }, '#' ) };
-
-   my $href  = uri_for_action $req, 'user/totp_request';
-   my $title = locm $req, 'TOTP Information Request';
-
-   push @{ $js }, dialog_anchor( 'totp-request', $href, {
-      name => 'totp-request', title => $title, useIcon => \1 } );
-
-   $href  = uri_for_action $req, 'user/reset';
-   $title = locm $req, 'Reset Password';
-
-   push @{ $js }, dialog_anchor( 'request-reset', $href, {
-      name => 'request-reset', title => $title, useIcon => \1 } );
+   else { $self->$_unauthenticated_login_links( $req, $page, $nav ) }
 
    return $nav;
 }
@@ -644,11 +660,9 @@ sub secondary_navigation_links {
    my ($self, $req, $page) = @_;
 
    my $nav = blank_form { type => 'unordered' };
-   my $js = $page->{literal_js} //= [];
-   my $location = $page->{location} // NUL;
 
    $req->authenticated
-      and $self->$_secondary_authenticated_links( $req, $nav, $js, $location );
+      and $self->$_secondary_authenticated_links( $req, $page, $nav );
 
    return $nav;
 }
