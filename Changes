@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Make address and postcode unique in location
           - Adds postcode to location
           - Adds per user sms subscription
           - Adds per user email unsubscription

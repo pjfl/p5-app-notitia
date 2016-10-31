@@ -22,8 +22,7 @@ $class->add_columns
 
 $class->set_primary_key( 'id' );
 
-$class->add_unique_constraint( [ 'address' ] );
-$class->add_unique_constraint( [ 'postcode' ] );
+$class->add_unique_constraint( [ 'address', 'postcode' ] );
 
 $class->has_many( assignments => "${result}::Event",   'location_id'  );
 $class->has_many( beginnings  => "${result}::Leg",     'beginning_id' );
