@@ -896,134 +896,136 @@ Defines no attributes
 
 =head1 Subroutines/Methods
 
-=item C<assert_unique>
+=head2 C<assert_unique>
 
-=item C<assign_link>
+=head2 C<assign_link>
 
-=item C<authenticated_only>
+=head2 C<authenticated_only>
 
-=item C<bind>
+=head2 C<bind>
 
-=item C<build_navigation>
+=head2 C<build_navigation>
 
-=item C<build_tree>
+=head2 C<build_tree>
 
-=item C<button>
+=head2 C<button>
 
-=item C<check_field_js>
+=head2 C<check_field_js>
 
-=item C<check_form_field>
+=head2 C<check_form_field>
 
-=item C<clone>
+=head2 C<clone>
 
-=item C<datetime_label>
+=head2 C<datetime_label>
 
-=item C<dialog_anchor>
+=head2 C<dialog_anchor>
 
-=item C<display_duration>
+=head2 C<display_duration>
 
-=item C<encrypted_attr>
+=head2 C<encrypted_attr>
 
-=item C<enhance>
+=head2 C<enhance>
 
-=item C<event_handler>
+=head2 C<event_handler>
 
-=item C<event_handler_cache>
+=head2 C<event_handler_cache>
 
-=item C<gcf>
+=head2 C<gcf>
 
 Greatest common factor
 
-=item C<get_hashed_pw>
+=head2 C<get_hashed_pw>
 
-=item C<get_salt>
+=head2 C<get_salt>
 
-=item C<is_access_authorised>
+=head2 C<is_access_authorised>
 
-=item C<is_draft>
+=head2 C<is_draft>
 
-=item C<is_encrypted>
+=head2 C<is_encrypted>
 
-=item C<iterator>
+=head2 C<iterator>
 
-=item C<js_config>
+=head2 C<js_config>
 
-=item C<js_server_config>
+=head2 C<js_server_config>
 
-=item C<js_submit_config>
+=head2 C<js_submit_config>
 
-=item C<js_togglers_config>
+=head2 C<js_togglers_config>
 
-=item C<js_window_config>
+=head2 C<js_window_config>
 
-=item C<lcm>
+=head2 C<lcm>
 
 Least common muliple
 
-=item C<lcm_for>
+=head2 C<lcm_for>
 
 LCM for a list of integers
 
-=item C<load_file_data>
+=head2 C<load_file_data>
 
-=item C<loc>
+=head2 C<loc>
 
-=item C<local_dt>
+=head2 C<local_dt>
 
-=item C<localise_tree>
+=head2 C<localise_tree>
 
-=item C<locm>
+=head2 C<locm>
 
-=item C<make_id_from>
+=head2 C<make_id_from>
 
-=item C<make_name_from>
+=head2 C<make_name_from>
 
-=item C<make_tip>
+=head2 C<make_tip>
 
-=item C<management_link>
+=head2 C<management_link>
 
-=item C<mtime>
+=head2 C<mtime>
 
-=item C<new_salt>
+=head2 C<new_salt>
 
-=item C<now_dt>
+=head2 C<now_dt>
 
-=item C<page_link_set>
+=head2 C<page_link_set>
 
-=item C<register_action_paths>
+=head2 C<register_action_paths>
 
    register_action_paths $action_path => $partial_uri;
 
 Used by L</uri_for_action> to lookup the partial URI for the action path
-prior to calling L<uri_for|Web::ComposableRequest::Base/uri_for>
+prior to calling the L<uri_for|Web::ComposableRequest::Base/uri_for> method
+on the request object
 
-=item C<set_element_focus>
+=head2 C<set_element_focus>
 
-=item C<set_rota_date>
+=head2 C<set_rota_date>
 
-=item C<show_node>
+=head2 C<show_node>
 
-=item C<slot_claimed>
+=head2 C<slot_claimed>
 
-=item C<slot_identifier>
+=head2 C<slot_identifier>
 
-=item C<slot_limit_index>
+=head2 C<slot_limit_index>
 
-=item C<stash_functions>
+=head2 C<stash_functions>
 
-=item C<time2int>
+=head2 C<time2int>
 
-=item C<to_dt>
+=head2 C<to_dt>
 
-=item C<to_msg>
+=head2 C<to_msg>
 
-=item C<uri_for_action>
+=head2 C<uri_for_action>
 
-   $uri = uri_for_action $request, $action_path, $uri_args, $query_params;
+   !uri = uri_for_action !request, $action_path, \@uri_args, \%query_params;
 
-Looks up the action path in the map created by call to L</register_action_path>
-then calls L<uri_for|Web::ComposableRequest::Base/uri_for> which is a method
-provided by the request object. Returns a L<URI> object reference
+Looks up the action path in the map created by calls to
+L</register_action_path>.  It then calls the
+L<uri_for|Web::ComposableRequest::Base/uri_for> method which is provided by the
+request object. Returns a L<URI> object reference
 
 =head1 Diagnostics
 
