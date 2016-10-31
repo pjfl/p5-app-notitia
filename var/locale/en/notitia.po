@@ -973,7 +973,7 @@ msgid "location"
 msgstr "Location"
 
 msgid "location_address"
-msgstr "Location Address"
+msgstr "Address"
 
 msgid "location_create_link"
 msgstr "Add Location"

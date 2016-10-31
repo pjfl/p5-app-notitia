@@ -26,6 +26,7 @@ $class->add_columns
      end_rota_id      => nullable_foreign_key_data_type,
      vehicle_id       => nullable_foreign_key_data_type,
      course_type_id   => nullable_foreign_key_data_type,
+     location_id      => nullable_foreign_key_data_type,
      max_participents => nullable_numerical_id_data_type,
      start_time       => varchar_data_type(   5 ),
      end_time         => varchar_data_type(   5 ),
@@ -47,6 +48,8 @@ $class->belongs_to( vehicle    =>
                     "${result}::Vehicle", 'vehicle_id', $left_join );
 $class->belongs_to( course_type =>
                     "${result}::Type", 'course_type_id', $left_join );
+$class->belongs_to( location   =>
+                    "${result}::Location", 'location_id', $left_join );
 
 $class->has_many( participents     => "${result}::Participent",    'event_id' );
 $class->has_many( vehicle_requests => "${result}::VehicleRequest", 'event_id' );

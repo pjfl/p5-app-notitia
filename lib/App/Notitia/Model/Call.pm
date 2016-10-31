@@ -6,9 +6,10 @@ use App::Notitia::Constants qw( FALSE NUL PRIORITY_TYPE_ENUM
 use App::Notitia::Form      qw( blank_form f_link p_action p_button p_fields
                                 p_link p_list p_row p_select p_table
                                 p_tag p_textfield );
-use App::Notitia::Util      qw( datetime_label dialog_anchor locm make_tip
-                                now_dt page_link_set register_action_paths
-                                to_dt to_msg uri_for_action );
+use App::Notitia::Util      qw( check_field_js datetime_label dialog_anchor
+                                locm make_tip now_dt page_link_set
+                                register_action_paths to_dt to_msg
+                                uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member );
 use Try::Tiny;
@@ -48,6 +49,15 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_add_location_js = sub {
+   my ($page, $name) = @_;
+
+   my $opts = { domain => $name ? 'update' : 'insert', form => 'Person' };
+
+   push @{ $page->{literal_js} }, check_field_js( 'postcode', $opts );
+
+   return;
+};
 my $_customer_tuple = sub {
    my ($selected, $customer) = @_;
 
@@ -325,7 +335,14 @@ my $_bind_location_fields = sub {
 
    my $disabled = $opts->{disabled} // FALSE;
 
-   return [ address => { disabled => $disabled, label => 'location_address' } ];
+   return
+      [ address     => { class    => 'standard-field',
+                         disabled => $disabled, label => 'location_address' },
+        location    => { disabled => $disabled },
+        postcode    => { class    => 'standard-field server',
+                         disabled => $disabled },
+        coordinates => { disabled => $disabled },
+        ];
 };
 
 my $_count_legs = sub {
@@ -635,6 +652,20 @@ my $_update_leg_from_request = sub {
    return;
 };
 
+my $_update_location_from_request = sub {
+   my ($self, $req, $location, $supplied) = @_; my $params = $req->body_params;
+
+   for my $attr (qw( address coordinates location postcode )) {
+      my $v = $supplied->{ $attr } // $params->( $attr, { optional => TRUE } );
+
+      (defined $v and length $v) or next;
+      $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
+      $location->$attr( $v );
+   }
+
+   return;
+};
+
 my $_update_package_from_request = sub {
    my ($self, $req, $package) = @_; my $params = $req->body_params;
 
@@ -714,14 +745,24 @@ sub create_delivery_stage_action : Role(controller) {
 }
 
 sub create_location_action : Role(controller) {
-   my ($self, $req) = @_;
+   my ($self, $req, $params) = @_; $params //= {};
 
-   my $address  = $req->body_params->( 'address' );
-   my $rs       = $self->schema->resultset( 'Location' );
-   my $lid      = $rs->create( { address => $address } )->id;
-   my $who      = $req->session->user_label;
-   my $message  = [ to_msg 'Location [_1] created by [_2]', $lid, $who ];
-   my $location = uri_for_action $req, $self->moniker.'/locations';
+   my $address  = $params->{address} // $req->body_params->( 'address' );
+   my $rs = $self->schema->resultset( 'Location' );
+   my $location = $rs->new_result( {} );
+
+   $self->$_update_location_from_request( $req, $location, $params );
+   $location->insert;
+
+   my $lid = $location->id;
+   my $message = "action:create-location location_id:${lid}";
+
+   $self->send_event( $req, $message, $params );
+
+   my $key = 'Location [_1] created by [_2]';
+
+   $message = [ to_msg $key, $lid, $req->session->user_label ];
+   $location = uri_for_action $req, $self->moniker.'/locations';
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -1027,7 +1068,7 @@ sub location : Role(controller) {
    my $page    =  {
       first_field => 'address',
       forms    => [ $form ],
-      selected => 'location',
+      selected => 'locations',
       title    => locm $req, 'location_setup_title'
    };
    my $where   =  $self->$_maybe_find( 'Location', $lid );
@@ -1038,6 +1079,8 @@ sub location : Role(controller) {
    p_action $form, $action, [ 'location', $lid ], { request => $req };
 
    $lid and p_action $form, 'delete', [ 'location', $lid ], { request => $req };
+
+   $_add_location_js->( $page, $lid );
 
    return $self->get_stash( $req, $page );
 }
@@ -1179,17 +1222,22 @@ sub update_delivery_stage_action : Role(controller) {
 }
 
 sub update_location_action : Role(controller) {
-   my ($self, $req) = @_;
+   my ($self, $req, $params) = @_; $params //= {};
 
-   my $lid = $req->uri_params->( 0 );
+   my $lid = $params->{location_id} // $req->uri_params->( 0 );
    my $location = $self->schema->resultset( 'Location' )->find( $lid );
 
-   $location->address( $req->body_params->( 'address' ) ); $location->update;
+   $self->$_update_location_from_request( $req, $location, $params );
+   $location->update;
 
-   my $who = $req->session->user_label;
-   my $message = [ to_msg 'Location [_1] updated by [_2]', $lid, $who ];
+   my $message = "action:update-location location_id:${lid}";
+
+   $self->send_event( $req, $message, $params );
+
+   my $key = 'Location [_1] updated by [_2]';
 
    $location = uri_for_action $req, $self->moniker.'/locations';
+   $message = [ to_msg $key, $lid, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }

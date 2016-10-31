@@ -8,6 +8,7 @@ use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token is_member throw trim );
 use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Types      qw( HashRef Object );
+use Scalar::Util            qw( blessed );
 use Try::Tiny;
 use Unexpected::Functions   qw( catch_class Disabled Unspecified );
 use Web::Components::Util   qw( load_components );
@@ -109,6 +110,22 @@ my $_make_template = sub {
 };
 
 # Public methods
+sub create_coordinate_lookup_job {
+   my ($self, $stash, $object) = @_; $object->postcode or return;
+
+   my ($object_type) = blessed( $object ) =~ m{ :: ([^\:]+) \z }mx;
+   my $id = $object_type eq 'Person' ? $object->shortcode : $object->id;
+   my $prog = $self->config->binsdir->catfile( 'notitia-schema' );
+   my $cmd = "${prog} geolocation ${object_type} ${id}";
+   my $rs = $self->schema->resultset( 'Job' );
+   my $job = $rs->create( { command => $cmd, name => 'geolocation' } );
+
+   $self->log->debug
+      ( "Coordinate lookup ${object_type} ${id} geolocation-".$job->id );
+
+   return $job;
+}
+
 sub create_email_job {
    my ($self, $stash, $template) = @_; my $conf = $self->config;
 
@@ -135,7 +152,7 @@ sub dump_event_attr : method {
 
    if ($self->options->{not_enabled}) {
       for my $sink_name (keys %{ $cache }) {
-         my $allowed = $self->config->automated->{ $sink_name };
+         my $allowed = $self->config->automated->{ $sink_name } // [];
          my @keys = keys %{ $cache->{ $sink_name } };
 
          for my $action (@keys) {

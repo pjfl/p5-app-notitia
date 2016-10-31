@@ -230,19 +230,6 @@ my $_list_all_roles = sub {
    return [ [ NUL, NUL ], $type_rs->search_for_role_types->all ];
 };
 
-my $_lookup_coordinates = sub {
-   my ($self, $person) = @_; $person->postcode or return;
-
-   my $prog = $self->config->binsdir->catfile( 'notitia-schema' );
-   my $scode = $person->shortcode;
-   my $cmd = "${prog} geolocation ${scode}";
-   my $rs = $self->schema->resultset( 'Job' );
-   my $job = $rs->create( { command => $cmd, name => 'geolocation' } );
-
-   $self->log->debug( "Coordinate lookup ${scode} geolocation-".$job->id );
-   return;
-};
-
 my $_next_badge_id = sub {
    return $_[ 0 ]->schema->resultset( 'Person' )->next_badge_id;
 };
@@ -435,7 +422,7 @@ sub create_person_action : Role(person_manager) {
 
    my $create = sub {
       $person->insert; $role and $person->add_member_to( $role );
-      $self->$_lookup_coordinates( $person );
+      $self->create_coordinate_lookup_job( $person );
    };
 
    try   { $self->schema->txn_do( $create ) }
@@ -611,7 +598,8 @@ sub update_person_action : Role(person_manager) {
 
    try {
       $person->update;
-      $pcode ne $person->postcode and $self->$_lookup_coordinates( $person );
+      $pcode ne $person->postcode
+         and $self->create_coordinate_lookup_job( $person );
    }
    catch { $self->rethrow_exception( $_, 'update', 'person', $label ) };
 

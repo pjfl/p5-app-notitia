@@ -814,24 +814,26 @@ sub deploy_and_populate : method {
 
 sub geolocation : method {
    my $self = shift;
-   my $scode = $self->next_argv or throw Unspecified, [ 'shortcode' ];
+   my $object_type = $self->next_argv or throw Unspecified, [ 'object type' ];
+   my $id = $self->next_argv or throw Unspecified, [ 'id' ];
 
-   $self->info( 'Geolocating [_1]', { args => [ $scode ] } );
+   $self->info( 'Geolocating [_1] [_2]', { args => [ $object_type, $id ] } );
 
-   my $rs = $self->schema->resultset( 'Person' );
-   my $person = $rs->find_by_shortcode( $scode );
-   my $postcode = $person->postcode;
+   my $rs = $self->schema->resultset( $object_type );
+   my $object = $object_type eq 'Person'
+              ? $rs->find_by_shortcode( $id ) : $rs->find( $id );
+   my $postcode = $object->postcode;
    my $locator = App::Notitia::GeoLocation->new( $self->config->geolocation );
    my $data = $locator->find_by_postcode( $postcode );
    my $coords = defined $data->{coordinates}
-              ? $person->coordinates( $data->{coordinates} ) : 'undefined';
+              ? $object->coordinates( $data->{coordinates} ) : 'undefined';
    my $location = defined $data->{location}
-                ? $person->location( $data->{location} ) : 'undefined';
+                ? $object->location( $data->{location} ) : 'undefined';
 
    (defined $data->{coordinates} or defined $data->{location})
-      and $person->update;
-   $self->info( 'Located [_1]: [_2] [_3] [_4]', {
-      args => [ $scode, $postcode, $coords, $location ] } );
+      and $object->update;
+   $self->info( 'Located [_1] [_2]: [_3] [_4] [_5]', {
+      args => [ $object_type, $id, $postcode, $coords, $location ] } );
    return OK;
 }
 

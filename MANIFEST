@@ -49,6 +49,8 @@ lib/App/Notitia/Model/User.pm
 lib/App/Notitia/Model/Vehicle.pm
 lib/App/Notitia/Model/WeekRota.pm
 lib/App/Notitia/Plugin/Core.pm
+lib/App/Notitia/Plugin/Email.pm
+lib/App/Notitia/Plugin/Update.pm
 lib/App/Notitia/Role/Editor.pm
 lib/App/Notitia/Role/EventStream.pm
 lib/App/Notitia/Role/Messaging.pm
@@ -84,6 +86,7 @@ lib/App/Notitia/Schema/Schedule/Result/Trainer.pm
 lib/App/Notitia/Schema/Schedule/Result/Training.pm
 lib/App/Notitia/Schema/Schedule/Result/Transport.pm
 lib/App/Notitia/Schema/Schedule/Result/Type.pm
+lib/App/Notitia/Schema/Schedule/Result/Unsubscribe.pm
 lib/App/Notitia/Schema/Schedule/Result/Vehicle.pm
 lib/App/Notitia/Schema/Schedule/Result/VehicleRequest.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Certification.pm

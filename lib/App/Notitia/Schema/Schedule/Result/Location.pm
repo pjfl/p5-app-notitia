@@ -5,24 +5,31 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( TRUE );
-use App::Notitia::DataTypes qw( serial_data_type varchar_data_type );
+use App::Notitia::DataTypes qw( nullable_varchar_data_type
+                                serial_data_type varchar_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
 $class->table( 'location' );
 
 $class->add_columns
-   ( id      => serial_data_type,
-     address => varchar_data_type( 64 ), );
+   ( id          => serial_data_type,
+     address     => varchar_data_type( 64 ),
+     postcode    => nullable_varchar_data_type( 16 ),
+     location    => nullable_varchar_data_type( 24 ),
+     coordinates => nullable_varchar_data_type( 16 ),
+     );
 
 $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'address' ] );
+$class->add_unique_constraint( [ 'postcode' ] );
 
-$class->has_many( beginnings => "${result}::Leg",      'beginning_id' );
-$class->has_many( dropoffs   => "${result}::Journey",  'dropoff_id'   );
-$class->has_many( endings    => "${result}::Leg",      'ending_id'    );
-$class->has_many( pickups    => "${result}::Journey",  'pickup_id'    );
+$class->has_many( assignments => "${result}::Event",   'location_id'  );
+$class->has_many( beginnings  => "${result}::Leg",     'beginning_id' );
+$class->has_many( dropoffs    => "${result}::Journey", 'dropoff_id'   );
+$class->has_many( endings     => "${result}::Leg",     'ending_id'    );
+$class->has_many( pickups     => "${result}::Journey", 'pickup_id'    );
 
 # Private methods
 sub _as_string {
@@ -50,10 +57,20 @@ sub update {
 sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       constraints => {
-         address  => { max_length => 64, min_length => 5, },
+         address     => { max_length => 64, min_length => 5, },
+         coordinates => { max_length => 16, min_length => 3, },
+         location    => { max_length => 24, min_length => 3, },
+         postcode    => { max_length => 16, min_length => 0, },
       },
-      fields      => {
-         address  => { validate => 'isValidLength isValidText' },
+      fields         => {
+         address     => { validate => 'isMandatory isValidLength isValidText' },
+         coordinates => { validate => 'isValidLength' },
+         location    => {
+            filters  => 'filterUCFirst',
+            validate => 'isValidLength isValidText' },
+         postcode    => {
+            filters  => 'filterUpperCase',
+            validate => 'isValidLength isValidPostcode' },
       },
       level => 8,
    };

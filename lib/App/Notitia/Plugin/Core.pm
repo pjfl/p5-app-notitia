@@ -41,6 +41,33 @@ event_handler 'email', '_sink_' => sub {
    return;
 };
 
+# Geolocation
+my $_find_location = sub {
+   return $_[ 0 ]->schema->resultset( 'Location' )->find( $_[ 1 ] );
+};
+
+my $_location_lookup = sub {
+   my ($self, $req, $stash) = @_;
+
+   my $id = delete $stash->{location_id}; $id
+      and $stash->{target} = $self->$_find_location( $id )
+      and return $stash;
+
+   return;
+};
+
+event_handler 'geolocation', create_location => \&{ $_location_lookup };
+event_handler 'geolocation', update_location => \&{ $_location_lookup };
+
+event_handler 'geolocation', '_sink_' => sub {
+   my ($self, $req, $stash) = @_;;
+
+   my $target = delete $stash->{target}; $target
+      and $self->create_coordinate_lookup_job( $stash, $target );
+
+   return;
+};
+
 # SMS
 event_handler 'sms', '_sink_' => sub {
    my ($self, $req, $stash) = @_;
