@@ -4,6 +4,7 @@ MANIFEST
 bin/notitia-cli
 bin/notitia-completion
 bin/notitia-daemon
+bin/notitia-import
 bin/notitia-jobdaemon
 bin/notitia-localenv
 bin/notitia-schema
@@ -27,6 +28,7 @@ lib/App/Notitia/DataTypes.pm
 lib/App/Notitia/Exception.pm
 lib/App/Notitia/Form.pm
 lib/App/Notitia/GeoLocation.pm
+lib/App/Notitia/Import.pm
 lib/App/Notitia/JobDaemon.pm
 lib/App/Notitia/Markdown.pm
 lib/App/Notitia/Model.pm
@@ -155,9 +157,9 @@ var/root/img/hyde/icons.png
 var/root/img/logo.png
 var/root/js/hyde.js
 var/root/js/mooclasses.js
-var/share/App-Notitia-Schema-Schedule-0.7.21-MySQL.sql
-var/share/App-Notitia-Schema-Schedule-0.7.21-PostgreSQL.sql
-var/share/App-Notitia-Schema-Schedule-0.7.21-SQLite.sql
+var/share/App-Notitia-Schema-Schedule-0.8.31-MySQL.sql
+var/share/App-Notitia-Schema-Schedule-0.8.31-PostgreSQL.sql
+var/share/App-Notitia-Schema-Schedule-0.8.31-SQLite.sql
 var/share/App-Notitia-Schema-Schedule-001-Type.json
 var/share/App-Notitia-Schema-Schedule-002-Person.json
 var/share/App-Notitia-Schema-Schedule-003-Role.json
