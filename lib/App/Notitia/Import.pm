@@ -7,6 +7,7 @@ use App::Notitia::Constants qw( COMMA EXCEPTION_CLASS FALSE
 use App::Notitia::Util      qw( to_dt );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
                                 io is_member squeeze throw trim );
+use Class::Usul::Types      qw( Bool );
 use Data::Record;
 use Data::Validation;
 use Scalar::Util            qw( blessed );
@@ -14,6 +15,7 @@ use Text::CSV;
 use Try::Tiny;
 use Unexpected::Functions   qw( Unspecified ValidationErrors );
 use Moo;
+use Class::Usul::Options;
 
 extends q(Class::Usul::Programs);
 with    q(Class::Usul::TraitFor::ConnectInfo);
@@ -21,6 +23,10 @@ with    q(App::Notitia::Role::Schema);
 
 # Override default in base class
 has '+config_class' => default => 'App::Notitia::Config';
+
+option 'dry_run' => is => 'ro', isa => Bool, default => FALSE,
+   documentation => 'Prints out commands, do not execute them',
+   short         => 'd';
 
 # Private functions
 my $_extend_column_map = sub {
