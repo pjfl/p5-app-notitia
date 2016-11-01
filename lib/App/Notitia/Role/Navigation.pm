@@ -107,7 +107,8 @@ my $_admin_log_links = sub {
                || $page->{selected} eq 'cli'
                || $page->{selected} eq 'jobdaemon'
                || $page->{selected} eq 'schema'
-               || $page->{selected} eq 'server' ? 'open' : NUL,
+               || $page->{selected} eq 'server'
+               || $page->{selected} eq 'util' ? 'open' : NUL,
          depth => 1, tip => 'Logs Menu' } ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'activity' ? 'selected' : NUL,
@@ -123,7 +124,10 @@ my $_admin_log_links = sub {
          depth => 2, name => 'schema_log' }, 'log', [ 'schema' ] ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'server' ? 'selected' : NUL,
-         depth => 2, name => 'server_log' }, 'log', [ 'server' ] );
+         depth => 2, name => 'server_log' }, 'log', [ 'server' ] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'util' ? 'selected' : NUL,
+         depth => 2, name => 'util_log' }, 'log', [ 'util' ] );
    return;
 };
 

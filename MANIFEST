@@ -9,6 +9,7 @@ bin/notitia-jobdaemon
 bin/notitia-localenv
 bin/notitia-schema
 bin/notitia-server
+bin/notitia-util
 lib/App/Notitia.pm
 lib/App/Notitia/Attributes.pm
 lib/App/Notitia/CLI.pm
@@ -106,6 +107,7 @@ lib/App/Notitia/Schema/Schedule/ResultSet/Vehicle.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/VehicleRequest.pm
 lib/App/Notitia/Server.pm
 lib/App/Notitia/Util.pm
+lib/App/Notitia/Utilities.pm
 lib/App/Notitia/View/CSV.pm
 lib/App/Notitia/View/HTML.pm
 lib/App/Notitia/View/HTML/Markdown.pm

@@ -1988,6 +1988,9 @@ msgid "username_field_tip"
 msgstr "If left blank a username will be generated from the "
        "person's first and last name"
 
+msgid "util_log_link"
+msgstr "Utilities"
+
 msgid "vehicle"
 msgstr "Vehicle"
 

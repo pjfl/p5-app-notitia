@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds util as a separate program
           - Adds import as a separate program
           - Make address and postcode unique in location
           - Adds postcode to location

@@ -115,7 +115,7 @@ sub create_coordinate_lookup_job {
 
    my ($object_type) = blessed( $object ) =~ m{ :: ([^\:]+) \z }mx;
    my $id = $object_type eq 'Person' ? $object->shortcode : $object->id;
-   my $prog = $self->config->binsdir->catfile( 'notitia-schema' );
+   my $prog = $self->config->binsdir->catfile( 'notitia-util' );
    my $cmd = "${prog} geolocation ${object_type} ${id}";
    my $rs = $self->schema->resultset( 'Job' );
    my $job = $rs->create( { command => $cmd, name => 'geolocation' } );
@@ -127,21 +127,23 @@ sub create_coordinate_lookup_job {
 }
 
 sub create_email_job {
-   my ($self, $stash, $template) = @_; my $conf = $self->config;
+   my ($self, $stash, $template) = @_;
 
-   my $cmd = $conf->binsdir->catfile( 'notitia-schema' ).SPC
-           . $self->$_flatten_stash( $stash )."send_message email ${template}";
-   my $rs  = $self->schema->resultset( 'Job' );
+   my $opts = $self->$_flatten_stash( $stash );
+   my $prog = $self->config->binsdir->catfile( 'notitia-util' );
+   my $cmd  = "${prog} ${opts}send_message email ${template}";
+   my $rs   = $self->schema->resultset( 'Job' );
 
    return $rs->create( { command => $cmd, name => 'send_message' } );
 }
 
 sub create_sms_job {
-   my ($self, $stash, $message) = @_; my $conf = $self->config;
+   my ($self, $stash, $message) = @_;
 
+   my $opts = $self->$_flatten_stash( $stash );
    my $path = $self->$_make_template( $message );
-   my $cmd  = $conf->binsdir->catfile( 'notitia-schema' ).SPC
-            . $self->$_flatten_stash( $stash )."send_message sms ${path}";
+   my $prog = $self->config->binsdir->catfile( 'notitia-util' );
+   my $cmd  = "${prog} ${opts}send_message sms ${path}";
    my $rs   = $self->schema->resultset( 'Job' );
 
    return $rs->create( { command => $cmd, name => 'send_message' } );

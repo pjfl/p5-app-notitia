@@ -164,7 +164,7 @@ sub message_create {
    }
    else { throw 'Sink [_1] unknown', [ $sink ] }
 
-   my $cmd      = $conf->binsdir->catfile( 'notitia-schema' ).SPC
+   my $cmd      = $conf->binsdir->catfile( 'notitia-util' ).SPC
                 . $self->$_flatten( $req )."send_message ${sink} ${template}";
    my $job_rs   = $self->schema->resultset( 'Job' );
    my $job      = $job_rs->create( { command => $cmd, name => 'send_message' });
