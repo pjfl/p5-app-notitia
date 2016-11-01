@@ -104,7 +104,6 @@ my $_admin_log_links = sub {
    push @{ $list },
       $nav_folder->( $req, 'logs', {
          class => $page->{selected} eq 'activity'
-               || $page->{selected} eq 'cli'
                || $page->{selected} eq 'jobdaemon'
                || $page->{selected} eq 'schema'
                || $page->{selected} eq 'server'
@@ -113,9 +112,6 @@ my $_admin_log_links = sub {
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'activity' ? 'selected' : NUL,
          depth => 2, name => 'activity_log' }, 'log', [ 'activity' ] ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'cli' ? 'selected' : NUL,
-         depth => 2, name => 'cli_log' }, 'log', [ 'cli' ] ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'jobdaemon' ? 'selected' : NUL,
          depth => 2, name => 'jobdaemon_log' }, 'log', [ 'jobdaemon' ] ),
