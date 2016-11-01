@@ -14,7 +14,7 @@ use Unexpected::Functions   qw( catch_class Disabled Unspecified );
 use Web::Components::Util   qw( load_components );
 use Moo::Role;
 
-requires qw( components config schema );
+requires qw( components config jobdaemon schema );
 
 my $_plugins_cache;
 
@@ -65,9 +65,7 @@ my $_flatten_stash = sub {
 };
 
 my $_inflate = sub {
-   my ($self, $req, $message) = @_;
-
-   my $stash = { app_name => $self->config->title, message => $message };
+   my ($self, $req, $message) = @_; my $stash = { message => $message };
 
    for my $pair (split SPC, $message) {
       my ($k, $v) = split m{ : }mx, $pair;

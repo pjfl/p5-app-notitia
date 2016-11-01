@@ -3,8 +3,6 @@ package App::Notitia::Utilities;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE OK SLOT_TYPE_ENUM TRUE );
-use App::Notitia::GeoLocation;
-use App::Notitia::SMS;
 use App::Notitia::Util      qw( load_file_data local_dt
                                 mail_domain now_dt slot_limit_index );
 use Class::Usul::Functions  qw( io sum throw );
@@ -12,14 +10,12 @@ use Class::Usul::File;
 use Class::Usul::Types      qw( HashRef LoadableClass Object );
 use Unexpected::Functions   qw( PathNotFound Unspecified );
 use Web::Components::Util   qw( load_components );
-use Web::ComposableRequest;
 use Moo;
 
 extends q(Class::Usul::Programs);
 with    q(Class::Usul::TraitFor::ConnectInfo);
 with    q(App::Notitia::Role::Schema);
 with    q(Web::Components::Role::Email);
-with    q(Web::Components::Role::TT);
 
 has 'components' => is => 'lazy', isa => HashRef[Object], builder => sub {
    return load_components 'Model', application => $_[ 0 ];
@@ -31,21 +27,24 @@ with q(App::Notitia::Role::EventStream);
 has '+config_class' => default => 'App::Notitia::Config';
 
 # Public attributes
-has 'formatter'       => is => 'lazy', isa => Object, builder => sub {
+has 'formatter' => is => 'lazy', isa => Object, builder => sub {
    $_[ 0 ]->formatter_class->new
       ( tab_width => $_[ 0 ]->config->mdn_tab_width ) };
 
 has 'formatter_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
-   default            => 'App::Notitia::Markdown';
+   default => 'App::Notitia::Markdown';
 
-has 'jobdaemon'       => is => 'lazy', isa => Object, builder => sub {
-   $_[ 0 ]->jobdaemon_class->new( {
-      appclass => $_[ 0 ]->config->appclass,
-      config   => { name => 'jobdaemon' },
-      noask    => TRUE } ) };
+has 'geolocator' => is => 'lazy', isa => Object, builder => sub {
+   $_[ 0 ]->geolocator_class->new( $_[ 0 ]->config->geolocation ) };
 
-has 'jobdaemon_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
-   default            => 'App::Notitia::JobDaemon';
+has 'geolocator_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
+   default => 'App::Notitia::GeoLocation';
+
+has 'request_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
+   default => 'Web::ComposableRequest';
+
+has 'sms_sender_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
+   default => 'App::Notitia::SMS';
 
 # Construction
 sub BUILD {
@@ -95,6 +94,25 @@ my $_assigned_slots = sub {
    return $data;
 };
 
+my $_list_from_stash = sub {
+   my ($self, $stash) = @_; my ($person, $role, $scode);
+
+   my $person_rs = $self->schema->resultset( 'Person' );
+
+   $scode = $stash->{shortcode}
+      and $person = $person_rs->find_by_shortcode( $scode )
+      and return [ [ $person->label, $person ] ];
+
+   my $opts = { columns => [ 'email_address', 'mobile_phone' ] };
+
+   $stash->{status} and $opts->{status} = $stash->{status};
+
+   $role = $stash->{role}
+      and return $person_rs->list_people( $role, $opts );
+
+   return $person_rs->list_all_people( $opts );
+};
+
 my $_list_participents = sub {
    my $self  = shift;
    my $uri   = $self->options->{event};
@@ -131,32 +149,17 @@ my $_list_recipients = sub {
                @{ $data->{selected} // [] } ];
 };
 
-my $_load_from_stash = sub {
-   my ($self, $stash) = @_; my ($person, $role, $scode);
-
-   my $person_rs = $self->schema->resultset( 'Person' );
-
-   $scode = $stash->{shortcode}
-      and $person = $person_rs->find_by_shortcode( $scode )
-      and return [ [ $person->label, $person ] ];
-
-   my $opts = { columns => [ 'email_address', 'mobile_phone' ] };
-
-   $stash->{status} and $opts->{status} = $stash->{status};
-
-   $role = $stash->{role}
-      and return $person_rs->list_people( $role, $opts );
-
-   return $person_rs->list_all_people( $opts );
-};
-
 my $_load_stash = sub {
-   my ($self, $plate_name, $quote) = @_; my $path = io $self->options->{stash};
+   my ($self, $plate_name, $quote) = @_; my $stash = {};
 
-   ($path->exists and $path->is_file) or throw PathNotFound, [ $path ];
+   if ($self->options->{stash}) {
+      my $path = io $self->options->{stash};
 
-   my $stash = Class::Usul::File->data_load
-      ( paths => [ $path ], storage_class => 'JSON' ) // {}; $path->unlink;
+      ($path->exists and $path->is_file) or throw PathNotFound, [ $path ];
+      $stash = Class::Usul::File->data_load
+         ( paths => [ $path ], storage_class => 'JSON' ) // {};
+      $path->unlink;
+   }
 
    $stash->{app_name} = $self->config->title;
    $stash->{path} = io $plate_name;
@@ -170,29 +173,15 @@ my $_load_stash = sub {
    return $stash, $template;
 };
 
-my $_load_template = sub {
-   my ($self, $plate_name, $quote) = @_;
-
-   my $stash = { app_name => $self->config->title,
-                 path => io( $plate_name ),
-                 sms_attributes => { quote => $quote }, };
-   my $template = load_file_data( $stash );
-
-   $plate_name =~ m{ \.md \z }mx
-      and $template = $self->formatter->markdown( $template );
-
-   return $stash, $template;
-};
-
 my $_new_request = sub {
    my ($self, $scheme, $hostport) = @_;
 
    my $env = { HTTP_ACCEPT_LANGUAGE => $self->locale,
-               HTTP_HOST => $hostport,
+               HTTP_HOST => $hostport // 'localhost:5000',
                SCRIPT_NAME => $self->config->mount_point,
-               'psgi.url_scheme' => $scheme,
+               'psgi.url_scheme' => $scheme // 'https',
                'psgix.session' => { username => 'admin' } };
-   my $factory = Web::ComposableRequest->new( config => $self->config );
+   my $factory = $self->request_class->new( config => $self->config );
 
    return $factory->new_from_simple_request( {}, '', {}, $env );
 };
@@ -290,8 +279,13 @@ my $_send_sms = sub {
    $attr->{password} //= 'unknown';
    $attr->{username} //= 'unknown';
 
-   my $sender = App::Notitia::SMS->new( $attr );
+   my $sender = $self->sms_sender_class->new( $attr );
    my $rv = $sender->send_sms( $message, @recipients );
+
+   my $uri; $attr->{quote} and $uri = $stash->{quote_uri}
+      and $message = "action:received-sms-quote quote_uri:${uri} "
+                   . "return_value:${rv}"
+      and $self->send_event( $self->$_new_request, $message );
 
    $self->info( 'SMS message rv: [_1]', { args => [ $rv ] } );
    return;
@@ -309,8 +303,7 @@ sub geolocation : method {
    my $object = $object_type eq 'Person'
               ? $rs->find_by_shortcode( $id ) : $rs->find( $id );
    my $postcode = $object->postcode;
-   my $locator = App::Notitia::GeoLocation->new( $self->config->geolocation );
-   my $data = $locator->find_by_postcode( $postcode );
+   my $data = $self->geolocator->find_by_postcode( $postcode );
    my $coords = defined $data->{coordinates}
               ? $object->coordinates( $data->{coordinates} ) : 'undefined';
    my $location = defined $data->{location}
@@ -325,8 +318,8 @@ sub geolocation : method {
 
 sub impending_slot : method {
    my $self = shift;
-   my $scheme = $self->next_argv // 'https';
-   my $hostport = $self->next_argv // 'localhost:5000';
+   my $scheme = $self->next_argv;
+   my $hostport = $self->next_argv;
    my $days = $self->next_argv // 3;
    my $rota_name = $self->next_argv // 'main';
    my $rota_dt = now_dt->add( days => $days );
@@ -339,12 +332,17 @@ sub impending_slot : method {
       my $slot_key = $data->{ $key }->key;
       my $scode = $data->{ $key }->operator;
       my $message = "action:impending-slot date:${dmy} days_in_advance:${days} "
-                  . "shortcode:${scode} rota_date:${ymd} slot_key:${slot_key}";
+                  . "shortcode:${scode} rota_name:${rota_name} "
+                  . "rota_date:${ymd} slot_key:${slot_key}";
 
       $self->send_event( $req, $message );
    }
 
    return OK;
+}
+
+sub jobdaemon {
+   return $_[ 0 ]->components->{daemon}->jobdaemon;
 }
 
 sub send_message : method {
@@ -355,12 +353,10 @@ sub send_message : method {
    my $plate_name = $self->next_argv or throw Unspecified, [ 'template name' ];
    my $quote      = $self->next_argv ? TRUE : $opts->{quote} ? TRUE : FALSE;
 
-   my ($stash, $template) = $opts->{stash}
-                          ? $self->$_load_stash( $plate_name, $quote )
-                          : $self->$_load_template( $plate_name, $quote );
+   my ($stash, $template) = $self->$_load_stash( $plate_name, $quote );
 
    my $attaches = $self->$_qualify_assets( delete $stash->{attachments} );
-   my $tuples   = $opts->{stash}      ? $self->$_load_from_stash( $stash )
+   my $tuples   = $opts->{stash}      ? $self->$_list_from_stash( $stash )
                 : $opts->{event}      ? $self->$_list_participents
                 : $opts->{recipients} ? $self->$_list_recipients
                                       : $self->$_list_people;
@@ -370,7 +366,8 @@ sub send_message : method {
          $self->$_send_email( $stash, $template, $person, $attaches );
       }
    }
-   else { $self->$_send_sms( $stash, $template, $tuples ) }
+   elsif ($sink eq 'sms') { $self->$_send_sms( $stash, $template, $tuples ) }
+   else { throw 'Message sink [_1] unknown', [ $sink ] }
 
    $conf->sessdir eq substr $plate_name, 0, length $conf->sessdir
       and unlink $plate_name;
@@ -380,8 +377,8 @@ sub send_message : method {
 
 sub vacant_slot : method {
    my $self = shift;
-   my $scheme = $self->next_argv // 'https';
-   my $hostport = $self->next_argv // 'localhost:5000';
+   my $scheme = $self->next_argv;
+   my $hostport = $self->next_argv;
    my $days = $self->next_argv // 7;
    my $rota_name = $self->next_argv // 'main';
    my $rota_dt = now_dt->add( days => $days );
@@ -396,7 +393,8 @@ sub vacant_slot : method {
       my $slots_claimed = grep { $_ =~ m{ _ $slot_type _ }mx }
                           grep { $_ =~ m{ \A $ymd _ }mx } keys %{ $data };
       my $message = "action:vacant-slot date:${dmy} days_in_advance:${days} "
-                  . "rota_date:${ymd} slot_type:${slot_type}";
+                  . "rota_name:${rota_name} rota_date:${ymd} "
+                  . "slot_type:${slot_type}";
 
       $slots_claimed >= $wanted or $self->send_event( $req, $message );
    }

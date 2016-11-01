@@ -169,7 +169,8 @@ sub message_create {
    my $job_rs   = $self->schema->resultset( 'Job' );
    my $job      = $job_rs->create( { command => $cmd, name => 'send_message' });
    my $location = uri_for_action $req, $self->moniker.'/'.$opts->{action};
-   my $message  = [ to_msg 'Job send_message-[_1] created', $job->id ];
+   my $message  = [ to_msg 'Job send_message-[_1] created by [_2]',
+                           $job->id, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }

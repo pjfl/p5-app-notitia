@@ -24,6 +24,7 @@ event_handler 'condition', '_output_' => sub {
 event_handler 'email', '_input_' => sub {
    my ($self, $req, $stash) = @_;
 
+   $stash->{app_name} = $self->config->title;
    $stash->{status} = 'current';
    $stash->{subject} = locm $req, $stash->{action}.'_email_subject';
 
