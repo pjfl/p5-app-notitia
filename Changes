@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds DDL files to backup
           - Adds util as a separate program
           - Adds import as a separate program
           - Make address and postcode unique in location

@@ -50,6 +50,38 @@ my $_connect_attr = sub {
    return { %{ $_[ 0 ]->connect_info->[ 3 ] }, %{ $_[ 0 ]->db_attr } };
 };
 
+my $_ddl_paths = sub {
+   my $self = shift;
+
+   return $self->ddl_paths
+      ( $self->schema, $self->schema_version, $self->config->sharedir );
+};
+
+my $_add_backup_files = sub {
+   my ($self, $arc) = @_; my $conf = $self->config;
+
+   for my $cfgfile (map { io $_ } @{ $conf->cfgfiles }) {
+      $arc->add_files( $cfgfile->abs2rel( $conf->appldir ) );
+   }
+
+   for my $doc ($conf->docs_root->clone->deep->all_files) {
+      $arc->add_files( $doc->abs2rel( $conf->appldir ) );
+   }
+
+   my $localedir = $conf->localedir->clone->deep
+                        ->filter( sub { m{ _local\.po \z }mx } );
+
+   for my $pofile ($localedir->all_files) {
+      $arc->add_files( $pofile->abs2rel( $conf->appldir ) );
+   }
+
+   for my $ddlfile ($self->$_ddl_paths) {
+      $arc->add_files( $ddlfile->abs2rel( $conf->appldir) );
+   }
+
+   return;
+};
+
 # Public methods
 sub backup_data : method {
    my $self = shift;
@@ -70,26 +102,11 @@ sub backup_data : method {
              '--databases', $self->database ] );
    }
 
-   ensure_class_loaded 'Archive::Tar'; my $arc = Archive::Tar->new;
+   chdir $conf->appldir; ensure_class_loaded 'Archive::Tar';
 
-   chdir $conf->appldir;
+   my $arc = Archive::Tar->new; $self->$_add_backup_files( $arc );
+
    $path->exists and $arc->add_files( $path->abs2rel( $conf->appldir ) );
-
-   for my $doc ($conf->docs_root->clone->deep->all_files) {
-      $arc->add_files( $doc->abs2rel( $conf->appldir ) );
-   }
-
-   for my $cfgfile (map { io $_ } @{ $conf->cfgfiles }) {
-      $arc->add_files( $cfgfile->abs2rel( $conf->appldir ) );
-   }
-
-   my $localedir = $conf->localedir
-                        ->clone->filter( sub { m{ _local\.po \z }mx } )->deep;
-
-   for my $pofile ($localedir->all_files ) {
-      $arc->add_files( $pofile->abs2rel( $conf->appldir ) );
-   }
-
    $self->info( 'Generating backup [_1]', { args => [ $tarb ] } );
    $arc->write( $out->pathname, COMPRESS_GZIP ); $path->unlink;
 
@@ -100,6 +117,16 @@ sub create_ddl : method {
    my $self = shift; $self->db_attr->{ignore_version} = TRUE;
 
    return $self->SUPER::create_ddl;
+}
+
+sub ddl_paths {
+   my ($self, $schema, $version, $dir) = @_; my @paths = ();
+
+   for my $rdb (@{ $self->rdbms }) {
+      push @paths, io( $schema->ddl_filename( $rdb, $version, $dir ) );
+   }
+
+   return @paths;
 }
 
 sub dump_connect_attr : method {
@@ -131,9 +158,9 @@ sub restore_data : method {
 
    $path = io $path; $path->exists or throw PathNotFound, [ $path ];
 
-   ensure_class_loaded 'Archive::Tar'; my $arc = Archive::Tar->new;
+   chdir $conf->appldir; ensure_class_loaded 'Archive::Tar';
 
-   chdir $conf->appldir; $arc->read( $path->pathname ); $arc->extract();
+   my $arc = Archive::Tar->new; $arc->read( $path->pathname ); $arc->extract();
 
    my (undef, $date) = split m{ - }mx, $path->basename( '.tgz' ), 2;
    my $bdir = $conf->vardir->catdir( 'backups' );
