@@ -174,7 +174,7 @@ my $_log_user_label = sub {
    my $label;
 
    try { $label = $data->{person_rs}->find_by_shortcode( $scode )->label }
-   catch { $self->log->warn( $_ ) };
+   catch { $self->log->debug( $_ ) };
 
    return $label ? $data->{cache}->{ $scode } = $label : NUL;
 };

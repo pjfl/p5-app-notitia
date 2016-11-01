@@ -10,18 +10,18 @@ with q(Web::Components::Role);
 # Public attributes
 has '+moniker' => default => 'core';
 
-# Event callbacks
+# Event callbacks. Zero or one _input_ handler. One or more _output_ handlers
 # Condition
-event_handler 'condition', '_sink_' => sub {
+event_handler 'condition', '_output_' => sub {
    my ($self, $req, $stash) = @_; return $stash->{message_sink1};
 };
 
-event_handler 'condition', '_sink_' => sub {
+event_handler 'condition', '_output_' => sub {
    my ($self, $req, $stash) = @_; return $stash->{message_sink2};
 };
 
 # Email
-event_handler 'email', '_buildargs_' => sub {
+event_handler 'email', '_input_' => sub {
    my ($self, $req, $stash) = @_;
 
    $stash->{status} = 'current';
@@ -30,7 +30,7 @@ event_handler 'email', '_buildargs_' => sub {
    return $stash;
 };
 
-event_handler 'email', '_sink_' => sub {
+event_handler 'email', '_output_' => sub {
    my ($self, $req, $stash) = @_;
 
    my $template = delete $stash->{template} or return;
@@ -59,7 +59,7 @@ my $_location_lookup = sub {
 event_handler 'geolocation', create_location => \&{ $_location_lookup };
 event_handler 'geolocation', update_location => \&{ $_location_lookup };
 
-event_handler 'geolocation', '_sink_' => sub {
+event_handler 'geolocation', '_output_' => sub {
    my ($self, $req, $stash) = @_;;
 
    my $target = delete $stash->{target}; $target
@@ -69,17 +69,17 @@ event_handler 'geolocation', '_sink_' => sub {
 };
 
 # SMS
-event_handler 'sms', '_sink_' => sub {
+event_handler 'sms', '_output_' => sub {
    my ($self, $req, $stash) = @_;
 
    my $message = delete $stash->{message}; $message
-      and $self->create_sms_job( $stash, $message ) and return;
+      and $self->create_sms_job( $stash, $message );
 
    return;
 };
 
 # Update
-event_handler 'update', '_sink_' => sub {
+event_handler 'update', '_output_' => sub {
    my ($self, $req, $stash) = @_;
 
    my $actionp = delete $stash->{action_path}; $actionp
@@ -88,7 +88,7 @@ event_handler 'update', '_sink_' => sub {
    return;
 };
 
-event_handler 'update', '_sink_' => sub {
+event_handler 'update', '_output_' => sub {
    my ($self, $req, $stash) = @_;
 
    my $resultp = delete $stash->{result_path}; $resultp
