@@ -271,7 +271,11 @@ my $_update_event_from_request = sub {
       $event->$attr( $v );
    }
 
-   my $v = $params->( 'owner', $opts ); defined $v and $event->owner_id( $v );
+   my $v = $params->( 'owner', $opts );
+
+   defined $v and length $v and $event->owner_id( $v );
+   $v = $params->( 'location', $opts );
+   length $v or undef $v; $event->location_id( $v );
 
    return;
 };
@@ -317,6 +321,22 @@ my $_bind_event_name = sub {
             disabled => $disabled, label => 'event_name' };
 };
 
+my $_bind_location = sub {
+   my ($self, $event, $opts) = @_;
+
+   my $disabled = $opts->{disabled} // FALSE;
+   my $location_id = $event->location_id // 0;
+   my $rs = $self->schema->resultset( 'Location');
+   my $locations = [ map { [ $_, $_->id, {
+         selected => $_->id eq $location_id ? TRUE : FALSE } ] }
+                     $rs->search( {}, { order_by => 'address' } )->all ];
+
+   return {
+      class => 'standard-field', disabled => $disabled, type => 'select',
+      value => [ [ NUL, undef ], @{ $locations } ], },
+      original_location => { type => 'hidden', value => "${location_id}" };
+};
+
 my $_bind_trainer = sub {
    my ($self, $event, $opts) = @_;
 
@@ -345,6 +365,7 @@ my $_bind_event_fields = sub {
       owner            => $self->$_bind_owner( $event, $disabled ),
       description      => { class    => 'standard-field autosize server',
                             disabled => $disabled, type => 'textarea' },
+      location         => $self->$_bind_location( $event, $opts ),
       start_time       => { class    => 'standard-field',
                             disabled => $disabled, type => 'time' },
 #      end_date         => $_bind_end_date->( $event, $opts ),
