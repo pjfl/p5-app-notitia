@@ -11,7 +11,7 @@ use App::Notitia::Util      qw( check_field_js datetime_label dialog_anchor
                                 register_action_paths to_dt to_msg
                                 uri_for_action );
 use Class::Null;
-use Class::Usul::Functions  qw( is_member );
+use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
 use Moo;
 
@@ -123,7 +123,7 @@ my $_bind_pickup_location = sub {
 my $_journey_leg_headers = sub {
    my $req = shift; my $header = 'journey_leg_heading';
 
-   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 3 ];
+   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 4 ];
 };
 
 my $_journey_package_headers = sub {
@@ -241,6 +241,7 @@ my $_bind_journey_fields = sub {
 
    my $schema    = $self->schema;
    my $disabled  = $opts->{disabled} // FALSE;
+   my $is_viewer = $opts->{is_viewer} // FALSE;
    my $customers = $schema->resultset( 'Customer' )->search( {} );
    my $locations = [ $schema->resultset( 'Location' )->search( {} )->all ];
 
@@ -397,11 +398,12 @@ my $_journey_leg_row = sub {
       request => $req, value => $leg->operator->label } },
             { value => $leg->called_label },
             { value => $leg->beginning },
-            { value => $leg->ending }, ];
+            { value => $leg->ending },
+            { value => locm $req, $leg->status }, ];
 };
 
 my $_journey_package_row = sub {
-   my ($self, $req, $page, $done, $jid, $package) = @_;
+   my ($self, $req, $page, $disabled, $jid, $package) = @_;
 
    my $actionp = $self->moniker.'/package';
    my $package_type = $package->package_type;
@@ -416,7 +418,7 @@ my $_journey_package_row = sub {
 
    return
       [ { class  => 'narrow', value => $package->quantity },
-        { value  => $done ? $value : f_link $name, '#', {
+        { value  => $disabled ? $value : f_link $name, '#', {
            class => 'windows', request => $req, tip => $tip,
            value => $value } },
         { value  => $package->description }, ];
@@ -542,7 +544,7 @@ my $_maybe_find_package = sub {
 };
 
 my $_packages_and_stages = sub {
-   my ($self, $req, $page, $disabled, $done, $jid) = @_;
+   my ($self, $req, $page, $disabled, $jid) = @_;
 
    my $pform = $page->{forms}->[ 1 ];
 
@@ -559,7 +561,7 @@ my $_packages_and_stages = sub {
       headers => $_journey_package_headers->( $req ) };
 
    p_row $p_table, [ map {
-      $self->$_journey_package_row( $req, $page, $done, $jid, $_ ) }
+      $self->$_journey_package_row( $req, $page, $disabled, $jid, $_ ) }
                      $packages->all ];
 
    my $lform = $page->{forms}->[ 2 ];
@@ -580,6 +582,24 @@ my $_packages_and_stages = sub {
    return;
 };
 
+my $_send_stage_events = sub {
+   my ($self, $req, $journey, $leg, $completed, $params) = @_;
+
+   my $jid = $journey->id;
+   my $lid = $leg->id;
+   my $status = $leg->status;
+   my $c_tag = lc $journey->customer->name; $c_tag =~ s{ [ ] }{_}gmx;
+   my $message = "action:update-delivery-stage delivery_id:${jid} "
+               . "stage_id:${lid} status:${status} customer:${c_tag}";
+
+   $self->send_event( $req, $message, $params );
+
+   $completed and $message = "action:delivery-complete delivery_id:${jid} "
+                           . "customer:${c_tag}"
+              and $self->send_event( $req, $message, $params );
+   return;
+};
+
 my $_stages_row = sub {
    my ($self, $req, $stage) = @_;
 
@@ -593,8 +613,14 @@ my $_stages_row = sub {
       request => $req, tip => $tip, value => $stage->label( $req ) };
 
    my $form = blank_form 'leg', $href;
-   my $collected = $stage->collected ? TRUE : FALSE;
-   my $name = $collected ? 'update_stage_delivered' : 'update_stage_collected';
+   my $status = $stage->status;
+
+   $status eq 'on_station'
+      and return [ $cell0, { value => locm $req, $status } ];
+
+   my $name = $status eq 'delivered' ? 'update_stage_on_station'
+            : $status eq 'collected' ? 'update_stage_delivered'
+            : 'update_stage_collected';
 
    $tip = make_tip $req, "${name}_tip";
    p_button $form, $name, $name, { class => 'save-button', tip => $tip };
@@ -649,6 +675,12 @@ my $_update_leg_from_request = sub {
       $leg->$attr( $v );
    }
 
+   $leg->on_station
+      and (not $leg->delivered or $leg->delivered > $leg->on_station)
+      and throw 'Cannot return to station before package delivered';
+   $leg->delivered
+      and (not $leg->collected or $leg->collected > $leg->delivered)
+      and throw 'Cannot deliver package before collecting it';
    return;
 };
 
@@ -689,8 +721,8 @@ sub create_customer_action : Role(controller) {
    my $name     = $req->body_params->( 'name' );
    my $rs       = $self->schema->resultset( 'Customer' );
    my $cid      = $rs->create( { name => $name } )->id;
-   my $who      = $req->session->user_label;
-   my $message  = [ to_msg 'Customer [_1] created by [_2]', $cid, $who ];
+   my $key      = 'Customer [_1] created by [_2]';
+   my $message  = [ to_msg $key, $cid, $req->session->user_label ];
    my $location = uri_for_action $req, $self->moniker.'/customers';
 
    return { redirect => { location => $location, message => $message } };
@@ -717,9 +749,9 @@ sub create_delivery_request_action : Role(controller) {
    $self->send_event( $req, $message );
 
    my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
+   my $key = 'Package type [_1] for delivery request [_2] deleted by [_3]';
 
-   $message = [ to_msg 'Delivery request [_1] for [_2] created by [_3]',
-                $jid, $customer->name, $req->session->user_label ];
+   $message = [ to_msg $key, $jid, $customer->name, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -736,9 +768,8 @@ sub create_delivery_stage_action : Role(controller) {
    try   { $leg->insert }
    catch { $self->rethrow_exception( $_, 'create', 'delivery stage', $jid ) };
 
-   my $message = [ to_msg
-                   'Stage [_1] of delivery request [_2] created by [_3]',
-                   $leg->id, $jid, $req->session->user_label ];
+   my $key = 'Stage [_1] of delivery request [_2] created by [_3]';
+   my $message = [ to_msg $key, $leg->id, $jid, $req->session->user_label ];
    my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
 
    return { redirect => { location => $location, message => $message } };
@@ -788,15 +819,14 @@ sub create_package_action : Role(controller) {
 
    my $actionp = $self->moniker.'/journey';
    my $location = uri_for_action $req, $actionp, [ $journey_id ];
+   my $key = 'Package type [_1] for delivery request [_2] created by [_3]';
 
-   $message = [ to_msg
-      'Package type [_1] for delivery request [_2] created by [_3]',
-                $type, $journey_id, $req->session->user_label ];
+   $message = [ to_msg $key, $type, $journey_id, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 };
 
-sub customer : Role(controller) {
+sub customer : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $cid     =  $req->uri_params->( 0, { optional => TRUE } );
@@ -804,9 +834,7 @@ sub customer : Role(controller) {
    my $form    =  blank_form 'customer', $href;
    my $action  =  $cid ? 'update' : 'create';
    my $page    =  {
-      first_field => 'name',
-      forms    => [ $form ],
-      selected => 'customers',
+      first_field => 'name', forms => [ $form ], selected => 'customers',
       title    => locm $req, 'customer_setup_title'
    };
    my $custer  =  $self->$_maybe_find( 'Customer', $cid );
@@ -821,7 +849,7 @@ sub customer : Role(controller) {
    return $self->get_stash( $req, $page );
 }
 
-sub customers : Role(controller) {
+sub customers : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $form = blank_form { class => 'standard-form' };
@@ -883,9 +911,8 @@ sub delete_delivery_stage_action : Role(controller) {
    my $jid      = $req->uri_params->( 0 );
    my $lid      = $req->uri_params->( 1 );
    my $leg      = $self->schema->resultset( 'Leg' )->find( $lid ); $leg->delete;
-   my $message  = [ to_msg
-                    'Stage [_1] of delivery request [_2] deleted by [_3]',
-                    $lid, $jid, $req->session->user_label ];
+   my $key      = 'Stage [_1] of delivery request [_2] deleted by [_3]';
+   my $message  = [ to_msg $key, $lid, $jid, $req->session->user_label ];
    my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
 
    return { redirect => { location => $location, message => $message } };
@@ -925,15 +952,15 @@ sub delete_package_action : Role(controller) {
 
    my $actionp = $self->moniker.'/journey';
    my $location = uri_for_action $req, $actionp, [ $journey_id ];
+   my $key = 'Package type [_1] for delivery request [_2] deleted by [_3]';
 
-   $message = [ to_msg
-      'Package type [_1] for delivery request [_2] deleted by [_3]',
-                $package_type, $journey_id, $req->session->user_label ];
+   $message = [ to_msg $key, $package_type,
+                $journey_id, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delivery_stages : Role(controller) {
+sub delivery_stages : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $scode = $req->uri_params->( 0 );
@@ -948,7 +975,7 @@ sub delivery_stages : Role(controller) {
    return $stash;
 }
 
-sub journey : Role(controller) {
+sub journey : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $jid     =  $req->uri_params->( 0, { optional => TRUE } );
@@ -964,28 +991,27 @@ sub journey : Role(controller) {
       selected => $done ? 'completed_journeys' : 'journeys',
       title    => locm $req, 'journey_call_title'
    };
-   my $disabled = $_is_disabled->( $req, $journey, $done );
-   my $label    = locm( $req, 'delivery request' ).SPC.($jid // NUL);
+   my $disabled  = $_is_disabled->( $req, $journey, $done );
+   my $is_viewer = is_member 'call_viewer', $req->session->roles;
+   my $label     = locm( $req, 'delivery request' ).SPC.($jid // NUL);
 
    p_fields $jform, $self->schema, 'Journey', $journey,
       $self->$_bind_journey_fields( $req, $page, $journey, {
-         disabled => $disabled, done => $done } );
+         disabled => $disabled, done => $done, is_viewer => $is_viewer } );
 
    $disabled or p_action $jform, $action, [ 'delivery_request', $label ], {
       request => $req };
 
-   my $is_call_viewer = is_member( 'call_viewer', $req->session->roles );
-
-   (not $is_call_viewer and $disabled) or $done
+   (not $is_viewer and $disabled) or $done
       or ($jid and p_action $jform, 'delete', [ 'delivery_request', $label ], {
          request => $req } );
 
-   $jid and $self->$_packages_and_stages( $req, $page, $disabled, $done, $jid );
+   $jid and $self->$_packages_and_stages( $req, $page, $disabled, $jid );
 
    return $self->get_stash( $req, $page );
 }
 
-sub journeys : Role(controller) {
+sub journeys : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $params =  $req->query_params->( { optional => TRUE } );
@@ -1020,7 +1046,7 @@ sub journeys : Role(controller) {
    return $self->get_stash( $req, $page );
 }
 
-sub leg : Role(controller) {
+sub leg : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $jid     =  $req->uri_params->( 0 );
@@ -1032,8 +1058,7 @@ sub leg : Role(controller) {
    my $action  =  $lid ? 'update' : 'create';
    my $form    =  blank_form 'leg', $href;
    my $page    =  {
-      forms    => [ $form ],
-      selected => $done ? 'completed' : 'journeys',
+      forms    => [ $form ], selected => $done ? 'completed' : 'journeys',
       title    => locm $req, 'journey_leg_title'
    };
    my $links    = $self->$_leg_ops_links( $req, $page, $jid );
@@ -1058,20 +1083,18 @@ sub leg : Role(controller) {
    return $self->get_stash( $req, $page );
 }
 
-sub location : Role(controller) {
+sub location : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
-   my $lid     =  $req->uri_params->( 0, { optional => TRUE } );
-   my $href    =  uri_for_action $req, $self->moniker.'/location', [ $lid ];
-   my $form    =  blank_form 'location', $href;
-   my $action  =  $lid ? 'update' : 'create';
-   my $page    =  {
-      first_field => 'address',
-      forms    => [ $form ],
-      selected => 'locations',
-      title    => locm $req, 'location_setup_title'
+   my $lid = $req->uri_params->( 0, { optional => TRUE } );
+   my $href = uri_for_action $req, $self->moniker.'/location', [ $lid ];
+   my $form = blank_form 'location', $href;
+   my $action = $lid ? 'update' : 'create';
+   my $page = {
+      first_field => 'address', forms => [ $form ], selected => 'locations',
+      title => locm $req, 'location_setup_title'
    };
-   my $where   =  $self->$_maybe_find( 'Location', $lid );
+   my $where = $self->$_maybe_find( 'Location', $lid );
 
    p_fields $form, $self->schema, 'Location', $where,
       $self->$_bind_location_fields( $where, {} );
@@ -1085,7 +1108,7 @@ sub location : Role(controller) {
    return $self->get_stash( $req, $page );
 }
 
-sub locations : Role(controller) {
+sub locations : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $form = blank_form { class => 'standard-form' };
@@ -1161,6 +1184,9 @@ sub update_delivery_request_action : Role(controller) {
    my $journey = $self->schema->resultset( 'Journey' )->find( $jid );
    my $c_name  = $journey->customer->name;
 
+   $journey->controller eq $req->username
+      or throw 'Updating someone elses delivery request is not allowed';
+
    $self->$_update_journey_from_request( $req, $journey );
 
    try   { $journey->update }
@@ -1178,7 +1204,7 @@ sub update_delivery_request_action : Role(controller) {
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub update_delivery_stage_action : Role(controller) {
+sub update_delivery_stage_action : Role(controller) Role(driver) Role(rider) {
    my ($self, $req, $params) = @_; $params //= {};
 
    my $schema    = $self->schema;
@@ -1187,6 +1213,10 @@ sub update_delivery_stage_action : Role(controller) {
    my $journey   = $schema->resultset( 'Journey' )->find( $jid );
    my $leg       = $schema->resultset( 'Leg' )->find( $lid );
    my $delivered = $leg->delivered;
+
+   $journey->controller eq $req->username
+      or $leg->operator eq $req->username
+      or throw 'Updating someone elses delivery stage is not allowed';
 
    $self->$_update_leg_from_request( $req, $leg, $params );
 
@@ -1204,19 +1234,10 @@ sub update_delivery_stage_action : Role(controller) {
    try   { $self->schema->txn_do( $update ) }
    catch { $self->rethrow_exception( $_, 'update', 'delivery stage', $lid ) };
 
-   if ($completed) {
-      my $c_name = $journey->customer->name;
+   $self->$_send_stage_events( $req, $journey, $leg, $completed, $params );
 
-      $c_name =~ s{ [ ] }{_}gmx; $c_name = lc $c_name;
-
-      my $message = "action:delivery-complete delivery_id:${jid} "
-                  . "customer:${c_name}";
-
-      $self->send_event( $req, $message );
-   }
-
-   my $message = [ to_msg 'Stage [_1] of delivery request [_2] updated by [_3]',
-                   $lid, $jid, $req->session->user_label ];
+   my $key = 'Stage [_1] of delivery request [_2] updated by [_3]';
+   my $message = [ to_msg $key, $lid, $jid, $req->session->user_label ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
@@ -1236,8 +1257,8 @@ sub update_location_action : Role(controller) {
 
    my $key = 'Location [_1] updated by [_2]';
 
-   $location = uri_for_action $req, $self->moniker.'/locations';
    $message = [ to_msg $key, $lid, $req->session->user_label ];
+   $location = uri_for_action $req, $self->moniker.'/locations';
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -1261,15 +1282,15 @@ sub update_package_action : Role(controller) {
 
    my $actionp = $self->moniker.'/journey';
    my $location = uri_for_action $req, $actionp, [ $journey_id ];
+   my $key = 'Package type [_1] for delivery request [_2] updated by [_3]';
+   my $who = $req->session->user_label;
 
-   $message = [ to_msg
-      'Package type [_1] for delivery request [_2] updated by [_3]',
-                $package_type, $journey_id, $req->session->user_label ];
+   $message = [ to_msg $key, $package_type, $journey_id, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
 
-sub update_stage_collected_action : Role(controller) {
+sub update_stage_collected_action : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $stash = $self->update_delivery_stage_action
@@ -1278,7 +1299,7 @@ sub update_stage_collected_action : Role(controller) {
    return $stash;
 }
 
-sub update_stage_delivered_action : Role(controller) {
+sub update_stage_delivered_action : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $stash = $self->update_delivery_stage_action

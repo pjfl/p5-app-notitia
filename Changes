@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Access to calls for drivers and riders
           - Adds location to event object
           - Adds DDL files to backup
           - Adds util as a separate program

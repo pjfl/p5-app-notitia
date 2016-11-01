@@ -22,8 +22,8 @@ sub search_for_journeys {
    my $scode = delete $opts->{controller};
    my $where = { completed => $done };
 
-   $is_viewer
-      or $where->{controller_id} = $self->$_find_by_shortcode( $scode )->id;
+   not $is_viewer and $done
+      and $where->{controller_id} = $self->$_find_by_shortcode( $scode )->id;
 
    if ($done) {
       unless ($is_viewer) {

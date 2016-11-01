@@ -279,13 +279,13 @@ my $_send_sms = sub {
    $attr->{password} //= 'unknown';
    $attr->{username} //= 'unknown';
 
+   my $uri = $stash->{quote_uri}; $uri and $attr->{quote} = TRUE;
    my $sender = $self->sms_sender_class->new( $attr );
    my $rv = $sender->send_sms( $message, @recipients );
 
-   my $uri; $attr->{quote} and $uri = $stash->{quote_uri}
-      and $message = "action:received-sms-quote quote_uri:${uri} "
-                   . "return_value:${rv}"
-      and $self->send_event( $self->$_new_request, $message );
+   $uri and $message = "action:received-sms-quote quote_uri:${uri} "
+                     . "quote_value:${rv}"
+        and $self->send_event( $self->$_new_request, $message );
 
    $self->info( 'SMS message rv: [_1]', { args => [ $rv ] } );
    return;

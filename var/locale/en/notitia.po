@@ -897,6 +897,9 @@ msgstr "Beginning"
 msgid "journey_leg_heading_3"
 msgstr "Ending"
 
+msgid "journey_leg_heading_4"
+msgstr "Status"
+
 msgid "journey_leg_title"
 msgstr "Delivery Stage"
 

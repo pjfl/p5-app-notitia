@@ -75,6 +75,16 @@ sub on_station_label {
    return datetime_label $_[ 0 ]->on_station;
 }
 
+sub status {
+   my $self = shift;
+
+   $self->on_station and return 'on_station';
+   $self->delivered  and return 'delivered';
+   $self->collected  and return 'collected';
+
+   return 'called';
+}
+
 sub update {
    my ($self, $columns) = @_;
 
