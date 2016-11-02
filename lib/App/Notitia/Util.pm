@@ -22,8 +22,8 @@ use Try::Tiny;
 use Unexpected::Functions      qw( ValidationErrors );
 use YAML::Tiny;
 
-our @EXPORT_OK = qw( assert_unique assign_link authenticated_only bind
-                     build_navigation build_tree button check_field_js
+our @EXPORT_OK = qw( assert_unique assign_link authenticated_only
+                     build_navigation build_tree check_field_js
                      check_form_field clone datetime_label dialog_anchor
                      display_duration encrypted_attr enhance event_handler
                      event_handler_cache get_hashed_pw get_salt
@@ -46,22 +46,7 @@ my $translations        = {};
 my $yaml_coder          = YAML::Tiny->new;
 
 # Private functions
-my $bind_option = sub {
-   my ($v, $opts) = @_;
-
-   my $prefix = $opts->{prefix} // NUL;
-   my $numify = $opts->{numify} // FALSE;
-
-   return is_arrayref $v
-        ? { label =>  $v->[ 0 ].NUL,
-            value => (defined $v->[ 1 ] ? ($numify ? 0 + ($v->[ 1 ] || 0)
-                                                   : $prefix.$v->[ 1 ])
-                                        : undef),
-            %{ $v->[ 2 ] // {} } }
-        : { label => "${v}", value => ($numify ? 0 + $v : $prefix.$v) };
-};
-
-my $_check_field = sub {
+my $check_field = sub {
    my ($schema, $req) = @_;
 
    my $params = $req->query_params;
@@ -108,7 +93,7 @@ my $load_file_data = sub {
    load_file_data( $_[ 0 ] ); return TRUE;
 };
 
-my $_page_link = sub {
+my $page_link = sub {
    my ($req, $name, $actionp, $args, $params, $page) = @_;
 
    $params = { %{ $params } }; $params->{page} = $page;
@@ -140,7 +125,7 @@ my $make_tuple = sub {
    return [ 0, $keys, $node ];
 };
 
-my $_vehicle_link = sub {
+my $vehicle_link = sub {
    my ($req, $page, $args, $opts) = @_;
 
    my $action = $opts->{action}; my $value = $opts->{value};
@@ -196,7 +181,7 @@ sub assign_link ($$$$) {
    if ($state eq 'vehicle-assigned') {
       my $opts = { action => 'unassign', name => $name, value => $value };
 
-      $value = $_vehicle_link->( $req, $page, $args, $opts );
+      $value = $vehicle_link->( $req, $page, $args, $opts );
    }
    elsif ($state eq 'vehicle-requested') {
       my $opts = { action => 'assign',
@@ -204,7 +189,7 @@ sub assign_link ($$$$) {
                    name  => $name, value => 'requested' };
 
       $type and $opts->{type} = $type;
-      $value = $_vehicle_link->( $req, $page, $args, $opts );
+      $value = $vehicle_link->( $req, $page, $args, $opts );
    }
 
    my $style; $state eq 'vehicle-assigned' and $opts->{vehicle}->colour
@@ -234,27 +219,6 @@ sub authenticated_only ($) {
 
       return FALSE;
    };
-}
-
-sub bind ($;$$) {
-   my ($name, $v, $opts) = @_; $opts = { %{ $opts // {} } };
-
-   my $numify = $opts->{numify} // FALSE;
-   my $params = { label => $name, name => $name }; my $class;
-
-   if (defined $v and $class = blessed $v and $class eq 'DateTime') {
-      $params->{value} = $v->set_time_zone( 'local' )->dmy( '/' );
-   }
-   elsif (is_arrayref $v) {
-      $params->{value} = [ map { $bind_option->( $_, $opts ) } @{ $v } ];
-   }
-   else { defined $v and $params->{value} = $numify ? 0 + $v : "${v}" }
-
-   delete $opts->{numify}; delete $opts->{prefix};
-
-   $params->{ $_ } = $opts->{ $_ } for (keys %{ $opts });
-
-   return $params;
 }
 
 sub build_navigation ($$) {
@@ -340,21 +304,6 @@ sub build_tree {
    return $tree;
 }
 
-sub button ($$;$$$) {
-   my ($req, $opts, $action, $name, $args) = @_; my $class = $opts->{class};
-
-   my $conk   = $action && $name ? 'container_class' : 'class';
-   my $label  = $opts->{label} // "${action}_${name}";
-   my $value  = $opts->{value} // "${action}_${name}";
-   my $button = { $conk => $class,   label => $label,
-                  type  => 'button', value => $value };
-
-   $action and $name
-      and $button->{tip} = make_tip( $req, "${action}_${name}_tip", $args );
-
-   return $button;
-}
-
 sub check_field_js ($$) {
    my ($k, $opts) = @_; my $args = [ $k, $opts->{form}, $opts->{domain} ];
 
@@ -366,7 +315,7 @@ sub check_form_field ($$;$) {
 
    my $id = $req->query_params->( 'id' ); my $meta = { id => "${id}_ajax" };
 
-   try   { $_check_field->( $schema, $req ) }
+   try   { $check_field->( $schema, $req ) }
    catch {
       my $e = $_;
 
@@ -527,7 +476,7 @@ sub iterator ($) {
    };
 }
 
-sub js_config ($$$) {
+sub js_config ($$$) { # Deprecated
    my ($page, $name, $params) = @_;
 
    my $k      = $params->[ 0 ];
@@ -714,18 +663,18 @@ sub page_link_set ($$$$$;$) {
 
    $pager->last_page > $pager->first_page or return;
 
-   my $list = [ $_page_link->( $req, 'first_page', $actionp,
-                               $args, $params, $pager->first_page ) ];
+   my $list = [ $page_link->( $req, 'first_page', $actionp,
+                              $args, $params, $pager->first_page ) ];
    my $lower_b = $pager->current_page - 4;
    my $page = $lower_b < $pager->first_page ? $pager->first_page : $lower_b;
 
    while (++$page < $pager->current_page) {
-      push @{ $list }, $_page_link->( $req, 'earlier_page', $actionp,
-                                      $args, $params, $page );
+      push @{ $list }, $page_link->( $req, 'earlier_page', $actionp,
+                                     $args, $params, $page );
    }
 
-   push @{ $list }, $_page_link->( $req, 'current_page', $actionp, $args,
-                                   $params, $pager->current_page );
+   push @{ $list }, $page_link->( $req, 'current_page', $actionp, $args,
+                                  $params, $pager->current_page );
 
    my $upper_b = $pager->current_page + 4;
 
@@ -733,12 +682,12 @@ sub page_link_set ($$$$$;$) {
    $page = $pager->current_page;
 
    while (++$page < $upper_b) {
-       push @{ $list }, $_page_link->( $req, 'later_page', $actionp,
-                                       $args, $params, $page );
+       push @{ $list }, $page_link->( $req, 'later_page', $actionp,
+                                      $args, $params, $page );
    }
 
-   push @{ $list }, $_page_link->( $req, 'last_page', $actionp, $args,
-                                   $params, $pager->last_page );
+   push @{ $list }, $page_link->( $req, 'last_page', $actionp, $args,
+                                  $params, $pager->last_page );
 
    return { class        => $opts->{class} // 'link-group',
             content      => {
@@ -902,13 +851,9 @@ Defines no attributes
 
 =head2 C<authenticated_only>
 
-=head2 C<bind>
-
 =head2 C<build_navigation>
 
 =head2 C<build_tree>
-
-=head2 C<button>
 
 =head2 C<check_field_js>
 
@@ -950,6 +895,8 @@ Greatest common factor
 
 =head2 C<js_server_config>
 
+=head2 C<js_slider_config>
+
 =head2 C<js_submit_config>
 
 =head2 C<js_togglers_config>
@@ -973,6 +920,8 @@ LCM for a list of integers
 =head2 C<localise_tree>
 
 =head2 C<locm>
+
+=head2 C<mail_domain>
 
 =head2 C<make_id_from>
 

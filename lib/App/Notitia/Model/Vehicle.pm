@@ -5,12 +5,11 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
                                 p_date p_fields p_hidden p_list
                                 p_row p_select p_table p_tag p_textfield );
-use App::Notitia::Util      qw( assign_link bind check_field_js
-                                display_duration loc local_dt now_dt make_tip
-                                management_link page_link_set
-                                register_action_paths set_element_focus
-                                slot_identifier time2int to_dt to_msg
-                                uri_for_action );
+use App::Notitia::Util      qw( assign_link check_field_js display_duration
+                                loc local_dt now_dt make_tip management_link
+                                page_link_set register_action_paths
+                                set_element_focus slot_identifier time2int
+                                to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
@@ -112,14 +111,15 @@ my $_owner_list = sub {
 my $_quantity_list = sub {
    my ($type, $selected) = @_;
 
-   my $opts   = { class => 'single-digit',
-                  label => NUL, type => 'select' };
+   my $select = { class => 'single-digit-select narrow', };
+   my $opts   = { class => 'single-digit', label => NUL };
    my $values = [ [ 0, 0 ], [ 1, 1 ], [ 2, 2 ], [ 3, 3 ], [ 4, 4 ], ];
 
    $values->[ $selected ]->[ 2 ] = { selected => TRUE };
 
-   return { class => 'single-digit-select narrow',
-            value => bind( "${type}_quantity", $values, $opts ) };
+   p_select $select , "${type}_quantity", $values, $opts;
+
+   return $select;
 };
 
 my $_transport_links = sub {
