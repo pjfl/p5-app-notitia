@@ -215,7 +215,7 @@ my $_send_email = sub {
       ( 'Would email [_1]', { args => [ $person->label ] } ) and return;
 
    $person->email_address =~ m{ \@ example\.com \z }imx and $self->info
-      ( 'Would not email [_1] example address', {
+      ( 'Will not email [_1] example address', {
          args => [ $person->label ] } ) and return;
 
    my $action; $action = $stash->{action}
