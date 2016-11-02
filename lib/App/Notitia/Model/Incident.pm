@@ -5,8 +5,8 @@ use App::Notitia::Constants qw( FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
                                 p_container p_fields p_link p_list p_row
                                 p_select p_table p_textfield );
-use App::Notitia::Util      qw( js_window_config locm make_tip page_link_set
-                                register_action_paths to_dt
+use App::Notitia::Util      qw( check_field_js js_window_config locm make_tip
+                                page_link_set register_action_paths to_dt
                                 to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
@@ -41,6 +41,18 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_add_incident_js = sub {
+   my ($page, $name) = @_;
+
+   my $opts = { domain => $name ? 'update' : 'insert', form => 'Incident' };
+
+   push @{ $page->{literal_js} },
+      check_field_js( 'reporter', $opts ),
+      check_field_js( 'title', $opts );
+
+   return;
+};
+
 my $_category_tuple = sub {
    my ($selected, $category) = @_;
 
@@ -116,9 +128,10 @@ my $_bind_incident_fields = sub {
          raised         => $incident->id ? {
             disabled    => TRUE, value => $incident->raised_label } : FALSE,
          title          => {
-            class       => 'standard-field',
+            class       => 'standard-field server',
             disabled    => $disabled, label => 'incident_title' },
-         reporter       => { class => 'standard-field', disabled => $disabled },
+         reporter       => { class => 'standard-field server',
+                             disabled => $disabled },
          reporter_phone => { disabled => $disabled },
          category_id    => {
             class       => 'standard-field windows',
@@ -339,6 +352,8 @@ sub incident : Role(controller) {
    p_action $form, $action, [ 'incident', $iid ], { request => $req };
 
    $iid and p_action $form, 'delete', [ 'incident', $iid ], { request => $req };
+
+   $_add_incident_js->( $page, $iid );
 
    return $self->get_stash( $req, $page );
 }
