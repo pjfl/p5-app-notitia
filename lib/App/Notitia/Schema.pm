@@ -30,7 +30,7 @@ has 'admin_password'  => is => 'lazy', isa => NonEmptySimpleStr,
 
 has '+config_class'   => default => 'App::Notitia::Config';
 
-has '+database'       => default => sub { $_[ 0 ]->config->database };
+has '+database'       => default => sub { $_[ 0 ]->schema_database };
 
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
@@ -119,7 +119,7 @@ sub create_ddl : method {
    return $self->SUPER::create_ddl;
 }
 
-sub ddl_paths {
+sub ddl_paths { # TODO: Use sub in parent when next released
    my ($self, $schema, $version, $dir) = @_; my @paths = ();
 
    for my $rdb (@{ $self->rdbms }) {
@@ -164,7 +164,7 @@ sub restore_data : method {
 
    my (undef, $date) = split m{ - }mx, $path->basename( '.tgz' ), 2;
    my $bdir = $conf->vardir->catdir( 'backups' );
-   my $sql  = $conf->tempdir->catfile( $conf->database."-${date}.sql" );
+   my $sql  = $conf->tempdir->catfile( $self->database."-${date}.sql" );
 
    if ($sql->exists and lc $self->driver eq 'mysql') {
       $self->run_cmd
@@ -182,6 +182,7 @@ sub upgrade_schema : method {
    my $self = shift;
 
    $self->preversion or throw Unspecified, [ 'preversion' ];
+   $self->can( '_set_unlink' ) and $self->_set_unlink( TRUE );
    $self->create_ddl;
 
    my $passwd = $self->password;

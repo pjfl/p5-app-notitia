@@ -2,7 +2,7 @@ package App::Notitia::Role::Schema;
 
 use namespace::autoclean;
 
-use Class::Usul::Types qw( LoadableClass Object );
+use Class::Usul::Types qw( LoadableClass NonEmptySimpleStr Object );
 use Moo::Role;
 
 requires qw( config get_connect_info );
@@ -10,9 +10,10 @@ requires qw( config get_connect_info );
 # Attribute constructors
 my $_build_schema = sub {
    my $self = shift;
-   my $class = $self->schema_class;
    my $extra = $self->config->connect_params;
-   my $schema = $class->connect( @{ $self->get_connect_info }, $extra );
+   my $opts = { database => $self->schema_database };
+   my $info = $self->get_connect_info( $self, $opts );
+   my $schema = $self->schema_class->connect( @{ $info }, $extra );
 
    $schema->can( 'accept_context' ) and $schema->accept_context( $self );
 
@@ -20,15 +21,17 @@ my $_build_schema = sub {
 };
 
 my $_build_schema_class = sub {
-   return $_[ 0 ]->config->schema_classes->{ $_[ 0 ]->config->database };
+   return $_[ 0 ]->config->schema_classes->{ $_[ 0 ]->schema_database };
 };
 
 # Public attributes
-has 'schema'       => is => 'lazy', isa => Object,
-   builder         => $_build_schema;
+has 'schema' => is => 'lazy', isa => Object, builder => $_build_schema;
 
 has 'schema_class' => is => 'lazy', isa => LoadableClass,
-   builder         => $_build_schema_class;
+   builder => $_build_schema_class;
+
+has 'schema_database' => is => 'lazy', isa => NonEmptySimpleStr,
+   builder => sub { $_[ 0 ]->config->database };
 
 1;
 
