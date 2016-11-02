@@ -30,6 +30,8 @@ $class->add_columns
 
 $class->set_primary_key( 'id' );
 
+$class->add_unique_constraint( [ 'title', 'raised' ] );
+
 $class->belongs_to( category => "${result}::Type", 'category_id' );
 $class->belongs_to
    ( committee_member => "${result}::Person", 'committee_member_id' );
@@ -84,6 +86,7 @@ sub validation_attributes {
             filters         => 'filterNonNumeric',
             validate        => 'isValidInteger' },
          title              => {
+            filters         => 'filterUCFirst',
             validate        => 'isMandatory isValidLength isValidText' },
       },
       level => 8,

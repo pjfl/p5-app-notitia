@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Unique constraint on Incident title and raised
           - Vacant slot email uses only one template
           - Access to calls for drivers and riders
           - Adds location to event object

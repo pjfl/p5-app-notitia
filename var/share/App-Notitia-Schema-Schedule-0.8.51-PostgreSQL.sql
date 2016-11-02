@@ -135,7 +135,8 @@ CREATE TABLE "incident" (
   "reporter_phone" character varying(16) DEFAULT '' NOT NULL,
   "category_other" character varying(16) DEFAULT '' NOT NULL,
   "notes" character varying(255) DEFAULT '' NOT NULL,
-  PRIMARY KEY ("id")
+  PRIMARY KEY ("id"),
+  CONSTRAINT "incident_title_raised" UNIQUE ("title", "raised")
 );
 CREATE INDEX "incident_idx_category_id" on "incident" ("category_id");
 CREATE INDEX "incident_idx_committee_member_id" on "incident" ("committee_member_id");

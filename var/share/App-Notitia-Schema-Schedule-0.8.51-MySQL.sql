@@ -159,6 +159,7 @@ CREATE TABLE `incident` (
   INDEX `incident_idx_committee_member_id` (`committee_member_id`),
   INDEX `incident_idx_controller_id` (`controller_id`),
   PRIMARY KEY (`id`),
+  UNIQUE `incident_title_raised` (`title`, `raised`),
   CONSTRAINT `incident_fk_category_id` FOREIGN KEY (`category_id`) REFERENCES `type` (`id`),
   CONSTRAINT `incident_fk_committee_member_id` FOREIGN KEY (`committee_member_id`) REFERENCES `person` (`id`),
   CONSTRAINT `incident_fk_controller_id` FOREIGN KEY (`controller_id`) REFERENCES `person` (`id`)

@@ -177,6 +177,8 @@ CREATE INDEX "incident_idx_committee_member_id" ON "incident" ("committee_member
 
 CREATE INDEX "incident_idx_controller_id" ON "incident" ("controller_id");
 
+CREATE UNIQUE INDEX "incident_title_raised" ON "incident" ("title", "raised");
+
 DROP TABLE "role";
 
 CREATE TABLE "role" (
