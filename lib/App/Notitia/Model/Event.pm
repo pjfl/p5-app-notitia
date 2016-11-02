@@ -413,7 +413,7 @@ my $_create_event = sub {
       my $label = ($event->name || 'with no name on').SPC
                 . $start_date->clone->set_time_zone( 'local' )->dmy( '/' );
 
-      $self->rethrow_exception( $_, 'create', 'event', $label );
+      $self->blow_smoke( $_, 'create', 'event', $label );
    };
 
    return $event;
@@ -429,7 +429,7 @@ my $_delete_event = sub {
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
 
    try   { $event->delete }
-   catch { $self->rethrow_exception( $_, 'delete', 'event', $event->name ) };
+   catch { $self->blow_smoke( $_, 'delete', 'event', $event->name ) };
 
    return $event;
 };
@@ -458,7 +458,7 @@ my $_update_event = sub {
    }
 
    try   { $self->schema->txn_do( $update ) }
-   catch { $self->rethrow_exception( $_, 'update', 'event', $event->name ) };
+   catch { $self->blow_smoke( $_, 'update', 'event', $event->name ) };
 
    return $event;
 };

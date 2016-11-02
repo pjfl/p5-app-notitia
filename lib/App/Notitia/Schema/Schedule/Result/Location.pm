@@ -62,7 +62,9 @@ sub validation_attributes {
          postcode    => { max_length => 16, min_length => 0, },
       },
       fields         => {
-         address     => { validate => 'isMandatory isValidLength isValidText' },
+         address     => {
+            unique   => TRUE,
+            validate => 'isMandatory isValidLength isValidText' },
          coordinates => { validate => 'isValidLength' },
          location    => {
             filters  => 'filterUCFirst',

@@ -278,7 +278,7 @@ sub create_incident_action : Role(controller) {
    my $title = $incident->title;
 
    try   { $incident->insert }
-   catch { $self->rethrow_exception( $_, 'create', 'incident', $title ) };
+   catch { $self->blow_smoke( $_, 'create', 'incident', $title ) };
 
    my $iid = $incident->id; $title =~ s{ [ ] }{_}gmx; $title = lc $title;
    my $message = "action:create-incident incident_id:${iid} "
@@ -452,7 +452,7 @@ sub update_incident_action : Role(controller) {
    $self->$_update_incident_from_request( $req, $incident );
 
    try   { $incident->update }
-   catch { $self->rethrow_exception( $_, 'update', 'incident', $iid ) };
+   catch { $self->blow_smoke( $_, 'update', 'incident', $iid ) };
 
    $title =~ s{ [ ] }{_}gmx; $title = lc $title;
 

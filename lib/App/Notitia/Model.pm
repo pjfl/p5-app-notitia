@@ -107,6 +107,18 @@ sub activity_cache {
    return join ', ', @{ $_activity_cache };
 }
 
+sub blow_smoke {
+   my ($self, $e, $verb, $noun, $label) = @_;
+
+   $self->application->debug and throw $e;
+   $e->can( 'class' ) and $e->class eq ValidationErrors->() and throw $e;
+   $e =~ m{ duplicate }imx and throw 'Duplicate [_1] [_2]', [ $noun, $label ],
+                                     no_quote_bind_values => TRUE;
+   $self->log->error( $e );
+   throw 'Failed to [_1] [_2] [_3]', [ $verb, $noun, $label ],
+         no_quote_bind_values => TRUE;
+}
+
 sub dialog_stash {
    my ($self, $req, $layout) = @_;
 
@@ -193,18 +205,6 @@ sub not_found : Role(anon) {
    my $e    = exception 'URI [_1] not found', [ $want ], rv => HTTP_NOT_FOUND;
 
    return $self->exception_handler( $req, $e );
-}
-
-sub rethrow_exception {
-   my ($self, $e, $verb, $noun, $label) = @_;
-
-   $self->application->debug and throw $e;
-   $e->can( 'class' ) and $e->class eq ValidationErrors->() and throw $e;
-   $e =~ m{ duplicate }imx and throw 'Duplicate [_1] [_2]', [ $noun, $label ],
-                                     no_quote_bind_values => TRUE;
-   $self->log->error( $e );
-   throw 'Failed to [_1] [_2] [_3]', [ $verb, $noun, $label ],
-         no_quote_bind_values => TRUE;
 }
 
 1;

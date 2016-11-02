@@ -558,7 +558,7 @@ sub create_vehicle_action : Role(rota_manager) {
    $self->$_update_vehicle_from_request( $req, $vehicle );
 
    try   { $vehicle->insert }
-   catch { $self->rethrow_exception( $_, 'create', 'vehicle', $vehicle->vrn ) };
+   catch { $self->blow_smoke( $_, 'create', 'vehicle', $vehicle->vrn ) };
 
    my $vrn = $vehicle->vrn;
    my $who = $req->session->user_label;
@@ -710,7 +710,7 @@ sub update_vehicle_action : Role(rota_manager) {
    $self->$_update_vehicle_from_request( $req, $vehicle );
 
    try   { $vehicle->update }
-   catch { $self->rethrow_exception( $_, 'delete', 'vehicle', $vehicle->vrn ) };
+   catch { $self->blow_smoke( $_, 'delete', 'vehicle', $vehicle->vrn ) };
 
    my $who      = $req->session->user_label; $vrn = $vehicle->vrn;
    my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];

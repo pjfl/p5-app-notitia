@@ -294,7 +294,7 @@ sub create_certification_action : Role(person_manager) Role(training_manager) {
    my $label   = $cert->label( $req );
 
    try   { $cert->insert }
-   catch { $self->rethrow_exception( $_, 'create', 'certification', $label ) };
+   catch { $self->blow_smoke( $_, 'create', 'certification', $label ) };
 
    my $message  = "action:create-certification shortcode:${scode} type:${type}";
 

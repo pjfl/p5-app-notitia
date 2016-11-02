@@ -140,7 +140,7 @@ sub create_endorsement_action : Role(person_manager) {
    my $label   = $blot->label( $req );
 
    try   { $blot->insert }
-   catch { $self->rethrow_exception( $_, 'create', 'endorsement', $label ) };
+   catch { $self->blow_smoke( $_, 'create', 'endorsement', $label ) };
 
    my $uri      = $blot->uri;
    my $type     = $blot->type_code;

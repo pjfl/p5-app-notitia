@@ -51,7 +51,8 @@ sub validation_attributes {
          name     => { max_length => 64, min_length => 5, },
       },
       fields      => {
-         name     => { validate => 'isValidLength isValidText' },
+         name     => { unique => TRUE,
+                       validate => 'isMandatory isValidLength isValidText' },
       },
       level => 8,
    };

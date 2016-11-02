@@ -49,15 +49,28 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_add_location_js = sub {
+my $_add_customer_js = sub {
    my ($page, $name) = @_;
 
-   my $opts = { domain => $name ? 'update' : 'insert', form => 'Person' };
+   my $opts = { domain => $name ? 'update' : 'insert', form => 'Customer' };
 
-   push @{ $page->{literal_js} }, check_field_js( 'postcode', $opts );
+   push @{ $page->{literal_js} }, check_field_js( 'name', $opts );
 
    return;
 };
+
+my $_add_location_js = sub {
+   my ($page, $name) = @_;
+
+   my $opts = { domain => $name ? 'update' : 'insert', form => 'Location' };
+
+   push @{ $page->{literal_js} },
+      check_field_js( 'address', $opts ),
+      check_field_js( 'postcode', $opts );
+
+   return;
+};
+
 my $_customer_tuple = sub {
    my ($selected, $customer) = @_;
 
@@ -223,7 +236,8 @@ my $_bind_customer_fields = sub {
 
    my $disabled = $opts->{disabled} // FALSE;
 
-   return [ name => { disabled => $disabled, label => 'customer_name' } ];
+   return [ name => { class => 'standard-field server',
+                      disabled => $disabled, label => 'customer_name' } ];
 };
 
 my $_bind_ending_location = sub {
@@ -337,7 +351,7 @@ my $_bind_location_fields = sub {
    my $disabled = $opts->{disabled} // FALSE;
 
    return
-      [ address     => { class    => 'standard-field',
+      [ address     => { class    => 'standard-field server',
                          disabled => $disabled, label => 'location_address' },
         location    => { disabled => $disabled },
         postcode    => { class    => 'standard-field server',
@@ -738,12 +752,13 @@ sub create_delivery_request_action : Role(controller) {
 
    $self->$_update_journey_from_request( $req, $journey );
 
+   my $c_name = $customer->name;
+
    try   { $journey->insert }
-   catch { $self->rethrow_exception
-              ( $_, 'create', 'delivery request', $customer->name ) };
+   catch { $self->blow_smoke( $_, 'create', 'delivery request', $c_name ) };
 
    my $jid = $journey->id;
-   my $c_tag = lc $customer->name; $c_tag =~ s{ [ ] }{_}gmx;
+   my $c_tag = lc $c_name; $c_tag =~ s{ [ ] }{_}gmx;
    my $message = "action:create-delivery delivery_id:${jid} customer:${c_tag}";
 
    $self->send_event( $req, $message );
@@ -766,7 +781,7 @@ sub create_delivery_stage_action : Role(controller) {
    $self->$_update_leg_from_request( $req, $leg );
 
    try   { $leg->insert }
-   catch { $self->rethrow_exception( $_, 'create', 'delivery stage', $jid ) };
+   catch { $self->blow_smoke( $_, 'create', 'delivery stage', $jid ) };
 
    my $key = 'Stage [_1] of delivery request [_2] created by [_3]';
    my $message = [ to_msg $key, $leg->id, $jid, $req->session->user_label ];
@@ -810,7 +825,7 @@ sub create_package_action : Role(controller) {
    my $type = $package->package_type || NUL;
 
    try   { $package->insert }
-   catch { $self->rethrow_exception( $_, 'create', 'package', $type ) };
+   catch { $self->blow_smoke( $_, 'create', 'package', $type ) };
 
    my $message = "action:create-package delivery_id:${journey_id} "
                . "package_type:${type}";
@@ -845,6 +860,8 @@ sub customer : Role(controller) Role(driver) Role(rider) {
    p_action $form, $action, [ 'customer', $cid ], { request => $req };
 
    $cid and p_action $form, 'delete', [ 'customer', $cid ], { request => $req };
+
+   $_add_customer_js->( $page, $cid );
 
    return $self->get_stash( $req, $page );
 }
@@ -1182,16 +1199,16 @@ sub update_delivery_request_action : Role(controller) {
 
    my $jid     = $req->uri_params->( 0 );
    my $journey = $self->schema->resultset( 'Journey' )->find( $jid );
-   my $c_name  = $journey->customer->name;
 
    $journey->controller eq $req->username
       or throw 'Updating someone elses delivery request is not allowed';
 
    $self->$_update_journey_from_request( $req, $journey );
 
+   my $c_name = $journey->customer->name;
+
    try   { $journey->update }
-   catch { $self->rethrow_exception
-              ( $_, 'update', 'delivery request', $c_name ) };
+   catch { $self->blow_smoke( $_, 'update', 'delivery request', $c_name ) };
 
    my $c_tag = lc $c_name; $c_tag =~ s{ [ ] }{_}gmx;
    my $message = "action:update-delivery delivery_id:${jid} customer:${c_tag}";
@@ -1232,7 +1249,7 @@ sub update_delivery_stage_action : Role(controller) Role(driver) Role(rider) {
    };
 
    try   { $self->schema->txn_do( $update ) }
-   catch { $self->rethrow_exception( $_, 'update', 'delivery stage', $lid ) };
+   catch { $self->blow_smoke( $_, 'update', 'delivery stage', $lid ) };
 
    $self->$_send_stage_events( $req, $journey, $leg, $completed, $params );
 

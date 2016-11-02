@@ -424,7 +424,7 @@ sub create_person_action : Role(person_manager) {
    };
 
    try   { $self->schema->txn_do( $create ) }
-   catch { $self->rethrow_exception( $_, 'create', 'person', $person->name ) };
+   catch { $self->blow_smoke( $_, 'create', 'person', $person->name ) };
 
    my $id       = $self->create_person_email( $req, $person, $password );
    my $message  = 'action:create-person shortcode:'.$person->shortcode;
@@ -599,7 +599,7 @@ sub update_person_action : Role(person_manager) {
       $pcode ne $person->postcode
          and $self->create_coordinate_lookup_job( $person );
    }
-   catch { $self->rethrow_exception( $_, 'update', 'person', $label ) };
+   catch { $self->blow_smoke( $_, 'update', 'person', $label ) };
 
    $self->send_event( $req, "action:update-person shortcode:${scode}" );
 
