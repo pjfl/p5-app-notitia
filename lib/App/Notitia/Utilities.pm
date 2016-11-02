@@ -179,7 +179,7 @@ my $_new_request = sub {
    my $env = { HTTP_ACCEPT_LANGUAGE => $self->locale,
                HTTP_HOST => $hostport // 'localhost:5000',
                SCRIPT_NAME => $self->config->mount_point,
-               'psgi.url_scheme' => $scheme // 'https',
+               'psgi.url_scheme' => $scheme // 'http',
                'psgix.session' => { username => 'admin' } };
    my $factory = $self->request_class->new( config => $self->config );
 
@@ -317,7 +317,7 @@ sub geolocation : method {
 }
 
 sub impending_slot : method {
-   my $self = shift;
+   my $self = shift; $self->components;
    my $scheme = $self->next_argv;
    my $hostport = $self->next_argv;
    my $days = $self->next_argv // 3;
@@ -376,7 +376,7 @@ sub send_message : method {
 }
 
 sub vacant_slot : method {
-   my $self = shift;
+   my $self = shift; $self->components;
    my $scheme = $self->next_argv;
    my $hostport = $self->next_argv;
    my $days = $self->next_argv // 7;

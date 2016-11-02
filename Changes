@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Vacant slot email uses only one template
           - Access to calls for drivers and riders
           - Adds location to event object
           - Adds DDL files to backup

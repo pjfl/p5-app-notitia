@@ -63,11 +63,12 @@ event_handler 'email', impending_slot => sub {
 };
 
 event_handler 'email', vacant_slot => sub {
-   my ($self, $req, $stash) = @_;
+   my ($self, $req, $stash) = @_; my $file = "vacant_slot_email.md";
 
-   my $slot_type = $stash->{role} = $stash->{slot_type};
-   my $file = "${slot_type}_slots_email.md";
+   my $args = [ $stash->{rota_name}, $stash->{rota_date} ];
 
+   $stash->{role} = $stash->{slot_type};
+   $stash->{uri} = uri_for_action $req, 'day/day_rota', $args;
    $stash->{template} = $self->$_template_dir( $req )->catfile( $file );
 
    return $stash;

@@ -6,7 +6,7 @@
          "feed_title": "Blood Bike Events"
       },
       "Plugin::Update": {
-         "certifiable_courses": [ "GMP" ]
+         "certifiable_courses": [ "controller", "gmp" ]
       }
    },
    "description": "People and resource scheduling",

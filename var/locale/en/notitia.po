@@ -391,9 +391,6 @@ msgstr "List contact information for current members"
 msgid "controller"
 msgstr "Controller"
 
-msgid "controller_course"
-msgstr "Controller"
-
 msgid "controller_issue"
 msgstr "Controller Issue"
 
