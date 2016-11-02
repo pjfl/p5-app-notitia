@@ -1,6 +1,7 @@
 package App::Notitia::Schema::Schedule::Result::Package;
 
 use strictures;
+use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( TRUE );
@@ -23,6 +24,12 @@ $class->set_primary_key( 'journey_id', 'package_type_id' );
 $class->belongs_to( journey => "${result}::Journey", 'journey_id' );
 $class->belongs_to( package_type => "${result}::Type", 'package_type_id' );
 
+# Private methods
+sub _as_string {
+   return $_[ 0 ]->package_type;
+}
+
+# Public methods
 sub insert {
    my $self = shift;
 

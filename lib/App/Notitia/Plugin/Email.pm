@@ -47,6 +47,30 @@ event_handler 'email', create_certification => sub {
    return $stash;
 };
 
+event_handler 'email', create_delivery_stage => sub {
+   my ($self, $req, $stash) = @_; my $file = 'delivery_stage_email.md';
+
+   my $id = $stash->{stage_id} or
+      ($self->log->warn( 'No stage_id in create_delivery_stage' ) and return);
+   my $opts = { prefetch => { 'journey' => 'packages' } };
+   my $leg = $self->schema->resultset( 'Leg' )->find( { id => $id }, $opts ) or
+      ($self->log->warn( "Stage id ${id} unknown" ) and return);
+   my $journey = $leg->journey;
+
+   $stash->{controller} = $journey->controller->label;
+   $stash->{beginning} = $leg->beginning.NUL;
+   $stash->{ending} = $leg->ending.NUL;
+   $stash->{called} = $leg->called_label;
+   $stash->{collection_eta} = $leg->collection_eta_label;
+   $stash->{priority} = $journey->priority.NUL;
+   $stash->{packages} = [ map {
+      [ $_->quantity, $_->package_type.NUL, $_->description ] }
+                          $journey->packages->all ];
+   $stash->{template} = $self->$_template_dir( $req )->catfile( $file );
+
+   return $stash;
+};
+
 event_handler 'email', create_event => \&{ $_event_email };
 event_handler 'email', update_event => \&{ $_event_email };
 

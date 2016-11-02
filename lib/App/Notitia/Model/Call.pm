@@ -781,11 +781,19 @@ sub create_delivery_stage_action : Role(controller) {
    $self->$_update_leg_from_request( $req, $leg );
 
    try   { $leg->insert }
-   catch { $self->blow_smoke( $_, 'create', 'delivery stage', $jid ) };
+   catch { $self->blow_smoke( $_, 'create', 'delivery stage for req. ', $jid )};
 
-   my $key = 'Stage [_1] of delivery request [_2] created by [_3]';
-   my $message = [ to_msg $key, $leg->id, $jid, $req->session->user_label ];
+   my $lid = $leg->id;
+   my $scode = $leg->operator;
+   my $message = "action:create-delivery_stage shortcode:${scode} "
+               . "stage_id:${lid}";
+
+   $self->send_event( $req, $message );
+
    my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
+   my $key = 'Stage [_1] of delivery request [_2] created by [_3]';
+
+   $message = [ to_msg $key, $lid, $jid, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
