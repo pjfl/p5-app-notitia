@@ -161,9 +161,7 @@ my $_person_ops_links = sub {
 
    push @{ $page->{literal_js} //= [] },
       dialog_anchor( 'upload_mugshot', $href, {
-         name    => 'mugshot_upload',
-         title   => loc( $req, 'Mugshot Upload' ),
-         useIcon => \1 } );
+         name => 'mugshot_upload', title => loc( $req, 'Mugshot Upload' ), } );
 
    my $mugshot = f_link 'mugshot', C_DIALOG, {
       action => 'upload', request => $req };

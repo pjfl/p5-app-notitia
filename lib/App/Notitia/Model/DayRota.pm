@@ -56,7 +56,7 @@ my $_add_js_dialog = sub {
    my $js   = $page->{literal_js} //= [];
 
    push @{ $js }, dialog_anchor( $args->[ 2 ], $href, {
-      name => $name, title => $title, useIcon => \1 } );
+      name => $name, title => $title, } );
 
    return;
 };

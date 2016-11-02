@@ -141,9 +141,8 @@ my $vehicle_link = sub {
    my $name = $opts->{name};
 
    push @{ $js }, dialog_anchor( "${action}_${name}", $href, {
-      name    => "${action}-vehicle",
-      title   => loc( $req, (ucfirst $action).' Vehicle' ),
-      useIcon => \1 } );
+      name  => "${action}-vehicle",
+      title => loc( $req, (ucfirst $action).' Vehicle' ), } );
 
    return { class => $opts->{class} // 'table-link windows',
             hint  => loc( $req, 'Hint' ),
@@ -345,6 +344,8 @@ sub datetime_label ($) {
 
 sub dialog_anchor ($$$) {
    my ($k, $href, $opts) = @_;
+
+   exists $opts->{useIcon} or $opts->{useIcon} = \1;
 
    return js_window_config( $k, 'click', 'modalDialog', [ "${href}", $opts ] );
 }

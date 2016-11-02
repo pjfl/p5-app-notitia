@@ -182,7 +182,7 @@ my $_authenticated_login_links = sub {
    my $title = locm $req, 'Person Profile';
 
    push @{ $js }, dialog_anchor( 'profile-user', $href, {
-      name => 'profile-user', title => $title, useIcon => \1 } );
+      name => 'profile-user', title => $title, } );
 
    $req->session->enable_2fa and push @{ $list }, $nav_linkto->( $req, {
       class => $page->{selected} eq 'totp_secret' ? 'selected' : NUL,
@@ -389,13 +389,13 @@ my $_unauthenticated_login_links = sub {
    my $title = locm $req, 'TOTP Information Request';
 
    push @{ $js }, dialog_anchor( 'totp-request', $href, {
-      name => 'totp-request', title => $title, useIcon => \1 } );
+      name => 'totp-request', title => $title, } );
 
    $href  = uri_for_action $req, 'user/reset';
    $title = locm $req, 'Reset Password';
 
    push @{ $js }, dialog_anchor( 'request-reset', $href, {
-      name => 'request-reset', title => $title, useIcon => \1 } );
+      name => 'request-reset', title => $title, } );
 
    return;
 };
@@ -511,7 +511,7 @@ sub credit_links {
    my $href = uri_for_action $req, $places->{about};
 
    push @{ $page->{literal_js} }, dialog_anchor( 'about', $href, {
-      name => 'about', title => locm( $req, 'About' ), useIcon => \1 } );
+      name => 'about', title => locm( $req, 'About' ), } );
 
    p_link $links, 'changes', uri_for_action( $req, $places->{changes} ), {
       request => $req };

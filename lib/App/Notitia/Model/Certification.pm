@@ -150,9 +150,7 @@ my $_files_ops_links = sub {
 
    push @{ $page->{literal_js} //= [] },
       dialog_anchor( 'upload_document', $href, {
-         name    => 'document_upload',
-         title   => loc( $req, 'Document Upload' ),
-         useIcon => \1 } );
+         name => 'document_upload', title => loc( $req, 'Document Upload' ) } );
 
    return $links;
 };

@@ -194,7 +194,7 @@ my $_month_rota_ops_links = sub {
    p_link $links, $name, '#', { class => 'windows', request => $req };
 
    push @{ $page->{literal_js} }, dialog_anchor( $name, $href, {
-      name => $name, title => locm( $req, "${name}_title" ), useIcon => \1 } );
+      name => $name, title => locm( $req, "${name}_title" ), } );
 
    return $links;
 };

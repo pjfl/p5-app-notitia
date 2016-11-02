@@ -48,7 +48,7 @@ my $_add_editing_js = sub {
                search => 'Search Documents', upload => 'Upload File', };
 
    for my $name (keys %{ $map }) {
-      my $opts = { title => locm( $req, $map->{ $name } ), useIcon => \1 };
+      my $opts = { title => locm( $req, $map->{ $name } ) };
 
       $name eq 'rename'and $opts->{value} = $page->{url};
       $self->$_add_dialog_js( $req, $page, $name, $opts );

@@ -191,7 +191,7 @@ my $_summary_cell_js = sub {
    my ($page, $id, $href, $title) = @_;
 
    push @{ $page->{literal_js} }, dialog_anchor( $id, $href, {
-      name => $id, title => $title, useIcon => \1 } );
+      name => $id, title => $title, } );
 
    return;
 };

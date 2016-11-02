@@ -414,7 +414,7 @@ my $_journey_package_row = sub {
    my $tip = locm $req, 'update_package_tip';
 
    push @{ $page->{literal_js} }, dialog_anchor( $name, $href, {
-      name => $name, title => $title, useIcon => \1 } );
+      name => $name, title => $title, } );
 
    return
       [ { class  => 'narrow', value => $package->quantity },
@@ -450,7 +450,7 @@ my $_journey_package_ops_links = sub {
    my $href = uri_for_action $req, $actionp, [ $jid ];
 
    push @{ $page->{literal_js} }, dialog_anchor( 'create_package', $href, {
-      name => 'create_package', title => $title, useIcon => \1 } );
+      name => 'create_package', title => $title, } );
 
    return $links;
 };
@@ -471,7 +471,7 @@ my $_journeys_ops_links = sub {
 
       p_link $links, $name, '#', { class => 'windows', request => $req };
       push @{ $page->{literal_js} }, dialog_anchor( $name, $href, {
-         name => $name, title => $title, useIcon => \1 } );
+         name => $name, title => $title, } );
 
       $actionp = $self->moniker.'/journey';
       p_link $links, 'journey', uri_for_action( $req, $actionp ), {
