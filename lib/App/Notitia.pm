@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev: 60 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev: 61 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -43,7 +43,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.8.$Rev: 60 $ of B<App::Notitia>
+This documents version v0.8.$Rev: 61 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -183,7 +183,7 @@ started in the foreground with:
    plackup bin/notitia-server
 
 Users must authenticate against the C<Person> table in the database.
-The default user is C<admin> password C<12345678>. You should
+The default user is C<admin> password C<abc12345>. You should
 change that via the change password page the link for which is at
 the top of the default page. To start the production server in the
 background listening on a Unix socket:

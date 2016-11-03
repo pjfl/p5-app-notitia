@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.8.$Rev: 59 $ of **App::Notitia**
+This documents version v0.8.$Rev: 61 $ of **App::Notitia**
 
 # Description
 
@@ -141,7 +141,7 @@ started in the foreground with:
     plackup bin/notitia-server
 
 Users must authenticate against the `Person` table in the database.
-The default user is `admin` password `12345678`. You should
+The default user is `admin` password `abc12345`. You should
 change that via the change password page the link for which is at
 the top of the default page. To start the production server in the
 background listening on a Unix socket:
