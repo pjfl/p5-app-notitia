@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes editor posts renaming
           - Adds create delivery stage email
           - Unique constraint on Incident title and raised
           - Vacant slot email uses only one template

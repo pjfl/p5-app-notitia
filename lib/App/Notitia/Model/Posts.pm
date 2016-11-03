@@ -138,7 +138,7 @@ sub page : Role(anon) {
 }
 
 sub rename_file_action : Role(editor) Role(event_manager) Role(person_manager) {
-   return $_[ 0 ]->rename_file( $_[ 1 ] );
+   return $_[ 0 ]->rename_file( $_[ 1 ], { prefix => $_[ 0 ]->config->posts } );
 }
 
 sub rss_feed : Role(anon) {

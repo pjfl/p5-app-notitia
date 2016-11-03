@@ -79,12 +79,14 @@ my $extension2format = sub {
 };
 
 my $get_tip_text = sub {
-   my ($root, $node) = @_;
+   my ($conf, $node) = @_; my $path = $node->{path} or return NUL;
 
-   my $path = $node->{path} or return NUL; my $text = $path->abs2rel( $root );
+   my $root = $conf->docs_root;
+   my $text = $path->abs2rel( $root ); $text =~ s{ \A [a-z]+ / }{}mx;
+   my $posts = $conf->posts; $text =~ s{ \A $posts / }{}mx;
 
-   $text =~ s{ \A [a-z]+ / }{}mx; $text =~ s{ \. .+ \z }{}mx;
-   $text =~ s{ [/] }{ / }gmx;     $text =~ s{ [_] }{ }gmx;
+   $text =~ s{ \. .+ \z }{}mx; $text =~ s{ [/] }{ / }gmx;
+   $text =~ s{ [_] }{ }gmx;
 
    return $text;
 };
@@ -245,7 +247,7 @@ sub build_navigation ($$) {
       $link->{class}  = $node->{type} eq 'folder' ? 'folder-link' : 'file-link';
       $link->{depth} -= $opts->{depth_offset};
       $link->{href }  = uri_for_action( $req, $opts->{path}, [ $link->{url} ] );
-      $link->{tip  }  = $get_tip_text->( $opts->{config}->docs_root, $node );
+      $link->{tip  }  = $get_tip_text->( $opts->{config}, $node );
       $link->{value}  = $opts->{label}->( $link );
 
       if (defined $ids->[ 0 ] and $ids->[ 0 ] eq $node->{id}) {

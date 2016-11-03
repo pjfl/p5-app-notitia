@@ -302,14 +302,15 @@ sub get_dialog {
 }
 
 sub rename_file {
-   my ($self, $req) = @_;
+   my ($self, $req, $opts) = @_; $opts //= {};
 
    my $conf     = $self->config;
    my $params   = $req->body_params;
    my $old_path = [ split m{ / }mx, $params->( 'old_path' ) ];
    my $node     = $self->find_node( $req->locale, $old_path )
       or throw 'Cannot find document tree node to rename';
-   my $new_node = $self->$_new_node( $req->locale, $params->( 'pathname' ) );
+   my $new_node = $self->$_new_node
+      ( $req->locale, $params->( 'pathname' ), $opts );
 
    $new_node->{path}->assert_filepath;
    $node->{path}->close->move( $new_node->{path} ); $_prune->( $node->{path} );
