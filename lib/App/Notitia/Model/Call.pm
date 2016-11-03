@@ -3,7 +3,7 @@ package App::Notitia::Model::Call;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PRIORITY_TYPE_ENUM
                                 PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_action p_button p_fields
+use App::Notitia::Form      qw( blank_form p_action p_button p_fields
                                 p_link p_list p_row p_select p_table
                                 p_tag p_textfield );
 use App::Notitia::Util      qw( check_field_js datetime_label dialog_anchor
@@ -109,7 +109,7 @@ my $_location_tuple = sub {
 my $_locations_headers = sub {
    my $req = shift; my $header = 'locations_heading';
 
-   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 0 ];
+   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 1 ];
 };
 
 my $_bind_customer = sub {
@@ -323,13 +323,11 @@ my $_bind_leg_fields = sub {
          beginning_id   => {
             class       => 'standard-field',
             disabled    => $disabled, type => 'select',
-            value       =>
-               $self->$_bind_beginning_location( $leg, $opts ) },
+            value       => $self->$_bind_beginning_location( $leg, $opts ) },
          ending_id      => {
             class       => 'standard-field',
             disabled    => $disabled, type => 'select',
-            value       =>
-               $self->$_bind_ending_location( $leg, $opts ) },
+            value       => $self->$_bind_ending_location( $leg, $opts ) },
          collection_eta => {
             disabled    => $disabled, type => 'datetime',
             value       => $leg->collection_eta_label },
@@ -381,9 +379,10 @@ my $_customers_row = sub {
    my ($self, $req, $customer) = @_; my $moniker = $self->moniker;
 
    my $href = uri_for_action $req, "${moniker}/customer", [ $customer->id ];
+   my $cell = {}; p_link $cell, 'customer', $href, {
+      request => $req, value => "${customer}" };
 
-   return [ { value => f_link 'customer', $href, {
-      request => $req, value => "${customer}" } }, ];
+   return [ $cell ];
 };
 
 my $_find_person = sub {
@@ -407,9 +406,10 @@ my $_journey_leg_row = sub {
    my ($self, $req, $jid, $leg) = @_;
 
    my $href = uri_for_action $req, $self->moniker.'/leg', [ $jid, $leg->id ];
+   my $cell = {}; p_link $cell, 'leg_operator', $href, {
+      request => $req, value => $leg->operator->label };
 
-   return [ { value => f_link 'leg_operator', $href, {
-      request => $req, value => $leg->operator->label } },
+   return [ $cell,
             { value => $leg->called_label },
             { value => $leg->beginning },
             { value => $leg->ending },
@@ -426,16 +426,17 @@ my $_journey_package_row = sub {
    my $name = "update_${package_type}_package";
    my $value = locm $req, $package_type;
    my $tip = locm $req, 'update_package_tip';
+   my $link = { value => $value };
+
+   $disabled or p_link $link, $name, '#', {
+      class => 'windows', request => $req, tip => $tip, value => $value };
 
    push @{ $page->{literal_js} }, dialog_anchor( $name, $href, {
       name => $name, title => $title, } );
 
    return
-      [ { class  => 'narrow', value => $package->quantity },
-        { value  => $disabled ? $value : f_link $name, '#', {
-           class => 'windows', request => $req, tip => $tip,
-           value => $value } },
-        { value  => $package->description }, ];
+      [ { class => 'narrow', value => $package->quantity }, $link,
+        { value => $package->description }, ];
 };
 
 my $_journey_leg_ops_links = sub {
@@ -498,11 +499,12 @@ my $_journeys_ops_links = sub {
 my $_journeys_row = sub {
    my ($self, $req, $done, $journey) = @_;
 
-   my $href = uri_for_action $req, $self->moniker.'/journey', [ $journey->id ];
    my $package = ($journey->packages->all)[ 0 ];
+   my $href = uri_for_action $req, $self->moniker.'/journey', [ $journey->id ];
+   my $cell = {}; p_link $cell, 'delivery_request', $href, {
+      request => $req, value => $journey->customer, };
 
-   return [ { value => f_link 'delivery_request', $href, {
-      request => $req, value => $journey->customer, } },
+   return [ $cell,
             { value => $done ? $journey->delivered_label
                              : $journey->requested_label },
             { value => locm $req, $journey->priority },
@@ -535,9 +537,10 @@ my $_locations_row = sub {
    my ($self, $req, $location) = @_; my $moniker = $self->moniker;
 
    my $href = uri_for_action $req, "${moniker}/location", [ $location->id ];
+   my $cell = {}; p_link $cell, 'location', $href, {
+      request => $req, value => "${location}" };
 
-   return [ { value => f_link 'location', $href, {
-      request => $req, value => "${location}" } }, ];
+   return [ $cell, { value => $location->postcode } ];
 };
 
 my $_maybe_find = sub {
@@ -964,9 +967,8 @@ sub delete_package_action : Role(controller) {
 
    my $journey_id = $req->uri_params->( 0 );
    my $package_type = $req->uri_params->( 1 );
-   my $type_rs = $self->schema->resultset( 'Type' );
-   my $package = $self->$_maybe_find_package
-      ( $type_rs, $journey_id, $package_type );
+   my $rs = $self->schema->resultset( 'Type' );
+   my $package = $self->$_maybe_find_package( $rs, $journey_id, $package_type );
 
    $package->delete;
 
@@ -978,9 +980,9 @@ sub delete_package_action : Role(controller) {
    my $actionp = $self->moniker.'/journey';
    my $location = uri_for_action $req, $actionp, [ $journey_id ];
    my $key = 'Package type [_1] for delivery request [_2] deleted by [_3]';
+   my $who = $req->session->user_label;
 
-   $message = [ to_msg $key, $package_type,
-                $journey_id, $req->session->user_label ];
+   $message = [ to_msg $key, $package_type, $journey_id, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -1083,7 +1085,8 @@ sub leg : Role(controller) Role(driver) Role(rider) {
    my $action  =  $lid ? 'update' : 'create';
    my $form    =  blank_form 'leg', $href;
    my $page    =  {
-      forms    => [ $form ], selected => $done ? 'completed' : 'journeys',
+      forms    => [ $form ],
+      selected => $done ? 'completed_journeys' : 'journeys',
       title    => locm $req, 'journey_leg_title'
    };
    my $links    = $self->$_leg_ops_links( $req, $page, $jid );

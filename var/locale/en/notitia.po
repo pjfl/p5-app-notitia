@@ -987,6 +987,9 @@ msgstr "Location"
 msgid "locations_heading_0"
 msgstr "Location Address"
 
+msgid "locations_heading_1"
+msgstr "Postcode"
+
 msgid "locations_list_link"
 msgstr "Locations"
 
