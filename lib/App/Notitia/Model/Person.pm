@@ -597,7 +597,7 @@ sub update_person_action : Role(person_manager) {
    try {
       $person->update;
       $pcode ne $person->postcode
-         and $self->create_coordinate_lookup_job( $person );
+         and $self->create_coordinate_lookup_job( {}, $person );
    }
    catch { $self->blow_smoke( $_, 'update', 'person', $label ) };
 
