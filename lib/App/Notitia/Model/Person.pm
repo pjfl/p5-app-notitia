@@ -420,7 +420,7 @@ sub create_person_action : Role(person_manager) {
 
    my $create = sub {
       $person->insert; $role and $person->add_member_to( $role );
-      $self->create_coordinate_lookup_job( $person );
+      $self->create_coordinate_lookup_job( {}, $person );
    };
 
    try   { $self->schema->txn_do( $create ) }
