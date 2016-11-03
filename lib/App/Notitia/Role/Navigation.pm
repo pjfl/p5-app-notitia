@@ -267,12 +267,15 @@ my $_people_links = sub {
 my $_report_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
-   $self->$_allowed( $req, 'report/people' )
-      or $self->$_allowed( $req, 'report/slots' ) or return;
+   my $is_allowed_people = $self->$_allowed( $req, 'report/people' );
+   my $is_allowed_slots  = $self->$_allowed( $req, 'report/slots' );
+   my $is_allowed_calls  = $self->$_allowed( $req, 'report/calls' );
+
+   $is_allowed_people or $is_allowed_slots or $is_allowed_calls or return;
 
    push @{ $list }, $nav_folder->( $req, 'reports', { tip => 'Report Menu' } );
 
-   $self->$_allowed( $req, 'report/people' ) and push @{ $list },
+   $is_allowed_people and push @{ $list },
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'people_report' ? 'selected' : NUL,
          name => 'people_report', }, 'report/people', [],
@@ -282,7 +285,7 @@ my $_report_links = sub {
          name => 'people_meta_report', }, 'report/people_meta', [],
                      period => 'year-to-date' );
 
-   $self->$_allowed( $req, 'report/slots' ) and push @{ $list },
+   $is_allowed_slots and push @{ $list },
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'slot_report' ? 'selected' : NUL,
          name => 'slot_report', }, 'report/slots', [],
@@ -290,6 +293,12 @@ my $_report_links = sub {
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'vehicle_report' ? 'selected' : NUL,
          name => 'vehicle_report', }, 'report/vehicles', [],
+                     period => 'year-to-date' );
+
+   $is_allowed_calls and push @{ $list },
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'call_report' ? 'selected' : NUL,
+         name => 'call_report', }, 'report/calls', [],
                      period => 'year-to-date' );
 
    return;

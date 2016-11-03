@@ -7,6 +7,8 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'report';
 
 sub dispatch_request {
+   sub (GET  + /calls-report          + ?*) { [ 'report/calls',        @_ ] },
+   sub (GET  + /calls-report/**       + ?*) { [ 'report/calls',        @_ ] },
    sub (GET  + /people-meta-report    + ?*) { [ 'report/people_meta',  @_ ] },
    sub (GET  + /people-meta-report/** + ?*) { [ 'report/people_meta',  @_ ] },
    sub (GET  + /people-report         + ?*) { [ 'report/people',       @_ ] },

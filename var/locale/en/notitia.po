@@ -207,11 +207,35 @@ msgstr "Call Category"
 msgid "call_category"
 msgstr "Call Category"
 
+msgid "call_report_link"
+msgstr "Call Report"
+
+msgid "call_report_tip"
+msgstr "View the counts by customer of delviery requests"
+
+msgid "call_report_title"
+msgstr "Call Report"
+
 msgid "call_viewer"
 msgstr "Call Viewer"
 
 msgid "calls_management_heading"
 msgstr "Calls"
+
+msgid "calls_report_heading_0"
+msgstr "Customer"
+
+msgid "calls_report_heading_1"
+msgstr "Routine"
+
+msgid "calls_report_heading_2"
+msgstr "Urgent"
+
+msgid "calls_report_heading_3"
+msgstr "Emergency"
+
+msgid "calls_report_heading_4"
+msgstr "Total"
 
 msgid "calls_tip"
 msgstr "Log incomming calls from other agencies"

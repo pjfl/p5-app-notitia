@@ -17,20 +17,20 @@ my $_find_by_shortcode = sub {
 sub search_for_journeys {
    my ($self, $opts) = @_; $opts = { %{ $opts // () } };
 
-   my $done = delete $opts->{done};
-   my $is_viewer = delete $opts->{is_viewer};
+   my $parser = $self->result_source->schema->datetime_parser;
+   my $done = delete $opts->{done} ? TRUE : FALSE;
+   my $is_viewer = delete $opts->{is_viewer} ? TRUE : FALSE;
    my $scode = delete $opts->{controller};
    my $where = { completed => $done };
 
-   not $is_viewer and $done
-      and $where->{controller_id} = $self->$_find_by_shortcode( $scode )->id;
+   set_rota_date $parser, $where, 'requested', $opts;
 
    if ($done) {
-      unless ($is_viewer) {
-         my $parser = $self->result_source->schema->datetime_parser;
+      if (not $is_viewer and $scode) {
+         my $after = now_dt->subtract( hours => 24 );
 
-         $opts->{after} = now_dt->subtract( hours => 24 );
-         set_rota_date $parser, $where, 'delivered', $opts;
+         $where->{ 'delivered' }->{ '>' } = $parser->format_datetime( $after );
+         $where->{controller_id} = $self->$_find_by_shortcode( $scode )->id;
       }
 
       $opts->{order_by} = { -desc => 'delivered' };

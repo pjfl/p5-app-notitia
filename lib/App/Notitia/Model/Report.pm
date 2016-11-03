@@ -4,8 +4,8 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_cell p_date
                                 p_hidden p_list p_row p_select p_table );
-use App::Notitia::Util      qw( js_submit_config locm make_tip now_dt to_dt
-                                register_action_paths slot_limit_index
+use App::Notitia::Util      qw( js_submit_config local_dt locm make_tip now_dt
+                                to_dt register_action_paths slot_limit_index
                                 uri_for_action );
 use Class::Usul::Functions  qw( sum throw );
 use Moo;
@@ -19,6 +19,7 @@ with    q(App::Notitia::Role::Navigation);
 has '+moniker' => default => 'report';
 
 register_action_paths
+   'report/calls' => 'calls-report',
    'report/controls' => 'report-controls',
    'report/people_meta' => 'people-meta-report',
    'report/people' => 'people-report',
@@ -52,10 +53,6 @@ around 'get_stash' => sub {
 my @ROLES = qw( active rider controller driver fund_raiser );
 
 # Private functions
-my $_local_dt = sub {
-   return $_[ 0 ]->clone->set_time_zone( 'local' );
-};
-
 my $_select_periods = sub {
    return
       [ 'Last month', 'last-month' ],
@@ -85,8 +82,8 @@ my $_display_period = sub {
 my $_dl_links = sub {
    my ($req, $type, $opts) = @_;
 
-   my $after = $_local_dt->( $opts->{after} )->ymd;
-   my $before = $_local_dt->( $opts->{before} )->ymd;
+   my $after = local_dt( $opts->{after} )->ymd;
+   my $before = local_dt( $opts->{before} )->ymd;
    my $csv_opts = {
       class => 'button', container_class => 'right',
       download => "${type}-report_${after}_${before}.csv", request => $req,
@@ -102,15 +99,17 @@ my $_dl_links = sub {
 my $_exclusive_date_range = sub {
    my $opts = shift; $opts = { %{ $opts } }; delete $opts->{period};
 
-   $opts->{after} = $opts->{after}->clone->subtract( days => 1 );
-   $opts->{before} = $opts->{before}->clone->add( days => 1 );
+   $opts->{after} = $opts->{after}->clone->truncate( to => 'day' )
+                                         ->subtract( seconds => 1 );
+   $opts->{before} = $opts->{before}->clone->add( days => 1 )
+                                           ->truncate( to => 'day' );
    return $opts;
 };
 
 my $_expand_range = sub {
    my $period = shift; my $now = now_dt;
 
-   my $after = $_local_dt->( $now ); my $before = $_local_dt->( $now );
+   my $after = local_dt $now; my $before = local_dt $now;
 
    if ($period eq 'last-month') {
       $after = $after->subtract( months => 1 )->truncate( to => 'month' ) ;
@@ -153,9 +152,7 @@ my $_find_insertion_pos = sub {
 };
 
 my $_get_bucket = sub {
-   my ($df, $data, $lookup, $dt) = @_;
-
-   my $key = $df->( $_local_dt->( $dt ) );
+   my ($df, $data, $lookup, $dt) = @_; my $key = $df->( local_dt $dt );
 
    exists $lookup->{ $key } and return $lookup->{ $key };
 
@@ -170,7 +167,7 @@ my $_get_date_function = sub {
    my $opts = shift;
    my $after = $opts->{after};
    my $before = $opts->{before};
-   my $drtn = $_local_dt->( $after )->delta_md( $_local_dt->( $before ) );
+   my $drtn = local_dt( $after )->delta_md( local_dt $before );
 
    if ($drtn->years > 2 or ($drtn->years == 2
        and ($drtn->months > 0 or $drtn->weeks > 0 or $drtn->days > 0))) {
@@ -223,7 +220,7 @@ my $_inc_resource_count = sub {
 my $_link_args = sub {
    my ($name, $basis, $dt) = @_;
 
-   my $from = $_local_dt->( $dt ); my $to = $_local_dt->( $dt );
+   my $from = local_dt $dt; my $to = local_dt $dt;
 
    if ($basis eq 'year') {
       $from = $from->truncate( to => 'year' );
@@ -258,7 +255,7 @@ my $_onchange_submit = sub {
 
    push @{ $page->{literal_js} },
       js_submit_config $k, 'change', 'submitForm',
-                       [ 'display_control', 'display-control' ];
+                       [ 'date_control', 'date-control' ];
 
    return;
 };
@@ -321,8 +318,8 @@ my $_people_meta_header_link = sub {
    my ($req, $moniker, $opts, $col) = @_;
 
    my $name = "people_meta_summary_heading_${col}";
-   my $from = $_local_dt->( $opts->{after} )->ymd;
-   my $to   = $_local_dt->( $opts->{before} )->ymd;
+   my $from = local_dt( $opts->{after} )->ymd;
+   my $to   = local_dt( $opts->{before} )->ymd;
    my $args = [ $ROLES[ $col - 1 ], $from, $to ];
    my $href = uri_for_action $req,"${moniker}/people_meta", $args;
 
@@ -353,6 +350,26 @@ my $_people_meta_table = sub {
 };
 
 # Private methods
+my $_calls_by_customer = sub {
+   my ($self, $opts) = @_;
+
+   $opts = $_exclusive_date_range->( $opts ); $opts->{done} = TRUE;
+
+   my $rs = $self->schema->resultset( 'Journey' ); my $data = {};
+
+   for my $journey ($rs->search_for_journeys( $opts )->all) {
+      my $customer = $journey->customer;
+      my $rec = $data->{ $customer->id } //= { customer => $customer };
+      my $index = 0;
+
+      $journey->priority eq 'urgent' and $index = 1;
+      $journey->priority eq 'emergency' and $index = 2;
+      $rec->{count}->[ $index ] //= 0; $rec->{count}->[ $index ]++;
+   }
+
+   return $data;
+};
+
 my $_counts_by_person = sub {
    my ($self, $opts) = @_;
 
@@ -388,7 +405,7 @@ my $_counts_by_slot = sub {
    my $data = []; my $lookup = {}; $opts->{order_by} = 'rota.date';
 
    for my $slot ($slot_rs->search_for_slots( $opts )->all) {
-      my $key = $df->( my $date = $_local_dt->( $slot->date ) );
+      my $key = $df->( my $date = local_dt $slot->date );
       my $rec = { date => $date };
 
       if (exists $lookup->{ $key }) { $rec = $lookup->{ $key } }
@@ -505,9 +522,9 @@ my $_get_period_options = sub {
 
    my $now = now_dt;
    my $after = $req->uri_params->( $pos, { optional => TRUE } )
-      // $_local_dt->( $now )->truncate( to => 'year' )->ymd;
+      // local_dt( $now )->truncate( to => 'year' )->ymd;
    my $before = $req->uri_params->( $pos + 1, { optional => TRUE } )
-      // $_local_dt->( $now )->subtract( days => 1 )->ymd;
+      // local_dt( $now )->subtract( days => 1 )->ymd;
 
    $opts->{after} = to_dt $after; $opts->{before} = to_dt $before;
    $opts->{period} = $req->query_params->( 'period', { optional => TRUE } );
@@ -576,11 +593,38 @@ my $_slots_row = sub {
 };
 
 # Public methods
-sub display_control_action : Role(person_manager) Role(rota_manager) {
+sub calls : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $actp = $self->moniker.'/controls';
+   my $opts = $self->$_get_period_options( $req, 0 );
+   my $href = uri_for_action $req, $actp, [ 'calls' ];
+   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $page = { forms => [ $form ], selected => 'call_report',
+                title => locm $req, 'call_report_title' };
+
+   $_push_date_controls->( $page, $opts );
+
+   my $data = $self->$_calls_by_customer( $opts );
+   my $headers = $_report_headers->( $req, 'calls', 4 );
+   my $table = $page->{content} = p_table $form, { headers => $headers };
+
+   p_row $table, [ map   { $_report_row->( $_->{customer}->name, $_, 3 ) }
+                   map   { $data->{ $_ } }
+                   map   { $_sum_counts->( $data, $_, 3 ) }
+                   keys %{ $data } ];
+
+   p_list $form, NUL, $_dl_links->( $req, 'calls', $opts ), $_link_opts->();
+
+   return $self->get_stash( $req, $page );
+}
+
+sub date_control_action : Role(person_manager) Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $report = $req->uri_params->( 0 );
-   my $args = [ $req->uri_params->( 1 ) ];
+   my $arg1 = $req->uri_params->( 1, { optional => TRUE } );
+   my $args = []; $arg1 and push @{ $args }, $arg1;
    my $after = $req->body_params->( 'after_date' );
    my $before = $req->body_params->( 'before_date' );
    my $prev_after = $req->body_params->( 'prev_after_date' );
@@ -593,8 +637,8 @@ sub display_control_action : Role(person_manager) Role(rota_manager) {
       $params->{period} = $period;
    }
 
-   push @{ $args }, $_local_dt->( to_dt $after )->ymd;
-   push @{ $args }, $_local_dt->( to_dt  $before )->ymd;
+   push @{ $args }, local_dt( to_dt $after )->ymd;
+   push @{ $args }, local_dt( to_dt $before )->ymd;
 
    my $actionp = $self->moniker."/${report}";
    my $location = uri_for_action $req, $actionp, $args, $params;
@@ -609,9 +653,8 @@ sub people : Role(person_manager) {
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
    my $href = uri_for_action $req, $actp, [ 'people', $opts->{rota_name} ];
-   my $form = blank_form 'display-control', $href, { class => 'wide-form' };
-   my $page = { forms => [ $form ],
-                selected => 'people_report',
+   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $page = { forms => [ $form ], selected => 'people_report',
                 title => locm $req, 'people_report_title' };
 
    $_push_date_controls->( $page, $opts );
@@ -639,9 +682,8 @@ sub people_meta : Role(person_manager) {
       ( $req, 1, $self->$_get_role_name( $req ) );
    my $name = $opts->{role_name};
    my $href = uri_for_action $req, $actp, [ 'people_meta', $name ];
-   my $form = blank_form 'display-control', $href, { class => 'wide-form' };
-   my $page = { forms => [ $form ],
-                selected => 'people_meta_report',
+   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $page = { forms => [ $form ], selected => 'people_meta_report',
                 title => $_people_meta_report_title->( $req, $name ) };
 
    $_push_date_controls->( $page, $opts );
@@ -656,7 +698,7 @@ sub people_meta : Role(person_manager) {
          ( $req, $form, $data, $opts );
    }
 
-   p_list $form, NUL, $_dl_links->( $req, 'people meta', $opts ),
+   p_list $form, NUL, $_dl_links->( $req, 'people_meta', $opts ),
       $_link_opts->();
 
    return $self->get_stash( $req, $page );
@@ -670,9 +712,8 @@ sub slots : Role(rota_manager) {
       ( $req, 1, $self->$_get_rota_name( $req ) );
    my $name = $opts->{rota_name};
    my $href = uri_for_action $req, $actp, [ 'slots', $name ];
-   my $form = blank_form 'display-control', $href, { class => 'wide-form' };
-   my $page = { forms => [ $form ],
-                selected => 'slot_report',
+   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $page = { forms => [ $form ], selected => 'slot_report',
                 title => locm $req, 'slot_report_title' };
 
    $_push_date_controls->( $page, $opts );
@@ -700,9 +741,8 @@ sub vehicles : Role(rota_manager) {
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
    my $href = uri_for_action $req, $actp, [ 'vehicles', $opts->{rota_name} ];
-   my $form = blank_form 'display-control', $href, { class => 'wide-form' };
-   my $page = { forms => [ $form ],
-                selected => 'vehicle_report',
+   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $page = { forms => [ $form ], selected => 'vehicle_report',
                 title => locm $req, 'vehicle_report_title' };
 
    $_push_date_controls->( $page, $opts );
