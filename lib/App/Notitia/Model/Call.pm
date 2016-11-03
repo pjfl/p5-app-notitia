@@ -767,7 +767,7 @@ sub create_delivery_request_action : Role(controller) {
    $self->send_event( $req, $message );
 
    my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
-   my $key = 'Package type [_1] for delivery request [_2] deleted by [_3]';
+   my $key = 'Delivery request [_1] for [_2] created by [_3]';
 
    $message = [ to_msg $key, $jid, $customer->name, $req->session->user_label ];
 
@@ -794,9 +794,9 @@ sub create_delivery_stage_action : Role(controller) {
    $self->send_event( $req, $message );
 
    my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
-   my $key = 'Stage [_1] of delivery request [_2] created by [_3]';
+   my $key = 'Stage [_2] of delivery request [_1] created by [_3]';
 
-   $message = [ to_msg $key, $lid, $jid, $req->session->user_label ];
+   $message = [ to_msg $key, $jid, $lid, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -902,11 +902,9 @@ sub delete_customer_action : Role(controller) {
 
    my $cid = $req->uri_params->( 0 );
    my $custer = $self->schema->resultset( 'Customer' )->find( $cid );
-
-   $custer->delete;
-
+   my $c_name = $custer->name; $custer->delete;
    my $who = $req->session->user_label;
-   my $message = [ to_msg 'Customer [_1] deleted by [_2]', $cid, $who ];
+   my $message = [ to_msg 'Customer [_1] deleted by [_2]', $c_name, $who ];
    my $location = uri_for_action $req, $self->moniker.'/customers';
 
    return { redirect => { location => $location, message => $message } };
@@ -939,8 +937,8 @@ sub delete_delivery_stage_action : Role(controller) {
    my $jid      = $req->uri_params->( 0 );
    my $lid      = $req->uri_params->( 1 );
    my $leg      = $self->schema->resultset( 'Leg' )->find( $lid ); $leg->delete;
-   my $key      = 'Stage [_1] of delivery request [_2] deleted by [_3]';
-   my $message  = [ to_msg $key, $lid, $jid, $req->session->user_label ];
+   my $key      = 'Stage [_2] of delivery request [_1] deleted by [_3]';
+   my $message  = [ to_msg $key, $jid, $lid, $req->session->user_label ];
    my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
 
    return { redirect => { location => $location, message => $message } };
@@ -951,11 +949,9 @@ sub delete_location_action : Role(controller) {
 
    my $lid = $req->uri_params->( 0 );
    my $location = $self->schema->resultset( 'Location' )->find( $lid );
-
-   $location->delete;
-
+   my $address = $location->address; $location->delete;
    my $who = $req->session->user_label;
-   my $message = [ to_msg 'Location [_1] deleted by [_2]', $lid, $who ];
+   my $message = [ to_msg 'Location [_1] deleted by [_2]', $address, $who ];
 
    $location = uri_for_action $req, $self->moniker.'/locations';
 
@@ -979,10 +975,10 @@ sub delete_package_action : Role(controller) {
 
    my $actionp = $self->moniker.'/journey';
    my $location = uri_for_action $req, $actionp, [ $journey_id ];
-   my $key = 'Package type [_1] for delivery request [_2] deleted by [_3]';
+   my $key = 'Package type [_2] for delivery request [_1] deleted by [_3]';
    my $who = $req->session->user_label;
 
-   $message = [ to_msg $key, $package_type, $journey_id, $who ];
+   $message = [ to_msg $key, $journey_id, $package_type, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -1195,11 +1191,9 @@ sub update_customer_action : Role(controller) {
 
    my $cid = $req->uri_params->( 0 );
    my $custer = $self->schema->resultset( 'Customer' )->find( $cid );
-
-   $custer->name( $req->body_params->( 'name' ) ); $custer->update;
-
+   my $c_name = $custer->name( $req->body_params->( 'name' ) ); $custer->update;
    my $who = $req->session->user_label;
-   my $message = [ to_msg 'Customer [_1] updated by [_2]', $cid, $who ];
+   my $message = [ to_msg 'Customer [_1] updated by [_2]', $c_name, $who ];
    my $location = uri_for_action $req, $self->moniker.'/customers';
 
    return { redirect => { location => $location, message => $message } };
@@ -1226,8 +1220,9 @@ sub update_delivery_request_action : Role(controller) {
 
    $self->send_event( $req, $message );
 
-   $message = [ to_msg 'Delivery request [_1] for [_2] updated by [_3]',
-                $jid, $c_name, $req->session->user_label ];
+   my $key = 'Delivery request [_1] for [_2] updated by [_3]';
+
+   $message = [ to_msg $key, $jid, $c_name, $req->session->user_label ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
@@ -1264,8 +1259,8 @@ sub update_delivery_stage_action : Role(controller) Role(driver) Role(rider) {
 
    $self->$_send_stage_events( $req, $journey, $leg, $completed, $params );
 
-   my $key = 'Stage [_1] of delivery request [_2] updated by [_3]';
-   my $message = [ to_msg $key, $lid, $jid, $req->session->user_label ];
+   my $key = 'Stage [_2] of delivery request [_1] updated by [_3]';
+   my $message = [ to_msg $key, $jid, $lid, $req->session->user_label ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }
@@ -1285,7 +1280,7 @@ sub update_location_action : Role(controller) {
 
    my $key = 'Location [_1] updated by [_2]';
 
-   $message = [ to_msg $key, $lid, $req->session->user_label ];
+   $message = [ to_msg $key, $location->address, $req->session->user_label ];
    $location = uri_for_action $req, $self->moniker.'/locations';
 
    return { redirect => { location => $location, message => $message } };
@@ -1310,10 +1305,10 @@ sub update_package_action : Role(controller) {
 
    my $actionp = $self->moniker.'/journey';
    my $location = uri_for_action $req, $actionp, [ $journey_id ];
-   my $key = 'Package type [_1] for delivery request [_2] updated by [_3]';
+   my $key = 'Package type [_2] for delivery request [_1] updated by [_3]';
    my $who = $req->session->user_label;
 
-   $message = [ to_msg $key, $package_type, $journey_id, $who ];
+   $message = [ to_msg $key, $journey_id, $package_type, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
