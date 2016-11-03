@@ -109,7 +109,9 @@ my $_make_template = sub {
 
 # Public methods
 sub create_coordinate_lookup_job {
-   my ($self, $stash, $object) = @_; $object->postcode or return;
+   my ($self, $stash, $object) = @_;
+
+   ($object and $object->postcode) or return;
 
    my ($object_type) = blessed( $object ) =~ m{ :: ([^\:]+) \z }mx;
    my $id = $object_type eq 'Person' ? $object->shortcode : $object->id;
@@ -151,13 +153,13 @@ sub dump_event_attr : method {
    my $self = shift; $self->plugins; my $cache = event_handler_cache;
 
    if ($self->options->{not_enabled}) {
-      for my $sink_name (keys %{ $cache }) {
-         my $allowed = $self->config->automated->{ $sink_name } // [];
-         my @keys = keys %{ $cache->{ $sink_name } };
+      for my $stream (keys %{ $cache }) {
+         my $allowed = $self->config->automated->{ $stream } // [];
+         my @keys = keys %{ $cache->{ $stream } };
 
          for my $action (@keys) {
             ($action =~ m{ \A _ }mx or is_member $action, $allowed)
-               and delete $cache->{ $sink_name }->{ $action };
+               and delete $cache->{ $stream }->{ $action };
          }
       }
    }
@@ -215,23 +217,23 @@ sub send_event {
 
    my $inflated = $self->$_is_valid_message( $req, $message ) or return;
 
-   for my $sink_name (grep { not m{ \A _ }mx } keys %{ $conf->automated }) {
+   for my $stream (grep { not m{ \A _ }mx } keys %{ $conf->automated }) {
       try {
          my $stash = { %{ $inflated } };
-         my $level = delete $stash->{level}; $stash->{sink} = $sink_name;
-         my $input = event_handler( $sink_name, '_input_' )->[ 0 ];
+         my $level = delete $stash->{level}; $stash->{stream} = $stream;
+         my $input = event_handler( $stream, '_input_' )->[ 0 ];
 
          $input and $stash = $input->( $self, $req, $stash );
 
          my $action = $stash->{action};
 
-         is_member $action, $conf->automated->{ $sink_name }
-            or throw Disabled, [ $sink_name, $action ];
+         is_member $action, $conf->automated->{ $stream }
+            or throw Disabled, [ $stream, $action ];
 
-         for my $handler (@{ event_handler( $sink_name, $action ) }) {
+         for my $handler (@{ event_handler( $stream, $action ) }) {
             my $processed = $handler->( $self, $req, { %{ $stash } } ) or next;
 
-            for my $output (@{ event_handler( $sink_name, '_output_' ) }) {
+            for my $output (@{ event_handler( $stream, '_output_' ) }) {
                my $chained = $output->( $self, $req, { %{ $processed } } );
 
                $chained and $chained->{level} = $level

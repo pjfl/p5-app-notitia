@@ -393,14 +393,14 @@ sub enhance ($) {
 }
 
 sub event_handler ($$;&) {
-   my ($sink, $action, $handler) = @_;
+   my ($stream, $action, $handler) = @_;
 
-   $handler_cache->{ $sink }->{ $action } //= [];
+   $handler_cache->{ $stream }->{ $action } //= [];
 
    defined $handler
-       and push @{ $handler_cache->{ $sink }->{ $action } }, $handler;
+       and push @{ $handler_cache->{ $stream }->{ $action } }, $handler;
 
-   return $handler_cache->{ $sink }->{ $action };
+   return $handler_cache->{ $stream }->{ $action };
 };
 
 sub event_handler_cache () {

@@ -32,7 +32,7 @@ has_exception 'PasswordExpired' => parents => [ 'Authentication' ],
    error   => 'User [_1] authentication failed';
 
 has_exception 'Disabled' => parents => [ $class ],
-   error   => 'Event sink [_1] action [_2] is disabled';
+   error   => 'Event stream [_1] action [_2] is disabled';
 
 has_exception 'SlotFree' => parents => [ $class ],
    error   => 'Slot [_1] is free';

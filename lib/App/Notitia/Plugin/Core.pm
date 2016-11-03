@@ -13,11 +13,11 @@ has '+moniker' => default => 'core';
 # Event callbacks. Zero or one _input_ handler. One or more _output_ handlers
 # Condition
 event_handler 'condition', '_output_' => sub {
-   my ($self, $req, $stash) = @_; return $stash->{message_sink1};
+   my ($self, $req, $stash) = @_; return $stash->{condition_output1};
 };
 
 event_handler 'condition', '_output_' => sub {
-   my ($self, $req, $stash) = @_; return $stash->{message_sink2};
+   my ($self, $req, $stash) = @_; return $stash->{condition_output2};
 };
 
 # Email
