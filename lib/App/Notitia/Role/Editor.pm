@@ -379,10 +379,11 @@ sub upload_dialog {
 sub upload_file {
    my ($self, $req) = @_; my $conf = $self->config;
 
-   my $public = $req->body_params->( 'public_access', { optional => TRUE } )
-             || FALSE;
-   my $name   = $req->query_params->( 'name', { optional => TRUE } );
-   my $type   = $req->query_params->( 'type', { optional => TRUE } );
+   my $scrub  = '[^ \(\)\+\,\-\.0-9A-Z\[\]_a-z\~]';
+   my $opts   = { optional => TRUE, scrubber => $scrub };
+   my $public = $req->body_params->( 'public_access', $opts ) || FALSE;
+   my $name   = $req->query_params->( 'name', $opts );
+   my $type   = $req->query_params->( 'type', $opts );
 
    my $upload; ($req->has_upload and $upload = $req->upload)
       or throw Unspecified, [ 'upload object' ];
