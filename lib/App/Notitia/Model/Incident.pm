@@ -115,8 +115,7 @@ my $_bind_incident_fields = sub {
    my $disabled = $opts->{disabled} // FALSE;
    my $type_rs = $schema->resultset( 'Type' );
    my $categories = $type_rs->search_for_call_categories;
-   my $other_type_id = $type_rs->search( {
-      name => 'other', type_class => 'call_category', } )->first->id;
+   my $other_type_id = $type_rs->find_type_by( 'other', 'call_category' )->id;
 
    push @{ $page->{literal_js} }, js_window_config 'category', 'change',
       'showIfNeeded', [ 'category', $other_type_id, 'category_other_field' ];
