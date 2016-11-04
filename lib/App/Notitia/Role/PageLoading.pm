@@ -68,8 +68,9 @@ around 'load_page' => sub {
 
       my $node = $self->find_node( $locale, $req->uri_params->() ) or next;
 
-      is_access_authorised( $req, $node ) or throw '[_1] permission denied',
-         args => [ $who ], class => AuthenticationRequired->();
+      is_access_authorised( $req, $node )
+         or throw '[_1] authentication required',
+            args => [ $who ], class => AuthenticationRequired->();
 
       my $page = $self->initialise_page( $req, $node, $locale );
 

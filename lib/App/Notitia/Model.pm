@@ -81,8 +81,8 @@ my $_auth_redirect = sub {
    if ($class eq AuthenticationRequired->()) {
       my $wanted = $req->path || NUL; my $actionp = action_for_uri $wanted;
 
-      $actionp and not is_dialog $self->components, $actionp
-               and $req->session->wanted( $wanted );
+      (($actionp and not is_dialog $self->components, $actionp)
+       or (not $actionp and $wanted)) and $req->session->wanted( $wanted );
 
       return { redirect => { location => $location, message => [ $message ] } };
    }

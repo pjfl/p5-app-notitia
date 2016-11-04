@@ -92,8 +92,17 @@ my $_push_change_password_js = sub {
    return;
 };
 
-my $_push_grid_width_js = sub {
-   my ($page, $range, $width) = @_;
+my $_push_profile_js = sub {
+   my $page = shift; my $range = $page->{range};
+
+   my $opts = { domain => 'update', form => 'Person' };
+
+   push @{ $page->{literal_js} },
+      check_field_js( 'address',       $opts ),
+      check_field_js( 'email_address', $opts ),
+      check_field_js( 'home_phone',    $opts ),
+      check_field_js( 'mobile_phone',  $opts ),
+      check_field_js( 'postcode',      $opts );
 
    js_slider_config $page, 'grid_width_slider', {
       form_name => 'profile-user',
@@ -103,7 +112,7 @@ my $_push_grid_width_js = sub {
       range     => $range,
       snap      => \0,
       steps     => $range->[ 1 ] - $range->[ 0 ],
-      value     => $width,
+      value     => $page->{grid_width},
       wheel     => \1, };
 
    return;
@@ -123,18 +132,6 @@ my $_subtract = sub {
 };
 
 # Private methods
-my $_push_login_js = sub {
-   my ($self, $req, $page) = @_;
-
-   my $uri = uri_for_action $req, $self->moniker.'/show_if_needed', [],
-      { class => 'Person', test => 'totp_secret', };
-
-   push @{ $page->{literal_js} }, js_server_config 'username', 'blur',
-      'showIfNeeded', [ "${uri}", 'username', 'auth_code_label' ];
-
-   return;
-};
-
 my $_fetch_shortcode = sub {
    my ($self, $req) = @_; my $scode = 'unknown';
 
@@ -149,6 +146,18 @@ my $_fetch_shortcode = sub {
    $scode eq 'unknown' and $req->authenticated and $scode = $req->username;
 
    return $scode;
+};
+
+my $_push_login_js = sub {
+   my ($self, $req, $page) = @_;
+
+   my $uri = uri_for_action $req, $self->moniker.'/show_if_needed', [],
+      { class => 'Person', test => 'totp_secret', };
+
+   push @{ $page->{literal_js} }, js_server_config 'username', 'blur',
+      'showIfNeeded', [ "${uri}", 'username', 'auth_code_label' ];
+
+   return;
 };
 
 my $_themes_list = sub {
@@ -170,6 +179,44 @@ my $_update_session = sub {
    $session->user_label( $person->label );
    $session->username( $person->shortcode );
    $session->version( $self->config->session_version );
+   return;
+};
+
+my $_bind_profile_fields = sub {
+   my ($self, $req, $page, $person) = @_;
+
+   my $form    = $page->{forms}->[ 0 ];
+   my $has_2fa = $person->totp_secret ? TRUE : FALSE;
+   my $gw_size = int( log( $page->{range}->[ 1 ] ) / log( 10 ) ) + 1;
+
+   p_textfield $form, 'username', $person->label, { disabled => TRUE };
+
+   p_textfield $form, 'address', $person->address, {
+      class => 'standard-field server' };
+
+   p_textfield $form, 'postcode', $person->postcode, {
+      class => 'standard-field server required' };
+
+   p_textfield $form, 'email_address', $person->email_address, {
+      class => 'standard-field server required' };
+
+   p_textfield $form, 'mobile_phone', $person->mobile_phone, {
+      class => 'standard-field server'.($has_2fa ? ' required' : NUL) };
+
+   p_textfield $form, 'home_phone', $person->home_phone, {
+      class => 'standard-field server' };
+
+   p_select $form, 'theme', $self->$_themes_list( $req );
+
+   p_slider $form, 'grid_width', $page->{grid_width}, {
+      class => 'smallint-field', fieldsize => $gw_size,
+      id    => 'grid_width_slider', label_class => 'clear' };
+
+   p_radio $form, 'rows_per_page', $_rows_per_page->( $person ), {
+      label => 'Rows Per Page' };
+
+   p_checkbox $form, 'enable_2fa', TRUE, {
+      checked => $has_2fa, label_class => 'clear' };
    return;
 };
 
@@ -370,37 +417,23 @@ sub logout_action : Role(any) {
 sub profile : Role(any) {
    my ($self, $req) = @_;
 
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_by_shortcode( $req->username );
-   my $href      = uri_for_action $req, $self->moniker.'/profile';
-   my $form      = blank_form 'profile-user', $href;
-   my $page      = {
-      first_field => 'address', forms => [ $form ],
-      location => 'account_management', selected => 'profile',
-      title => locm $req, 'profile_title',
+   my $person_rs  =  $self->schema->resultset( 'Person' );
+   my $person     =  $person_rs->find_by_shortcode( $req->username );
+   my $href       =  uri_for_action $req, $self->moniker.'/profile';
+   my $form       =  blank_form 'profile-user', $href;
+   my $page       =  {
+      first_field => 'address',
+      forms       => [ $form ],
+      grid_width  => $req->session->grid_width,
+      location    => 'account_management',
+      range       => [ 978, 1180 ],
+      selected    => 'profile',
+      title       => locm $req, 'profile_title',
    };
 
-   p_textfield $form, 'username',      $person->label, { disabled => TRUE };
-   p_textfield $form, 'address',       $person->address;
-   p_textfield $form, 'postcode',      $person->postcode;
-   p_textfield $form, 'email_address', $person->email_address;
-   p_textfield $form, 'mobile_phone',  $person->mobile_phone;
-   p_textfield $form, 'home_phone',    $person->home_phone;
-   p_select    $form, 'theme',         $self->$_themes_list( $req );
+   $_push_profile_js->( $page );
 
-   my $range = [ 978, 1180 ]; my $width = $req->session->grid_width;
-
-   $_push_grid_width_js->( $page, $range, $width );
-
-   p_slider $form, 'grid_width', $width, { class => 'smallint-field',
-      fieldsize => int( log( $range->[ 1 ] ) / log( 10 ) ) + 1,
-      id => 'grid_width_slider', label_class => 'clear' };
-
-   p_radio $form, 'rows_per_page', $_rows_per_page->( $person ), {
-      label => 'Rows Per Page' };
-
-   p_checkbox $form, 'enable_2fa', TRUE, {
-      checked => $person->totp_secret ? TRUE : FALSE, label_class => 'clear' };
+   $self->$_bind_profile_fields( $req, $page, $person );
 
    p_button $form, 'update', 'update_profile', { class => 'button right-last' };
 

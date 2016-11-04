@@ -595,7 +595,7 @@ sub primary_navigation_links {
       tip   => 'Documentation pages for the application',
       value => 'Documentation', }, 'docs/index' );
 
-   p_item $nav, $nav_linkto->( $req, {
+   $req->authenticated and p_item $nav, $nav_linkto->( $req, {
       class => $location eq 'posts' ? 'current' : NUL,
       tip   => 'Posts about upcoming events',
       value => 'Posts', }, 'posts/index' );

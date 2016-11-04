@@ -597,8 +597,10 @@ sub validation_attributes {
          coordinates   => { max_length =>  16, min_length => 3, },
          email_address => { max_length =>  64, min_length => 0, },
          first_name    => { max_length =>  32, min_length => 1, },
+         home_phone    => { max_length =>  16, min_length => 6, },
          last_name     => { max_length =>  32, min_length => 1, },
          location      => { max_length =>  24, min_length => 3, },
+         mobile_phone  => { max_length =>  16, min_length => 6, },
          name          => { max_length =>  64, min_length => 3, },
          notes         => { max_length =>  VARCHAR_MAX_SIZE(),
                             min_length =>   0, },
@@ -622,7 +624,7 @@ sub validation_attributes {
             filters    => 'filterUCFirst',
             validate   => 'isMandatory isValidLength isValidText' },
          home_phone    => { filters  => 'filterNonNumeric',
-                            validate => 'isValidInteger' },
+                            validate => 'isValidLength isValidInteger' },
          joined        => { validate => 'isValidDate' },
          last_name     => {
             filters    => 'filterUCFirst',
@@ -631,7 +633,7 @@ sub validation_attributes {
             filters    => 'filterUCFirst',
             validate   => 'isValidLength isValidText' },
          mobile_phone  => { filters  => 'filterNonNumeric',
-                            validate => 'isValidInteger' },
+                            validate => 'isValidLength isValidInteger' },
          name          => {
             unique     => TRUE,
             validate   => 'isMandatory isValidLength isSimpleText' },

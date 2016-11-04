@@ -162,15 +162,21 @@ sub action_for_uri ($) {
 
    unless ($uri_action_path_map) {
       for my $actionp (keys %{ $action_path_uri_map }) {
-         my ($key) = split m{ / }mx, $action_path_uri_map->{ $actionp };
+         my $key = $action_path_uri_map->{ $actionp };
 
          $key and $uri_action_path_map->{ $key } = $actionp;
       }
    }
 
-   my ($key) = split m{ / }mx, $uri;
+   my @parts = split m{ / }mx, $uri;
 
-   return $uri_action_path_map->{ $key };
+   while (@parts) {
+      my $key = join '/', @parts; my $actionp = $uri_action_path_map->{ $key };
+
+      $actionp and return $actionp; pop @parts;
+   }
+
+   return;
 }
 
 sub assert_unique ($$$$) {
