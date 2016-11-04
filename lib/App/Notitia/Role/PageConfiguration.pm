@@ -31,6 +31,11 @@ around 'execute' => sub {
       and $stash->{redirect}->{location} //=
           new_uri $req->scheme, $req->referer;
 
+   my $key; $self->application->debug
+      and $key = $self->config->appclass->env_var( 'trace' )
+      and $self->application->dumper
+         ( $key eq 'stash' ? $stash : $stash->{ $key } // {} );
+
    return $stash;
 };
 
