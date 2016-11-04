@@ -232,11 +232,14 @@ my $_send_email = sub {
    $stash->{last_name } = $person->last_name;
    $stash->{username  } = $person->name;
 
+   my $sender = $self->config->email_sender;
+      $sender //= $self->config->title.'@'.mail_domain();
+
    my $post = {
       attributes      => {
          charset      => $self->config->encoding,
          content_type => 'text/html', },
-      from            => $self->config->title.'@'.mail_domain(),
+      from            => $sender,
       stash           => $stash,
       subject         => $stash->{subject} // 'No subject',
       template        => \$template,
