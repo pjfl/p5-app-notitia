@@ -642,22 +642,22 @@ sub management_link ($$$;$) {
 
    my $args   = $opts->{args} // [ $name ];
    my $params = $opts->{params} // {};
-   my ($moniker, $action) = split m{ / }mx, $actionp, 2;
+   my ($moniker, $method) = split m{ / }mx, $actionp, 2;
    my $href   = uri_for_action( $req, $actionp, $args, $params );
    my $type   = $opts->{type} // 'link';
    my $button = { class => 'table-link',
                   hint  => loc( $req, 'Hint' ),
                   href  => $href,
-                  name  => "${name}-${action}",
-                  tip   => locm( $req, "${action}_management_tip", @{ $args } ),
+                  name  => "${name}-${method}",
+                  tip   => locm( $req, "${method}_management_tip", @{ $args } ),
                   type  => $type,
-                  value => loc( $req, "${action}_management_link" ), };
+                  value => loc( $req, "${method}_management_link" ), };
 
    if ($type eq 'form_button') {
-      $button->{action   } = "${name}_${action}";
-      $button->{form_name} = "${name}-${action}";
-      $button->{tip      } = locm( $req, "${name}_${action}_tip", @{ $args } );
-      $button->{value    } = loc( $req, "${name}_${action}_link" );
+      $button->{form_name} = "${name}-${method}";
+      $button->{label    } = loc( $req, "${name}_${method}_link" );
+      $button->{tip      } = locm( $req, "${name}_${method}_tip", @{ $args } );
+      $button->{value    } = "${name}_${method}";
    }
 
    return $button;

@@ -27,10 +27,16 @@
 [%    tip   = loc( 'Edit the markdown for this page' ) -%]
 [%    LinkWithTips( links.edit_uri, 'fade', text, page.hint, tip ) -%]
       &nbsp;|&nbsp;
-[%    class = 'fade submit' -%]
-[%    text  = loc( 'Delete' ) -%]
-[%    tip   = loc( 'Delete this markdown file' ) -%]
-[%    FormWithButton( links.req_uri, class, text, page.form_name, tip,
-                      'delete-file', 'delete_file' ) -%]
+[%    form         = {
+         class     = 'fade submit'
+         form_name = page.form_name
+         href      = links.req_uri
+         label     = loc( 'Delete' )
+         name      = 'delete-file'
+         tip       = loc( 'Delete this markdown file' )
+         type      = 'form_button'
+         value     = 'delete_file'
+      } %]
+[%    Dispatch( form ) -%]
 </div>
 [% END -%]
