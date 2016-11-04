@@ -426,7 +426,7 @@ sub create_person_action : Role(person_manager) {
    try   { $self->schema->txn_do( $create ) }
    catch { $self->blow_smoke( $_, 'create', 'person', $person->name ) };
 
-   my $id       = $self->create_person_email( $req, $person, $password );
+   my $id       = $self->create_person_email( $req, $person, $password )->id;
    my $message  = 'action:create-person shortcode:'.$person->shortcode;
 
    $self->send_event( $req, $message );

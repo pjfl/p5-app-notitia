@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Make profile a page not a dialog
           - Adds Dialog subroutine attribute
             Removes no_redirect config attribute
           - Adds call report

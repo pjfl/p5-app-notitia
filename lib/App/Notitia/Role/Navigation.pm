@@ -173,16 +173,10 @@ my $_authenticated_login_links = sub {
       tip   => 'Manage automated SMS subscriptions',
       value => 'SMS Subscriptions' }, 'user/sms_subs' );
 
-   push @{ $list }, {
-      depth => 1, type => 'link', value => $nav_linkto->( $req, {
-         class => 'windows', name => 'profile-user',
-         tip   => 'Update personal details', value => 'Profile', }, '#' ) };
-
-   my $href  = uri_for_action $req, 'user/profile';
-   my $title = locm $req, 'Person Profile';
-
-   push @{ $js }, dialog_anchor( 'profile-user', $href, {
-      name => 'profile-user', title => $title, } );
+   push @{ $list }, $nav_linkto->( $req, {
+      class => $page->{selected} eq 'profile' ? 'selected' : NUL,
+      tip   => 'Update personal details',
+      value => 'Profile', }, 'user/profile' );
 
    $req->session->enable_2fa and push @{ $list }, $nav_linkto->( $req, {
       class => $page->{selected} eq 'totp_secret' ? 'selected' : NUL,

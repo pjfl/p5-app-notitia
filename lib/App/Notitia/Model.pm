@@ -146,8 +146,7 @@ sub exception_handler {
 
    my $name = $req->session->first_name || $req->username || 'unknown';
    my $form = blank_form { type => 'list' };
-   my $page = { forms => [ $form ],
-                template => [ 'none', NUL ],
+   my $page = { forms => [ $form ], template => [ 'none', NUL ],
                 title => locm $req, 'Exception Handler', $name };
    my $stash = $self->get_stash( $req, $page );
 
@@ -180,6 +179,8 @@ sub get_stash {
    my $stash = $self->initialise_stash( $req );
 
    $stash->{page} = $self->load_page( $req, $page );
+   $stash->{page}->{status_message}
+      = $req->session->collect_status_message( $req );
 
    return $stash;
 }

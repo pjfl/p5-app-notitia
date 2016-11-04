@@ -1505,6 +1505,9 @@ msgstr "Private Vehicles"
 msgid "private_vehicles_tip"
 msgstr "List privately owned vehicles"
 
+msgid "profile_title"
+msgstr "Profile Details"
+
 msgid "public_access"
 msgstr "Is this a publicly available asset?"
 

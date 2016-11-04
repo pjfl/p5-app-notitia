@@ -75,8 +75,6 @@ around 'load_page' => sub {
 
    for my $k (@{ $conf->stash_attr->{config } }) { $page->{ $k } //= $conf->$k }
 
-   $page->{status_message} = $req->session->collect_status_message( $req );
-
    my $skin = $req->session->skin || $conf->skin;
 
    $page->{template} //= [ "${skin}/menu" ];

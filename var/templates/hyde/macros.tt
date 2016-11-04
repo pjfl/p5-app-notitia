@@ -202,7 +202,7 @@
       <span class="slider_group">
 [%    count = 0 -%]
 [%    WHILE count < 11 -%]
-[%       left = ( 20 * count ) - 1; count = count + 1 -%]
+[%       left = ( 20 * count ) - 3; count = count + 1 -%]
          <span class="tick" style="left: [% left %]px;"></span>
 [%    END -%]
          <span class="slider" id="[% f.id %]">

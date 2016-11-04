@@ -101,7 +101,7 @@ sub create_person_email {
 
    $conf->sessdir->catfile( $token )->println( $scode );
 
-   return $self->create_email_job( $stash, $template )->id;
+   return $self->create_email_job( $stash, $template );
 }
 
 sub create_reset_email {
@@ -120,7 +120,7 @@ sub create_reset_email {
 
    $conf->sessdir->catfile( $token )->println( "${scode}/${password}" );
 
-   return $self->create_email_job( $stash, $template )->id;
+   return $self->create_email_job( $stash, $template );
 }
 
 sub create_totp_request_email {
@@ -138,7 +138,7 @@ sub create_totp_request_email {
 
    $conf->sessdir->catfile( $token )->println( $scode );
 
-   return $self->create_email_job( $stash, $template )->id;
+   return $self->create_email_job( $stash, $template );
 }
 
 sub message_create {

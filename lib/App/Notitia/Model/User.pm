@@ -367,17 +367,18 @@ sub logout_action : Role(any) {
    return { redirect => { location => $req->base, message => $message } };
 }
 
-sub profile : Dialog Role(any) {
+sub profile : Role(any) {
    my ($self, $req) = @_;
 
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_by_shortcode( $req->username );
-   my $stash     = $self->dialog_stash( $req );
    my $href      = uri_for_action $req, $self->moniker.'/profile';
-   my $form      = $stash->{page}->{forms}->[ 0 ]
-                 = blank_form 'profile-user', $href;
-
-   $stash->{page}->{literal_js} = set_element_focus 'profile-user', 'address';
+   my $form      = blank_form 'profile-user', $href;
+   my $page      = {
+      first_field => 'address', forms => [ $form ],
+      location => 'account_management', selected => 'profile',
+      title => locm $req, 'profile_title',
+   };
 
    p_textfield $form, 'username',      $person->label, { disabled => TRUE };
    p_textfield $form, 'address',       $person->address;
@@ -389,7 +390,7 @@ sub profile : Dialog Role(any) {
 
    my $range = [ 978, 1180 ]; my $width = $req->session->grid_width;
 
-   $_push_grid_width_js->( $stash->{page}, $range, $width );
+   $_push_grid_width_js->( $page, $range, $width );
 
    p_slider $form, 'grid_width', $width, { class => 'smallint-field',
       fieldsize => int( log( $range->[ 1 ] ) / log( 10 ) ) + 1,
@@ -399,11 +400,11 @@ sub profile : Dialog Role(any) {
       label => 'Rows Per Page' };
 
    p_checkbox $form, 'enable_2fa', TRUE, {
-      checked => $person->totp_secret ? TRUE : FALSE, };
+      checked => $person->totp_secret ? TRUE : FALSE, label_class => 'clear' };
 
    p_button $form, 'update', 'update_profile', { class => 'button right-last' };
 
-   return $stash;
+   return $self->get_stash( $req, $page );
 }
 
 sub request_reset : Dialog Role(anon) {
@@ -429,7 +430,7 @@ sub request_reset_action : Role(anon) {
    my $name     = $req->body_params->( 'username' );
    my $person   = $self->schema->resultset( 'Person' )->find_person( $name );
    my $password = substr create_token, 0, 12;
-   my $job_id   = $self->create_reset_email( $req, $person, $password );
+   my $job_id   = $self->create_reset_email( $req, $person, $password )->id;
    my $key      = '[_1] password reset requested ref. [_2]';
    my $message  = [ to_msg $key, $person->label, "send_message-${job_id}" ];
 
@@ -456,7 +457,7 @@ sub reset_password : Role(anon) {
    }
    else {
       $location = $req->base;
-      $message  = [ 'Key [_1] unknown password reset attempt', $file ];
+      $message  = [ to_msg 'Key [_1] unknown password reset attempt', $file ];
    }
 
    return { redirect => { location => $location, message => $message } };
@@ -606,7 +607,7 @@ sub totp_request_action : Role(anon) {
    $person->security_check( { mobile_phone => $mobile, postcode => $postcode });
 
    my $key      = '[_1] TOTP request sent ref. [_2]';
-   my $job_id   = $self->create_totp_request_email( $req, $person );
+   my $job_id   = $self->create_totp_request_email( $req, $person )->id;
    my $message  = [ to_msg $key, $person->label, "send_message-${job_id}" ];
 
    return { redirect => { location => $req->base, message => $message } };
