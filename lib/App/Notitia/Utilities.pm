@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE OK SLOT_TYPE_ENUM TRUE );
 use App::Notitia::Util      qw( load_file_data local_dt
-                                mail_domain now_dt slot_limit_index );
+                                now_dt slot_limit_index );
 use Class::Usul::Functions  qw( io sum throw );
 use Class::Usul::File;
 use Class::Usul::Types      qw( HashRef LoadableClass Object );
@@ -232,14 +232,11 @@ my $_send_email = sub {
    $stash->{last_name } = $person->last_name;
    $stash->{username  } = $person->name;
 
-   my $sender = $self->config->email_sender;
-      $sender //= $self->config->title.'@'.mail_domain();
-
    my $post = {
       attributes      => {
          charset      => $self->config->encoding,
          content_type => 'text/html', },
-      from            => $sender,
+      from            => $self->config->email_sender,
       stash           => $stash,
       subject         => $stash->{subject} // 'No subject',
       template        => \$template,
