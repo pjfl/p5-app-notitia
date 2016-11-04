@@ -161,7 +161,19 @@ my $_admin_links = sub {
 my $_authenticated_login_links = sub {
    my ($self, $req, $page, $nav) = @_;
 
-   my $js = $page->{literal_js} //= []; my $list = $nav->{menu}->{list} //= [];
+   my $places = $self->config->places;
+   my $js = $page->{literal_js} //= [];
+   my $list = $nav->{menu}->{list} //= [];
+
+   push @{ $list }, $nav_linkto->( $req, {
+      class => $page->{selected} eq 'profile' ? 'selected' : NUL,
+      tip   => 'Update personal details',
+      value => 'Profile', }, $places->{profile} );
+
+   push @{ $list }, $nav_linkto->( $req, {
+      class => $page->{selected} eq 'change_password' ? 'selected' : NUL,
+      tip   => 'Change the password used to access the application',
+      value => 'Change Password', }, $places->{password} );
 
    push @{ $list }, $nav_linkto->( $req, {
       class => $page->{selected} eq 'email_subscription' ? 'selected' : NUL,
@@ -172,11 +184,6 @@ my $_authenticated_login_links = sub {
       class => $page->{selected} eq 'sms_subscription' ? 'selected' : NUL,
       tip   => 'Manage automated SMS subscriptions',
       value => 'SMS Subscriptions' }, 'user/sms_subs' );
-
-   push @{ $list }, $nav_linkto->( $req, {
-      class => $page->{selected} eq 'profile' ? 'selected' : NUL,
-      tip   => 'Update personal details',
-      value => 'Profile', }, 'user/profile' );
 
    $req->session->enable_2fa and push @{ $list }, $nav_linkto->( $req, {
       class => $page->{selected} eq 'totp_secret' ? 'selected' : NUL,
@@ -374,31 +381,43 @@ my $_secondary_authenticated_links = sub {
 my $_unauthenticated_login_links = sub {
    my ($self, $req, $page, $nav) = @_;
 
-   my $js = $page->{literal_js} //= []; my $list = $nav->{menu}->{list} //= [];
+   my $places = $self->config->places;
+   my $js = $page->{literal_js} //= [];
+   my $list = $nav->{menu}->{list} //= [];
+
+   push @{ $list },$nav_linkto->( $req, {
+      class => $page->{selected} eq 'login' ? 'selected' : NUL,
+      tip   => 'Login to the application',
+      value => 'Login', }, $places->{login} );
+
+   push @{ $list }, $nav_linkto->( $req, {
+      class => $page->{selected} eq 'change_password' ? 'selected' : NUL,
+      tip   => 'Change the password used to access the application',
+      value => 'Change Password', }, $places->{password} );
 
    push @{ $list },
-      { depth  => 1, type => 'link',
-        value  => $nav_linkto->( $req, {
-           class => 'windows', name => 'request-reset',
-           tip   => 'Request a password reset email',
-           value => 'Forgot Password?', }, '#' ) },
-      { depth  => 1, type => 'link',
-        value  => $nav_linkto->( $req, {
-           class => 'windows', name => 'totp-request',
-           tip   => 'Request a TOTP recovery email',
-           value => 'Lost TOTP?', }, '#' ) };
+      { depth  => 1, type => 'link', value  => $nav_linkto->( $req, {
+         class => 'windows', name => 'request-reset',
+         tip   => 'Request a password reset email',
+         value => 'Forgot Password?', }, '#' ) };
 
-   my $href  = uri_for_action $req, 'user/totp_request';
-   my $title = locm $req, 'TOTP Information Request';
-
-   push @{ $js }, dialog_anchor( 'totp-request', $href, {
-      name => 'totp-request', title => $title, } );
-
-   $href  = uri_for_action $req, 'user/reset';
-   $title = locm $req, 'Reset Password';
+   my $href  = uri_for_action $req, 'user/reset';
+   my $title = locm $req, 'Reset Password';
 
    push @{ $js }, dialog_anchor( 'request-reset', $href, {
       name => 'request-reset', title => $title, } );
+
+   push @{ $list },
+      { depth  => 1, type => 'link', value  => $nav_linkto->( $req, {
+         class => 'windows', name => 'totp-request',
+         tip   => 'Request a TOTP recovery email',
+         value => 'Lost TOTP?', }, '#' ) };
+
+   $href  = uri_for_action $req, 'user/totp_request';
+   $title = locm $req, 'TOTP Information Request';
+
+   push @{ $js }, dialog_anchor( 'totp-request', $href, {
+      name => 'totp-request', title => $title, } );
 
    return;
 };
@@ -553,16 +572,6 @@ sub login_navigation_links {
 
    push @{ $list }, $nav_folder->( $req, 'login' );
 
-   $req->authenticated or push @{ $list }, $nav_linkto->( $req, {
-      class => $page->{selected} eq 'login' ? 'selected' : NUL,
-      tip   => 'Login to the application',
-      value => 'Login', }, $places->{login} );
-
-   push @{ $list }, $nav_linkto->( $req, {
-      class => $page->{selected} eq 'change_password' ? 'selected' : NUL,
-      tip   => 'Change the password used to access the application',
-      value => 'Change Password', }, $places->{password} );
-
    if ($req->authenticated) {
       $self->$_authenticated_login_links( $req, $page, $nav );
    }
@@ -610,7 +619,7 @@ sub primary_navigation_links {
    p_item $nav, $nav_linkto->( $req, {
       class => $location eq 'account_management' ? 'current' : NUL,
       tip   => 'Manage account profile and email subscription',
-      value => 'Account', }, $places->{password} );
+      value => 'Account', }, $places->{profile} );
 
    my $href = uri_for_action $req, 'user/logout_action';
    my $form = blank_form  'authentication', $href, { class => 'none' };

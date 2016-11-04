@@ -284,7 +284,7 @@ sub change_password_action : Role(anon) {
    $person->set_password( $oldpass, $password );
    $self->$_update_session( $session, $person );
 
-   my $location = uri_for_action $req, $self->config->places->{login_action};
+   my $location = uri_for_action $req, $self->config->places->{login_redirect};
    my $message  = [ to_msg '[_1] password changed', $person->label ];
 
    $self->send_event( $req, 'action:change-password' );
@@ -395,7 +395,7 @@ sub login_action : Role(anon) {
    my $message   = [ to_msg '[_1] logged in', $person->label ];
    my $wanted    = $session->wanted; $session->wanted( NUL );
    my $location  = $wanted ? $req->uri_for( $wanted )
-                 : uri_for_action $req, $self->config->places->{login_action};
+                 : uri_for_action $req, $self->config->places->{login_redirect};
 
    $self->send_event( $req, 'action:logged-in' );
 

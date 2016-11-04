@@ -192,7 +192,7 @@ has 'logo'            => is => 'ro',   isa => ArrayRef,
 
 has 'max_asset_size'  => is => 'ro',   isa => PositiveInt, default => 4_194_304;
 
-has 'max_messages'    => is => 'ro',   isa => NonZeroPositiveInt, default => 1;
+has 'max_messages'    => is => 'ro',   isa => NonZeroPositiveInt, default => 2;
 
 has 'max_sess_time'   => is => 'ro',   isa => PositiveInt, default => 900;
 
@@ -223,9 +223,10 @@ has 'places'          => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
       admin_index     => 'event/events',
       changes         => 'user/changes',
       login           => 'user/login',
-      login_action    => 'month/month_rota',
+      login_redirect  => 'month/month_rota',
       logo            => 'docs/index',
       password        => 'user/change_password',
+      profile         => 'user/profile',
       rota            => 'month/month_rota',
       search          => 'docs/search',
       upload          => 'docs/upload', } };

@@ -22,11 +22,11 @@ use Try::Tiny;
 use Unexpected::Functions      qw( ValidationErrors );
 use YAML::Tiny;
 
-our @EXPORT_OK = qw( action_for_uri assert_unique assign_link authenticated_only
-                     build_navigation build_tree check_field_js
-                     check_form_field clone datetime_label dialog_anchor
-                     display_duration encrypted_attr enhance event_handler
-                     event_handler_cache get_hashed_pw get_salt
+our @EXPORT_OK = qw( action_for_uri assert_unique assign_link
+                     authenticated_only build_navigation build_tree
+                     check_field_js check_form_field clone datetime_label
+                     dialog_anchor display_duration encrypted_attr enhance
+                     event_handler event_handler_cache get_hashed_pw get_salt
                      is_access_authorised is_draft is_encrypted iterator
                      js_config js_slider_config js_server_config
                      js_submit_config js_togglers_config js_window_config
@@ -35,7 +35,8 @@ our @EXPORT_OK = qw( action_for_uri assert_unique assign_link authenticated_only
                      management_link mtime new_salt now_dt page_link_set
                      register_action_paths set_element_focus set_rota_date
                      slot_claimed slot_identifier slot_limit_index show_node
-                     stash_functions time2int to_dt to_msg uri_for_action );
+                     stash_functions time2int to_dt to_json to_msg
+                     uri_for_action );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -804,6 +805,10 @@ sub stash_functions ($$$) {
    return;
 }
 
+sub to_json ($) {
+   return $json_coder->encode( $_[ 0 ] );
+}
+
 sub time2int ($) {
    my $x = shift; $x or $x = 0; $x =~ s{ : }{}mx; return $x;
 }
@@ -992,6 +997,8 @@ on the request object
 =head2 C<time2int>
 
 =head2 C<to_dt>
+
+=head2 C<to_json>
 
 =head2 C<to_msg>
 

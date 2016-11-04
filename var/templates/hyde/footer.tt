@@ -25,7 +25,7 @@
          cookiePrefix: '[% config.prefix %]',
          firstField  : '[% page.first_field %]',
          formName    : '[% page.forms.0.form_name %]',
-         message     : "[% page.status_message %]"
+         messages    : [% page.status_messages %]
       } );
 [% FOR line IN page.literal_js; -%]
    [%+ line | eval %]

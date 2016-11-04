@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds multiple status messages
           - Adds field validation to profile screen
           - Make profile a page not a dialog
           - Adds Dialog subroutine attribute

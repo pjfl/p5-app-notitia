@@ -23,6 +23,7 @@ var Behaviour = new Class( {
       formName      : null,
       keyMap        : 'default',
       message       : null,
+      messages      : [],
       target        : null,
       useCodeMirror : false
    },
@@ -105,7 +106,8 @@ var Behaviour = new Class( {
             this.tip.setStyle( 'visibility', 'visible' ); this.fx.start( 1 ) },
          showDelay      : 666 } );
 
-      if (opt.message) this.noticeBoard.create( opt.message );
+      opt.messages.each( function( message ) {
+         this.noticeBoard.create( message ) }.bind( this ) );
 
       if (first_field && (el = $( first_field ))) el.focus();
    },

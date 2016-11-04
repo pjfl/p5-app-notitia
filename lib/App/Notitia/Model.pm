@@ -3,8 +3,8 @@ package App::Notitia::Model;
 use App::Notitia::Attributes qw( is_dialog ); # Will do namespace cleaning
 use App::Notitia::Constants  qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form       qw( blank_form f_tag p_tag );
-use App::Notitia::Util       qw( action_for_uri locm uri_for_action );
-use Class::Usul::Functions   qw( exception is_member throw );
+use App::Notitia::Util       qw( action_for_uri locm to_json uri_for_action );
+use Class::Usul::Functions   qw( exception is_member throw trim );
 use Class::Usul::Time        qw( time2str );
 use Class::Usul::Types       qw( Plinth );
 use HTTP::Status             qw( HTTP_NOT_FOUND HTTP_OK );
@@ -28,6 +28,24 @@ has 'application' => is => 'ro', isa => Plinth,
 my $_activity_cache = [];
 
 # Private functions
+my $_collect_status_messages = sub {
+   my $req = shift; my @messages = ();
+
+   my $mid = $req->query_params->( 'mid', { optional => TRUE } )
+      or return \@messages;
+
+   my $session = $req->session;
+   my @keys = reverse sort keys %{ $session->messages };
+
+   while (my $key = $keys[ 0 ]) {
+      $key gt $mid and next; my $msg = delete $session->messages->{ $key };
+
+      push @messages, $req->loc( @{ $msg } ); shift @keys;
+   }
+
+   return \@messages;
+};
+
 my $_debug_output = sub {
    my ($req, $e, $form, $leader) = @_;
 
@@ -49,7 +67,7 @@ my $_parse_error = sub {
 
    if ($e =~ m{ : }mx) {
       ($leader, $message) = split m{ : }mx, "${e}", 2;
-      $summary = substr $message, 0, 500;
+      $summary = substr trim( $message ), 0, 500;
    }
    else { $leader = NUL; $summary = $message = "${e}" }
 
@@ -179,8 +197,9 @@ sub get_stash {
    my $stash = $self->initialise_stash( $req );
 
    $stash->{page} = $self->load_page( $req, $page );
-   $stash->{page}->{status_message}
-      = $req->session->collect_status_message( $req );
+
+   $stash->{page}->{status_messages}
+      = to_json $_collect_status_messages->( $req );
 
    return $stash;
 }
