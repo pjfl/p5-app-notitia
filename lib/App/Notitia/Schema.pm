@@ -119,16 +119,6 @@ sub create_ddl : method {
    return $self->SUPER::create_ddl;
 }
 
-sub ddl_paths { # TODO: Use sub in parent when next released
-   my ($self, $schema, $version, $dir) = @_; my @paths = ();
-
-   for my $rdb (@{ $self->rdbms }) {
-      push @paths, io( $schema->ddl_filename( $rdb, $version, $dir ) );
-   }
-
-   return @paths;
-}
-
 sub dump_connect_attr : method {
    my $self = shift; $self->dumper( $self->connect_info ); return OK;
 }
@@ -182,7 +172,7 @@ sub upgrade_schema : method {
    my $self = shift;
 
    $self->preversion or throw Unspecified, [ 'preversion' ];
-   $self->can( '_set_unlink' ) and $self->_set_unlink( TRUE );
+   $self->_set_unlink( TRUE );
    $self->create_ddl;
 
    my $passwd = $self->password;
