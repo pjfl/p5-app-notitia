@@ -604,7 +604,7 @@ sub event : Role(event_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub event_info : Role(any) {
+sub event_info : Dialog Role(any) {
    my ($self, $req) = @_;
 
    my $uri   = $req->uri_params->( 0 );
@@ -691,7 +691,7 @@ sub events : Role(any) {
    return $self->get_stash( $req, $page );
 }
 
-sub message : Role(event_manager) {
+sub message : Dialog Role(event_manager) {
    return $_[ 0 ]->message_stash( $_[ 1 ] );
 }
 
@@ -880,7 +880,7 @@ sub vehicle_event : Role(rota_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub vehicle_info : Role(rota_manager) {
+sub vehicle_info : Dialog Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $uri     = $req->uri_params->( 0 );

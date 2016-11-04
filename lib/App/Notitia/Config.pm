@@ -211,10 +211,6 @@ has 'no_index'        => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
 
 has 'no_message_send' => is => 'ro',   isa => Bool, default => FALSE;
 
-has 'no_redirect'     => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
-   builder            => sub {
-      [ qw( check_field logout profile totp_secret ) ] };
-
 has 'owner'           => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => sub { $_[ 0 ]->prefix };
 
@@ -692,11 +688,6 @@ List of files and directories under the document root to ignore
 
 Suppress the sending of user activation emails and using SMS. Used in
 development only
-
-=item C<no_redirect>
-
-An array reference of non empty simple strings. Requests matching these
-patterns are not redirected to after a successful login
 
 =item C<owner>
 

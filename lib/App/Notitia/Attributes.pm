@@ -1,10 +1,15 @@
 package App::Notitia::Attributes;
 
 use strictures;
+use attributes ();
 use namespace::autoclean ();
 use parent 'Exporter::Tiny';
 
+use App::Notitia::Constants qw( FALSE TRUE );
+
 our @EXPORT = qw( FETCH_CODE_ATTRIBUTES MODIFY_CODE_ATTRIBUTES );
+
+our @EXPORT_OK = qw( is_dialog );
 
 my $Code_Attr = {};
 
@@ -12,10 +17,24 @@ sub import {
    my $class   = shift;
    my $caller  = caller;
    my $globals = { $_[ 0 ] && ref $_[ 0 ] eq 'HASH' ? %{+ shift } : () };
+   my @wanted  = (qw( FETCH_CODE_ATTRIBUTES MODIFY_CODE_ATTRIBUTES ), @_);
 
    namespace::autoclean->import( -cleanee => $caller, -except => [ @EXPORT ] );
-   $globals->{into} //= $caller; $class->SUPER::import( $globals );
+   $globals->{into} //= $caller; $class->SUPER::import( $globals, @wanted );
    return;
+}
+
+sub is_dialog ($$) {
+   my ($components, $actionp) = @_;
+
+   $components //= {}; $actionp or return FALSE;
+
+   my ($moniker, $method) = split m{ / }mx, $actionp;
+   my $component = $components->{ $moniker } or return FALSE;
+   my $code_ref = $component->can( $method ) or return FALSE;
+   my $attr = attributes::get( $code_ref ) // {};
+
+   return $attr->{Dialog} ? TRUE : FALSE;
 }
 
 sub FETCH_CODE_ATTRIBUTES {

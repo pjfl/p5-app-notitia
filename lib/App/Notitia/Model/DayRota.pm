@@ -421,7 +421,9 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
    $person->claim_slot( $rota_name, to_dt( $rota_date ), $shift_type,
                         $slot_type, $subslot, $bike );
 
-   $self->send_event( $req, "action:slot-claim slot:${name}" );
+   $self->send_event( $req, "action:slot-claim shortcode:${assignee} "
+                          . "rota_name:${rota_name} rota_date:${rota_date} "
+                          . "slot:${name}" );
 
    my $args     = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;
@@ -477,7 +479,7 @@ sub rota_redirect_action : Role(any) {
    return { redirect => { location => $location } };
 }
 
-sub slot : Role(rota_manager) Role(rider) Role(controller) Role(driver) {
+sub slot : Dialog Role(rota_manager) Role(rider) Role(controller) Role(driver) {
    my ($self, $req) = @_;
 
    my $params = $req->uri_params;

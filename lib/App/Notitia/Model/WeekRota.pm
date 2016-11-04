@@ -764,7 +764,7 @@ my $_alloc_query = sub {
 };
 
 # Public methods
-sub alloc_key : Role(rota_manager) {
+sub alloc_key : Dialog Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $rota_date = $req->uri_params->( 0 );
@@ -786,7 +786,7 @@ sub alloc_key : Role(rota_manager) {
    return $stash;
 }
 
-sub alloc_table : Role(rota_manager) {
+sub alloc_table : Dialog Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $today = time2str '%Y-%m-%d';

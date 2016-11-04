@@ -174,7 +174,7 @@ my $_update_session = sub {
 };
 
 # Public methods
-sub about : Role(anon) {
+sub about : Dialog Role(anon) {
    my ($self, $req) = @_;
 
    my $stash = $self->dialog_stash( $req );
@@ -367,7 +367,7 @@ sub logout_action : Role(any) {
    return { redirect => { location => $req->base, message => $message } };
 }
 
-sub profile : Role(any) {
+sub profile : Dialog Role(any) {
    my ($self, $req) = @_;
 
    my $person_rs = $self->schema->resultset( 'Person' );
@@ -406,7 +406,7 @@ sub profile : Role(any) {
    return $stash;
 }
 
-sub request_reset : Role(anon) {
+sub request_reset : Dialog Role(anon) {
    my ($self, $req) = @_;
 
    my $stash = $self->dialog_stash( $req );
@@ -571,7 +571,7 @@ sub subscribe_sms_action : Role(any) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub totp_request : Role(anon) {
+sub totp_request : Dialog Role(anon) {
    my ($self, $req) = @_;
 
    my $stash = $self->dialog_stash( $req );

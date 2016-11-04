@@ -370,7 +370,7 @@ my $_slot_assignments = sub {
 };
 
 # Public methods
-sub assign_summary : Role(any) {
+sub assign_summary : Dialog Role(any) {
    my ($self, $req) = @_;
 
    my ($rota_name, $rota_date, $shift_type, $slot_type, $subslot)
@@ -401,7 +401,7 @@ sub assign_summary : Role(any) {
    return $stash;
 }
 
-sub events_summary : Role(any) {
+sub events_summary : Dialog Role(any) {
    my ($self, $req) = @_;
 
    my ($rota_name, $rota_date, $extra)
@@ -470,7 +470,8 @@ sub month_rota : Role(any) {
    return $self->get_stash( $req, $page );
 }
 
-sub user_slots : Role(rota_manager) Role(rider) Role(controller) Role(driver) {
+sub user_slots : Dialog Role(rota_manager) Role(rider)
+                 Role(controller) Role(driver) {
    my ($self, $req) = @_;
 
    my $params    = $req->uri_params;

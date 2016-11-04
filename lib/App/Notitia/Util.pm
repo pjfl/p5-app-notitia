@@ -22,7 +22,7 @@ use Try::Tiny;
 use Unexpected::Functions      qw( ValidationErrors );
 use YAML::Tiny;
 
-our @EXPORT_OK = qw( assert_unique assign_link authenticated_only
+our @EXPORT_OK = qw( action_for_uri assert_unique assign_link authenticated_only
                      build_navigation build_tree check_field_js
                      check_form_field clone datetime_label dialog_anchor
                      display_duration encrypted_attr enhance event_handler
@@ -43,6 +43,7 @@ my $handler_cache       = {};
 my $json_coder          = JSON::MaybeXS->new( utf8 => FALSE );
 my $result_class_cache  = {};
 my $translations        = {};
+my $uri_action_path_map;      # Key is a partial URI, value an action path
 my $yaml_coder          = YAML::Tiny->new;
 
 # Private functions
@@ -156,6 +157,22 @@ my $vehicle_link = sub {
 };
 
 # Public functions
+sub action_for_uri ($) {
+   my $uri = shift; $uri or return;
+
+   unless ($uri_action_path_map) {
+      for my $actionp (keys %{ $action_path_uri_map }) {
+         my ($key) = split m{ / }mx, $action_path_uri_map->{ $actionp };
+
+         $key and $uri_action_path_map->{ $key } = $actionp;
+      }
+   }
+
+   my ($key) = split m{ / }mx, $uri;
+
+   return $uri_action_path_map->{ $key };
+}
+
 sub assert_unique ($$$$) {
    my ($rs, $columns, $fields, $k) = @_;
 
@@ -847,6 +864,8 @@ Functions used in this application
 Defines no attributes
 
 =head1 Subroutines/Methods
+
+=head2 C<action_for_uri>
 
 =head2 C<assert_unique>
 

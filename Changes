@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Adds Dialog subroutine attribute
+            Removes no_redirect config attribute
           - Adds call report
           - Fixes editor posts renaming
           - Adds create delivery stage email

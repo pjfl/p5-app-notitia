@@ -510,7 +510,7 @@ my $_vehicles_ops_links = sub {
 };
 
 # Public methods
-sub assign : Role(rota_manager) {
+sub assign : Dialog Role(rota_manager) {
    my ($self, $req) = @_; my $params = $req->uri_params;
 
    my $args = [ $params->( 0 ) ]; my $opts = { optional => TRUE };
@@ -608,7 +608,7 @@ sub find_last_keeper {
    return $keeper;
 }
 
-sub request_info : Role(rota_manager) {
+sub request_info : Dialog Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $uri     = $req->uri_params->( 0 );

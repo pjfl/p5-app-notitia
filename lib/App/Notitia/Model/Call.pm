@@ -983,7 +983,7 @@ sub delete_package_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delivery_stages : Role(controller) Role(driver) Role(rider) {
+sub delivery_stages : Dialog Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $scode = $req->uri_params->( 0 );
@@ -1152,7 +1152,7 @@ sub locations : Role(controller) Role(driver) Role(rider) {
    return $self->get_stash( $req, $page );
 }
 
-sub package : Role(controller) {
+sub package : Dialog Role(controller) {
    my ($self, $req) = @_;
 
    my $journey_id = $req->uri_params->( 0 );

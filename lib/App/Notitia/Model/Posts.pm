@@ -109,7 +109,7 @@ sub delete_file_action : Role(editor) Role(event_manager) Role(person_manager) {
    return $stash;
 }
 
-sub dialog : Role(any) {
+sub dialog : Dialog Role(any) {
    return $_[ 0 ]->get_dialog( $_[ 1 ] );
 }
 

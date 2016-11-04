@@ -374,7 +374,7 @@ sub update_certification_action : Role(person_manager) Role(training_manager) {
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub upload_document : Role(person_manager) Role(training_manager) {
+sub upload_document : Dialog Role(person_manager) Role(training_manager) {
    my ($self, $req) = @_;
 
    my $scode  = $req->uri_params->( 0 );

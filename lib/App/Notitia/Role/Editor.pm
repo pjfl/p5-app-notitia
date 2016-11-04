@@ -18,8 +18,9 @@ use Scalar::Util           qw( blessed );
 use Unexpected::Functions  qw( Unspecified );
 use Moo::Role;
 
-requires qw( application components config find_node initialise_stash
-             invalidate_docs_cache load_page log make_draft send_event );
+requires qw( application components config dialog_stash find_node
+             initialise_stash invalidate_docs_cache load_page log make_draft
+             send_event );
 
 with q(Web::Components::Role::TT);
 

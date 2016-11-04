@@ -462,7 +462,7 @@ sub find_by_shortcode {
    return shift->schema->resultset( 'Person' )->find_by_shortcode( @_ );
 }
 
-sub message : Role(person_manager) {
+sub message : Dialog Role(person_manager) {
    return $_[ 0 ]->message_stash( $_[ 1 ] );
 }
 
@@ -470,7 +470,7 @@ sub message_create_action : Role(person_manager) {
    return $_[ 0 ]->message_create( $_[ 1 ], { action => 'people' } );
 }
 
-sub mugshot : Role(person_manager) {
+sub mugshot : Dialog Role(person_manager) {
    my ($self, $req) = @_;
 
    my $scode  = $req->uri_params->( 0 );

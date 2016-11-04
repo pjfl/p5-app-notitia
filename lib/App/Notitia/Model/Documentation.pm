@@ -108,7 +108,7 @@ sub docs_url {
         [ $_[ 0 ]->$_docs_url( $_[ 2 ] // $_[ 1 ]->locale ) ] );
 }
 
-sub dialog : Role(any) {
+sub dialog : Dialog Role(any) {
    return $_[ 0 ]->get_dialog( $_[ 1 ] );
 }
 
