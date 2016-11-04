@@ -1,6 +1,7 @@
 Revision history for App::Notitia
 
           - Adds multiple status messages
+          - Adds email_sender as a config option
           - Adds field validation to profile screen
           - Make profile a page not a dialog
           - Adds Dialog subroutine attribute
