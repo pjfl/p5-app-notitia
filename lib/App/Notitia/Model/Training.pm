@@ -288,7 +288,7 @@ sub add_course_action : Role(training_manager) {
    return { redirect => { message => $message } }; # location referer
 }
 
-sub dialog : Role(training_manager) {
+sub dialog : Dialog Role(training_manager) {
    my ($self, $req) = @_;
 
    my $scode = $req->uri_params->( 0 );

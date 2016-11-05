@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Defines
+REPO=${2:-'git://github.com/pjfl/p5-app-notitia.git'}
+SERVICE=${3:-'notitia'}
+
+# Functions
+service_home() {
+   local home; home=$(grep ^${SERVICE}: /etc/passwd | cut -d: -f6)
+   [ -n "${home}" ] && echo -n "${home}" && return 0
+   echo "Service ${SERVICE} home directory not found" >&2
+   return 1
+}
+
+install_directory() {
+   local dir; dir=$(service_home); [ ${?} -gt 0 ] && return 1
+   dir="${dir}/local"; [ -d "${dir}" ] && echo -n "${dir}" && return 0
+   echo "Install directory ${dir} not found" >&2
+   return 1
+}
+
+upgrade_application() {
+   local dir; dir=$(install_directory); [ ${?} -gt 0 ] && exit 1
+   cd $dir
+   source var/etc/profile
+   notitia-jobdaemon stop
+   cpanm --notest ${REPO} || exit 1
+   notitia-schema upgrade-schema
+   notitia-jobdaemon start
+   exit 0
+}
+
+upgrade_service() {
+   local dir; dir=$(install_directory); [ ${?} -gt 0 ] && exit 1
+   local prog; prog="${dir}/bin/notitia-upgrade"
+   service ${SERVICE} stop
+   su - ${SERVICE} -c "${prog} application ${REPO} ${SERVICE}"
+   service ${SERVICE} start
+   exit 0
+}
+
+# Main
+method=${1:-'service'}
+
+[ "${method}" = "service" ] && upgrade_service
+[ "${method}" = "application" ] && upgrade_application
+
+echo "Method ${method} unknown" >&2
+exit 1
+
+# Local Variables:
+# mode: sh
+# tab-width: 3
+# End:
+# vim: expandtab shiftwidth=3:

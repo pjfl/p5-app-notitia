@@ -32,6 +32,8 @@ has '+config_class'   => default => 'App::Notitia::Config';
 
 has '+database'       => default => sub { $_[ 0 ]->schema_database };
 
+has '+preversion'     => is => 'rwp';
+
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
 has '+schema_version' => default => sub { App::Notitia->schema_version.NUL };
@@ -55,6 +57,19 @@ my $_ddl_paths = sub {
 
    return $self->ddl_paths
       ( $self->schema, $self->schema_version, $self->config->sharedir );
+};
+
+my $_needs_upgrade = sub {
+   my $self = shift;
+
+   $self->preversion and $self->_set_unlink( TRUE ) and return TRUE;
+
+   my $db_version = $self->schema->get_db_version; $db_version
+      and $db_version ne $self->schema_version
+      and $self->_set_preversion( $db_version )
+      and return TRUE;
+
+   return FALSE;
 };
 
 my $_add_backup_files = sub {
@@ -120,7 +135,7 @@ sub create_ddl : method {
 }
 
 sub dump_connect_attr : method {
-   my $self = shift; $self->dumper( $self->connect_info ); return OK;
+   my $self = shift; $self->dumper( $self->schema_connect_attr ); return OK;
 }
 
 sub deploy_and_populate : method {
@@ -171,14 +186,10 @@ sub restore_data : method {
 sub upgrade_schema : method {
    my $self = shift;
 
-   $self->preversion or throw Unspecified, [ 'preversion' ];
-   $self->_set_unlink( TRUE );
-   $self->create_ddl;
+   $self->$_needs_upgrade
+      or ($self->info( 'No schema upgrade required' ) and return OK);
 
-   my $passwd = $self->password;
-   my $class  = $self->schema_class;
-   my $attr   = $self->$_connect_attr;
-   my $schema = $class->connect( $self->dsn, $self->user, $passwd, $attr );
+   my $schema = $self->schema; $self->create_ddl;
 
    $schema->storage->ensure_connected;
    $schema->upgrade_directory( $self->config->sharedir );

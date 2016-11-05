@@ -355,22 +355,24 @@ sub email_subs : Role(any) {
 sub login : Role(anon) {
    my ($self, $req) = @_;
 
-   my $href       =  uri_for_action $req, $self->moniker.'/login';
-   my $form       =  blank_form 'login-user', $href;
-   my $page       =  {
-      first_field => 'username',
-      forms       => [ $form ],
-      location    => 'login',
-      selected    => 'login',
-      title       => locm $req, 'login_title', $self->config->title };
+   my $href = uri_for_action $req, $self->moniker.'/login';
+   my $form = blank_form 'login-user', $href;
+   my $page = {
+      first_field => 'username', forms => [ $form ],
+      location => 'login', selected => 'login',
+      title => locm $req, 'login_title', $self->config->title,
+   };
 
-   p_textfield $form, 'username',  NUL, {
+   p_textfield $form, 'username', NUL, {
       class => 'standard-field server required' };
-   p_password  $form, 'password',  NUL, { class => 'standard-field required' };
+
+   p_password $form, 'password', NUL, { class => 'standard-field required' };
+
    p_textfield $form, 'auth_code', NUL, {
       class => 'mediumint-field', label_class => 'hidden',
       label_id => 'auth_code_label', tip => make_tip $req, 'auth_code_tip' };
-   p_button    $form, 'login', 'login', { class => 'save-button right' };
+
+   p_button $form, 'login', 'login', { class => 'save-button right' };
 
    $self->$_push_login_js( $req, $page );
 

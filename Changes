@@ -1,5 +1,8 @@
 Revision history for App::Notitia
 
+          - Adds upgrade script
+          - Add parameter less schema upgrade
+
 0.9.1     2016-11-05 02:01:18
           - Implements #121. Vehicle event locations
           - Adds multiple status messages
