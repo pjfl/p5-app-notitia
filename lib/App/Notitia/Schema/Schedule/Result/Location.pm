@@ -4,7 +4,7 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( TRUE );
+use App::Notitia::Constants qw( NUL SPC TRUE );
 use App::Notitia::DataTypes qw( nullable_varchar_data_type
                                 serial_data_type varchar_data_type );
 
@@ -42,6 +42,13 @@ sub insert {
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
 
    return $self->next::method;
+}
+
+sub outer_postcode {
+   my $self    = shift;
+   my ($outer) = split SPC, ($self->postcode // NUL); $outer //= NUL;
+
+   return $outer;
 }
 
 sub update {

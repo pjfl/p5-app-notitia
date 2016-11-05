@@ -137,7 +137,7 @@ sub search_for_events {
    my $fields = delete $opts->{fields}; delete $opts->{rota_type};
 
    return $self->search
-      ( $where, { columns  => [ 'end_time', 'name', 'start_time', 'uri' ],
+      ( $where, { columns  => [ 'id', 'end_time', 'name', 'start_time', 'uri' ],
                   prefetch => $prefetch, %{ $opts } } );
 }
 

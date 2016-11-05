@@ -62,6 +62,7 @@ sub assert_not_assigned_to_vehicle_event {
    for my $vehicle_event ($event_rs->search_for_vehicle_events( $opts )->all) {
       my ($vehicle_ev_start, $vehicle_ev_end) = $vehicle_event->duration;
 
+      $vehicle_event->id == $event->id     and next;
       $vehicle_ev_end <= $event_start      and next;
       $event_end      <= $vehicle_ev_start and next;
 

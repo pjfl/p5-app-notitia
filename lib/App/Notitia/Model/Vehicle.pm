@@ -435,7 +435,7 @@ my $_vehicle_events = sub {
              $self->$_vehicle_slot_links( $req, $slot ) ] ];
    }
 
-   $opts->{prefetch} = [ 'end_rota', 'owner', 'start_rota' ];
+   $opts->{prefetch} = [ 'end_rota', 'owner', 'location', 'start_rota' ];
 
    for my $event ($event_rs->search_for_events( $opts )->all) {
       push @rows,
@@ -491,7 +491,7 @@ my $_vehicle_links = sub {
 
    my $keeper = $self->find_last_keeper( $req, $now, $vehicle );
 
-   push @{ $links }, { value => $keeper ? $keeper->label : NUL };
+   push @{ $links }, { value => $keeper ? $keeper->[ 0 ]->label : NUL };
 
    return $links;
 };
@@ -601,8 +601,12 @@ sub find_last_keeper {
       my ($start_dt) = $tuple->[ 0 ]->duration; $start_dt > $now and next;
 
       my $attr = $tuple->[ 0 ]->can( 'owner' ) ? 'owner' : 'operator';
+      my $event; $attr eq 'owner' and $event = $tuple->[ 0 ];
 
-      $keeper = $tuple->[ 0 ]->$attr(); last;
+      my $location; $event and $event->event_type eq 'vehicle'
+         and $location = $event->location;
+
+      $keeper = [ $tuple->[ 0 ]->$attr(), $location ]; last;
    }
 
    return $keeper;

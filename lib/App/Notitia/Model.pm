@@ -29,12 +29,11 @@ my $_activity_cache = [];
 
 # Private functions
 my $_collect_status_messages = sub {
-   my $req = shift; my @messages = ();
+   my $req = shift; my $session = $req->session; my @messages = ();
 
    my $mid = $req->query_params->( 'mid', { optional => TRUE } )
       or return \@messages;
 
-   my $session = $req->session;
    my @keys = reverse sort keys %{ $session->messages };
 
    while (my $key = $keys[ 0 ]) {
@@ -166,7 +165,6 @@ sub exception_handler {
    my $form = blank_form { type => 'list' };
    my $page = { forms => [ $form ], template => [ 'none', NUL ],
                 title => locm $req, 'Exception Handler', $name };
-   my $stash = $self->get_stash( $req, $page );
 
    if ($e->class eq ValidationErrors->()) {
       $_validation_errors->( $req, $e, $form );
@@ -177,6 +175,8 @@ sub exception_handler {
    }
 
    $self->application->debug and $_debug_output->( $req, $e, $form, $leader );
+
+   my $stash = $self->get_stash( $req, $page );
 
    $stash->{code} = $e->code > HTTP_OK ? $e->code : HTTP_OK;
 

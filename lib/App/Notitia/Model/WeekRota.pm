@@ -88,13 +88,16 @@ my $_add_vreq_tip = sub {
 };
 
 my $_add_journal = sub {
-   my ($journal, $vrn, $start, $keeper) = @_;
+   my ($journal, $vrn, $start, $tuple) = @_;
 
    my $list = $journal->{ $vrn } //= []; my $i = 0;
 
    while (my $entry = $list->[ $i ]) { $entry->{start} < $start and last; $i++ }
 
-   splice @{ $list }, $i, 0, { keeper => $keeper, start => $start };
+   my $location = $tuple->[ 1 ] && $tuple->[ 1 ]->coordinates ? $tuple->[ 1 ]
+                : $tuple->[ 0 ];
+
+   splice @{ $list }, $i, 0, { location => $location, start => $start };
 
    return;
 };
@@ -183,31 +186,32 @@ my $_week_rota_title = sub {
    return locm $req, 'week_rota_title', locm( $req, $rota_name ), $date;
 };
 
-my $_find_keeper = sub {
+my $_find_location = sub {
    my ($list, $start) = @_; my $i = 0;
 
    while (my $entry = $list->[ $i ]) { $entry->{start} < $start and last; $i++ }
 
-   return $list->[ $i ] ? $list->[ $i ]->{keeper} : FALSE;
+   return $list->[ $i ] ? $list->[ $i ]->{location} : FALSE;
 };
 
 my $_calculate_distance = sub {
-   my ($keeper, $assignee) = @_;
+   my ($location, $assignee) = @_;
 
-   ($keeper and $keeper->coordinates and $assignee and $assignee->coordinates)
-      or return;
+   ($location and $location->coordinates and
+    $assignee and $assignee->coordinates) or return;
 
-   my ($kx, $ky) = split m{ , }mx, $keeper->coordinates;
+   my ($kx, $ky) = split m{ , }mx, $location->coordinates;
    my ($ax, $ay) = split m{ , }mx, $assignee->coordinates;
 
    return int( 0.5 + sqrt( ($kx - $ax)**2 + ($ky - $ay)**2 ) / 1000 );
 };
 
 my $_vehicle_label = sub {
-   my ($data, $vehicle) = @_; my $vrn = $vehicle->vrn;
+   my ($data, $vehicle) = @_;
 
-   my $keeper = $_find_keeper->( $data->{journal}->{ $vrn }, $data->{start} );
-   my $distance = $_calculate_distance->( $keeper, $data->{assignee} );
+   my $list = $data->{journal}->{ $vehicle->vrn };
+   my $location = $_find_location->( $list, $data->{start} );
+   my $distance = $_calculate_distance->( $location, $data->{assignee} );
 
    $distance = int( 5 * $distance / 8 ); # Kilometers to miles
 
@@ -288,13 +292,13 @@ my $_alloc_key_row = sub {
    p_cell $row, { value => ucfirst $details };
    p_cell $row, { value => locm $req, $vehicle->type };
    p_cell $row, { class => 'narrow align-center',
-                  value => $keeper ? $keeper->region : NUL };
+                  value => $keeper ? $keeper->[ 0 ]->region : NUL };
    p_cell $row, { style => $style,
-                  value => $keeper ? $keeper->label : NUL };
+                  value => $keeper ? $keeper->[ 0 ]->label : NUL };
 
-   my $location = $keeper ? $keeper->location : NUL;
+   my $location = $keeper ? $keeper->[ 0 ]->location : NUL;
 
-   $location and $location .= ' ('.$keeper->outer_postcode.')';
+   $location and $location .= ' ('.$keeper->[ 0 ]->outer_postcode.')';
 
    p_cell $row, { value => $location };
 
@@ -524,9 +528,9 @@ my $_initialise_journal = sub {
 
    for my $type (keys %{ $vehicles }) {
       for my $vehicle (@{ $vehicles->{ $type } }) {
-         my $keeper = $asset->find_last_keeper( $req, $rota_dt, $vehicle );
+         my $tuple = $asset->find_last_keeper( $req, $rota_dt, $vehicle );
 
-         $_add_journal->( $journal, $vehicle->vrn, $rota_dt, $keeper );
+         $_add_journal->( $journal, $vehicle->vrn, $rota_dt, $tuple );
       }
    }
 
@@ -600,16 +604,18 @@ my $_search_for_vehicle_events = sub {
 
    my $event_rs = $self->schema->resultset( 'Event' );
 
-   $opts->{prefetch} //= [ 'end_rota', 'owner', 'start_rota', 'vehicle' ];
+   $opts->{prefetch} //=
+      [ 'end_rota', 'location', 'owner', 'start_rota', 'vehicle' ];
 
    for my $vevent ($event_rs->search_for_vehicle_events( $opts )->all) {
       my $k = local_dt( $vevent->start_date )->ymd;
 
       push @{ $vevents->{ $k } //= [] }, $vevent;
 
-      my $start = ($vevent->duration)[ 0 ]; my $vehicle = $vevent->vehicle;
+      my $start = ($vevent->duration)[ 0 ];
+      my $tuple = [ $vevent->owner, $vevent->location ];
 
-      $_add_journal->( $journal, $vehicle->vrn, $start, $vevent->owner );
+      $_add_journal->( $journal, $vevent->vehicle->vrn, $start, $tuple );
    }
 
    return $vevents;
@@ -654,8 +660,9 @@ my $_search_for_events = sub {
       push @{ $events->{ $k } //= [] }, [ $tport->event, $vehicle ];
 
       my $start = ($tport->event->duration)[ 0 ];
+      my $tuple = [ $tport->event->owner ];
 
-      $_add_journal->( $journal, $vehicle->vrn, $start, $tport->event->owner );
+      $_add_journal->( $journal, $vehicle->vrn, $start, $tuple );
    }
 
    return $events;
@@ -674,9 +681,9 @@ my $_search_for_slots = sub {
 
       $slots->{ $k } = $slot; $slot->vehicle or next;
 
-      my $start = ($slot->duration)[ 0 ];
+      my $start = ($slot->duration)[ 0 ]; my $tuple = [ $slot->operator ];
 
-      $_add_journal->( $journal, $slot->vehicle->vrn, $start, $slot->operator );
+      $_add_journal->( $journal, $slot->vehicle->vrn, $start, $tuple );
    }
 
    return $slots;

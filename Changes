@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #121. Vehicle event locations
           - Adds multiple status messages
           - Adds email_sender as a config option
           - Adds field validation to profile screen
