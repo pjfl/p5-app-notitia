@@ -108,16 +108,16 @@ my $_link_opts = sub {
 my $_add_participate_button = sub {
    my ($req, $form, $event, $person) = @_;
 
-   my $uri    = $event->uri;
-   my $action = $person->is_participating_in( $uri, $event )
-              ? 'unparticipate' : 'participate';
+   my $uri     = $event->uri;
+   my $action  = $person->is_participating_in( $uri, $event )
+               ? 'unparticipate' : 'participate';
+   my $t_opts  = { class => 'field-text right-last', label => NUL };
 
    my $text; $action eq 'participate'
       and $event->max_participents
       and $event->count_of_participents >= $event->max_participents
-      and $text = loc( $req, 'Maximum number of paticipants reached' )
-      and p_text $form, 'info', $text, {
-         class => 'field-text right-last', label => NUL }
+      and $text = locm $req, 'Maximum number of paticipants reached'
+      and p_text $form, 'info', $text, $t_opts
       and return;
 
    if ($action eq 'participate' and $event->event_type eq 'training') {
@@ -125,18 +125,20 @@ my $_add_participate_button = sub {
          and $course = $person->assert_enroled_on( $event->course_type );
 
       not $course
-         and p_text $form, 'info', locm( $req, 'Not enroled on this course' ), {
-            class => 'field-text right-last', label => NUL }
+         and $text = locm $req, 'Not enroled on this course'
+         and p_text $form, 'info', $text, $t_opts
          and return;
 
       $course->status ne 'enroled'
          and $text = locm $req, 'Current course status: [_1]', $course->status
-         and p_text $form, 'info', $text, {
-            class => 'field-text right-last', label => NUL }
+         and p_text $form, 'info', $text, $t_opts
          and return;
    }
 
-   now_dt > $event->start_date and return;
+   now_dt > $event->start_date
+      and $text = locm $req, 'This event has already happened'
+      and p_text $form, 'info', $text, $t_opts
+      and return;
 
    p_button $form, "${action}_event", "${action}_event", {
       class => 'save-button', container_class => 'right-last',

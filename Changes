@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements #123. Fewer spreadsheet columns
           - Adds application upgraded email for staff
           - Can configure the rdbms to create schema for
           - Adds upgrade script

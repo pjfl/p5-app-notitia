@@ -1840,6 +1840,9 @@ msgstr "Course Enrolement"
 msgid "training_event_name"
 msgstr "Course Name"
 
+msgid "training_event_tip"
+msgstr "Edit the details of this training event"
+
 msgid "training_event_title"
 msgstr "Training Event"
 
