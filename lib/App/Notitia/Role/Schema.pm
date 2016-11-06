@@ -23,7 +23,7 @@ my $_build_schema_class = sub {
 
 my $_build_schema_connect_attr = sub {
    my $self  = shift;
-   my $extra = $self->config->connect_params;
+   my $extra = $self->config->connect_attr;
    my $opts  = { database => $self->schema_database };
    my $info  = $self->get_connect_info( $self, $opts );
 

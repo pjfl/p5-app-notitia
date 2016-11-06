@@ -119,7 +119,7 @@ has 'components'      => is => 'lazy', isa => HashRef,
 
 has 'compress_css'    => is => 'ro',   isa => Bool, default => TRUE;
 
-has 'connect_params'  => is => 'ro',   isa => HashRef,
+has 'connect_attr'    => is => 'ro',   isa => HashRef,
    builder            => sub { { quote_names => TRUE } };
 
 has 'css'             => is => 'ro',   isa => NonEmptySimpleStr,
@@ -239,6 +239,9 @@ has 'port'            => is => 'lazy', isa => NonZeroPositiveInt,
 
 has 'posts'           => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'posts';
+
+has 'rdbms'           => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   default            => sub { [ 'MySQL' ] };
 
 has 'repo_url'        => is => 'ro',   isa => SimpleStr, default => NUL;
 
@@ -497,7 +500,7 @@ The RSS event feed title
 Boolean default to true. Should the command line C<make-css> method compress
 it's output
 
-=item C<connect_params>
+=item C<connect_attr>
 
 A hash reference which defaults to C<< { quote_names => TRUE } >>. These
 are extra connection parameters passed to the database
@@ -661,7 +664,7 @@ Integer defaults to 4Mb. Maximum size in bytes of the file upload
 
 =item C<max_messages>
 
-Non zero positive integer defaults to 3. The maximum number of messages to
+Non zero positive integer defaults to 2. The maximum number of messages to
 store in the session between requests
 
 =item C<max_sess_time>
@@ -728,6 +731,11 @@ in production mode with a L<Plack> engine that listens on a port
 A non empty simple string the defaults to F<posts>.  The directory
 name where dated markdown files are created in category
 directories. These are the blogs posts or news articles
+
+=item C<rdbms>
+
+An array reference of non empty simple strings. The list of relational
+databases to create schema for
 
 =item C<repo_url>
 

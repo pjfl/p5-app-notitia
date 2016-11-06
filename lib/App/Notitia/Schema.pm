@@ -34,6 +34,8 @@ has '+database'       => default => sub { $_[ 0 ]->schema_database };
 
 has '+preversion'     => is => 'rwp';
 
+has '+rdbms'          => default => sub { $_[ 0 ]->config->rdbms };
+
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
 has '+schema_version' => default => sub { App::Notitia->schema_version.NUL };
@@ -48,10 +50,6 @@ around 'deploy_file' => sub {
 };
 
 # Private methods
-my $_connect_attr = sub {
-   return { %{ $_[ 0 ]->connect_info->[ 3 ] }, %{ $_[ 0 ]->db_attr } };
-};
-
 my $_ddl_paths = sub {
    my $self = shift;
 

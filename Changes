@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Can configure the rdbms to create schema for
           - Adds upgrade script
           - Add parameter less schema upgrade
 
