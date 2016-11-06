@@ -277,7 +277,7 @@ my $_alloc_slot_row = sub {
 
    p_cell $row, { class => 'narrow align-center',
                   value => $operator->id ? $operator->region : NUL };
-   p_cell $row, { class => 'spreadsheet-fixed-cell table-cell-help',
+   p_cell $row, { class => 'spreadsheet-fixed-cell table-cell-label',
                   style => $style,
                   value => $operator->id ? $operator->label : 'Vacant' };
    p_cell $row, { class => 'narrow align-center',
