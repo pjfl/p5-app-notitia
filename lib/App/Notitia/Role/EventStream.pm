@@ -152,15 +152,16 @@ sub create_sms_job {
 sub dump_event_attr : method {
    my $self = shift; $self->plugins; my $cache = event_handler_cache;
 
-   if ($self->options->{not_enabled}) {
-      for my $stream (keys %{ $cache }) {
-         my $allowed = $self->config->automated->{ $stream } // [];
-         my @keys = keys %{ $cache->{ $stream } };
+   for my $stream (keys %{ $cache }) {
+      my $allowed = $self->config->automated->{ $stream } // [];
+      my @keys = keys %{ $cache->{ $stream } };
 
-         for my $action (@keys) {
-            ($action =~ m{ \A _ }mx or is_member $action, $allowed)
-               and delete $cache->{ $stream }->{ $action };
-         }
+      for my $action (@keys) {
+         $self->options->{not_enabled} and is_member $action, $allowed
+            and delete $cache->{ $stream }->{ $action };
+
+         not $self->options->{all} and $action =~ m{ \A _ }mx
+            and delete $cache->{ $stream }->{ $action };
       }
    }
 
