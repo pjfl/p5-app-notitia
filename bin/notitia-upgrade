@@ -1,14 +1,21 @@
 #!/bin/bash
+# Copyright (c) 2016 Peter Flanigan
 
-# Defines
-REPO=${2:-'git://github.com/pjfl/p5-app-notitia.git'}
-SERVICE=${3:-'notitia'}
+# This is free software; you can redistribute it and/or modify
+# it under the same terms as Perl itself.
+
+# Use: ssh -t <user>@<domain> sudo ~notitia/local/bin/notitia-upgrade
+
+# Command line
+method=${1:-'service'}
+repo=${2:-'git://github.com/pjfl/p5-app-notitia.git'}
+service=${3:-'notitia'}
 
 # Functions
 service_home() {
-   local home; home=$(grep ^${SERVICE}: /etc/passwd | cut -d: -f6)
-   [ -n "${home}" ] && echo -n "${home}" && return 0
-   echo "Service ${SERVICE} home directory not found" >&2
+   local home; home=$(getent passwd ${service} | cut -d: -f6)
+   [ -n "${home}" -a -d "${home}" ] && echo -n "${home}" && return 0
+   echo "Service ${service} home directory not found" >&2
    return 1
 }
 
@@ -24,8 +31,7 @@ upgrade_application() {
    cd $dir
    source var/etc/profile
    notitia-jobdaemon stop
-   cpanm --notest ${REPO} || exit 1
-   notitia-schema upgrade-schema
+   cpanm --notest ${repo} && notitia-schema upgrade-schema
    notitia-jobdaemon start
    exit 0
 }
@@ -33,15 +39,13 @@ upgrade_application() {
 upgrade_service() {
    local dir; dir=$(install_directory); [ ${?} -gt 0 ] && exit 1
    local prog; prog="${dir}/bin/notitia-upgrade"
-   service ${SERVICE} stop
-   su - ${SERVICE} -c "${prog} application ${REPO} ${SERVICE}"
-   service ${SERVICE} start
+   service ${service} stop
+   su - ${service} -c "${prog} application ${repo} ${service}"
+   service ${service} start
    exit 0
 }
 
 # Main
-method=${1:-'service'}
-
 [ "${method}" = "service" ] && upgrade_service
 [ "${method}" = "application" ] && upgrade_application
 
