@@ -38,6 +38,16 @@ my $_event_email = sub {
 };
 
 # Event handlers
+event_handler 'email', application_upgraded => sub {
+   my ($self, $req, $stash) = @_; my $file = 'application_upgraded_email.md';
+
+   $stash->{template} = $self->$_template_dir( $req )->catfile( $file );
+   $stash->{time} =~ s{ \. }{:}mx;
+   $stash->{role} = 'staff';
+
+   return $stash;
+};
+
 event_handler 'email', create_certification => sub {
    my ($self, $req, $stash) = @_; my $file = 'certification_email.md';
 

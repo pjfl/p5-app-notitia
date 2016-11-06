@@ -292,6 +292,21 @@ my $_send_sms = sub {
 };
 
 # Public methods
+sub application_upgraded : method {
+   my $self    = shift;
+   my $req     = $self->$_new_request( $self->next_argv, $self->next_argv );
+   my $now     = local_dt( now_dt );
+   my $date    = $now->dmy( '/' );
+   my $time    = sprintf '%.2d.%.2d', $now->hour, $now->minute;
+   my $version = $self->config->appclass->VERSION;
+   my $message = "action:application-upgraded date:${date} time:${time} "
+               . "version:${version}";
+
+   $self->components; $self->send_event( $req, $message );
+
+   return OK;
+}
+
 sub geolocation : method {
    my $self = shift;
    my $object_type = $self->next_argv or throw Unspecified, [ 'object type' ];
@@ -430,6 +445,8 @@ Defines the following attributes;
 =back
 
 =head1 Subroutines/Methods
+
+=head2 C<application_upgraded> - Generates the application upgraded email
 
 =head2 C<geolocation> - Lookup geolocation information
 
