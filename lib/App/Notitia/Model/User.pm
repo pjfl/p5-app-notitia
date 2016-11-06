@@ -469,7 +469,7 @@ sub profile : Role(any) {
       forms       => [ $form ],
       grid_width  => $req->session->grid_width,
       location    => 'account_management',
-      range       => [ 978, 1180 ],
+      range       => [ 940, 1560 ],
       selected    => 'profile',
       title       => locm $req, 'profile_title',
    };
