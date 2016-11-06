@@ -12,14 +12,8 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'email';
 
 # Private methods
-my $_template_dir = sub {
-   my ($self, $req) = @_; my $conf = $self->config; my $root = $conf->docs_root;
-
-   return $root->catdir( $req->locale, $conf->posts, $conf->email_templates );
-};
-
 my $_event_email = sub {
-   my ($self, $req, $stash) = @_; my $file = 'event_email.md';
+   my ($self, $req, $stash) = @_;
 
    my $rs = $self->schema->resultset( 'Event' );
    my $event = $rs->find_event_by( $stash->{event_uri} );
@@ -28,37 +22,37 @@ my $_event_email = sub {
       $stash->{ $k } = $event->$k();
    }
 
+   $stash->{role} = 'fund_raiser';
+   $stash->{template} = 'event_email.md';
    $stash->{owner} = $event->owner->label;
    $stash->{date} = local_dt( $event->start_date )->dmy( '/' );
    $stash->{uri} = uri_for_action $req, 'event/event_summary', [ $event->uri ];
-   $stash->{role} = 'fund_raiser';
-   $stash->{template} = $self->$_template_dir( $req )->catfile( $file );
 
    return $stash;
 };
 
 # Event handlers
 event_handler 'email', application_upgraded => sub {
-   my ($self, $req, $stash) = @_; my $file = 'application_upgraded_email.md';
+   my ($self, $req, $stash) = @_;
 
-   $stash->{template} = $self->$_template_dir( $req )->catfile( $file );
-   $stash->{time} =~ s{ \. }{:}mx;
    $stash->{role} = 'staff';
+   $stash->{template} = 'application_upgraded_email.md';
+   $stash->{time} =~ s{ \. }{:}mx;
 
    return $stash;
 };
 
 event_handler 'email', create_certification => sub {
-   my ($self, $req, $stash) = @_; my $file = 'certification_email.md';
+   my ($self, $req, $stash) = @_;
 
-   $stash->{template} = $self->$_template_dir( $req )->catfile( $file );
+   $stash->{template} = 'certification_email.md';
    $stash->{type} = locm $req, $stash->{type};
 
    return $stash;
 };
 
 event_handler 'email', create_delivery_stage => sub {
-   my ($self, $req, $stash) = @_; my $file = 'delivery_stage_email.md';
+   my ($self, $req, $stash) = @_;
 
    my $id = $stash->{stage_id} or
       ($self->log->warn( 'No stage_id in create_delivery_stage' ) and return);
@@ -67,6 +61,7 @@ event_handler 'email', create_delivery_stage => sub {
       ($self->log->warn( "Stage id ${id} unknown" ) and return);
    my $journey = $leg->journey;
 
+   $stash->{template} = 'delivery_stage_email.md';
    $stash->{controller} = $journey->controller->label;
    $stash->{beginning} = $leg->beginning.NUL;
    $stash->{ending} = $leg->ending.NUL;
@@ -76,7 +71,6 @@ event_handler 'email', create_delivery_stage => sub {
    $stash->{packages} = [ map {
       [ $_->quantity, $_->package_type.NUL, $_->description ] }
                           $journey->packages->all ];
-   $stash->{template} = $self->$_template_dir( $req )->catfile( $file );
 
    return $stash;
 };
@@ -85,46 +79,43 @@ event_handler 'email', create_event => \&{ $_event_email };
 event_handler 'email', update_event => \&{ $_event_email };
 
 event_handler 'email', impending_slot => sub {
-   my ($self, $req, $stash) = @_; my $file = 'impending_slot_email.md';
+   my ($self, $req, $stash) = @_;
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $stash->{slot_key};
 
+   $stash->{template} = 'impending_slot_email.md';
    $stash->{shift_type} = $shift_type;
    $stash->{slot_type} = $slot_type;
-   $stash->{template} = $self->$_template_dir( $req )->catfile( $file );
 
    return $stash;
 };
 
 event_handler 'email', vacant_slot => sub {
-   my ($self, $req, $stash) = @_; my $file = "vacant_slot_email.md";
+   my ($self, $req, $stash) = @_;
 
    my $args = [ $stash->{rota_name}, $stash->{rota_date} ];
 
    $stash->{role} = $stash->{slot_type};
+   $stash->{template} = 'vacant_slot_email.md';
    $stash->{uri} = uri_for_action $req, 'day/day_rota', $args;
-   $stash->{template} = $self->$_template_dir( $req )->catfile( $file );
 
    return $stash;
 };
 
 event_handler 'email', vehicle_assignment => sub {
-   my ($self, $req, $stash) = @_; my $file;
+   my ($self, $req, $stash) = @_;
 
    if ($stash->{slot_key}) {
       my ($shift_type, $slot_type, $subslot)
          = split m{ _ }mx, $stash->{slot_key};
 
+      $stash->{template} = 'vehicle_assignment_email.md';
       $stash->{shift_type} = $shift_type;
       $stash->{slot_type} = $slot_type;
-      $file = 'vehicle_assignment_email.md';
    }
    elsif ($stash->{event_uri}) {
-      $file = 'vehicle_assignment_event_email.md';
+      $stash->{template} = 'vehicle_assignment_event_email.md';
    }
-
-   $file and $stash->{template}
-      = $self->$_template_dir( $req )->catfile( $file );
 
    return $stash;
 };

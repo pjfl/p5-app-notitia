@@ -3,12 +3,20 @@ package App::Notitia::Plugin::Core;
 use namespace::autoclean;
 
 use App::Notitia::Util qw( event_handler locm );
+use Scalar::Util       qw( blessed );
 use Moo;
 
 with q(Web::Components::Role);
 
 # Public attributes
 has '+moniker' => default => 'core';
+
+# Private methods
+my $_template_dir = sub {
+   my ($self, $req) = @_; my $conf = $self->config; my $root = $conf->docs_root;
+
+   return $root->catdir( $req->locale, $conf->posts, $conf->email_templates );
+};
 
 # Event callbacks. Zero or one _input_ handler. One or more _output_ handlers
 # Condition
@@ -35,6 +43,9 @@ event_handler 'email', '_output_' => sub {
    my ($self, $req, $stash) = @_;
 
    my $template = delete $stash->{template} or return;
+
+   blessed $template
+      or $template = $self->$_template_dir( $req )->catfile( $template );
 
    if ($template->exists) { $self->create_email_job( $stash, $template ) }
    else { $self->log->warn( "Email template ${template} does not exist" ) }
