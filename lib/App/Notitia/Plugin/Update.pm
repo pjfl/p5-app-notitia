@@ -14,7 +14,7 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'update';
 
 has 'certifiable_courses' => is => 'ro', isa => ArrayRef[NonEmptySimpleStr],
-   builder                => sub { [] };
+   builder => sub { [] };
 
 # Private methods
 my $_maybe_delete_cert = sub {

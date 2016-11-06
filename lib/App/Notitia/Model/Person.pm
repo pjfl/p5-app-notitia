@@ -133,10 +133,13 @@ my $_people_headers = sub {
       $max = is_member( 'person_manager', $req->session->roles) ? 7 : 3;
    }
    else {
-      $header = 'people_heading';
-      $max    = (is_member $role, qw( driver rider )) ? 5
-              : (is_member $role, qw( controller fund_raiser )) ? 4
-              : 2;
+      if (is_member $role, qw( driver rider )) {
+         $header = 'people_role_heading'; $max = 5;
+      }
+      elsif (is_member $role, qw( controller fund_raiser )) {
+         $header = 'people_role_heading'; $max = 4;
+      }
+      else { $header = 'people_heading'; $max = 4 }
    }
 
    return [ map { { value => loc( $req, "${header}_${_}" ) } } 0 .. $max ];
@@ -245,9 +248,10 @@ my $_people_links = sub {
    unshift @paths, is_member( 'person_manager', $req->session->roles )
       ? "${moniker}/person" : "${moniker}/person_summary";
 
+   $role or  push @paths, 'user/email_subs', 'user/sms_subs';
+
    $role and is_member $role, qw( controller driver fund_raiser rider )
-      and push @paths, 'certs/certifications',
-      and push @paths, 'train/training';
+         and push @paths, 'certs/certifications', 'train/training';
 
    $role and ($role eq 'rider' or $role eq 'driver')
          and push @paths, 'blots/endorsements';
