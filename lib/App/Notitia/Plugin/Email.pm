@@ -3,7 +3,7 @@ package App::Notitia::Plugin::Email;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE NUL TRUE );
-use App::Notitia::Util      qw( event_handler local_dt locm uri_for_action );
+use App::Notitia::Util      qw( event_handler locd locm uri_for_action );
 use Moo;
 
 with q(Web::Components::Role);
@@ -25,7 +25,7 @@ my $_event_email = sub {
    $stash->{role} = 'fund_raiser';
    $stash->{template} = 'event_email.md';
    $stash->{owner} = $event->owner->label;
-   $stash->{date} = local_dt( $event->start_date )->dmy( '/' );
+   $stash->{date} = locd $req, $event->start_date;
    $stash->{uri} = uri_for_action $req, 'event/event_summary', [ $event->uri ];
 
    return $stash;

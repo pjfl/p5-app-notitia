@@ -7,8 +7,8 @@ use App::Notitia::Constants qw( FALSE NUL SPC TRAINING_STATUS_ENUM TRUE );
 use App::Notitia::Form      qw( blank_form f_link f_tag p_button p_container
                                 p_date p_hidden p_link p_list p_row p_select
                                 p_table p_textfield );
-use App::Notitia::Util      qw( dialog_anchor js_submit_config local_dt locm
-                                make_tip management_link page_link_set
+use App::Notitia::Util      qw( dialog_anchor js_submit_config local_dt locd
+                                locm make_tip management_link page_link_set
                                 register_action_paths to_dt to_msg
                                 uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
@@ -208,7 +208,7 @@ my $_summary_cell = sub {
    my $scode = $person->shortcode;
    my $course = $tuple->[ 1 ]->{ $course_name };
    my $status = $course->status;
-   my $date = local_dt( $course->$status() )->dmy( '/' );
+   my $date = locd $req, $course->$status();
    my $course_type = $course->course_type;
    my $actionp = $self->moniker.'/dialog';
    my $href = uri_for_action $req, $actionp, [ $scode, $course_type ];
@@ -301,9 +301,7 @@ sub dialog : Dialog Role(training_manager) {
             = blank_form 'user-training', $href, { class => 'dialog-form' };
 
    for my $status (@{ TRAINING_STATUS_ENUM() }) {
-      my $date = $course->$status() // NUL;
-
-      $date and $date = local_dt( $date )->dmy( '/' );
+      my $date = $course->$status() // NUL; $date and $date = locd $req, $date;
 
       p_date $form, "${course_name}_${status}_date", $date, {
          class => 'narrow-field',
@@ -472,34 +470,31 @@ sub update_training_action : Role(training_manager) {
    my $prev = [];
 
    for my $status (@{ TRAINING_STATUS_ENUM() }) {
-      my $date = $req->body_params->( "${course_name}_${status}_date",
-                                      { optional => TRUE} ) // NUL;
+      my $key  = "${course_name}_${status}_date";
+      my $date = $req->body_params->( $key, { optional => TRUE} ) // NUL;
 
       $prev->[ 0 ] or
          ($prev = [ $status,
                     local_dt( $course->$status() )->truncate( to => 'day' ) ]
           and next);
 
-      if ($date) {
-         $date = to_dt $date;
-         $prev->[ 1 ] or throw 'Cannot skip [_1] state', [ $prev->[ 0 ] ];
-         $date < $prev->[ 1 ]
-            and throw '[_1] date cannot be before the [_2] date',
-                      { args => [ ucfirst $status, $prev->[ 0 ] ],
-                        no_quote_bind_values => TRUE };
-         $course->status( $status ); $course->$status( $date );
+      $date or ($prev = [ $status, FALSE ] and next);
 
-         my $dmy = local_dt( $date )->dmy( '/' );
-         my $message = "action:update-course shortcode:${scode} "
-                     . "course:${course_name} date:${dmy} status:${status}";
+      my $local_dt = local_dt( my $dt = to_dt $date ); my $dmy = locd $req, $dt;
 
-         $self->send_event( $req, $message );
-      }
+      $prev->[ 1 ] or throw 'Cannot skip [_1] state', [ $prev->[ 0 ] ];
+      $local_dt < $prev->[ 1 ]
+         and throw '[_1] date cannot be before the [_2] date', {
+            args => [ ucfirst $status, $prev->[ 0 ] ],
+            no_quote_bind_values => TRUE };
+      $course->status( $status ); $course->$status( $dt ); $course->update;
 
-      $prev = [ $status, $date ];
+      my $message = "action:update-course shortcode:${scode} "
+                  . "course:${course_name} date:${dmy} status:${status}";
+
+      $self->send_event( $req, $message );
+      $prev = [ $status, $local_dt->truncate( to => 'day' ) ];
    }
-
-   $course->update;
 
    my $key = 'Training for [_1] updated by [_2]';
    my $message = [ to_msg $key, $person->label, $req->session->user_label ];

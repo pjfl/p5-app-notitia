@@ -9,7 +9,7 @@ use App::Notitia::DataTypes qw( bool_data_type enumerated_data_type
                                 foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 numerical_id_data_type );
-use App::Notitia::Util      qw( local_dt locm );
+use App::Notitia::Util      qw( local_dt locd locm );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -76,7 +76,7 @@ sub key {
 sub label {
    my ($self, $req) = @_;
 
-   return locm( $req, $self->key ).' ('.local_dt( $self->date )->dmy( '/' ).')';
+   return locm( $req, $self->key ).' ('.locd( $req, $self->date ).')';
 }
 
 sub start_date {

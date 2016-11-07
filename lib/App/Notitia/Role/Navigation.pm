@@ -6,7 +6,7 @@ use namespace::autoclean;
 use App::Notitia::Constants qw( FALSE HASH_CHAR NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_button p_image p_item
                                 p_link p_list p_text );
-use App::Notitia::Util      qw( dialog_anchor locm make_tip now_dt
+use App::Notitia::Util      qw( dialog_anchor local_dt locd locm make_tip now_dt
                                 to_dt uri_for_action );
 use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
@@ -61,7 +61,7 @@ my $_week_link = sub {
    my $value = locm( $req, 'Week' ).SPC.$date->week_number;
 
    $opts = { value => $value,   name => 'wk'.$date->week_number,
-             tip   => $tip, tip_args => [ $date->dmy( '/' ) ], %{ $opts } };
+             tip   => $tip, tip_args => [ locd $req, $date ], %{ $opts } };
    $params->{rota_date} = $date->ymd;
 
    return $nav_linkto->( $req, $opts, $actionp, $args, $params );
@@ -641,7 +641,7 @@ sub rota_navigation_links {
    my $list     = $nav->{menu}->{list} //= [];
    my $actionp  = "${period}/${period}_rota";
    my $date     = $req->session->rota_date // time2str '%Y-%m-01';
-   my $local_dt = to_dt( $date )->set_time_zone( 'local' );
+   my $local_dt = local_dt to_dt $date;
    my $f_dom    = $local_dt->clone->set( day => 1 );
 
    $req->session->rota_date or $self->update_navigation_date( $req, $local_dt );

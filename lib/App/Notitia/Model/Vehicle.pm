@@ -6,7 +6,7 @@ use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
                                 p_date p_fields p_hidden p_list
                                 p_row p_select p_table p_tag p_textfield );
 use App::Notitia::Util      qw( assign_link check_field_js display_duration
-                                loc local_dt now_dt make_tip management_link
+                                loc locd now_dt make_tip management_link
                                 page_link_set register_action_paths
                                 set_element_focus slot_identifier time2int
                                 to_dt to_msg uri_for_action );
@@ -332,7 +332,7 @@ my $_toggle_event_assignment = sub {
    my $key  = "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]";
    my $event = $schema->resultset( 'Event' )->find_event_by( $uri );
    my $scode = $event->owner;
-   my $dmy = local_dt( $event->start_date )->dmy( '/' );
+   my $dmy = locd $req, $event->start_date;
    my $message = "action:vehicle-${action}ment event_uri:${uri} "
                . "shortcode:${scode} date:${dmy} vehicle:${vrn}";
 
@@ -364,7 +364,7 @@ my $_toggle_slot_assignment = sub {
    my $label = slot_identifier
       ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
    my $operator = $slot->operator;
-   my $dmy = local_dt( $rota_dt )->dmy( '/' );
+   my $dmy = locd $req, $rota_dt;
    my $message = "action:vehicle-${action}ment date:${dmy} "
                . "shortcode:${operator} slot_key:${slot_name} vehicle:${vrn}";
 
