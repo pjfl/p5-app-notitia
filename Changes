@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds private vehicle selection to slot claim
           - Implements #124. Person manager subscription override
           - Implements #123. Fewer spreadsheet columns
           - Adds application upgraded email for staff

@@ -6,12 +6,13 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG FALSE NUL SPC
                                 SHIFT_TYPE_ENUM TILDE TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_button
-                                p_checkbox p_select );
-use App::Notitia::Util      qw( assign_link dialog_anchor js_submit_config
-                                locm make_tip register_action_paths slot_claimed
+                                p_checkbox p_hidden p_js p_link p_select );
+use App::Notitia::Util      qw( assign_link dialog_anchor js_config
+                                js_submit_config local_dt locm make_tip
+                                register_action_paths slot_claimed
                                 slot_identifier slot_limit_index to_dt to_msg
                                 uri_for_action );
-use Class::Usul::Functions  qw( is_member );
+use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
 use Moo;
 
@@ -25,6 +26,7 @@ has '+moniker' => default => 'day';
 
 register_action_paths
    'day/day_rota' => 'day-rota',
+   'day/operator_vehicle' => 'operator-vehicle',
    'day/slot' => 'slot';
 
 # Construction
@@ -48,15 +50,12 @@ my $_max_rota_cols = 4;
 my $_add_js_dialog = sub {
    my ($req, $page, $args, $action, $name, $title) = @_;
 
-   $name = "${action}-${name}";
-   $title = locm $req, (ucfirst $action).SPC.$title;
+   my $actionp = $page->{moniker}.'/slot';
+   my $href = uri_for_action $req, $actionp, $args, { action => $action };
 
-   my $path = $page->{moniker}.'/slot';
-   my $href = uri_for_action $req, $path, $args, { action => $action };
-   my $js   = $page->{literal_js} //= [];
-
-   push @{ $js }, dialog_anchor( $args->[ 2 ], $href, {
-      name => $name, title => $title, } );
+   p_js $page, dialog_anchor $args->[ 2 ], $href, {
+      name  => "${action}-${name}",
+      title => locm $req, (ucfirst $action).SPC.$title, };
 
    return;
 };
@@ -101,16 +100,10 @@ my $_date_picker = sub {
             type        => 'form', };
 };
 
-my $_local_dt = sub {
-   return $_[ 0 ]->clone->set_time_zone( 'local' );
-};
-
 my $_onchange_submit = sub {
-   my $page = shift;
+   my $page = shift; my $args = [ 'rota_redirect', 'day-rota' ];
 
-   push @{ $page->{literal_js} },
-      js_submit_config 'rota_date', 'change', 'submitForm',
-                       [ 'rota_redirect', 'day-rota' ];
+   p_js $page, js_submit_config 'rota_date', 'change', 'submitForm', $args;
 
    return;
 };
@@ -118,27 +111,56 @@ my $_onchange_submit = sub {
 my $_onclick_relocate = sub {
    my ($page, $k, $href) = @_;
 
-   push @{ $page->{literal_js} },
-      js_submit_config $k, 'click', 'location', [ "${href}" ];
+   p_js $page, js_submit_config $k, 'click', 'location', [ "${href}" ];
 
    return;
 };
 
-my $_operators_vehicle = sub {
-   my $slot = shift; $slot->operator->id or return NUL;
+my $_operators_vehicle_label = sub {
+   my $slov = shift; $slov or return 'N';
 
-   my $slov = $slot->operator_vehicle;
+   return $slov->type eq '4x4' ? $slov->type
+        : $slov->type eq 'car' ? ucfirst( $slov->type )
+        : 'N';
+};
 
-   return $slov && $slov->type eq '4x4' ? $slov->type
-        : $slov && $slov->type eq 'car' ? ucfirst( $slov->type )
-        : NUL;
+my $_operators_vehicle_link = sub {
+   my ($req, $page, $data, $k) = @_;
+
+   my $slot_data = $data->{ $k };
+   my $vehicle_link = { class => 'narrow', value => NUL };
+
+   $slot_data->{rota_dt} or return $vehicle_link;
+
+   my $actionp = $page->{moniker}.'/operator_vehicle';
+   my $local_rota_dt = local_dt $slot_data->{rota_dt};
+   my $args = [ $slot_data->{rota_name}, $local_rota_dt->ymd, $k ];
+   my $tip = locm $req, 'operators_vehicle_tip';
+   my $id = "${k}_vehicle";
+
+   p_js $page, dialog_anchor $id, uri_for_action( $req, $actionp, $args ), {
+      name => 'operator-vehicle' ,
+      title => locm $req, 'operators_vehicle_title' };
+
+   if ($slot_data->{operator} eq $req->username) {
+      p_link $vehicle_link, $id, '#', {
+         class => 'windows', request => $req, tip => $tip,
+         value => $_operators_vehicle_label->( $slot_data->{slov} ),
+      };
+   }
+   else {
+      $vehicle_link->{value}
+         = $_operators_vehicle_label->( $slot_data->{slov} );
+   }
+
+   return $vehicle_link;
 };
 
 my $_participents_link = sub {
    my ($req, $page, $event) = @_; $event or return;
 
-   my $href  = uri_for_action $req, 'event/participents', [ $event->uri ];
-   my $tip   = locm $req, 'participents_view_link', $event->label;
+   my $href = uri_for_action $req, 'event/participents', [ $event->uri ];
+   my $tip  = locm $req, 'participents_view_link', $event->label;
 
    return { class   => 'narrow',
             colspan => 1,
@@ -146,6 +168,18 @@ my $_participents_link = sub {
                          href  => $href,       name => 'view-participents',
                          tip   => $tip,        type => 'link',
                          value => '&nbsp;', } };
+};
+
+my $_push_slot_claim_js = sub {
+   my $page = shift;
+
+   my $id   = substr create_token, 0, 5; my $assignee_id = "assignee_${id}";
+
+   my $opts = [ $assignee_id, 'change', 'hide', [ "${assignee_id}_label" ] ];
+
+   js_config $page, 'togglers', $opts;
+
+   return $assignee_id;
 };
 
 my $_slot_contact_info = sub {
@@ -258,7 +292,7 @@ my $_driver_row = sub {
    return [ { value => locm( $req, $k ), class => 'rota-header' },
             { value => undef },
             $_slot_link->( $req, $page, $data, $k, 'driver' ),
-            { value => $data->{ $k }->{ops_veh}, class => 'narrow' }, ];
+            $_operators_vehicle_link->( $req, $page, $data, $k ), ];
 };
 
 my $_event_link = sub {
@@ -311,13 +345,14 @@ my $_events = sub {
    return;
 };
 
+
 my $_rider_row = sub {
    my ($req, $page, $args, $data) = @_; my $k = $args->[ 2 ];
 
    return [ { value => locm( $req, $k ), class => 'rota-header' },
             assign_link( $req, $page, $args, $data->{ $k } ),
             $_slot_link->( $req, $page, $data, $k, 'rider' ),
-            { value => $data->{ $k }->{ops_veh}, class => 'narrow' }, ];
+            $_operators_vehicle_link->( $req, $page, $data, $k ), ];
 };
 
 my $_riders_n_drivers = sub {
@@ -365,7 +400,7 @@ my $_day_page = sub {
 
    my $schema   =  $self->schema;
    my $limits   =  $self->config->slot_limits;
-   my $local_dt =  $_local_dt->( $rota_dt );
+   my $local_dt =  local_dt $rota_dt;
    my $date     =  $local_dt->month_name.SPC.$local_dt->day.SPC.$local_dt->year;
    my $title    =  locm $req, 'day_rota_title', locm( $req, $name ), $date;
    my $actionp  =  $self->moniker.'/day_rota';
@@ -390,8 +425,43 @@ my $_day_page = sub {
    return $page;
 };
 
+my $_find_by_shortcode = sub {
+   my ($self, $scode) = @_; my $rs = $self->schema->resultset( 'Person' );
+
+   return $rs->find_by_shortcode( $scode );
+};
+
 my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
+};
+
+my $_find_slot = sub {
+   my ($result, $rota_name, $date, $shift_type, $slot_type, $subslot) = @_;
+
+   my $shift = $result->find_shift( $rota_name, $date, $shift_type );
+   my $slot  = $result->find_slot( $shift, $slot_type, $subslot );
+
+   return $slot;
+};
+
+my $_push_vehicle_select = sub {
+   my ($self, $form, $id, $person, $args) = @_;
+
+   my @slot_key = split m{ _ }mx, $args->[ 2 ];
+   my $rota_dt = to_dt $args->[ 1 ];
+   my $slot = $_find_slot->( $person, $args->[ 0 ], $rota_dt, @slot_key);
+   my $vehicle_id = $slot ? $slot->operator_vehicle_id : undef;
+   my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
+   my $vehicle = $vehicle_id ? $vehicle_rs->find( $vehicle_id ) : NUL;
+   my $vehicles = $vehicle_rs->list_vehicles( {
+      fields => { selected => $vehicle }, owner => $person } );
+
+   p_select $form, 'vehicle', [ [ NUL, undef ], @{ $vehicles } ], {
+      label_id => "${id}_label" };
+
+   p_hidden $form, 'original_vehicle', $vehicle;
+
+   return;
 };
 
 # Public methods
@@ -406,8 +476,7 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
    my $rota_dt    = to_dt( $rota_date );
    my $opts       = { optional => TRUE };
    my $assignee   = $req->body_params->( 'assignee', $opts ) || $req->username;
-   my $person_rs  = $self->schema->resultset( 'Person' );
-   my $person     = $person_rs->find_by_shortcode( $assignee );
+   my $person     = $self->$_find_by_shortcode( $assignee );
    my $bike       = $req->body_params->( 'request_bike', $opts ) // FALSE;
    my $vrn        = $req->body_params->( 'vehicle', $opts );
    my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
@@ -450,7 +519,9 @@ sub day_rota : Role(any) {
       $slot_data->{ $slot->key } =
          { name        => $slot->key,
            operator    => $slot->operator,
-           ops_veh     => $_operators_vehicle->( $slot ),
+           rota_dt     => $rota_dt,
+           rota_name   => $name,
+           slov        => $slot->operator_vehicle,
            vehicle     => $slot->vehicle,
            vehicle_req => $slot->bike_requested };
    }
@@ -458,6 +529,29 @@ sub day_rota : Role(any) {
    my $page = $self->$_day_page( $req, $name, $rota_dt, $events, $slot_data );
 
    return $self->get_stash( $req, $page );
+}
+
+sub operator_vehicle : Dialog Role(any) {
+   my ($self, $req) = @_;
+
+   my $rota_name = $req->uri_params->( 0 );
+   my $rota_date = $req->uri_params->( 1 );
+   my $slot_key = $req->uri_params->( 2 );
+   my $stash = $self->dialog_stash( $req );
+   my $person = $self->$_find_by_shortcode( $req->username );
+   my $args = [ $rota_name, $rota_date, $slot_key, $person ];
+   my $href = uri_for_action $req, $self->moniker.'/operator_vehicle', $args;
+   my $form = $stash->{page}->{forms}->[ 0 ]
+            = blank_form 'operator-vehicle', $href;
+   my $id = 'vehicle';
+
+   $self->$_push_vehicle_select( $form, $id, $person, $args );
+
+   p_button $form, 'select_operator_vehicle', 'select_operator_vehicle', {
+      class => 'button', container_class => 'right-last',
+      tip => make_tip $req, 'select_operator_vehicle_tip' };
+
+   return $stash;
 }
 
 sub rota_redirect_action : Role(any) {
@@ -475,6 +569,37 @@ sub rota_redirect_action : Role(any) {
    return { redirect => { location => $location } };
 }
 
+sub select_operator_vehicle_action : Role(driver) Role(rider) {
+   my ($self, $req) = @_;
+
+   my $rota_name = $req->uri_params->( 0 );
+   my $rota_date = $req->uri_params->( 1 );
+   my $slot_key = $req->uri_params->( 2 );
+   my $scode = $req->uri_params->( 3 );
+   my $rota_dt = to_dt $rota_date;
+   my @slot_key = split m{ _ }mx, $slot_key;
+   my $opts = { optional => TRUE };
+   my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
+
+   $scode ne $req->username
+      and throw 'Updating selected vehicles for other people is not allowed';
+
+   if (my $vrn = $req->body_params->( 'vehicle', $opts )) {
+      my $vehicle = $vehicle_rs->find_vehicle_by( $vrn );
+
+      $vehicle->assign_private( $rota_name, $rota_dt, @slot_key );
+   }
+   elsif (my $original = $req->body_params->( 'original_vehicle', $opts )) {
+      my $vehicle = $vehicle_rs->find_vehicle_by( $original );
+
+      $vehicle->unassign_private( $rota_name, $rota_dt, @slot_key );
+   }
+
+   my $message = [ to_msg 'Selected vehicle updated' ];
+
+   return { redirect => { message => $message } }; # location referer
+}
+
 sub slot : Dialog Role(rota_manager) Role(rider) Role(controller) Role(driver) {
    my ($self, $req) = @_;
 
@@ -489,26 +614,21 @@ sub slot : Dialog Role(rota_manager) Role(rider) Role(controller) Role(driver) {
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
    if ($action eq 'claim') {
-      my $person_rs = $self->schema->resultset( 'Person' );
-      my $person = $person_rs->find_by_shortcode( $req->username );
-      my $role = $slot_type eq 'controller' ? 'controller'
-               : $slot_type eq 'rider'      ? 'rider'
-               : $slot_type eq 'driver'     ? 'driver'
-                                            : FALSE;
+      my $person = $self->$_find_by_shortcode( $req->username );
+      my $id = 'vehicle';
 
-      if ($role and is_member 'rota_manager', $req->session->roles) {
+      if ($slot_type and is_member 'rota_manager', $req->session->roles) {
          my $opts = { fields => { selected => $person } };
-         my $people = $person_rs->list_people( $role, $opts );
+         my $person_rs = $self->schema->resultset( 'Person' );
+         my $people = $person_rs->list_people( $slot_type, $opts );
 
-         p_select $form, 'assignee', [ [ NUL, NUL ], @{ $people } ];
+         $id = $_push_slot_claim_js->( $stash->{page} );
+         p_select $form, 'assignee', [ [ NUL, undef ], @{ $people } ], {
+            class => 'standard-field togglers', id => $id };
       }
 
-      if ($slot_type eq 'driver' or $slot_type eq 'rider') {
-         my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
-         my $vehicles = $vehicle_rs->list_vehicles( { owner => $person } );
-
-         p_select $form, 'vehicle', [ [ NUL, undef ], @{ $vehicles } ];
-      }
+      ($slot_type eq 'driver' or $slot_type eq 'rider')
+         and $self->$_push_vehicle_select( $form, $id, $person, $args );
 
       $slot_type eq 'rider' and p_checkbox $form, 'request_bike', TRUE, {
          checked => TRUE };
@@ -529,8 +649,7 @@ sub yield_slot_action : Role(rota_manager) Role(rider) Role(controller)
    my $rota_name = $params->( 0 );
    my $rota_date = $params->( 1 );
    my $slot_name = $params->( 2 );
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_by_shortcode( $req->username );
+   my $person    = $self->$_find_by_shortcode( $req->username );
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
 

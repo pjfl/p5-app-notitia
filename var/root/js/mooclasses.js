@@ -2889,6 +2889,12 @@ var Togglers = new Class( {
          this[ cfg.method ].apply( this, cfg.args ) }.bind( this ) );
    },
 
+   hide: function( target_id ) {
+      var target = $( target_id ); if (!target) return;
+
+      target.hide();
+   },
+
    showSelected: function( src_id, sink_id ) {
       var src = $( src_id ), target = $( sink_id );
 
