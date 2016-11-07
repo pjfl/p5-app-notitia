@@ -359,7 +359,9 @@ sub authenticate_optional_2fa {
 }
 
 sub claim_slot {
-   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $bike) = @_;
+   my ($self, $rota_name, $date, $name, $bike, $vehicle) = @_;
+
+   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
    $self->$_assert_claim_allowed
       ( $rota_name, $date, $shift_type, $slot_type, $subslot, $bike );
@@ -369,10 +371,12 @@ sub claim_slot {
 
    $slot and throw SlotTaken, [ $slot, $slot->operator ];
 
-   return $self->result_source->schema->resultset( 'Slot' )->create
-      ( { bike_requested => $bike,      operator_id => $self->id,
-          shift_id       => $shift->id, subslot     => $subslot,
-          type_name      => $slot_type, } );
+   my $attr = { bike_requested => $bike,    shift_id  => $shift->id,
+                subslot        => $subslot, type_name => $slot_type, };
+
+   $vehicle and $attr->{operator_vehicle_id} = $vehicle->id;
+
+   return $self->create_related( 'slots', $attr );
 }
 
 sub deactivate {

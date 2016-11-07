@@ -145,17 +145,13 @@ my $_onclick_relocate = sub {
 };
 
 my $_operators_vehicle = sub {
-   my ($slot, $cache) = @_; my $id = $slot->operator->id or return NUL;
+   my $slot = shift; $slot->operator->id or return NUL;
 
-   exists $cache->{ $id } and return $cache->{ $id }; my $label;
+   my $slov = $slot->operator_vehicle;
 
-   for my $pv ($slot->operator_vehicles->all) {
-      $label = $pv->type eq '4x4' ? '4' : $pv->type eq 'car' ? 'C' : FALSE;
-
-      $label and last;
-   }
-
-   return $cache->{ $id } = $label || 'N';
+   return $slov && $slov->type eq '4x4' ? '4'
+        : $slov && $slov->type eq 'car' ? 'C'
+        : NUL;
 };
 
 my $_select_number = sub {
@@ -281,7 +277,7 @@ my $_alloc_slot_row = sub {
                   style => $style,
                   value => $operator->id ? $operator->label : 'Vacant' };
    p_cell $row, { class => 'narrow align-center',
-                  value => $_operators_vehicle->( $slot, $data->{cache} ) };
+                  value => $_operators_vehicle->( $slot ) };
    return $row;
 };
 
@@ -819,8 +815,8 @@ sub alloc_table : Dialog Role(rota_manager) {
    my $events = $self->$_search_for_events( $opts, $journal );
    my $slots = $self->$_search_for_slots( $opts, $journal );
    my $vevents = $self->$_search_for_vehicle_events( $opts, $journal );
-   my $data = { cache => {}, events => $events, journal => $journal,
-                slots => $slots, vehicles => $vehicles, vevents => $vevents };
+   my $data = { events => $events, journal => $journal, slots => $slots,
+                vehicles => $vehicles, vevents => $vevents };
    my $page = $stash->{page};
    my $row = p_row $table;
 

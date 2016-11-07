@@ -51,7 +51,8 @@ sub search_for_slots {
         { 'columns'      => [ qw( bike_requested type_name subslot ) ],
           'join'         => [ 'operator', 'vehicle' ],
           'order_by'     => $order,
-          'prefetch'     => [ { 'shift' => 'rota' }, 'operator_vehicles' ],
+          'prefetch'     => [ { 'shift' => 'rota' },
+                              { 'operator_vehicle' => 'type' } ],
           '+select'      => $attr,
           '+as'          => $attr, } );
 }

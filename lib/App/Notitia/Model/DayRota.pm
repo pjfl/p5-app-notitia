@@ -125,19 +125,13 @@ my $_onclick_relocate = sub {
 };
 
 my $_operators_vehicle = sub {
-   my ($slot, $cache) = @_; $slot->operator->id or return NUL; my $label;
+   my $slot = shift; $slot->operator->id or return NUL;
 
-   exists $cache->{ $slot->operator->id }
-      and return $cache->{ $slot->operator->id };
+   my $slov = $slot->operator_vehicle;
 
-   for my $pv ($slot->operator_vehicles->all) {
-      $label = $pv->type eq '4x4' ? $pv->type
-             : $pv->type eq 'car' ? ucfirst( $pv->type ) : undef;
-
-      $label and last;
-   }
-
-   return $cache->{ $slot->operator->id } = $label // NUL;
+   return $slov && $slov->type eq '4x4' ? $slov->type
+        : $slov && $slov->type eq 'car' ? ucfirst( $slov->type )
+        : NUL;
 };
 
 my $_participents_link = sub {
@@ -405,21 +399,23 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
                         Role(driver) {
    my ($self, $req) = @_;
 
-   my $params    = $req->uri_params;
-   my $rota_name = $params->( 0 );
-   my $rota_date = $params->( 1 );
-   my $name      = $params->( 2 );
-   my $opts      = { optional => TRUE };
-   my $bike      = $req->body_params->( 'request_bike', $opts ) // FALSE;
-   my $assignee  = $req->body_params->( 'assignee', $opts ) || $req->username;
-   my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_by_shortcode( $assignee );
+   my $params     = $req->uri_params;
+   my $rota_name  = $params->( 0 );
+   my $rota_date  = $params->( 1 );
+   my $name       = $params->( 2 );
+   my $rota_dt    = to_dt( $rota_date );
+   my $opts       = { optional => TRUE };
+   my $assignee   = $req->body_params->( 'assignee', $opts ) || $req->username;
+   my $person_rs  = $self->schema->resultset( 'Person' );
+   my $person     = $person_rs->find_by_shortcode( $assignee );
+   my $bike       = $req->body_params->( 'request_bike', $opts ) // FALSE;
+   my $vrn        = $req->body_params->( 'vehicle', $opts );
+   my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
+   my $vehicle    = $vrn ? $vehicle_rs->find_vehicle_by( $vrn ) : undef;
 
-   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
+   $vehicle and ($vehicle->owner_id == $person->id or $vehicle = undef);
 
-   # Without tz will create rota records prev. day @ 23:00 during summer time
-   $person->claim_slot( $rota_name, to_dt( $rota_date ), $shift_type,
-                        $slot_type, $subslot, $bike );
+   $person->claim_slot( $rota_name, $rota_dt, $name, $bike, $vehicle );
 
    $self->send_event( $req, "action:slot-claim shortcode:${assignee} "
                           . "rota_name:${rota_name} rota_date:${rota_date} "
@@ -428,14 +424,14 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
    my $args     = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;
    my $label    = slot_identifier
-                     $rota_name, $rota_date, $shift_type, $slot_type, $subslot;
+                     $rota_name, $rota_date, split m{ _ }mx, $name, 3;
    my $message  = [ to_msg '[_1] claimed slot [_2]', $person->label, $label ];
 
    return { redirect => { location => $location, message => $message } };
 }
 
 sub day_rota : Role(any) {
-   my ($self, $req) = @_; my $vehicle_cache = {};
+   my ($self, $req) = @_;
 
    my $params    = $req->uri_params;
    my $today     = time2str '%Y-%m-%d';
@@ -454,7 +450,7 @@ sub day_rota : Role(any) {
       $slot_data->{ $slot->key } =
          { name        => $slot->key,
            operator    => $slot->operator,
-           ops_veh     => $_operators_vehicle->( $slot, $vehicle_cache ),
+           ops_veh     => $_operators_vehicle->( $slot ),
            vehicle     => $slot->vehicle,
            vehicle_req => $slot->bike_requested };
    }
@@ -493,18 +489,25 @@ sub slot : Dialog Role(rota_manager) Role(rider) Role(controller) Role(driver) {
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
    if ($action eq 'claim') {
+      my $person_rs = $self->schema->resultset( 'Person' );
+      my $person = $person_rs->find_by_shortcode( $req->username );
       my $role = $slot_type eq 'controller' ? 'controller'
                : $slot_type eq 'rider'      ? 'rider'
                : $slot_type eq 'driver'     ? 'driver'
                                             : FALSE;
 
       if ($role and is_member 'rota_manager', $req->session->roles) {
-         my $person_rs = $self->schema->resultset( 'Person' );
-         my $person    = $person_rs->find_by_shortcode( $req->username );
-         my $opts      = { fields => { selected => $person } };
-         my $people    = $person_rs->list_people( $role, $opts );
+         my $opts = { fields => { selected => $person } };
+         my $people = $person_rs->list_people( $role, $opts );
 
          p_select $form, 'assignee', [ [ NUL, NUL ], @{ $people } ];
+      }
+
+      if ($slot_type eq 'driver' or $slot_type eq 'rider') {
+         my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
+         my $vehicles = $vehicle_rs->list_vehicles( { owner => $person } );
+
+         p_select $form, 'vehicle', [ [ NUL, undef ], @{ $vehicles } ];
       }
 
       $slot_type eq 'rider' and p_checkbox $form, 'request_bike', TRUE, {

@@ -71,10 +71,13 @@ sub search_for_vehicles {
              prefetch => [ 'type', 'owner' ], %{ $opts } };
    delete $opts->{fields};
 
-   my $type  = delete $opts->{type};
-   my $where = $type ? { 'type.name' => $type } : {};
+   my $where = {};
+   my $type  = delete $opts->{type}; $type
+      and $where->{ 'type.name' } = $type;
+   my $owner = delete $opts->{owner}; $owner
+      and $where->{owner_id} = $owner->id;
 
-   ($opts->{private} or $opts->{service})
+   ($opts->{private} or $opts->{service} or $owner)
       and $where->{disposed} = { '=' => undef };
    delete $opts->{private} and $where->{owner_id} = { '!=' => undef };
    delete $opts->{service} and $where->{owner_id} = { '='  => undef };
