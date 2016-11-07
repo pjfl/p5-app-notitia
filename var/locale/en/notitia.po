@@ -1277,6 +1277,12 @@ msgstr "On Station"
 msgid "operator_id"
 msgstr "Operator"
 
+msgid "operators_vehicle_tip"
+msgstr "Indicate if your private vehicle is available"
+
+msgid "operators_vehicle_title"
+msgstr "Select Private Vehicle"
+
 msgid "orig_priority"
 msgstr "Original Priority"
 
@@ -1676,6 +1682,12 @@ msgstr "Route"
 
 msgid "schema_log_link"
 msgstr "Schema"
+
+msgid "select_operator_vehicle"
+msgstr "Select Vehicle"
+
+msgid "select_operator_vehicle_tip"
+msgstr "Select the vehicle to use if necessary for this claimed slot"
 
 msgid "select_person"
 msgstr "Select Person"

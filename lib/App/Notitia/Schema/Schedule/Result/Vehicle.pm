@@ -173,6 +173,17 @@ my $_assert_slot_assignment_allowed = sub {
 };
 
 # Public methods
+sub assign_private {
+   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot) = @_;
+
+   my $slot = $self->$_find_slot
+      ( $rota_name, $date, $shift_type, $slot_type, $subslot );
+
+   $slot->operator_vehicle_id( $self->id );
+
+   return $slot->update;
+}
+
 sub assign_to_event {
    my ($self, $event_uri, $assigner_name) = @_;
 
@@ -225,6 +236,17 @@ sub label {
 
 sub slotref {
    return $_[ 0 ]->name ? $_[ 0 ]->name : $_[ 0 ]->vrn;
+}
+
+sub unassign_private {
+   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot) = @_;
+
+   my $slot = $self->$_find_slot
+      ( $rota_name, $date, $shift_type, $slot_type, $subslot );
+
+   $slot->operator_vehicle_id( undef );
+
+   return $slot->update;
 }
 
 sub unassign_from_event {

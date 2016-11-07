@@ -16,6 +16,8 @@ sub dispatch_request {
    sub (GET  + /events-summary/*     + ?*) { [ 'month/events_summary', @_ ] },
    sub (GET  + /month-rota/**        + ?*) { [ 'month/month_rota',     @_ ] },
    sub (GET  + /month-rota           + ?*) { [ 'month/month_rota',     @_ ] },
+   sub (POST + /operator-vehicle/**  + ?*) { [ 'day/from_request',     @_ ] },
+   sub (GET  + /operator-vehicle/**  + ?*) { [ 'day/operator_vehicle', @_ ] },
    sub (POST + /slot/**              + ?*) { [ 'day/from_request',     @_ ] },
    sub (GET  + /slot/**              + ?*) { [ 'day/slot',             @_ ] },
    sub (GET  + /user-slots/**        + ?*) { [ 'month/user_slots',     @_ ] },

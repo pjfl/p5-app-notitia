@@ -780,7 +780,7 @@ sub slot_claimed ($) {
    return defined $_[ 0 ] && exists $_[ 0 ]->{operator} ? TRUE : FALSE;
 }
 
-sub slot_identifier ($$$$$) {
+sub slot_identifier ($$@) {
    my ($rota_name, $rota_date, $shift_type, $slot_type, $subslot) = @_;
 
    $rota_name =~ s{ _ }{ }gmx;
