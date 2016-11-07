@@ -3,7 +3,7 @@ package App::Notitia::Role::EventStream;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL OK SPC TRUE );
-use App::Notitia::Util      qw( event_handler event_handler_cache );
+use App::Notitia::Util      qw( event_handler );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token is_member throw trim );
 use Class::Usul::Log        qw( get_logger );
@@ -149,26 +149,6 @@ sub create_sms_job {
    return $rs->create( { command => $cmd, name => 'send_message' } );
 }
 
-sub dump_event_attr : method {
-   my $self = shift; $self->plugins; my $cache = event_handler_cache;
-
-   for my $stream (keys %{ $cache }) {
-      my $allowed = $self->config->automated->{ $stream } // [];
-      my @keys = keys %{ $cache->{ $stream } };
-
-      for my $action (@keys) {
-         $self->options->{not_enabled} and is_member $action, $allowed
-            and delete $cache->{ $stream }->{ $action };
-
-         not $self->options->{all} and $action =~ m{ \A _ }mx
-            and delete $cache->{ $stream }->{ $action };
-      }
-   }
-
-   $self->dumper( $cache );
-   return OK;
-}
-
 sub event_component_update {
    my ($self, $req, $stash, $actionp) = @_;
 
@@ -279,8 +259,6 @@ Defines the following attributes;
 =back
 
 =head1 Subroutines/Methods
-
-=head2 C<dump_event_attr> - Dumps the event handling attribute data
 
 =head1 Diagnostics
 

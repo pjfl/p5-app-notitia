@@ -3,14 +3,15 @@ package App::Notitia::Utilities;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE OK SLOT_TYPE_ENUM TRUE );
-use App::Notitia::Util      qw( load_file_data local_dt
+use App::Notitia::Util      qw( event_handler_cache load_file_data local_dt
                                 now_dt slot_limit_index );
-use Class::Usul::Functions  qw( io sum throw );
+use Class::Usul::Functions  qw( io is_member sum throw );
 use Class::Usul::File;
-use Class::Usul::Types      qw( HashRef LoadableClass Object );
+use Class::Usul::Types      qw( Bool HashRef LoadableClass Object );
 use Unexpected::Functions   qw( PathNotFound Unspecified );
 use Web::Components::Util   qw( load_components );
 use Moo;
+use Class::Usul::Options;
 
 extends q(Class::Usul::Programs);
 with    q(Class::Usul::TraitFor::ConnectInfo);
@@ -27,6 +28,9 @@ with q(App::Notitia::Role::EventStream);
 has '+config_class' => default => 'App::Notitia::Config';
 
 # Public attributes
+option 'all' => is => 'ro', isa => Bool, default => FALSE, short => 'a',
+   documentation => 'Show all event attributes including the private ones';
+
 has 'formatter' => is => 'lazy', isa => Object, builder => sub {
    $_[ 0 ]->formatter_class->new
       ( tab_width => $_[ 0 ]->config->mdn_tab_width ) };
@@ -39,6 +43,9 @@ has 'geolocator' => is => 'lazy', isa => Object, builder => sub {
 
 has 'geolocator_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
    default => 'App::Notitia::GeoLocation';
+
+option 'not_enabled' => is => 'ro', isa => Bool, default => FALSE,
+   documentation => 'Show only the event attributes that are not enabled';
 
 has 'request_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
    default => 'Web::ComposableRequest';
@@ -307,6 +314,26 @@ sub application_upgraded : method {
    return OK;
 }
 
+sub dump_event_attr : method {
+   my $self = shift; $self->plugins; my $cache = event_handler_cache;
+
+   for my $stream (keys %{ $cache }) {
+      my $allowed = $self->config->automated->{ $stream } // [];
+      my @keys = keys %{ $cache->{ $stream } };
+
+      for my $action (@keys) {
+         $self->not_enabled and is_member $action, $allowed
+            and delete $cache->{ $stream }->{ $action };
+
+         not $self->all and $action =~ m{ \A _ }mx
+            and delete $cache->{ $stream }->{ $action };
+      }
+   }
+
+   $self->dumper( $cache );
+   return OK;
+}
+
 sub geolocation : method {
    my $self = shift;
    my $object_type = $self->next_argv or throw Unspecified, [ 'object type' ];
@@ -447,6 +474,8 @@ Defines the following attributes;
 =head1 Subroutines/Methods
 
 =head2 C<application_upgraded> - Generates the application upgraded email
+
+=head2 C<dump_event_attr> - Dumps the event handling attribute data
 
 =head2 C<geolocation> - Lookup geolocation information
 

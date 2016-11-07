@@ -8,8 +8,7 @@ use Archive::Tar::Constant   qw( COMPRESS_GZIP );
 use Class::Usul::Constants   qw( AS_PARA AS_PASSWORD FALSE NUL OK TRUE );
 use Class::Usul::Crypt::Util qw( encrypt_for_config );
 use Class::Usul::File;
-use Class::Usul::Functions   qw( bson64id class2appdir create_token
-                                 ensure_class_loaded io );
+use Class::Usul::Functions   qw( bson64id create_token ensure_class_loaded io );
 use Class::Usul::Types       qw( LoadableClass NonEmptySimpleStr Object );
 use English                  qw( -no_match_vars );
 use User::grent;
@@ -112,9 +111,10 @@ my $_root_post_install = sub {
       $self->run_cmd( [ 'chown', '-R', "${owner}:${group}", $appldir ] );
    }
 
-   my $appname = class2appdir $conf->appclass;
+   my $appname = $conf->prefix;
+   my $binsdir = $conf->binsdir;
    my ($init, $kill) = $_init_file_list->( $appname );
-   my $cmd = [ $conf->binsdir->catfile( 'notifier-daemon' ), 'get-init-file' ];
+   my $cmd = [ $binsdir->catfile( "${appname}-daemon" ), 'get-init-file' ];
 
    $init->exists or $self->run_cmd( $cmd, { out => $init } );
    $init->is_executable or $init->chmod( oct '0750' );
@@ -160,6 +160,21 @@ my $_write_theme = sub {
 };
 
 # Public methods
+sub housekeeping : method {
+   my $self = shift; my $keep_days = $self->next_argv // 30;
+
+   my $old = time - $keep_days * 24 * 60 * 60;
+
+   $self->config->sessdir->visit( sub {
+      $_->stat->{mtime} < $old and $_->unlink } );
+
+   $self->config->tempdir->filter( sub {
+      $_ =~ m{ \- \d+ \- \d+ \. sql \z }mx } )->visit( sub {
+         $_->stat->{mtime} < $old and $_->unlink } );
+
+   return OK;
+};
+
 sub make_css : method {
    my $self = shift;
    my $conf = $self->config;
@@ -258,9 +273,11 @@ sub set_sms_password : method {
 sub uninstall : method {
    my $self    = shift;
    my $conf    = $self->config;
-   my $appname = class2appdir $conf->appclass;
+   my $appname = $conf->prefix;
 
    my ($init, $kill) = $_init_file_list->( $appname );
+
+   $self->run_cmd( [ "${appname}-jobdaemon", 'stop' ] );
 
    $init->exists and $self->run_cmd( [ 'invoke-rc.d', $appname, 'stop' ],
                                      { expected_rv => 1 } );
@@ -297,6 +314,13 @@ Defines the following attributes;
 =back
 
 =head1 Subroutines/Methods
+
+=head2 C<housekeeping> - Deletes extraneous files
+
+   bin/notitia-cli housekeeping [keep_days]
+
+Deletes old left over files from various F<var> directories that are older
+than the keep days parameter which defaults to 30
 
 =head2 C<make_css> - Compile CSS files from LESS files
 
