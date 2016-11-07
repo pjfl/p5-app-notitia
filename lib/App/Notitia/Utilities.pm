@@ -234,6 +234,7 @@ my $_send_email = sub {
 
    $template = "[% WRAPPER '${layout}' %]${template}[% END %]";
 
+   $stash = { %{ $stash } };
    $stash->{first_name} = $person->first_name;
    $stash->{label     } = $person->label;
    $stash->{last_name } = $person->last_name;
@@ -369,6 +370,7 @@ sub impending_slot : method {
    my $req = $self->$_new_request( $scheme, $hostport );
    my $dmy = local_dt( $rota_dt )->dmy( '/' );
    my $ymd = local_dt( $rota_dt )->ymd;
+   my $sent = FALSE;
 
    for my $key (grep { $_ =~ m{ \A $ymd _ }mx } sort keys %{ $data }) {
       my $slot_key = $data->{ $key }->key;
@@ -377,8 +379,10 @@ sub impending_slot : method {
                   . "shortcode:${scode} rota_name:${rota_name} "
                   . "rota_date:${ymd} slot_key:${slot_key}";
 
-      $self->send_event( $req, $message );
+      $self->send_event( $req, $message ); $sent = TRUE;
    }
+
+   $sent and $self->info( "Sent impending slot emails for ${dmy}" );
 
    return OK;
 }
@@ -434,11 +438,15 @@ sub vacant_slot : method {
       my $wanted = $_slots_wanted->( $limits, $rota_dt, $slot_type );
       my $slots_claimed = grep { $_ =~ m{ _ $slot_type _ }mx }
                           grep { $_ =~ m{ \A $ymd _ }mx } keys %{ $data };
+
+      $slots_claimed >= $wanted and next;
+
       my $message = "action:vacant-slot date:${dmy} days_in_advance:${days} "
                   . "rota_name:${rota_name} rota_date:${ymd} "
                   . "slot_type:${slot_type}";
 
-      $slots_claimed >= $wanted or $self->send_event( $req, $message );
+      $self->send_event( $req, $message );
+      $self->info( "Sending vacant ${slot_type} slot emails for ${dmy}" );
    }
 
    return OK;
