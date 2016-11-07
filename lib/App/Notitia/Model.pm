@@ -28,6 +28,7 @@ has 'application' => is => 'ro', isa => Plinth,
 my $_activity_cache = [];
 
 # Private functions
+# TODO: Drop this when W::CReq bumps
 my $_collect_status_messages = sub {
    my $req = shift; my $session = $req->session; my @messages = ();
 
@@ -208,7 +209,7 @@ sub initialise_stash {
    return { code => HTTP_OK, view => $_[ 0 ]->config->default_view, };
 }
 
-sub jobdaemon {
+sub jobdaemon { # Shortcut for result classes
    return $_[ 0 ]->components->{daemon}->jobdaemon;
 }
 

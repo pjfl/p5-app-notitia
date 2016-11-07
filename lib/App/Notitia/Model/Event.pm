@@ -5,8 +5,8 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_button p_list
                                 p_fields p_row p_table p_tag p_text
                                 p_textfield );
-use App::Notitia::Util      qw( check_field_js display_duration loc local_dt
-                                locm make_tip management_link now_dt
+use App::Notitia::Util      qw( check_field_js display_duration loc
+                                locd locm make_tip management_link now_dt
                                 page_link_set register_action_paths to_dt to_msg
                                 uri_for_action );
 use Class::Null;
@@ -50,22 +50,24 @@ around 'get_stash' => sub {
 
 # Private functions
 my $_bind_date = sub {
-   my ($name, $date, $event, $opts) = @_;
+   my ($req, $name, $date, $event, $opts) = @_;
 
    my $disabled = $opts->{disabled} || $event->uri ? TRUE : FALSE;
    my $dt = $event->uri ? $date : $opts->{date} ? to_dt $opts->{date} : now_dt;
 
    return { class => 'standard-field required', disabled => $disabled,
-            label => $name, name => $name,
-            type => 'date', value => local_dt( $dt )->dmy( '/' ) };
+            label => $name, name => $name, type => 'date',
+            value => locd( $req, $dt ) };
 };
 
 my $_bind_end_date = sub {
-   return $_bind_date->( 'end_date', $_[ 0 ]->end_date, $_[ 0 ], $_[ 1 ] );
+   return $_bind_date->
+      ( $_[ 0 ], 'end_date', $_[ 1 ]->end_date, $_[ 1 ], $_[ 2 ] );
 };
 
 my $_bind_start_date = sub {
-   return $_bind_date->( 'start_date', $_[ 0 ]->start_date, $_[ 0 ], $_[ 1 ] );
+   return $_bind_date->
+      ( $_[ 0 ], 'start_date', $_[ 1 ]->start_date, $_[ 1 ], $_[ 2 ] );
 };
 
 my $_create_action = sub {
@@ -75,20 +77,6 @@ my $_create_action = sub {
 
 my $_events_headers = sub {
    return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 4 ];
-};
-
-my $_event_links = sub {
-   my ($self, $req, $event) = @_; my $links = []; my $uri = $event->uri;
-
-   my @actions = qw( event/event event/participents
-                     asset/request_vehicle event/event_summary );
-
-   for my $actionp (@actions) {
-      push @{ $links }, { value => management_link( $req, $actionp, $uri, {
-         params => $req->query_params->( { optional => TRUE } ) } ) };
-   }
-
-   return [ { value => $event->label }, @{ $links } ];
 };
 
 my $_event_ops_links = sub {
@@ -200,6 +188,20 @@ my $_bind_owner = sub {
    return {
       class => 'standard-field required', disabled => $disabled, numify => TRUE,
       type  => 'select', value => [ [ NUL, undef ], @{ $people } ] };
+};
+
+my $_event_links = sub {
+   my ($self, $req, $event) = @_; my $links = []; my $uri = $event->uri;
+
+   my @actions = qw( event/event event/participents
+                     asset/request_vehicle event/event_summary );
+
+   for my $actionp (@actions) {
+      push @{ $links }, { value => management_link( $req, $actionp, $uri, {
+         params => $req->query_params->( { optional => TRUE } ) } ) };
+   }
+
+   return [ { value => $event->label }, @{ $links } ];
 };
 
 my $_format_as_markdown = sub {
@@ -356,21 +358,22 @@ my $_bind_trainer = sub {
 };
 
 my $_bind_event_fields = sub {
-   my ($self, $event, $opts) = @_; $opts //= {};
+   my ($self, $req, $event, $opts) = @_; $opts //= {};
 
    my $disabled = $opts->{disabled} // FALSE;
    my $no_maxp  = $disabled || $opts->{vehicle_event} ? TRUE : FALSE;
 
    return
    [  name             => $self->$_bind_event_name( $event, $opts ),
-      start_date       => $_bind_start_date->( $event, $opts ),
+      start_date       => $_bind_start_date->( $req, $event, $opts ),
       owner            => $self->$_bind_owner( $event, $disabled ),
       description      => { class    => 'standard-field autosize server',
                             disabled => $disabled, type => 'textarea' },
       location         => $self->$_bind_location( $event, $opts ),
       start_time       => { class    => 'standard-field',
                             disabled => $disabled, type => 'time' },
-#      end_date         => $_bind_end_date->( $event, $opts ),
+# TODO: Needed for multiday events
+#      end_date         => $_bind_end_date->( $req, $event, $opts ),
       end_time         => { class    => 'standard-field',
                             disabled => $disabled, type => 'time' },
       trainer          => $self->$_bind_trainer( $event, $opts ),
@@ -387,7 +390,8 @@ my $_create_event_post = sub {
 my $_create_event = sub {
    my ($self, $req, $start_date, $event_type, $opts) = @_; $opts //= {};
 
-   my $attr  = { rota       => 'main', # TODO: Naughty
+# TODO: Should not assume rota name
+   my $attr  = { rota       => 'main',
                  start_date => $start_date,
                  event_type => $event_type,
                  owner      => $req->username, };
@@ -412,8 +416,8 @@ my $_create_event = sub {
 
    try   { $self->schema->txn_do( $create ) }
    catch {
-      my $label = ($event->name || 'with no name on').SPC
-                . $start_date->clone->set_time_zone( 'local' )->dmy( '/' );
+      my $label = ($event->name || 'with no name on')
+                . SPC.locd( $req, $start_date );
 
       $self->blow_smoke( $_, 'create', 'event', $label );
    };
@@ -595,7 +599,7 @@ sub event : Role(event_manager) {
    $uri and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Event', $event,
-      $self->$_bind_event_fields( $event, {
+      $self->$_bind_event_fields( $req, $event, {
          date => $date, disabled => $disabled } );
 
    $disabled
@@ -650,7 +654,7 @@ sub event_summary : Role(any) {
    $uri and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Event', $event,
-      $self->$_bind_event_fields( $event, { disabled => TRUE } );
+      $self->$_bind_event_fields( $req, $event, { disabled => TRUE } );
 
    $_add_participate_button->( $req, $form, $event, $person );
 
@@ -768,7 +772,7 @@ sub training_event : Role(training_manager) {
    my $args = [ 'training_event', $uri ];
 
    p_fields $form, $self->schema, 'Event', $event,
-      $self->$_bind_event_fields( $event, {
+      $self->$_bind_event_fields( $req, $event, {
          date => $date, training_event => TRUE } );
 
    p_action $form, $action, $args, { request => $req };
@@ -873,7 +877,7 @@ sub vehicle_event : Role(rota_manager) {
    p_textfield $form, 'vehicle', $label, { disabled => TRUE };
 
    p_fields $form, $self->schema, 'Event', $event,
-      $self->$_bind_event_fields( $event, { vehicle_event => TRUE } );
+      $self->$_bind_event_fields( $req, $event, { vehicle_event => TRUE } );
 
    p_action $form, $action, $args, { request => $req };
 

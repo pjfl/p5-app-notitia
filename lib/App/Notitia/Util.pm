@@ -31,12 +31,12 @@ our @EXPORT_OK = qw( action_for_uri assert_unique assign_link
                      is_encrypted iterator js_config js_slider_config
                      js_server_config js_submit_config js_togglers_config
                      js_window_config lcm_for load_file_data loc local_dt
-                     localise_tree locm mail_domain make_id_from make_name_from
-                     make_tip management_link mtime new_salt now_dt
-                     page_link_set register_action_paths set_element_focus
-                     set_rota_date slot_claimed slot_identifier
-                     slot_limit_index show_node stash_functions time2int to_dt
-                     to_json to_msg uri_for_action );
+                     localise_tree locd locm mail_domain make_id_from
+                     make_name_from make_tip management_link mtime new_salt
+                     now_dt page_link_set register_action_paths
+                     set_element_focus set_rota_date slot_claimed
+                     slot_identifier slot_limit_index show_node stash_functions
+                     time2int to_dt to_json to_msg uri_for_action );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -612,6 +612,10 @@ sub localise_tree ($$) {
    return FALSE;
 }
 
+sub locd ($$) {
+   my $req = shift; return local_dt( $_[ 0 ] )->dmy( '/' );
+}
+
 sub locm ($@) {
    my $req = shift; return loc $req, to_msg( @_ );
 }
@@ -957,6 +961,8 @@ LCM for a list of integers
 =head2 C<local_dt>
 
 =head2 C<localise_tree>
+
+=head2 C<locd>
 
 =head2 C<locm>
 

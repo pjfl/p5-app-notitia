@@ -13,7 +13,7 @@ my $_types = {};
 my $_find_by = sub {
    my ($self, $name, $type_class, $opts) = @_; $opts //= {};
 
-   # TODO: Implement cache invalidation when a type is removed
+# TODO: Implement cache invalidation when a type is removed
    my $k = "${name}-${type_class}"; exists $_types->{ $k }
       and return $_types->{ $k };
 

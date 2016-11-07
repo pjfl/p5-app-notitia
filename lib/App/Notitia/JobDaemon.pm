@@ -50,7 +50,7 @@ my $_build_read_socket = sub {
 };
 
 my $_build_write_socket = sub {
-   my $self = shift; my $have_warned = FALSE; my $start = time; my $socket;
+   my $self = shift; my $have_logged = FALSE; my $start = time; my $socket;
 
    while (TRUE) {
       my $list = $self->lock->list || [];
@@ -63,7 +63,7 @@ my $_build_write_socket = sub {
          $socket = IO::Socket::UNIX->new
             ( Peer => $self->_socket_path->pathname, Type => SOCK_DGRAM, );
          $socket and last;
-         not $have_warned and $have_warned = TRUE and $self->log->warn
+         not $have_logged and $have_logged = TRUE and $self->log->error
             ( 'Cannot connect to socket '.$self->_socket_path
               ." ${stopping} ${starting} ${started} ${exists} ${OS_ERROR}" );
       }

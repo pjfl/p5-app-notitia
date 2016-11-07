@@ -767,7 +767,7 @@ sub vehicle_events : Role(rota_manager) {
    my $params =  $req->query_params;
    my $after  =  $params->( 'after',  { optional => TRUE } );
    my $before =  $params->( 'before', { optional => TRUE } );
-   # TODO: Add paged query in case of search for vehicle event before tommorrow
+# TODO: Add paged query in case of search for vehicle event before tommorrow
    my $opts   =  { after      => $after  ? to_dt( $after  ) : FALSE,
                    before     => $before ? to_dt( $before ) : FALSE,
                    event_type => 'vehicle',

@@ -193,6 +193,10 @@ has 'load_factor'     => is => 'ro',   isa => NonZeroPositiveInt,
 has 'logo'            => is => 'ro',   isa => ArrayRef,
    builder            => sub { [ 'logo.png', 272, 99 ] };
 
+# TODO: Add this when W::Comps bumps
+#has 'loader_attr'     => is => 'ro',   isa => HashRef,
+#   builder            => sub { { should_log_errors => FALSE } };
+
 has 'max_asset_size'  => is => 'ro',   isa => PositiveInt, default => 4_194_304;
 
 has 'max_messages'    => is => 'ro',   isa => NonZeroPositiveInt, default => 2;
