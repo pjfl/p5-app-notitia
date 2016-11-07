@@ -12,6 +12,33 @@ _notitia_cli() {
 
 complete -F _notitia_cli notitia-cli
 
+_notitia_daemon() {
+   local cur=${COMP_WORDS[COMP_CWORD]}
+   local methods=$(notitia-daemon list-methods 2>&1 | awk '/^[a-z-]+/ {print $1}')
+   local opts=$(notitia-daemon --help 2>&1 | grep -oP '\-[a-zA-f-]*')
+   COMPREPLY=( $(compgen -W "$methods $opts" -- $cur) )
+}
+
+complete -F _notitia_daemon notitia-daemon
+
+_notitia_import() {
+   local cur=${COMP_WORDS[COMP_CWORD]}
+   local methods=$(notitia-import list-methods 2>&1 | awk '/^[a-z-]+/ {print $1}')
+   local opts=$(notitia-import --help 2>&1 | grep -oP '\-[a-zA-f-]*')
+   COMPREPLY=( $(compgen -W "$methods $opts" -- $cur) )
+}
+
+complete -F _notitia_import notitia-import
+
+_notitia_jobdaemon() {
+   local cur=${COMP_WORDS[COMP_CWORD]}
+   local methods=$(notitia-jobdaemon list-methods 2>&1 | awk '/^[a-z-]+/ {print $1}')
+   local opts=$(notitia-jobdaemon --help 2>&1 | grep -oP '\-[a-zA-f-]*')
+   COMPREPLY=( $(compgen -W "$methods $opts" -- $cur) )
+}
+
+complete -F _notitia_jobdaemon notitia-jobdaemon
+
 _notitia_schema() {
    local cur=${COMP_WORDS[COMP_CWORD]}
    local methods=$(notitia-schema list-methods 2>&1 | awk '/^[a-z-]+/ {print $1}')
@@ -21,12 +48,12 @@ _notitia_schema() {
 
 complete -F _notitia_schema notitia-schema
 
-_notitia_daemon() {
+_notitia_util() {
    local cur=${COMP_WORDS[COMP_CWORD]}
-   local methods=$(notitia-daemon list-methods 2>&1 | awk '/^[a-z-]+/ {print $1}')
-   local opts=$(notitia-daemon --help 2>&1 | grep -oP '\-[a-zA-f-]*')
+   local methods=$(notitia-util list-methods 2>&1 | awk '/^[a-z-]+/ {print $1}')
+   local opts=$(notitia-util --help 2>&1 | grep -oP '\-[a-zA-f-]*')
    COMPREPLY=( $(compgen -W "$methods $opts" -- $cur) )
 }
 
-complete -F _notitia_daemon notitia-daemon
+complete -F _notitia_util notitia-util
 
