@@ -24,7 +24,9 @@ $class->add_columns
      subslot             => numerical_id_data_type,
      bike_requested      => bool_data_type,
      vehicle_assigner_id => nullable_foreign_key_data_type,
-     vehicle_id          => nullable_foreign_key_data_type, );
+     vehicle_id          => nullable_foreign_key_data_type,
+     operator_vehicle_id => nullable_foreign_key_data_type,
+     );
 
 $class->set_primary_key( 'shift_id', 'type_name', 'subslot' );
 
