@@ -232,7 +232,7 @@ sub create_file {
    my $location = $self->base_uri( $req, [ $new_node->{url} ] );
    my $message  = [ to_msg 'File [_1] created by [_2]', $rel_path, $who ];
 
-   $self->send_event( $req, "action:create-file file:${rel_path}" );
+   $self->send_event( $req, "action:create-file relpath:${rel_path}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -252,7 +252,7 @@ sub delete_file {
    my $rel_path = $path->abs2rel( $self->config->docs_root );
    my $message  = [ to_msg 'File [_1] deleted by [_2]', $rel_path, $who ];
 
-   $self->send_event( $req, "action:delete-file file:${rel_path}" );
+   $self->send_event( $req, "action:delete-file relpath:${rel_path}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -322,7 +322,7 @@ sub rename_file {
    my $location = $self->base_uri( $req, [ $new_node->{url} ] );
    my $message  = [ to_msg 'File [_1] renamed by [_2]', $rel_path, $who ];
 
-   $self->send_event( $req, "action:rename-file file:${rel_path}" );
+   $self->send_event( $req, "action:rename-file relpath:${rel_path}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -343,7 +343,7 @@ sub save_file {
    my $location =  $self->base_uri( $req, [ $node->{url} ] );
    my $message  = [ to_msg 'File [_1] updated by [_2]', $rel_path, $who ];
 
-   $self->send_event( $req, "action:update-file file:${rel_path}" );
+   $self->send_event( $req, "action:update-file relpath:${rel_path}" );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -417,7 +417,7 @@ sub upload_file {
    my $rel_path = $dest->abs2rel( $conf->assetdir );
    my $message  = [ to_msg 'File [_1] uploaded by [_2]', $rel_path, $who ];
 
-   $self->send_event( $req, "action:upload-file file:${rel_path}" );
+   $self->send_event( $req, "action:upload-file relpath:${rel_path}" );
 
    return { redirect => { message => $message } }; # location referer
 }
