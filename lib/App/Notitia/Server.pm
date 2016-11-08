@@ -17,7 +17,7 @@ has '_config_attr' => is => 'ro', isa => HashRef,
 
 has '_usul' => is => 'lazy', isa => Plinth,
    builder  => sub { Class::Usul->new( enhance $_[ 0 ]->_config_attr ) },
-   handles  => [ 'config', 'debug', 'dumper', 'l10n', 'lock', 'log' ];
+   handles  => [ qw( config debug dumper l10n lock log log_class ) ];
 
 with 'Web::Components::Loader';
 
@@ -64,11 +64,6 @@ sub BUILD {
    my $info   = 'v'.$class->VERSION; $port and $info .= " on port ${port}";
 
    $self->log->info( "${server} Server started ${info}" );
-
-   my $file = $conf->logsdir->catfile( 'activity.log' );
-   my $opts = { appclass => 'activity', builder => $self, logfile => $file, };
-
-   $self->_usul->log_class->new( $opts );
 
    return;
 }

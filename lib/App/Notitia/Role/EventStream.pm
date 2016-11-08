@@ -25,6 +25,28 @@ has 'plugins' => is => 'lazy', isa => HashRef[Object], builder => sub {
       application => $self->can( 'application' ) ? $self->application : $self;
 };
 
+# Construction
+sub BUILD {}
+
+after 'BUILD' => sub {
+   my $self = shift; get_logger( 'activity' ) and return;
+
+   my $conf  = $self->config;
+   my $file  = $conf->logsdir->catfile( 'activity.log' );
+   my $opts  = { appclass => 'activity', builder => $self, logfile => $file, };
+   my $class; $self->can( 'log_class' )
+      and $class = $self->log_class
+      and $class->new( $opts )
+      and return;
+
+   $self->can( 'application' ) && $self->application->can( 'log_class' )
+      and $class = $self->application->log_class
+      and $class->new( $opts )
+      and return;
+
+   throw 'Cannot find a log_class attribute';
+};
+
 # Private functions
 my $_clean_and_log = sub {
    my ($req, $message, $params) = @_;

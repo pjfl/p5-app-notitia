@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE OK SLOT_TYPE_ENUM TRUE );
 use App::Notitia::Util      qw( event_handler_cache load_file_data local_dt
-                                now_dt slot_limit_index );
+                                locd now_dt slot_limit_index );
 use Class::Usul::Functions  qw( io is_member sum throw );
 use Class::Usul::File;
 use Class::Usul::Types      qw( Bool HashRef LoadableClass Object );
@@ -53,18 +53,6 @@ has 'request_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
 has 'sms_sender_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
    default => 'App::Notitia::SMS';
 
-# Construction
-sub BUILD {
-   my $self = shift;
-   my $conf = $self->config;
-   my $file = $conf->logsdir->catfile( 'activity.log' );
-   my $opts = { appclass => 'activity', builder => $self, logfile => $file, };
-
-   $self->log_class->new( $opts );
-
-   return;
-}
-
 # Private functions
 my $_slots_wanted = sub {
    my ($limits, $rota_dt, $role) = @_;
@@ -85,17 +73,17 @@ my $_find_rota_type = sub {
 };
 
 my $_assigned_slots = sub {
-   my ($self, $rota_name, $rota_dt) = @_;
+   my ($self, $req, $rota_name, $rota_dt) = @_;
 
-   my $slot_rs  =  $self->schema->resultset( 'Slot' );
    my $opts     =  {
       after     => $rota_dt->clone->subtract( days => 1 ),
       before    => $rota_dt->clone->add( days => 1 ),
       rota_type => $self->$_find_rota_type( $rota_name )->id };
+   my $slot_rs  =  $self->schema->resultset( 'Slot' );
    my $data     =  {};
 
    for my $slot ($slot_rs->search_for_slots( $opts )->all) {
-      $data->{ local_dt( $slot->start_date )->ymd.'_'.$slot->key } = $slot;
+      $data->{ locd( $req, $slot->start_date ).'_'.$slot->key } = $slot;
    }
 
    return $data;
@@ -303,11 +291,11 @@ my $_send_sms = sub {
 sub application_upgraded : method {
    my $self    = shift;
    my $req     = $self->$_new_request( $self->next_argv, $self->next_argv );
-   my $now     = local_dt( now_dt );
-   my $date    = $now->dmy( '/' );
+   my $now     = local_dt now_dt;
+   my $dmy     = locd $req, $now;
    my $time    = sprintf '%.2d.%.2d', $now->hour, $now->minute;
    my $version = $self->config->appclass->VERSION;
-   my $message = "action:application-upgraded date:${date} time:${time} "
+   my $message = "action:application-upgraded date:${dmy} time:${time} "
                . "version:${version}";
 
    $self->components; $self->send_event( $req, $message );
@@ -366,9 +354,9 @@ sub impending_slot : method {
    my $days = $self->next_argv // 3;
    my $rota_name = $self->next_argv // 'main';
    my $rota_dt = now_dt->add( days => $days );
-   my $data = $self->$_assigned_slots( $rota_name, $rota_dt );
    my $req = $self->$_new_request( $scheme, $hostport );
-   my $dmy = local_dt( $rota_dt )->dmy( '/' );
+   my $data = $self->$_assigned_slots( $req, $rota_name, $rota_dt );
+   my $dmy = locd $req, $rota_dt;
    my $ymd = local_dt( $rota_dt )->ymd;
    my $sent = FALSE;
 
@@ -428,10 +416,10 @@ sub vacant_slot : method {
    my $days = $self->next_argv // 7;
    my $rota_name = $self->next_argv // 'main';
    my $rota_dt = now_dt->add( days => $days );
-   my $data = $self->$_assigned_slots( $rota_name, $rota_dt );
    my $req = $self->$_new_request( $scheme, $hostport );
+   my $data = $self->$_assigned_slots( $req, $rota_name, $rota_dt );
    my $limits = $self->config->slot_limits;
-   my $dmy = local_dt( $rota_dt )->dmy( '/' );
+   my $dmy = locd $req, $rota_dt;
    my $ymd = local_dt( $rota_dt )->ymd;
 
    for my $slot_type (@{ SLOT_TYPE_ENUM() }) {

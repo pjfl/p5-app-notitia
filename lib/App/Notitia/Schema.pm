@@ -182,7 +182,7 @@ sub restore_data : method {
 }
 
 sub upgrade_schema : method {
-   my $self = shift;
+   my $self = shift; $self->db_attr->{ignore_version} = TRUE;
 
    $self->$_needs_upgrade
       or ($self->info( 'No schema upgrade required' ) and return OK);
