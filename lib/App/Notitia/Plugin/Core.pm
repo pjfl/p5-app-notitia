@@ -32,19 +32,37 @@ event_handler 'condition', '_output_' => sub {
 event_handler 'email', '_input_' => sub {
    my ($self, $req, $stash) = @_;
 
-   $stash->{app_name} = $self->config->title;
-   $stash->{status} = 'current';
-   $stash->{subject} = locm $req, $stash->{action}.'_email_subject';
+   $stash->{app_name} //= $self->config->title;
+   $stash->{role} //= 'shortcode';
+   $stash->{status} //= 'current';
+   $stash->{subject} //= locm $req, $stash->{action}.'_email_subject';
+   $stash->{template} //= $stash->{action}.'_email.md';
+
+   return $stash;
+};
+
+event_handler 'email', '_default_' => sub {
+   my ($self, $req, $stash) = @_;
+
+   return;
+   $stash->{role} = 'administrator';
 
    return $stash;
 };
 
 event_handler 'email', '_output_' => sub {
-   my ($self, $req, $stash) = @_;
+   my ($self, $req, $stash) = @_; my $action = $stash->{action};
 
-   my $template = delete $stash->{template} or return;
+   if (not $stash->{role} or $stash->{role} eq 'shortcode') {
+      not $stash->{role} and $self->log->warn( "No role in ${action} message" )
+          and return;
+      not $stash->{shortcode}
+          and $self->log->warn( "No shortcode in ${action} message" )
+          and return;
+      delete $stash->{role};
+   }
 
-   blessed $template
+   my $template = delete $stash->{template}; blessed $template
       or $template = $self->$_template_dir( $req )->catfile( $template );
 
    if ($template->exists) { $self->create_email_job( $stash, $template ) }

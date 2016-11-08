@@ -86,6 +86,21 @@ my $_flatten_stash = sub {
    return "-o stash=${path} ";
 };
 
+my $_handle = sub {
+   my ($self, $req, $stash, $stream, $handler, $level) = @_;
+
+   my $processed = $handler->( $self, $req, { %{ $stash } } ) or return;
+
+   for my $output (@{ event_handler( $stream, '_output_' ) }) {
+      my $chained = $output->( $self, $req, { %{ $processed } } );
+
+      $chained and $chained->{level} = $level
+         and $self->send_event( $req, $_flatten->{ $chained } );
+   }
+
+   return;
+};
+
 my $_inflate = sub {
    my ($self, $req, $message) = @_; my $stash = { message => $message };
 
@@ -232,21 +247,19 @@ sub send_event {
 
          $input and $stash = $input->( $self, $req, $stash );
 
-         my $action = $stash->{action};
+         my $action = $stash->{action}; my $handled = FALSE;
 
          is_member $action, $conf->automated->{ $stream }
             or throw Disabled, [ $stream, $action ];
 
          for my $handler (@{ event_handler( $stream, $action ) }) {
-            my $processed = $handler->( $self, $req, { %{ $stash } } ) or next;
-
-            for my $output (@{ event_handler( $stream, '_output_' ) }) {
-               my $chained = $output->( $self, $req, { %{ $processed } } );
-
-               $chained and $chained->{level} = $level
-                  and $self->send_event( $req, $_flatten->{ $chained } );
-            }
+            $self->$_handle( $req, $stash, $stream, $handler, $level );
+            $handled = TRUE;
          }
+
+         my $handler; not $handled
+            and $handler = (event_handler $stream, '_default_')[ 0 ]
+            and $self->$_handle( $req, $stash, $stream, $handler, $level );
       }
       catch_class [
          Disabled => sub { $self->log->debug( $_ ) },

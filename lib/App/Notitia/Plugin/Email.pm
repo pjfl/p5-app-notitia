@@ -36,7 +36,6 @@ event_handler 'email', application_upgraded => sub {
    my ($self, $req, $stash) = @_;
 
    $stash->{role} = 'staff';
-   $stash->{template} = 'application_upgraded_email.md';
    $stash->{time} =~ s{ \. }{:}mx;
 
    return $stash;
@@ -46,7 +45,6 @@ event_handler 'email', backup_data => sub {
    my ($self, $req, $stash) = @_;
 
    $stash->{role} = 'administrator';
-   $stash->{template} = 'backup_data.md';
 
    return $stash;
 };
@@ -54,7 +52,6 @@ event_handler 'email', backup_data => sub {
 event_handler 'email', create_certification => sub {
    my ($self, $req, $stash) = @_;
 
-   $stash->{template} = 'certification_email.md';
    $stash->{type} = locm $req, $stash->{type};
 
    return $stash;
@@ -92,7 +89,6 @@ event_handler 'email', impending_slot => sub {
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $stash->{slot_key};
 
-   $stash->{template} = 'impending_slot_email.md';
    $stash->{shift_type} = $shift_type;
    $stash->{slot_type} = $slot_type;
 
@@ -105,7 +101,6 @@ event_handler 'email', vacant_slot => sub {
    my $args = [ $stash->{rota_name}, $stash->{rota_date} ];
 
    $stash->{role} = $stash->{slot_type};
-   $stash->{template} = 'vacant_slot_email.md';
    $stash->{uri} = uri_for_action $req, 'day/day_rota', $args;
 
    return $stash;
@@ -118,13 +113,13 @@ event_handler 'email', vehicle_assignment => sub {
       my ($shift_type, $slot_type, $subslot)
          = split m{ _ }mx, $stash->{slot_key};
 
-      $stash->{template} = 'vehicle_assignment_email.md';
       $stash->{shift_type} = $shift_type;
       $stash->{slot_type} = $slot_type;
    }
    elsif ($stash->{event_uri}) {
       $stash->{template} = 'vehicle_assignment_event_email.md';
    }
+   else { return }
 
    return $stash;
 };

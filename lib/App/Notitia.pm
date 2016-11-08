@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev: 21 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev: 22 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -14,6 +14,8 @@ sub env_var {
 sub schema_version {
    return qv( '0.9.14' );
 }
+
+# TODO: Add pod for production install - Create a notita user and su to them
 
 1;
 
@@ -43,7 +45,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.9.$Rev: 21 $ of B<App::Notitia>
+This documents version v0.9.$Rev: 22 $ of B<App::Notitia>
 
 =head1 Description
 
