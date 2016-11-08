@@ -107,20 +107,20 @@ sub shift_times {
 }
 
 sub validate {
-   my ($self, $for_update) = @_; my $attr = $self->validation_attributes;
+   my ($self, $for_update) = @_;
 
-   defined $attr->{fields} or return TRUE;
-
+   my $attr = $self->validation_attributes; $attr->{level} = 5;
+   my $fields = $attr->{fields} or return TRUE;
    my $columns = { $self->get_inflated_columns };
-   my $rs      = $self->result_source->resultset;
+   my $rs = $self->result_source->resultset;
 
-   for my $field (keys %{ $attr->{fields} }) {
-      $attr->{fields}->{ $field }->{unique}
+   for my $field (keys %{ $fields }) {
+      $fields->{ $field }->{unique}
          and not $for_update
          and exists $columns->{ $field }
-         and assert_unique $rs, $columns, $attr->{fields}, $field;
+         and assert_unique $rs, $columns, $fields, $field;
 
-      my $valids =  $attr->{fields}->{ $field }->{validate} or next;
+      my $valids =  $fields->{ $field }->{validate} or next;
          $valids =~ m{ isMandatory }msx and $columns->{ $field } //= undef;
    }
 
