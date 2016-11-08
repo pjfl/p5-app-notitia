@@ -31,6 +31,7 @@ upgrade_application() {
    cd $dir
    source var/etc/profile
    notitia-jobdaemon stop
+   notitia-schema backup-data
    cpanm --notest ${repo} && \
       notitia-schema upgrade-schema && \
       notitia-util -q application-upgraded

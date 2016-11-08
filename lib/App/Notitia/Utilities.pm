@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE OK SLOT_TYPE_ENUM TRUE );
 use App::Notitia::Util      qw( event_handler_cache load_file_data local_dt
-                                locd now_dt slot_limit_index );
+                                locd new_request now_dt slot_limit_index );
 use Class::Usul::Functions  qw( io is_member sum throw );
 use Class::Usul::File;
 use Class::Usul::Types      qw( Bool HashRef LoadableClass Object );
@@ -46,9 +46,6 @@ has 'geolocator_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
 
 option 'not_enabled' => is => 'ro', isa => Bool, default => FALSE,
    documentation => 'Show only the event attributes that are not enabled';
-
-has 'request_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
-   default => 'Web::ComposableRequest';
 
 has 'sms_sender_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
    default => 'App::Notitia::SMS';
@@ -99,13 +96,13 @@ my $_list_from_stash = sub {
       and return [ [ $person->label, $person ] ];
 
    my $opts = { columns => [ 'email_address', 'mobile_phone' ] };
+   my $ss = $stash->{status};
 
-   $stash->{status} and $opts->{status} = $stash->{status};
+   $opts->{status} = $ss && $ss eq 'all' ? undef : $ss ? $ss : 'current';
 
-   $role = $stash->{role}
-      and return $person_rs->list_people( $role, $opts );
+   $stash->{role} or throw Unspecified, [ 'person role' ];
 
-   return $person_rs->list_all_people( $opts );
+   return $person_rs->list_people( $stash->{role}, $opts );
 };
 
 my $_list_participents = sub {
@@ -171,14 +168,7 @@ my $_load_stash = sub {
 my $_new_request = sub {
    my ($self, $scheme, $hostport) = @_;
 
-   my $env = { HTTP_ACCEPT_LANGUAGE => $self->locale,
-               HTTP_HOST => $hostport // 'localhost:5000',
-               SCRIPT_NAME => $self->config->mount_point,
-               'psgi.url_scheme' => $scheme // 'http',
-               'psgix.session' => { username => 'admin' } };
-   my $factory = $self->request_class->new( config => $self->config );
-
-   return $factory->new_from_simple_request( {}, '', {}, $env );
+   return new_request $self->config, $self->locale, $scheme, $hostport;
 };
 
 my $_qualify_assets = sub {
@@ -373,10 +363,6 @@ sub impending_slot : method {
    $sent and $self->info( "Sent impending slot emails for ${dmy}" );
 
    return OK;
-}
-
-sub jobdaemon {
-   return $_[ 0 ]->components->{daemon}->jobdaemon;
 }
 
 sub send_message : method {

@@ -6,11 +6,13 @@ use App::Notitia; our $VERSION = $App::Notitia::VERSION;
 
 use App::Notitia::Constants qw( AS_PASSWORD EXCEPTION_CLASS FALSE
                                 NUL OK SLOT_TYPE_ENUM TRUE );
-use App::Notitia::Util      qw( encrypted_attr now_dt );
+use App::Notitia::Util      qw( encrypted_attr new_request now_dt );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( ensure_class_loaded io throw );
-use Class::Usul::Types      qw( NonEmptySimpleStr );
+use Class::Usul::Types      qw( HashRef NonEmptySimpleStr Object );
+use Format::Human::Bytes;
 use Unexpected::Functions   qw( PathNotFound Unspecified );
+use Web::Components::Util   qw( load_components );
 use Moo;
 
 extends q(Class::Usul::Schema);
@@ -40,6 +42,12 @@ has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
 has '+schema_version' => default => sub { App::Notitia->schema_version.NUL };
 
+has 'components' => is => 'lazy', isa => HashRef[Object], builder => sub {
+   return load_components 'Model', application => $_[ 0 ];
+};
+
+with q(App::Notitia::Role::EventStream);
+
 # Construction
 around 'deploy_file' => sub {
    my ($orig, $self, @args) = @_;
@@ -68,6 +76,12 @@ my $_needs_upgrade = sub {
       and return TRUE;
 
    return FALSE;
+};
+
+my $_new_request = sub {
+   my ($self, $scheme, $hostport) = @_;
+
+   return new_request $self->config, $self->locale, $scheme, $hostport;
 };
 
 my $_add_backup_files = sub {
@@ -122,6 +136,12 @@ sub backup_data : method {
    $path->exists and $arc->add_files( $path->abs2rel( $conf->appldir ) );
    $self->info( 'Generating backup [_1]', { args => [ $tarb ] } );
    $arc->write( $out->pathname, COMPRESS_GZIP ); $path->unlink;
+   $file = $out->basename;
+
+   my $size = Format::Human::Bytes->new()->base2( $out->stat->{size} );
+   my $message = "action:backup-data file:${file} size:${size}";
+
+   $self->send_event( $self->$_new_request, $message );
 
    return OK;
 }

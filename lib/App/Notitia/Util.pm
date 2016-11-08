@@ -32,8 +32,8 @@ our @EXPORT_OK = qw( action_for_uri assert_unique assign_link
                      js_server_config js_submit_config js_togglers_config
                      js_window_config lcm_for load_file_data loc local_dt
                      localise_tree locd locm mail_domain make_id_from
-                     make_name_from make_tip management_link mtime new_salt
-                     now_dt page_link_set register_action_paths
+                     make_name_from make_tip management_link mtime new_request
+                     new_salt now_dt page_link_set register_action_paths
                      set_element_focus set_rota_date slot_claimed
                      slot_identifier slot_limit_index show_node stash_functions
                      time2int to_dt to_json to_msg uri_for_action );
@@ -682,6 +682,21 @@ sub mtime ($) {
    return $_[ 0 ]->{tree}->{_mtime};
 }
 
+sub new_request ($$$$) {
+   my ($conf, $locale, $scheme, $hostport) = @_;
+
+   ensure_class_loaded 'Web::ComposableRequest';
+
+   my $env = { HTTP_ACCEPT_LANGUAGE => $locale,
+               HTTP_HOST => $hostport // 'localhost:5000',
+               SCRIPT_NAME => $conf->mount_point,
+               'psgi.url_scheme' => $scheme // 'http',
+               'psgix.session' => { username => 'admin' } };
+   my $factory = Web::ComposableRequest->new( config => $conf );
+
+   return $factory->new_from_simple_request( {}, '', {}, $env );
+}
+
 sub new_salt ($$) {
    my ($type, $lf) = @_;
 
@@ -977,6 +992,8 @@ LCM for a list of integers
 =head2 C<management_link>
 
 =head2 C<mtime>
+
+=head2 C<new_request>
 
 =head2 C<new_salt>
 

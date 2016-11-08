@@ -41,6 +41,7 @@ my $prereqs  = {
     'FCGI' => '0.77',
     'FCGI::ProcManager' => '0.25',
     'File::DataClass' => 'v0.69.0',
+    'Format::Human::Bytes' => '0.06',
     'HTML::GenerateUtil' => '1.20',
     'HTTP::Message' => '6.06',
     'JSON::MaybeXS' => '1.003005',

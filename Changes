@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds completed backup email
           - Adds private vehicle selection to slot claim
           - Adds housekeeping to cli program
           - Implements #124. Person manager subscription override

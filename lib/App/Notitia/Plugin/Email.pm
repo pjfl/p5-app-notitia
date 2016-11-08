@@ -42,6 +42,15 @@ event_handler 'email', application_upgraded => sub {
    return $stash;
 };
 
+event_handler 'email', backup_data => sub {
+   my ($self, $req, $stash) = @_;
+
+   $stash->{role} = 'administrator';
+   $stash->{template} = 'backup_data.md';
+
+   return $stash;
+};
+
 event_handler 'email', create_certification => sub {
    my ($self, $req, $stash) = @_;
 

@@ -14,6 +14,14 @@ use Moo::Role;
 requires qw( config create_email_job dialog_stash moniker schema );
 
 # Private functions
+my $_contains_one = sub {
+   my ($params, $keys) = @_;
+
+   for my $key (@{ $keys }) { exists $params->{ $key } and return TRUE }
+
+   return FALSE;
+};
+
 my $_plate_label = sub {
    my $v = ucfirst $_[ 0 ]->basename( '.md' ); $v =~ s{[_\-]}{ }gmx; return $v;
 };
@@ -40,6 +48,9 @@ my $_flatten = sub {
    }
    else {
       scalar keys %{ $params } or throw 'Messaging all people is not allowed';
+
+      $_contains_one->( $params, [ qw( stash event role ) ] )
+         or throw 'Must select a sub-set of people to message';
 
       exists $params->{type} and $params->{type} eq 'contacts'
          and throw 'Messaging all contacts is not allowed';

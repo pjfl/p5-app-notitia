@@ -14,7 +14,7 @@ use Unexpected::Functions   qw( catch_class Disabled Unspecified );
 use Web::Components::Util   qw( load_components );
 use Moo::Role;
 
-requires qw( components config jobdaemon schema );
+requires qw( components config schema );
 
 my $_plugins_cache;
 
@@ -211,6 +211,10 @@ sub event_schema_update {
    else { throw 'Method [_1] unknown', [ $method ] }
 
    return $message;
+}
+
+sub jobdaemon { # Shortcut for result classes
+   return $_[ 0 ]->components->{daemon}->jobdaemon;
 }
 
 sub send_event {
