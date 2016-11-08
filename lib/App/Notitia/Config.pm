@@ -193,9 +193,8 @@ has 'load_factor'     => is => 'ro',   isa => NonZeroPositiveInt,
 has 'logo'            => is => 'ro',   isa => ArrayRef,
    builder            => sub { [ 'logo.png', 272, 99 ] };
 
-# TODO: Add this when W::Comps bumps
-#has 'loader_attr'     => is => 'ro',   isa => HashRef,
-#   builder            => sub { { should_log_errors => FALSE } };
+has 'loader_attr'     => is => 'ro',   isa => HashRef,
+   builder            => sub { { should_log_errors => FALSE } };
 
 has 'max_asset_size'  => is => 'ro',   isa => PositiveInt, default => 4_194_304;
 
@@ -655,6 +654,10 @@ key / value pair, the link name and it's URI
 =item C<load_factor>
 
 Defaults to 14. A non zero positive integer passed to the C<bcrypt> function
+
+=item C<loader_attr>
+
+A hash reference of attributes passed to the MVC loader role
 
 =item C<logo>
 

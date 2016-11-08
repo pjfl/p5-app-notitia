@@ -9,6 +9,7 @@ bin/notitia-jobdaemon
 bin/notitia-localenv
 bin/notitia-schema
 bin/notitia-server
+bin/notitia-upgrade
 bin/notitia-util
 lib/App/Notitia.pm
 lib/App/Notitia/Attributes.pm

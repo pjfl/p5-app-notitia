@@ -112,6 +112,14 @@ my $_auth_redirect = sub {
    return;
 };
 
+my $_log_error = sub {
+   my ($self, $req, $e) = @_;
+
+   my $username = $req->username || 'unknown'; my $msg = "${e}"; chomp $msg;
+
+   return $self->log->error( "${msg} (${username})" );
+};
+
 # Public methods
 sub activity_cache {
    my ($self, $v) = @_;
@@ -177,7 +185,7 @@ sub exception_handler {
 
    $self->application->debug and $_debug_output->( $req, $e, $form, $leader );
 
-   my $stash = $self->get_stash( $req, $page );
+   my $stash = $self->get_stash( $req, $page ); $self->$_log_error( $req, $e );
 
    $stash->{code} = $e->code > HTTP_OK ? $e->code : HTTP_OK;
 

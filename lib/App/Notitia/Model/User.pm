@@ -3,7 +3,7 @@ package App::Notitia::Model::User;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_tag p_button p_checkbox p_container
-                                p_image p_label p_password p_radio p_select
+                                p_image p_js p_label p_password p_radio p_select
                                 p_slider p_tag p_text p_textfield );
 use App::Notitia::Util      qw( check_field_js check_form_field event_actions
                                 js_server_config js_slider_config locm make_tip
@@ -79,7 +79,7 @@ my $_listify = sub {
 my $_push_change_password_js = sub {
    my $page = shift; my $opts = { domain => 'update', form => 'Person' };
 
-   push @{ $page->{literal_js} },
+   p_js $page,
       "   behaviour.config.inputs[ 'again' ]",
       "      = { event     : [ 'focus', 'blur' ],",
       "          method    : [ 'show_password', 'hide_password' ] };",
@@ -96,7 +96,7 @@ my $_push_profile_js = sub {
 
    my $opts = { domain => 'update', form => 'Person' };
 
-   push @{ $page->{literal_js} },
+   p_js $page,
       check_field_js( 'address',       $opts ),
       check_field_js( 'email_address', $opts ),
       check_field_js( 'home_phone',    $opts ),
@@ -150,11 +150,11 @@ my $_fetch_shortcode = sub {
 my $_push_login_js = sub {
    my ($self, $req, $page) = @_;
 
-   my $uri = uri_for_action $req, $self->moniker.'/show_if_needed', [],
+   my $href = uri_for_action $req, $self->moniker.'/show_if_needed', [],
       { class => 'Person', test => 'totp_secret', };
 
-   push @{ $page->{literal_js} }, js_server_config 'username', 'blur',
-      'showIfNeeded', [ "${uri}", 'username', 'auth_code_label' ];
+   p_js $page, js_server_config 'username', 'blur',
+      'showIfNeeded', [ "${href}", 'username', 'auth_code_label' ];
 
    return;
 };
@@ -491,7 +491,7 @@ sub request_reset : Dialog Role(anon) {
    my $form  = $stash->{page}->{forms}->[ 0 ]
              = blank_form 'request-reset', $href;
 
-   $stash->{page}->{literal_js} = set_element_focus 'request-reset', 'username';
+   p_js $stash->{page}, set_element_focus 'request-reset', 'username';
 
    p_textfield $form, 'username';
 
@@ -661,8 +661,7 @@ sub totp_request : Dialog Role(anon) {
    my $form  = $stash->{page}->{forms}->[ 0 ]
              = blank_form 'totp-request', $href;
 
-   $stash->{page}->{literal_js} = set_element_focus 'totp-request', 'username';
-
+   p_js $stash->{page}, set_element_focus 'totp-request', 'username';
    p_textfield $form, 'username';
    p_password  $form, 'password';
    p_textfield $form, 'mobile_phone';
