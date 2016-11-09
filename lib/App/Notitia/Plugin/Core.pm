@@ -33,7 +33,7 @@ event_handler 'email', '_input_' => sub {
    my ($self, $req, $stash) = @_;
 
    $stash->{app_name} //= $self->config->title;
-   $stash->{role} //= 'shortcode';
+   $stash->{role} //= 'individual';
    $stash->{status} //= 'current';
    $stash->{subject} //= locm $req, $stash->{action}.'_email_subject';
    $stash->{template} //= $stash->{action}.'_email.md';
@@ -53,7 +53,7 @@ event_handler 'email', '_default_' => sub {
 event_handler 'email', '_output_' => sub {
    my ($self, $req, $stash) = @_; my $action = $stash->{action};
 
-   if (not $stash->{role} or $stash->{role} eq 'shortcode') {
+   if (not $stash->{role} or $stash->{role} eq 'individual') {
       not $stash->{role} and $self->log->warn( "No role in ${action} message" )
           and return;
       not $stash->{shortcode}
