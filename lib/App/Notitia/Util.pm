@@ -27,8 +27,8 @@ our @EXPORT_OK = qw( action_for_uri assert_unique assign_link
                      check_field_js check_form_field clone datetime_label
                      dialog_anchor display_duration encrypted_attr enhance
                      event_actions event_handler event_handler_cache
-                     get_hashed_pw get_salt is_access_authorised is_draft
-                     is_encrypted iterator js_config js_slider_config
+                     event_streams get_hashed_pw get_salt is_access_authorised
+                     is_draft is_encrypted iterator js_config js_slider_config
                      js_server_config js_submit_config js_togglers_config
                      js_window_config lcm_for load_file_data loc local_dt
                      localise_tree locd locm mail_domain make_id_from
@@ -433,6 +433,10 @@ sub event_handler ($$;&) {
 
 sub event_handler_cache () {
    return { %{ $handler_cache } };
+}
+
+sub event_streams () {
+   return sort keys %{ $handler_cache };
 }
 
 sub gcf ($$) {
@@ -932,6 +936,8 @@ Defines no attributes
 =head2 C<event_handler>
 
 =head2 C<event_handler_cache>
+
+=head2 C<event_streams>
 
 =head2 C<gcf>
 

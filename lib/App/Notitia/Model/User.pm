@@ -167,7 +167,10 @@ my $_subs_lists = sub {
    my $where = { recipient_id => $person->id, sink => $sink };
    my $unsubscribed_rs = $self->schema->resultset( 'Unsubscribe' );
    my $unsubscribed = [ $unsubscribed_rs->search( $where )->all ];
-   my $subscribed = $_subtract->( [ event_actions $sink ], $unsubscribed );
+   my $ev_rs = $self->schema->resultset( 'EventControl' );
+   my $all_actions = [ map { $_->action }
+                       $ev_rs->search( { sink => $sink } )->all ];
+   my $subscribed = $_subtract->( $all_actions, $unsubscribed );
 
    return $_listify->( $subscribed ), $_listify->( $unsubscribed ), $person;
 };

@@ -133,15 +133,19 @@ my $_admin_links = sub {
    push @{ $list },
       $nav_folder->( $req, 'admin', { tip => "Administrator's Menu" } );
 
+   $self->$_admin_log_links( $req, $page, $nav );
+
    push @{ $list },
-      $nav_folder->( $req, 'jobdaemon', {
-         class => $page->{selected} eq 'jobdaemon_status' ? 'open' : NUL,
-         depth => 1, tip => 'Job Daemon Menu' } ),
+      $nav_folder->( $req, 'process_control', {
+         class => $page->{selected} eq 'jobdaemon_status' ? 'open'
+                : $page->{selected} eq 'event_controls'    ? 'open' : NUL,
+         depth => 1, tip => 'Process Control Menu' } ),
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'jobdaemon_status' ? 'selected' : NUL,
-         depth => 2, name => 'jobdaemon_status' }, 'daemon/status', [] );
-
-   $self->$_admin_log_links( $req, $page, $nav );
+         depth => 2, name => 'jobdaemon_status' }, 'daemon/status', [] ),
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'event_controls' ? 'selected' : NUL,
+         depth => 2, name => 'event_controls' }, 'admin/event_controls', [] );
 
    push @{ $list },
       $nav_folder->( $req, 'types', {

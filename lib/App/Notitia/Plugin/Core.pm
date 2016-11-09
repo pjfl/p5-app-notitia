@@ -2,14 +2,23 @@ package App::Notitia::Plugin::Core;
 
 use namespace::autoclean;
 
-use App::Notitia::Util qw( event_handler locm );
-use Scalar::Util       qw( blessed );
+use App::Notitia::Constants qw( NUL );
+use App::Notitia::Util      qw( event_handler locm );
+use Scalar::Util            qw( blessed );
 use Moo;
 
 with q(Web::Components::Role);
 
 # Public attributes
 has '+moniker' => default => 'core';
+
+# Private functions
+my $_event_control_role = sub {
+   my $stash = shift;
+   my $tuple = $stash->{_event_control}->{email}->{ $stash->{action} };
+
+   return $tuple && $tuple->[ 1 ] ? $tuple->[ 1 ].NUL : undef;
+};
 
 # Private methods
 my $_template_dir = sub {
@@ -33,21 +42,16 @@ event_handler 'email', '_input_' => sub {
    my ($self, $req, $stash) = @_;
 
    $stash->{app_name} //= $self->config->title;
-   $stash->{role} //= 'individual';
-   $stash->{status} //= 'current';
-   $stash->{subject} //= locm $req, $stash->{action}.'_email_subject';
+   $stash->{role    } //= $_event_control_role->( $stash ) // 'individual';
+   $stash->{status  } //= 'current';
+   $stash->{subject } //= locm $req, $stash->{action}.'_email_subject';
    $stash->{template} //= $stash->{action}.'_email.md';
 
    return $stash;
 };
 
 event_handler 'email', '_default_' => sub {
-   my ($self, $req, $stash) = @_;
-
-   return;
-   $stash->{role} = 'administrator';
-
-   return $stash;
+   my ($self, $req, $stash) = @_; return $stash;
 };
 
 event_handler 'email', '_output_' => sub {

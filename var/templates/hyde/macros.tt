@@ -44,6 +44,7 @@
 [%    END -%]
 [%    IF f.class; class = f.class; ELSE; class = 'button'; END -%]
       <button class="[% class %]" name="_method" type="submit"
+[%    IF f.style -%] style="[% f.style %]"[% END -%]
               value="[% f.value %]">[% loc( f.label ) %]</button>
 [%    IF f.tip -%]</span>[% END -%]
 [% END -%]

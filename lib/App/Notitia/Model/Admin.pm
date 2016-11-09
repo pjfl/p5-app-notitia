@@ -3,10 +3,13 @@ package App::Notitia::Model::Admin;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP
                                 SLOT_TYPE_ENUM SPC TRUE TYPE_CLASS_ENUM );
-use App::Notitia::Form      qw( blank_form f_link f_tag p_button p_container
-                                p_list p_select p_row p_table p_textfield );
-use App::Notitia::Util      qw( loc locm make_tip management_link
-                                page_link_set register_action_paths to_msg
+use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button p_cell
+                                p_container p_item p_js p_link p_list p_radio
+                                p_select p_span p_row p_table p_text
+                                p_textfield );
+use App::Notitia::Util      qw( event_handler event_streams js_submit_config
+                                loc locm make_tip management_link page_link_set
+                                register_action_paths to_msg
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
@@ -23,11 +26,13 @@ with    q(App::Notitia::Role::Navigation);
 has '+moniker' => default => 'admin';
 
 register_action_paths
-   'admin/logs'       => 'log',
-   'admin/slot_certs' => 'slot-certs',
-   'admin/slot_roles' => 'slot-roles',
-   'admin/type'       => 'type',
-   'admin/types'      => 'types';
+   'admin/event_control'  => 'event-control',
+   'admin/event_controls' => 'event-controls',
+   'admin/logs'           => 'log',
+   'admin/slot_certs'     => 'slot-certs',
+   'admin/slot_roles'     => 'slot-roles',
+   'admin/type'           => 'type',
+   'admin/types'          => 'types';
 
 # Construction
 around 'get_stash' => sub {
@@ -42,9 +47,32 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_bind_event_controls_role = sub {
+   my ($roles, $control) = @_; my $role = $control->role // NUL;
+
+   return [ [ 'Individual', undef ],
+            map { [ $_, $_, { selected => $_ eq $role ? TRUE : FALSE } ] }
+            @{ $roles } ];
+};
+
 my $_create_action = sub {
    return { action => 'create', container_class => 'add-link',
             request => $_[ 0 ] };
+};
+
+my $_event_control_status = sub {
+   my $control = shift; my $status = $control->status;
+
+   return
+      [ [ 'Disabled', 0, { selected => $status ? FALSE : TRUE } ],
+        [ 'Enabled',  1, { selected => $status ? TRUE : FALSE } ], ];
+};
+
+my $_event_controls_headers = sub {
+   my $req = shift; my $max = 4; my $header = 'event_control_heading';
+
+   return [ map { { value => loc $req, "${header}_${_}" } } 0 .. $max ];
+
 };
 
 my $_list_slot_certs = sub {
@@ -55,6 +83,15 @@ my $_list_slot_certs = sub {
                           { prefetch    => 'certification_type' } )->all ];
 };
 
+my $_list_streams = sub {
+   my $control = shift; my $sink = $control->sink;
+
+   return
+      [ [ NUL, undef ],
+        map { [ ucfirst $_, $_, { selected => $_ eq $sink ? TRUE : FALSE } ] }
+        event_streams ];
+};
+
 my $_log_headers = sub {
    my ($req, $logname) = @_; my $max = 2; my $header = 'log_header';
 
@@ -63,18 +100,30 @@ my $_log_headers = sub {
    return [ map { { value => loc $req, "${header}_${_}" } } 0 .. $max ];
 };
 
-my $_log_link_opts = sub {
-   return { class => 'operation-links' };
-};
-
 my $_maybe_find_type = sub {
    return $_[ 2 ] ? $_[ 0 ]->find_type_by( $_[ 2 ], $_[ 1 ] )
                   : Class::Null->new;
 };
 
+my $_onchange_submit_event_controls = sub {
+   my ($page, $id, $form_name) = @_;
+
+   p_js $page, js_submit_config $id, 'change', 'submitForm',
+      [ 'update_event_controls', $form_name ];
+
+   return;
+};
+
+my $_ops_link_opts = sub {
+   return { class => 'operation-links' };
+};
+
+my $_ops_link_right_opts = sub {
+   return { class => 'operation-links align-right right-last' };
+};
+
 my $_slot_roles_headers = sub {
-   return [ map { { value => loc( $_[ 0 ], "slot_roles_heading_${_}" ) } }
-            0 .. 1 ];
+   return [ map { { value => loc $_[ 0 ], "slot_roles_heading_${_}" } } 0 .. 1];
 };
 
 my $_slot_roles_links = sub {
@@ -115,11 +164,7 @@ my $_type_create_links = sub {
 };
 
 my $_types_headers = sub {
-   return [ map { { value => loc( $_[ 0 ], "types_heading_${_}" ) } } 0 .. 2 ];
-};
-
-my $_types_link_opts = sub {
-   return { class => 'operation-links align-right right-last' };
+   return [ map { { value => loc $_[ 0 ], "types_heading_${_}" } } 0 .. 2 ];
 };
 
 my $_types_links = sub {
@@ -133,6 +178,64 @@ my $_types_links = sub {
 };
 
 # Private methods
+my $_event_controls_links = sub {
+   my ($self, $req) = @_; my $links = [];
+
+   my $href = uri_for_action $req, $self->moniker.'/event_control';
+
+   p_link $links, 'event_control', $href, {
+      action => 'create', container_class => 'add-link', request => $req };
+
+   return $links;
+};
+
+my $_event_controls_row = sub {
+   my ($self, $req, $page, $roles, $control) = @_; my $row = [];
+
+   my $sink = $control->sink; p_item $row, ucfirst $sink;
+
+   my $action = $control->action;
+   my $actionp = $self->moniker.'/event_control';
+   my $href = uri_for_action $req, $actionp, [ $sink, $action ];
+   my $label = ucfirst $action; $label =~ s{ _ }{ }gmx;
+   my $cell = p_cell $row, {};
+
+   p_link $cell, 'event_action', $href, { request => $req, value => $label };
+
+   $actionp = $self->moniker.'/event_controls';
+   $href = uri_for_action $req, $actionp, [ $sink, $action ];
+
+   my $form = blank_form 'event-control-status', $href;
+   my $status = $control->status ? 'Enabled' : 'Disabled';
+   my $value  = $control->status ? 'disable_event' : 'enable_event';
+   my $colour = $control->status ? '#99ff33' : '#c00';
+
+   p_item $row, $form, { class => 'narrow' };
+   p_button $form, $status, $value, {
+      class => 'table-link', style => "color: ${colour};",
+      tip => make_tip $req, 'toggle_status_tip', };
+
+   my $form_name = "${sink}-${action}-role";
+   my $id = "${sink}_${action}_role";
+
+   $form = blank_form $form_name, $href;
+
+   p_item $row, $sink eq 'email' ? $form : NUL, { class => 'embeded narrow' };
+   p_select $form, 'role', $_bind_event_controls_role->( $roles, $control ), {
+      class => 'narrow-field submit', id => $id, label => NUL };
+
+   $_onchange_submit_event_controls->( $page, $id, $form_name );
+
+   my $title = make_tip $req, 'no_event_handler_tip';
+
+   $cell = p_cell $row, { class => 'centre narrow' }; $self->plugins;
+
+   event_handler( $sink, $action )->[ 0 ] or p_span $cell, '&dagger;', {
+      class => 'table-cell-help tips', title => $title };
+
+   return $row;
+};
+
 my $_filter_controls = sub {
    my ($self, $req, $logname, $params) = @_;
 
@@ -154,8 +257,7 @@ my $_filter_controls = sub {
       label_field_class => 'control-label' };
 
    p_button $form, 'filter_log', 'filter_log', {
-      class => 'button',
-      tip   => make_tip( $req, 'filter_log_tip' ) };
+      class => 'button', tip => make_tip $req, 'filter_log_tip' };
 
    return $form;
 };
@@ -164,6 +266,16 @@ my $_list_all_certs = sub {
    my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
 
    return [ $type_rs->search_for_certification_types->all ];
+};
+
+my $_list_roles = sub {
+   my ($self, $control) = @_; my $role = $control->role // NUL;
+
+   my $type_rs = $self->schema->resultset( 'Type' );
+
+   return [ [ NUL, undef ],
+            map { [ $_, $_->id, { selected => $_ eq $role ? TRUE : FALSE } ] }
+            $type_rs->search_for_types( 'role' )->all ];
 };
 
 my $_log_user_label = sub {
@@ -233,6 +345,49 @@ my $_log_columns = sub {
    return @cols;
 };
 
+my $_log_rows = sub {
+   my ($self, $file, $first, $last, $data, $logname) = @_;
+
+   my $lno = 0; my @rows;
+
+   while (defined (my $line = $file->getline)) {
+      $lno < $first and ++$lno and next; $lno > $last and ++$lno and next;
+      $line =~ m{ \A [a-zA-z]{3} [ ] \d+ [ ] \d+ : }mx or next;
+
+      my @cols = $self->$_log_columns( $data, $logname, $line ); @cols or next;
+
+      push @rows, [ map { { class => $_->[ 1 ], value => $_->[ 0 ] } } @cols ];
+      $lno++;
+   }
+
+   return ($lno, @rows);
+};
+
+my $_maybe_find_control = sub {
+   my ($self, $sink, $action) = @_; my $object;
+
+   my $rs = $self->schema->resultset( 'EventControl' );
+
+   $sink and $action and ($object = $rs->find( $sink, $action )
+      or throw 'Stream [_1] action [_2] unknown', [ $sink, $action ]);
+
+   return $object ? $object : Class::Null->new;
+};
+
+my $_toggle_event_status = sub {
+   my ($self, $req, $status, $verb) = @_;
+
+   my $sink = $req->uri_params->( 0 );
+   my $action = $req->uri_params->( 1 );
+   my $rs = $self->schema->resultset( 'EventControl' );
+   my $control = $rs->find( $sink, $action );
+
+   $control->status( $status ); $control->update;
+
+   return [ to_msg "Stream [_1] action [_2] ${verb} by [_3]",
+            $sink, $action, $req->session->user_label ];
+};
+
 # Public methods
 sub add_certification_action : Role(administrator) {
    my ($self, $req) = @_;
@@ -270,6 +425,121 @@ sub add_type_action : Role(administrator) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub create_event_control_action : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $rs = $self->schema->resultset( 'EventControl' );
+   my $params = $req->body_params->( { optional => TRUE } );
+
+   delete $params->{_method}; $params->{role_id} or delete $params->{role_id};
+
+   my $control = $rs->create( $params );
+   my $message = [ to_msg 'Stream [_1] action [_2] control created by [_3]',
+                   $control->sink, $control->action, $req->session->user_label];
+   my $location = uri_for_action $req, $self->moniker.'/event_controls';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub delete_event_control_action : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $sink = $req->uri_params->( 0 );
+   my $ev_action = $req->uri_params->( 1 );
+   my $rs = $self->schema->resultset( 'EventControl' );
+   my $control = $rs->find( $sink, $ev_action ); $control->delete;
+   my $message = [ to_msg 'Stream [_1] action [_2] control deleted by [_3]',
+                   $sink, $ev_action, $req->session->user_label];
+   my $location = uri_for_action $req, $self->moniker.'/event_controls';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub disable_event_action : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $message = $self->$_toggle_event_status( $req, FALSE, 'disabled' );
+
+   return { redirect => { message => $message } }; # location referer
+}
+
+sub enable_event_action : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $message = $self->$_toggle_event_status( $req, TRUE, 'enabled' );
+
+   return { redirect => { message => $message } }; # location referer
+}
+
+sub event_control : Role(administrator) {
+   my ($self, $req) = @_; $self->plugins;
+
+   my $sink = $req->uri_params->( 0, { optional => TRUE } );
+   my $ev_action = $req->uri_params->( 1, { optional => TRUE } );
+   my $action = $sink && $ev_action ? 'update' : 'create';
+   my $args = [ $sink, $ev_action ];
+   my $href = uri_for_action $req, $self->moniker.'/event_control', $args;
+   my $form = blank_form 'event-control', $href;
+   my $page = {
+      forms => [ $form ], selected => 'event_controls',
+      title => locm $req, 'event_control_title',
+   };
+   my $control = $self->$_maybe_find_control( $sink, $ev_action );
+
+   p_select $form, 'sink', $_list_streams->( $control ), {
+      class => 'standard-field required', label => 'event_stream' };
+
+   p_textfield $form, 'action', $control->action, {
+      class => 'standard-field required', label => 'event_action' };
+
+   p_radio $form, 'status', $_event_control_status->( $control ), {
+      label => 'action_status' };
+
+   p_select $form, 'role_id', $self->$_list_roles( $control ), {
+      label => 'action_role' };
+
+   $args = [ 'event_control', $sink ? "${sink} / ${ev_action}" : NUL ];
+   p_action $form, $action, $args, { request => $req };
+
+   $sink and $ev_action
+      and not event_handler( $sink, $ev_action )->[ 0 ]
+      and p_action $form, 'delete', $args, { request => $req};
+
+   return $self->get_stash( $req, $page );
+}
+
+sub event_controls : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $form = blank_form;
+   my $page = {
+      forms => [ $form ], selected => 'event_controls',
+      title => locm $req, 'event_controls_title',
+   };
+   my $type_rs = $self->schema->resultset( 'Type' );
+   my $roles = [ $type_rs->search_for_types( 'role' )->all ];
+   my $ec_rs = $self->schema->resultset( 'EventControl' );
+   my $links = $self->$_event_controls_links( $req );
+
+   p_list $form, PIPE_SEP, $links, $_ops_link_right_opts->();
+
+   my $table = p_table $form, { headers => $_event_controls_headers->( $req ) };
+
+   p_row $table, [ map { $self->$_event_controls_row( $req, $page, $roles, $_ )}
+                   $ec_rs->search( {} )->all ];
+
+   my $href = uri_for_action $req, $self->moniker.'/event_controls';
+
+   $form = $page->{forms}->[ 1 ] = blank_form 'event-controls', $href, {
+      class => 'wide-form' };
+
+   p_button $form, 'init_event_controls', 'init_event_controls', {
+      class => 'save-button', container_class => 'right-last',
+      tip => make_tip $req, 'init_event_controls_tip' };
+
+   return $self->get_stash( $req, $page );
+}
+
 sub filter_log_action : Role(administrator) {
    my ($self, $req) = @_;
 
@@ -282,14 +552,23 @@ sub filter_log_action : Role(administrator) {
    return { redirect => { location => $location } };
 }
 
+sub init_event_controls_action : Role(administrator) {
+   my ($self, $req) = @_;
+
+   $self->update_event_control_from_cache;
+
+   my $message = [ to_msg 'Updated event control from event handler cache' ];
+
+   return { redirect => { message => $message } }; # location referer
+}
+
 sub logs : Role(administrator) {
    my ($self, $req) = @_;
 
    my $logname = $req->uri_params->( 0 );
    my $form = blank_form;
    my $page = {
-      selected => $logname,
-      forms => [ $form ],
+      selected => $logname, forms => [ $form ],
       title => locm $req, 'logs_title', ucfirst locm $req, $logname,
    };
    my $dir = $self->config->logsdir;
@@ -304,23 +583,10 @@ sub logs : Role(administrator) {
    my $queryp = $req->query_params;
    my $column = $queryp->( 'filter_column', { optional => TRUE } ) // 'none';
    my $pattern = $queryp->( 'filter_pattern', { optional => TRUE } ) // NUL;
-   my $data = { cache => {},
-                filter_column => $column,
+   my $data = { cache => {}, filter_column => $column,
                 filter_pattern => qr{ $pattern }imx,
                 person_rs => $self->schema->resultset( 'Person' ) };
-   my $lno = 0; my @rows;
-
-   while (defined (my $line = $file->getline)) {
-      $line =~ m{ \A [a-zA-z]{3} [ ] \d+ [ ] \d+ : }mx or next;
-
-      my @cols = $self->$_log_columns( $data, $logname, $line ); @cols or next;
-
-      $lno < $first and ++$lno and next; $lno > $last and ++$lno and next;
-
-      push @rows, [ map { { class => $_->[ 1 ], value => $_->[ 0 ] } } @cols ];
-      $lno++;
-   }
-
+   my ($lno, @rows) = $self->$_log_rows( $file, $first, $last, $data, $logname);
    my $actp = $self->moniker.'/logs';
    my $params = { filter_column => $column, filter_pattern => $pattern, };
    my $dp = Data::Page->new( $lno, $rows_pp, $pageno );
@@ -328,13 +594,13 @@ sub logs : Role(administrator) {
    my $plinks = page_link_set $req, $actp, [ $logname ], $params, $dp, $opts;
    my $links = [ $self->$_filter_controls( $req, $logname, $params ), $plinks ];
 
-   p_list $form, NUL, $links, $_log_link_opts->();
+   p_list $form, NUL, $links, $_ops_link_opts->();
 
    my $table = p_table $form, {
       class => 'smaller-table', headers => $_log_headers->( $req, $logname ) };
 
    p_row $table, [ @rows ];
-   p_list $form, NUL, $links, $_log_link_opts->();
+   p_list $form, NUL, $links, $_ops_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
@@ -453,12 +719,12 @@ sub type : Role(administrator) {
    if ($name) {
       p_button $form, 'remove_type', 'remove_type', {
          class => 'delete-button', container_class => 'right-last',
-         tip   => make_tip( $req, 'remove_type_tip', $args ) };
+         tip   => make_tip $req, 'remove_type_tip', $args };
    }
    else {
       p_button $form, 'add_type', 'add_type', {
          class => 'save-button', container_class => 'right-last',
-         tip   => make_tip( $req, 'add_type_tip', $args ) };
+         tip   => make_tip $req, 'add_type_tip', $args };
    }
 
    return $self->get_stash( $req, $page );
@@ -480,15 +746,54 @@ sub types : Role(administrator) {
                                  : $type_rs->search_for_all_types;
    my $links      =  $_type_create_links->( $req, $moniker, $type_class );
 
-   p_list $form, PIPE_SEP, $links, $_types_link_opts->();
+   p_list $form, PIPE_SEP, $links, $_ops_link_right_opts->();
 
    my $table = p_table $form, { headers => $_types_headers->( $req ) };
 
    p_row $table, [ map { $_types_links->( $req, $_ ) } $types->all ];
 
-   p_list $form, PIPE_SEP, $links, $_types_link_opts->();
+   p_list $form, PIPE_SEP, $links, $_ops_link_right_opts->();
 
    return $self->get_stash( $req, $page );
+}
+
+sub update_event_control_action : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $sink = $req->uri_params->( 0 );
+   my $ev_action = $req->uri_params->( 1 );
+   my $rs = $self->schema->resultset( 'EventControl' );
+   my $control = $rs->find( $sink, $ev_action );
+   my $status = $req->body_params->( 'status' );
+   my $role_id = $req->body_params->( 'role_id', { optional => TRUE } );
+
+   $role_id or $role_id = undef;
+   $control->status( $status ); $control->role_id( $role_id ); $control->update;
+
+   my $message = [ to_msg 'Stream [_1] action [_2] control updated by [_3]',
+                   $sink, $ev_action, $req->session->user_label];
+   my $location = uri_for_action $req, $self->moniker.'/event_controls';
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub update_event_controls_action : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $sink = $req->uri_params->( 0 );
+   my $action = $req->uri_params->( 1 );
+   my $rs = $self->schema->resultset( 'EventControl' );
+   my $control = $rs->find( $sink, $action );
+   my $role_name = $req->body_params->( 'role', { optional => TRUE } );
+   my $type_rs = $self->schema->resultset( 'Type' );
+   my $role = $role_name ? $type_rs->find_role_by( $role_name ) : undef;
+
+   $control->role_id( $role ? $role->id : undef ); $control->update;
+
+   my $message = [ to_msg 'Stream [_1] action [_2] updated by [_3]',
+                   $sink, $action, $req->session->user_label ];
+
+   return { redirect => { message => $message } }; # location referer
 }
 
 1;

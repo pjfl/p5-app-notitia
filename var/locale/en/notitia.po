@@ -21,17 +21,11 @@ msgstr "About"
 msgid "about_tip"
 msgstr "View the credits information for this application"
 
-msgid "incident_party_create_link"
-msgstr "Involved Parties"
+msgid "action_role"
+msgstr "Distribution List"
 
-msgid "incident_party_create_tip"
-msgstr "Manage the parties involved in this incident"
-
-msgid "incident_party_people"
-msgstr "Parties"
-
-msgid "incident_party_title"
-msgstr "Involved Parties"
+msgid "action_status"
+msgstr "Status"
 
 msgid "active"
 msgstr "Active"
@@ -706,11 +700,47 @@ msgstr "Enroled"
 msgid "equipment_issue"
 msgstr "Equipment Issue"
 
+msgid "event_action_tip"
+msgstr "Edit this existing event control record"
+
 msgid "event_blog_link"
 msgstr "Follow this [link]([_1]) to participate in the event"
 
 msgid "event_blog_when"
 msgstr "This event is on the [_1], starts at [_2] and finishes at [_3]"
+
+msgid "event_control_create_link"
+msgstr "Add Control"
+
+msgid "event_control_create_tip"
+msgstr "Add a new event control record"
+
+msgid "event_control_heading_0"
+msgstr "Stream"
+
+msgid "event_control_heading_1"
+msgstr "Action"
+
+msgid "event_control_heading_2"
+msgstr "Status"
+
+msgid "event_control_heading_3"
+msgstr "Role"
+
+msgid "event_control_heading_4"
+msgstr "Code"
+
+msgid "event_control_title"
+msgstr "Event Control"
+
+msgid "event_controls_link"
+msgstr "Event Controls"
+
+msgid "event_controls_tip"
+msgstr "Control the automated events processing"
+
+msgid "event_controls_title"
+msgstr "Event Controls"
 
 msgid "event_create_link"
 msgstr "Add Event"
@@ -732,6 +762,12 @@ msgstr "Event Manager"
 
 msgid "event_name"
 msgstr "Event Name"
+
+msgid "event_action"
+msgstr "Action Name"
+
+msgid "event_stream"
+msgstr "Stream Name"
 
 msgid "event_summary_heading"
 msgstr "Event Participation"
@@ -832,6 +868,18 @@ msgstr "Add Incident"
 msgid "incident_create_tip"
 msgstr "Create a new incident record"
 
+msgid "incident_party_create_link"
+msgstr "Involved Parties"
+
+msgid "incident_party_create_tip"
+msgstr "Manage the parties involved in this incident"
+
+msgid "incident_party_people"
+msgstr "Parties"
+
+msgid "incident_party_title"
+msgstr "Involved Parties"
+
 msgid "incident_record_tip"
 msgstr "View this incident record"
 
@@ -865,6 +913,13 @@ msgstr "List, create, and update incident call records"
 msgid "incidents_title"
 msgstr "Incidents"
 
+msgid "init_event_controls"
+msgstr "Initialise Event Controls"
+
+msgid "init_event_controls_tip"
+msgstr "Click this button to run the process that will populate the event "
+       "control table from the event handler cache"
+
 msgid "is_running"
 msgstr "Running"
 
@@ -883,22 +938,19 @@ msgstr "Job Daemon"
 msgid "jobdaemon_log_link"
 msgstr "Job Daemon"
 
-msgid "jobdaemon_management_heading"
-msgstr "Job Daemon"
-
 msgid "jobdaemon_status_job_queue_help"
 msgstr "With the job daemon running jobs should not remain in the queue for "
        "more than a few seconds. Reload this page to see if the current queue "
        "of jobs has been processed"
 
 msgid "jobdaemon_status_link"
-msgstr "Status"
+msgstr "Job Daemon Control"
 
 msgid "jobdaemon_status_tip"
-msgstr "Job daemon status and control"
+msgstr "Control the background processing job daemon"
 
 msgid "jobdaemon_status_title"
-msgstr "Job Daemon Status"
+msgstr "Job Daemon Control"
 
 msgid "joined"
 msgstr "Joined"
@@ -1256,6 +1308,10 @@ msgstr "Night South"
 msgid "night_rider_2_abbrv"
 msgstr "NS"
 
+msgid "no_event_handler_tip"
+msgstr "There is no event handler defined for this event control. The default "
+       "handler will be used and it will attempt to message the selected role"
+
 msgid "nok_view_link"
 msgstr "NOK"
 
@@ -1531,6 +1587,9 @@ msgstr "Private Vehicles"
 
 msgid "private_vehicles_tip"
 msgstr "List privately owned vehicles"
+
+msgid "process_control_management_heading"
+msgstr "Processes"
 
 msgid "profile_title"
 msgstr "Profile Details"
@@ -1839,6 +1898,9 @@ msgstr "Subscribed SMS"
 
 msgid "subscription"
 msgstr "Subscription"
+
+msgid "toggle_status_tip"
+msgstr "Toggle the enabled / disabled status of this event control"
 
 msgid "totp_auth"
 msgstr "Authentication URI"

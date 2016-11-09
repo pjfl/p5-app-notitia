@@ -100,9 +100,6 @@ has 'assetdir'        => is => 'lazy', isa => Path, coerce => TRUE,
 has 'assets'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'assets';
 
-has 'automated'       => is => 'ro',   isa => HashRef[ArrayRef],
-   builder            => sub { {} };
-
 has 'badge_excludes'  => is => 'ro',   isa => ArrayRef[PositiveInt],
    builder            => sub { [ 0, 0 ] };
 
@@ -440,12 +437,6 @@ containing user uploaded files
 
 A non empty simple string that defaults to F<assets>. Relative URI
 that locates the asset files uploaded by users
-
-=item C<automated>
-
-A hash reference of array references that defaults to an empty hash. If the
-list for the C<email> attribute contains one or more activity log action names
-then the coresponding automated notifiction email will be sent
 
 =item C<badge_excludes>
 

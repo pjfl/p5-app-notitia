@@ -22,7 +22,6 @@ my $_event_email = sub {
       $stash->{ $k } = $event->$k();
    }
 
-   $stash->{role} = 'fund_raiser';
    $stash->{template} = 'event_email.md';
    $stash->{owner} = $event->owner->label;
    $stash->{date} = locd $req, $event->start_date;
@@ -35,16 +34,7 @@ my $_event_email = sub {
 event_handler 'email', application_upgraded => sub {
    my ($self, $req, $stash) = @_;
 
-   $stash->{role} = 'staff';
    $stash->{time} =~ s{ \. }{:}mx;
-
-   return $stash;
-};
-
-event_handler 'email', backup_data => sub {
-   my ($self, $req, $stash) = @_;
-
-   $stash->{role} = 'administrator';
 
    return $stash;
 };
@@ -110,8 +100,7 @@ event_handler 'email', vehicle_assignment => sub {
    my ($self, $req, $stash) = @_;
 
    if ($stash->{slot_key}) {
-      my ($shift_type, $slot_type, $subslot)
-         = split m{ _ }mx, $stash->{slot_key};
+      my ($shift_type, $slot_type, undef) = split m{ _ }mx, $stash->{slot_key};
 
       $stash->{shift_type} = $shift_type;
       $stash->{slot_type} = $slot_type;

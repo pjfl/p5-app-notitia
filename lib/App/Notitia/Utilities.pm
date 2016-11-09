@@ -296,12 +296,17 @@ sub application_upgraded : method {
 sub dump_event_attr : method {
    my $self = shift; $self->plugins; my $cache = event_handler_cache;
 
+   my $allowed = {}; my $rs = $self->schema->resultset( 'EventControl' );
+
+   for my $control ($rs->search( {} )->all) {
+      $allowed->{ $control->sink }->{ $control->action } = $control->status;
+   }
+
    for my $stream (keys %{ $cache }) {
-      my $allowed = $self->config->automated->{ $stream } // [];
       my @keys = keys %{ $cache->{ $stream } };
 
       for my $action (@keys) {
-         $self->not_enabled and is_member $action, $allowed
+         $self->not_enabled and $allowed->{ $stream }->{ $action }
             and delete $cache->{ $stream }->{ $action };
 
          not $self->all and $action =~ m{ \A _ }mx
@@ -361,6 +366,14 @@ sub impending_slot : method {
    }
 
    $sent and $self->info( "Sent impending slot emails for ${dmy}" );
+
+   return OK;
+}
+
+sub load_event_control : method {
+   my $self = shift; $self->update_event_control_from_cache;
+
+   $self->info( 'Updated event control from event handler cache' );
 
    return OK;
 }
@@ -466,6 +479,8 @@ Defines the following attributes;
    bin/notitia-util -q impending-slot [scheme] [hostport]
 
 Run this from cron(8) to periodically trigger the impending slots email
+
+=head2 C<load_event_control> - Load the event control table from the registered plugins
 
 =head2 C<send_message> - Send email or SMS to people
 

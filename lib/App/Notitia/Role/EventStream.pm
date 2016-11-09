@@ -3,7 +3,8 @@ package App::Notitia::Role::EventStream;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL OK SPC TRUE );
-use App::Notitia::Util      qw( event_handler );
+use App::Notitia::Util      qw( event_actions event_handler
+                                event_handler_cache );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token is_member throw trim );
 use Class::Usul::Log        qw( get_logger );
@@ -91,6 +92,8 @@ my $_handle = sub {
 
    my $processed = $handler->( $self, $req, { %{ $stash } } ) or return;
 
+   delete $processed->{_event_control};
+
    for my $output (@{ event_handler( $stream, '_output_' ) }) {
       my $chained = $output->( $self, $req, { %{ $processed } } );
 
@@ -125,7 +128,7 @@ my $_is_valid_message = sub {
       $self->log->error( "Message contains no action: ${message}" ); return;
    }
 
-   my $max_levels = $self->config->automated->{_max_levels} // 10;
+   my $max_levels = 10;
 
    if ($inflated->{level} > $max_levels) {
       $self->log->error
@@ -142,6 +145,19 @@ my $_make_template = sub {
    my $path = $self->$_session_file; $path->println( trim $message );
 
    return $path;
+};
+
+my $_select_event_control = sub {
+   my $self = shift; my $event_control = {};
+
+   my $rs = $self->schema->resultset( 'EventControl' );
+
+   for my $control ($rs->search( {} )->all) {
+      $event_control->{ $control->sink }->{ $control->action }
+         = [ $control->status, $control->role ];
+   }
+
+   return $event_control;
 };
 
 # Public methods
@@ -233,13 +249,14 @@ sub jobdaemon { # Shortcut for result classes
 }
 
 sub send_event {
-   my ($self, $req, $message, $params) = @_; my $conf = $self->config;
+   my ($self, $req, $message, $params) = @_;
 
    $self->plugins; $message = $_clean_and_log->( $req, $message, $params );
 
    my $inflated = $self->$_is_valid_message( $req, $message ) or return;
+   my $allowed = $inflated->{_event_control} = $self->$_select_event_control();
 
-   for my $stream (grep { not m{ \A _ }mx } keys %{ $conf->automated }) {
+   for my $stream (grep { not m{ \A _ }mx } keys %{ $allowed }) {
       try {
          my $stash = { %{ $inflated } };
          my $level = delete $stash->{level}; $stash->{stream} = $stream;
@@ -249,7 +266,7 @@ sub send_event {
 
          my $action = $stash->{action}; my $handled = FALSE;
 
-         is_member $action, $conf->automated->{ $stream }
+         $allowed->{ $stream }->{ $action }->[ 0 ]
             or throw Disabled, [ $stream, $action ];
 
          for my $handler (@{ event_handler( $stream, $action ) }) {
@@ -258,13 +275,27 @@ sub send_event {
          }
 
          my $handler; not $handled
-            and $handler = (event_handler $stream, '_default_')[ 0 ]
+            and $handler = event_handler( $stream, '_default_')->[ 0 ]
             and $self->$_handle( $req, $stash, $stream, $handler, $level );
       }
       catch_class [
          Disabled => sub { $self->log->debug( $_ ) },
          '*'      => sub { $self->log->error( $_ ) },
       ];
+   }
+
+   return;
+}
+
+sub update_event_control_from_cache {
+   my $self = shift; $self->plugins;
+
+   my $rs = $self->schema->resultset( 'EventControl' );
+
+   for my $stream (keys %{ event_handler_cache() }) {
+      for my $action (event_actions $stream) {
+         $rs->find_or_create( { sink => $stream, action => $action } );
+      }
    }
 
    return;
