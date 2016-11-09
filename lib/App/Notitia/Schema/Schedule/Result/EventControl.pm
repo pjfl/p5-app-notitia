@@ -3,7 +3,7 @@ package App::Notitia::Schema::Schedule::Result::EventControl;
 use strictures;
 use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( FALSE TRUE );
+use App::Notitia::Constants qw( FALSE TRUE VARCHAR_MAX_SIZE );
 use App::Notitia::DataTypes qw( bool_data_type nullable_foreign_key_data_type
                                 varchar_data_type );
 
@@ -18,6 +18,7 @@ $class->add_columns
      sink    => varchar_data_type( 16, 'email' ),
      action  => varchar_data_type( 32 ),
      role_id => nullable_foreign_key_data_type,
+     notes   => varchar_data_type,
      );
 
 $class->set_primary_key( 'sink', 'action' );
@@ -46,11 +47,14 @@ sub validation_attributes {
    return { # Keys: constraints, fields, and filters (all hashes)
       constraints => {
          action   => { max_length => 32, min_length =>  8, },
+         notes    => { max_length => VARCHAR_MAX_SIZE(), min_length =>  0, },
          sink     => { max_length => 16, min_length =>  3, },
       },
       fields          => {
          action       => {
             validate  => 'isMandatory isValidLength isValidIdentifier' },
+         notes        => {
+            validate  => 'isValidLength isValidText' },
          sink         => {
             validate  => 'isMandatory isValidLength isValidIdentifier' },
       },

@@ -6,7 +6,7 @@ use App::Notitia::Constants qw( FALSE NUL PIPE_SEP
 use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button p_cell
                                 p_container p_item p_js p_link p_list p_radio
                                 p_select p_span p_row p_table p_text
-                                p_textfield );
+                                p_textarea p_textfield );
 use App::Notitia::Util      qw( event_handler event_streams js_submit_config
                                 loc locm make_tip management_link page_link_set
                                 register_action_paths to_msg
@@ -198,9 +198,11 @@ my $_event_controls_row = sub {
    my $actionp = $self->moniker.'/event_control';
    my $href = uri_for_action $req, $actionp, [ $sink, $action ];
    my $label = ucfirst $action; $label =~ s{ _ }{ }gmx;
+   my $tip = $control->notes || locm $req, 'event_action_tip';
    my $cell = p_cell $row, {};
 
-   p_link $cell, 'event_action', $href, { request => $req, value => $label };
+   p_link $cell, 'event_action', $href, {
+      request => $req, tip => $tip, value => $label };
 
    $actionp = $self->moniker.'/event_controls';
    $href = uri_for_action $req, $actionp, [ $sink, $action ];
@@ -498,6 +500,9 @@ sub event_control : Role(administrator) {
    p_select $form, 'role_id', $self->$_list_roles( $control ), {
       label => 'action_role' };
 
+   p_textarea $form, 'notes', $control->notes, {
+      class => 'standard-field autosize' };
+
    $args = [ 'event_control', $sink ? "${sink} / ${ev_action}" : NUL ];
    p_action $form, $action, $args, { request => $req };
 
@@ -764,11 +769,13 @@ sub update_event_control_action : Role(administrator) {
    my $ev_action = $req->uri_params->( 1 );
    my $rs = $self->schema->resultset( 'EventControl' );
    my $control = $rs->find( $sink, $ev_action );
-   my $status = $req->body_params->( 'status' );
-   my $role_id = $req->body_params->( 'role_id', { optional => TRUE } );
+   my $params = $req->body_params;
+   my $role_id = $params->( 'role_id', { optional => TRUE } );
 
-   $role_id or $role_id = undef;
-   $control->status( $status ); $control->role_id( $role_id ); $control->update;
+   $role_id or $role_id = undef; $control->role_id( $role_id );
+   $control->notes( $params->( 'notes', { optional => TRUE } // NUL ) );
+   $control->status( $params->( 'status' ) );
+   $control->update;
 
    my $message = [ to_msg 'Stream [_1] action [_2] control updated by [_3]',
                    $sink, $ev_action, $req->session->user_label];

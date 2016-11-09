@@ -275,7 +275,7 @@ sub send_event {
          }
 
          my $handler; not $handled
-            and $handler = event_handler( $stream, '_default_')->[ 0 ]
+            and $handler = event_handler( $stream, '_default_' )->[ 0 ]
             and $self->$_handle( $req, $stash, $stream, $handler, $level );
       }
       catch_class [

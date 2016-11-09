@@ -12,7 +12,7 @@ sub env_var {
 
 # TODO: Automate incrementing of schema versions
 sub schema_version {
-   return qv( '0.9.26' );
+   return qv( '0.9.27' );
 }
 
 # TODO: Add pod for production install - Create a notita user and su to them
