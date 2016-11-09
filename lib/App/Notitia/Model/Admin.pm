@@ -487,12 +487,15 @@ sub event_control : Role(administrator) {
       title => locm $req, 'event_control_title',
    };
    my $control = $self->$_maybe_find_control( $sink, $ev_action );
+   my $disabled = $action eq 'update' ? TRUE : FALSE;
 
    p_select $form, 'sink', $_list_streams->( $control ), {
-      class => 'standard-field required', label => 'event_stream' };
+      class => 'standard-field required', disabled => $disabled,
+      label => 'event_stream' };
 
    p_textfield $form, 'action', $control->action, {
-      class => 'standard-field required', label => 'event_action' };
+      class => 'standard-field required', disabled => $disabled,
+      label => 'event_action' };
 
    p_radio $form, 'status', $_event_control_status->( $control ), {
       label => 'action_status' };
