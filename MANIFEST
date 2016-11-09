@@ -72,6 +72,7 @@ lib/App/Notitia/Schema/Schedule/Result/Certification.pm
 lib/App/Notitia/Schema/Schedule/Result/Customer.pm
 lib/App/Notitia/Schema/Schedule/Result/Endorsement.pm
 lib/App/Notitia/Schema/Schedule/Result/Event.pm
+lib/App/Notitia/Schema/Schedule/Result/EventControl.pm
 lib/App/Notitia/Schema/Schedule/Result/Incident.pm
 lib/App/Notitia/Schema/Schedule/Result/IncidentParty.pm
 lib/App/Notitia/Schema/Schedule/Result/Job.pm
