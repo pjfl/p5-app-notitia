@@ -27,7 +27,7 @@ install_directory() {
 }
 
 upgrade_application() {
-   local dir; dir=$(install_directory); [ ${?} -gt 0 ] && exit 1
+   local dir; dir=$(install_directory); [ ${?} -gt 0 ] && return 1
    cd $dir
    source var/etc/profile
    notitia-jobdaemon stop
@@ -36,24 +36,25 @@ upgrade_application() {
       notitia-schema upgrade-schema && \
       notitia-util -q application-upgraded
    notitia-jobdaemon start
-   exit 0
+   return 0
 }
 
 upgrade_service() {
-   local dir; dir=$(install_directory); [ ${?} -gt 0 ] && exit 1
+   local dir; dir=$(install_directory); [ ${?} -gt 0 ] && return 1
    local prog; prog="${dir}/bin/notitia-upgrade"
    service ${service} stop
    su - ${service} -c "${prog} application ${repo} ${service}"
    service ${service} start
-   exit 0
+   return 0
 }
 
 # Main
-[ "${method}" = "service" ] && upgrade_service
-[ "${method}" = "application" ] && upgrade_application
+[ "${method}" = "service" ] && { upgrade_service; rv=${?}; }
+[ "${method}" = "application" ] && { upgrade_application; rv=${?}; }
 
-echo "Method ${method} unknown" >&2
-exit 1
+[ -z "${rv}" ] && { echo "Method ${method} unknown" >&2; rv=1; }
+
+exit ${rv}
 
 # Local Variables:
 # mode: sh
