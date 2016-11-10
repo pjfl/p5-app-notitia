@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev: 27 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev: 28 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -14,8 +14,6 @@ sub env_var {
 sub schema_version {
    return qv( '0.9.27' );
 }
-
-# TODO: Add pod for production install - Create a notita user and su to them
 
 1;
 
@@ -45,7 +43,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.9.$Rev: 27 $ of B<App::Notitia>
+This documents version v0.9.$Rev: 28 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -97,11 +95,11 @@ B<Requirements:>
 
 =back
 
-To find out if Perl is installed and which version; at a shell prompt type
+To find out if Perl is installed and which version; at a shell prompt type:
 
    perl -v
 
-To find out if Git is installed, type
+To find out if Git is installed, type:
 
    git --version
 
@@ -112,18 +110,23 @@ If you don't already have it, bootstrap L<App::cpanminus> with:
 What follows are the instructions for a production deployment. If you are
 installing for development purposes skip ahead to L</Development Installs>
 
+If this is a production deployment create a user, C<notitia>, and then
+login as (C<su> to) the C<notitia> user before carrying out the next step.
+
+If you C<su> to the C<notitia> user unset any Perl environment variables first.
+
 Next install L<local::lib> with:
 
    cpanm --notest --local-lib=~/local local::lib && \
       eval $(perl -I ~/local/lib/perl5/ -Mlocal::lib=~/local)
 
 The second statement sets environment variables to include the local
-Perl library. You can append the output of the perl command to your
+Perl library. You can append the output of the C<perl> command to your
 shell startup if you want to make it permanent. Without the correct
 environment settings Perl will not be able to find the installed
 dependencies and the following will fail, badly.
 
-Upgrade the installed version of L<Module::Build> with
+Upgrade the installed version of L<Module::Build> with:
 
    cpanm --notest Module::Build
 
@@ -135,35 +138,35 @@ Watch out for broken Github download URIs, the one above is the
 correct format
 
 Although this is a I<simple> application it is composed of many CPAN
-distributions and, depending on how many of them are already
-available, installation may take a while to complete. The flip side is
-that there are no external dependencies like Node.js or Grunt to
-install. Anyway you are advised to seek out sustenance whilst you
-wait for ack-2.12 to run it's tests.  At the risk of installing broken
-modules (they are only going into a local library) you can skip the
-tests by running C<cpanm> with the C<--notest> option.
+distributions and, depending on how many of them are already available,
+installation may take a while to complete. The flip side is that there are no
+external dependencies like Node.js or Grunt to install. At the risk of
+installing broken modules (they are only going into a local library) tests are
+skipped by running C<cpanm> with the C<--notest> option. This has the advantage
+that installs take less time but the disadvantage that you will not notice a
+broken module until the application fails.
 
-If that fails run it again with the C<--force> option
+If that fails run it again with the C<--force> option:
 
    cpanm --force git:...
 
 =head2 Development Installs
 
 Assuming you have the Perl environment setup correctly, clone
-B<App-Notitia> from the repository with
+B<App-Notitia> from the repository with:
 
    git clone https://github.com/pjfl/p5-app-notitia.git Notitia
    cd Notitia/
    cpanm --notest --installdeps .
 
-To install the development toolchain execute
+To install the development toolchain execute:
 
    cpanm Dist::Zilla
    dzil authordeps | cpanm --notest
 
 =head2 Post Installation
 
-Once installation is complete run the post install
+Once installation is complete run the post install:
 
    bin/notitia-cli post-install
 
@@ -186,20 +189,20 @@ started in the foreground with:
 
 Users must authenticate against the C<Person> table in the database.
 The default user is C<admin> password C<abc12345>. You should
-change that via the change password page the link for which is at
-the top of the default page. To start the production server in the
+change that via the change password page, the link for which is on
+the account management menu. To start the production server in the
 background listening on a Unix socket:
 
    bin/notitia-daemon start
 
 The C<notitia-daemon> program provides normal SysV init script
-semantics. Additionally the daemon program will write an init script to
+semantics. Additionally the daemon program will write an C<init> script to
 standard output in response to the command:
 
    bin/notitia-daemon get-init-file
 
 As the root user you could redirect this to F</etc/init.d/notitia>, then
-restart the notitia service with
+restart the notitia service with:
 
    service notitia restart
 
@@ -214,17 +217,39 @@ Running one of the command line programs like F<bin/notitia-cli> calling
 the C<dump-config-attr> method will output a list of configuration options,
 their defining class, documentation, and current value
 
-Help for command line options can be found be running
+Help for command line options can be found be running:
 
    bin/notitia-cli list-methods
 
-The production server options are detailed by running
+The production server options are detailed by running:
 
    bin/notitia-daemon list-methods
 
-The bash completion script is provided by
+The bash completion script is provided by:
 
    . bin/notitia-completion
+
+A typical logroate configuration in the file F</etc/logrotate.d/notitia>
+might look like this:
+
+   /home/notitia/local/var/backups/Notitia-*.tgz {
+      weekly
+      missingok
+      rotate 7
+      delaycompress
+      notifempty
+   }
+
+   /home/notitia/local/var/logs/*.log {
+      daily
+      copytruncate
+      create
+      missingok
+      rotate 30
+      compress
+      delaycompress
+      notifempty
+   }
 
 =head1 Subroutines/Methods
 

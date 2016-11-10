@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.9.$Rev: 26 $ of **App::Notitia**
+This documents version v0.9.$Rev: 28 $ of **App::Notitia**
 
 # Description
 
@@ -53,11 +53,11 @@ when this application is installed.
 - Perl 5.12.0 or above
 - Git - to install **App::Notitia** from Github
 
-To find out if Perl is installed and which version; at a shell prompt type
+To find out if Perl is installed and which version; at a shell prompt type:
 
     perl -v
 
-To find out if Git is installed, type
+To find out if Git is installed, type:
 
     git --version
 
@@ -68,18 +68,23 @@ If you don't already have it, bootstrap [App::cpanminus](https://metacpan.org/po
 What follows are the instructions for a production deployment. If you are
 installing for development purposes skip ahead to ["Development Installs"](#development-installs)
 
+If this is a production deployment create a user, `notitia`, and then
+login as (`su` to) the `notitia` user before carrying out the next step.
+
+If you `su` to the `notitia` user unset any Perl environment variables first.
+
 Next install [local::lib](https://metacpan.org/pod/local::lib) with:
 
     cpanm --notest --local-lib=~/local local::lib && \
        eval $(perl -I ~/local/lib/perl5/ -Mlocal::lib=~/local)
 
 The second statement sets environment variables to include the local
-Perl library. You can append the output of the perl command to your
+Perl library. You can append the output of the `perl` command to your
 shell startup if you want to make it permanent. Without the correct
 environment settings Perl will not be able to find the installed
 dependencies and the following will fail, badly.
 
-Upgrade the installed version of [Module::Build](https://metacpan.org/pod/Module::Build) with
+Upgrade the installed version of [Module::Build](https://metacpan.org/pod/Module::Build) with:
 
     cpanm --notest Module::Build
 
@@ -91,35 +96,35 @@ Watch out for broken Github download URIs, the one above is the
 correct format
 
 Although this is a _simple_ application it is composed of many CPAN
-distributions and, depending on how many of them are already
-available, installation may take a while to complete. The flip side is
-that there are no external dependencies like Node.js or Grunt to
-install. Anyway you are advised to seek out sustenance whilst you
-wait for ack-2.12 to run it's tests.  At the risk of installing broken
-modules (they are only going into a local library) you can skip the
-tests by running `cpanm` with the `--notest` option.
+distributions and, depending on how many of them are already available,
+installation may take a while to complete. The flip side is that there are no
+external dependencies like Node.js or Grunt to install. At the risk of
+installing broken modules (they are only going into a local library) tests are
+skipped by running `cpanm` with the `--notest` option. This has the advantage
+that installs take less time but the disadvantage that you will not notice a
+broken module until the application fails.
 
-If that fails run it again with the `--force` option
+If that fails run it again with the `--force` option:
 
     cpanm --force git:...
 
 ## Development Installs
 
 Assuming you have the Perl environment setup correctly, clone
-**App-Notitia** from the repository with
+**App-Notitia** from the repository with:
 
     git clone https://github.com/pjfl/p5-app-notitia.git Notitia
     cd Notitia/
     cpanm --notest --installdeps .
 
-To install the development toolchain execute
+To install the development toolchain execute:
 
     cpanm Dist::Zilla
     dzil authordeps | cpanm --notest
 
 ## Post Installation
 
-Once installation is complete run the post install
+Once installation is complete run the post install:
 
     bin/notitia-cli post-install
 
@@ -142,20 +147,20 @@ started in the foreground with:
 
 Users must authenticate against the `Person` table in the database.
 The default user is `admin` password `abc12345`. You should
-change that via the change password page the link for which is at
-the top of the default page. To start the production server in the
+change that via the change password page, the link for which is on
+the account management menu. To start the production server in the
 background listening on a Unix socket:
 
     bin/notitia-daemon start
 
 The `notitia-daemon` program provides normal SysV init script
-semantics. Additionally the daemon program will write an init script to
+semantics. Additionally the daemon program will write an `init` script to
 standard output in response to the command:
 
     bin/notitia-daemon get-init-file
 
 As the root user you could redirect this to `/etc/init.d/notitia`, then
-restart the notitia service with
+restart the notitia service with:
 
     service notitia restart
 
@@ -170,17 +175,39 @@ Running one of the command line programs like `bin/notitia-cli` calling
 the `dump-config-attr` method will output a list of configuration options,
 their defining class, documentation, and current value
 
-Help for command line options can be found be running
+Help for command line options can be found be running:
 
     bin/notitia-cli list-methods
 
-The production server options are detailed by running
+The production server options are detailed by running:
 
     bin/notitia-daemon list-methods
 
-The bash completion script is provided by
+The bash completion script is provided by:
 
     . bin/notitia-completion
+
+A typical logroate configuration in the file `/etc/logrotate.d/notitia`
+might look like this:
+
+    /home/notitia/local/var/backups/Notitia-*.tgz {
+       weekly
+       missingok
+       rotate 7
+       delaycompress
+       notifempty
+    }
+
+    /home/notitia/local/var/logs/*.log {
+       daily
+       copytruncate
+       create
+       missingok
+       rotate 30
+       compress
+       delaycompress
+       notifempty
+    }
 
 # Subroutines/Methods
 
