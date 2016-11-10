@@ -509,9 +509,9 @@ sub request_reset_action : Role(anon) {
    my $name     = $req->body_params->( 'username' );
    my $person   = $self->schema->resultset( 'Person' )->find_person( $name );
    my $password = substr create_token, 0, 12;
-   my $job_id   = $self->create_reset_email( $req, $person, $password )->id;
+   my $job      = $self->create_reset_email( $req, $person, $password );
    my $key      = '[_1] password reset requested ref. [_2]';
-   my $message  = [ to_msg $key, $person->label, "send_message-${job_id}" ];
+   my $message  = [ to_msg $key, $person->label, $job->label ];
 
    return { redirect => { location => $req->base, message => $message } };
 }
@@ -690,8 +690,8 @@ sub totp_request_action : Role(anon) {
    $person->security_check( { mobile_phone => $mobile, postcode => $postcode });
 
    my $key      = '[_1] TOTP request sent ref. [_2]';
-   my $job_id   = $self->create_totp_request_email( $req, $person )->id;
-   my $message  = [ to_msg $key, $person->label, "send_message-${job_id}" ];
+   my $job      = $self->create_totp_request_email( $req, $person );
+   my $message  = [ to_msg $key, $person->label, $job->label ];
 
    return { redirect => { location => $req->base, message => $message } };
 }

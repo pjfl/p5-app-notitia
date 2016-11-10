@@ -28,6 +28,10 @@ sub insert {
    return $job;
 }
 
+sub label {
+   return $_[ 0 ]->name.'-'.$_[ 0 ]->id;
+}
+
 1;
 
 __END__

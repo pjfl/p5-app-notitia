@@ -259,7 +259,7 @@ my $_daemon_loop = sub {
          $self->run_cmd( [ sub { $_runjob->( $self, $job ) } ],
                          { async => TRUE, detach => TRUE } );
 
-         $self->_last_run_file->println( $job->name.'-'.$job->id );
+         $self->_last_run_file->println( $job->label );
          $self->_last_run_file->close;
          $job->delete;
       }

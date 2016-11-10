@@ -120,7 +120,7 @@ sub status : Role(administrator) {
 
    my $jobs = $self->schema->resultset( 'Job' )->search( {} );
 
-   p_select $form, 'job_queue', [ map { [ $_->name.'-'.$_->id ] } $jobs->all ],
+   p_select $form, 'job_queue', [ map { [ $_->label ] } $jobs->all ],
       { class => 'standard-field fake-disabled',
         tip => make_tip $req, 'jobdaemon_status_job_queue_help' };
 

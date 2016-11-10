@@ -173,8 +173,7 @@ sub create_coordinate_lookup_job {
    my $rs = $self->schema->resultset( 'Job' );
    my $job = $rs->create( { command => $cmd, name => 'geolocation' } );
 
-   $self->log->debug
-      ( "Coordinate lookup ${object_type} ${id} geolocation-".$job->id );
+   $self->log->debug( "Coordinate lookup ${object_type} ${id} ".$job->label );
 
    return $job;
 }
