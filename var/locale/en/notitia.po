@@ -136,6 +136,9 @@ msgstr "Sat [_1] [_2]"
 msgid "alloc_table_heading_sun"
 msgstr "Sun [_1] [_2]"
 
+msgid "app_version"
+msgstr "App. Version"
+
 msgid "aquired"
 msgstr "Aquired"
 
@@ -1739,6 +1742,9 @@ msgstr "Create a rota type record"
 msgid "route"
 msgstr "Route"
 
+msgid "running_v"
+msgstr "Running Version"
+
 msgid "schema_log_link"
 msgstr "Schema"
 
@@ -2282,9 +2288,6 @@ msgstr "List all the vehicles"
 
 msgid "view_document_tip"
 msgstr "View this document"
-
-msgid "version"
-msgstr "Version"
 
 msgid "vrn"
 msgstr "Registration"

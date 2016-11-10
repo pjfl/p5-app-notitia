@@ -300,6 +300,14 @@ my $_rundaemon = sub {
    exit OK;
 };
 
+my $_write_version = sub {
+   my $self = shift;
+
+   $self->config->tempdir->catfile( 'jobdaemon_version' )->println( $VERSION );
+
+   return;
+};
+
 # Public methods
 sub clear : method {
    my $self = shift; $self->is_running and throw 'Cannot clear whilst running';
@@ -355,6 +363,15 @@ sub rundaemon : method {
    return $_[ 0 ]->$_rundaemon;
 }
 
+sub running_version {
+   my $self = shift;
+   my $file = $self->config->tempdir->catfile( 'jobdaemon_version' )->chomp;
+
+   my $version; try { $version = $file->getline } catch {};
+
+   return $version;
+}
+
 sub show_locks : method {
    my $self = shift;
 
@@ -385,6 +402,8 @@ sub start : method {
 
    $rv == OK and $self->$_raise_semaphore
       and $self->log->debug( 'Raised jobqueue semaphore on startup' );
+
+   $rv == OK and $self->$_write_version;
 
    return $rv;
 }

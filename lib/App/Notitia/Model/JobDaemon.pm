@@ -63,19 +63,22 @@ my $_get_jobdaemon_status = sub {
    my $is_running = $jobdaemon->is_running;
    my $daemon_pid = 'N/A';
    my $start_time = 'N/A';
+   my $running_v  = 'N/A';
 
    if ($is_running) {
       $daemon_pid = $jobdaemon->daemon_pid;
       $start_time = time2str '%Y-%m-%d %H:%M:%S', $jobdaemon->socket_ctime;
+      $running_v  = $jobdaemon->running_version;
    }
 
    return {
-      is_running => $is_running,
-      run_state  => locm( $req, $is_running ? 'Yes' : 'No' ),
-      daemon_pid => $daemon_pid,
-      version    => $jobdaemon->VERSION,
-      start_time => $start_time,
-      last_run   => $jobdaemon->last_run };
+      is_running  => $is_running,
+      run_state   => locm( $req, $is_running ? 'Yes' : 'No' ),
+      daemon_pid  => $daemon_pid,
+      app_version => $jobdaemon->VERSION,
+      running_v   => $running_v,
+      start_time  => $start_time,
+      last_run    => $jobdaemon->last_run };
 };
 
 my $_lock_table = sub {
@@ -112,11 +115,12 @@ sub status : Role(administrator) {
       title => locm $req, 'jobdaemon_status_title' };
    my $data = $self->$_get_jobdaemon_status( $req );
 
-   p_textfield $form, 'is_running', $data->{run_state},  { disabled => TRUE };
-   p_textfield $form, 'daemon_pid', $data->{daemon_pid}, { disabled => TRUE };
-   p_textfield $form, 'version',    $data->{version},    { disabled => TRUE };
-   p_textfield $form, 'start_time', $data->{start_time}, { disabled => TRUE };
-   p_textfield $form, 'last_run',   $data->{last_run},   { disabled => TRUE };
+   p_textfield $form, 'is_running',  $data->{run_state},   { disabled => TRUE };
+   p_textfield $form, 'daemon_pid',  $data->{daemon_pid},  { disabled => TRUE };
+   p_textfield $form, 'running_v',   $data->{running_v},   { disabled => TRUE };
+   p_textfield $form, 'app_version', $data->{app_version}, { disabled => TRUE };
+   p_textfield $form, 'start_time',  $data->{start_time},  { disabled => TRUE };
+   p_textfield $form, 'last_run',    $data->{last_run},    { disabled => TRUE };
 
    my $jobs = $self->schema->resultset( 'Job' )->search( {} );
 

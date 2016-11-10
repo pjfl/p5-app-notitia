@@ -1,6 +1,7 @@
 package App::Notitia::Schema::Schedule::Result::Job;
 
 use strictures;
+use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( TRUE );
@@ -18,6 +19,12 @@ $class->add_columns
 
 $class->set_primary_key( 'id' );
 
+# Private methods
+sub _as_string {
+   return $_[ 0 ]->name.'-'.$_[ 0 ]->id;
+}
+
+# Public methods
 sub insert {
    my $self = shift; my $job = $self->next::method;
 
@@ -29,7 +36,7 @@ sub insert {
 }
 
 sub label {
-   return $_[ 0 ]->name.'-'.$_[ 0 ]->id;
+   return $_[ 0 ]->_as_string;
 }
 
 1;
