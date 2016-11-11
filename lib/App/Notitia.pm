@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev: 32 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev: 33 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -43,7 +43,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.9.$Rev: 32 $ of B<App::Notitia>
+This documents version v0.9.$Rev: 33 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -206,6 +206,11 @@ restart the notitia service with:
 
    service notitia restart
 
+Production installs can subsequently be upgraded using this remote C<ssh>
+command:
+
+   ssh -t <user>@<domain> sudo ~notitia/local/bin/notitia-upgrade
+
 =head1 Configuration and Environment
 
 The prefered production deployment method uses the C<FCGI> engine over
@@ -220,20 +225,21 @@ their defining class, documentation, and current value
 Help for command line options can be found be running:
 
    bin/notitia-cli list-methods
+   bin/notitia-cli help <method>
 
-The production server options are detailed by running:
-
-   bin/notitia-daemon list-methods
+The C<list-methods> command is available to all of the appliction programs
+(except scripts and C<notitia-server>)
 
 The bash completion script is provided by:
 
    . bin/notitia-completion
 
-The following represents a typical C<crontab> file for the C<notitia> user
+The following represents a typical C<crontab> file for the C<notitia> user:
 
    10 12 * * * /home/notitia/local/bin/notitia-schema -q backup-data
-   15 12 * * * /home/notitia/local/bin/notitia-util -q impending-slot
-   20 12 * * * /home/notitia/local/bin/notitia-util -q vacant-slot
+   15 12 * * * /home/notitia/local/bin/notitia-cli -q housekeeping
+   20 12 * * * /home/notitia/local/bin/notitia-util -q impending-slot
+   25 12 * * * /home/notitia/local/bin/notitia-util -q vacant-slot
 
 A typical logroate configuration in the file F</etc/logrotate.d/notitia>
 might look like this:
