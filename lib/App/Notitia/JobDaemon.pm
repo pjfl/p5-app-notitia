@@ -252,9 +252,7 @@ my $_daemon_loop = sub {
       $self->$_lower_semaphore;
 
       for my $job ($self->schema->resultset( 'Job' )->search( {} )->all) {
-         if ($job->command eq 'stop_jobdaemon') {
-            $job->delete; $stopping = TRUE; last;
-         }
+         if ($job->command eq 'stop_jobdaemon') { $job->delete; last }
 
          $self->run_cmd( [ sub { $_runjob->( $self, $job ) } ],
                          { async => TRUE, detach => TRUE } );
