@@ -73,11 +73,12 @@ my $_week_link = sub {
 };
 
 my $_year_link = sub {
-   my ($req, $actionp, $name, $date) = @_;
+   my ($req, $actionp, $name, $date, $selected) = @_;
 
    my $tip    = 'Navigate to [_1]';
-   my $opts   = { value => $date->year, name => $date->year,
-                  tip   => $tip,    tip_args => [ $date->year ], };
+   my $opts   = { class => $selected ? 'selected' : NUL, name => $date->year,
+                  tip   => $tip, tip_args => [ $date->year ],
+                  value => $date->year, };
    my $args   = [ $name, $date->ymd ];
    my $params = { rota_date => $date->ymd };
 
@@ -659,6 +660,7 @@ sub rota_navigation_links {
    push @{ $list }, $nav_folder->( $req, 'year' ),;
    $date = $f_dom->clone->subtract( years => 1 );
    push @{ $list }, $_year_link->( $req, $actionp, $name, $date );
+   push @{ $list }, $_year_link->( $req, $actionp, $name, $f_dom, TRUE );
    $date = $f_dom->clone->add( years => 1 );
    push @{ $list }, $_year_link->( $req, $actionp, $name, $date );
 
