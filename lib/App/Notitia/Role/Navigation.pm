@@ -54,14 +54,19 @@ my $nav_linkto = sub {
 my $_week_link = sub {
    my ($req, $actionp, $name, $date, $opts, $params) = @_;
 
-   $opts //= {}; $params //= {};
+   $opts = { %{ $opts } }; $params //= {};
 
+   my $local_dt = delete $opts->{local_dt};
    my $args = [ $name, $date->ymd ];
    my $tip = 'Navigate to week commencing [_1]';
    my $value = locm( $req, 'Week' ).SPC.$date->week_number;
+   my $class = $date->week_number eq $local_dt->week_number
+             ? ($opts->{value} // NUL) ne 'spreadsheet' ? 'selected' : NUL
+             : NUL;
 
-   $opts = { value => $value,   name => 'wk'.$date->week_number,
-             tip   => $tip, tip_args => [ locd $req, $date ], %{ $opts } };
+   $opts = { class => $class, name => 'wk'.$date->week_number,
+             tip   => $tip, tip_args => [ locd $req, $date ],
+             value => $value, %{ $opts }, };
    $params->{rota_date} = $date->ymd;
 
    return $nav_linkto->( $req, $opts, $actionp, $args, $params );
@@ -337,23 +342,24 @@ my $_rota_month_links = sub {
 };
 
 my $_rota_week_links = sub {
-   my ($self, $req, $name, $sow, $nav) = @_;
+   my ($self, $req, $name, $sow, $local_dt, $nav) = @_;
 
    my $actionp = 'week/week_rota'; my $list = $nav->{menu}->{list};
+   my $opts = { local_dt => $local_dt };
 
    push @{ $list },
       $nav_folder->( $req, 'week' ),
       $_week_link->( $req, $actionp, $name,
-                     $sow->clone->subtract( weeks => 1 ) ),
-      $_week_link->( $req, $actionp, $name, $sow ),
+                     $sow->clone->subtract( weeks => 1 ), $opts ),
+      $_week_link->( $req, $actionp, $name, $sow, $opts ),
       $_week_link->( $req, $actionp, $name,
-                     $sow->clone->add( weeks => 1 ) ),
+                     $sow->clone->add( weeks => 1 ), $opts ),
       $_week_link->( $req, $actionp, $name,
-                     $sow->clone->add( weeks => 2 ) ),
+                     $sow->clone->add( weeks => 2 ), $opts ),
       $_week_link->( $req, $actionp, $name,
-                     $sow->clone->add( weeks => 3 ) ),
+                     $sow->clone->add( weeks => 3 ), $opts ),
       $_week_link->( $req, $actionp, $name,
-                     $sow->clone->add( weeks => 4 ) );
+                     $sow->clone->add( weeks => 4 ), $opts );
    return;
 };
 
@@ -662,12 +668,12 @@ sub rota_navigation_links {
 
    while ($sow->day_of_week > 1) { $sow = $sow->subtract( days => 1 ) }
 
-   $self->$_rota_week_links( $req, $name, $sow, $nav );
+   $self->$_rota_week_links( $req, $name, $sow, $local_dt, $nav );
 
    $self->$_allowed( $req, 'week/allocation' ) and push @{ $list },
       $nav_folder->( $req, 'vehicle_allocation' ),
       $_week_link->( $req, 'week/allocation', $name, $sow, {
-         value => 'spreadsheet' } );
+         local_dt => $local_dt, value => 'spreadsheet' } );
 
    return $nav;
 }
