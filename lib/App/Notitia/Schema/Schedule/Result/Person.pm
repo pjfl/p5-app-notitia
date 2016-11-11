@@ -496,7 +496,7 @@ sub list_courses {
 }
 
 sub list_roles {
-   my $self = shift; my $opts = { prefetch => 'type' };
+   my $self = shift; my $opts = { order_by => 'type.name', prefetch => 'type' };
 
    return [ map { $_->type->name } $self->roles->search( {}, $opts )->all ];
 }

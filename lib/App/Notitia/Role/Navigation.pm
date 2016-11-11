@@ -477,14 +477,17 @@ sub admin_navigation_links {
 
    $self->$_report_links( $req, $page, $nav );
 
-   $self->$_allowed( $req, 'train/summary' ) and push @{ $list },
-      $nav_folder->( $req, 'training', { tip => 'Training Menu' } ),
-      $nav_linkto->( $req, {
+   push @{ $list }, $nav_folder->( $req, 'training', {
+      tip => 'Training Menu' } );
+
+   $self->$_allowed( $req, 'train/summary' )
+      and push @{ $list }, $nav_linkto->( $req, {
          class => $page->{selected} eq 'training' ? 'selected' : NUL,
-         name  => 'training_summary' }, 'train/summary', [] ),
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'training_events' ? 'selected' : NUL,
-         name  => 'training_events' }, 'train/events', [] );
+         name  => 'training_summary' }, 'train/summary', [] );
+
+   push @{ $list }, $nav_linkto->( $req, {
+      class => $page->{selected} eq 'training_events' ? 'selected' : NUL,
+      name  => 'training_events' }, 'train/events', [] );
 
    $self->$_allowed( $req, 'asset/vehicles' )
       and $self->$_vehicle_links( $req, $page, $nav );

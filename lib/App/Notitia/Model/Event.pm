@@ -230,6 +230,15 @@ my $_maybe_find_event = sub {
    return $schema->resultset( 'Event' )->find_event_by( $uri, $opts );
 };
 
+my $_unparticipate_allowed = sub {
+   my ($req, $scode) = @_;
+
+   $scode eq $req->username and return TRUE;
+   is_member 'event_manager', $req->session->roles and return TRUE;
+   is_member 'training_manager', $req->session->roles and return TRUE;
+   return FALSE;
+};
+
 my $_participent_links = sub {
    my ($self, $req, $page, $event, $tuple) = @_;
 
@@ -238,7 +247,7 @@ my $_participent_links = sub {
    return
    [ { value => $tuple->[ 0 ] },
      { value => management_link( $req, 'person/person_summary', $name ) },
-     { value => $disabled
+     { value => ($disabled or not $_unparticipate_allowed->( $req, $name ))
               ? locm $req, 'Unparticipate'
               : management_link( $req, 'event/event', 'unparticipate', {
                  args => [ $event->uri ], type => 'form_button' } ) }

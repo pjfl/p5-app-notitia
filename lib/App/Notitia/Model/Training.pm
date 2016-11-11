@@ -316,7 +316,7 @@ sub dialog : Dialog Role(training_manager) {
    return $stash;
 }
 
-sub events : Role(training_manager) {
+sub events : Role(any) {
    my ($self, $req) = @_;
 
    my $params = $req->query_params->( { optional => TRUE } );
