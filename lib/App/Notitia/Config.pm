@@ -161,6 +161,9 @@ has 'expire_session'  => is => 'ro',   isa => CodeRef,
 has 'extensions'      => is => 'ro',   isa => HashRef[ArrayRef],
    builder            => sub { { markdown => [ qw( md mkdn ) ] } };
 
+has 'favicon'         => is => 'ro',   isa => ArrayRef,
+   builder            => sub { [ 'favicon.ico' ] };
+
 has 'geolocation'     => is => 'ro',   isa => HashRef, builder => sub { {} };
 
 has 'images'          => is => 'ro',   isa => NonEmptySimpleStr,
@@ -573,6 +576,11 @@ user
 A hash reference. The keys are microformat names and the values are an
 array reference of filename extensions that the corresponding view can
 render
+
+=item C<favicon>
+
+An array reference defining the attributes of the favicon that appears on all
+web browser tabs. Contains file name.  Defaults to C<< favicon.ico >>
 
 =item C<geolocation>
 
