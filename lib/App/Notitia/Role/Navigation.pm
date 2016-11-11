@@ -4,7 +4,7 @@ use attributes ();
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE HASH_CHAR NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_button p_image p_item
+use App::Notitia::Form      qw( blank_form p_button p_image p_item
                                 p_link p_list p_text );
 use App::Notitia::Util      qw( dialog_anchor local_dt locd locm make_tip now_dt
                                 to_dt uri_for_action );
@@ -13,6 +13,9 @@ use Class::Usul::Time       qw( time2str );
 use Moo::Role;
 
 requires qw( components );
+
+# Private package variables
+my $_method_roles_cache = {};
 
 # Private functions
 my $_list_roles_of = sub {
@@ -86,19 +89,33 @@ my $_year_link = sub {
 };
 
 # Private methods
+my $_method_roles = sub {
+   my ($self, $actionp) = @_;
+
+   my $tuple; $tuple = $_method_roles_cache->{ $actionp } and return $tuple;
+
+   my ($moniker, $method) = split m{ / }mx, $actionp, 2;
+   my $model = $self->components->{ $moniker };
+
+   $tuple = [ $_list_roles_of->( $model->can( $method ) ), FALSE, FALSE ];
+
+   is_member 'anon', $tuple->[ 0 ] and $tuple->[ 1 ] = TRUE;
+   is_member 'any',  $tuple->[ 0 ] and $tuple->[ 2 ] = TRUE;
+
+   return $_method_roles_cache->{ $actionp } = $tuple;
+};
+
 my $_allowed = sub {
    my ($self, $req, $actionp) = @_;
 
-   my ($moniker, $method) = split m{ / }mx, $actionp, 2;
-   my $model        = $self->components->{ $moniker };
-   my $method_roles = $_list_roles_of->( $model->can( $method ) );
+   my $roles = $self->$_method_roles( $actionp );
 
-   is_member 'anon', $method_roles and return TRUE;
+   $roles->[ 1 ] and return TRUE;
    $req->authenticated or return FALSE;
-   is_member 'any',  $method_roles and return TRUE;
+   $roles->[ 2 ] and return TRUE;
 
    for my $role_name (@{ $req->session->roles }) {
-      is_member $role_name, $method_roles and return TRUE;
+      is_member $role_name, $roles->[ 0 ] and return TRUE;
    }
 
    return FALSE;
@@ -505,8 +522,9 @@ sub application_logo {
    my $image = p_image {}, $conf->title.' Logo', $href, {
       height => $logo->[ 2 ], width => $logo->[ 1 ] };
    my $opts = { request => $req, args => [ $conf->title ], value => $image };
+   my $cell = {};
 
-   return f_link 'logo', uri_for_action( $req, $places->{logo} ), $opts;
+   return p_link $cell, 'logo', uri_for_action( $req, $places->{logo} ), $opts;
 }
 
 sub call_navigation_links {
