@@ -3,7 +3,7 @@ package App::Notitia::Model::Admin;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP
                                 SLOT_TYPE_ENUM SPC TRUE TYPE_CLASS_ENUM );
-use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button p_cell
+use App::Notitia::Form      qw( blank_form f_tag p_action p_button p_cell
                                 p_container p_item p_js p_link p_list p_radio
                                 p_select p_span p_row p_table p_text
                                 p_textarea p_textfield );
@@ -177,14 +177,14 @@ my $_type_create_links = sub {
       my $k = "${type_class}_type";
       my $href = uri_for_action $req, $actionp, [ $type_class ];
 
-      push @{ $links }, f_link $k, $href, $_create_action->( $req );
+      p_link $links, $k, $href, $_create_action->( $req );
    }
    else {
       for my $type_class (@{ TYPE_CLASS_ENUM() }) {
          my $k = "${type_class}_type";
          my $href = uri_for_action $req, $actionp, [ $type_class ];
 
-         push @{ $links }, f_link $k, $href, $_create_action->( $req );
+         p_link $links, $k, $href, $_create_action->( $req );
       }
    }
 
