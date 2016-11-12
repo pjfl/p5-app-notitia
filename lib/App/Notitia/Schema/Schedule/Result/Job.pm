@@ -5,17 +5,25 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( TRUE );
-use App::Notitia::DataTypes qw( nullable_varchar_data_type
-                                serial_data_type varchar_data_type );
+use App::Notitia::DataTypes qw( date_data_type numerical_id_data_type
+                                serial_data_type
+                                set_on_create_datetime_data_type
+                                varchar_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
 $class->table( 'job' );
 
 $class->add_columns
-   ( id      => serial_data_type,
-     name    => varchar_data_type(   32 ),
-     command => nullable_varchar_data_type( 1024 ), );
+   ( id       => serial_data_type,
+     name     => varchar_data_type( 32 ),
+     created  => set_on_create_datetime_data_type,
+     updated  => date_data_type,
+     run      => numerical_id_data_type( 0 ),
+     max_runs => numerical_id_data_type( 3 ),
+     period   => numerical_id_data_type( 300 ),
+     command  => varchar_data_type( 1024 ),
+     );
 
 $class->set_primary_key( 'id' );
 
@@ -26,8 +34,11 @@ sub _as_string {
 
 # Public methods
 sub insert {
-   my $self = shift; my $job = $self->next::method;
+   my $self = shift;
 
+   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   my $job = $self->next::method;
    my $jobdaemon = $self->result_source->schema->application->jobdaemon;
 
    $jobdaemon->is_running and $jobdaemon->trigger;
@@ -37,6 +48,35 @@ sub insert {
 
 sub label {
    return $_[ 0 ]->_as_string;
+}
+
+sub update {
+   my ($self, $columns) = @_;
+
+   $columns and $self->set_inflated_columns( $columns );
+   $self->validate( TRUE );
+
+   return $self->next::method;
+}
+
+sub validation_attributes {
+   return { # Keys: constraints, fields, and filters (all hashes)
+      constraints => {
+         command  => { max_length => 1024, min_length => 1, },
+         name     => { max_length =>   32, min_length => 3, },
+      },
+      fields         => {
+         command     => { validate => 'isMandatory isValidLength' },
+         created     => { validate => 'isVaidDate' },
+         interval    => { validate => 'isMandatory isVaidInteger' },
+         max_runs    => { validate => 'isMandatory isVaidInteger' },
+         name        => {
+            validate => 'isMandatory isValidLength isValidIdentifier', },
+         run         => { validate => 'isVaidInteger' },
+         updated     => { validate => 'isVaidDate' },
+      },
+      level => 8,
+   };
 }
 
 1;
