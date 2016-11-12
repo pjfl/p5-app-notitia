@@ -14,10 +14,11 @@ has '+moniker' => default => 'core';
 
 # Private functions
 my $_event_control_role = sub {
-   my $stash = shift;
-   my $tuple = $stash->{_event_control}->{email}->{ $stash->{action} };
+   my ($stash, $sink) = @_;
 
-   return $tuple && $tuple->[ 1 ] ? $tuple->[ 1 ].NUL : undef;
+   my $tuple = $stash->{_event_control}->{ $sink }->{ $stash->{action} };
+
+   return $tuple && $tuple->[ 1 ] ? $tuple->[ 1 ].NUL : 'individual';
 };
 
 # Private methods
@@ -42,7 +43,7 @@ event_handler 'email', '_input_' => sub {
    my ($self, $req, $stash) = @_;
 
    $stash->{app_name} //= $self->config->title;
-   $stash->{role    } //= $_event_control_role->( $stash ) // 'individual';
+   $stash->{role    } //= $_event_control_role->( $stash, 'email' );
    $stash->{status  } //= 'current';
    $stash->{subject } //= locm $req, $stash->{action}.'_email_subject';
    $stash->{template} //= $stash->{action}.'_email.md';
@@ -103,6 +104,19 @@ event_handler 'geolocation', '_output_' => sub {
 };
 
 # SMS
+event_handler 'sms', '_input_' => sub {
+   my ($self, $req, $stash) = @_;
+
+   $stash->{message} //= $stash->{action}.'_sms.md';
+   $stash->{role   } //= $_event_control_role->( $stash, 'sms' );
+
+   return $stash;
+};
+
+event_handler 'sms', '_default_' => sub {
+   my ($self, $req, $stash) = @_; return $stash;
+};
+
 event_handler 'sms', '_output_' => sub {
    my ($self, $req, $stash) = @_;
 

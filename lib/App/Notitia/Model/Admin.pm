@@ -13,6 +13,7 @@ use App::Notitia::Util      qw( event_handler event_streams js_submit_config
                                 uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
+use Class::Usul::Types      qw( ArrayRef NonEmptySimpleStr );
 use Data::Page;
 use Try::Tiny;
 use Moo;
@@ -22,8 +23,31 @@ with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
 
+# Attribute constructors
+my $_build_actions = sub {
+   my $self = shift; my $libs = $self->config->appldir->catdir( 'lib' );
+
+   my $actions = $libs->deep->filter( sub { m{ \. pm \z }mx } )->visit( sub {
+      my ($file, $actions) = @_;
+
+      for my $action (map  { s{ [\-] }{_}gmx; $_ }
+                      grep { $_ }
+                      map  { m{ action: ([^ \$\']+) }mx; $1 }
+                      grep { m{ action: }mx } $file->getlines) {
+         $actions->{ $action } = TRUE;
+      }
+
+      return TRUE;
+   } );
+
+   return [ sort keys %{ $actions } ];
+};
+
 # Public attributes
 has '+moniker' => default => 'admin';
+
+has 'actions' => is => 'lazy', isa => ArrayRef[NonEmptySimpleStr],
+   builder => $_build_actions;
 
 register_action_paths
    'admin/event_control'  => 'event-control',
@@ -140,6 +164,10 @@ my $_subtract = sub {
    return [ grep { is_arrayref $_ or not is_member $_, $_[ 1 ] } @{ $_[ 0 ] } ];
 };
 
+my $_to_action_label = sub {
+   my $action = ucfirst shift; $action =~ s{ _ }{ }gmx; return $action;
+};
+
 my $_type_create_links = sub {
    my ($req, $moniker, $type_class) = @_;
 
@@ -222,7 +250,8 @@ my $_event_controls_row = sub {
 
    $form = blank_form $form_name, $href;
 
-   p_item $row, $sink eq 'email' ? $form : NUL, { class => 'embeded narrow' };
+   p_item $row, ($sink eq 'email' or $sink eq 'sms')
+      ? $form : NUL, { class => 'embeded narrow' };
    p_select $form, 'role', $_bind_event_controls_role->( $roles, $control ), {
       class => 'narrow-field submit', id => $id, label => NUL };
 
@@ -262,6 +291,15 @@ my $_filter_controls = sub {
       class => 'button', tip => make_tip $req, 'filter_log_tip' };
 
    return $form;
+};
+
+my $_list_actions = sub {
+   my ($self, $control) = @_; my $action = $control->action;
+
+   return [ [ NUL, undef ],
+        map { [ $_to_action_label->( $_ ), $_, {
+           selected => $_ eq $action ? TRUE : FALSE } ] }
+           @{ $self->actions } ];
 };
 
 my $_list_all_certs = sub {
@@ -493,7 +531,7 @@ sub event_control : Role(administrator) {
       class => 'standard-field required', disabled => $disabled,
       label => 'event_stream' };
 
-   p_textfield $form, 'action', $control->action, {
+   p_select $form, 'action', $self->$_list_actions( $control ), {
       class => 'standard-field required', disabled => $disabled,
       label => 'event_action' };
 

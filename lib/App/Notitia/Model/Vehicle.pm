@@ -333,7 +333,9 @@ my $_toggle_event_assignment = sub {
    my $event = $schema->resultset( 'Event' )->find_event_by( $uri );
    my $scode = $event->owner;
    my $dmy = locd $req, $event->start_date;
-   my $message = "action:vehicle-${action}ment event_uri:${uri} "
+   my $kv = $action eq 'assign' ? 'action:vehicle-assignment'
+                                : 'action:vehicle-unassignment';
+   my $message = "${kv} event_uri:${uri} "
                . "shortcode:${scode} date:${dmy} vehicle:${vrn}";
 
    $self->send_event( $req, $message );
@@ -365,7 +367,9 @@ my $_toggle_slot_assignment = sub {
       ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
    my $operator = $slot->operator;
    my $dmy = locd $req, $rota_dt;
-   my $message = "action:vehicle-${action}ment date:${dmy} "
+   my $kv = $action eq 'assign' ? 'action:vehicle-assignment'
+                                : 'action:vehicle-unassignment';
+   my $message = "${kv} date:${dmy} "
                . "shortcode:${operator} slot_key:${slot_name} vehicle:${vrn}";
 
    $self->send_event( $req, $message );
