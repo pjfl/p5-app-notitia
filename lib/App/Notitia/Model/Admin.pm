@@ -12,7 +12,7 @@ use App::Notitia::Util      qw( event_handler event_streams js_submit_config
                                 register_action_paths to_msg
                                 uri_for_action );
 use Class::Null;
-use Class::Usul::Functions  qw( is_arrayref is_member throw );
+use Class::Usul::Functions  qw( classdir is_arrayref is_member throw );
 use Class::Usul::Types      qw( ArrayRef NonEmptySimpleStr );
 use Data::Page;
 use Try::Tiny;
@@ -25,7 +25,9 @@ with    q(App::Notitia::Role::Navigation);
 
 # Attribute constructors
 my $_build_actions = sub {
-   my $self = shift; my $libs = $self->config->appldir->catdir( 'lib' );
+   my $self = shift;
+   my $class_dir = classdir $self->config->appclass;
+   my $libs = $self->config->appldir->catdir( 'lib' )->catdir( $class_dir );
 
    my $actions = $libs->deep->filter( sub { m{ \. pm \z }mx } )->visit( sub {
       my ($file, $actions) = @_;
