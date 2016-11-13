@@ -7,9 +7,10 @@
 # Use: ssh -t <user>@<domain> sudo ~notitia/local/bin/notitia-upgrade
 
 # Command line
-method=${1:-'service'}
+release=${1:-'latest'}
 repo=${2:-'git://github.com/pjfl/p5-app-notitia.git'}
 service=${3:-'notitia'}
+method=${4:-'service'}
 
 # Functions
 service_home() {
@@ -28,6 +29,7 @@ install_directory() {
 
 upgrade_application() {
    local dir; dir=$(install_directory); [ ${?} -gt 0 ] && return 1
+   [ "${release}" = "blead" ] || repo="${repo}@${release}"
    cd $dir
    source var/etc/profile
    notitia-jobdaemon stop
@@ -43,7 +45,7 @@ upgrade_service() {
    local dir; dir=$(install_directory); [ ${?} -gt 0 ] && return 1
    local prog; prog="${dir}/bin/notitia-upgrade"
    service ${service} stop
-   su - ${service} -c "${prog} application ${repo} ${service}"
+   su - ${service} -c "${prog} ${release} ${repo} ${service} application"
    service ${service} start
    return 0
 }

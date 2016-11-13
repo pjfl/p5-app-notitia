@@ -3,8 +3,9 @@ package App::Notitia::Utilities;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE OK SLOT_TYPE_ENUM TRUE );
-use App::Notitia::Util      qw( event_handler_cache load_file_data local_dt
-                                locd new_request now_dt slot_limit_index );
+use App::Notitia::Util      qw( action_path_uri_map event_handler_cache
+                                load_file_data local_dt locd new_request
+                                now_dt slot_limit_index );
 use Class::Usul::Functions  qw( io is_member sum throw );
 use Class::Usul::File;
 use Class::Usul::Types      qw( Bool HashRef LoadableClass Object );
@@ -318,6 +319,14 @@ sub dump_event_attr : method {
    return OK;
 }
 
+sub dump_route_attr : method {
+   my $self = shift; $self->components;
+
+   $self->dumper( action_path_uri_map );
+
+   return OK;
+}
+
 sub geolocation : method {
    my $self = shift;
    my $object_type = $self->next_argv or throw Unspecified, [ 'object type' ];
@@ -471,6 +480,8 @@ Defines the following attributes;
 =head2 C<application_upgraded> - Generates the application upgraded email
 
 =head2 C<dump_event_attr> - Dumps the event handling attribute data
+
+=head2 C<dump_route_attr> - Dumps the reverse routing table
 
 =head2 C<geolocation> - Lookup geolocation information
 

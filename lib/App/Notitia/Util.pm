@@ -22,8 +22,8 @@ use Try::Tiny;
 use Unexpected::Functions      qw( ValidationErrors );
 use YAML::Tiny;
 
-our @EXPORT_OK = qw( action_for_uri assert_unique assign_link
-                     authenticated_only build_navigation build_tree
+our @EXPORT_OK = qw( action_for_uri action_path_uri_map assert_unique
+                     assign_link authenticated_only build_navigation build_tree
                      check_field_js check_form_field clone datetime_label
                      dialog_anchor display_duration encrypted_attr enhance
                      event_actions event_handler event_handler_cache
@@ -178,6 +178,10 @@ sub action_for_uri ($) {
    }
 
    return;
+}
+
+sub action_path_uri_map () {
+   return { %{ $action_path_uri_map } };
 }
 
 sub assert_unique ($$$$) {
@@ -904,6 +908,8 @@ Defines no attributes
 =head1 Subroutines/Methods
 
 =head2 C<action_for_uri>
+
+=head2 C<action_path_uri_map>
 
 =head2 C<assert_unique>
 
