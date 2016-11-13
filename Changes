@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds email upon course enrolement
           - Implements #126. My Events
           - Fixes bad command data type in Job
           - Adds tagged releases to upgrade script

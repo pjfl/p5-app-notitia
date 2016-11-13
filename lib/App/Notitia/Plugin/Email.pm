@@ -32,6 +32,15 @@ my $_event_email = sub {
 };
 
 # Event handlers
+event_handler 'email', add_course => sub {
+   my ($self, $req, $stash) = @_;
+
+   $stash->{course} = locm $req, $stash->{course};
+   $stash->{uri} = uri_for_action $req, 'train/events';
+
+   return $stash;
+};
+
 event_handler 'email', application_upgraded => sub {
    my ($self, $req, $stash) = @_;
 

@@ -231,7 +231,7 @@ my $_summary_cell = sub {
 };
 
 my $_summary_headers = sub {
-   return [ map { { value => locm $_[ 1 ], $_ } } @{ $_[ 2 ] } ];
+   return [ map { { value => locm $_[ 1 ], "${_}_abbrev" } } @{ $_[ 2 ] } ];
 };
 
 my $_summary_ops_links = sub {

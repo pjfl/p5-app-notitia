@@ -412,6 +412,9 @@ msgstr "List contact information for current members"
 msgid "controller"
 msgstr "Controller"
 
+msgid "controller_abbrev"
+msgstr "Controller"
+
 msgid "controller_issue"
 msgstr "Controller Issue"
 
@@ -851,6 +854,9 @@ msgid "fund_raiser_list_tip"
 msgstr "List fund raisers"
 
 msgid "gmp"
+msgstr "GMP"
+
+msgid "gmp_abbrev"
 msgstr "GMP"
 
 msgid "grid_width"
@@ -1322,6 +1328,9 @@ msgid "nok_view_tip"
 msgstr "View this person's next of kin record"
 
 msgid "north_route"
+msgstr "North Route"
+
+msgid "north_route_abbrev"
 msgstr "N. Route"
 
 msgid "notes"
@@ -1701,6 +1710,9 @@ msgid "rider_list_tip"
 msgstr "List riders"
 
 msgid "road_assessment"
+msgstr "Road Assessment"
+
+msgid "road_assessment_abbrev"
 msgstr "Road Ass."
 
 msgid "role_management_heading"
@@ -1846,6 +1858,9 @@ msgid "sms_subs_management_tip"
 msgstr "Edit the SMS subscription list for [_1]"
 
 msgid "south_route"
+msgstr "South Route"
+
+msgid "south_route_abbrev"
 msgstr "S. Route"
 
 msgid "spreadsheet"
@@ -1924,6 +1939,9 @@ msgid "totp_secret_title"
 msgstr "TOTP Account Information"
 
 msgid "towing_assessment"
+msgstr "Towing Assessment"
+
+msgid "towing_assessment_abbrev"
 msgstr "Towing Ass."
 
 msgid "template"
