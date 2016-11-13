@@ -4,6 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE NUL TRUE );
 use App::Notitia::Util      qw( event_handler locd locm uri_for_action );
+use Class::Usul::Functions  qw( throw );
 use Moo;
 
 with q(Web::Components::Role);
@@ -50,11 +51,10 @@ event_handler 'email', create_certification => sub {
 event_handler 'email', create_delivery_stage => sub {
    my ($self, $req, $stash) = @_;
 
-   my $id = $stash->{stage_id} or
-      ($self->log->warn( 'No stage_id in create_delivery_stage' ) and return);
+   my $id = $stash->{stage_id} or throw 'No stage_id in create_delivery_stage';
    my $opts = { prefetch => { 'journey' => 'packages' } };
-   my $leg = $self->schema->resultset( 'Leg' )->find( { id => $id }, $opts ) or
-      ($self->log->warn( "Stage id ${id} unknown" ) and return);
+   my $leg = $self->schema->resultset( 'Leg' )->find( { id => $id }, $opts )
+      or throw "Stage id ${id} unknown";
    my $journey = $leg->journey;
 
    $stash->{template} = 'delivery_stage_email.md';
@@ -77,7 +77,7 @@ event_handler 'email', update_event => \&{ $_event_email };
 event_handler 'email', impending_slot => sub {
    my ($self, $req, $stash) = @_;
 
-   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $stash->{slot_key};
+   my ($shift_type, $slot_type, undef) = split m{ _ }mx, $stash->{slot_key};
 
    $stash->{shift_type} = $shift_type;
    $stash->{slot_type} = $slot_type;
@@ -108,7 +108,7 @@ event_handler 'email', vehicle_assignment => sub {
    elsif ($stash->{event_uri}) {
       $stash->{template} = 'vehicle_assignment_event_email.md';
    }
-   else { return }
+   else { return TRUE }
 
    return $stash;
 };

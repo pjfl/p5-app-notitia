@@ -6,7 +6,7 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL OK SPC TRUE );
 use App::Notitia::Util      qw( event_actions event_handler
                                 event_handler_cache );
 use Class::Usul::File;
-use Class::Usul::Functions  qw( create_token is_member throw trim );
+use Class::Usul::Functions  qw( create_token is_hashref is_member throw trim );
 use Class::Usul::Log        qw( get_logger );
 use Class::Usul::Types      qw( HashRef Object );
 use Scalar::Util            qw( blessed );
@@ -88,10 +88,12 @@ my $_flatten_stash = sub {
 };
 
 my $_handle = sub {
-   my ($self, $req, $stash, $stream, $handler, $level) = @_;
+   my ($self, $req, $stash, $stream, $handler, $level) = @_; my $processed;
 
-   my $processed = $handler->( $self, $req, { %{ $stash } } ) or return;
+   try { $processed = $handler->( $self, $req, { %{ $stash } } ) // FALSE }
+   catch { $self->log->warn( $_ ); $processed = TRUE };
 
+   is_hashref $processed or return $processed;
    delete $processed->{_event_control};
 
    for my $output (@{ event_handler( $stream, '_output_' ) }) {
@@ -101,7 +103,7 @@ my $_handle = sub {
          and $self->send_event( $req, $_flatten->{ $chained } );
    }
 
-   return;
+   return TRUE;
 };
 
 my $_inflate = sub {
@@ -269,8 +271,10 @@ sub send_event {
             or throw Disabled, [ $stream, $action ];
 
          for my $handler (@{ event_handler( $stream, $action ) }) {
-            $self->$_handle( $req, $stash, $stream, $handler, $level );
-            $handled = TRUE;
+            my $did_handle = $self->$_handle
+               ( $req, $stash, $stream, $handler, $level );
+
+            $handled ||= $did_handle;
          }
 
          my $handler; not $handled
