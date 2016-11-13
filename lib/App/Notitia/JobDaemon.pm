@@ -4,6 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia; our $VERSION = $App::Notitia::VERSION;
 
+use App::Notitia::Util     qw( now_dt );
 use Class::Usul::Constants qw( COMMA EXCEPTION_CLASS FALSE NUL OK SPC TRUE );
 use Class::Usul::Functions qw( emit get_user is_member throw );
 use Class::Usul::Time      qw( nap time2str );
@@ -203,16 +204,19 @@ my $_runjob = sub {
    my ($self, $job) = @_;
 
    try {
-      $self->log->info( 'Running job '.$job->name.'-'.$job->id );
+      $job->run( $job->run + 1 ); $job->updated( now_dt ); $job->update;
+
+      $self->log->info( 'Running job '.$job->label );
 
       my $r = $self->run_cmd( [ split SPC, $job->command ] );
 
-      $self->log->info( 'Job '.$job->name.'-'.$job->id.' rv '.$r->rv );
+      $self->log->info( 'Job '.$job->label.' rv '.$r->rv );
+      $job->delete;
    }
    catch {
       my ($msg) = split m{ \n }mx, "${_}";
 
-      $self->log->error( 'Job '.$job->name.'-'.$job->id.' rv '.$_->rv.": $msg");
+      $self->log->error( 'Job '.$job->label.' rv '.$_->rv.": ${msg}" );
    };
 
    return OK;
@@ -232,6 +236,21 @@ my $_set_started_lock = sub {
    try { $lock->reset( k => "${name}_starting", p => 666 ) } catch {};
 
    return;
+};
+
+my $_should_run_job = sub {
+   my ($self, $job) = @_;
+
+   if ($job->run + 1 > $job->max_runs) {
+      $self->log->error( 'Job '.$job->label.' killed. Max. retries exceeded' );
+      $job->delete; return FALSE;
+   }
+
+   $job->updated
+      and $job->updated->clone->add( minutes => $job->period ) > now_dt
+      and return FALSE;
+
+   return TRUE;
 };
 
 my $_wait_while_stopping = sub {
@@ -254,12 +273,13 @@ my $_daemon_loop = sub {
       for my $job ($self->schema->resultset( 'Job' )->search( {} )->all) {
          if ($job->command eq 'stop_jobdaemon') { $job->delete; last }
 
+         $self->$_should_run_job( $job ) or next;
+
          $self->run_cmd( [ sub { $_runjob->( $self, $job ) } ],
                          { async => TRUE, detach => TRUE } );
 
          $self->_last_run_file->println( $job->label );
          $self->_last_run_file->close;
-         $job->delete;
       }
    }
 

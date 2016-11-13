@@ -68,10 +68,10 @@ sub validation_attributes {
       fields         => {
          command     => { validate => 'isMandatory isValidLength' },
          created     => { validate => 'isVaidDate' },
-         interval    => { validate => 'isMandatory isVaidInteger' },
-         max_runs    => { validate => 'isMandatory isVaidInteger' },
+         max_runs    => { validate => 'isVaidInteger' },
          name        => {
             validate => 'isMandatory isValidLength isValidIdentifier', },
+         period      => { validate => 'isVaidInteger' },
          run         => { validate => 'isVaidInteger' },
          updated     => { validate => 'isVaidDate' },
       },
