@@ -133,12 +133,11 @@ my $_people_headers = sub {
       $max = is_member( 'person_manager', $req->session->roles) ? 7 : 3;
    }
    else {
-      if (is_member $role, qw( driver rider )) {
-         $header = 'people_role_heading'; $max = 5;
-      }
-      elsif (is_member $role, qw( controller fund_raiser )) {
-         $header = 'people_role_heading'; $max = 4;
-      }
+      $header = 'people_role_heading';
+
+      if ($role eq 'driver' or $role eq 'rider') { $max = 5 }
+      elsif ($role eq 'controller' or $role eq 'fund_raiser') { $max = 4 }
+      elsif ($role) { $max = 2 }
       else { $header = 'people_heading'; $max = 4 }
    }
 
@@ -243,17 +242,19 @@ my $_people_links = sub {
    $params->{type} and $params->{type} eq 'contacts'
                    and return $_contact_links->( $req, $person );
 
-   my @links; my $scode = $person->shortcode; my @paths = ( 'role/role' );
+   my @links; my $scode = $person->shortcode; my @paths = ();
 
-   unshift @paths, is_member( 'person_manager', $req->session->roles )
+   push @paths, is_member( 'person_manager', $req->session->roles )
       ? "${moniker}/person" : "${moniker}/person_summary";
+
+   push @paths, 'role/role';
 
    $role or  push @paths, 'user/email_subs', 'user/sms_subs';
 
    $role and is_member $role, qw( controller driver fund_raiser rider )
-         and push @paths, 'certs/certifications', 'train/training';
+         and push @paths, 'train/training', 'certs/certifications';
 
-   $role and ($role eq 'rider' or $role eq 'driver')
+   $role and ($role eq 'driver' or $role eq 'rider')
          and push @paths, 'blots/endorsements';
 
    for my $actionp ( @paths ) {

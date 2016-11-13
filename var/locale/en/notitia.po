@@ -1508,10 +1508,10 @@ msgid "people_role_heading_2"
 msgstr "Roles"
 
 msgid "people_role_heading_3"
-msgstr "Certs"
+msgstr "Training"
 
 msgid "people_role_heading_4"
-msgstr "Training"
+msgstr "Certs"
 
 msgid "people_role_heading_5"
 msgstr "Endorsements"
