@@ -2109,6 +2109,21 @@ msgstr "Urgent"
 msgid "username"
 msgstr "User name"
 
+msgid "user_events_heading_0"
+msgstr "Event Link"
+
+msgid "user_events_link"
+msgstr "My Events"
+
+msgid "user_events_row_link_tip"
+msgstr "Link to the event summary page"
+
+msgid "user_events_tip"
+msgstr "Links to upcoming events that you are participating in"
+
+msgid "user_events_title"
+msgstr "Events"
+
 msgid "user_slots_heading_0"
 msgstr "Slot Link"
 

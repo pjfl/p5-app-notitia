@@ -495,6 +495,22 @@ sub list_courses {
             $self->courses->search( {}, $opts )->all ];
 }
 
+sub list_events {
+   my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   my $parser = $self->result_source->schema->datetime_parser;
+   my $after  = delete $opts->{after};
+   my $where  = {};
+
+   $after and $where->{ 'start_rota.date' }->{ '>' }
+      = $parser->format_datetime( $after );
+
+   $opts->{prefetch} //= { 'event' => 'start_rota' };
+
+   return
+      [ map { $_->event } $self->participents->search( $where, $opts )->all ];
+}
+
 sub list_roles {
    my $self = shift; my $opts = { order_by => 'type.name', prefetch => 'type' };
 

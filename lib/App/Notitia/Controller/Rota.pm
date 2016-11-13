@@ -20,6 +20,7 @@ sub dispatch_request {
    sub (GET  + /operator-vehicle/**  + ?*) { [ 'day/operator_vehicle', @_ ] },
    sub (POST + /slot/**              + ?*) { [ 'day/from_request',     @_ ] },
    sub (GET  + /slot/**              + ?*) { [ 'day/slot',             @_ ] },
+   sub (GET  + /user-events          + ?*) { [ 'month/user_events',    @_ ] },
    sub (GET  + /user-slots/**        + ?*) { [ 'month/user_slots',     @_ ] },
    sub (GET  + /vehicle-allocation/**+ ?*) { [ 'week/allocation',      @_ ] },
    sub (POST + /vehicle-allocation/**+ ?*) { [ 'week/from_request',    @_ ] },

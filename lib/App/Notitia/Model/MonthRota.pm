@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP SHIFT_TYPE_ENUM SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_cell p_link p_list p_row
+use App::Notitia::Form      qw( blank_form p_cell p_js p_link p_list p_row
                                 p_table p_tag );
 use App::Notitia::Util      qw( dialog_anchor display_duration js_server_config
                                 js_submit_config lcm_for local_dt locm
@@ -27,6 +27,7 @@ register_action_paths
    'month/assign_summary' => 'assignment-summary',
    'month/events_summary' => 'events-summary',
    'month/month_rota' => 'month-rota',
+   'month/user_events' => 'user-events',
    'month/user_slots' => 'user-slots';
 
 # Construction
@@ -58,8 +59,7 @@ my $_link_opts = sub {
 my $_onclick_relocate = sub {
    my ($page, $k, $href) = @_;
 
-   push @{ $page->{literal_js} },
-      js_submit_config $k, 'click', 'location', [ "${href}" ];
+   p_js $page, js_submit_config $k, 'click', 'location', [ "${href}" ];
 
    return;
 };
@@ -149,6 +149,24 @@ my $_week_number = sub {
    return { class => 'month-rota-week-number', value => $week->week_number };
 };
 
+my $_user_events_headers = sub {
+   my $req = shift;
+
+   return [ map { { value => locm $req, "user_events_heading_${_}" } } 0 .. 0 ];
+};
+
+my $_user_events_row = sub {
+   my ($req, $event) = @_; my $cell = {};
+
+   my $href = uri_for_action $req, 'event/event_summary', [ $event->uri ];
+   my $tip  = locm $req, 'user_events_row_link_tip';
+
+   p_link $cell, $event->uri, $href, {
+      request => $req, tip => $tip, value => $event->label( $req ) };
+
+   return [ $cell ];
+};
+
 my $_user_slots_headers = sub {
    my $req = shift;
 
@@ -185,16 +203,24 @@ my $_first_day_of_table = sub {
    return $date->set_time_zone( 'GMT' );
 };
 
-my $_month_rota_ops_links = sub {
-   my ($self, $req, $page, $rota_name) = @_; my $links = [];
+my $_p_ops_link = sub {
+   my ($self, $links, $req, $page, $name, $args) = @_;
 
-   my $name = 'user_slots';
-   my $href = uri_for_action $req, $self->moniker."/${name}", [ $rota_name ];
+   my $href = uri_for_action $req, $self->moniker."/${name}", $args;
 
    p_link $links, $name, '#', { class => 'windows', request => $req };
 
-   push @{ $page->{literal_js} }, dialog_anchor( $name, $href, {
-      name => $name, title => locm( $req, "${name}_title" ), } );
+   p_js $page, dialog_anchor $name, $href, {
+      name => $name, title => locm $req, "${name}_title" };
+
+   return;
+};
+
+my $_month_rota_ops_links = sub {
+   my ($self, $req, $page, $rota_name) = @_; my $links = [];
+
+   $self->$_p_ops_link( $links, $req, $page, 'user_events', [] );
+   $self->$_p_ops_link( $links, $req, $page, 'user_slots', [ $rota_name ] );
 
    return $links;
 };
@@ -221,7 +247,7 @@ my $_summary_cells = sub {
             push @{ $cells },
                $_summary_link->( $req, $slot_type, $span, $id, $slot );
 
-            $slot and push @{ $page->{literal_js} }, js_server_config
+            $slot and p_js $page, js_server_config
                $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
          }
       }
@@ -322,7 +348,7 @@ my $_rota_summary = sub {
       my $actionp = $self->moniker.'/events_summary';
       my $href = uri_for_action $req, $actionp, [ "${name}_${id}" ];
 
-      push @{ $page->{literal_js} }, js_server_config
+      p_js $page, js_server_config
          $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    }
 
@@ -468,6 +494,23 @@ sub month_rota : Role(any) {
    }
 
    return $self->get_stash( $req, $page );
+}
+
+sub user_events : Dialog Role(any) {
+   my ($self, $req) = @_;
+
+   my $yesterday = now_dt->subtract( days => 1 );
+   my $stash = $self->dialog_stash( $req );
+   my $rs = $self->schema->resultset( 'Person' );
+   my $person = $rs->find_by_shortcode( $req->username );
+   my $form = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $table = p_table $form, { headers => $_user_events_headers->( $req ) };
+
+   for my $event (@{ $person->list_events( { after => $yesterday } ) }) {
+      p_row $table, $_user_events_row->( $req, $event );
+   }
+
+   return $stash;
 }
 
 sub user_slots : Dialog Role(rota_manager) Role(rider)
