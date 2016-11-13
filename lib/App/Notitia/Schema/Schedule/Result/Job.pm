@@ -67,13 +67,13 @@ sub validation_attributes {
       },
       fields         => {
          command     => { validate => 'isMandatory isValidLength' },
-         created     => { validate => 'isVaidDate' },
-         max_runs    => { validate => 'isVaidInteger' },
+         created     => { validate => 'isValidDate' },
+         max_runs    => { validate => 'isValidInteger' },
          name        => {
             validate => 'isMandatory isValidLength isValidIdentifier', },
-         period      => { validate => 'isVaidInteger' },
-         run         => { validate => 'isVaidInteger' },
-         updated     => { validate => 'isVaidDate' },
+         period      => { validate => 'isValidInteger' },
+         run         => { validate => 'isValidInteger' },
+         updated     => { validate => 'isValidDate' },
       },
       level => 8,
    };

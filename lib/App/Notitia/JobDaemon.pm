@@ -275,8 +275,11 @@ my $_daemon_loop = sub {
 
          $self->$_should_run_job( $job ) or next;
 
-         $self->run_cmd( [ sub { $_runjob->( $self, $job ) } ],
-                         { async => TRUE, detach => TRUE } );
+         try {
+            $self->run_cmd( [ sub { $_runjob->( $self, $job ) } ],
+                            { async => TRUE, detach => TRUE } );
+         }
+         catch { $self->log->error( $_ ) };
 
          $self->_last_run_file->println( $job->label );
          $self->_last_run_file->close;
