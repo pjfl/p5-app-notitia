@@ -7,7 +7,7 @@
 # Use: ssh -t <user>@<domain> sudo ~notitia/local/bin/notitia-upgrade
 
 # Command line
-release=${1:-'latest'}
+release=${1:-'blead'}
 repo=${2:-'git://github.com/pjfl/p5-app-notitia.git'}
 service=${3:-'notitia'}
 method=${4:-'service'}
