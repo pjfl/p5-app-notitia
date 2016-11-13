@@ -4,10 +4,10 @@
 # This is free software; you can redistribute it and/or modify
 # it under the same terms as Perl itself.
 
-# Use: ssh -t <user>@<domain> sudo ~notitia/local/bin/notitia-upgrade
+# Use: ssh -t <user>@<domain> sudo ~notitia/local/bin/notitia-upgrade <release>
 
 # Command line
-release=${1:-'blead'}
+release=${1:-'unspecified'}
 repo=${2:-'git://github.com/pjfl/p5-app-notitia.git'}
 service=${3:-'notitia'}
 method=${4:-'service'}
@@ -27,14 +27,22 @@ install_directory() {
    return 1
 }
 
+append_release() {
+   local target; target=${repo}
+   [ "${release}" = "blead" ] || target="${target}@${release}"
+   [ "${release}" != "unspecified" ] && echo -n "${target}" && return 0
+   echo "Release target not specified" >&2
+   return 1
+}
+
 upgrade_application() {
    local dir; dir=$(install_directory); [ ${?} -gt 0 ] && return 1
-   [ "${release}" = "blead" ] || repo="${repo}@${release}"
+   local target; target=$(append_release);  [ ${?} -gt 0 ] && return 1
    cd $dir
    source var/etc/profile
    notitia-jobdaemon stop
    notitia-schema backup-data
-   cpanm --notest ${repo} && \
+   cpanm --notest ${target} && \
       notitia-schema upgrade-schema && \
       notitia-util -q application-upgraded
    notitia-jobdaemon start
