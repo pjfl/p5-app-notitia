@@ -5,8 +5,8 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia::Constants qw( TRUE );
-use App::Notitia::DataTypes qw( date_data_type numerical_id_data_type
-                                serial_data_type
+use App::Notitia::DataTypes qw( date_data_type nullable_varchar_data_type
+                                numerical_id_data_type serial_data_type
                                 set_on_create_datetime_data_type
                                 varchar_data_type );
 
@@ -22,7 +22,7 @@ $class->add_columns
      run      => numerical_id_data_type( 0 ),
      max_runs => numerical_id_data_type( 3 ),
      period   => numerical_id_data_type( 300 ),
-     command  => varchar_data_type( 1024 ),
+     command  => nullable_varchar_data_type( 1024 ),
      );
 
 $class->set_primary_key( 'id' );

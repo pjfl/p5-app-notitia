@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes bad command data type in Job
           - Adds tagged releases to upgrade script
           - Adds event controls
           - Adds completed backup email
