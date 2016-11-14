@@ -1,8 +1,10 @@
 package App::Notitia::Utilities;
 
+use version;
 use namespace::autoclean;
 
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE OK SLOT_TYPE_ENUM TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FAILED FALSE OK
+                                SLOT_TYPE_ENUM TRUE );
 use App::Notitia::Util      qw( action_path_uri_map event_handler_cache
                                 load_file_data local_dt locd new_request
                                 now_dt slot_limit_index );
@@ -55,12 +57,10 @@ has 'sms_sender_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
 my $_slots_wanted = sub {
    my ($limits, $rota_dt, $role) = @_;
 
-   my $day_max = sum( map { $limits->[ slot_limit_index 'day', $_ ] }
-                      $role );
-   my $night_max = sum( map { $limits->[ slot_limit_index 'night', $_ ] }
-                        $role );
-   my $wd = $night_max;
+   my $day_max = $limits->[ slot_limit_index 'day', $role ];
+   my $night_max = $limits->[ slot_limit_index 'night', $role ];
    my $we = $day_max + $night_max;
+   my $wd = $night_max;
 
    return (0, $wd, $wd, $wd, $wd, $wd, $we, $we)[ $rota_dt->day_of_week ];
 };
@@ -167,9 +167,7 @@ my $_load_stash = sub {
 };
 
 my $_new_request = sub {
-   my ($self, $scheme, $hostport) = @_;
-
-   return new_request $self->config, $self->locale, $scheme, $hostport;
+   return new_request $_[ 0 ]->config, $_[ 0 ]->locale, $_[ 1 ], $_[ 2 ];
 };
 
 my $_qualify_assets = sub {
@@ -186,28 +184,37 @@ my $_qualify_assets = sub {
    return $assets;
 };
 
+my $_should_send_email = sub {
+   my ($self, $stash, $person) = @_;
+
+   $person->email_address =~ m{ \@ example\.com \z }imx and $self->info
+      ( 'Will not email [_1] example address', {
+         args => [ $person->label ] } ) and return FALSE;
+
+   my $action; $action = $stash->{action}
+      and $person->has_stopped_email( $action ) and $self->info
+         ( 'Would email [_1] but unsub. from action [_2]', {
+            args => [ $person->label, $action ] } ) and return FALSE;
+
+   $self->config->no_message_send and $self->info
+      ( 'Would email [_1] but off in config', { args => [ $person->label ] } )
+      and return FALSE;
+
+   return TRUE;
+};
+
 my $_template_path = sub {
    my ($self, $name) = @_; my $conf = $self->config;
 
-   my $file = $conf->template_dir->catfile( "custom/${name}.tt" );
+   my $path = $conf->template_dir->catfile( "custom/${name}.tt" );
 
-   return $file->exists ? "custom/${name}.tt" : $conf->skin."/${name}.tt";
+   return $path->exists ? "custom/${name}.tt" : $conf->skin."/${name}.tt";
 };
 
 my $_send_email = sub {
    my ($self, $stash, $template, $person, $attaches) = @_;
 
-   $self->config->no_message_send and $self->info
-      ( 'Would email [_1]', { args => [ $person->label ] } ) and return;
-
-   $person->email_address =~ m{ \@ example\.com \z }imx and $self->info
-      ( 'Will not email [_1] example address', {
-         args => [ $person->label ] } ) and return;
-
-   my $action; $action = $stash->{action}
-      and $person->has_stopped_email( $action ) and $self->info
-         ( 'Would email [_1] [_2]', { args => [ $person->label, $action ] } )
-         and return;
+   $self->$_should_send_email( $stash, $person ) or return;
 
    my $layout = $self->$_template_path( 'email_layout' );
 
@@ -235,7 +242,7 @@ my $_send_email = sub {
    my ($id)   = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
    my $params = { args => [ $person->shortcode, $id ] };
 
-   $self->info( 'Emailed [_1] - [_2]', $params );
+   $self->info( 'Emailed [_1] returned message id. [_2]', $params );
    return;
 };
 
@@ -252,8 +259,8 @@ my $_send_sms = sub {
 
    for my $person (map { $_->[ 1 ] } @{ $tuples }) {
       $action and $person->has_stopped_sms( $action ) and $self->info
-         ( 'Would SMS [_1] [_2]', { args => [ $person->label, $action ] } )
-         and next;
+         ( 'Would SMS [_1] but unsub. from action [_2]', {
+            args => [ $person->label, $action ] } ) and next;
       $self->log->debug( 'SMS recipient: '.$person->shortcode );
       $person->mobile_phone and push @recipients,
          map { s{ \A 07 }{447}mx; $_ } $person->mobile_phone;
@@ -353,12 +360,10 @@ sub geolocation : method {
 
 sub impending_slot : method {
    my $self = shift; $self->components;
-   my $scheme = $self->next_argv;
-   my $hostport = $self->next_argv;
+   my $req = $self->$_new_request( $self->next_argv, $self->next_argv );
    my $days = $self->next_argv // 3;
    my $rota_name = $self->next_argv // 'main';
    my $rota_dt = now_dt->add( days => $days );
-   my $req = $self->$_new_request( $scheme, $hostport );
    my $data = $self->$_assigned_slots( $req, $rota_name, $rota_dt );
    my $dmy = locd $req, $rota_dt;
    my $ymd = local_dt( $rota_dt )->ymd;
@@ -417,14 +422,24 @@ sub send_message : method {
    return OK;
 }
 
+sub should_upgrade : method {
+   my $self = shift;
+   my $candidate = $self->next_argv or throw Unspecified, [ 'new version' ];
+   my $current = $self->config->appclass->VERSION;
+
+   qv( $candidate ) > $current and return OK;
+
+   $self->info( "Current version ${current} is newer or same" );
+
+   return FAILED;
+}
+
 sub vacant_slot : method {
    my $self = shift; $self->components;
-   my $scheme = $self->next_argv;
-   my $hostport = $self->next_argv;
+   my $req = $self->$_new_request( $self->next_argv, $self->next_argv );
    my $days = $self->next_argv // 7;
    my $rota_name = $self->next_argv // 'main';
    my $rota_dt = now_dt->add( days => $days );
-   my $req = $self->$_new_request( $scheme, $hostport );
    my $data = $self->$_assigned_slots( $req, $rota_name, $rota_dt );
    my $limits = $self->config->slot_limits;
    my $dmy = locd $req, $rota_dt;
@@ -435,11 +450,11 @@ sub vacant_slot : method {
       my $slots_claimed = grep { $_ =~ m{ _ $slot_type _ }mx }
                           grep { $_ =~ m{ \A $ymd _ }mx } keys %{ $data };
 
-      $slots_claimed >= $wanted and next;
+      $slots_claimed >= $wanted and next; my $short = $wanted - $slots_claimed;
 
       my $message = "action:vacant-slot date:${dmy} days_in_advance:${days} "
                   . "rota_name:${rota_name} rota_date:${ymd} "
-                  . "slot_type:${slot_type}";
+                  . "slot_type:${slot_type} shortfall:${short}";
 
       $self->send_event( $req, $message );
       $self->info( "Sending vacant ${slot_type} slot emails for ${dmy}" );
@@ -494,6 +509,8 @@ Run this from cron(8) to periodically trigger the impending slots email
 =head2 C<load_event_control> - Load the event control table from the registered plugins
 
 =head2 C<send_message> - Send email or SMS to people
+
+=head2 C<should_upgrade> - Returns OK is an upgrade is neeeded
 
 =head2 C<vacant_slot> - Generates the vacant slots email
 

@@ -9,7 +9,7 @@ roles:
 
 Dear [% first_name %]
 
-There are unclaimed [% slot_type %] slots for [% date %]
+There are [% shortfall %] unclaimed [% slot_type %] slots for [% date %]
 
 That's [% days_in_advance %] days from now
 
