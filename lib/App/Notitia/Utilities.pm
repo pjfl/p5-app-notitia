@@ -425,13 +425,15 @@ sub send_message : method {
 sub should_upgrade : method {
    my $self = shift;
    my $candidate = $self->next_argv or throw Unspecified, [ 'new version' ];
-   my $current = $self->config->appclass->VERSION;
 
-   qv( $candidate ) > $current and return OK;
+   $self->params->{should_upgrade} = [ { expected_rv => 1 } ];
 
-   $self->info( "Current version ${current} is newer or same" );
+   qv( $candidate ) <= $self->config->appclass->VERSION
+      and $self->warning( "Version ${candidate} is not newer than current" )
+      and return FAILED;
 
-   return FAILED;
+   $self->info( "Upgrade to version ${candidate} is possible" );
+   return OK;
 }
 
 sub vacant_slot : method {
