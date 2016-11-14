@@ -40,7 +40,7 @@ upgrade_application() {
    local target; target=$(append_release);  [ ${?} -gt 0 ] && return 1
    cd $dir
    source var/etc/profile
-   [ "${release}" != "blead" ] && notitia-util should_upgrade ${release} || \
+   [ "${release}" = "blead" ] || notitia-util should_upgrade ${release} || \
       return 1
    notitia-jobdaemon stop
    notitia-schema backup-data
