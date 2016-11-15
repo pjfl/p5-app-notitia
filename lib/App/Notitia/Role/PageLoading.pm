@@ -12,7 +12,7 @@ use Unexpected::Functions  qw( AuthenticationRequired );
 use Moo::Role;
 
 requires qw( components config depth_offset get_stash load_page
-             localised_tree navigation_links );
+             localised_tree max_navigation nav_label navigation_links );
 
 has 'type_map' => is => 'ro', isa => HashRef, builder => sub { {} };
 

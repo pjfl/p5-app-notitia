@@ -28,24 +28,6 @@ has 'application' => is => 'ro', isa => Plinth,
 my $_activity_cache = [];
 
 # Private functions
-# TODO: Drop this when W::CReq bumps
-my $_collect_status_messages = sub {
-   my $req = shift; my $session = $req->session; my @messages = ();
-
-   my $mid = $req->query_params->( 'mid', { optional => TRUE } )
-      or return \@messages;
-
-   my @keys = reverse sort keys %{ $session->messages };
-
-   while (my $key = $keys[ 0 ]) {
-      $key gt $mid and next; my $msg = delete $session->messages->{ $key };
-
-      push @messages, $req->loc( @{ $msg } ); shift @keys;
-   }
-
-   return \@messages;
-};
-
 my $_debug_output = sub {
    my ($req, $e, $form, $leader) = @_;
 
@@ -208,7 +190,7 @@ sub get_stash {
    $stash->{page} = $self->load_page( $req, $page );
 
    $stash->{page}->{status_messages}
-      = to_json $_collect_status_messages->( $req );
+      = to_json $req->session->collect_status_messages( $req );
 
    return $stash;
 }

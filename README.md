@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.9.$Rev: 28 $ of **App::Notitia**
+This documents version v0.9.$Rev: 54 $ of **App::Notitia**
 
 # Description
 
@@ -164,6 +164,11 @@ restart the notitia service with:
 
     service notitia restart
 
+Production installs can subsequently be upgraded using this remote `ssh`
+command:
+
+    ssh -t <user>@<domain> sudo ~notitia/local/bin/notitia-upgrade
+
 # Configuration and Environment
 
 The prefered production deployment method uses the `FCGI` engine over
@@ -178,35 +183,41 @@ their defining class, documentation, and current value
 Help for command line options can be found be running:
 
     bin/notitia-cli list-methods
+    bin/notitia-cli help <method>
 
-The production server options are detailed by running:
-
-    bin/notitia-daemon list-methods
+The `list-methods` command is available to all of the appliction programs
+(except scripts and `notitia-server`)
 
 The bash completion script is provided by:
 
     . bin/notitia-completion
 
+The following represents a typical `crontab` file for the `notitia` user:
+
+    10 12 * * * /home/notitia/local/bin/notitia-schema -q backup-data
+    15 12 * * * /home/notitia/local/bin/notitia-cli -q housekeeping
+    20 12 * * * /home/notitia/local/bin/notitia-util -q impending-slot
+    25 12 * * * /home/notitia/local/bin/notitia-util -q vacant-slot
+
 A typical logroate configuration in the file `/etc/logrotate.d/notitia`
 might look like this:
 
     /home/notitia/local/var/backups/Notitia-*.tgz {
-       weekly
        missingok
-       rotate 7
-       delaycompress
+       nocompress
        notifempty
+       rotate 7
+       weekly
     }
 
     /home/notitia/local/var/logs/*.log {
-       daily
-       copytruncate
-       create
-       missingok
-       rotate 30
        compress
+       copytruncate
+       daily
        delaycompress
+       missingok
        notifempty
+       rotate 30
     }
 
 # Subroutines/Methods
