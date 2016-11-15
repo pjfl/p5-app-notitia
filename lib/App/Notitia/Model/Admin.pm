@@ -114,7 +114,8 @@ my $_list_streams = sub {
 
    return
       [ [ NUL, undef ],
-        map { [ ucfirst $_, $_, { selected => $_ eq $sink ? TRUE : FALSE } ] }
+        map  { [ ucfirst $_, $_, { selected => $_ eq $sink ? TRUE : FALSE } ] }
+        grep { defined event_handler( $_, '_default_' )->[ 0 ] }
         event_streams ];
 };
 
