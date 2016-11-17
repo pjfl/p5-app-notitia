@@ -200,6 +200,7 @@ my $_raise_semaphore = sub {
    return TRUE;
 };
 
+# TODO: Add expected_rv
 my $_runjob = sub {
    my ($self, $job) = @_;
 
@@ -208,7 +209,8 @@ my $_runjob = sub {
 
       $self->log->info( 'Running job '.$job->label );
 
-      my $r = $self->run_cmd( [ split SPC, $job->command ] );
+      my $opts = { timeout => 60 * ($job->period - 1) };
+      my $r = $self->run_cmd( [ split SPC, $job->command ], $opts );
 
       $self->log->info( 'Job '.$job->label.' rv '.$r->rv );
       $job->delete;
@@ -271,7 +273,9 @@ my $_daemon_loop = sub {
       $self->$_lower_semaphore;
 
       for my $job ($self->schema->resultset( 'Job' )->search( {} )->all) {
-         if ($job->command eq 'stop_jobdaemon') { $job->delete; last }
+         if ($job->command eq 'stop_jobdaemon') {
+            $job->delete; $stopping = TRUE; last;
+         }
 
          $self->$_should_run_job( $job ) or next;
 
@@ -326,7 +330,7 @@ my $_write_version = sub {
 
    $self->config->tempdir->catfile( 'jobdaemon_version' )->println( $VERSION );
 
-   return;
+   return TRUE;
 };
 
 # Public methods
@@ -421,10 +425,9 @@ sub start : method {
 
    my $rv = $self->_daemon_control->do_start;
 
-   $rv == OK and $self->$_raise_semaphore
+   $rv == OK and $self->$_write_version
+      and $self->$_raise_semaphore
       and $self->log->debug( 'Raised jobqueue semaphore on startup' );
-
-   $rv == OK and $self->$_write_version;
 
    return $rv;
 }
