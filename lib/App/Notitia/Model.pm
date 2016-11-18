@@ -2,7 +2,7 @@ package App::Notitia::Model;
 
 use App::Notitia::Attributes qw( is_dialog ); # Will do namespace cleaning
 use App::Notitia::Constants  qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Form       qw( blank_form f_tag p_tag );
+use App::Notitia::Form       qw( blank_form p_tag );
 use App::Notitia::Util       qw( action_for_uri locm to_json uri_for_action );
 use Class::Usul::Functions   qw( exception is_member throw trim );
 use Class::Usul::Time        qw( time2str );

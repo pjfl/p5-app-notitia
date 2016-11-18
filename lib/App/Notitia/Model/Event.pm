@@ -397,17 +397,17 @@ my $_create_event_post = sub {
 };
 
 my $_create_event = sub {
-   my ($self, $req, $start_date, $event_type, $opts) = @_; $opts //= {};
+   my ($self, $req, $start_dt, $event_type, $opts) = @_; $opts //= {};
 
 # TODO: Should not assume rota name
    my $attr  = { rota       => 'main',
-                 start_date => $start_date,
+                 start_date => $start_dt,
                  event_type => $event_type,
                  owner      => $req->username, };
 
    my $end_date = $req->body_params->( 'end_date', { optional => TRUE } );
 
-   $end_date and $attr->{end_date} = to_dt $end_date;
+   $attr->{end_date} = $end_date ? to_dt $end_date : $start_dt;
    $opts->{vrn} and $attr->{vehicle} = $opts->{vrn};
    $opts->{course} and $attr->{course_type} = $opts->{course};
 
@@ -426,7 +426,7 @@ my $_create_event = sub {
    try   { $self->schema->txn_do( $create ) }
    catch {
       my $label = ($event->name || 'with no name on')
-                . SPC.locd( $req, $start_date );
+                . SPC.locd( $req, $start_dt );
 
       $self->blow_smoke( $_, 'create', 'event', $label );
    };

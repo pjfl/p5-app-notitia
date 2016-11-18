@@ -4,7 +4,7 @@ use attributes ();
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE HASH_CHAR NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_button p_image p_item
+use App::Notitia::Form      qw( blank_form p_button p_image p_item p_js
                                 p_link p_list p_text );
 use App::Notitia::Util      qw( dialog_anchor local_dt locd locm make_tip now_dt
                                 to_dt uri_for_action );
@@ -188,9 +188,7 @@ my $_admin_links = sub {
 my $_authenticated_login_links = sub {
    my ($self, $req, $page, $nav) = @_;
 
-   my $places = $self->config->places;
-   my $js = $page->{literal_js} //= [];
-   my $list = $nav->{menu}->{list} //= [];
+   my $places = $self->config->places; my $list = $nav->{menu}->{list} //= [];
 
    push @{ $list }, $nav_linkto->( $req, {
       class => $page->{selected} eq 'profile' ? 'selected' : NUL,
@@ -382,9 +380,9 @@ my $_rota_week_links = sub {
 };
 
 my $_secondary_authenticated_links = sub {
-   my ($self, $req, $page, $nav) = @_; my $places = $self->config->places;
+   my ($self, $req, $page, $nav) = @_;
 
-   my $js = $page->{literal_js} //= []; my $location = $page->{location} // NUL;
+   my $places = $self->config->places; my $location = $page->{location} // NUL;
 
    p_item $nav, $nav_linkto->( $req, {
       class => $location eq 'schedule' ? 'current' : NUL,
@@ -409,11 +407,9 @@ my $_secondary_authenticated_links = sub {
 my $_unauthenticated_login_links = sub {
    my ($self, $req, $page, $nav) = @_;
 
-   my $places = $self->config->places;
-   my $js = $page->{literal_js} //= [];
-   my $list = $nav->{menu}->{list} //= [];
+   my $places = $self->config->places; my $list = $nav->{menu}->{list} //= [];
 
-   push @{ $list },$nav_linkto->( $req, {
+   push @{ $list }, $nav_linkto->( $req, {
       class => $page->{selected} eq 'login' ? 'selected' : NUL,
       tip   => 'Login to the application',
       value => 'Login', }, $places->{login} );
@@ -424,28 +420,26 @@ my $_unauthenticated_login_links = sub {
       value => 'Change Password', }, $places->{password} );
 
    push @{ $list },
-      { depth  => 1, type => 'link', value  => $nav_linkto->( $req, {
+      { depth  => 1, type => 'link', value => $nav_linkto->( $req, {
          class => 'windows', name => 'request-reset',
          tip   => 'Request a password reset email',
          value => 'Forgot Password?', }, '#' ) };
 
-   my $href  = uri_for_action $req, 'user/reset';
-   my $title = locm $req, 'Reset Password';
+   my $href = uri_for_action $req, 'user/reset';
 
-   push @{ $js }, dialog_anchor( 'request-reset', $href, {
-      name => 'request-reset', title => $title, } );
+   p_js $page, dialog_anchor 'request-reset', $href, {
+      name => 'request-reset', title => locm $req, 'Reset Password', };
 
    push @{ $list },
-      { depth  => 1, type => 'link', value  => $nav_linkto->( $req, {
+      { depth  => 1, type => 'link', value => $nav_linkto->( $req, {
          class => 'windows', name => 'totp-request',
          tip   => 'Request a TOTP recovery email',
          value => 'Lost TOTP?', }, '#' ) };
 
-   $href  = uri_for_action $req, 'user/totp_request';
-   $title = locm $req, 'TOTP Information Request';
+   $href = uri_for_action $req, 'user/totp_request';
 
-   push @{ $js }, dialog_anchor( 'totp-request', $href, {
-      name => 'totp-request', title => $title, } );
+   p_js $page, dialog_anchor 'totp-request', $href, {
+      name => 'totp-request', title => locm $req, 'TOTP Information Request' };
 
    return;
 };
@@ -564,8 +558,8 @@ sub credit_links {
 
    my $href = uri_for_action $req, $places->{about};
 
-   push @{ $page->{literal_js} }, dialog_anchor( 'about', $href, {
-      name => 'about', title => locm( $req, 'About' ), } );
+   p_js $page, dialog_anchor 'about', $href, {
+      name => 'about', title => locm $req, 'About' };
 
    p_link $links, 'changes', uri_for_action( $req, $places->{changes} ), {
       request => $req };
