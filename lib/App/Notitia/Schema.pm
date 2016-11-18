@@ -79,9 +79,7 @@ my $_needs_upgrade = sub {
 };
 
 my $_new_request = sub {
-   my ($self, $scheme, $hostport) = @_;
-
-   return new_request $self->config, $self->locale, $scheme, $hostport;
+   return new_request $_[ 0 ]->config, $_[ 0 ]->locale, $_[ 1 ], $_[ 2 ];
 };
 
 my $_add_backup_files = sub {
@@ -196,6 +194,12 @@ sub restore_data : method {
              $self->db_admin_ids->{mysql}, $self->database ],
            { in => $sql } );
       $sql->unlink;
+
+      my $file = $path->basename;
+      my $ver = $self->schema->get_db_version;
+      my $message = "action:restore-data relpath:${file} schema_version:${ver}";
+
+      $self->send_event( $self->$_new_request, $message );
    }
 
    return OK;
