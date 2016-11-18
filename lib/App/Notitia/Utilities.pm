@@ -240,9 +240,9 @@ my $_send_email = sub {
 
    my $r      = $self->send_email( $post );
    my ($id)   = $r =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
-   my $params = { args => [ $person->shortcode, $id ] };
+   my $params = { args => [ $person->label, $id ] };
 
-   $self->info( 'Emailed [_1] returned message id. [_2]', $params );
+   $self->info( 'Emailed [_1] message id. [_2]', $params );
    return;
 };
 

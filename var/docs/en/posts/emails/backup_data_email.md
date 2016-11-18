@@ -9,6 +9,6 @@ roles:
 
 Dear [% first_name %],
 
-The application backup completed and created [% file %] which is [% size %] long
+The application backup completed and created [% relpath %] which is [% size %] long
 
 Regards

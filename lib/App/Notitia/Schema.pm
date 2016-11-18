@@ -139,7 +139,7 @@ sub backup_data : method {
    $file = $out->basename;
 
    my $size = Format::Human::Bytes->new()->base2( $out->stat->{size} );
-   my $message = "action:backup-data file:${file} size:${size}";
+   my $message = "action:backup-data relpath:${file} size:${size}";
 
    $self->send_event( $self->$_new_request, $message );
 
