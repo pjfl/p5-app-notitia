@@ -1349,7 +1349,7 @@ msgid "operators_vehicle_tip"
 msgstr "Indicate if your private vehicle is available"
 
 msgid "operators_vehicle_title"
-msgstr "Select Private Vehicle"
+msgstr "Select Personal Vehicle"
 
 msgid "orig_priority"
 msgstr "Original Priority"
@@ -1563,6 +1563,12 @@ msgstr "View the summary record for [_1]"
 
 msgid "person_update_heading"
 msgstr "Edit Person"
+
+msgid "personal_vehicle"
+msgstr "Personal Vehicle"
+
+msgid "personal_vehicle_tip"
+msgstr "Do you have a personal vehicle available for use?"
 
 msgid "pickup_id"
 msgstr "Pickup Location"

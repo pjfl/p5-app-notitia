@@ -187,7 +187,7 @@ my $_slot_contact_info = sub {
 
    for my $role ('controller', 'rota_manager') {
       is_member $role, $req->session->roles
-         and return '('.$slot->{operator}->mobile_phone.')';
+         and return "(\x{260E} ".$slot->{operator}->mobile_phone.')';
    }
 
    return NUL;
@@ -445,7 +445,7 @@ my $_find_slot = sub {
 };
 
 my $_push_vehicle_select = sub {
-   my ($self, $form, $id, $person, $args) = @_;
+   my ($self, $req, $form, $id, $person, $args) = @_;
 
    my @slot_key = split m{ _ }mx, $args->[ 2 ];
    my $rota_dt = to_dt $args->[ 1 ];
@@ -457,7 +457,9 @@ my $_push_vehicle_select = sub {
       fields => { selected => $vehicle }, owner => $person } );
 
    p_select $form, 'vehicle', [ [ NUL, undef ], @{ $vehicles } ], {
-      label_id => "${id}_label" };
+      container_class => 'dialog-contrast',
+      label => 'personal_vehicle', label_id => "${id}_label",
+      tip => make_tip $req, 'personal_vehicle_tip' };
 
    p_hidden $form, 'original_vehicle', $vehicle;
 
@@ -545,7 +547,7 @@ sub operator_vehicle : Dialog Role(any) {
             = blank_form 'operator-vehicle', $href;
    my $id = 'vehicle';
 
-   $self->$_push_vehicle_select( $form, $id, $person, $args );
+   $self->$_push_vehicle_select( $req, $form, $id, $person, $args );
 
    p_button $form, 'select_operator_vehicle', 'select_operator_vehicle', {
       class => 'button', container_class => 'right-last',
@@ -628,7 +630,7 @@ sub slot : Dialog Role(rota_manager) Role(rider) Role(controller) Role(driver) {
       }
 
       ($slot_type eq 'driver' or $slot_type eq 'rider')
-         and $self->$_push_vehicle_select( $form, $id, $person, $args );
+         and $self->$_push_vehicle_select( $req, $form, $id, $person, $args );
 
       $slot_type eq 'rider' and p_checkbox $form, 'request_bike', TRUE, {
          checked => TRUE };

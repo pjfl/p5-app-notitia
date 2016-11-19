@@ -183,7 +183,8 @@ sub restore_data : method {
 
    my $arc = Archive::Tar->new; $arc->read( $path->pathname ); $arc->extract();
 
-   my (undef, $date) = split m{ - }mx, $path->basename( '.tgz' ), 2;
+   my $file = $path->basename( '.tgz' );
+   my (undef, $date) = split m{ - }mx, $file, 2;
    my $bdir = $conf->vardir->catdir( 'backups' );
    my $sql  = $conf->tempdir->catfile( $self->database."-${date}.sql" );
 
@@ -194,13 +195,13 @@ sub restore_data : method {
              $self->db_admin_ids->{mysql}, $self->database ],
            { in => $sql } );
       $sql->unlink;
-
-      my $file = $path->basename;
-      my $ver = $self->schema->get_db_version;
-      my $message = "action:restore-data relpath:${file} schema_version:${ver}";
-
-      $self->send_event( $self->$_new_request, $message );
    }
+
+   my $ver = $self->schema->get_db_version;
+   my $message = "action:restore-data relpath:${file} schema_version:${ver}";
+
+   $self->send_event( $self->$_new_request, $message );
+   $self->info( 'Restored backup [_1] schema [_1]', { args => [ $file, $ver ]});
 
    return OK;
 }
