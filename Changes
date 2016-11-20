@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #129. Additional package types
           - Fixes #130. Only controllers can add delivery requests
           - Fixes #133. Time wheel step set to one minute
           - Fixes #132. Validates delivery stage dropoff

@@ -51,8 +51,12 @@
       "vehicle, event",
       "blood, package",
       "drugs, package",
+      "eyes, package",
       "milk, package",
       "other, package",
+      "plasma, package",
+      "platelets, package",
+      "sample, package",
       "main, rota",
       "milk, rota"
    ]
