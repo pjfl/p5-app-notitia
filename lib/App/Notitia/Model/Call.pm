@@ -491,8 +491,11 @@ my $_journeys_ops_links = sub {
          name => $name, title => $title, } );
 
       $actionp = $self->moniker.'/journey';
-      p_link $links, 'journey', uri_for_action( $req, $actionp ), {
-         action => 'create', container_class => 'add-link', request => $req };
+
+      is_member 'controller', $req->session->roles
+         and p_link $links, 'journey', uri_for_action( $req, $actionp ), {
+            action => 'create', container_class => 'add-link',
+            request => $req };
    }
 
    return $links;
