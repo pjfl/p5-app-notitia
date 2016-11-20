@@ -207,9 +207,9 @@ my $_runjob = sub {
    try {
       my $job = $self->schema->resultset( 'Job' )->find( $job_id );
 
-      $job->run( $job->run + 1 ); $job->updated( now_dt ); $job->update;
+      $job->run( $job->run + 1 ); $job->update;
 
-      $self->log->info( 'Running job '.$job->label );
+      $self->log->info( 'Running job '.$job->label.' try #'.$job->run );
 
       my $opts = { timeout => 60 * ($job->period - 1) };
       my $r = $self->run_cmd( [ split SPC, $job->command ], $opts );
@@ -245,14 +245,16 @@ my $_set_started_lock = sub {
 my $_should_run_job = sub {
    my ($self, $job) = @_;
 
-   if ($job->run + 1 > $job->max_runs) {
-      $self->log->error( 'Job '.$job->label.' killed. Max. retries exceeded' );
-      $job->delete; return FALSE;
-   }
-
    $job->updated
       and $job->updated->clone->add( minutes => $job->period ) > now_dt
       and return FALSE;
+
+   if ($job->run + 1 > $job->max_runs) {
+      $self->log->error( 'Job '.$job->label.' killed max. retries exceeded' );
+      $job->delete; return FALSE;
+   }
+
+   $job->updated( now_dt ); $job->update;
 
    return TRUE;
 };
