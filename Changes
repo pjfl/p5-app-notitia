@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #133. Time wheel step set to one minute
           - Fixes #132. Validates delivery stage dropoff
           - Passes job_id to child in JobDaemon
           - Adds field help to personal vehicle selection

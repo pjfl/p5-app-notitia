@@ -2208,13 +2208,13 @@ var Pickers = new Class( {
                if (el.hasClass( 'pick-datetime')) {
                   opts[ 'format' ] = '%d/%m/%Y @ %H:%M';
                   opts[ 'timePicker' ] = true;
-                  opts[ 'timeWheelStep' ] = 5;
+                  opts[ 'timeWheelStep' ] = 1;
                }
 
                if (el.hasClass( 'pick-time')) {
                   opts[ 'format'        ] = '%H:%M';
                   opts[ 'pickOnly'      ] = 'time';
-                  opts[ 'timeWheelStep' ] = 5;
+                  opts[ 'timeWheelStep' ] = 1;
                }
 
                new Picker.Date( el.id, opts );
