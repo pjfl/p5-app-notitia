@@ -209,7 +209,7 @@ my $_runjob = sub {
 
       $job->run( $job->run + 1 ); $job->update;
 
-      $self->log->info( 'Running job '.$job->label.' try #'.$job->run );
+      $self->log->info( 'Running job '.$job->label );
 
       my $opts = { timeout => 60 * ($job->period - 1) };
       my $r = $self->run_cmd( [ split SPC, $job->command ], $opts );

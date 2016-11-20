@@ -4,7 +4,7 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( TRUE );
+use App::Notitia::Constants qw( NUL TRUE );
 use App::Notitia::DataTypes qw( date_data_type nullable_varchar_data_type
                                 numerical_id_data_type serial_data_type
                                 set_on_create_datetime_data_type
@@ -47,7 +47,7 @@ sub insert {
 }
 
 sub label {
-   return $_[ 0 ]->_as_string;
+   return $_[ 0 ]->_as_string.($_[ 0 ]->run ? '#'.$_[ 0 ]->run : NUL);
 }
 
 sub update {
