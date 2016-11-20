@@ -254,8 +254,6 @@ my $_should_run_job = sub {
       $job->delete; return FALSE;
    }
 
-   $job->updated( now_dt ); $job->update;
-
    return TRUE;
 };
 
@@ -282,6 +280,8 @@ my $_daemon_loop = sub {
          }
 
          $self->$_should_run_job( $job ) or next;
+
+         $job->updated( now_dt ); $job->update;
 
          try {
             $self->run_cmd( [ sub { $_runjob->( $self, $job->id ) } ],

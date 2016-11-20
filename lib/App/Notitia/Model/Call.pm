@@ -169,10 +169,12 @@ my $_person_tuple = sub {
 };
 
 my $_bind_operator = sub {
-   my ($leg, $opts) = @_; my $selected = $leg->operator_id;
+   my ($req, $leg, $opts) = @_; my $selected = $leg->operator_id;
 
    return [ [ NUL, undef ],
-            map { $_person_tuple->( $selected, $_ ) } $opts->{people}->all ];
+            map  { $_person_tuple->( $selected, $_ ) }
+            grep { $_->shortcode ne $req->username }
+            $opts->{people}->all ];
 };
 
 my $_package_tuple = sub {
@@ -293,7 +295,7 @@ my $_bind_journey_fields = sub {
 };
 
 my $_bind_leg_fields = sub {
-   my ($self, $leg, $opts) = @_; $opts //= {};
+   my ($self, $req, $leg, $opts) = @_; $opts //= {};
 
    my $schema     = $self->schema;
    my $disabled   = $opts->{disabled} // FALSE;
@@ -315,7 +317,7 @@ my $_bind_leg_fields = sub {
          operator_id    => {
             class       => 'standard-field',
             disabled    => $leg->id ? TRUE : $disabled, type => 'select',
-            value       => $_bind_operator->( $leg, $opts ) },
+            value       => $_bind_operator->( $req, $leg, $opts ) },
          called         => {
             disabled    => $leg->id ? TRUE : $disabled,
             value       => $leg->id
@@ -585,16 +587,22 @@ my $_packages_and_stages = sub {
 
    p_tag $lform, 'h5', locm $req, 'journey_leg_title';
 
-   $links = $self->$_journey_leg_ops_links( $req, $jid );
+   my $leg_rs = $self->schema->resultset( 'Leg' );
+   my $legs = [ $leg_rs->search( { journey_id => $jid } )->all ];
+   my $last_leg;
 
-   $disabled or p_list $lform, PIPE_SEP, $links, $_link_opts->();
+   for my $leg (@{ $legs }) {
+      $last_leg = $leg->ending_id == $leg->journey->dropoff_id ? TRUE : FALSE;
+      $last_leg and last;
+   }
 
-   my $leg_rs  = $self->schema->resultset( 'Leg' );
-   my $legs    = $leg_rs->search( { journey_id => $jid } );
+   $disabled or $last_leg or p_list $lform, PIPE_SEP,
+      $self->$_journey_leg_ops_links( $req, $jid ), $_link_opts->();
+
    my $l_table = p_table $lform, { headers => $_journey_leg_headers->( $req ) };
 
    p_row $l_table, [ map { $self->$_journey_leg_row( $req, $jid, $_ ) }
-                     $legs->all ];
+                     @{ $legs } ];
 
    return;
 };
@@ -1092,9 +1100,10 @@ sub leg : Role(controller) Role(driver) Role(rider) {
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
-   p_fields $form, $self->schema, 'Leg', $leg, $self->$_bind_leg_fields( $leg, {
-      disabled => $disabled, done => $done,
-      journey_id => $jid, leg_count => $count, request => $req } );
+   p_fields $form, $self->schema, 'Leg', $leg,
+      $self->$_bind_leg_fields( $req, $leg, {
+         disabled => $disabled, done => $done,
+         journey_id => $jid, leg_count => $count, request => $req } );
 
    ($done and $leg->on_station)
       or p_action $form, $action, [ 'delivery_stage', $label ], {
