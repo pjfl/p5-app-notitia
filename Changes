@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Passes job_id to child in JobDaemon
           - Adds field help to personal vehicle selection
 
 0.10.1    2016-11-18 00:34:53

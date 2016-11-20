@@ -260,12 +260,11 @@ my $_event_controls_row = sub {
 
    $_onchange_submit_event_controls->( $page, $id, $form_name );
 
-   my $title = make_tip $req, 'no_event_handler_tip';
-
    $cell = p_cell $row, { class => 'centre narrow' }; $self->plugins;
 
    event_handler( $sink, $action )->[ 0 ] or p_span $cell, '&dagger;', {
-      class => 'table-cell-help tips', title => $title };
+      class => 'table-cell-help tips',
+      title => make_tip $req, 'no_event_handler_tip' };
 
    return $row;
 };

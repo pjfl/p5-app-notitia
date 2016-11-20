@@ -202,9 +202,11 @@ my $_raise_semaphore = sub {
 
 # TODO: Add expected_rv
 my $_runjob = sub {
-   my ($self, $job) = @_;
+   my ($self, $job_id) = @_;
 
    try {
+      my $job = $self->schema->resultset( 'Job' )->find( $job_id );
+
       $job->run( $job->run + 1 ); $job->updated( now_dt ); $job->update;
 
       $self->log->info( 'Running job '.$job->label );
@@ -218,7 +220,7 @@ my $_runjob = sub {
    catch {
       my ($msg) = split m{ \n }mx, "${_}";
 
-      $self->log->error( 'Job '.$job->label.' rv '.$_->rv.": ${msg}" );
+      $self->log->error( "Job ${job_id} rv ".$_->rv.": ${msg}" );
    };
 
    return OK;
@@ -280,7 +282,7 @@ my $_daemon_loop = sub {
          $self->$_should_run_job( $job ) or next;
 
          try {
-            $self->run_cmd( [ sub { $_runjob->( $self, $job ) } ],
+            $self->run_cmd( [ sub { $_runjob->( $self, $job->id ) } ],
                             { async => TRUE, detach => TRUE } );
          }
          catch { $self->log->error( $_ ) };

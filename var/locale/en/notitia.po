@@ -235,7 +235,7 @@ msgid "calls_report_heading_4"
 msgstr "Total"
 
 msgid "calls_tip"
-msgstr "Log incomming calls from other agencies"
+msgstr "Log incoming calls from other agencies"
 
 msgid "called"
 msgstr "Called"
@@ -782,7 +782,7 @@ msgid "event_summary_management_link"
 msgstr "View"
 
 msgid "event_summary_management_tip"
-msgstr "View the summary for the [_1] event and participte"
+msgstr "View the summary for the [_1] event and participate"
 
 msgid "event_type_create_link"
 msgstr "Event"

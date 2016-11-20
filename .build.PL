@@ -56,6 +56,14 @@ use File::Find            qw( find );
 use File::Path            qw( make_path );
 use File::Spec::Functions qw( catdir catfile );
 
+sub _added_to_INC { # CVE-2016-1238
+  my $self = shift; my %seen;
+
+  for ($self->_default_INC) { $seen{ $_ }++ }
+
+  return grep { not $seen{ $_ }++ } $self->base_dir, @INC;
+}
+
 sub ACTION_install {
    my $self = shift; umask oct '0007'; $self->SUPER::ACTION_install();
 
