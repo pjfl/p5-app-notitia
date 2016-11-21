@@ -8,7 +8,7 @@ use App::Notitia::Constants qw( C_DIALOG FALSE NUL SPC
 use App::Notitia::Form      qw( blank_form f_link p_button
                                 p_checkbox p_hidden p_js p_link p_select );
 use App::Notitia::Util      qw( assign_link dialog_anchor js_config
-                                js_submit_config local_dt locm make_tip
+                                js_submit_config local_dt locm make_tip now_dt
                                 register_action_paths slot_claimed
                                 slot_identifier slot_limit_index to_dt to_msg
                                 uri_for_action );
@@ -138,15 +138,15 @@ my $_operators_vehicle_link = sub {
    my $tip = locm $req, 'operators_vehicle_tip';
    my $id = "${k}_vehicle";
 
-   p_js $page, dialog_anchor $id, uri_for_action( $req, $actionp, $args ), {
-      name => 'operator-vehicle' ,
-      title => locm $req, 'operators_vehicle_title' };
-
-   if ($slot_data->{operator} eq $req->username) {
+   if ($slot_data->{operator} eq $req->username and not $page->{disabled}) {
       p_link $vehicle_link, $id, '#', {
          class => 'windows', request => $req, tip => $tip,
          value => $_operators_vehicle_label->( $slot_data->{slov} ),
       };
+
+      p_js $page, dialog_anchor $id, uri_for_action( $req, $actionp, $args ), {
+         name => 'operator-vehicle' ,
+         title => locm $req, 'operators_vehicle_title' };
    }
    else {
       $vehicle_link->{value}
@@ -201,8 +201,11 @@ my $_slot_label = sub {
 my $_slot_link = sub {
    my ($req, $page, $data, $k, $slot_type) = @_;
 
-   my $action = slot_claimed $data->{ $k } ? 'yield' : 'claim';
    my $value = $_slot_label->( $req, $data->{ $k } );
+
+   $page->{disabled} and return { colspan => 2, value => $value };
+
+   my $action = slot_claimed $data->{ $k } ? 'yield' : 'claim';
    my $opts = { action => $action,
                 args => [ $slot_type,
                           $_slot_contact_info->( $req, $data->{ $k } ) ],
@@ -271,7 +274,7 @@ my $_controllers = sub {
          my $action = slot_claimed( $data->{ $k } ) ? 'yield' : 'claim';
          my $date   = $local_dt->clone->truncate( to => 'day' );
          my $args   = [ $rota_name, $date->ymd, $k ];
-         my $link   = $_slot_link->( $req, $page, $data, $k, 'controller');
+         my $link   = $_slot_link->( $req, $page, $data, $k, 'controller' );
 
          push @{ $controls },
             [ { class => 'rota-header', value   => locm( $req, $k ), },
@@ -408,7 +411,9 @@ my $_day_page = sub {
                    [ $name, $local_dt->clone->add( days => 1 )->ymd ];
    my $prev     =  uri_for_action $req, $actionp,
                    [ $name, $local_dt->clone->subtract( days => 1 )->ymd ];
+   my $sod      =  local_dt( now_dt )->truncate( to => 'day' );
    my $page     =  {
+      disabled  => $local_dt < $sod ? TRUE : FALSE,
       fields    => { nav => { next => $next, prev => $prev }, },
       moniker   => $self->moniker,
       rota      => { controllers => [],

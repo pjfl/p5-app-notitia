@@ -132,13 +132,18 @@ my $make_tuple = sub {
 my $vehicle_link = sub {
    my ($req, $page, $args, $opts) = @_;
 
-   my $action = $opts->{action}; my $value = $opts->{value};
+   my $params = { action => my $action = $opts->{action} };
+   my $value = $opts->{value}; $action eq 'unassign'
+      and $params->{vehicle} = $value;
 
-   my $path   = "asset/${action}"; my $params = { action => $action };
+   $value = (blessed $value) ? $value->slotref : $value;
 
-   $action eq 'unassign' and $params->{vehicle} = $value;
+   $page->{disabled}
+      and return { class => 'table-link', type => 'text', value => $value };
+
    $opts->{type} and $params->{type} = $opts->{type};
 
+   my $path = "asset/${action}";
    my $href = uri_for_action( $req, $path, $args, $params );
    my $tip  = loc( $req, "${action}_management_tip" );
    my $js   = $page->{literal_js} //= [];
@@ -154,7 +159,7 @@ my $vehicle_link = sub {
             name  => "${action}_${name}",
             tip   => $tip,
             type  => 'link',
-            value => (blessed $value) ? $value->slotref : $value, };
+            value => $value, };
 };
 
 # Public functions

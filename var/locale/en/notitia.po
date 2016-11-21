@@ -826,6 +826,9 @@ msgstr "View this external link in another tab"
 msgid "Exception Handler"
 msgstr "I'm sorry [_1], I can't do that"
 
+msgid "eyes"
+msgstr "Eyes"
+
 msgid "filter_column"
 msgstr "Column"
 
@@ -1573,6 +1576,12 @@ msgstr "Do you have a personal vehicle available for use?"
 msgid "pickup_id"
 msgstr "Pickup Location"
 
+msgid "plasma"
+msgstr "Plasma"
+
+msgid "platelets"
+msgstr "Platelets"
+
 msgid "points"
 msgstr "Points"
 
@@ -1762,6 +1771,9 @@ msgstr "Route"
 
 msgid "running_v"
 msgstr "Running Version"
+
+msgid "sample"
+msgstr "Sample"
 
 msgid "schema_log_link"
 msgstr "Schema"
