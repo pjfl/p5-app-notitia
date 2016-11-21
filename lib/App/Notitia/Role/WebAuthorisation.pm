@@ -57,7 +57,8 @@ around 'execute' => sub {
          and return $orig->( $self, $method, $req );
    }
 
-   throw '[_1] permission denied', [ $req->session->user_label || $name ];
+   throw '[_1] permission to [_2] denied',
+      [ $req->session->user_label || $name, $self->moniker."/${method}" ];
 };
 
 1;
