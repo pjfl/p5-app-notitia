@@ -388,18 +388,28 @@ my $_log_columns = sub {
 };
 
 my $_log_rows = sub {
-   my ($self, $file, $first, $last, $data, $logname) = @_;
+   my ($self, $path, $first, $last, $data, $logname) = @_; my @files = ($path);
+
+   my $dir = $self->config->logsdir; my $file = $path->basename( '.log' );
+
+   for my $candidate (map { $dir->catfile( "${file}.log.${_}" ) } 0 .. 9) {
+      $candidate->exists or last; unshift @files, $candidate->backward->chomp;
+   }
 
    my $lno = 0; my @rows;
 
-   while (defined (my $line = $file->getline)) {
-      $lno < $first and ++$lno and next; $lno > $last and ++$lno and next;
-      $line =~ m{ \A [a-zA-z]{3} [ ] \d+ [ ] \d+ : }mx or next;
+   for my $logfile (@files) {
+      while (defined (my $line = $logfile->getline)) {
+         $lno < $first and ++$lno and next; $lno > $last and ++$lno and next;
+         $line =~ m{ \A [a-zA-z]{3} [ ] \d+ [ ] \d+ : }mx or next;
 
-      my @cols = $self->$_log_columns( $data, $logname, $line ); @cols or next;
+         my @cols = $self->$_log_columns( $data, $logname, $line );
 
-      push @rows, [ map { { class => $_->[ 1 ], value => $_->[ 0 ] } } @cols ];
-      $lno++;
+         @cols or next;
+         push @rows, [ map { { class => $_->[ 1 ], value => $_->[ 0 ] } }
+                       @cols ];
+         $lno++;
+      }
    }
 
    return ($lno, @rows);
@@ -620,9 +630,9 @@ sub logs : Role(administrator) {
       title => locm $req, 'logs_title', ucfirst locm $req, $logname,
    };
    my $dir = $self->config->logsdir;
-   my $file = $dir->catfile( "${logname}.log" )->backwards->chomp;
+   my $path = $dir->catfile( "${logname}.log" )->backwards->chomp;
 
-   $file->exists or return $self->get_stash( $req, $page );
+   $path->exists or return $self->get_stash( $req, $page );
 
    my $pageno = $req->query_params->( 'page', { optional => TRUE } ) || 1;
    my $rows_pp = $req->session->rows_per_page;
@@ -634,7 +644,7 @@ sub logs : Role(administrator) {
    my $data = { cache => {}, filter_column => $column,
                 filter_pattern => qr{ $pattern }imx,
                 person_rs => $self->schema->resultset( 'Person' ) };
-   my ($lno, @rows) = $self->$_log_rows( $file, $first, $last, $data, $logname);
+   my ($lno, @rows) = $self->$_log_rows( $path, $first, $last, $data, $logname);
    my $actp = $self->moniker.'/logs';
    my $params = { filter_column => $column, filter_pattern => $pattern, };
    my $dp = Data::Page->new( $lno, $rows_pp, $pageno );
