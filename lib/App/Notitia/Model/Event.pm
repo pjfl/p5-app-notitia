@@ -770,7 +770,8 @@ sub training_event : Role(training_manager) {
 
    my $uri  = $req->uri_params->( 0, { optional => TRUE } );
    my $date = $req->query_params->( 'date', { optional => TRUE } );
-   my $href = uri_for_action $req, $self->moniker.'/training_event', [ $uri ];
+   my $actionp = $self->moniker.'/training_event';
+   my $href = uri_for_action $req, $actionp, [ $uri ];
    my $form = blank_form 'training-event', $href;
    my $action = $uri ? 'update' : 'create';
    my $page = {
@@ -779,6 +780,9 @@ sub training_event : Role(training_manager) {
    };
    my $event = $self->$_maybe_find_event( $uri );
    my $args = [ 'training_event', $uri ];
+   my $links =  $uri ? $_event_ops_links->( $req, $actionp, $uri ) : [];
+
+   $uri and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Event', $event,
       $self->$_bind_event_fields( $req, $event, {
