@@ -392,8 +392,8 @@ my $_log_rows = sub {
 
    my $dir = $self->config->logsdir; my $file = $path->basename( '.log' );
 
-   for my $candidate (map { $dir->catfile( "${file}.log.${_}" ) } 0 .. 9) {
-      $candidate->exists or last; unshift @files, $candidate->backward->chomp;
+   for my $candidate (map { $dir->catfile( "${file}.log.${_}" ) } 1 .. 9) {
+      $candidate->exists or last; push @files, $candidate->backwards->chomp;
    }
 
    my $lno = 0; my @rows;

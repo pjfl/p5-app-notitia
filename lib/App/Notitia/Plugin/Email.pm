@@ -109,10 +109,13 @@ event_handler 'email', vehicle_assignment => sub {
    my ($self, $req, $stash) = @_;
 
    if ($stash->{slot_key}) {
+      my $rs = $self->schema->resultset( 'Vehicle' );
       my ($shift_type, $slot_type, undef) = split m{ _ }mx, $stash->{slot_key};
 
       $stash->{shift_type} = $shift_type;
       $stash->{slot_type} = $slot_type;
+      $stash->{subject} = locm $req, 'Vehicle Assignment [_1]', $stash->{date};
+      $stash->{vehicle} = $rs->find_vehicle_by( $stash->{vehicle} )->label;
    }
    elsif ($stash->{event_uri}) {
       $stash->{template} = 'vehicle_assignment_event_email.md';

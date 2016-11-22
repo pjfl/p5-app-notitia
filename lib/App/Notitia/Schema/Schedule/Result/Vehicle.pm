@@ -36,6 +36,14 @@ $class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
 $class->belongs_to( type  => "${result}::Type", 'type_id' );
 
 # Private functions
+my $_display_vrn = sub {
+   my $vrn = shift;
+
+   $vrn =~ s{ \A ([A-Z]+ \d+) ([A-Z]+) \z }{$1 $2}mx;
+
+   return $vrn;
+};
+
 my $_random_colour = sub {
    return sprintf '#%x%x%x', int rand 256, int rand 256, int rand 256;
 };
@@ -229,9 +237,11 @@ sub insert {
 }
 
 sub label {
-   return $_[ 0 ]->name  ? $_[ 0 ]->vrn.' ('.$_[ 0 ]->name.')'
-        : $_[ 0 ]->owner ? $_[ 0 ]->vrn.' ('.$_[ 0 ]->owner->label.')'
-                         : $_[ 0 ]->vrn;
+   my $self = shift; my $vrn = $self->vrn;
+
+   return $self->name  ? $_display_vrn->( $vrn ).' ('.$self->name.')'
+        : $self->owner ? $_display_vrn->( $vrn ).' ('.$self->owner->label.')'
+                       : $_display_vrn->( $vrn );
 }
 
 sub slotref {
