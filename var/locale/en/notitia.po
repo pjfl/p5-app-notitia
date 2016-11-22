@@ -622,6 +622,9 @@ msgstr "Download this document"
 msgid "download_file_tip"
 msgstr "Download the [_1] file"
 
+msgid "drafts_folder"
+msgstr "Unpublished document drafts"
+
 msgid "driver"
 msgstr "Driver"
 
@@ -657,6 +660,9 @@ msgstr "Emails"
 
 msgid "email_subs_management_tip"
 msgstr "Edit the email subscription list for [_1]"
+
+msgid "emails_folder"
+msgstr "Templates for emails sent by this application"
 
 msgid "emergency"
 msgstr "Emergency"
@@ -792,6 +798,9 @@ msgstr "Create a new event type record"
 
 msgid "event_update_heading"
 msgstr "Edit Event"
+
+msgid "events_folder"
+msgstr "RSS Feed posts for fund raising events"
 
 msgid "events_heading_0"
 msgstr "Event"

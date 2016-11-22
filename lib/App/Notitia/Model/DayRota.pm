@@ -495,7 +495,7 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
 
    $self->send_event( $req, "action:slot-claim shortcode:${assignee} "
                           . "rota_name:${rota_name} rota_date:${rota_date} "
-                          . "slot:${name}" );
+                          . "slot:${name} vehicle_requested:${bike}" );
 
    my $args     = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;

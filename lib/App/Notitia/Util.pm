@@ -81,16 +81,32 @@ my $extension2format = sub {
 };
 
 my $get_tip_text = sub {
-   my ($conf, $node) = @_; my $path = $node->{path} or return NUL;
+   my ($req, $conf, $node) = @_; my $path = $node->{path} or return NUL;
 
    my $root = $conf->docs_root;
-   my $text = $path->abs2rel( $root ); $text =~ s{ \A [a-z]+ / }{}mx;
-   my $posts = $conf->posts; $text =~ s{ \A $posts / }{}mx;
+   my $name = $path->abs2rel( $root ); $name =~ s{ \A [a-z]+ / }{}mx;
+   my $posts = $conf->posts; $name =~ s{ \A $posts / }{}mx;
 
-   $text =~ s{ \. .+ \z }{}mx; $text =~ s{ [/] }{ / }gmx;
-   $text =~ s{ [_] }{ }gmx;
+   $name =~ s{ \. .+ \z }{}mx;
 
-   return $text;
+   my $text; $node->{type} eq 'folder'
+      and $text = locm( $req, "${name}_folder" )
+      and $text ne "${name}_folder"
+      and $name = $text;
+
+   $name =~ s{ [/] }{ / }gmx; $name =~ s{ [_] }{ }gmx;
+
+   return $name;
+};
+
+my $load_directory_data = sub {
+   my $folder = shift;
+   my $path = $folder->{path}->catfile( '.data.json' ); $path->exists or return;
+   my $data = Class::Usul::File->data_load( paths => [ $path ] ) // {};
+
+   for (keys %{ $data }) { $folder->{ $_ } = $data->{ $_ } }
+
+   return;
 };
 
 my $load_file_data = sub {
@@ -112,10 +128,16 @@ my $page_link = sub {
 };
 
 my $sorted_keys = sub {
-   my $node = shift;
+   my $folder = shift; my $tree = $folder->{tree};
 
-   return [ sort { $node->{ $a }->{_order} <=> $node->{ $b }->{_order} }
-            grep { first_char $_ ne '_' } keys %{ $node } ];
+   my $order = $folder->{sort_by} ? [ 1, 0 ] : [ 0, 1 ];
+   my $compare = sub {
+      $tree->{ $_[ $order->[ 0 ] ] }->{_order}
+         <=> $tree->{ $_[ $order->[ 1 ] ] }->{_order}
+   };
+
+   return [ sort { $compare->( $a, $b ) }
+            grep { first_char $_ ne '_' } keys %{ $tree } ];
 };
 
 my $make_tuple = sub {
@@ -124,7 +146,7 @@ my $make_tuple = sub {
    ($node and exists $node->{type} and defined $node->{type})
       or return [ 0, [], $node ];
 
-   my $keys = $node->{type} eq 'folder' ? $sorted_keys->( $node->{tree} ) : [];
+   my $keys = $node->{type} eq 'folder' ? $sorted_keys->( $node ) : [];
 
    return [ 0, $keys, $node ];
 };
@@ -268,8 +290,9 @@ sub build_navigation ($$) {
          my $keepit = FALSE; $node->{fcount} < 1 and next;
 
          for my $id (grep { not m{ \A _ }mx } keys %{ $node->{tree} }) {
-            is_access_authorised( $req, $node->{tree}->{ $id } )
-               and $keepit = TRUE and last;
+            my $candidate = $node->{tree}->{ $id };
+
+            $keepit = is_access_authorised( $req, $candidate ) and last;
          }
 
          $keepit or next;
@@ -280,7 +303,7 @@ sub build_navigation ($$) {
       $link->{class}  = $node->{type} eq 'folder' ? 'folder-link' : 'file-link';
       $link->{depth} -= $opts->{depth_offset};
       $link->{href }  = uri_for_action( $req, $opts->{path}, [ $link->{url} ] );
-      $link->{tip  }  = $get_tip_text->( $opts->{config}, $node );
+      $link->{tip  }  = $get_tip_text->( $req, $opts->{config}, $node );
       $link->{value}  = $opts->{label}->( $link );
 
       if (defined $ids->[ 0 ] and $ids->[ 0 ] eq $node->{id}) {
@@ -326,6 +349,7 @@ sub build_tree {
                      and $mtime > $max_mtime and $max_mtime = $mtime;
       $path->is_dir  or  next;
       $node->{type} = 'folder';
+      $load_directory_data->( $node );
       $node->{tree} = $depth > 1 # Skip the language code directories
          ?  build_tree( $map, $path, $depth, $node_order, $url, $name )
          :  build_tree( $map, $path, $depth, $node_order );
