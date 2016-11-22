@@ -362,7 +362,7 @@ my $_alloc_event_row = sub {
                 start => ($event->duration)[ 0 ] };
    my $action = 'assign_vehicle';
    my $id = $event->uri;
-   my $row = [];
+   my $row = []; $cno == 0 and push @{ $row }, { value => NUL };
    my $style = NUL;
 
    if (blessed $tuple->[ 1 ]) {

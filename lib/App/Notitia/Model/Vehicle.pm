@@ -648,13 +648,14 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    my $href     =  uri_for_action $req, $self->moniker.'/vehicle', [ $uri ];
    my $form     =  blank_form 'vehicle-request', $href, {
       class     => 'wide-form no-header-wrap' };
+   my $selected =  $event->event_type eq 'training' ? 'training_events'
+                :  now_dt > $event->start_date      ? 'previous_events'
+                :                                     'current_events';
    my $page     =  {
       event_uri => $uri,
       forms     => [ $form ],
       moniker   => $self->moniker,
-      selected  => $event->event_type eq 'training' ? 'training_events'
-                :  now_dt > $event->start_date ? 'previous_events'
-                :  'current_events',
+      selected  => $selected,
       title     => loc $req, 'vehicle_request_heading' };
    my $type_rs  =  $schema->resultset( 'Type' );
 
@@ -668,7 +669,7 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    p_row $table, [ map { $_vreq_row->( $schema, $req, $page, $event, $_ ) }
                    $type_rs->search_for_vehicle_types->all ];
 
-   $page->{selected} eq 'current_events'
+   ($selected eq 'current_events' or $selected eq 'training_events')
       and p_button $form, 'request_vehicle', 'request_vehicle', {
          class => 'save-button right-last' };
 
