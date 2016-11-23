@@ -172,6 +172,15 @@ sub housekeeping : method {
       $_ =~ m{ \- \d+ \- \d+ \. sql \z }mx } )->visit( sub {
          $_->stat->{mtime} < $old and $_->unlink } );
 
+   $keep_days = $self->next_argv // 7;
+   $old = time - $keep_days * 24 * 60 * 60;
+
+   my $title = $self->config->title;
+
+   $self->config->vardir->catdir( 'backups' )->filter( sub {
+      $_ =~ m{ $title \- \d+ \- \d+ \.tgz \z }mx } )->visit( sub {
+         $_->stat->{mtime} < $old and $_->unlink } );
+
    return OK;
 };
 

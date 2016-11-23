@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds old backup file deletion to housekeeping
           - Better vehicle assignment email
           - Fixes #127. Cannot change the past
           - Fixes #129. Additional package types
