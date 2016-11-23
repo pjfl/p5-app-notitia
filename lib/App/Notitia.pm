@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 22 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 23 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -43,7 +43,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.10.$Rev: 22 $ of B<App::Notitia>
+This documents version v0.10.$Rev: 23 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -244,22 +244,12 @@ The following represents a typical C<crontab> file for the C<notitia> user:
 A typical logroate configuration in the file F</etc/logrotate.d/notitia>
 might look like this:
 
-   /home/notitia/local/var/backups/Notitia-*.tgz {
-      missingok
-      nocompress
-      notifempty
-      rotate 7
-      weekly
-   }
-
    /home/notitia/local/var/logs/*.log {
-      compress
       copytruncate
       daily
-      delaycompress
       missingok
       notifempty
-      rotate 30
+      rotate 7
    }
 
 =head1 Subroutines/Methods

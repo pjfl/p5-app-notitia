@@ -324,12 +324,14 @@ Defines the following attributes;
 
 =head1 Subroutines/Methods
 
-=head2 C<housekeeping> - Deletes extraneous files
+=head2 C<housekeeping> - Deletes extraneous old files
 
-   bin/notitia-cli housekeeping [keep_days]
+   bin/notitia-cli housekeeping [keep_days1] [keep_days2]
 
 Deletes old left over files from various F<var> directories that are older
-than the keep days parameter which defaults to 30
+than the keep days (1) parameter which defaults to C<30>
+
+Old backup files are deleted after keep days (2) which defaults to C<7>
 
 =head2 C<make_css> - Compile CSS files from LESS files
 
