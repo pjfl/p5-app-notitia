@@ -1,6 +1,6 @@
 package App::Notitia::Model;
 
-use App::Notitia::Attributes qw( is_dialog ); # Will do namespace cleaning
+use App::Notitia::Attributes qw( is_action is_dialog );
 use App::Notitia::Constants  qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form       qw( blank_form p_tag );
 use App::Notitia::Util       qw( action_for_uri locm to_json uri_for_action );
@@ -78,10 +78,11 @@ my $_auth_redirect = sub {
       $self->send_event( $req, 'action:failed-login' );
    }
 
-   if ($class eq AuthenticationRequired->()) {
+   if ($e->instance_of( AuthenticationRequired->() )) {
       my $wanted = $req->path || NUL; my $actionp = action_for_uri $wanted;
 
       (($actionp and not is_dialog $self->components, $actionp)
+       or ($actionp and not is_action $self->components, $actionp)
        or (not $actionp and $wanted)) and $req->session->wanted( $wanted );
 
       return { redirect => { location => $location, message => [ $message ] } };

@@ -448,7 +448,7 @@ sub login_action : Role(anon) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub logout_action : Role(any) {
+sub logout_action : Action Role(any) {
    my ($self, $req) = @_; my $message = [ 'Not logged in' ];
 
    if ($req->authenticated) {

@@ -213,7 +213,7 @@ my $_vehicle_label = sub {
    my $location = $_find_location->( $list, $data->{start} );
    my $distance = $_calculate_distance->( $location, $data->{assignee} );
 
-   $distance = int( 5 * $distance / 8 ); # Kilometers to miles
+   $distance and $distance = int( 5 * $distance / 8 ); # Kilometers to miles
 
    return $distance ? $vehicle->name." (${distance} mls)" : $vehicle->name;
 };
