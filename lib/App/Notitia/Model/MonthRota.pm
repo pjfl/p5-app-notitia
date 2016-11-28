@@ -318,9 +318,9 @@ my $_rota_summary_date_style = sub {
                         'controller', 'rider', 'driver' );
    my $wd = $night_max;
    my $we = $day_max + $night_max;
+   my $wanted = $self->is_working_day( $local_dt ) ? $wd : $we;
    my $ymd = $local_dt->ymd;
    my $slots_claimed = grep { $_ =~ m{ \A $ymd _ }mx } keys %{ $data };
-   my $wanted = (0, $wd, $wd, $wd, $wd, $wd, $we, $we)[ $local_dt->day_of_week];
    my $colour = 'red';
 
    $slots_claimed > 0 and $colour = 'yellow';

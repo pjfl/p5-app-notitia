@@ -245,6 +245,22 @@ sub event_schema_update {
    return $message;
 }
 
+sub is_bank_holiday {
+   my ($self, $dt) = @_;
+
+   return exists $self->plugins->{holidays}
+        ? $self->plugins->{holidays}->is_bank_holiday( $dt )
+        : FALSE;
+}
+
+sub is_working_day {
+   my ($self, $dt) = @_;
+
+   return exists $self->plugins->{holidays}
+        ? $self->plugins->{holidays}->is_working_day( $dt )
+        : $dt->day_of_week > 5 ? FALSE : TRUE;
+}
+
 sub jobdaemon { # Shortcut for result classes
    return $_[ 0 ]->components->{daemon}->jobdaemon;
 }
