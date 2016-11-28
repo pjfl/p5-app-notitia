@@ -2,7 +2,7 @@ package App::Notitia;
 
 use 5.010001;
 use strictures;
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 23 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 24 $ =~ /\d+/gmx );
 
 use Class::Usul::Functions  qw( ns_environment );
 
@@ -43,7 +43,7 @@ App::Notitia - People and resource scheduling
 
 =head1 Version
 
-This documents version v0.10.$Rev: 23 $ of B<App::Notitia>
+This documents version v0.10.$Rev: 24 $ of B<App::Notitia>
 
 =head1 Description
 
@@ -246,10 +246,10 @@ might look like this:
 
    /home/notitia/local/var/logs/*.log {
       copytruncate
-      daily
       missingok
       notifempty
-      rotate 7
+      rotate 4
+      weekly
    }
 
 =head1 Subroutines/Methods
@@ -263,6 +263,8 @@ mutator if provided with an optional new value. Uppercases and prefixes
 the environment variable key
 
 =head2 C<schema_version>
+
+   $version_object = App::Notitia->schema_version;
 
 Returns the current schema version
 

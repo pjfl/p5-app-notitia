@@ -161,24 +161,22 @@ my $_write_theme = sub {
 
 # Public methods
 sub housekeeping : method {
-   my $self = shift; my $keep_days = $self->next_argv // 30;
-
+   my $self = shift;
+   my $title = $self->config->title;
+   my $keep_days = $self->next_argv // 7;
    my $old = time - $keep_days * 24 * 60 * 60;
+
+   $self->config->vardir->catdir( 'backups' )->filter( sub {
+      $_ =~ m{ $title \- \d+ \- \d+ \.tgz \z }mx } )->visit( sub {
+         $_->stat->{mtime} < $old and $_->unlink } );
+
+   $keep_days = $self->next_argv // 30; $old = time - $keep_days * 24 * 60 * 60;
 
    $self->config->sessdir->visit( sub {
       $_->stat->{mtime} < $old and $_->unlink } );
 
    $self->config->tempdir->filter( sub {
       $_ =~ m{ \- \d+ \- \d+ \. sql \z }mx } )->visit( sub {
-         $_->stat->{mtime} < $old and $_->unlink } );
-
-   $keep_days = $self->next_argv // 7;
-   $old = time - $keep_days * 24 * 60 * 60;
-
-   my $title = $self->config->title;
-
-   $self->config->vardir->catdir( 'backups' )->filter( sub {
-      $_ =~ m{ $title \- \d+ \- \d+ \.tgz \z }mx } )->visit( sub {
          $_->stat->{mtime} < $old and $_->unlink } );
 
    return OK;
@@ -316,6 +314,9 @@ App::Notitia::CLI - People and resource scheduling
 
 =head1 Configuration and Environment
 
+Must never be used to connect to the database as it is called by the toolchain
+before the database exists
+
 Defines the following attributes;
 
 =over 3
@@ -328,10 +329,10 @@ Defines the following attributes;
 
    bin/notitia-cli housekeeping [keep_days1] [keep_days2]
 
-Deletes old left over files from various F<var> directories that are older
-than the keep days (1) parameter which defaults to C<30>
+Old backup files are deleted after keep days (1) which defaults to C<7>
 
-Old backup files are deleted after keep days (2) which defaults to C<7>
+Deletes old left over files from various F<var> directories that are older
+than the keep days (2) parameter which defaults to C<30>
 
 =head2 C<make_css> - Compile CSS files from LESS files
 

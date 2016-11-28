@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.10.$Rev: 6 $ of **App::Notitia**
+This documents version v0.10.$Rev: 24 $ of **App::Notitia**
 
 # Description
 
@@ -202,22 +202,12 @@ The following represents a typical `crontab` file for the `notitia` user:
 A typical logroate configuration in the file `/etc/logrotate.d/notitia`
 might look like this:
 
-    /home/notitia/local/var/backups/Notitia-*.tgz {
-       missingok
-       nocompress
-       notifempty
-       rotate 7
-       weekly
-    }
-
     /home/notitia/local/var/logs/*.log {
-       compress
        copytruncate
        daily
-       delaycompress
        missingok
        notifempty
-       rotate 30
+       rotate 7
     }
 
 # Subroutines/Methods
