@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Vacant slot email now bank holiday aware
           - Adds support for bank holidays
           - Adds old backup file deletion to housekeeping
           - Better vehicle assignment email

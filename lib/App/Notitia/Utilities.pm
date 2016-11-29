@@ -53,18 +53,6 @@ option 'not_enabled' => is => 'ro', isa => Bool, default => FALSE,
 has 'sms_sender_class' => is => 'lazy', isa => LoadableClass, coerce => TRUE,
    default => 'App::Notitia::SMS';
 
-# Private functions
-my $_slots_wanted = sub {
-   my ($limits, $rota_dt, $role) = @_;
-
-   my $day_max = $limits->[ slot_limit_index 'day', $role ];
-   my $night_max = $limits->[ slot_limit_index 'night', $role ];
-   my $we = $day_max + $night_max;
-   my $wd = $night_max;
-
-   return (0, $wd, $wd, $wd, $wd, $wd, $we, $we)[ $rota_dt->day_of_week ];
-};
-
 # Private methods
 my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
@@ -285,6 +273,18 @@ my $_send_sms = sub {
    return;
 };
 
+my $_slots_wanted = sub {
+   my ($self, $limits, $rota_dt, $role) = @_;
+
+   my $local_dt = local_dt( $rota_dt )->truncate( to => 'day' );
+   my $day_max = $limits->[ slot_limit_index 'day', $role ];
+   my $night_max = $limits->[ slot_limit_index 'night', $role ];
+   my $we = $day_max + $night_max;
+   my $wd = $night_max;
+
+   return $self->is_working_day( $local_dt ) ? $wd : $we;
+};
+
 # Public methods
 sub application_upgraded : method {
    my $self    = shift;
@@ -448,7 +448,7 @@ sub vacant_slot : method {
    my $ymd = local_dt( $rota_dt )->ymd;
 
    for my $slot_type (@{ SLOT_TYPE_ENUM() }) {
-      my $wanted = $_slots_wanted->( $limits, $rota_dt, $slot_type );
+      my $wanted = $self->$_slots_wanted( $limits, $rota_dt, $slot_type );
       my $slots_claimed = grep { $_ =~ m{ _ $slot_type _ }mx }
                           grep { $_ =~ m{ \A $ymd _ }mx } keys %{ $data };
 
