@@ -188,7 +188,7 @@ Larry Wall - For the Perl programming language
 
 =head1 Author
 
-John Sargent, C<< <john@j-bg.co.uk> >>
+John Sargent, C<< <github@j-bg.co.uk> >>
 
 =head1 License and Copyright
 
