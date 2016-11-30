@@ -231,7 +231,7 @@ my $_assert_not_too_many_slots = sub {
       push @tuples, [ $slot->start_date, $slot->shift.NUL, $slot->key ];
    }
 
-   not $inserted and push @tuples, $proposed;
+   $inserted or push @tuples, $proposed;
 
    my $trip1 = 0; my $trip2 = 0; my $prev_date; my $prev_shift;
 
@@ -250,22 +250,16 @@ my $_assert_not_too_many_slots = sub {
             or throw 'Shift [_1] should be last of day but have [_2]',
                      [ $prev_shift, $tuple->[ 2 ] ];
 
-         if ($shift eq $shifts[ $index ]) { $trip1++ } else { $trip1 = 1 }
-
-         if ($app->is_working_day( local_dt $start_date )) { $trip2 = 1 }
-         else {
-            if ($shift eq $shifts[ $index ]) { $trip2++ } else { $trip2 = 1 }
-         }
+         if ($shift eq $shifts[ $index ]) { $trip1++; $trip2++ }
+         else { $trip1 = $trip2 = 1 }
       }
       elsif ($start_date == $prev_date->clone->add( days => 1 )) {
          if ($index == $n_shifts - 1 and $shift eq $shifts[ 0 ]) { $trip1++ }
          else { $trip1 = 1 }
 
          if ($app->is_working_day( local_dt $start_date )) { $trip2++ }
-         else {
-            if ($index == $n_shifts - 1 and $shift eq $shifts[ 0 ]) { $trip2++ }
-            else { $trip2 = 1 }
-         }
+         elsif ($index == $n_shifts - 1 and $shift eq $shifts[ 0 ]) { $trip2++ }
+         else { $trip2 = 1 }
       }
       else { $trip1 = $trip2 = 1 }
 
