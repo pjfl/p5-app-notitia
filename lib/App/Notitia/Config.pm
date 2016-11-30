@@ -202,6 +202,8 @@ has 'max_messages'    => is => 'ro',   isa => NonZeroPositiveInt, default => 2;
 
 has 'max_sess_time'   => is => 'ro',   isa => PositiveInt, default => 900;
 
+has 'max_slots'       => is => 'ro',   isa => PositiveInt, default => 3;
+
 has 'mdn_tab_width'   => is => 'ro',   isa => NonZeroPositiveInt, default => 3;
 
 has 'min_id_length'   => is => 'ro',   isa => PositiveInt, default => 3;
@@ -676,6 +678,10 @@ store in the session between requests
 =item C<max_sess_time>
 
 Time in seconds before a session expires. Defaults to 15 minutes
+
+=item C<max_slots>
+
+The maximum number of consecutive slots that can be booked. Defaults to 3
 
 =item C<mdn_tab_width>
 

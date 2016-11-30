@@ -97,6 +97,7 @@ my $_bank_holidays = sub {
    my $dt = shift; my $year = $dt->year; my @holidays;
 
    exists $_holiday_cache->{ $year } and return $_holiday_cache->{ $year };
+
    push @holidays, $_new_year->( $dt ) if $year > 1973;
    push @holidays, $_good_friday->( $dt );
    push @holidays, $_easter_monday->( $dt );

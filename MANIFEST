@@ -54,6 +54,7 @@ lib/App/Notitia/Model/Vehicle.pm
 lib/App/Notitia/Model/WeekRota.pm
 lib/App/Notitia/Plugin/Core.pm
 lib/App/Notitia/Plugin/Email.pm
+lib/App/Notitia/Plugin/UKHolidays.pm
 lib/App/Notitia/Plugin/Update.pm
 lib/App/Notitia/Role/Editor.pm
 lib/App/Notitia/Role/EventStream.pm

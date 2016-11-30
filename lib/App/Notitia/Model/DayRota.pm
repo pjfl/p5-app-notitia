@@ -482,7 +482,8 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
    my $name       = $params->( 2 );
    my $rota_dt    = to_dt( $rota_date );
    my $opts       = { optional => TRUE };
-   my $assignee   = $req->body_params->( 'assignee', $opts ) || $req->username;
+   my $assigner   = $req->username;
+   my $assignee   = $req->body_params->( 'assignee', $opts ) || $assigner;
    my $person     = $self->$_find_by_shortcode( $assignee );
    my $bike       = $req->body_params->( 'request_bike', $opts ) // FALSE;
    my $vrn        = $req->body_params->( 'vehicle', $opts );
@@ -491,7 +492,8 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
 
    $vehicle and ($vehicle->owner_id == $person->id or $vehicle = undef);
 
-   $person->claim_slot( $rota_name, $rota_dt, $name, $bike, $vehicle );
+   $person->claim_slot
+      ( $rota_name, $rota_dt, $name, $bike, $vehicle, $assigner );
 
    $self->send_event( $req, "action:slot-claim shortcode:${assignee} "
                           . "rota_name:${rota_name} rota_date:${rota_date} "

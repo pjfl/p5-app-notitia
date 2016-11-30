@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.10.$Rev: 24 $ of **App::Notitia**
+This documents version v0.10.$Rev: 27 $ of **App::Notitia**
 
 # Description
 
@@ -204,10 +204,10 @@ might look like this:
 
     /home/notitia/local/var/logs/*.log {
        copytruncate
-       daily
        missingok
        notifempty
-       rotate 7
+       rotate 4
+       weekly
     }
 
 # Subroutines/Methods
@@ -221,6 +221,8 @@ mutator if provided with an optional new value. Uppercases and prefixes
 the environment variable key
 
 ## `schema_version`
+
+    $version_object = App::Notitia->schema_version;
 
 Returns the current schema version
 

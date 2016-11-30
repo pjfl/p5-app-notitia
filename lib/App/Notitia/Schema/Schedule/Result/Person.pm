@@ -7,17 +7,18 @@ use parent   'App::Notitia::Schema::Base';
 
 use App::Notitia;
 use App::Notitia::Constants    qw( EXCEPTION_CLASS SPC TRUE
-                                   FALSE NUL VARCHAR_MAX_SIZE );
+                                   FALSE NUL SHIFT_TYPE_ENUM VARCHAR_MAX_SIZE );
 use App::Notitia::DataTypes    qw( bool_data_type date_data_type
                                    nullable_foreign_key_data_type
                                    nullable_numerical_id_data_type
                                    numerical_id_data_type
                                    serial_data_type varchar_data_type );
-use App::Notitia::Util         qw( get_salt is_encrypted new_salt now_dt
-                                   slot_limit_index );
+use App::Notitia::Util         qw( get_salt is_encrypted local_dt new_salt
+                                   now_dt slot_limit_index );
 use Auth::GoogleAuth;
 use Class::Usul::Functions     qw( digest is_member throw urandom );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
+use List::SomeUtils            qw( first_index );
 use Try::Tiny;
 use Unexpected::Functions      qw( AccountInactive FailedSecurityCheck
                                    IncorrectAuthCode IncorrectPassword
@@ -184,11 +185,10 @@ my $_new_shortcode = sub {
 };
 
 my $_assert_no_slot_collision = sub {
-   my ($self, $rota_name, $date, $shift_type, $slot_type) = @_;
+   my ($self, $type_id, $date, $shift_type, $slot_type) = @_;
 
-   my $rs      = $self->result_source->schema->resultset( 'Slot' );
-   my $type_id = $self->$_find_rota_type( $rota_name )->id;
-   my $opts    = { rota_type => $type_id, on => $date };
+   my $rs   = $self->result_source->schema->resultset( 'Slot' );
+   my $opts = { rota_type => $type_id, on => $date };
 
    for my $slot ($rs->search_for_slots( $opts )->all) {
       $slot->shift eq $shift_type and $self->id == $slot->operator->id
@@ -199,28 +199,109 @@ my $_assert_no_slot_collision = sub {
    return;
 };
 
+my $_assert_not_too_many_slots = sub {
+   my ($self, $rota_type, $date, $shift_type) = @_;
+
+   my $app = $self->result_source->schema->application;
+   my $max_slots = $app->config->max_slots;
+   my @shifts = @{ SHIFT_TYPE_ENUM() };
+   my $n_shifts = @shifts;
+   my $after = $date->clone->subtract( days => $max_slots + 2 );
+   my $before = $date->clone->add( days => $max_slots + 2 );
+   my $opts = { after => $after,
+                before => $before,
+                operator => $self->shortcode,
+                order_by => [ 'rota.date', 'shift.type_name' ],
+                rota_type => $rota_type->id, };
+   my $ymd = $date->ymd;
+   my $proposed = [ $date, $shift_type, "${rota_type}_${ymd}_${shift_type}" ];
+   my $shift_index = first_index { $_ eq $shift_type } @shifts;
+   my $rs = $self->result_source->schema->resultset( 'Slot' );
+   my $inserted = FALSE;
+   my @tuples = ();
+
+   for my $slot ($rs->search_for_slots( $opts )->all) {
+      my $index = first_index { $_ eq $slot->shift } @shifts;
+
+      if (not $inserted and $slot->start_date > $date
+          or ($slot->start_date == $date and $index > $shift_index)) {
+         push @tuples, $proposed; $inserted = TRUE;
+      }
+
+      push @tuples, [ $slot->start_date, $slot->shift.NUL, $slot->key ];
+   }
+
+   not $inserted and push @tuples, $proposed;
+
+   my $trip1 = 0; my $trip2 = 0; my $prev_date; my $prev_shift;
+
+   for my $tuple (@tuples) {
+      my $start_date = $tuple->[ 0 ]; my $shift = $tuple->[ 1 ];
+
+      if ($trip1 == 0) {
+         $prev_date = $start_date; $prev_shift = $shift; $trip1 = $trip2 = 1;
+         next;
+      }
+
+      my $index = first_index { $_ eq $prev_shift } @shifts;
+
+      if ($start_date == $prev_date) {
+         defined $shifts[ ++$index ]
+            or throw 'Shift [_1] should be last of day but have [_2]',
+                     [ $prev_shift, $tuple->[ 2 ] ];
+
+         if ($shift eq $shifts[ $index ]) { $trip1++ } else { $trip1 = 1 }
+
+         if ($app->is_working_day( local_dt $start_date )) { $trip2 = 1 }
+         else {
+            if ($shift eq $shifts[ $index ]) { $trip2++ } else { $trip2 = 1 }
+         }
+      }
+      elsif ($start_date == $prev_date->clone->add( days => 1 )) {
+         if ($index == $n_shifts - 1 and $shift eq $shifts[ 0 ]) { $trip1++ }
+         else { $trip1 = 1 }
+
+         if ($app->is_working_day( local_dt $start_date )) { $trip2++ }
+         else {
+            if ($index == $n_shifts - 1 and $shift eq $shifts[ 0 ]) { $trip2++ }
+            else { $trip2 = 1 }
+         }
+      }
+      else { $trip1 = $trip2 = 1 }
+
+      ($trip1 > $max_slots or $trip2 > $max_slots) and throw 'Too many slots';
+      $prev_date = $start_date; $prev_shift = $shift;
+   }
+
+   return;
+};
+
 my $_assert_claim_allowed = sub {
-   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $bike) = @_;
+   my ($self, $name, $date, $shift_t, $slot_t, $subslot, $bike, $assigner) = @_;
 
-   $self->$_assert_no_slot_collision
-      ( $rota_name, $date, $shift_type, $slot_type );
+   my $rota_type = $self->$_find_rota_type( $name );
 
-   $slot_type eq 'rider' and $self->assert_member_of( 'rider' );
-   $slot_type ne 'rider' and $bike
-      and throw 'Cannot request a bike for slot type [_1]', [ $slot_type ];
+   $self->$_assert_no_slot_collision( $rota_type, $date, $shift_t, $slot_t );
 
-   for my $cert (@{ $self->$_list_slot_certs_for( $slot_type ) }) {
+   $self->shortcode eq $assigner
+      and $self->$_assert_not_too_many_slots( $rota_type, $date, $shift_t );
+
+   $slot_t eq 'rider' and $self->assert_member_of( 'rider' );
+   $slot_t ne 'rider' and $bike
+      and throw 'Cannot request a bike for slot type [_1]', [ $slot_t ];
+
+   for my $cert (@{ $self->$_list_slot_certs_for( $slot_t ) }) {
       $self->assert_certified_for( $cert );
    }
 
    my $conf = $self->result_source->schema->config;
-   my $i    = slot_limit_index $shift_type, $slot_type;
+   my $i    = slot_limit_index $shift_t, $slot_t;
 
    $subslot > $conf->slot_limits->[ $i ] - 1
       and throw 'Cannot claim slot [_1] greater than slot limit [_2]',
           [ $subslot, $conf->slot_limits->[ $i ] - 1 ];
 
-   $slot_type eq 'rider' and now_dt->add( weeks => 4 ) < $date
+   $slot_t eq 'rider' and now_dt->add( weeks => 4 ) < $date
       and $self->region ne $conf->slot_region->{ $subslot }
       and throw 'Cannot claim slot [_1] out of region', [ $subslot ];
 
@@ -359,12 +440,12 @@ sub authenticate_optional_2fa {
 }
 
 sub claim_slot {
-   my ($self, $rota_name, $date, $name, $bike, $vehicle) = @_;
+   my ($self, $rota_name, $date, $name, $bike, $vehicle, $assigner) = @_;
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
    $self->$_assert_claim_allowed
-      ( $rota_name, $date, $shift_type, $slot_type, $subslot, $bike );
+      ( $rota_name, $date, $shift_type, $slot_type, $subslot, $bike, $assigner);
 
    my $shift = $self->find_shift( $rota_name, $date, $shift_type );
    my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
