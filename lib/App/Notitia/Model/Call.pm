@@ -271,9 +271,11 @@ my $_bind_journey_fields = sub {
          requested     => {
             disabled   => $journey->id ? TRUE : $disabled, type => 'datetime',
             value      => $journey->id
-                        ? $journey->requested_label : datetime_label now_dt },
+                        ? $journey->requested_label( $req )
+                        : datetime_label $req, now_dt },
          delivered     => $opts->{done} ? {
-            disabled   => TRUE, value => $journey->delivered_label } : FALSE,
+            disabled   => TRUE, value => $journey->delivered_label( $req ) }
+                        : FALSE,
          priority      => {
             disabled   => $disabled, type => 'radio',
             value      => $_bind_priority->( $journey ) },
@@ -321,7 +323,8 @@ my $_bind_leg_fields = sub {
          called         => {
             disabled    => $leg->id ? TRUE : $disabled,
             value       => $leg->id
-                         ? $leg->called_label : datetime_label now_dt },
+                         ? $leg->called_label( $req )
+                         : datetime_label $req, now_dt },
          beginning_id   => {
             class       => 'standard-field',
             disabled    => $disabled, type => 'select',
@@ -332,16 +335,16 @@ my $_bind_leg_fields = sub {
             value       => $self->$_bind_ending_location( $leg, $opts ) },
          collection_eta => {
             disabled    => $disabled, type => 'datetime',
-            value       => $leg->collection_eta_label },
+            value       => $leg->collection_eta_label( $req ) },
          collected      => $leg->id ? {
             disabled    => $opts->{done}, type => 'datetime',
-            value       => $leg->collected_label } : FALSE,
+            value       => $leg->collected_label( $req ) } : FALSE,
          delivered      => $leg->id ? {
             disabled    => $opts->{done}, type => 'datetime',
-            value       => $leg->delivered_label } : FALSE,
+            value       => $leg->delivered_label( $req ) } : FALSE,
          on_station     => $leg->id ? {
             disabled    => $on_station_disabled, type => 'datetime',
-            value       => $leg->on_station_label } : FALSE,
+            value       => $leg->on_station_label( $req ) } : FALSE,
       ];
 };
 
@@ -412,7 +415,7 @@ my $_journey_leg_row = sub {
       request => $req, value => $leg->operator->label };
 
    return [ $cell,
-            { value => $leg->called_label },
+            { value => $leg->called_label( $req ) },
             { value => $leg->beginning },
             { value => $leg->ending },
             { value => locm $req, $leg->status }, ];
@@ -510,8 +513,8 @@ my $_journeys_row = sub {
       request => $req, value => $journey->customer, };
 
    return [ $cell,
-            { value => $done ? $journey->delivered_label
-                             : $journey->requested_label },
+            { value => $done ? $journey->delivered_label( $req )
+                             : $journey->requested_label( $req ) },
             { value => locm $req, $journey->priority },
             { value => locm $req, $package ? $package->package_type : NUL }, ];
 };
@@ -1329,7 +1332,7 @@ sub update_stage_collected_action : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $stash = $self->update_delivery_stage_action
-      ( $req, { collected => datetime_label now_dt } );
+      ( $req, { collected => datetime_label $req, now_dt } );
 
    return $stash;
 }
@@ -1338,7 +1341,7 @@ sub update_stage_delivered_action : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $stash = $self->update_delivery_stage_action
-      ( $req, { delivered => datetime_label now_dt } );
+      ( $req, { delivered => datetime_label $req, now_dt } );
 
    return $stash;
 }

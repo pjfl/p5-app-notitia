@@ -70,8 +70,8 @@ event_handler 'email', create_delivery_stage => sub {
    $stash->{controller} = $journey->controller->label;
    $stash->{beginning} = $leg->beginning.NUL;
    $stash->{ending} = $leg->ending.NUL;
-   $stash->{called} = $leg->called_label;
-   $stash->{collection_eta} = $leg->collection_eta_label;
+   $stash->{called} = $leg->called_label( $req );
+   $stash->{collection_eta} = $leg->collection_eta_label( $req );
    $stash->{priority} = $journey->priority.NUL;
    $stash->{packages} = [ map {
       [ $_->quantity, $_->package_type.NUL, $_->description ] }

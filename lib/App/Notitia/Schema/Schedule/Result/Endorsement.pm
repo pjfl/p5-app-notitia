@@ -7,7 +7,7 @@ use parent   'App::Notitia::Schema::Base';
 use App::Notitia::Constants qw( TRUE VARCHAR_MAX_SIZE );
 use App::Notitia::DataTypes qw( foreign_key_data_type
                                 numerical_id_data_type varchar_data_type );
-use App::Notitia::Util      qw( local_dt locm );
+use App::Notitia::Util      qw( local_dt locd locm );
 use Class::Usul::Functions  qw( create_token );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -63,8 +63,10 @@ sub label {
    my ($self, $req) = @_;
 
    my $type = $req ? locm( $req, $self->type_code ) : $self->type_code;
+   my $date = $req ? locd( $req, $self->endorsed )
+                   : local_dt( $self->endorsed )->dmy( '/' );
 
-   return $type.' ('.local_dt( $self->endorsed )->dmy( '/' ).')';
+   return "${type} (${date})";
 }
 
 sub update {

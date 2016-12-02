@@ -7,7 +7,7 @@ use parent   'App::Notitia::Schema::Base';
 use App::Notitia::Constants qw( VARCHAR_MAX_SIZE );
 use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type
                                 varchar_data_type );
-use App::Notitia::Util      qw( local_dt locm );
+use App::Notitia::Util      qw( local_dt locd locm );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -41,8 +41,10 @@ sub label {
    my ($self, $req) = @_;
 
    my $type = $req ? locm( $req, $self->type ) : $self->type;
+   my $date = $req ? locd( $req, $self->completed )
+                   : local_dt( $self->completed )->dmy( '/' );
 
-   return $type.' ('.local_dt( $self->completed )->dmy( '/' ).')';
+   return "${type} (${date})";
 }
 
 sub update {

@@ -41,7 +41,7 @@ $class->has_many( parties => "${result}::IncidentParty", 'incident_id' );
 
 # Public methods
 sub committee_informed_label {
-   return datetime_label $_[ 0 ]->committee_informed;
+   return datetime_label $_[ 1 ], $_[ 0 ]->committee_informed;
 }
 
 sub insert {
@@ -53,7 +53,7 @@ sub insert {
 }
 
 sub raised_label {
-   return datetime_label $_[ 0 ]->raised;
+   return datetime_label $_[ 1 ], $_[ 0 ]->raised;
 }
 
 sub update {

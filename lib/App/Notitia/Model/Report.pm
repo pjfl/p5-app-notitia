@@ -4,10 +4,11 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_cell p_date
                                 p_hidden p_list p_row p_select p_table );
-use App::Notitia::Util      qw( js_submit_config local_dt locm make_tip now_dt
-                                to_dt register_action_paths slot_limit_index
-                                uri_for_action );
+use App::Notitia::Util      qw( js_submit_config local_dt locd locm make_tip
+                                now_dt to_dt register_action_paths
+                                slot_limit_index uri_for_action );
 use Class::Usul::Functions  qw( sum throw );
+use Scalar::Util            qw( weaken );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -164,7 +165,8 @@ my $_get_bucket = sub {
 };
 
 my $_get_date_function = sub {
-   my $opts = shift;
+   my ($req, $opts) = @_; weaken $req;
+
    my $after = $opts->{after};
    my $before = $opts->{before};
    my $drtn = local_dt( $after )->delta_md( local_dt $before );
@@ -189,11 +191,11 @@ my $_get_date_function = sub {
 
          $dt = $dt->clone->truncate( to => 'week' );
 
-         return 'Wk'.$dt->week_number.SPC.$dt->dmy( '/' );
+         return 'Wk'.$dt->week_number.SPC.locd( $req, $dt );
       };
    }
 
-   return sub { $_[ 0 ] ? $_[ 0 ]->dmy( '/' ) : 'day' };
+   return sub { $_[ 0 ] ? locd( $req, $_[ 0 ] ) : 'day' };
 };
 
 my $_inc_bucket = sub {
@@ -397,7 +399,7 @@ my $_counts_by_person = sub {
 };
 
 my $_counts_by_slot = sub {
-   my ($self, $opts) = @_; my $df = $_get_date_function->( $opts );
+   my ($self, $req, $opts) = @_; my $df = $_get_date_function->( $req, $opts );
 
    $opts = $_exclusive_date_range->( $opts ); delete $opts->{rota_name};
 
@@ -454,7 +456,7 @@ my $_counts_by_vehicle = sub {
 };
 
 my $_counts_of_people = sub {
-   my ($self, $opts) = @_; my $df = $_get_date_function->( $opts );
+   my ($self, $req, $opts) = @_; my $df = $_get_date_function->( $req, $opts );
 
    $opts = $_exclusive_date_range->( $opts ); delete $opts->{role_name};
 
@@ -557,7 +559,7 @@ my $_people_meta_summary_table = sub {
    my ($self, $req, $form, $data, $opts) = @_;
 
    my $moniker = $self->moniker;
-   my $basis = $_get_date_function->( $opts )->();
+   my $basis = $_get_date_function->( $req, $opts )->();
    my $headers =
       [ { value => locm $req, 'people_meta_summary_heading_0' },
         map { $_people_meta_header_link->( $req, $moniker, $opts, $_ ) }
@@ -688,7 +690,7 @@ sub people_meta : Role(person_manager) {
 
    $_push_date_controls->( $page, $opts );
 
-   my $data = $self->$_counts_of_people( $opts );
+   my $data = $self->$_counts_of_people( $req, $opts );
 
    if ($name ne 'all') {
       $page->{content} = $_people_meta_table->( $req, $form, $data, $name );
@@ -718,8 +720,8 @@ sub slots : Role(rota_manager) {
 
    $_push_date_controls->( $page, $opts );
 
-   my $data = $self->$_counts_by_slot( $opts );
-   my $df = $_get_date_function->( $opts );
+   my $data = $self->$_counts_by_slot( $req, $opts );
+   my $df = $_get_date_function->( $req, $opts );
    my $basis = $df->();
    my $expected = $self->$_get_expected( $basis );
    my $headers = $_report_headers->( $req, 'slot', 4 );

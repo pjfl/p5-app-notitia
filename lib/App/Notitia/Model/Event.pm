@@ -208,12 +208,12 @@ my $_format_as_markdown = sub {
    my ($self, $req, $event) = @_;
 
    my $name    = $event->name;
-   my $date    = $event->start_date->clone->set_time_zone( 'local' );
    my $created = time2str '%Y-%m-%d %H:%M:%S %z', time, 'GMT';
    my $yaml    = "---\nauthor: ".$event->owner."\n"
                . "created: ${created}\nrole: any\ntitle: ${name}\n---\n";
    my $desc    = $event->description."\n\n";
-   my @opts    = ($date->dmy( '/' ), $event->start_time, $event->end_time);
+   my $date    = locd( $req, $event->start_date );
+   my @opts    = ($date, $event->start_time, $event->end_time);
    my $when    = locm( $req, 'event_blog_when', @opts )."\n\n";
    my $actionp = $self->moniker.'/event_summary';
    my $href    = uri_for_action $req, $actionp, [ $event->uri ];

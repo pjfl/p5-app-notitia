@@ -38,23 +38,23 @@ $class->belongs_to( vehicle   => "${result}::Vehicle",  'vehicle_id'   );
 
 # Public methods
 sub called_label {
-   return datetime_label $_[ 0 ]->called;
+   return datetime_label $_[ 1 ], $_[ 0 ]->called;
 }
 
 sub created_label {
-   return datetime_label $_[ 0 ]->created;
+   return datetime_label $_[ 1 ], $_[ 0 ]->created;
 }
 
 sub collection_eta_label {
-   return datetime_label $_[ 0 ]->collection_eta;
+   return datetime_label $_[ 1 ], $_[ 0 ]->collection_eta;
 }
 
 sub collected_label {
-   return datetime_label $_[ 0 ]->collected;
+   return datetime_label $_[ 1 ], $_[ 0 ]->collected;
 }
 
 sub delivered_label {
-   return datetime_label $_[ 0 ]->delivered;
+   return datetime_label $_[ 1 ], $_[ 0 ]->delivered;
 }
 
 sub insert {
@@ -72,7 +72,7 @@ sub label {
 }
 
 sub on_station_label {
-   return datetime_label $_[ 0 ]->on_station;
+   return datetime_label $_[ 1 ], $_[ 0 ]->on_station;
 }
 
 sub status {

@@ -109,7 +109,7 @@ my $_bind_committee_member = sub {
 };
 
 my $_bind_incident_fields = sub {
-   my ($self, $page, $incident, $opts) = @_; $opts //= {};
+   my ($self, $req, $page, $incident, $opts) = @_; $opts //= {};
 
    my $schema = $self->schema;
    my $disabled = $opts->{disabled} // FALSE;
@@ -125,7 +125,8 @@ my $_bind_incident_fields = sub {
             disabled    => TRUE,
             value       => $incident->controller->label } : FALSE,
          raised         => $incident->id ? {
-            disabled    => TRUE, value => $incident->raised_label } : FALSE,
+            disabled    => TRUE, value => $incident->raised_label( $req ) }
+                         : FALSE,
          title          => {
             class       => 'standard-field server',
             disabled    => $disabled, label => 'incident_title' },
@@ -147,7 +148,7 @@ my $_bind_incident_fields = sub {
             disabled    => $disabled, type => 'textarea' },
          committee_informed => $incident->id ? {
             disabled    => $disabled, type => 'datetime',
-            value       => $incident->committee_informed_label } : FALSE,
+            value       => $incident->committee_informed_label( $req )} : FALSE,
          committee_member_id => $incident->id ? {
             disabled    => $disabled,
             label       => 'committee_member', type => 'select',
@@ -208,7 +209,7 @@ my $_incidents_row = sub {
 
    return [ { value => f_link 'incident_record', $href, {
       request => $req, value => $incident->title, } },
-            { value => $incident->raised_label },
+            { value => $incident->raised_label( $req ) },
             { value => locm $req, $incident->category }, ];
 };
 
@@ -346,7 +347,7 @@ sub incident : Role(controller) {
    $iid and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Incident', $incident,
-      $self->$_bind_incident_fields( $page, $incident, $fopts );
+      $self->$_bind_incident_fields( $req, $page, $incident, $fopts );
 
    p_action $form, $action, [ 'incident', $iid ], { request => $req };
 
@@ -378,7 +379,8 @@ sub incident_party : Role(controller) {
 
    p_textfield $form, 'incident', $title, {
       disabled => TRUE, label => 'incident_title' };
-   p_textfield $form, 'raised', $incident->raised_label, { disabled => TRUE };
+   p_textfield $form, 'raised', $incident->raised_label( $req ), {
+      disabled => TRUE };
 
    p_select $form, 'incident_party', $parties, {
       label => 'incident_party_people', multiple => TRUE, size => 5 };

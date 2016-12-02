@@ -3,7 +3,7 @@ package App::Notitia::Form;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use App::Notitia::Util      qw( locm make_tip );
+use App::Notitia::Util      qw( local_dt locm locd make_tip );
 use App::Notitia::Constants qw( FALSE HASH_CHAR NUL TRUE );
 use Class::Usul::Functions  qw( is_arrayref is_hashref throw );
 use Scalar::Util            qw( blessed );
@@ -40,7 +40,9 @@ my $_bind = sub {
    $opts->{name} = $name; my $class;
 
    if (defined $v and $class = blessed $v and $class eq 'DateTime') {
-      $opts->{value} = $v->clone->set_time_zone( 'local' )->dmy( '/' );
+      $opts->{value} = exists $opts->{request}
+                     ? locd( $opts->{request}, $v )
+                     : local_dt( $v )->dmy( '/' );
    }
    elsif (is_arrayref $v) {
       $opts->{value} = [ map { $_bind_option->( $_, $opts ) } @{ $v } ];

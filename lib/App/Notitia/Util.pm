@@ -395,10 +395,14 @@ sub clone (;$) {
    return $v;
 }
 
-sub datetime_label ($) {
-   my $dt = shift; $dt or return NUL; $dt = local_dt( $dt );
+sub datetime_label ($;$) {
+   my ($req, $dt) = @_; $req or return NUL;
 
-   return sprintf '%s @ %.2d:%.2d', $dt->dmy( '/' ), $dt->hour, $dt->minute;
+   blessed $req eq 'DateTime' and ($req, $dt) = ($dt, $req); $dt or return NUL;
+
+   my $date = $req ? locd( $req, $dt ) : local_dt( $dt )->dmy( '/' );
+
+   return sprintf '%s @ %.2d:%.2d', $date, $dt->hour, $dt->minute;
 }
 
 sub dialog_anchor ($$$) {
@@ -412,12 +416,11 @@ sub dialog_anchor ($$$) {
 sub display_duration ($$) {
    my ($req, $event) = @_; my ($start, $end) = $event->duration;
 
-   $start = $start->set_time_zone( 'local' );
-   $end = $end->set_time_zone( 'local' );
+   $start = locd( $req, $start ); $end = locd( $req, $end );
 
    return
-   loc( $req, 'Starts' ).SPC.$start->dmy( '/' ).SPC.$start->strftime( '%H:%M' ),
-   loc( $req, 'Ends' ).SPC.$end->dmy( '/' ).SPC.$end->strftime( '%H:%M' );
+      loc( $req, 'Starts' ).SPC.$start.SPC.$start->strftime( '%H:%M' ),
+      loc( $req, 'Ends' ).SPC.$end.SPC.$end->strftime( '%H:%M' );
 }
 
 sub encrypted_attr ($$$$) {

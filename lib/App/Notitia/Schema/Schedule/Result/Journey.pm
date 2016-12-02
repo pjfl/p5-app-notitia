@@ -43,11 +43,11 @@ $class->has_many( packages => "${result}::Package", 'journey_id' );
 
 # Public methods
 sub created_label {
-   return datetime_label $_[ 0 ]->created;
+   return datetime_label $_[ 1 ], $_[ 0 ]->created;
 }
 
 sub delivered_label {
-   return datetime_label $_[ 0 ]->delivered;
+   return datetime_label $_[ 1 ], $_[ 0 ]->delivered;
 }
 
 sub insert {
@@ -64,7 +64,7 @@ sub insert {
 }
 
 sub requested_label {
-   return datetime_label $_[ 0 ]->requested;
+   return datetime_label $_[ 1 ], $_[ 0 ]->requested;
 }
 
 sub update {

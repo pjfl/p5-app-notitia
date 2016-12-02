@@ -9,7 +9,7 @@ use App::Notitia::DataTypes qw( foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 nullable_numerical_id_data_type
                                 serial_data_type varchar_data_type );
-use App::Notitia::Util      qw( local_dt locm );
+use App::Notitia::Util      qw( local_dt locd locm );
 use Class::Usul::Functions  qw( create_token throw );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -147,7 +147,7 @@ sub insert {
 }
 
 sub label {
-   my $self = shift;
+   my ($self, $req) = @_; $req and return $self->localised_label( $req );
 
    return $self->name.' ('.local_dt( $self->start_date )->dmy( '/' ).')';
 }
@@ -155,7 +155,7 @@ sub label {
 sub localised_label {
    my ($self, $req) = @_; my $name = locm $req, lc $self->name;
 
-   return $name.' ('.local_dt( $self->start_date )->dmy( '/' ).')';
+   return $name.' ('.locd( $req, $self->start_date ).')';
 }
 
 sub post_filename {
