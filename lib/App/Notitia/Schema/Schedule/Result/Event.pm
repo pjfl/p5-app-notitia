@@ -155,6 +155,8 @@ sub label {
 sub localised_label {
    my ($self, $req) = @_; my $name = locm $req, lc $self->name;
 
+   $name = $name ne lc $self->name ? $name : $self->name;
+
    return $name.' ('.locd( $req, $self->start_date ).')';
 }
 

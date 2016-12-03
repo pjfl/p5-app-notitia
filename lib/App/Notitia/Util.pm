@@ -416,11 +416,11 @@ sub dialog_anchor ($$$) {
 sub display_duration ($$) {
    my ($req, $event) = @_; my ($start, $end) = $event->duration;
 
-   $start = locd( $req, $start ); $end = locd( $req, $end );
+   my $local_start = locd( $req, $start ); my $local_end = locd( $req, $end );
 
    return
-      loc( $req, 'Starts' ).SPC.$start.SPC.$start->strftime( '%H:%M' ),
-      loc( $req, 'Ends' ).SPC.$end.SPC.$end->strftime( '%H:%M' );
+      loc( $req, 'Starts' ).SPC.$local_start.SPC.$start->strftime( '%H:%M' ),
+      loc( $req, 'Ends' ).SPC.$local_end.SPC.$end->strftime( '%H:%M' );
 }
 
 sub encrypted_attr ($$$$) {
