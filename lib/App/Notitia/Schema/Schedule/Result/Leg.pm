@@ -68,7 +68,7 @@ sub insert {
 sub label {
    my ($self, $req) = @_;
 
-   return locm( $req, $self->beginning ).' ('.$self->called_label.')';
+   return locm( $req, $self->beginning ).' ('.$self->called_label( $req ).')';
 }
 
 sub on_station_label {
