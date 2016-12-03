@@ -7,8 +7,8 @@ use App::Notitia::Constants qw( C_DIALOG FALSE NUL SPC
                                 SHIFT_TYPE_ENUM TILDE TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_button
                                 p_checkbox p_hidden p_js p_link p_select );
-use App::Notitia::Util      qw( assign_link dialog_anchor js_config
-                                js_submit_config local_dt locm make_tip now_dt
+use App::Notitia::Util      qw( assign_link dialog_anchor js_submit_config
+                                js_togglers_config local_dt locm make_tip now_dt
                                 register_action_paths slot_claimed
                                 slot_identifier slot_limit_index to_dt to_msg
                                 uri_for_action );
@@ -172,12 +172,11 @@ my $_participents_link = sub {
 
 my $_push_slot_claim_js = sub {
    my $page = shift;
+   my $id   = substr create_token, 0, 5;
+   my $assignee_id = "assignee_${id}";
+   my $args = [ "${assignee_id}_label" ];
 
-   my $id   = substr create_token, 0, 5; my $assignee_id = "assignee_${id}";
-
-   my $opts = [ $assignee_id, 'change', 'hide', [ "${assignee_id}_label" ] ];
-
-   js_config $page, 'togglers', $opts;
+   p_js $page, js_togglers_config $assignee_id, 'change', 'hide', $args;
 
    return $assignee_id;
 };

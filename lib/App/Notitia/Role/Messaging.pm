@@ -2,11 +2,12 @@ package App::Notitia::Role::Messaging;
 
 use namespace::autoclean;
 
-use App::Notitia::Form      qw( blank_form f_link p_button
+use App::Notitia::Form      qw( blank_form f_link p_button p_js
                                 p_radio p_select p_textarea );
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Util      qw( js_config locm mail_domain
-                                set_element_focus to_msg uri_for_action );
+use App::Notitia::Util      qw( js_togglers_config js_window_config locm
+                                mail_domain set_element_focus to_msg
+                                uri_for_action );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token throw trim );
 use Moo::Role;
@@ -194,9 +195,8 @@ sub message_link {
       target  => $page->{forms}->[ 0 ]->{form_name} // $page->{form}->{name},
       title   => locm( $req, 'message_title' ),
       useIcon => \1 } ];
-   my $opts   =  [ 'send_message', 'click', 'inlineDialog', $args ];
 
-   js_config $page, 'window', $opts;
+   p_js $page, js_window_config 'send_message', 'click', 'inlineDialog', $args;
 
    return f_link 'message', C_DIALOG, { action => 'send', request => $req };
 }
@@ -240,16 +240,14 @@ sub message_stash {
 
    $stash->{page}->{literal_js} = set_element_focus "people", 'email_message';
 
-   my $args = [ $plate_eml_id, "${plate_eml_id}_label" ];
-   my $opts = [ $plate_eml_id, 'checked', 'showSelected', $args ];
+   p_js $stash->{page}, js_togglers_config $plate_eml_id, 'checked',
+      'showSelected', [ $plate_eml_id, "${plate_eml_id}_label" ];
 
-   js_config $stash->{page}, 'togglers', $opts;
-   $args = [ $adhoc_eml_id, "${adhoc_eml_id}_label" ];
-   $opts = [ $adhoc_eml_id, 'checked', 'showSelected', $args ];
-   js_config $stash->{page}, 'togglers', $opts;
-   $args = [ $sms_id, "${sms_id}_label" ];
-   $opts = [ $sms_id, 'checked', 'showSelected', $args ];
-   js_config $stash->{page}, 'togglers', $opts;
+   p_js $stash->{page}, js_togglers_config  $adhoc_eml_id, 'checked',
+      'showSelected', [ $adhoc_eml_id, "${adhoc_eml_id}_label" ];
+
+   p_js $stash->{page}, js_togglers_config  $sms_id, 'checked',
+      'showSelected', [ $sms_id, "${sms_id}_label" ];
 
    return $stash;
 }

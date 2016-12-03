@@ -28,7 +28,7 @@ our @EXPORT_OK = qw( action_for_uri action_path_uri_map assert_unique
                      dialog_anchor display_duration encrypted_attr enhance
                      event_actions event_handler event_handler_cache
                      event_streams get_hashed_pw get_salt is_access_authorised
-                     is_draft is_encrypted iterator js_config js_slider_config
+                     is_draft is_encrypted iterator js_slider_config
                      js_server_config js_submit_config js_togglers_config
                      js_window_config lcm_for load_file_data loc local_dt
                      localise_tree locd locm mail_domain make_id_from
@@ -547,21 +547,6 @@ sub iterator ($) {
    };
 }
 
-sub js_config ($$$) { # Deprecated
-   my ($page, $name, $params) = @_;
-
-   my $k      = $params->[ 0 ];
-   my $event  = $params->[ 1 ];
-   my $method = $params->[ 2 ];
-   my $args   = $json_coder->encode( $params->[ 3 ] );
-
-   return push @{ $page->{literal_js} //= [] },
-        "   behaviour.config.${name}[ '${k}' ] = {",
-        "      event     : '${event}',",
-        "      method    : '${method}',",
-        "      args      : ${args} };";
-}
-
 sub js_server_config ($$$$) {
    my ($k, $event, $method, $args) = @_; $args = $json_coder->encode( $args );
 
@@ -571,11 +556,10 @@ sub js_server_config ($$$$) {
           "      args      : ${args} };";
 }
 
-sub js_slider_config ($$$) {
-   my ($page, $k, $params) = @_; $params = $json_coder->encode( $params );
+sub js_slider_config ($$) {
+   my ($k, $params) = @_; $params = $json_coder->encode( $params );
 
-   return push @{ $page->{literal_js} //= [] },
-        "   behaviour.config.slider[ '${k}' ] = ${params};";
+   return "   behaviour.config.slider[ '${k}' ] = ${params};";
 }
 
 sub js_submit_config ($$$$) {
@@ -992,8 +976,6 @@ Greatest common factor
 =head2 C<is_encrypted>
 
 =head2 C<iterator>
-
-=head2 C<js_config>
 
 =head2 C<js_server_config>
 

@@ -103,7 +103,7 @@ my $_push_profile_js = sub {
       check_field_js( 'mobile_phone',  $opts ),
       check_field_js( 'postcode',      $opts );
 
-   js_slider_config $page, 'grid_width_slider', {
+   p_js $page, js_slider_config 'grid_width_slider', {
       form_name => 'profile-user',
       mode      => 'horizontal',
       name      => 'grid_width',
@@ -347,27 +347,27 @@ sub email_subs : Role(any) {
 
    p_textfield $form, 'username', $person->label, { disabled => TRUE };
 
-   p_select $form, 'unsubscribed_emails', $unsubscribed, {
-      multiple => TRUE, size => 5 };
-
-   my $action = $is_manager && $scode ne $req->username
-              ? 'force_subscribe_email' : 'subscribe_email';
-
-   p_button $form, 'subscribe_email', $action, {
-      class => 'delete-button', container_class => 'right-last',
-      tip   => make_tip( $req, 'subscribe_email_tip', [] ) };
-
-   p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
-
    p_select $form, 'subscribed_emails', $subscribed, {
       multiple => TRUE, size => 5 };
 
-   $action = $is_manager && $scode ne $req->username
-           ? 'force_unsubscribe_email' : 'unsubscribe_email';
+   my $action = $is_manager && $scode ne $req->username
+              ? 'force_unsubscribe_email' : 'unsubscribe_email';
 
    p_button $form, 'unsubscribe_email', $action, {
       class => 'save-button', container_class => 'right-last',
       tip   => make_tip( $req, 'unsubscribe_email_tip', [] ) };
+
+   p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
+
+   p_select $form, 'unsubscribed_emails', $unsubscribed, {
+      multiple => TRUE, size => 5 };
+
+   $action = $is_manager && $scode ne $req->username
+           ? 'force_subscribe_email' : 'subscribe_email';
+
+   p_button $form, 'subscribe_email', $action, {
+      class => 'delete-button', container_class => 'right-last',
+      tip   => make_tip( $req, 'subscribe_email_tip', [] ) };
 
    return $self->get_stash( $req, $page );
 }
@@ -581,27 +581,27 @@ sub sms_subs : Role(any) {
 
    p_textfield $form, 'username', $person->label, { disabled => TRUE };
 
-   p_select $form, 'unsubscribed_messages', $unsubscribed, {
-      multiple => TRUE, size => 5 };
-
-   my $action = $is_manager && $scode ne $req->username
-              ? 'force_subscribe_sms' : 'subscribe_sms';
-
-   p_button $form, 'subscribe_sms', $action, {
-      class => 'delete-button', container_class => 'right-last',
-      tip   => make_tip $req, 'subscribe_sms_tip', [] };
-
-   p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
-
    p_select $form, 'subscribed_messages', $subscribed, {
       multiple => TRUE, size => 5 };
 
-   $action = $is_manager && $scode ne $req->username
-           ? 'force_unsubscribe_sms' : 'unsubscribe_sms';
+   my $action = $is_manager && $scode ne $req->username
+              ? 'force_unsubscribe_sms' : 'unsubscribe_sms';
 
    p_button $form, 'unsubscribe_sms', $action, {
       class => 'save-button', container_class => 'right-last',
       tip   => make_tip $req, 'unsubscribe_sms_tip', [] };
+
+   p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
+
+   p_select $form, 'unsubscribed_messages', $unsubscribed, {
+      multiple => TRUE, size => 5 };
+
+   $action = $is_manager && $scode ne $req->username
+           ? 'force_subscribe_sms' : 'subscribe_sms';
+
+   p_button $form, 'subscribe_sms', $action, {
+      class => 'delete-button', container_class => 'right-last',
+      tip   => make_tip $req, 'subscribe_sms_tip', [] };
 
    return $self->get_stash( $req, $page );
 }
