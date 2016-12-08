@@ -410,10 +410,9 @@ sub incidents : Role(controller) {
       forms => [ $form ], selected => 'incidents',
       title => locm $req, 'incidents_title',
    };
-   my $is_viewer = is_member 'incident_viewer', $req->session->roles;
    my $opts      =  {
       controller => $req->username,
-      is_viewer  => $is_viewer,
+      is_manager => is_member( 'incident_manager', $req->session->roles ),
       page       => delete $params->{page} // 1,
       rows       => $req->session->rows_per_page,
    };

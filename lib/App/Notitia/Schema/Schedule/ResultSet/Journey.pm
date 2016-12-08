@@ -19,14 +19,14 @@ sub search_for_journeys {
 
    my $parser = $self->result_source->schema->datetime_parser;
    my $done = delete $opts->{done} ? TRUE : FALSE;
-   my $is_viewer = delete $opts->{is_viewer} ? TRUE : FALSE;
+   my $is_manager = delete $opts->{is_manager} ? TRUE : FALSE;
    my $scode = delete $opts->{controller};
    my $where = { completed => $done };
 
    set_rota_date $parser, $where, 'requested', $opts;
 
    if ($done) {
-      if (not $is_viewer and $scode) {
+      if (not $is_manager and $scode) {
          my $after = now_dt->subtract( hours => 24 );
 
          $where->{ 'delivered' }->{ '>' } = $parser->format_datetime( $after );

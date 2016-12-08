@@ -18,10 +18,10 @@ sub search_for_incidents {
    my ($self, $opts) = @_; $opts = { %{ $opts // () } };
 
    my $scode = delete $opts->{controller};
-   my $is_viewer = delete $opts->{is_viewer};
+   my $is_manager = delete $opts->{is_manager};
    my $where = {};
 
-   unless ($is_viewer) {
+   unless ($is_manager) {
       my $parser = $self->result_source->schema->datetime_parser;
 
       $where->{controller_id} = $self->$_find_by_shortcode( $scode )->id;

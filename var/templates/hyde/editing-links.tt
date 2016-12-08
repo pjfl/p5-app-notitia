@@ -1,6 +1,6 @@
 <!-- Editing Links -->
 [% IF ! page.editing && page.authenticated && page.is_editor -%]
-<div class="right hide-on-mobiles">
+<div class="right">
 [%    text = '<i class="edit-panel-icon false" id="edit-panelIcon"></i>' -%]
 [%    tip  = loc( 'Improve this page' ) -%]
 [%    LinkWithTips( '#', 'togglers', text, page.hint, tip, 'toggle-edit' ) -%]

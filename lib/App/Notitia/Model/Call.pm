@@ -3,7 +3,7 @@ package App::Notitia::Model::Call;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PRIORITY_TYPE_ENUM
                                 PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_action p_button p_fields
+use App::Notitia::Form      qw( blank_form p_action p_button p_fields p_js
                                 p_link p_list p_row p_select p_table
                                 p_tag p_textfield );
 use App::Notitia::Util      qw( check_field_js datetime_label dialog_anchor
@@ -54,7 +54,7 @@ my $_add_customer_js = sub {
 
    my $opts = { domain => $name ? 'update' : 'insert', form => 'Customer' };
 
-   push @{ $page->{literal_js} }, check_field_js( 'name', $opts );
+   p_js $page, check_field_js( 'name', $opts );
 
    return;
 };
@@ -64,9 +64,8 @@ my $_add_location_js = sub {
 
    my $opts = { domain => $name ? 'update' : 'insert', form => 'Location' };
 
-   push @{ $page->{literal_js} },
-      check_field_js( 'address', $opts ),
-      check_field_js( 'postcode', $opts );
+   p_js $page, check_field_js( 'address', $opts ),
+               check_field_js( 'postcode', $opts );
 
    return;
 };
@@ -83,15 +82,6 @@ my $_customers_headers = sub {
    my $req = shift; my $header = 'customers_heading';
 
    return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 0 ];
-};
-
-my $_is_disabled = sub {
-   my ($req, $journey, $done) = @_; $journey->id or return $done;
-
-   $req->username ne $journey->controller and return TRUE;
-   now_dt > $journey->created->clone->add( minutes => 30 ) and return TRUE;
-
-   return $done;
 };
 
 my $_link_opts = sub {
@@ -257,7 +247,6 @@ my $_bind_journey_fields = sub {
 
    my $schema    = $self->schema;
    my $disabled  = $opts->{disabled} // FALSE;
-   my $is_viewer = $opts->{is_viewer} // FALSE;
    my $customers = $schema->resultset( 'Customer' )->search( {} );
    my $locations = [ $schema->resultset( 'Location' )->search( {} )->all ];
 
@@ -407,6 +396,43 @@ my $_delivery_stages = sub {
    return [ $schema->resultset( 'Leg' )->search( $where, $opts )->all ];
 };
 
+my $_find_rota_type = sub {
+   return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
+};
+
+my $_is_manager = sub {
+   my ($self, $req, $journey) = @_;
+
+   is_member 'call_manager', $req->session->roles and return TRUE;
+   ($journey and $journey->id) or return FALSE;
+
+   my $rota_type = $self->$_find_rota_type( 'main' );
+   my $opts = { after => $journey->requested,
+                order_by => [ 'rota.date', 'shift.type_name' ],
+                rota_type => $rota_type->id, };
+   my $rs = $self->schema->resultset( 'Slot' );
+
+   for my $slot (grep { $_->type_name->is_controller }
+                 $rs->search_for_slots( $opts )->all) {
+      $slot->operator eq $req->username and return TRUE;
+      last;
+   }
+
+   return FALSE;
+};
+
+my $_is_disabled = sub {
+   my ($self, $req, $journey, $done) = @_; $journey->id or return $done;
+
+   $req->username ne $journey->controller
+      and not $self->$_is_manager( $req, $journey )
+      and return $done;
+
+   now_dt > $journey->created->clone->add( minutes => 30 ) and return TRUE;
+
+   return $done;
+};
+
 my $_journey_leg_row = sub {
    my ($self, $req, $jid, $leg) = @_;
 
@@ -436,8 +462,7 @@ my $_journey_package_row = sub {
    $disabled or p_link $link, $name, '#', {
       class => 'windows', request => $req, tip => $tip, value => $value };
 
-   push @{ $page->{literal_js} }, dialog_anchor( $name, $href, {
-      name => $name, title => $title, } );
+   p_js $page, dialog_anchor $name, $href, { name => $name, title => $title };
 
    return
       [ { class => 'narrow', value => $package->quantity }, $link,
@@ -469,8 +494,8 @@ my $_journey_package_ops_links = sub {
 
    my $href = uri_for_action $req, $actionp, [ $jid ];
 
-   push @{ $page->{literal_js} }, dialog_anchor( 'create_package', $href, {
-      name => 'create_package', title => $title, } );
+   p_js $page, dialog_anchor 'create_package', $href, {
+      name => 'create_package', title => $title };
 
    return $links;
 };
@@ -490,8 +515,8 @@ my $_journeys_ops_links = sub {
       my $title = locm( $req, "${name}_title" );
 
       p_link $links, $name, '#', { class => 'windows', request => $req };
-      push @{ $page->{literal_js} }, dialog_anchor( $name, $href, {
-         name => $name, title => $title, } );
+      p_js $page, dialog_anchor $name, $href, {
+         name => $name, title => $title };
 
       $actionp = $self->moniker.'/journey';
 
@@ -753,7 +778,7 @@ sub create_customer_action : Role(controller) {
    my $rs       = $self->schema->resultset( 'Customer' );
    my $cid      = $rs->create( { name => $name } )->id;
    my $key      = 'Customer [_1] created by [_2]';
-   my $message  = [ to_msg $key, $cid, $req->session->user_label ];
+   my $message  = [ to_msg $key, $name, $req->session->user_label ];
    my $location = uri_for_action $req, $self->moniker.'/customers';
 
    return { redirect => { location => $location, message => $message } };
@@ -772,7 +797,7 @@ sub create_delivery_request_action : Role(controller) {
    my $c_name = $customer->name;
 
    try   { $journey->insert }
-   catch { $self->blow_smoke( $_, 'create', 'delivery request', $c_name ) };
+   catch { $self->blow_smoke( $_, 'create', 'delivery request for', $c_name ) };
 
    my $jid = $journey->id;
    my $c_tag = lc $c_name; $c_tag =~ s{ [ ] }{_}gmx;
@@ -1028,18 +1053,18 @@ sub journey : Role(controller) Role(driver) Role(rider) {
       selected => $done ? 'completed_journeys' : 'journeys',
       title    => locm $req, 'journey_call_title'
    };
-   my $disabled  = $_is_disabled->( $req, $journey, $done );
-   my $is_viewer = is_member 'call_viewer', $req->session->roles;
+   my $disabled  = $self->$_is_disabled( $req, $journey, $done );
+   my $is_manager = $self->$_is_manager( $req, $journey );
    my $label     = locm( $req, 'delivery request' ).SPC.($jid // NUL);
 
    p_fields $jform, $self->schema, 'Journey', $journey,
       $self->$_bind_journey_fields( $req, $page, $journey, {
-         disabled => $disabled, done => $done, is_viewer => $is_viewer } );
+         disabled => $disabled, done => $done } );
 
    $disabled or p_action $jform, $action, [ 'delivery_request', $label ], {
       request => $req };
 
-   (not $is_viewer and $disabled) or $done
+   (not $is_manager and $disabled) or $done
       or ($jid and p_action $jform, 'delete', [ 'delivery_request', $label ], {
          request => $req } );
 
@@ -1060,11 +1085,10 @@ sub journeys : Role(controller) Role(driver) Role(rider) {
       forms   => [ $form ], selected => $select,
       title   => locm $req, "${select}_title",
    };
-   my $is_viewer =  is_member 'call_viewer', $req->session->roles;
    my $opts      =  {
       controller => $req->username,
       done       => $done,
-      is_viewer  => $is_viewer,
+      is_manager => $self->$_is_manager( $req ),
       page       => delete $params->{page} // 1,
       rows       => $req->session->rows_per_page,
    };
@@ -1101,7 +1125,7 @@ sub leg : Role(controller) Role(driver) Role(rider) {
    };
    my $links    = $self->$_leg_ops_links( $req, $page, $jid );
    my $count    = !$lid ? $self->$_count_legs( $jid ) : undef;
-   my $disabled = $_is_disabled->( $req, $journey, $done );
+   my $disabled = $self->$_is_disabled( $req, $journey, $done );
    my $label    = locm( $req, 'stage' ).SPC.($lid // NUL);
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
@@ -1221,6 +1245,7 @@ sub update_delivery_request_action : Role(controller) {
    my $journey = $self->schema->resultset( 'Journey' )->find( $jid );
 
    $journey->controller eq $req->username
+      or $self->$_is_manager( $req, $journey )
       or throw 'Updating someone elses delivery request is not allowed';
 
    $self->$_update_journey_from_request( $req, $journey );
@@ -1254,6 +1279,7 @@ sub update_delivery_stage_action : Role(controller) Role(driver) Role(rider) {
 
    $journey->controller eq $req->username
       or $leg->operator eq $req->username
+      or $self->$_is_manager( $req, $journey )
       or throw 'Updating someone elses delivery stage is not allowed';
 
    $self->$_update_leg_from_request( $req, $leg, $params );

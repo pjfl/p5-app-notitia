@@ -204,6 +204,9 @@ msgstr "Call Category"
 msgid "call_category"
 msgstr "Call Category"
 
+msgid "call_manager"
+msgstr "Call Manager"
+
 msgid "call_report_link"
 msgstr "Call Report"
 
@@ -212,9 +215,6 @@ msgstr "View the counts by customer of delviery requests"
 
 msgid "call_report_title"
 msgstr "Call Report"
-
-msgid "call_viewer"
-msgstr "Call Viewer"
 
 msgid "calls_management_heading"
 msgstr "Calls"
@@ -889,6 +889,9 @@ msgstr "Add Incident"
 msgid "incident_create_tip"
 msgstr "Create a new incident record"
 
+msgid "incident_manager"
+msgstr "Incident Manager"
+
 msgid "incident_party_create_link"
 msgstr "Involved Parties"
 
@@ -912,9 +915,6 @@ msgstr "View Incident"
 
 msgid "incident_view_tip"
 msgstr "View the incident in which these people are involved"
-
-msgid "incident_viewer"
-msgstr "Incident Viewer"
 
 msgid "incidents_heading_0"
 msgstr "Title"
