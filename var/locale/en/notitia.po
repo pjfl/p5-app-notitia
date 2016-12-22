@@ -1694,11 +1694,11 @@ msgstr "Reported By"
 msgid "reporter_phone"
 msgstr "Contact Phone"
 
-msgid "request_bike"
-msgstr "Do you want a bike?"
-
 msgid "request_reset"
 msgstr "Reset Password"
+
+msgid "request_service_vehicle"
+msgstr "Do you want a vehicle?"
 
 msgid "request_vehicle"
 msgstr "Request Vehicles"

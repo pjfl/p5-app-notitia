@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #136. Driver slot vehicle allocation
           - Fixes #131. Deliverys available to next controller
           - Adds #128. Limits consecutive slot claims
           - Vacant slot email now bank holiday aware

@@ -185,10 +185,10 @@ my $_new_shortcode = sub {
 };
 
 my $_assert_no_slot_collision = sub {
-   my ($self, $type_id, $date, $shift_type, $slot_type) = @_;
+   my ($self, $type_id, $dt, $shift_type, $slot_type) = @_;
 
    my $rs   = $self->result_source->schema->resultset( 'Slot' );
-   my $opts = { rota_type => $type_id, on => $date };
+   my $opts = { rota_type => $type_id, on => $dt };
 
    for my $slot ($rs->search_for_slots( $opts )->all) {
       $slot->shift eq $shift_type and $self->id == $slot->operator->id
@@ -200,21 +200,21 @@ my $_assert_no_slot_collision = sub {
 };
 
 my $_assert_not_too_many_slots = sub {
-   my ($self, $rota_type, $date, $shift_type) = @_;
+   my ($self, $rota_type, $dt, $shift_type) = @_;
 
    my $app = $self->result_source->schema->application;
    my $max_slots = $app->config->max_slots;
    my @shifts = @{ SHIFT_TYPE_ENUM() };
    my $n_shifts = @shifts;
-   my $after = $date->clone->subtract( days => $max_slots + 2 );
-   my $before = $date->clone->add( days => $max_slots + 2 );
+   my $after = $dt->clone->subtract( days => $max_slots + 2 );
+   my $before = $dt->clone->add( days => $max_slots + 2 );
    my $opts = { after => $after,
                 before => $before,
                 operator => $self->shortcode,
                 order_by => [ 'rota.date', 'shift.type_name' ],
                 rota_type => $rota_type->id, };
-   my $ymd = $date->ymd;
-   my $proposed = [ $date, $shift_type, "${rota_type}_${ymd}_${shift_type}" ];
+   my $ymd = $dt->ymd;
+   my $proposed = [ $dt, $shift_type, "${rota_type}_${ymd}_${shift_type}" ];
    my $shift_index = first_index { $_ eq $shift_type } @shifts;
    my $rs = $self->result_source->schema->resultset( 'Slot' );
    my $inserted = FALSE;
@@ -223,8 +223,8 @@ my $_assert_not_too_many_slots = sub {
    for my $slot ($rs->search_for_slots( $opts )->all) {
       my $index = first_index { $_ eq $slot->shift } @shifts;
 
-      if (not $inserted and $slot->start_date > $date
-          or ($slot->start_date == $date and $index > $shift_index)) {
+      if (not $inserted and $slot->start_date > $dt
+          or ($slot->start_date == $dt and $index > $shift_index)) {
          push @tuples, $proposed; $inserted = TRUE;
       }
 
@@ -271,18 +271,21 @@ my $_assert_not_too_many_slots = sub {
 };
 
 my $_assert_claim_allowed = sub {
-   my ($self, $name, $date, $shift_t, $slot_t, $subslot, $bike, $assigner) = @_;
+   my ($self, $rota_name, $dt, $slot_name, $request_sv, $assigner) = @_;
 
-   my $rota_type = $self->$_find_rota_type( $name );
+   my $rota_type = $self->$_find_rota_type( $rota_name );
 
-   $self->$_assert_no_slot_collision( $rota_type, $date, $shift_t, $slot_t );
+   my ($shift_t, $slot_t, $slotno) = split m{ _ }mx, $slot_name, 3;
+
+   $self->$_assert_no_slot_collision( $rota_type, $dt, $shift_t, $slot_t );
 
    $self->shortcode eq $assigner
-      and $self->$_assert_not_too_many_slots( $rota_type, $date, $shift_t );
+      and $self->$_assert_not_too_many_slots( $rota_type, $dt, $shift_t );
 
-   $slot_t eq 'rider' and $self->assert_member_of( 'rider' );
-   $slot_t ne 'rider' and $bike
-      and throw 'Cannot request a bike for slot type [_1]', [ $slot_t ];
+   $slot_t eq 'driver' and $self->assert_member_of( 'driver' );
+   $slot_t eq 'rider'  and $self->assert_member_of( 'rider' );
+   $slot_t eq 'driver' or $slot_t eq 'rider' or not $request_sv or throw
+      'Cannot request a service vehicle for slot type [_1]', [ $slot_t ];
 
    for my $cert (@{ $self->$_list_slot_certs_for( $slot_t ) }) {
       $self->assert_certified_for( $cert );
@@ -291,13 +294,13 @@ my $_assert_claim_allowed = sub {
    my $conf = $self->result_source->schema->config;
    my $i    = slot_limit_index $shift_t, $slot_t;
 
-   $subslot > $conf->slot_limits->[ $i ] - 1
+   $slotno > $conf->slot_limits->[ $i ] - 1
       and throw 'Cannot claim slot [_1] greater than slot limit [_2]',
-          [ $subslot, $conf->slot_limits->[ $i ] - 1 ];
+          [ $slotno, $conf->slot_limits->[ $i ] - 1 ];
 
-   $slot_t eq 'rider' and now_dt->add( weeks => 4 ) < $date
-      and $self->region ne $conf->slot_region->{ $subslot }
-      and throw 'Cannot claim slot [_1] out of region', [ $subslot ];
+   $slot_t eq 'rider' and now_dt->add( weeks => 4 ) < $dt
+      and $self->region ne $conf->slot_region->{ $slotno }
+      and throw 'Cannot claim slot [_1] out of region', [ $slotno ];
 
    return;
 };
@@ -434,20 +437,20 @@ sub authenticate_optional_2fa {
 }
 
 sub claim_slot {
-   my ($self, $rota_name, $date, $name, $bike, $vehicle, $assigner) = @_;
-
-   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
+   my ($self, $name, $dt, $slot_name, $request_sv, $vehicle, $assigner) = @_;
 
    $self->$_assert_claim_allowed
-      ( $rota_name, $date, $shift_type, $slot_type, $subslot, $bike, $assigner);
+      ( $name, $dt, $slot_name, $request_sv, $assigner );
 
-   my $shift = $self->find_shift( $rota_name, $date, $shift_type );
-   my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
+   my ($shift_type, $slot_type, $slotno) = split m{ _ }mx, $slot_name, 3;
+
+   my $shift = $self->find_shift( $name, $dt, $shift_type );
+   my $slot  = $self->find_slot( $shift, $slot_type, $slotno );
 
    $slot and throw SlotTaken, [ $slot, $slot->operator ];
 
-   my $attr = { bike_requested => $bike,    shift_id  => $shift->id,
-                subslot        => $subslot, type_name => $slot_type, };
+   my $attr = { bike_requested => $request_sv, shift_id => $shift->id,
+                subslot        => $slotno, type_name => $slot_type, };
 
    $vehicle and $attr->{operator_vehicle_id} = $vehicle->id;
 
@@ -752,10 +755,10 @@ sub validation_attributes {
 }
 
 sub yield_slot {
-   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot) = @_;
+   my ($self, $rota_name, $dt, $shift_type, $slot_type, $slotno) = @_;
 
-   my $shift = $self->find_shift( $rota_name, $date, $shift_type );
-   my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
+   my $shift = $self->find_shift( $rota_name, $dt, $shift_type );
+   my $slot  = $self->find_slot( $shift, $slot_type, $slotno );
 
    $slot or throw SlotFree, [ $slot ]; $self->$_assert_yield_allowed( $slot );
 

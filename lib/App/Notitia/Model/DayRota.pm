@@ -292,7 +292,7 @@ my $_driver_row = sub {
    my ($req, $page, $args, $data) = @_; my $k = $args->[ 2 ];
 
    return [ { value => locm( $req, $k ), class => 'rota-header' },
-            { value => undef },
+            assign_link( $req, $page, $args, $data->{ $k } ),
             $_slot_link->( $req, $page, $data, $k, 'driver' ),
             $_operators_vehicle_link->( $req, $page, $data, $k ), ];
 };
@@ -484,7 +484,7 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
    my $assigner   = $req->username;
    my $assignee   = $req->body_params->( 'assignee', $opts ) || $assigner;
    my $person     = $self->$_find_by_shortcode( $assignee );
-   my $bike       = $req->body_params->( 'request_bike', $opts ) // FALSE;
+   my $request_sv = $req->body_params->( 'request_service_vehicle', $opts );
    my $vrn        = $req->body_params->( 'vehicle', $opts );
    my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
    my $vehicle    = $vrn ? $vehicle_rs->find_vehicle_by( $vrn ) : undef;
@@ -492,11 +492,11 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
    $vehicle and ($vehicle->owner_id == $person->id or $vehicle = undef);
 
    $person->claim_slot
-      ( $rota_name, $rota_dt, $name, $bike, $vehicle, $assigner );
+      ( $rota_name, $rota_dt, $name, $request_sv, $vehicle, $assigner );
 
    $self->send_event( $req, "action:slot-claim shortcode:${assignee} "
                           . "rota_name:${rota_name} rota_date:${rota_date} "
-                          . "slot:${name} vehicle_requested:${bike}" );
+                          . "slot:${name} vehicle_requested:${request_sv}" );
 
    my $args     = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;
@@ -516,7 +516,7 @@ sub day_rota : Role(any) {
    my $rota_date = $params->( 1, { optional => TRUE } ) // $today;
    my $rota_dt   = to_dt $rota_date;
    my $type_id   = $self->$_find_rota_type( $name )->id;
-   my $slot_rs   = $self->schema->resultset( 'Slot' );;
+   my $slot_rs   = $self->schema->resultset( 'Slot' );
    my $event_rs  = $self->schema->resultset( 'Event' );
    my $events    = $event_rs->search_for_a_days_events
       ( $type_id, $rota_dt, { event_type => [ qw( person training ) ] } );
@@ -524,12 +524,16 @@ sub day_rota : Role(any) {
    my $slot_data = {};
 
    for my $slot ($slot_rs->search_for_slots( $opts )->all) {
+      my $vehicle_type = $slot->type_name eq 'driver' ? '4x4'
+                       : $slot->type_name eq 'rider'  ? 'bike' : undef;
+
       $slot_data->{ $slot->key } =
          { name        => $slot->key,
            operator    => $slot->operator,
            rota_dt     => $rota_dt,
            rota_name   => $name,
            slov        => $slot->operator_vehicle,
+           type        => $vehicle_type,
            vehicle     => $slot->vehicle,
            vehicle_req => $slot->bike_requested };
    }
@@ -635,11 +639,11 @@ sub slot : Dialog Role(rota_manager) Role(rider) Role(controller) Role(driver) {
             class => 'standard-field togglers', id => $id };
       }
 
-      ($slot_type eq 'driver' or $slot_type eq 'rider')
-         and $self->$_push_vehicle_select( $req, $form, $id, $person, $args );
+      if ($slot_type eq 'driver' or $slot_type eq 'rider') {
+         $self->$_push_vehicle_select( $req, $form, $id, $person, $args );
 
-      $slot_type eq 'rider' and p_checkbox $form, 'request_bike', TRUE, {
-         checked => TRUE };
+         p_checkbox $form, 'request_service_vehicle', TRUE, { checked => TRUE };
+      }
    }
 
    p_button $form, 'confirm', "${action}_slot", {
