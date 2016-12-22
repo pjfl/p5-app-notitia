@@ -489,6 +489,7 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
    my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
    my $vehicle    = $vrn ? $vehicle_rs->find_vehicle_by( $vrn ) : undef;
 
+   $request_sv //= FALSE;
    $vehicle and ($vehicle->owner_id == $person->id or $vehicle = undef);
 
    $person->claim_slot
