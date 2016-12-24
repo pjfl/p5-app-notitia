@@ -525,7 +525,7 @@ sub day_rota : Role(any) {
    my $slot_data = {};
 
    for my $slot ($slot_rs->search_for_slots( $opts )->all) {
-      my $vehicle_type = $slot->type_name eq 'driver' ? '4x4'
+      my $vehicle_type = $slot->type_name eq 'driver' ? [ '4x4', 'car' ]
                        : $slot->type_name eq 'rider'  ? 'bike' : undef;
 
       $slot_data->{ $slot->key } =

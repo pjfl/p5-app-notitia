@@ -526,7 +526,9 @@ sub assign : Dialog Role(rota_manager) {
       $slot_name and push @{ $args }, $slot_name;
 
    my $action = $req->query_params->( 'action' );
-   my $type   = $req->query_params->( 'type', { optional => TRUE } ) // 'bike';
+   my $type   = $req->query_params->( 'type', {
+      multiple => TRUE, optional => TRUE } ) // [ 'bike' ];
+
    my $stash  = $self->dialog_stash( $req );
    my $href   = uri_for_action $req, $self->moniker.'/vehicle', $args;
    my $form   = $stash->{page}->{forms}->[ 0 ]
