@@ -3,7 +3,7 @@ package App::Notitia::Model::Event;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_button p_list
-                                p_fields p_row p_table p_tag p_text
+                                p_fields p_js p_row p_table p_tag p_text
                                 p_textfield );
 use App::Notitia::Util      qw( check_field_js display_duration loc
                                 locd locm make_tip management_link now_dt
@@ -49,6 +49,15 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_add_event_js = sub {
+   my $page = shift; my $opts = { domain => 'schedule', form => 'Event' };
+
+   p_js $page, check_field_js( 'description', $opts ),
+               check_field_js( 'name', $opts );
+
+   return;
+};
+
 my $_bind_date = sub {
    my ($req, $name, $date, $event, $opts) = @_;
 
@@ -171,13 +180,6 @@ my $_events_ops_links = sub {
 };
 
 # Private methods
-my $_add_event_js = sub {
-   my $self = shift; my $opts = { domain => 'schedule', form => 'Event' };
-
-   return [ check_field_js( 'description', $opts ),
-            check_field_js( 'name', $opts ) ];
-};
-
 my $_bind_owner = sub {
    my ($self, $event, $disabled) = @_; $event->uri or return FALSE;
 
@@ -587,23 +589,21 @@ sub delete_vehicle_event_action : Role(rota_manager) {
 sub event : Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $actionp    =  $self->moniker.'/event';
    my $opts       =  { optional => TRUE };
    my $uri        =  $req->uri_params->( 0, $opts );
    my $date       =  $req->query_params->( 'date', $opts );
+   my $disabled   =  $req->query_params->( 'before', $opts ) ? TRUE : FALSE;
+   my $actionp    =  $self->moniker.'/event';
    my $href       =  uri_for_action $req, $actionp, [ $uri ];
    my $form       =  blank_form 'event-admin', $href;
    my $action     =  $uri ? 'update' : 'create';
    my $page       =  {
       first_field => 'name',
       forms       => [ $form ],
-      literal_js  => $self->$_add_event_js(),
-      selected    => $req->query_params->( 'before', $opts ) ? 'previous_events'
-                  :  'current_events',
+      selected    => $disabled ? 'previous_events' : 'current_events',
       title       => loc $req, "event_${action}_heading" };
    my $event      =  $self->$_maybe_find_event( $uri );
    my $links      =  $uri ? $_event_ops_links->( $req, $actionp, $uri ) : [];
-   my $disabled   =  $page->{selected} ne 'current_events' ? TRUE : FALSE;
 
    $uri and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
@@ -615,6 +615,7 @@ sub event : Role(event_manager) {
       or p_action $form, $action, [ 'event', $uri ], { request => $req };
 
    $uri and p_action $form, 'delete', [ 'event', $uri ], { request => $req };
+   $_add_event_js->( $page );
 
    return $self->get_stash( $req, $page );
 }
@@ -675,8 +676,8 @@ sub events : Role(any) {
 
    my $moniker   =  $self->moniker;
    my $params    =  $req->query_params->( { optional => TRUE } );
-   my $after     =  $params->{after} ? to_dt( $params->{after} ) : FALSE;
-   my $before    =  $params->{before} ? to_dt( $params->{before} ) : FALSE;
+   my $after     =  $params->{after} ? to_dt $params->{after} : FALSE;
+   my $before    =  $params->{before} ? to_dt $params->{before} : FALSE;
    my $opts      =  { after      => $after,
                       before     => $before,
                       event_type => 'person',
@@ -880,7 +881,6 @@ sub vehicle_event : Role(rota_manager) {
    my $page       =  {
       first_field => 'name',
       forms       => [ $form ],
-      literal_js  => $self->$_add_event_js(),
       selected    => 'service_vehicles',
       title       => loc $req, "vehicle_event_${action}_heading" };
    my $event      =  $self->$_maybe_find_event( $uri );
@@ -895,6 +895,7 @@ sub vehicle_event : Role(rota_manager) {
    p_action $form, $action, $args, { request => $req };
 
    $uri and p_action $form, 'delete', $args, { request => $req };
+   $_add_event_js->( $page );
 
    return $self->get_stash( $req, $page );
 }
