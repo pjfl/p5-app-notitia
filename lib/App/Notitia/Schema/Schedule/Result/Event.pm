@@ -117,23 +117,17 @@ sub count_of_participents {
 }
 
 sub duration {
-   my $self  = shift;
-   my ($hours, $mins) = split m{ : }mx, $self->start_time, 2;
-   my $start = $self->start_date->add( hours   => $hours )
-                                ->add( minutes => $mins  );
-
-   ($hours, $mins) = split m{ : }mx, $self->end_time, 2;
-
-   my $end   = $self->end_date->add( hours   => $hours )
-                              ->add( minutes => $mins  );
-
-   return $start, $end;
+   return $_[ 0 ]->starts, $_[ 0 ]->ends;
 }
 
 sub end_date {
-   my $self = shift; my $end = $self->end_rota;
+   return $_[ 0 ]->end_rota->date->clone;
+}
 
-   return defined $end ? $end->date->clone : $self->start_date;
+sub ends {
+   my $self = shift; my ($hours, $mins) = split m{ : }mx, $self->end_time, 2;
+
+   return $self->end_date->add( hours => $hours )->add( minutes => $mins );
 }
 
 sub insert {
@@ -184,6 +178,12 @@ sub sqlt_deploy_hook {
 
 sub start_date {
    return $_[ 0 ]->start_rota->date->clone;
+}
+
+sub starts {
+   my $self = shift; my ($hours, $mins) = split m{ : }mx, $self->start_time, 2;
+
+   return $self->start_date->add( hours => $hours )->add( minutes => $mins );
 }
 
 sub update {
