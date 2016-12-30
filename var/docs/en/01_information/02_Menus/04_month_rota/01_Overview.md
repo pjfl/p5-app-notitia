@@ -1,12 +1,13 @@
 ---
 author: admin
 created: 2016-07-09 15:37:38 +0000
-title: Month Rota
 roles:
    - any
 ---
 
-#### Month View
+<style> h6 { text-decoration: underline; } </style>
+
+###### Month View
 
 The main "rota" menu item leads to this months calendar display. This page has
 a square for each day of the month, with each square having a heading row and
@@ -27,7 +28,8 @@ the slot.
 
 ![RotaM]([%links.assets%]rota-tip.png)
 
-#### Week View
+
+###### Select Week (week view)
 
 On the right hand navigation menu, you can select a particular week within the
 current month. This will take you to the slots for that week. This shows the
@@ -35,7 +37,8 @@ vehicles and the slot(s) to which they have been allocated.
 
 ![RotaW]([%links.assets%]rota-week.png)
 
-#### Day View
+
+###### Day View
 
 Clicking on a day-square on the month calendar will take you to a page with
 more detail on that day, where you can see the riders and controllers that have
@@ -45,7 +48,8 @@ satisfied here (if you have the "Rota Manager" role)
 
 ![RotaD]([%links.assets%]rota-day.png)
 
-#### Spreadsheet View
+
+###### Vehicle Allocation (spreadsheet view)
 
 If you have the "Rota Manager" role, you will see the Spreasheet entry in the
 right hand navigation menu. Clicking this will take you to a page with the
