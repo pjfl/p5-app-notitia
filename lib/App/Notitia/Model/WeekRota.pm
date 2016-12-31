@@ -653,7 +653,8 @@ my $_search_for_events = sub {
 
    my $tport_rs = $self->schema->resultset( 'Transport' );
 
-   $opts->{prefetch} = [ { 'event' => [ 'owner', 'start_rota' ] }, 'vehicle' ];
+   $opts->{prefetch} = [ {
+      'event' => [ 'end_rota', 'owner', 'start_rota' ] }, 'vehicle' ];
 
    for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
       my $k = local_dt( $tport->event->start_date )->ymd;
