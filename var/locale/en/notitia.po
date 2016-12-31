@@ -1986,8 +1986,8 @@ msgstr "Trainer"
 msgid "training"
 msgstr "Training"
 
-msgid "training_enrollment_title"
-msgstr "Course Enrollment"
+msgid "training_enrolment_title"
+msgstr "Course Enrolment"
 
 msgid "training_event_name"
 msgstr "Course Name"

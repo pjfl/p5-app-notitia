@@ -116,19 +116,19 @@ my $_summary_caption = sub {
       qw( enrolled started completed expired );
 };
 
-my $_enroll_link = sub {
+my $_enrol_link = sub {
    my ($self, $req, $person, $course_name) = @_;
 
    my $href = uri_for_action $req, $self->moniker.'/training', [ "${person}" ];
    my $form = blank_form 'training', $href;
-   my $text = 'Enroll [_1] on the [_2]';
+   my $text = 'Enrol [_1] on the [_2]';
 
    $course_name !~ m{ course \z }mx and $text .= ' course';
 
    my $tip = make_tip $req, $text, [ $person->label, $course_name ];
 
-   p_button $form, 'enroll', 'add_course', {
-      class => 'table-link', label => locm( $req, 'Enroll' ), tip => $tip };
+   p_button $form, 'enrol', 'add_course', {
+      class => 'table-link', label => locm( $req, 'Enrol' ), tip => $tip };
    p_hidden $form, 'courses', $course_name;
 
    return $form;
@@ -203,7 +203,7 @@ my $_summary_cell = sub {
    my $course_name = $all_courses->[ $index ];
 
    exists $tuple->[ 1 ]->{ $course_name }
-      or return { value => $self->$_enroll_link( $req, $person, $course_name )};
+      or return { value => $self->$_enrol_link( $req, $person, $course_name )};
 
    my $scode = $person->shortcode;
    my $course = $tuple->[ 1 ]->{ $course_name };
@@ -436,7 +436,7 @@ sub training : Role(training_manager) {
    my $form = blank_form 'training', $href;
    my $page = {
       forms => [ $form ], selected => $role ? "${role}_list" : 'summary',
-      title => locm $req, 'training_enrollment_title'
+      title => locm $req, 'training_enrolment_title'
       };
    my $courses_taken = $person->list_courses;
    my $courses = $_subtract->( $self->$_list_all_courses, $courses_taken );

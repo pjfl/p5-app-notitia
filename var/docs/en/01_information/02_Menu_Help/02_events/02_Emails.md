@@ -17,7 +17,7 @@ This menu gives access to the notification email templates. There are a number o
  [% type %]
  
 
-###### Course Enrollment
+###### Course Enrolment
 
 Sent to people when they have been enrolled on a course
 

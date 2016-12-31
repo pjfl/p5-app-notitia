@@ -1,8 +1,8 @@
 ---
 author: admin
 created: 2016-11-13 22:31:23 +0000
-subject: Course Enrollment
-title: Course Enrollment
+subject: Course Enrolment
+title: Course Enrolment
 roles:
    - editor
 ---
