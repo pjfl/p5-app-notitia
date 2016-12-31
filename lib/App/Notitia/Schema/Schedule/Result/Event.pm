@@ -77,12 +77,12 @@ my $_set_uri = sub {
 my $_vehicle_event_id_cache;
 
 my $_vehicle_event_id = sub {
-   my $self   = shift;
+   my $self = shift;
 
    $_vehicle_event_id_cache and return $_vehicle_event_id_cache;
 
    my $schema = $self->result_source->schema;
-   my $type   = $schema->resultset( 'Type' )->find_event_by( 'vehicle' );
+   my $type = $schema->resultset( 'Type' )->find_event_by( 'vehicle' );
 
    return $_vehicle_event_id_cache = $type->id;
 };
