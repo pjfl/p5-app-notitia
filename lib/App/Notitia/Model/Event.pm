@@ -6,9 +6,9 @@ use App::Notitia::Form      qw( blank_form f_link p_action p_button p_list
                                 p_fields p_js p_row p_table p_tag p_text
                                 p_textfield );
 use App::Notitia::Util      qw( check_field_js datetime_label display_duration
-                                loc locd locm make_tip management_link now_dt
-                                page_link_set register_action_paths to_dt to_msg
-                                uri_for_action );
+                                loc local_dt locd locm make_tip management_link
+                                now_dt page_link_set register_action_paths
+                                to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -209,8 +209,10 @@ my $_format_as_markdown = sub {
    my $yaml    = "---\nauthor: ".$event->owner."\n"
                . "created: ${created}\nrole: any\ntitle: ${name}\n---\n";
    my $desc    = $event->description."\n\n";
-   my @opts    = (locd( $req, $event->start_date ), $event->start_time,
-                  locd( $req, $event->end_date ), $event->end_time);
+   my @opts    = (locd( $req, $event->starts ),
+                  local_dt( $event->starts )->strftime( '%H:%M' ),
+                  locd( $req, $event->ends ),
+                  local_dt( $event->ends )->strftime( '%H:%M' ));
    my $key     = $event->start_date == $event->end_date
                ? 'event_single_day' : 'event_multi_day';
    my $when    = locm( $req, $key, @opts )."\n\n";
@@ -278,16 +280,12 @@ my $_update_event_from_request = sub {
       $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
       if (length $v and is_member $attr, [ qw( ends starts ) ]) {
-         my $method = $attr eq 'ends' ? 'end_time' : 'start_time';
-
-         $v =~ s{ [@] }{}mx; $v = to_dt $v, 'local';
-
-         $event->$method( sprintf '%.2d:%.2d', $v->hour, $v->minute );
+         $v =~ s{ [@] }{}mx; $v = to_dt( $v, 'local' )->strftime( '%H:%M' );
+         $attr eq 'ends' ? $event->end_time( $v ) : $event->start_time( $v );
          next;
       }
 
       $attr eq 'max_participents' and not $v and undef $v;
-
       $event->$attr( $v );
    }
 

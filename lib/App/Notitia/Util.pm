@@ -402,7 +402,7 @@ sub datetime_label ($;$) {
 
    my $date = $req ? locd( $req, $dt ) : local_dt( $dt )->dmy( '/' );
 
-   return sprintf '%s @ %.2d:%.2d', $date, $dt->hour, $dt->minute;
+   return sprintf '%s @ %s', $date, local_dt( $dt )->strftime( '%H:%M' );
 }
 
 sub dialog_anchor ($$$) {
@@ -414,13 +414,11 @@ sub dialog_anchor ($$$) {
 }
 
 sub display_duration ($$) {
-   my ($req, $event) = @_; my ($start, $end) = $event->duration;
-
-   my $local_start = locd( $req, $start ); my $local_end = locd( $req, $end );
+   my ($req, $event) = @_; my ($starts, $ends) = $event->duration;
 
    return
-      loc( $req, 'Starts' ).SPC.$local_start.SPC.$start->strftime( '%H:%M' ),
-      loc( $req, 'Ends' ).SPC.$local_end.SPC.$end->strftime( '%H:%M' );
+      loc( $req, 'Starts' ).SPC.datetime_label( $req, $starts ),
+      loc( $req, 'Ends' ).SPC.datetime_label( $req, $ends );
 }
 
 sub encrypted_attr ($$$$) {
@@ -637,6 +635,7 @@ sub localise_tree ($$) {
 }
 
 sub locd ($$) {
+# TODO: Select serialisation method based on req locale
    my $req = shift; return local_dt( $_[ 0 ] )->dmy( '/' );
 }
 

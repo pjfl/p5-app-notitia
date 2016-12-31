@@ -291,7 +291,7 @@ sub application_upgraded : method {
    my $req     = $self->$_new_request( $self->next_argv, $self->next_argv );
    my $now     = local_dt now_dt;
    my $dmy     = locd $req, $now;
-   my $time    = sprintf '%.2d.%.2d', $now->hour, $now->minute;
+   my $time    = $now->strftime( '%H.%M' );
    my $version = $self->config->appclass->VERSION;
    my $message = "action:application-upgraded date:${dmy} time:${time} "
                . "version:${version}";
