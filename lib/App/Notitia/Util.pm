@@ -99,6 +99,21 @@ my $get_tip_text = sub {
    return $name;
 };
 
+my $_is_access_authorised_for_folder = sub {
+   my ($req, $node) = @_;
+
+   for my $child (grep { is_hashref $child }
+                  map  { $node->{tree}->{ $_ } }
+                  grep { not m{ \A _ }mx } keys %{ $node->{tree} }) {
+      if ($child->{type} eq 'folder') {
+         $_is_access_authorised_for_folder->( $req, $child ) and return TRUE;
+      }
+      else { is_access_authorised( $req, $child ) and return TRUE }
+   }
+
+   return FALSE;
+};
+
 my $load_directory_data = sub {
    my $folder = shift;
    my $path = $folder->{path}->catfile( '.data.json' ); $path->exists or return;
@@ -281,6 +296,7 @@ sub build_navigation ($$) {
    my ($req, $opts) = @_; my $count = 0; my @nav = ();
 
    my $ids = $req->uri_params->() // []; my $iter = iterator( $opts->{node} );
+
    while (defined (my $node = $iter->())) {
       $node->{id} eq 'index' and next;
       is_access_authorised( $req, $node ) or next;
@@ -290,6 +306,7 @@ sub build_navigation ($$) {
 
          for my $id (grep { not m{ \A _ }mx } keys %{ $node->{tree} }) {
             my $candidate = $node->{tree}->{ $id };
+
             $keepit = is_access_authorised( $req, $candidate ) and last;
          }
 
@@ -489,30 +506,11 @@ sub get_salt ($) {
    return join '$', @parts;
 }
 
-sub is_access_authorised_for_folder {
-   my ($req, $node) = @_; $node->{type} eq 'folder' or return FALSE;
-
-   for my $c ( keys %{$node->{tree}} ) {
-        my $child = $node->{tree}->{$c};
- 
-        ref $child eq 'HASH' or next;
-
-        $child->{type} eq 'folder' 
-            and is_access_authorised_for_folder($req, $child)
-            and return TRUE;
-        
-        is_access_authorised($req, $child) and return TRUE;
-   }
-
-   return FALSE;
-}
-
 sub is_access_authorised ($$) {
    my ($req, $node) = @_;
 
-   $node->{type} eq 'folder' 
-      and is_access_authorised_for_folder($req, $node)
-      and return TRUE;
+   $node->{type} eq 'folder'
+      and return $_is_access_authorised_for_folder->( $req, $node );
 
    my $nroles = $node->{role} // $node->{roles};
 
