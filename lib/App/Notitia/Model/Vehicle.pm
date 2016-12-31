@@ -451,7 +451,8 @@ my $_vehicle_events = sub {
              $self->$_vehicle_event_links( $req, $event ) ] ];
    }
 
-   $opts->{prefetch} = [ { 'event' => [ 'owner', 'start_rota' ] }, 'vehicle' ];
+   $opts->{prefetch} = [ {
+      'event' => [ 'end_rota', 'owner', 'start_rota' ] }, 'vehicle' ];
 
    for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
       my $event = $tport->event;

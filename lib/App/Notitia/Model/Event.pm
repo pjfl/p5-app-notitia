@@ -10,9 +10,10 @@ use App::Notitia::Util      qw( check_field_js datetime_label display_duration
                                 now_dt page_link_set register_action_paths
                                 to_dt to_msg uri_for_action );
 use Class::Null;
-use Class::Usul::Functions  qw( create_token is_member throw );
+use Class::Usul::Functions  qw( create_token exception is_member throw );
 use Class::Usul::Time       qw( time2str );
 use Try::Tiny;
+use Unexpected::Functions   qw( catch_class ValidationErrors VehicleAssigned );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -419,6 +420,10 @@ my $_create_event = sub {
 
    $self->$_update_event_from_request( $req, $event );
 
+   $event->starts > $event->ends
+      and throw ValidationErrors, [ exception 'Ends before start' ];
+
+   my $label  = $event->localised_label( $req );
    my $create = sub { $event->insert };
 
    if ($event_type eq 'training') {
@@ -427,12 +432,11 @@ my $_create_event = sub {
       $v and $create = sub { $event->insert; $event->add_trainer( $v ) };
    }
 
-   try   { $self->schema->txn_do( $create ) }
-   catch {
-      my $label = $event->localised_label( $req );
-
-      $self->blow_smoke( $_, 'create', 'event', $label );
-   };
+   try { $self->schema->txn_do( $create ) }
+   catch_class [
+      VehicleAssigned => sub { throw $_ },
+      '*' => sub { $self->blow_smoke( $_, 'create', 'event', $label ) },
+   ];
 
    return $event;
 };

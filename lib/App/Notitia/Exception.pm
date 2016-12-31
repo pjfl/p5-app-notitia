@@ -40,6 +40,9 @@ has_exception 'SlotFree' => parents => [ $class ],
 has_exception 'SlotTaken' => parents => [ $class ],
    error   => 'Slot [_1] alredy taken by [_2]';
 
+has_exception 'VehicleAssigned' => parents => [ $class ],
+   error   => 'Vehicle [_1] already assigned to the [_2] [_3]';
+
 has '+class' => default => $class;
 
 sub code {

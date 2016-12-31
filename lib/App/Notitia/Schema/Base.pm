@@ -3,10 +3,11 @@ package App::Notitia::Schema::Base;
 use strictures;
 use parent 'DBIx::Class::Core';
 
-use App::Notitia::Constants qw( NUL TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS NUL TRUE );
 use App::Notitia::Util      qw( assert_unique to_dt );
 use Class::Usul::Functions  qw( throw );
 use Data::Validation;
+use Unexpected::Functions   qw( VehicleAssigned );
 
 __PACKAGE__->load_components( qw( InflateColumn::Object::Enum TimeStamp ) );
 
@@ -17,17 +18,17 @@ sub assert_not_assigned_to_event {
    my $tport_rs = $self->result_source->schema->resultset( 'Transport' );
 
    for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
-      $tport->event_id == $event->id
-         and throw 'Vehicle [_1] already assigned to this event',
-                   [ $opts->{vehicle} ], level => 2;
+      $event->id and $tport->event_id == $event->id
+         and throw VehicleAssigned, [ $opts->{vehicle}, 'this', 'event' ],
+                   level => 2;
 
       my ($tport_ev_start, $tport_ev_end) = $tport->event->duration;
 
       $tport_ev_end <= $event_start    and next;
       $event_end    <= $tport_ev_start and next;
 
-      throw 'Vehicle [_1] already assigned to the [_2] event',
-            [ $opts->{vehicle}, $tport->event ], level => 2;
+      throw VehicleAssigned, [ $opts->{vehicle}, $tport->event, 'event' ],
+            level => 2;
    }
 
    return;
@@ -46,8 +47,7 @@ sub assert_not_assigned_to_slot {
 
       $shift_end <= $event_start and next; $event_end <= $shift_start and next;
 
-      throw 'Vehicle [_1] already assigned to slot [_2]',
-            [ $opts->{vehicle}, $slot ], level => 2;
+      throw VehicleAssigned, [ $opts->{vehicle}, 'slot', $slot ], level => 2;
    }
 
    return;
@@ -62,12 +62,12 @@ sub assert_not_assigned_to_vehicle_event {
    for my $vehicle_event ($event_rs->search_for_vehicle_events( $opts )->all) {
       my ($vehicle_ev_start, $vehicle_ev_end) = $vehicle_event->duration;
 
-      $vehicle_event->id == $event->id     and next;
+      $event->id and $vehicle_event->id == $event->id and next;
       $vehicle_ev_end <= $event_start      and next;
-      $event_end      <= $vehicle_ev_start and next;
+      $event_end <= $vehicle_ev_start and next;
 
-      throw 'Vehicle [_1] already assigned to the [_2] vehicle event',
-            [ $opts->{vehicle}, $vehicle_event ], level => 2;
+      throw VehicleAssigned,
+            [ $opts->{vehicle}, $vehicle_event, 'vehicle event' ], level => 2;
    }
 
    return;

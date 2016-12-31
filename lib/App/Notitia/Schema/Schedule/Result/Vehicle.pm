@@ -5,11 +5,12 @@ use overload '""' => sub { $_[ 0 ]->_as_string },
              '+'  => sub { $_[ 0 ]->_as_number }, fallback => 1;
 use parent   'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( VARCHAR_MAX_SIZE SPC TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS VARCHAR_MAX_SIZE SPC TRUE );
 use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 serial_data_type varchar_data_type );
 use Class::Usul::Functions  qw( throw );
+use Unexpected::Functions   qw( VehicleAssigned );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -80,8 +81,7 @@ my $_assert_not_assigned_to_event = sub {
 
       $shift_end <= $event_start and next; $event_end <= $shift_start and next;
 
-      throw 'Vehicle [_1] already assigned to the [_2] event',
-            [ $self, $tport->event ], level => 2;
+      throw VehicleAssigned, [ $self, $tport->event, 'event' ], level => 2;
    }
 
    return;
@@ -99,8 +99,7 @@ my $_assert_not_assigned_to_vehicle_event = sub {
 
       $shift_end <= $event_start and next; $event_end <= $shift_start and next;
 
-      throw 'Vehicle [_1] already assigned to the [_2] vehicle event',
-            [ $self, $event ], level => 2;
+      throw VehicleAssigned, [ $self, $event, 'vehicle event' ], level => 2;
    }
 
    return;
@@ -140,8 +139,8 @@ my $_assert_not_assigned_to_slot = sub {
       $slot->get_column( 'shift_type' ) eq $shift_t
          and $slot->get_column( 'vehicle_name' )
          and $slot->get_column( 'vehicle_vrn'  ) eq $self->vrn
-         and throw 'Vehicle [_1] already assigned to slot [_2]',
-                   [ $self, $slot->subslot ], level => 2;
+         and throw VehicleAssigned, [ $self, 'slot', $slot->subslot ],
+                   level => 2;
    }
 
    return;
