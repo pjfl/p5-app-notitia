@@ -40,7 +40,7 @@ sub TILDE     () { chr 126    }
 sub PRIORITY_TYPE_ENUM   () { [ qw( routine urgent emergency ) ] }
 sub SHIFT_TYPE_ENUM      () { [ qw( day night ) ] }
 sub SLOT_TYPE_ENUM       () { [ qw( controller rider driver ) ] }
-sub TRAINING_STATUS_ENUM () { [ qw( enroled started completed expired ) ] }
+sub TRAINING_STATUS_ENUM () { [ qw( enrolled started completed expired ) ] }
 sub TYPE_CLASS_ENUM      () {
    [ qw( call_category certification course
          event package role rota vehicle ) ] }

@@ -77,7 +77,7 @@ msgid "add_course"
 msgstr "Add Course"
 
 msgid "add_course_tip"
-msgstr "Enrole this person on the selected courses"
+msgstr "Enroll this person on the selected courses"
 
 msgid "add_role"
 msgstr "Add Role"
@@ -341,7 +341,7 @@ msgid "committee_informed"
 msgstr "Committee Informed"
 
 msgid "committee_list_link"
-msgstr "The Committee"
+msgstr "Committee"
 
 msgid "committee_list_tip"
 msgstr "Members of The Committee"
@@ -706,8 +706,8 @@ msgstr "Endorsements"
 msgid "endorsements_management_tip"
 msgstr "Administer endorsement records for [_1]"
 
-msgid "enroled_date"
-msgstr "Enroled"
+msgid "enrolled_date"
+msgstr "Enrolled"
 
 msgid "equipment_issue"
 msgstr "Equipment Issue"
@@ -1986,8 +1986,8 @@ msgstr "Trainer"
 msgid "training"
 msgstr "Training"
 
-msgid "training_enrolement_title"
-msgstr "Course Enrolement"
+msgid "training_enrollment_title"
+msgstr "Course Enrollment"
 
 msgid "training_event_name"
 msgstr "Course Name"
@@ -2035,7 +2035,7 @@ msgid "training_manager"
 msgstr "Training Manager"
 
 msgid "training_summary_caption"
-msgstr "[_1] - Enroled | [_2] - Started | [_3] - Completed | [_4] - Expired"
+msgstr "[_1] - Enrolled | [_2] - Started | [_3] - Completed | [_4] - Expired"
 
 msgid "training_summary_link"
 msgstr "Training Summary"

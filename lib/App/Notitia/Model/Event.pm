@@ -118,15 +118,15 @@ my $_add_participate_button = sub {
       and return;
 
    if ($action eq 'participate' and $event->event_type eq 'training') {
-      my $course; $person->is_enroled_on( $event->course_type )
-         and $course = $person->assert_enroled_on( $event->course_type );
+      my $course; $person->is_enrolled_on( $event->course_type )
+         and $course = $person->assert_enrolled_on( $event->course_type );
 
       not $course
-         and $text = locm $req, 'Not enroled on this course'
+         and $text = locm $req, 'Not enrolled on this course'
          and p_text $form, 'info', $text, $t_opts
          and return;
 
-      $course->status ne 'enroled'
+      $course->status ne 'enrolled'
          and $text = locm $req, 'Current course status: [_1]', $course->status
          and p_text $form, 'info', $text, $t_opts
          and return;
