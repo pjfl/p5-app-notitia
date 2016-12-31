@@ -99,6 +99,21 @@ my $get_tip_text = sub {
    return $name;
 };
 
+my $_is_access_authorised_for_folder = sub {
+   my ($req, $node) = @_;
+
+   for my $child (grep { is_hashref $child }
+                  map  { $node->{tree}->{ $_ } }
+                  grep { not m{ \A _ }mx } keys %{ $node->{tree} }) {
+      if ($child->{type} eq 'folder') {
+         $_is_access_authorised_for_folder->( $req, $child ) and return TRUE;
+      }
+      else { is_access_authorised( $req, $child ) and return TRUE }
+   }
+
+   return FALSE;
+};
+
 my $load_directory_data = sub {
    my $folder = shift;
    my $path = $folder->{path}->catfile( '.data.json' ); $path->exists or return;
@@ -492,7 +507,10 @@ sub get_salt ($) {
 }
 
 sub is_access_authorised ($$) {
-   my ($req, $node) = @_; $node->{type} eq 'folder' and return TRUE;
+   my ($req, $node) = @_;
+
+   $node->{type} eq 'folder'
+      and return $_is_access_authorised_for_folder->( $req, $node );
 
    my $nroles = $node->{role} // $node->{roles};
 
