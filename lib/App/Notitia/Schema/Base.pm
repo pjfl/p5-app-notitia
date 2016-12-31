@@ -74,30 +74,30 @@ sub assert_not_assigned_to_vehicle_event {
 }
 
 sub find_shift {
-   my ($self, $rota_name, $date, $shift_type) = @_;
+   my ($self, $rota_name, $rota_dt, $shift_t) = @_;
 
    my $schema = $self->result_source->schema;
-   my $rota   = $schema->resultset( 'Rota' )->find_rota( $rota_name, $date );
+   my $rota = $schema->resultset( 'Rota' )->find_rota( $rota_name, $rota_dt );
 
    return $schema->resultset( 'Shift' )->find_or_create
-      ( { rota_id => $rota->id, type_name => $shift_type } );
+      ( { rota_id => $rota->id, type_name => $shift_t } );
 }
 
 sub find_slot {
-   my ($self, $shift, $slot_type, $subslot) = @_;
+   my ($self, $shift, $slot_t, $subslot) = @_;
 
    my $slot_rs = $self->result_source->schema->resultset( 'Slot' );
 
-   return $slot_rs->find_slot_by( $shift, $slot_type, $subslot );
+   return $slot_rs->find_slot_by( $shift, $slot_t, $subslot );
 }
 
 sub shift_times {
-   my ($self, $date, $shift_type) = @_;
+   my ($self, $rota_dt, $shift_t) = @_;
 
    my $shift_times = $self->result_source->schema->config->shift_times;
-   my $start_time  = $shift_times->{ "${shift_type}_start" };
-   my $end_time    = $shift_times->{ "${shift_type}_end" };
-   my $local_dt    = $date->clone->set_time_zone( 'local' );
+   my $start_time  = $shift_times->{ "${shift_t}_start" };
+   my $end_time    = $shift_times->{ "${shift_t}_end" };
+   my $local_dt    = $rota_dt->clone->set_time_zone( 'local' );
    my $shift_start = to_dt $local_dt->ymd." ${start_time}";
    my $shift_end   = to_dt $local_dt->ymd." ${end_time}";
 

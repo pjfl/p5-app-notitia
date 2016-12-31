@@ -34,7 +34,7 @@ our @EXPORT_OK = qw( action_for_uri action_path_uri_map assert_unique
                      localise_tree locd locm mail_domain make_id_from
                      make_name_from make_tip management_link mtime new_request
                      new_salt now_dt page_link_set register_action_paths
-                     set_element_focus set_rota_date slot_claimed
+                     set_element_focus set_event_date set_rota_date slot_claimed
                      slot_identifier slot_limit_index show_node stash_functions
                      time2int to_dt to_json to_msg uri_for_action );
 
@@ -786,6 +786,30 @@ sub set_element_focus ($$) {
             'f.delay( 100 );', ];
 }
 
+sub set_event_date ($$$) {
+   my ($parser, $where, $opts) = @_;
+
+   if (my $after = delete $opts->{after}) {
+      $where->{ 'end_rota.date' }->{ '>' }
+         = $parser->format_datetime( $after );
+      $opts->{order_by} //= 'start_rota.date';
+   }
+
+   if (my $before = delete $opts->{before}) {
+      $where->{ 'start_rota.date' }->{ '<' }
+         = $parser->format_datetime( $before );
+   }
+
+   if (my $ondate = delete $opts->{on}) {
+      $where->{ 'end_rota.date' }->{ '>=' }
+         = $parser->format_datetime( $ondate );
+      $where->{ 'start_rota.date' }->{ '<=' }
+         = $parser->format_datetime( $ondate );
+   }
+
+   return;
+}
+
 sub set_rota_date ($$$$) {
    my ($parser, $where, $key, $opts) = @_;
 
@@ -1035,6 +1059,8 @@ prior to calling the L<uri_for|Web::ComposableRequest::Base/uri_for> method
 on the request object
 
 =head2 C<set_element_focus>
+
+=head2 C<set_event_date>
 
 =head2 C<set_rota_date>
 

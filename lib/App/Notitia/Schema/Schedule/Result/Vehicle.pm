@@ -69,11 +69,11 @@ my $_assert_public_or_private = sub {
 };
 
 my $_assert_not_assigned_to_event = sub {
-   my ($self, $date, $shift_type) = @_;
+   my ($self, $rota_dt, $shift_t) = @_;
 
-   my ($shift_start, $shift_end) = $self->shift_times( $date, $shift_type );
+   my ($shift_start, $shift_end) = $self->shift_times( $rota_dt, $shift_t );
    my $tport_rs = $self->result_source->schema->resultset( 'Transport' );
-   my $opts     = { on => $date, vehicle => $self->vrn };
+   my $opts = { on => $rota_dt, vehicle => $self->vrn };
 
    for my $tport ($tport_rs->search_for_assigned_vehicles( $opts )->all) {
       my ($event_start, $event_end) = $tport->event->duration;
@@ -88,11 +88,11 @@ my $_assert_not_assigned_to_event = sub {
 };
 
 my $_assert_not_assigned_to_vehicle_event = sub {
-   my ($self, $date, $shift_type) = @_;
+   my ($self, $rota_dt, $shift_t) = @_;
 
-   my ($shift_start, $shift_end) = $self->shift_times( $date, $shift_type );
+   my ($shift_start, $shift_end) = $self->shift_times( $rota_dt, $shift_t );
    my $event_rs = $self->result_source->schema->resultset( 'Event' );
-   my $opts     = { on => $date, vehicle => $self->vrn, };
+   my $opts = { on => $rota_dt, vehicle => $self->vrn, };
 
    for my $event ($event_rs->search_for_vehicle_events( $opts )->all) {
       my ($event_start, $event_end) = $event->duration;
@@ -119,10 +119,10 @@ my $_find_rota_type = sub {
 };
 
 my $_find_slot = sub {
-   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot) = @_;
+   my ($self, $rota_name, $rota_dt, $shift_t, $slot_t, $subslot) = @_;
 
-   my $shift = $self->find_shift( $rota_name, $date, $shift_type );
-   my $slot  = $self->find_slot( $shift, $slot_type, $subslot );
+   my $shift = $self->find_shift( $rota_name, $rota_dt, $shift_t );
+   my $slot  = $self->find_slot( $shift, $slot_t, $subslot );
 
    $slot or throw 'Slot [_1] has not been claimed', [ $slot ];
 
@@ -130,14 +130,14 @@ my $_find_slot = sub {
 };
 
 my $_assert_not_assigned_to_slot = sub {
-   my ($self, $rota_name, $date, $shift_type) = @_;
+   my ($self, $rota_name, $rota_dt, $shift_t) = @_;
 
    my $type_id  = $self->$_find_rota_type( $rota_name )->id;
    my $slots_rs = $self->result_source->schema->resultset( 'Slot' );
-   my $slots    = $slots_rs->assignment_slots( $type_id, $date );
+   my $slots    = $slots_rs->assignment_slots( $type_id, $rota_dt );
 
    for my $slot (grep { $_->type_name->is_rider } $slots->all) {
-      $slot->get_column( 'shift_type' ) eq $shift_type
+      $slot->get_column( 'shift_type' ) eq $shift_t
          and $slot->get_column( 'vehicle_name' )
          and $slot->get_column( 'vehicle_vrn'  ) eq $self->vrn
          and throw 'Vehicle [_1] already assigned to slot [_2]',
@@ -161,22 +161,21 @@ my $_assert_event_assignment_allowed = sub {
 };
 
 my $_assert_slot_assignment_allowed = sub {
-   my ($self, $rota_name, $date, $shift_type, $slot_type, $person, $bike) = @_;
+   my ($self, $rota_name, $rota_dt, $shift_t, $slot_t, $person, $v_req) = @_;
 
    $person->assert_member_of( 'rota_manager' );
 
-   if ($slot_type eq 'rider') {
-      $bike and $self->type ne 'bike' and
+   if ($slot_t eq 'rider') {
+      $v_req and $self->type ne 'bike' and
          throw 'Vehicle [_1] is not a bike and one was requested', [ $self ];
 
-      $bike and not $self->name and
+      $v_req and not $self->name and
          throw 'Vehicle [_1] is not a service vehicle', [ $self ];
-
-      $self->$_assert_not_assigned_to_event( $date, $shift_type );
-      $self->$_assert_not_assigned_to_slot( $rota_name, $date, $shift_type );
-      $self->$_assert_not_assigned_to_vehicle_event( $date, $shift_type );
    }
 
+   $self->$_assert_not_assigned_to_event( $rota_dt, $shift_t );
+   $self->$_assert_not_assigned_to_slot( $rota_name, $rota_dt, $shift_t );
+   $self->$_assert_not_assigned_to_vehicle_event( $rota_dt, $shift_t );
    return;
 };
 
@@ -207,15 +206,15 @@ sub assign_to_event {
 }
 
 sub assign_slot {
-   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $name) = @_;
+   my ($self, $rota_name, $rota_dt, $shift_t, $slot_t, $subslot, $name) = @_;
 
    my $slot   = $self->$_find_slot
-      ( $rota_name, $date, $shift_type, $slot_type, $subslot );
+      ( $rota_name, $rota_dt, $shift_t, $slot_t, $subslot );
    my $person = $self->$_find_assigner( $name );
-   my $bike   = $slot->bike_requested;
+   my $vehicle_req = $slot->bike_requested;
 
    $self->$_assert_slot_assignment_allowed
-      ( $rota_name, $date, $shift_type, $slot_type, $person, $bike );
+      ( $rota_name, $rota_dt, $shift_t, $slot_t, $person, $vehicle_req );
 
    $slot->vehicle_id( $self->id ); $slot->vehicle_assigner_id( $person->id );
 
