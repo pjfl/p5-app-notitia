@@ -2,7 +2,7 @@
 author: admin
 created: 2016-12-30 16:39:57 +0000
 roles:
-   - editor
+   - any
 ---
 
 <style> h6 { text-decoration: underline; } </style>
