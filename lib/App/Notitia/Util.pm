@@ -281,7 +281,6 @@ sub build_navigation ($$) {
    my ($req, $opts) = @_; my $count = 0; my @nav = ();
 
    my $ids = $req->uri_params->() // []; my $iter = iterator( $opts->{node} );
-
    while (defined (my $node = $iter->())) {
       $node->{id} eq 'index' and next;
       is_access_authorised( $req, $node ) or next;
@@ -291,7 +290,6 @@ sub build_navigation ($$) {
 
          for my $id (grep { not m{ \A _ }mx } keys %{ $node->{tree} }) {
             my $candidate = $node->{tree}->{ $id };
-
             $keepit = is_access_authorised( $req, $candidate ) and last;
          }
 
@@ -491,8 +489,30 @@ sub get_salt ($) {
    return join '$', @parts;
 }
 
+sub is_access_authorised_for_folder {
+   my ($req, $node) = @_; $node->{type} eq 'folder' or return FALSE;
+
+   for my $c ( keys %{$node->{tree}} ) {
+        my $child = $node->{tree}->{$c};
+ 
+        ref $child eq 'HASH' or next;
+
+        $child->{type} eq 'folder' 
+            and is_access_authorised_for_folder($req, $child)
+            and return TRUE;
+        
+        is_access_authorised($req, $child) and return TRUE;
+   }
+
+   return FALSE;
+}
+
 sub is_access_authorised ($$) {
-   my ($req, $node) = @_; $node->{type} eq 'folder' and return TRUE;
+   my ($req, $node) = @_;
+
+   $node->{type} eq 'folder' 
+      and is_access_authorised_for_folder($req, $node)
+      and return TRUE;
 
    my $nroles = $node->{role} // $node->{roles};
 
