@@ -99,10 +99,10 @@ my $get_tip_text = sub {
    return $name;
 };
 
-my $_is_access_authorised_for_folder = sub {
+my $_is_access_authorised_for_folder; $_is_access_authorised_for_folder = sub {
    my ($req, $node) = @_;
 
-   for my $child (grep { is_hashref $child }
+   for my $child (grep { is_hashref $_ }
                   map  { $node->{tree}->{ $_ } }
                   grep { not m{ \A _ }mx } keys %{ $node->{tree} }) {
       if ($child->{type} eq 'folder') {
