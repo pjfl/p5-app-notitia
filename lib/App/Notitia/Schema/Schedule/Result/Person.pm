@@ -315,11 +315,11 @@ sub add_course {
 
    my $type = $self->$_find_course_type( $course_name );
 
-   $self->is_enroled_on( $course_name, $type )
-      and throw '[_1] already enroled on [_2]', [ $self->label, $type ];
+   $self->is_enrolled_on( $course_name, $type )
+      and throw '[_1] already enrolled on [_2]', [ $self->label, $type ];
 
    return $self->create_related( 'courses', {
-      course_type_id => $type->id, status => 'enroled' } );
+      course_type_id => $type->id, status => 'enrolled' } );
 }
 
 sub add_member_to {
@@ -372,13 +372,13 @@ sub assert_endorsement_for {
    return $endorsement;
 }
 
-sub assert_enroled_on {
+sub assert_enrolled_on {
    my ($self, $course_name, $type) = @_;
 
    $type //= $self->$_find_course_type( $course_name );
 
    my $course = $self->courses->find( $self->id, $type->id )
-      or throw '[_1] is not enroled on a [_2] course',
+      or throw '[_1] is not enrolled on a [_2] course',
                [ $self->label, $type ], level => 2;
 
    return $course;
@@ -462,7 +462,7 @@ sub deactivate {
 }
 
 sub delete_course {
-   return $_[ 0 ]->assert_enroled_on( $_[ 1 ] )->delete;
+   return $_[ 0 ]->assert_enrolled_on( $_[ 1 ] )->delete;
 }
 
 sub delete_member_from {
@@ -536,7 +536,7 @@ sub is_endorsed_for {
         ? TRUE : FALSE;
 }
 
-sub is_enroled_on {
+sub is_enrolled_on {
    my ($self, $course_name, $type) = @_;
 
    $type //= $self->$_find_course_type( $course_name );

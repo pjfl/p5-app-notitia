@@ -10,7 +10,7 @@ roles:
 A slightly different view of people organised by the role they perform, with more options appropriate to that role. Of particular note is the "Training" column, where individuals can be enrolled on training courses.
 
 
-###### The Committee
+###### Committee
 
 Those people tagged as being members of the organisation's management committee
 

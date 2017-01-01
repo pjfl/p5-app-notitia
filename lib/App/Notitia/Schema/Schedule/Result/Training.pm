@@ -15,8 +15,8 @@ $class->table( 'training' );
 $class->add_columns
    ( recipient_id   => foreign_key_data_type,
      course_type_id => foreign_key_data_type,
-     status         => enumerated_data_type( TRAINING_STATUS_ENUM, 'enroled' ),
-     enroled        => set_on_create_datetime_data_type,
+     status         => enumerated_data_type( TRAINING_STATUS_ENUM, 'enrolled' ),
+     enrolled       => set_on_create_datetime_data_type,
      started        => date_data_type,
      completed      => date_data_type,
      expired        => date_data_type,

@@ -83,7 +83,7 @@ my $_suppress_summary_row = sub {
 my $_cell_colours = sub {
    my ($self, $status) = @_;
 
-   my $bg_colours = { completed => 'green', enroled => 'blue',
+   my $bg_colours = { completed => 'green', enrolled => 'blue',
                       expired => 'red', started => 'yellow' };
    my $fg_colours = { started => 'black' };
 
@@ -113,22 +113,22 @@ my $_summary_caption = sub {
    return locm $req, 'training_summary_caption',
       map { "<span style=\"color: ${_};\">${_}</span>" }
       map { my ($colour) = $self->$_cell_colours( $_ ); $colour }
-      qw( enroled started completed expired );
+      qw( enrolled started completed expired );
 };
 
-my $_enrole_link = sub {
+my $_enrol_link = sub {
    my ($self, $req, $person, $course_name) = @_;
 
    my $href = uri_for_action $req, $self->moniker.'/training', [ "${person}" ];
    my $form = blank_form 'training', $href;
-   my $text = 'Enrole [_1] on the [_2]';
+   my $text = 'Enrol [_1] on the [_2]';
 
    $course_name !~ m{ course \z }mx and $text .= ' course';
 
    my $tip = make_tip $req, $text, [ $person->label, $course_name ];
 
-   p_button $form, 'enrole', 'add_course', {
-      class => 'table-link', label => locm( $req, 'Enrole' ), tip => $tip };
+   p_button $form, 'enrol', 'add_course', {
+      class => 'table-link', label => locm( $req, 'Enrol' ), tip => $tip };
    p_hidden $form, 'courses', $course_name;
 
    return $form;
@@ -203,7 +203,7 @@ my $_summary_cell = sub {
    my $course_name = $all_courses->[ $index ];
 
    exists $tuple->[ 1 ]->{ $course_name }
-      or return { value => $self->$_enrole_link( $req, $person, $course_name )};
+      or return { value => $self->$_enrol_link( $req, $person, $course_name ) };
 
    my $scode = $person->shortcode;
    my $course = $tuple->[ 1 ]->{ $course_name };
@@ -281,7 +281,7 @@ sub add_course_action : Role(training_manager) {
       $self->send_event( $req, $message );
    }
 
-   my $message = [ to_msg '[_1] enroled on course(s): [_2]',
+   my $message = [ to_msg '[_1] enrolled on course(s): [_2]',
                    $person->label, join ', ', @{ $courses } ];
    my $location = uri_for_action $req, $self->moniker.'/training', [ $scode ];
 
@@ -305,7 +305,7 @@ sub dialog : Dialog Role(training_manager) {
 
       p_date $form, "${course_name}_${status}_date", $date, {
          class => 'narrow-field',
-         disabled => $status eq 'enroled' ? TRUE : FALSE,
+         disabled => $status eq 'enrolled' ? TRUE : FALSE,
          label => "${status}_date", label_class => 'right-last' };
    }
 
@@ -436,7 +436,7 @@ sub training : Role(training_manager) {
    my $form = blank_form 'training', $href;
    my $page = {
       forms => [ $form ], selected => $role ? "${role}_list" : 'summary',
-      title => locm $req, 'training_enrolement_title'
+      title => locm $req, 'training_enrolment_title'
       };
    my $courses_taken = $person->list_courses;
    my $courses = $_subtract->( $self->$_list_all_courses, $courses_taken );
