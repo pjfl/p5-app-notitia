@@ -16,7 +16,7 @@ use App::Notitia::DataTypes    qw( bool_data_type date_data_type
 use App::Notitia::Util         qw( get_salt is_encrypted local_dt new_salt
                                    now_dt slot_limit_index );
 use Auth::GoogleAuth;
-use Class::Usul::Functions     qw( digest is_member throw urandom );
+use Class::Usul::Functions     qw( create_token64 is_member throw );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use List::SomeUtils            qw( first_index );
 use Try::Tiny;
@@ -623,13 +623,11 @@ sub set_password {
 }
 
 sub set_totp_secret {
-   my ($self, $enable) = @_;
+   my ($self, $enable) = @_; my $current = $self->totp_secret ? TRUE : FALSE;
 
-   my $current = $self->totp_secret ? TRUE : FALSE;
-
-   $enable  and not $current and return
-      $self->totp_secret( substr( digest( urandom )->b64digest, 0, 16 ) );
-   $current and not $enable  and return $self->totp_secret( NUL );
+   $enable  and not $current
+      and return $self->totp_secret( substr create_token64, 0, 16 );
+   $current and not $enable and return $self->totp_secret( NUL );
 
    return $self->totp_secret;
 }
