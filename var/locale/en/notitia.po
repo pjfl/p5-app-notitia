@@ -670,6 +670,9 @@ msgstr "Emergency"
 msgid "enable_2fa"
 msgstr "Enable 2FA."
 
+msgid "end_date"
+msgstr "End Date"
+
 msgid "end_time"
 msgstr "End Time"
 
@@ -706,20 +709,23 @@ msgstr "Endorsements"
 msgid "endorsements_management_tip"
 msgstr "Administer endorsement records for [_1]"
 
+msgid "ends"
+msgstr "Ends"
+
 msgid "enroled_date"
 msgstr "Enroled"
 
 msgid "equipment_issue"
 msgstr "Equipment Issue"
 
+msgid "event_action"
+msgstr "Action Name"
+
 msgid "event_action_tip"
 msgstr "Edit this existing event control record"
 
 msgid "event_blog_link"
 msgstr "Follow this [link]([_1]) to participate in the event"
-
-msgid "event_blog_when"
-msgstr "This event is on the [_1], starts at [_2] and finishes at [_3]"
 
 msgid "event_control_create_link"
 msgstr "Add Control"
@@ -772,11 +778,14 @@ msgstr "Edit the [_1] event details"
 msgid "event_manager"
 msgstr "Event Manager"
 
+msgid "event_multi_day"
+msgstr "This event start at [_2] on the [_1] and finishes at [_4] on the [_3]"
+
 msgid "event_name"
 msgstr "Event Name"
 
-msgid "event_action"
-msgstr "Action Name"
+msgid "event_single_day"
+msgstr "This event is on the [_1], starts at [_2] and finishes at [_4]"
 
 msgid "event_stream"
 msgstr "Stream Name"
@@ -1922,6 +1931,9 @@ msgstr "Stop the job daemon process"
 
 msgid "start_time"
 msgstr "Start Time"
+
+msgid "starts"
+msgstr "Starts"
 
 msgid "submarine"
 msgstr "Submarine"

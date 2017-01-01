@@ -10,7 +10,8 @@ use App::Notitia::DataTypes qw( foreign_key_data_type
                                 nullable_numerical_id_data_type
                                 serial_data_type varchar_data_type );
 use App::Notitia::Util      qw( local_dt locd locm );
-use Class::Usul::Functions  qw( create_token throw );
+use Class::Usul::Functions  qw( create_token exception throw );
+use Unexpected::Functions   qw( ValidationErrors );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -76,18 +77,21 @@ my $_set_uri = sub {
 my $_vehicle_event_id_cache;
 
 my $_vehicle_event_id = sub {
-   my $self   = shift;
+   my $self = shift;
 
    $_vehicle_event_id_cache and return $_vehicle_event_id_cache;
 
    my $schema = $self->result_source->schema;
-   my $type   = $schema->resultset( 'Type' )->find_event_by( 'vehicle' );
+   my $type = $schema->resultset( 'Type' )->find_event_by( 'vehicle' );
 
    return $_vehicle_event_id_cache = $type->id;
 };
 
 my $_assert_event_allowed = sub {
    my $self = shift;
+
+   $self->starts > $self->ends
+      and throw ValidationErrors, [ exception 'Ends before start' ];
 
    $self->event_type_id == $self->$_vehicle_event_id or return;
 
@@ -117,23 +121,17 @@ sub count_of_participents {
 }
 
 sub duration {
-   my $self  = shift;
-   my ($hours, $mins) = split m{ : }mx, $self->start_time, 2;
-   my $start = $self->start_date->add( hours   => $hours )
-                                ->add( minutes => $mins  );
-
-   ($hours, $mins) = split m{ : }mx, $self->end_time, 2;
-
-   my $end   = $self->end_date->add( hours   => $hours )
-                              ->add( minutes => $mins  );
-
-   return $start, $end;
+   return $_[ 0 ]->starts, $_[ 0 ]->ends;
 }
 
 sub end_date {
-   my $self = shift; my $end = $self->end_rota;
+   return $_[ 0 ]->end_rota->date->clone;
+}
 
-   return defined $end ? $end->date->clone : $self->start_date;
+sub ends {
+   my $self = shift; my ($hours, $mins) = split m{ : }mx, $self->end_time, 2;
+
+   return $self->end_date->add( hours => $hours )->add( minutes => $mins );
 }
 
 sub insert {
@@ -184,6 +182,12 @@ sub sqlt_deploy_hook {
 
 sub start_date {
    return $_[ 0 ]->start_rota->date->clone;
+}
+
+sub starts {
+   my $self = shift; my ($hours, $mins) = split m{ : }mx, $self->start_time, 2;
+
+   return $self->start_date->add( hours => $hours )->add( minutes => $mins );
 }
 
 sub update {

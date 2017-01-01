@@ -4,7 +4,7 @@ use strictures;
 use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( set_rota_date );
+use App::Notitia::Util      qw( set_event_date set_rota_date );
 use Class::Usul::Functions  qw( is_member throw );
 
 # Private methods
@@ -121,20 +121,20 @@ sub search_for_a_days_events {
 sub search_for_events {
    my ($self, $opts) = @_; my $where = {}; $opts = { %{ $opts // {} } };
 
+   delete $opts->{fields}; delete $opts->{rota_type};
+
    my $type     = delete $opts->{event_type};
       $type and $where->{ 'event_type.name' } = $type;
    my $vrn      = delete $opts->{vehicle};
       $vrn  and $where->{ 'vehicle.vrn' } = $vrn;
-   my $parser   = $self->result_source->schema->datetime_parser;
    my $prefetch = delete $opts->{prefetch} // [ 'end_rota', 'start_rota' ];
+   my $parser = $self->result_source->schema->datetime_parser;
 
-   set_rota_date $parser, $where, 'start_rota.date', $opts;
+   set_event_date $parser, $where, $opts;
    $opts->{order_by} //= { -desc => 'start_rota.date' };
    $type and push @{ $prefetch }, 'event_type';
    $vrn  and not is_member 'vehicle', $prefetch
          and push @{ $prefetch }, 'vehicle';
-
-   my $fields = delete $opts->{fields}; delete $opts->{rota_type};
 
    return $self->search
       ( $where, { columns  => [ 'id', 'end_time', 'name', 'start_time', 'uri' ],

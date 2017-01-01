@@ -5,14 +5,15 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_action p_button p_list
                                 p_fields p_js p_row p_table p_tag p_text
                                 p_textfield );
-use App::Notitia::Util      qw( check_field_js display_duration loc
-                                locd locm make_tip management_link now_dt
-                                page_link_set register_action_paths to_dt to_msg
-                                uri_for_action );
+use App::Notitia::Util      qw( check_field_js datetime_label display_duration
+                                loc local_dt locd locm make_tip management_link
+                                now_dt page_link_set register_action_paths
+                                to_dt to_msg uri_for_action );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
 use Try::Tiny;
+use Unexpected::Functions   qw( catch_class VehicleAssigned );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -58,25 +59,22 @@ my $_add_event_js = sub {
    return;
 };
 
-my $_bind_date = sub {
-   my ($req, $name, $date, $event, $opts) = @_;
+my $_bind_datetime = sub {
+   my ($req, $event, $opts, $ev_dt) = @_;
 
    my $disabled = $opts->{disabled} || $event->uri ? TRUE : FALSE;
-   my $dt = $event->uri ? $date : $opts->{date} ? to_dt $opts->{date} : now_dt;
+   my $dt = $event->uri ? $ev_dt : $opts->{date} ? to_dt $opts->{date} : now_dt;
 
    return { class => 'standard-field required', disabled => $disabled,
-            label => $name, name => $name, type => 'date',
-            value => locd( $req, $dt ) };
+            type => 'datetime', value => datetime_label $req, $dt };
 };
 
-my $_bind_end_date = sub {
-   return $_bind_date->
-      ( $_[ 0 ], 'end_date', $_[ 1 ]->end_date, $_[ 1 ], $_[ 2 ] );
+my $_bind_ends = sub {
+   return $_bind_datetime->( $_[ 0 ], $_[ 1 ], $_[ 2 ], $_[ 1 ]->ends );
 };
 
-my $_bind_start_date = sub {
-   return $_bind_date->
-      ( $_[ 0 ], 'start_date', $_[ 1 ]->start_date, $_[ 1 ], $_[ 2 ] );
+my $_bind_starts = sub {
+   return $_bind_datetime->( $_[ 0 ], $_[ 1 ], $_[ 2 ], $_[ 1 ]->starts );
 };
 
 my $_create_action = sub {
@@ -150,11 +148,9 @@ my $_participent_headers = sub {
 };
 
 my $_participents_title = sub {
-   my ($req, $event) = @_; my $label = $event->name;
+   my ($req, $event) = @_; my $name = $event->name;
 
-   if ($event->event_type eq 'training') {
-      $label = locm $req, lc $event->name;
-   }
+   my $label = $event->event_type eq 'training' ? locm $req, lc $name : $name;
 
    return locm $req, 'participents_management_heading', $label;
 };
@@ -199,8 +195,8 @@ my $_event_links = sub {
                      asset/request_vehicle event/event_summary );
 
    for my $actionp (@actions) {
-      push @{ $links }, { value => management_link( $req, $actionp, $uri, {
-         params => $req->query_params->( { optional => TRUE } ) } ) };
+      push @{ $links }, { value => management_link $req, $actionp, $uri, {
+         params => $req->query_params->( { optional => TRUE } ) } };
    }
 
    return [ { value => $event->label }, @{ $links } ];
@@ -214,9 +210,13 @@ my $_format_as_markdown = sub {
    my $yaml    = "---\nauthor: ".$event->owner."\n"
                . "created: ${created}\nrole: any\ntitle: ${name}\n---\n";
    my $desc    = $event->description."\n\n";
-   my $date    = locd( $req, $event->start_date );
-   my @opts    = ($date, $event->start_time, $event->end_time);
-   my $when    = locm( $req, 'event_blog_when', @opts )."\n\n";
+   my @opts    = (locd( $req, $event->starts ),
+                  local_dt( $event->starts )->strftime( '%H:%M' ),
+                  locd( $req, $event->ends ),
+                  local_dt( $event->ends )->strftime( '%H:%M' ));
+   my $key     = $event->start_date == $event->end_date
+               ? 'event_single_day' : 'event_multi_day';
+   my $when    = locm( $req, $key, @opts )."\n\n";
    my $actionp = $self->moniker.'/event_summary';
    my $href    = uri_for_action $req, $actionp, [ $event->uri ];
    my $link    = locm( $req, 'event_blog_link', $href )."\n\n";
@@ -248,11 +248,11 @@ my $_participent_links = sub {
 
    return
    [ { value => $tuple->[ 0 ] },
-     { value => management_link( $req, 'person/person_summary', $name ) },
+     { value => management_link $req, 'person/person_summary', $name },
      { value => ($disabled or not $_unparticipate_allowed->( $req, $name ))
               ? locm $req, 'Unparticipate'
-              : management_link( $req, 'event/event', 'unparticipate', {
-                 args => [ $event->uri ], type => 'form_button' } ) }
+              : management_link $req, 'event/event', 'unparticipate', {
+                 args => [ $event->uri ], type => 'form_button' } }
      ];
 };
 
@@ -272,8 +272,7 @@ my $_update_event_from_request = sub {
 
    my $params = $req->body_params; my $opts = { optional => TRUE };
 
-   for my $attr (qw( description end_time max_participents
-                     name notes start_time )) {
+   for my $attr (qw( description ends max_participents name notes starts )) {
       if (is_member $attr, [ 'description', 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 
@@ -281,8 +280,13 @@ my $_update_event_from_request = sub {
 
       $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
-      $attr eq 'max_participents' and not $v and undef $v;
+      if (length $v and is_member $attr, [ qw( ends starts ) ]) {
+         $v =~ s{ [@] }{}mx; $v = to_dt( $v, 'local' )->strftime( '%H:%M' );
+         $attr eq 'ends' ? $event->end_time( $v ) : $event->start_time( $v );
+         next;
+      }
 
+      $attr eq 'max_participents' and not $v and undef $v;
       $event->$attr( $v );
    }
 
@@ -376,17 +380,12 @@ my $_bind_event_fields = sub {
 
    return
    [  name             => $self->$_bind_event_name( $event, $opts ),
-      start_date       => $_bind_start_date->( $req, $event, $opts ),
+      starts           => $_bind_starts->( $req, $event, $opts ),
+      ends             => $_bind_ends->( $req, $event, $opts ),
       owner            => $self->$_bind_owner( $event, $disabled ),
       description      => { class    => 'standard-field autosize server',
                             disabled => $disabled, type => 'textarea' },
       location         => $self->$_bind_location( $event, $opts ),
-      start_time       => { class    => 'standard-field',
-                            disabled => $disabled, type => 'time' },
-# TODO: Needed for multiday events
-#      end_date         => $_bind_end_date->( $req, $event, $opts ),
-      end_time         => { class    => 'standard-field',
-                            disabled => $disabled, type => 'time' },
       trainer          => $self->$_bind_trainer( $event, $opts ),
       max_participents => $no_maxp  ? FALSE : { class => 'standard-field' },
       notes            => $disabled ? FALSE : {
@@ -399,17 +398,21 @@ my $_create_event_post = sub {
 };
 
 my $_create_event = sub {
-   my ($self, $req, $start_dt, $event_type, $opts) = @_; $opts //= {};
+   my ($self, $req, $event_type, $opts) = @_; $opts //= {};
 
+   my $ends = $req->body_params->( 'ends' ); $ends =~ s{ [@] }{}mx;
+   my $end_date = to_dt( $ends, 'local' )
+      ->truncate( to => 'day' )->set_time_zone( 'GMT' );
+   my $starts = $req->body_params->( 'starts' ); $starts =~ s{ [@] }{}mx;
+   my $start_date = to_dt( $starts, 'local' )
+      ->truncate( to => 'day' )->set_time_zone( 'GMT' );
 # TODO: Should not assume rota name
-   my $attr  = { rota       => 'main',
-                 start_date => $start_dt,
-                 event_type => $event_type,
-                 owner      => $req->username, };
+   my $attr = { end_date   => $end_date,
+                event_type => $event_type,
+                owner      => $req->username,
+                rota       => 'main',
+                start_date => $start_date, };
 
-   my $end_date = $req->body_params->( 'end_date', { optional => TRUE } );
-
-   $attr->{end_date} = $end_date ? to_dt $end_date : $start_dt;
    $opts->{vrn} and $attr->{vehicle} = $opts->{vrn};
    $opts->{course} and $attr->{course_type} = $opts->{course};
 
@@ -417,6 +420,7 @@ my $_create_event = sub {
 
    $self->$_update_event_from_request( $req, $event );
 
+   my $label  = $event->localised_label( $req );
    my $create = sub { $event->insert };
 
    if ($event_type eq 'training') {
@@ -425,13 +429,11 @@ my $_create_event = sub {
       $v and $create = sub { $event->insert; $event->add_trainer( $v ) };
    }
 
-   try   { $self->schema->txn_do( $create ) }
-   catch {
-      my $label = ($event->name || 'with no name on')
-                . SPC.locd( $req, $start_dt );
-
-      $self->blow_smoke( $_, 'create', 'event', $label );
-   };
+   try { $self->schema->txn_do( $create ) }
+   catch_class [
+      VehicleAssigned => sub { throw $_ },
+      '*' => sub { $self->blow_smoke( $_, 'create', 'event', $label ) },
+   ];
 
    return $event;
 };
@@ -484,8 +486,7 @@ my $_update_event = sub {
 sub create_event_action : Role(event_manager) {
    my ($self, $req) = @_;
 
-   my $date  = to_dt $req->body_params->( 'start_date' );
-   my $event = $self->$_create_event( $req, $date, 'person' );
+   my $event = $self->$_create_event( $req, 'person' );
 
    $self->$_create_event_post( $req, $event->post_filename, $event );
 
@@ -502,10 +503,9 @@ sub create_event_action : Role(event_manager) {
 sub create_training_event_action : Role(training_manager) {
    my ($self, $req) = @_;
 
-   my $date = to_dt $req->body_params->( 'start_date' );
    my $course_name = $req->body_params->( 'name' );
-   my $event = $self->$_create_event
-      ( $req, $date, 'training', { course => $course_name } );
+   my $event = $self->$_create_event( $req, 'training', {
+      course => $course_name } );
    my $uri = $event->uri;
    my $label = $event->localised_label( $req );
    my $who = $req->session->user_label;
@@ -522,9 +522,7 @@ sub create_vehicle_event_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $vrn      = $req->uri_params->( 0 );
-   my $date     = to_dt $req->body_params->( 'start_date' );
-   my $event    = $self->$_create_event
-      ( $req, $date, 'vehicle', { vrn => $vrn } );
+   my $event    = $self->$_create_event( $req, 'vehicle', { vrn => $vrn } );
    my $uri      = $event->uri;
    my $label    = $event->label;
    my $who      = $req->session->user_label;

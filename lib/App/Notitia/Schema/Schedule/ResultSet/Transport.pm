@@ -3,7 +3,7 @@ package App::Notitia::Schema::Schedule::ResultSet::Transport;
 use strictures;
 use parent 'DBIx::Class::ResultSet';
 
-use App::Notitia::Util qw( set_rota_date );
+use App::Notitia::Util qw( set_event_date );
 
 sub assigned_vehicle_count {
    return $_[ 0 ]->count( { event_id => $_[ 1 ] } );
@@ -18,11 +18,11 @@ sub search_for_assigned_vehicles {
 
    my $parser = $self->result_source->schema->datetime_parser;
 
-   set_rota_date( $parser, $where, 'start_rota.date', $opts );
+   set_event_date $parser, $where, $opts;
    $opts->{order_by} //= { -desc => 'start_rota.date' };
 
    my $prefetch = delete $opts->{prefetch}
-               // [ { 'event' => 'start_rota' }, 'vehicle' ];
+               // [ { 'event' => [ 'end_rota', 'start_rota' ] }, 'vehicle' ];
 
    return $self->search( $where, { prefetch => $prefetch, %{ $opts } } );
 }

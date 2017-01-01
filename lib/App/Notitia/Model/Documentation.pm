@@ -7,7 +7,6 @@ use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( first_char throw );
 use Class::Usul::Types     qw( NonZeroPositiveInt PositiveInt );
 use Try::Tiny;
-use Unexpected::Functions  qw( catch_class );
 use Moo;
 
 extends q(App::Notitia::Model);
