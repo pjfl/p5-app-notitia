@@ -5,7 +5,7 @@ use namespace::autoclean;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link p_cell p_container p_hidden
-                                p_row p_select p_span p_table );
+                                p_js p_row p_select p_span p_table );
 use App::Notitia::Util      qw( js_server_config js_submit_config local_dt
                                 locm make_tip register_action_paths
                                 slot_limit_index to_dt uri_for_action );
@@ -48,7 +48,7 @@ my $_add_event_tip = sub {
 
    my $href = uri_for_action $req, 'event/event_info', [ $event->uri ];
 
-   push @{ $page->{literal_js} }, js_server_config
+   p_js $page, js_server_config
       $event->uri, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    return;
 };
@@ -60,7 +60,7 @@ my $_add_slot_tip = sub {
    my $actionp = 'month/assign_summary';
    my $href    = uri_for_action $req, $actionp, [ "${name}_${id}" ];
 
-   push @{ $page->{literal_js} }, js_server_config
+   p_js $page, js_server_config
       $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    return;
 };
@@ -70,7 +70,7 @@ my $_add_v_event_tip = sub {
 
    my $href = uri_for_action $req, 'event/vehicle_info', [ $event->uri ];
 
-   push @{ $page->{literal_js} }, js_server_config
+   p_js $page, js_server_config
       $event->uri, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    return;
 };
@@ -82,7 +82,7 @@ my $_add_vreq_tip = sub {
    my $href    = uri_for_action $req, $actionp, [ $event->uri ];
    my $id      = 'request-'.$event->uri;
 
-   push @{ $page->{literal_js} }, js_server_config
+   p_js $page, js_server_config
       $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
    return;
 };
@@ -128,9 +128,8 @@ my $_alloc_query_params = sub {
 my $_onchange_submit = sub {
    my ($page, $k) = @_;
 
-   push @{ $page->{literal_js} },
-      js_submit_config $k, 'change', 'submitForm',
-                       [ 'display_control', 'display-control' ];
+   p_js $page, js_submit_config $k, 'change', 'submitForm',
+                  [ 'display_control', 'display-control' ];
 
    return;
 };
@@ -138,8 +137,7 @@ my $_onchange_submit = sub {
 my $_onclick_relocate = sub {
    my ($page, $k, $href) = @_;
 
-   push @{ $page->{literal_js} },
-      js_submit_config $k, 'click', 'location', [ "${href}" ];
+   p_js $page, js_submit_config $k, 'click', 'location', [ "${href}" ];
 
    return;
 };
@@ -233,7 +231,7 @@ my $_vehicle_select_cell = sub {
       class => 'spreadsheet-fixed-form align-center' };
    my $jsid = "vehicle-${form_name}";
 
-   push @{ $page->{literal_js} //= [] }, js_submit_config
+   p_js $page, js_submit_config
       $jsid, 'change', 'submitForm', [ $action, $form_name ];
    p_select $form, 'vehicle', $_vehicle_list->( $data, $vrn ), {
       class => "spreadsheet-select submit", disabled => $disabled,
@@ -829,7 +827,7 @@ sub alloc_table : Dialog Role(rota_manager) {
    p_cell $row, [ map { $_alloc_cell->( $req, $page, $data, $_ ) }
                   0 .. $cols - 1 ];
 
-   push @{ $page->{literal_js} }, 'behaviour.rebuild();';
+   p_js $page, 'behaviour.rebuild();';
 
    return $stash;
 }
@@ -854,9 +852,9 @@ sub allocation : Role(rota_manager) {
       template => [ 'none', 'custom/two-week-table' ],
       title => locm $req, 'Vehicle Allocation'
    };
-   my $js = $page->{literal_js} = $_allocation_js->( $req, $moniker, $rota_dt );
    my $fields = $page->{fields};
 
+   $page->{literal_js} = $_allocation_js->( $req, $moniker, $rota_dt );
    $fields->{query} = $self->$_alloc_query( $req, $page, $args, $params );
 
    for my $rno (0 .. $params->{rows} - 1) {
@@ -869,7 +867,7 @@ sub allocation : Role(rota_manager) {
       my $href = uri_for_action $req, "${moniker}/alloc_table", $args;
       my $opts = [ "${href}", $id ];
 
-      push @{ $js }, js_server_config $id, 'load', 'request', $opts;
+      p_js $page, js_server_config $id, 'load', 'request', $opts;
    }
 
    return $self->get_stash( $req, $page );
