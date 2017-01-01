@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+0.11.1    2017-01-01 16:45:25
           - Fixes #120. Multiday event support
           - Cars and 4x4 in driver vehicle allocation
             Feature does not start working until next release of
