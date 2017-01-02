@@ -3,8 +3,8 @@ package App::Notitia::Model::Person;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
                                 NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_action
-                                p_fields p_list p_row p_table );
+use App::Notitia::Form      qw( blank_form p_action p_fields p_js p_link
+                                p_list p_row p_table );
 use App::Notitia::Util      qw( check_field_js dialog_anchor loc make_tip
                                 management_link page_link_set
                                 register_action_paths to_dt to_msg
@@ -51,7 +51,7 @@ my $_add_person_js = sub {
 
    my $opts = { domain => $name ? 'update' : 'insert', form => 'Person' };
 
-   push @{ $page->{literal_js} },
+   p_js $page,
       check_field_js( 'first_name',    $opts ),
       check_field_js( 'last_name',     $opts ),
       check_field_js( 'email_address', $opts ),
@@ -155,34 +155,6 @@ my $_people_title = sub {
    return loc( $req, $k );
 };
 
-my $_person_ops_links = sub {
-   my ($req, $page, $moniker, $person) = @_;
-
-   my $scode = $person->shortcode;
-   my $href = uri_for_action $req, "${moniker}/mugshot", [ $scode ];
-
-   push @{ $page->{literal_js} //= [] },
-      dialog_anchor( 'upload_mugshot', $href, {
-         name => 'mugshot_upload', title => loc( $req, 'Mugshot Upload' ), } );
-
-   my $mugshot = f_link 'mugshot', C_DIALOG, {
-      action => 'upload', request => $req };
-
-   my $actionp = "${moniker}/person";
-   my $add_person = f_link 'person', uri_for_action( $req, $actionp ), {
-      action => 'create', container_class => 'add-link', request => $req };
-   my $links = [ $mugshot, $add_person ];
-
-   my $view_nok; if (my $nok = $person->next_of_kin) {
-      $view_nok = f_link 'nok', uri_for_action( $req, $actionp, [ $nok ] ), {
-         action => 'view', container_class => 'add-link', request => $req };
-   }
-
-   $view_nok and unshift @{ $links }, $view_nok;
-
-   return $links;
-};
-
 my $_select_nav_link_name = sub {
    my $opts = { %{ $_[ 0 ] } };
 
@@ -267,11 +239,12 @@ my $_people_links = sub {
 };
 
 my $_people_ops_links = sub {
-   my ($self, $req, $page, $params, $pager) = @_;
+   my ($self, $req, $page, $params, $pager) = @_; my $links = [];
 
    my $moniker = $self->moniker;
    my $actionp = "${moniker}/person";
-   my $add_user = f_link 'person', uri_for_action( $req, $actionp ), {
+
+   p_link $links, 'person', uri_for_action( $req, $actionp ), {
       action => 'create', container_class => 'add-link', request => $req };
 
    my $name = 'message_people';
@@ -281,9 +254,40 @@ my $_people_ops_links = sub {
    $actionp = "${moniker}/people";
 
    my $page_links = page_link_set $req, $actionp, [], $params, $pager;
-   my $links = [ $message, $add_user ];
 
    $page_links and unshift @{ $links }, $page_links;
+
+   return $links;
+};
+
+my $_person_ops_links = sub {
+   my ($self, $req, $page, $person) = @_;
+
+   my $links = []; $person->id or return $links;
+
+   my $moniker = $self->moniker; my $scode = $person->shortcode;
+
+   for my $actionp (qw( certs/certifications blots/endorsements
+                        train/training )) {
+      push @{ $links }, management_link $req, $actionp, $scode;
+   }
+
+   my $href = uri_for_action $req, "${moniker}/mugshot", [ $scode ];
+
+   p_js $page, dialog_anchor 'upload_mugshot', $href, {
+      name => 'mugshot_upload', title => loc( $req, 'Mugshot Upload' ), };
+
+   p_link $links, 'mugshot', C_DIALOG, { action => 'upload', request => $req };
+
+   my $actionp = "${moniker}/person"; my $view_nok;
+
+   if (my $nok = $person->next_of_kin) {
+      p_link $links, 'nok', uri_for_action( $req, $actionp, [ $nok ] ), {
+         action => 'view', container_class => 'add-link', request => $req };
+   }
+
+   p_link $links, 'person', uri_for_action( $req, $actionp ), {
+      action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
 };
@@ -511,7 +515,7 @@ sub person : Role(person_manager) {
    my $person     =  $_maybe_find_person->( $person_rs, $name );
    my $opts       =  { action => $action };
    my $fields     =  $self->$_bind_person_fields( $req, $form, $person, $opts );
-   my $links      =  $_person_ops_links->( $req, $page, $moniker, $person );
+   my $links      =  $self->$_person_ops_links( $req, $page, $person );
    my $args       =  [ 'person', $person->label ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
