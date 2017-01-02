@@ -171,7 +171,12 @@ my $_person_ops_links = sub {
    my $actionp = "${moniker}/person";
    my $add_person = f_link 'person', uri_for_action( $req, $actionp ), {
       action => 'create', container_class => 'add-link', request => $req };
-   my $links = [ $mugshot, $add_person ];
+   
+   my $links;
+   for my $actionp ( 'train/training', 'certs/certifications', 'blots/endorsements' ) {
+      push @$links, management_link($req, $actionp, $scode);
+   }
+   push @$links, $mugshot, $add_person;
 
    my $view_nok; if (my $nok = $person->next_of_kin) {
       $view_nok = f_link 'nok', uri_for_action( $req, $actionp, [ $nok ] ), {
