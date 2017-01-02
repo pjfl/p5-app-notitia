@@ -46,6 +46,7 @@ upgrade_application() {
    notitia-schema backup-data
    cpanm --notest ${target} && \
       notitia-schema upgrade-schema && \
+      notitia-schema -q repopulate-class type && \
       notitia-util -q application-upgraded
    notitia-jobdaemon start
    return 0
