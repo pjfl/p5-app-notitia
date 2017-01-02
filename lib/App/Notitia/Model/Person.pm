@@ -261,7 +261,7 @@ my $_people_links = sub {
 
    $role and ($role eq 'driver' or $role eq 'rider')
          and push @paths, 'blots/endorsements';
-$DB::single=1;
+
    for my $actionp ( @paths ) {
       push @links, {
          value => management_link
