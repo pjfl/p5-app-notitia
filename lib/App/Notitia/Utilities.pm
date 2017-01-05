@@ -76,22 +76,25 @@ my $_assigned_slots = sub {
 };
 
 my $_list_from_stash = sub {
-   my ($self, $stash) = @_; my ($person, $role, $scode);
+   my ($self, $stash) = @_;
+
+   $stash->{role} or $stash->{shortcode}
+      or throw Unspecified, [ 'role or shortcode' ];
 
    my $person_rs = $self->schema->resultset( 'Person' );
 
-   $scode = $stash->{shortcode}
-      and $person = $person_rs->find_by_shortcode( $scode )
-      and return [ [ $person->label, $person ] ];
+   if (my $role = $stash->{role}) {
+      my $ss = $stash->{status};
+      my $opts = { columns => [ 'email_address', 'mobile_phone' ] };
 
-   my $opts = { columns => [ 'email_address', 'mobile_phone' ] };
-   my $ss = $stash->{status};
+      $opts->{status} = $ss && $ss eq 'all' ? undef : $ss ? $ss : 'current';
 
-   $opts->{status} = $ss && $ss eq 'all' ? undef : $ss ? $ss : 'current';
+      return $person_rs->list_people( $role, $opts );
+   }
 
-   $stash->{role} or throw Unspecified, [ 'person role' ];
+   my $person = $person_rs->find_by_shortcode( $stash->{shortcode} );
 
-   return $person_rs->list_people( $stash->{role}, $opts );
+   return [ [ $person->label, $person ] ];
 };
 
 my $_list_participents = sub {

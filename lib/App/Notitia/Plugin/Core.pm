@@ -58,9 +58,11 @@ event_handler 'email', '_default_' => sub {
 event_handler 'email', '_output_' => sub {
    my ($self, $req, $stash) = @_; my $action = $stash->{action};
 
-   if (not $stash->{role} or $stash->{role} eq 'individual') {
-      not $stash->{role} and $self->log->warn( "No role in ${action} message" )
-          and return;
+   not $stash->{role}
+      and $self->log->warn( "No role in ${action} message" )
+      and return;
+
+   if ($stash->{role} eq 'individual') {
       not $stash->{shortcode}
           and $self->log->warn( "No shortcode in ${action} message" )
           and return;
