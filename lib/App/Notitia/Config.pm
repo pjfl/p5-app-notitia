@@ -149,6 +149,25 @@ has 'drafts'          => is => 'ro',   isa => NonEmptySimpleStr,
 has 'editors'         => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    builder            => sub { [ qw( editor event_manager person_manager ) ] };
 
+
+has 'editor_create'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub { [ qw( editor ) ] };
+
+has 'editor_delete'  => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub { [ qw( editor ) ] };
+
+has 'editor_edit'     => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub { [ qw( editor ) ] };
+
+has 'editor_rename'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub { [ qw( editor ) ] };
+
+has 'editor_upload'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+   builder            => sub { [ qw( editor event_manager person_manager ) ] };
+
+
+
+
 has 'email_sender'    => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => sub { $_[ 0 ]->title.'@'.mail_domain() };
 

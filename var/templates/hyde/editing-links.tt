@@ -10,22 +10,36 @@
 [%    text  = loc( 'Search' ) -%]
 [%    tip   = loc( 'Search for text in markdown files' ) -%]
 [%    LinkWithTips( '#', class, text, page.hint, tip, 'search-file' ) -%]
+
+[% IF page.is_create -%]
       &nbsp;|&nbsp;
 [%    text  = loc( 'Create' ) -%]
 [%    tip   = loc( 'Create a new markdown file' ) -%]
 [%    LinkWithTips( '#', class, text, page.hint, tip, 'create-file' ) -%]
+[% END -%]
+
+[% IF page.is_rename -%]
       &nbsp;|&nbsp;
 [%    text  = loc( 'Rename' ) -%]
 [%    tip   = loc( 'Rename this markdown file' ) -%]
 [%    LinkWithTips( '#', class, text, page.hint, tip, 'rename-file' ) -%]
+[% END -%]
+
+[% IF page.is_upload -%]
       &nbsp;|&nbsp;
 [%    text  = loc( 'Upload' ) -%]
 [%    tip   = loc( 'Upload an asset file' ) -%]
 [%    LinkWithTips( '#', class, text, page.hint, tip, 'upload-file' ) -%]
+[% END -%]
+
+[% IF page.is_edit -%]
       &nbsp;|&nbsp;
 [%    text  = loc( 'Edit' ) -%]
 [%    tip   = loc( 'Edit the markdown for this page' ) -%]
 [%    LinkWithTips( links.edit_uri, 'fade', text, page.hint, tip ) -%]
+[% END -%]
+
+[% IF page.is_delete -%]
       &nbsp;|&nbsp;
 [%    form         = {
          class     = 'fade submit'
@@ -38,5 +52,6 @@
          value     = 'delete_file'
       } %]
 [%    Dispatch( form ) -%]
+[% END -%]
 </div>
 [% END -%]
