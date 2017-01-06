@@ -61,8 +61,9 @@ my $_validation_errors = sub {
 
    p_tag $form, 'h5', locm $req, 'Form validation errors';
 
-   for my $message (map { ($_parse_error->( $_ ))[ 1 ] } @{ $e->args }) {
-      p_tag $form, 'p', $message;
+   for my $e (@{ $e->args }) {
+      p_tag $form, 'p', ($_parse_error->( $e ))[ 1 ];
+      $e->can( 'explain' ) and p_tag $form, 'p', $e->explain;
    }
 
    return;

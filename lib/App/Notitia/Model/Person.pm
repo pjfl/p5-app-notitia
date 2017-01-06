@@ -427,13 +427,14 @@ sub create_person_action : Role(person_manager) {
    $person->password( my $password = substr create_token, 0, 12 );
    $person->password_expired( TRUE );
 
+   my $name = $person->name || 'with no name';
    my $create = sub {
       $person->insert; $role and $person->add_member_to( $role );
       $self->create_coordinate_lookup_job( {}, $person );
    };
 
    try   { $self->schema->txn_do( $create ) }
-   catch { $self->blow_smoke( $_, 'create', 'person', $person->name ) };
+   catch { $self->blow_smoke( $_, 'create', 'person', $name ) };
 
    my $job      = $self->create_person_email( $req, $person, $password );
    my $message  = 'action:create-person shortcode:'.$person->shortcode;

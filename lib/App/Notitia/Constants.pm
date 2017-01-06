@@ -9,7 +9,6 @@ use Data::Validation::Constants ();
 use Web::ComposableRequest::Constants ();
 
 Class::Usul::Constants->Exception_Class( 'App::Notitia::Exception' );
-Data::Validation::Constants->Exception_Class( 'App::Notitia::Exception' );
 Web::ComposableRequest::Constants->Exception_Class( 'App::Notitia::Exception' );
 
 our @EXPORT = qw( C_DIALOG DOTS HASH_CHAR PIPE_SEP PRIORITY_TYPE_ENUM

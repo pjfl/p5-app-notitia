@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Will explain form validation errors if possible
           - Choose role over individual when sending email
           - Fixes #143. More people management links
           - Upgrade repopulates type table
