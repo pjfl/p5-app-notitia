@@ -158,7 +158,11 @@ my $_load_stash = sub {
 };
 
 my $_new_request = sub {
-   return new_request $_[ 0 ]->config, $_[ 0 ]->locale, $_[ 1 ], $_[ 2 ];
+   return new_request {
+      config   => $_[ 0 ]->config,
+      locale   => $_[ 0 ]->locale,
+      scheme   => $_[ 1 ],
+      hostport => $_[ 2 ], };
 };
 
 my $_qualify_assets = sub {

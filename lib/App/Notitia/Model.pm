@@ -63,7 +63,7 @@ my $_validation_errors = sub {
 
    for my $e (@{ $e->args }) {
       p_tag $form, 'p', ($_parse_error->( $e ))[ 1 ];
-      $e->can( 'explain' ) and p_tag $form, 'p', $e->explain;
+      $e->can( 'explain' ) and $e->explain and p_tag $form, 'p', $e->explain;
    }
 
    return;
@@ -157,7 +157,7 @@ sub exception_handler {
    my $name = $req->session->first_name || $req->username || 'unknown';
    my $form = blank_form { type => 'list' };
    my $page = { forms => [ $form ], template => [ 'none', NUL ],
-                title => locm $req, 'Exception Handler', $name };
+                title => locm $req, 'exception_handler_title', $name };
 
    if ($e->class eq ValidationErrors->()) {
       $_validation_errors->( $req, $e, $form );

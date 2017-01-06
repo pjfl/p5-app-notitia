@@ -841,7 +841,7 @@ msgstr "Expired"
 msgid "external_link_tip"
 msgstr "View this external link in another tab"
 
-msgid "Exception Handler"
+msgid "exception_handler_title"
 msgstr "I'm sorry [_1], I can't do that"
 
 msgid "eyes"

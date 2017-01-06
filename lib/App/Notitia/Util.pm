@@ -723,16 +723,17 @@ sub mtime ($) {
    return $_[ 0 ]->{tree}->{_mtime};
 }
 
-sub new_request ($$$$) {
-   my ($conf, $locale, $scheme, $hostport) = @_;
+sub new_request ($) {
+   my $args = shift; my $conf = $args->{config};
 
    ensure_class_loaded 'Web::ComposableRequest';
 
-   my $env = { HTTP_ACCEPT_LANGUAGE => $locale,
-               HTTP_HOST => $hostport // 'localhost:5000',
+   my $env = { HTTP_ACCEPT_LANGUAGE => $args->{locale} // 'en',
+               HTTP_HOST => $args->{hostport} // 'localhost:5000',
                SCRIPT_NAME => $conf->mount_point,
-               'psgi.url_scheme' => $scheme // 'http',
-               'psgix.session' => { username => 'admin' } };
+               'psgi.url_scheme' => $args->{scheme} // 'http',
+               'psgix.session' => { username => 'admin' },
+               %{ $args->{env} // {} } };
    my $factory = Web::ComposableRequest->new( config => $conf );
 
    return $factory->new_from_simple_request( {}, '', {}, $env );
