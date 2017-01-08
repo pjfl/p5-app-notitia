@@ -204,68 +204,32 @@ my $_assert_not_too_many_slots = sub {
 
    my $app = $self->result_source->schema->application;
    my $max_slots = $app->config->max_slots;
-   my @shifts = @{ SHIFT_TYPE_ENUM() };
-   my $n_shifts = @shifts;
-   my $after = $dt->clone->subtract( days => $max_slots + 2 );
-   my $before = $dt->clone->add( days => $max_slots + 2 );
+   my $after = $dt->clone->subtract( days => $max_slots + 1 );
+   my $before = $dt->clone->add( days => $max_slots + 1 );
    my $opts = { after => $after,
                 before => $before,
                 operator => $self->shortcode,
                 order_by => [ 'rota.date', 'shift.type_name' ],
-                rota_type => $rota_type->id, };
-   my $ymd = $dt->ymd;
-   my $proposed = [ $dt, $shift_type, "${rota_type}_${ymd}_${shift_type}" ];
-   my $shift_index = first_index { $_ eq $shift_type } @shifts;
+                rota_type => $rota_type->id };
    my $rs = $self->result_source->schema->resultset( 'Slot' );
-   my $inserted = FALSE;
-   my @tuples = ();
-
+   my %taken = ();
    for my $slot ($rs->search_for_slots( $opts )->all) {
-      my $index = first_index { $_ eq $slot->shift } @shifts;
-
-      if (not $inserted and $slot->start_date > $dt
-          or ($slot->start_date == $dt and $index > $shift_index)) {
-         push @tuples, $proposed; $inserted = TRUE;
-      }
-
-      push @tuples, [ $slot->start_date, $slot->shift.NUL, $slot->key ];
+      $taken{int($slot->start_date->jd())} = $slot->start_date->ymd;
    }
 
-   $inserted or push @tuples, $proposed;
-
-   my $trip1 = 0; my $trip2 = 0; my $prev_date; my $prev_shift;
-
-   for my $tuple (@tuples) {
-      my $start_date = $tuple->[ 0 ]; my $shift = $tuple->[ 1 ];
-
-      if ($trip1 == 0) {
-         $prev_date = $start_date; $prev_shift = $shift; $trip1 = $trip2 = 1;
-         next;
+   my $prev_d;
+   my $remaining = $max_slots - 1;
+   for my $d ( sort keys %taken ) {
+      if ( $prev_d and $d == $prev_d + 1 ) {
+         --$remaining;
       }
-
-      my $index = first_index { $_ eq $prev_shift } @shifts;
-
-      if ($start_date == $prev_date) {
-         defined $shifts[ ++$index ]
-            or throw 'Shift [_1] should be last of day but have [_2]',
-                     [ $prev_shift, $tuple->[ 2 ] ];
-
-         if ($shift eq $shifts[ $index ]) { $trip1++; $trip2++ }
-         else { $trip1 = $trip2 = 1 }
+      else {
+           $remaining = $max_slots - 1;
       }
-      elsif ($start_date == $prev_date->clone->add( days => 1 )) {
-         if ($index == $n_shifts - 1 and $shift eq $shifts[ 0 ]) { $trip1++ }
-         else { $trip1 = 1 }
-
-         if ($app->is_working_day( local_dt $start_date )) { $trip2++ }
-         elsif ($index == $n_shifts - 1 and $shift eq $shifts[ 0 ]) { $trip2++ }
-         else { $trip2 = 1 }
-      }
-      else { $trip1 = $trip2 = 1 }
-
-      ($trip1 > $max_slots or $trip2 > $max_slots) and throw 'Too many slots';
-      $prev_date = $start_date; $prev_shift = $shift;
+      $prev_d = $d;
    }
+
+   $remaining < 1 and throw "Only $max_slots consecutive duty-days are allowed, sorry.";
 
    return;
 };

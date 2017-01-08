@@ -147,7 +147,7 @@ has 'drafts'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'drafts';
 
 has 'editors'         => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
-   builder            => sub { [ qw( editor event_manager person_manager ) ] };
+   builder            => sub { [ qw( editor ) ] };
 
 has 'email_sender'    => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => sub { $_[ 0 ]->title.'@'.mail_domain() };
