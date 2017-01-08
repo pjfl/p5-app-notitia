@@ -213,23 +213,22 @@ my $_assert_not_too_many_slots = sub {
                 rota_type => $rota_type->id };
    my $rs = $self->result_source->schema->resultset( 'Slot' );
    my %taken = ();
+
    for my $slot ($rs->search_for_slots( $opts )->all) {
-      $taken{int($slot->start_date->jd())} = $slot->start_date->ymd;
+      $taken{ int $slot->start_date->jd } = $slot->start_date->ymd;
    }
 
-   my $prev_d;
-   my $remaining = $max_slots - 1;
-   for my $d ( sort keys %taken ) {
-      if ( $prev_d and $d == $prev_d + 1 ) {
-         --$remaining;
-      }
-      else {
-           $remaining = $max_slots - 1;
-      }
-      $prev_d = $d;
+   my $prev_jd; my $remaining = $max_slots - 1;
+
+   for my $jd (sort keys %taken) {
+      if ($prev_jd and $jd == $prev_jd + 1) { $remaining-- }
+      else { $remaining = $max_slots - 1 }
+
+      $prev_jd = $jd;
    }
 
-   $remaining < 1 and throw "Only $max_slots consecutive duty-days are allowed, sorry.";
+   $remaining < 1
+      and throw 'Only [_1] consecutive duty-days are allowed', [ $max_slots ];
 
    return;
 };
