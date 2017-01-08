@@ -214,7 +214,6 @@ my $_assert_not_too_many_slots = sub {
    my $rs = $self->result_source->schema->resultset( 'Slot' );
    my %taken = ();
    for my $slot ($rs->search_for_slots( $opts )->all) {
-      print int($slot->start_date->jd()), $slot->start_date->ymd, "\n";
       $taken{int($slot->start_date->jd())} = $slot->start_date->ymd;
    }
 
