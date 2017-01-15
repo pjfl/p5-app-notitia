@@ -213,12 +213,12 @@ my $_assert_not_too_many_slots = sub {
                 rota_type => $rota_type->id };
    my $rs = $self->result_source->schema->resultset( 'Slot' );
    my %taken = ();
-   
+
    for my $slot ($rs->search_for_slots( $opts )->all) {
       $taken{ int $slot->start_date->jd } = $slot->start_date->ymd;
    }
 
-   return if exists $taken{ int $dt->jd };
+   exists $taken{ int $dt->jd } and return;
 
    my $prev_jd; my $remaining = $max_slots - 1;
 
