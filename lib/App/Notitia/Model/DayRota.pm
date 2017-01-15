@@ -5,8 +5,8 @@ use namespace::autoclean;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG FALSE NUL SPC
                                 SHIFT_TYPE_ENUM TILDE TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_button
-                                p_checkbox p_hidden p_js p_link p_select );
+use App::Notitia::Form      qw( blank_form p_button p_checkbox p_hidden
+                                p_js p_link p_select );
 use App::Notitia::Util      qw( assign_link dialog_anchor js_submit_config
                                 js_togglers_config local_dt locm make_tip now_dt
                                 register_action_paths slot_claimed
@@ -205,12 +205,21 @@ my $_slot_link = sub {
    $page->{disabled} and return { colspan => 2, value => $value };
 
    my $action = slot_claimed $data->{ $k } ? 'yield' : 'claim';
+   my $operator = $data->{ $k }->{operator} // NUL;
+   my $can_yield = ($operator eq $req->username
+                    or is_member 'rota_manager', $req->session->roles)
+                 ? TRUE : FALSE;
+
+   $action eq 'yield' and not $can_yield
+      and return { colspan => 2, value => $value };
+
    my $opts = { action => $action,
                 args => [ $slot_type,
                           $_slot_contact_info->( $req, $data->{ $k } ) ],
                 name => $k, request => $req, value => $value };
+   my $link = { colspan => 2, }; p_link $link, 'slot', C_DIALOG, $opts;
 
-   return { colspan => 2, value => f_link 'slot', C_DIALOG, $opts };
+   return $link;
 };
 
 my $_summary_link = sub {

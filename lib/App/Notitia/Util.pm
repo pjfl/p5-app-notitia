@@ -170,10 +170,10 @@ my $vehicle_link = sub {
    my ($req, $page, $args, $opts) = @_;
 
    my $params = { action => my $action = $opts->{action} };
-   my $value = $opts->{value}; $action eq 'unassign'
-      and $params->{vehicle} = $value;
+   my $value = $opts->{value};
 
-   $value = (blessed $value) ? $value->slotref : $value;
+   $action eq 'unassign' and $params->{vehicle} = $value;
+   blessed $value and $value = $value->slotref;
 
    $page->{disabled}
       and return { class => 'table-link', type => 'text', value => $value };
@@ -204,8 +204,8 @@ sub action_for_uri ($) {
    my $uri = shift; $uri or return;
 
    unless ($uri_action_path_map) {
-      for my $actionp (keys %{ $action_path_uri_map }) {
-         my $key = $action_path_uri_map->{ $actionp };
+      for my $actionp (keys %{ action_path_uri_map() }) {
+         my $key = action_path2uri( $actionp );
 
          $key and $uri_action_path_map->{ $key } = $actionp;
       }
@@ -220,6 +220,12 @@ sub action_for_uri ($) {
    }
 
    return;
+}
+
+sub action_path2uri ($;$) {
+   defined $_[ 1 ] and $action_path_uri_map->{ $_[ 0 ] } = $_[ 1 ];
+
+   return $action_path_uri_map->{ $_[ 0 ] };
 }
 
 sub action_path_uri_map () {
@@ -724,19 +730,20 @@ sub mtime ($) {
 }
 
 sub new_request ($) {
-   my $args = shift; my $conf = $args->{config};
-
-   ensure_class_loaded 'Web::ComposableRequest';
-
+   my $args = shift; ensure_class_loaded 'Web::ComposableRequest';
+   my $conf = $args->{config};
+   my $factory = Web::ComposableRequest->new( config => $conf );
+   my $uri_params = $args->{uri_params} // NUL;
+   my $query_params = $args->{query_params} // {};
    my $env = { HTTP_ACCEPT_LANGUAGE => $args->{locale} // 'en',
                HTTP_HOST => $args->{hostport} // 'localhost:5000',
                SCRIPT_NAME => $conf->mount_point,
                'psgi.url_scheme' => $args->{scheme} // 'http',
-               'psgix.session' => { username => 'admin' },
+               'psgix.session' => { username => $args->{username} // 'admin' },
                %{ $args->{env} // {} } };
-   my $factory = Web::ComposableRequest->new( config => $conf );
 
-   return $factory->new_from_simple_request( {}, '', {}, $env );
+   return $factory->new_from_simple_request
+      ( {}, $uri_params, $query_params, $env );
 }
 
 sub new_salt ($$) {
@@ -792,7 +799,7 @@ sub page_link_set ($$$$$;$) {
 sub register_action_paths (;@) {
    my $args = (is_hashref $_[ 0 ]) ? $_[ 0 ] : { @_ };
 
-   for my $k (keys %{ $args }) { $action_path_uri_map->{ $k } = $args->{ $k } }
+   for my $k (keys %{ $args }) { action_path2uri( $k, $args->{ $k } ) }
 
    return;
 }
@@ -922,7 +929,7 @@ sub uri_for_action ($$;@) {
 
    blessed $req or throw 'Not a request object [_1]', [ $req ];
 
-   my $uri = $action_path_uri_map->{ $action } // $action;
+   my $uri = action_path2uri( $action ) // $action;
 
    $uri =~ m{ \* }mx or return $req->uri_for( $uri, @args );
 
