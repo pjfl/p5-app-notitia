@@ -200,14 +200,12 @@ my $_assert_no_slot_collision = sub {
 };
 
 my $_assert_not_too_many_slots = sub {
-   my ($self, $rota_type, $dt, $shift_type) = @_;
+   my ($self, $rota_type, $rota_dt) = @_;
 
    my $app = $self->result_source->schema->application;
    my $max_slots = $app->config->max_slots;
-   my $after = $dt->clone->subtract( days => $max_slots + 1 );
-   my $before = $dt->clone->add( days => $max_slots + 1 );
-   my $opts = { after => $after,
-                before => $before,
+   my $opts = { after => $rota_dt->clone->subtract( days => $max_slots + 1 ),
+                before => $rota_dt->clone->add( days => $max_slots + 1 ),
                 operator => $self->shortcode,
                 order_by => [ 'rota.date', 'shift.type_name' ],
                 rota_type => $rota_type->id };
@@ -218,7 +216,7 @@ my $_assert_not_too_many_slots = sub {
       $taken{ int $slot->start_date->jd } = $slot->start_date->ymd;
    }
 
-   exists $taken{ int $dt->jd } and return;
+   exists $taken{ int $rota_dt->jd } and return;
 
    my $prev_jd; my $remaining = $max_slots - 1;
 
@@ -236,16 +234,16 @@ my $_assert_not_too_many_slots = sub {
 };
 
 my $_assert_claim_allowed = sub {
-   my ($self, $rota_name, $dt, $slot_name, $request_sv, $assigner) = @_;
+   my ($self, $rota_name, $rota_dt, $slot_name, $request_sv, $assigner) = @_;
 
    my $rota_type = $self->$_find_rota_type( $rota_name );
 
    my ($shift_t, $slot_t, $slotno) = split m{ _ }mx, $slot_name, 3;
 
-   $self->$_assert_no_slot_collision( $rota_type, $dt, $shift_t, $slot_t );
+   $self->$_assert_no_slot_collision( $rota_type, $rota_dt, $shift_t, $slot_t );
 
    $self->shortcode eq $assigner
-      and $self->$_assert_not_too_many_slots( $rota_type, $dt, $shift_t );
+      and $self->$_assert_not_too_many_slots( $rota_type, $rota_dt );
 
    $slot_t eq 'driver' and $self->assert_member_of( 'driver' );
    $slot_t eq 'rider'  and $self->assert_member_of( 'rider' );
@@ -263,7 +261,7 @@ my $_assert_claim_allowed = sub {
       and throw 'Cannot claim slot [_1] greater than slot limit [_2]',
           [ $slotno, $conf->slot_limits->[ $i ] - 1 ];
 
-   $slot_t eq 'rider' and now_dt->add( weeks => 4 ) < $dt
+   $slot_t eq 'rider' and now_dt->add( weeks => 4 ) < $rota_dt
       and $self->region ne $conf->slot_region->{ $slotno }
       and throw 'Cannot claim slot [_1] out of region', [ $slotno ];
 
