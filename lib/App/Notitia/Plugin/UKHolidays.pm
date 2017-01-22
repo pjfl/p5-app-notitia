@@ -73,15 +73,13 @@ my $_easter = sub {
    # See http://www.gmarts.org/index.php?go=415
    my $year  = $dt->year;
    my $g     = $year % 19;
-   my $c     = $year / 100;
-   my $h     = ($c - $c / 4 - (8 * $c + 13) / 25 + 19 * $g + 15) % 30;
-   my $i     = $h - ($h / 28) * (1 - ($h / 28) * (29 / ($h + 1)) * ((21 - $g) / 11));
-   my $j     = ($year + $year / 4 + $i + 2 - $c + $c / 4) % 7;
-   my $p     = $i - $j;
-   my $day   = int(($p + 27 + ($p + 6) / 40) % 31);
-   my $month = int(3 + ($p + 26) / 30);
-
-   $day == 0 and throw 'Bad easter for year [_1]', [ $year ];
+   my $c     = int $year / 100;
+   my $h     = ($c - int( $c / 4 ) - int( (8 * $c + 13) / 25 ) + 19 * $g + 15) % 30;
+   my $i     = $h - int( $h * (1 - int( $h / 28 ) * int( 29 / ($h + 1) ) * int( (21 - $g) / 11 )) / 28 );
+   my $j     = ($year + int( $year / 4 ) + $i + 2 - $c + int( $c / 4 )) % 7;
+   my $l     = $i - $j;
+   my $month = 3 + int( ($l + 40) / 44 );
+   my $day   = $l + 28 - 31 * int( $month / 4 );
 
    return $dt->clone->set( month => $month, day => $day );
 };
@@ -96,8 +94,9 @@ my $_easter_monday = sub {
 
 my $_holiday_cache = {};
 
-my $_bank_holidays = sub {
-   my $dt = shift; my $year = $dt->year; my @holidays;
+# Public methods
+sub bank_holidays {
+   my ($self, $dt) = @_; my $year = $dt->year; my @holidays;
 
    exists $_holiday_cache->{ $year } and return $_holiday_cache->{ $year };
 
@@ -117,13 +116,12 @@ my $_bank_holidays = sub {
    push @holidays, $_boxing_day->( $dt );
 
    return $_holiday_cache->{ $year } = \@holidays;
-};
+}
 
-# Public methods
 sub is_bank_holiday {
    my ($self, $dt) = @_;
 
-   for my $holiday (@{ $_bank_holidays->( $dt ) }) {
+   for my $holiday (@{ $self->bank_holidays( $dt ) }) {
       $dt == $holiday and return TRUE;
    }
 

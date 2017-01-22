@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.11.$Rev: 8 $ of **App::Notitia**
+This documents version v0.11.$Rev: 14 $ of **App::Notitia**
 
 # Description
 
@@ -185,7 +185,7 @@ Help for command line options can be found be running:
     bin/notitia-cli list-methods
     bin/notitia-cli help <method>
 
-The `list-methods` command is available to all of the appliction programs
+The `list-methods` command is available to all of the application programs
 (except scripts and `notitia-server`)
 
 The bash completion script is provided by:

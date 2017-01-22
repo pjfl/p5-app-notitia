@@ -163,6 +163,14 @@ my $_select_event_control = sub {
 };
 
 # Public methods
+sub bank_holidays {
+   my ($self, $dt) = @_;
+
+   return exists $self->plugins->{holidays}
+        ? $self->plugins->{holidays}->bank_holidays( $dt )
+        : [];
+}
+
 sub create_coordinate_lookup_job {
    my ($self, $stash, $object) = @_;
 

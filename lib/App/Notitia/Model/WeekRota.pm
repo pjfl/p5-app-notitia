@@ -192,16 +192,16 @@ my $_find_location = sub {
    return $list->[ $i ] ? $list->[ $i ]->{location} : FALSE;
 };
 
-my $_calculate_distance = sub {
+my $_calculate_distance = sub { # In metres
    my ($location, $assignee) = @_;
 
    ($location and $location->coordinates and
     $assignee and $assignee->coordinates) or return;
 
-   my ($kx, $ky) = split m{ , }mx, $location->coordinates;
+   my ($lx, $ly) = split m{ , }mx, $location->coordinates;
    my ($ax, $ay) = split m{ , }mx, $assignee->coordinates;
 
-   return int( 0.5 + sqrt( ($kx - $ax)**2 + ($ky - $ay)**2 ) / 1000 );
+   return int 0.5 + sqrt( ($lx - $ax)**2 + ($ly - $ay)**2 );
 };
 
 my $_vehicle_label = sub {
@@ -211,7 +211,7 @@ my $_vehicle_label = sub {
    my $location = $_find_location->( $list, $data->{start} );
    my $distance = $_calculate_distance->( $location, $data->{assignee} );
 
-   $distance and $distance = int( 5 * $distance / 8 ); # Kilometers to miles
+   $distance and $distance = int 0.5 + 5 * $distance / 8000; # Metres to miles
 
    return $distance ? $vehicle->name." (${distance} mls)" : $vehicle->name;
 };

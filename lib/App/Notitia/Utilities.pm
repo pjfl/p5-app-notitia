@@ -7,7 +7,7 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FAILED FALSE OK
                                 SLOT_TYPE_ENUM TRUE );
 use App::Notitia::Util      qw( action_path_uri_map event_handler_cache
                                 load_file_data local_dt locd new_request
-                                now_dt slot_limit_index );
+                                now_dt slot_limit_index to_dt );
 use Class::Usul::Functions  qw( io is_member sum throw );
 use Class::Usul::File;
 use Class::Usul::Types      qw( Bool HashRef LoadableClass Object );
@@ -308,6 +308,15 @@ sub application_upgraded : method {
    return OK;
 }
 
+sub dump_bank_holidays : method {
+   my $self = shift; $self->plugins;
+   my $year = $self->options->{year} or throw Unspecified, [ 'year' ];
+
+   $self->dumper( $self->bank_holidays( to_dt( "${year}-01-01", 'local' ) ) );
+
+   return OK;
+}
+
 sub dump_event_attr : method {
    my $self = shift; $self->plugins; my $cache = event_handler_cache;
 
@@ -502,6 +511,8 @@ Defines the following attributes;
 =head1 Subroutines/Methods
 
 =head2 C<application_upgraded> - Generates the application upgraded email
+
+=head2 C<dump_bank_holidays> - Lists bank holidays for a given year
 
 =head2 C<dump_event_attr> - Dumps the event handling attribute data
 
