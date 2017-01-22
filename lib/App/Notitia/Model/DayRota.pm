@@ -462,7 +462,7 @@ my $_push_vehicle_select = sub {
 
    my @slot_key = split m{ _ }mx, $args->[ 2 ];
    my $rota_dt = to_dt $args->[ 1 ];
-   my $slot = $_find_slot->( $person, $args->[ 0 ], $rota_dt, @slot_key);
+   my $slot = $_find_slot->( $person, $args->[ 0 ], $rota_dt, @slot_key );
    my $vehicle_id = $slot ? $slot->operator_vehicle_id : undef;
    my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
    my $vehicle = $vehicle_id ? $vehicle_rs->find( $vehicle_id ) : NUL;

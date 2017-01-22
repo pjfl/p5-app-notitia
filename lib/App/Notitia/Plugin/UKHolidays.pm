@@ -100,20 +100,26 @@ sub bank_holidays {
 
    exists $_holiday_cache->{ $year } and return $_holiday_cache->{ $year };
 
-   push @holidays, $_new_year->( $dt ) if $year > 1973;
-   push @holidays, $_good_friday->( $dt );
-   push @holidays, $_easter_monday->( $dt );
-   push @holidays, $_may_day->( $dt ) if $year > 1977;
-   push @holidays, $_spring->( $dt );
+   push @holidays, [ 'new year', $_new_year->( $dt ) ] if $year > 1973;
+   push @holidays, [ 'good friday', $_good_friday->( $dt ) ];
+   push @holidays, [ 'easter monday', $_easter_monday->( $dt ) ];
 
-   # Weddings, Jubilees etc
-   push @holidays, $dt->clone->set( month => 6, day => 3 )  if $year == 2002;
-   push @holidays, $dt->clone->set( month => 4, day => 29 ) if $year == 2011;
-   push @holidays, $dt->clone->set( month => 6, day => 5 )  if $year == 2012;
+   push @holidays, [ 'royal wedding', $dt->clone->set( month => 4, day => 29 ) ]
+      if $year == 2011;
 
-   push @holidays, $_summer->( $dt );
-   push @holidays, $_christmas_day->( $dt );
-   push @holidays, $_boxing_day->( $dt );
+   push @holidays, [ 'may day', $_may_day->( $dt ) ] if $year > 1977;
+
+   push @holidays, [ 'golden jubilee', $dt->clone->set( month => 6, day => 3 ) ]
+      if $year == 2002;
+
+   push @holidays, [ 'spring', $_spring->( $dt ) ];
+
+   push @holidays, [ 'diamond jubilee', $dt->clone->set( month => 6, day => 5 )]
+      if $year == 2012;
+
+   push @holidays, [ 'summer', $_summer->( $dt ) ];
+   push @holidays, [ 'christmas day', $_christmas_day->( $dt ) ];
+   push @holidays, [ 'boxing day', $_boxing_day->( $dt ) ];
 
    return $_holiday_cache->{ $year } = \@holidays;
 }
@@ -121,7 +127,7 @@ sub bank_holidays {
 sub is_bank_holiday {
    my ($self, $dt) = @_;
 
-   for my $holiday (@{ $self->bank_holidays( $dt ) }) {
+   for my $holiday (map { $_->[ 1 ] } @{ $self->bank_holidays( $dt ) }) {
       $dt == $holiday and return TRUE;
    }
 
