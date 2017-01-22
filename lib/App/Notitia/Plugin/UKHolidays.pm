@@ -74,8 +74,10 @@ my $_easter = sub {
    my $year  = $dt->year;
    my $g     = $year % 19;
    my $c     = int $year / 100;
-   my $h     = ($c - int( $c / 4 ) - int( (8 * $c + 13) / 25 ) + 19 * $g + 15) % 30;
-   my $i     = $h - int( $h * (1 - int( $h / 28 ) * int( 29 / ($h + 1) ) * int( (21 - $g) / 11 )) / 28 );
+   my $h     = ($c - int( $c / 4 ) - int( (8 * $c + 13) / 25 )
+                + 19 * $g + 15) % 30;
+   my $i     = $h - int( $h * (1 - int( $h / 28 ) * int( 29 / ($h + 1) )
+                                 * int( (21 - $g) / 11 )) / 28 );
    my $j     = ($year + int( $year / 4 ) + $i + 2 - $c + int( $c / 4 )) % 7;
    my $l     = $i - $j;
    my $month = 3 + int( ($l + 40) / 44 );
@@ -125,10 +127,10 @@ sub bank_holidays {
 }
 
 sub is_bank_holiday {
-   my ($self, $dt) = @_;
+   my ($self, $dt) = @_; my $ymd = $dt->ymd;
 
-   for my $holiday (map { $_->[ 1 ] } @{ $self->bank_holidays( $dt ) }) {
-      $dt == $holiday and return TRUE;
+   for my $bhol_ymd (map { $_->[ 1 ]->ymd } @{ $self->bank_holidays( $dt ) }) {
+      $bhol_ymd eq $ymd and return TRUE;
    }
 
    return FALSE;
