@@ -58,6 +58,7 @@ lib/App/Notitia/Plugin/UKHolidays.pm
 lib/App/Notitia/Plugin/Update.pm
 lib/App/Notitia/Role/Editor.pm
 lib/App/Notitia/Role/EventStream.pm
+lib/App/Notitia/Role/Holidays.pm
 lib/App/Notitia/Role/Messaging.pm
 lib/App/Notitia/Role/Navigation.pm
 lib/App/Notitia/Role/PageConfiguration.pm
