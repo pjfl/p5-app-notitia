@@ -3,6 +3,7 @@ package App::Notitia::Plugin::UKHolidays;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE TRUE );
+use Class::Usul::Functions  qw( throw );
 use Moo;
 
 with q(Web::Components::Role);
@@ -79,6 +80,8 @@ my $_easter = sub {
    my $p     = $i - $j;
    my $day   = int(($p + 27 + ($p + 6) / 40) % 31);
    my $month = int(3 + ($p + 26) / 30);
+
+   $day == 0 and throw 'Bad easter for year [_1]', [ $year ];
 
    return $dt->clone->set( month => $month, day => $day );
 };
