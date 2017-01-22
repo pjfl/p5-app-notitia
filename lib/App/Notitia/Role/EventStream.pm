@@ -163,14 +163,6 @@ my $_select_event_control = sub {
 };
 
 # Public methods
-sub bank_holidays {
-   my ($self, $dt) = @_;
-
-   return exists $self->plugins->{holidays}
-        ? $self->plugins->{holidays}->bank_holidays( $dt )
-        : [];
-}
-
 sub create_coordinate_lookup_job {
    my ($self, $stash, $object) = @_;
 
@@ -251,22 +243,6 @@ sub event_schema_update {
    else { throw 'Method [_1] unknown', [ $method ] }
 
    return $message;
-}
-
-sub is_bank_holiday {
-   my ($self, $dt) = @_;
-
-   return exists $self->plugins->{holidays}
-        ? $self->plugins->{holidays}->is_bank_holiday( $dt )
-        : FALSE;
-}
-
-sub is_working_day {
-   my ($self, $dt) = @_;
-
-   return exists $self->plugins->{holidays}
-        ? $self->plugins->{holidays}->is_working_day( $dt )
-        : $dt->day_of_week > 5 ? FALSE : TRUE;
 }
 
 sub jobdaemon { # Shortcut for result classes

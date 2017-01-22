@@ -18,6 +18,12 @@ use Moo;
 extends q(Class::Usul::Schema);
 with    q(App::Notitia::Role::Schema);
 
+has 'components' => is => 'lazy', isa => HashRef[Object], builder => sub {
+   return load_components 'Model', application => $_[ 0 ];
+};
+
+with q(App::Notitia::Role::EventStream);
+
 # Attribute constructors
 my $_build_admin_password = sub {
    my $self = shift; my $prompt = '+Database administrator password';
@@ -41,12 +47,6 @@ has '+rdbms'          => default => sub { $_[ 0 ]->config->rdbms };
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
 has '+schema_version' => default => sub { App::Notitia->schema_version.NUL };
-
-has 'components' => is => 'lazy', isa => HashRef[Object], builder => sub {
-   return load_components 'Model', application => $_[ 0 ];
-};
-
-with q(App::Notitia::Role::EventStream);
 
 # Construction
 around 'deploy_file' => sub {

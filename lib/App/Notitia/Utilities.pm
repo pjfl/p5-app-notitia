@@ -26,6 +26,7 @@ has 'components' => is => 'lazy', isa => HashRef[Object], builder => sub {
 };
 
 with q(App::Notitia::Role::EventStream);
+with q(App::Notitia::Role::Holidays);
 
 # Override default in base class
 has '+config_class' => default => 'App::Notitia::Config';
