@@ -309,11 +309,11 @@ sub application_upgraded : method {
    return OK;
 }
 
-sub dump_bank_holidays : method {
-   my $self = shift; $self->plugins;
+sub dump_holidays : method {
+   my $self = shift;
    my $year = $self->next_argv or throw Unspecified, [ 'year' ];
 
-   $self->dumper( $self->bank_holidays( to_dt( "${year}-01-01", 'local' ) ) );
+   $self->dumper( $self->public_holidays( to_dt( "${year}-01-01", 'local' ) ) );
 
    return OK;
 }
@@ -513,11 +513,11 @@ Defines the following attributes;
 
 =head2 C<application_upgraded> - Generates the application upgraded email
 
-=head2 C<dump_bank_holidays> - Dumps bank holidays for a given year
+=head2 C<dump_holidays> - Dumps public holidays for a given year
 
-   bin/notitia-util dump-bank-holidays 2011
+   bin/notitia-util dump-holidays 2011
 
-Dumps bank holidays for a given year
+Dumps public holidays for a given year
 
 =head2 C<dump_event_attr> - Dumps the event handling attribute data
 

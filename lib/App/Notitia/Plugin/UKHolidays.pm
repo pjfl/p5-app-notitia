@@ -97,7 +97,7 @@ my $_easter_monday = sub {
 my $_holiday_cache = {};
 
 # Public methods
-sub bank_holidays {
+sub public_holidays {
    my ($self, $dt) = @_; my $year = $dt->year; my @holidays;
 
    exists $_holiday_cache->{ $year } and return $_holiday_cache->{ $year };
@@ -126,10 +126,10 @@ sub bank_holidays {
    return $_holiday_cache->{ $year } = \@holidays;
 }
 
-sub is_bank_holiday {
+sub is_public_holiday {
    my ($self, $dt) = @_; my $ymd = $dt->ymd;
 
-   for my $bhol_ymd (map { $_->[ 1 ]->ymd } @{ $self->bank_holidays( $dt ) }) {
+   for my $bhol_ymd (map { $_->[ 1 ]->ymd } @{ $self->public_holidays( $dt )}) {
       $bhol_ymd eq $ymd and return TRUE;
    }
 
@@ -139,7 +139,8 @@ sub is_bank_holiday {
 sub is_working_day {
    my ($self, $dt) = @_;
 
-   return $dt->day_of_week > 5 || $self->is_bank_holiday( $dt ) ? FALSE : TRUE;
+   return $dt->day_of_week > 5 || $self->is_public_holiday( $dt )
+        ? FALSE : TRUE;
 }
 
 1;

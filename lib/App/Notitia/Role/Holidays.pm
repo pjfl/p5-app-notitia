@@ -8,19 +8,19 @@ use Moo::Role;
 requires qw( plugins );
 
 # Public methods
-sub bank_holidays {
+sub public_holidays {
    my ($self, $dt) = @_;
 
    return exists $self->plugins->{holidays}
-        ? $self->plugins->{holidays}->bank_holidays( $dt )
+        ? $self->plugins->{holidays}->public_holidays( $dt )
         : [];
 }
 
-sub is_bank_holiday {
+sub is_public_holiday {
    my ($self, $dt) = @_;
 
    return exists $self->plugins->{holidays}
-        ? $self->plugins->{holidays}->is_bank_holiday( $dt )
+        ? $self->plugins->{holidays}->is_public_holiday( $dt )
         : FALSE;
 }
 
