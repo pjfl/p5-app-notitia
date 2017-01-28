@@ -459,16 +459,12 @@ sub has_stopped_sms {
 }
 
 sub insert {
-   my $self     = shift;
-   my $columns  = { $self->get_inflated_columns };
-   my $first    = $columns->{first_name};
-   my $last     = $columns->{last_name};
+   my $self    = shift;
+   my $columns = { $self->get_inflated_columns };
+   my $first   = lc $columns->{first_name}; $first =~ s{[^a-z]}{}gmx;
+   my $last    = lc $columns->{last_name}; $last =~ s{[^a-z]}{}gmx;
 
-   unless ($columns->{name}) {
-      $columns->{name} = lc "${first}.${last}";
-      $columns->{name} =~ s{[ \'\-\+]}{}gmx;
-   }
-
+   $columns->{name} or $columns->{name} = "${first}.${last}";
    $columns->{shortcode} or $columns->{shortcode}
       = $self->$_new_shortcode( $first, $last );
    $self->set_inflated_columns( $columns );
