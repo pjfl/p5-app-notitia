@@ -304,7 +304,7 @@ my $_month_rota_page = sub {
          lcm       => lcm_for( 4, @{ $max_slots } ),
          max_slots => $max_slots,
          name      => $rota_name, },
-      forms    => [ blank_form ],
+      forms    => [ blank_form { class => 'mobile-side-scroller' } ],
       template => [ '/menu', 'custom/month-table' ],
       title    => $_month_rota_title->( $req, $rota_name, $rota_dt ), };
 };

@@ -510,7 +510,7 @@ footer {
 /* Article - Used for both docs and news */
 article {
    background-color: @lighter; .border-radius(10px); .box-shadow;
-   font-size: 12px; margin: 0 10px; overflow-x: auto; padding: 20px;
+   font-size: 12px; margin: 0 10px; padding: 20px;
 }
 @media (max-width: 480px) {
    article ul { padding-left: 20px; }
@@ -791,7 +791,7 @@ hr.subtle { display: none; }
    }
    caption {
       .border-bottom-left-radius; .border-bottom-right-radius;
-      caption-side: bottom; margin-left: 0; margin-right: 0; margin-top: 0;
+      caption-side: bottom; margin: 0;
    }
    tbody td {
       border-top: 1px solid #747474; border-top: 1px solid rgba(0,0,0,.1);
@@ -821,7 +821,7 @@ hr.subtle { display: none; }
 .spreadsheet-table { margin: 0.5em auto; }
 .spreadsheet-table td.embeded { vertical-align: top; }
 .spreadsheet-table th.day-of-week { max-width: 270px; }
-.standard-table { margin: 0.5em 0; }
+.standard-table { margin: 0.5em 0 0 0; }
 table.embeded { margin: 0; }
 table.embeded td { white-space: nowrap; }
 /* Note types */
@@ -918,7 +918,7 @@ table.embeded td { white-space: nowrap; }
 /* Responsive tables */
 @media (max-width: 768px) {
    .mobile-side-scroller {
-      margin: 0 -40px; overflow-x: scroll; padding: 0 10px;
+      margin: 0 -40px; overflow-x: scroll; padding: 0 5px;
    }
 }
 .show-on-mobiles {
