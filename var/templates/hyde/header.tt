@@ -1,16 +1,18 @@
 <!-- Header -->
 <header role="banner">
-   <nav class="mobile-nav show-on-mobiles">
+   <div class="show-on-mobiles">
+      <nav class="mobile-nav">
 [% Dispatch( navigation.primary ) -%]
 [% Dispatch( navigation.secondary ) -%]
-   </nav>
-   <div class="grid" style="max-width: [% session.grid_width %]px;">
-      <div class="unit one-third center-on-mobiles">
+      </nav>
+   </div>
+   <div class="grid hide-on-mobiles" style="max-width: [% session.grid_width %]px;">
+      <div class="unit one-third">
          <h1>
 [% Dispatch( navigation.logo ) %]
          </h1>
       </div>
-      <nav class="main-nav unit two-thirds hide-on-mobiles">
+      <nav class="main-nav unit two-thirds">
 [% Dispatch( navigation.primary ) -%]
 [% Dispatch( navigation.secondary ) -%]
       </nav>

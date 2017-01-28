@@ -75,11 +75,8 @@ var Behaviour = new Class( {
          formName       : opt.formName } );
       this.dropmenu     = new DropMenu( { context: this } );
       this.headroom     = new Headroom( {
-         classes        : {
-            pinned      : 'navbar-fixed-top' },
          context        : this,
          offset         : 108,
-         selector       : '.navbar',
          tolerance      : 10 } );
       this.navigation   = new Navigation( { context: this } );
       this.noticeBoard  = new NoticeBoard( { context: this } );

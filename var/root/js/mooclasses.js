@@ -292,7 +292,8 @@ var Dialog = new Class( {
    },
 
    position: function() {
-      this.dialog.position( { relativeTo: this.parent } );
+      this.dialog.position( {
+         relativeTo: this.parent, relFixedPosition: true } );
    },
 
    show: function() {
