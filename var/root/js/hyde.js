@@ -89,6 +89,8 @@ var Behaviour = new Class( {
       this.togglers     = new Togglers( { context: this } );
       this.tips         = new Tips( {
          context        : this,
+         fsWidthRatio   : 1.5,
+         minWidth       : 200,
          onHide         : function() { this.fx.start( 0 ) },
          onInitialize   : function() {
             this.fx     = new Fx.Tween( this.tip, {
