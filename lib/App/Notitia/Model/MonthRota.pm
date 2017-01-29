@@ -322,7 +322,7 @@ my $_rota_summary_date_style = sub {
    my $wanted = $self->is_working_day( $local_dt ) ? $wd : $we;
    my $ymd = $local_dt->ymd;
    my $slots_claimed = grep { $_ =~ m{ \A $ymd _ }mx } keys %{ $data };
-   my $colour = 'red';
+   my $colour = '#c00';
 
    $slots_claimed > 0 and $colour = 'yellow';
    $slots_claimed >= $wanted and $colour = '#47ff00';
