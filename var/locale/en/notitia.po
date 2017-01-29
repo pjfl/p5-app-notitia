@@ -1999,7 +1999,7 @@ msgid "training"
 msgstr "Training"
 
 msgid "training_enrolment_title"
-msgstr "Course Enrolment"
+msgstr "Course Enrollment"
 
 msgid "training_event_name"
 msgstr "Course Name"

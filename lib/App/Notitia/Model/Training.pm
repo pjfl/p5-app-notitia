@@ -121,14 +121,14 @@ my $_enrol_link = sub {
 
    my $href = uri_for_action $req, $self->moniker.'/training', [ "${person}" ];
    my $form = blank_form 'training', $href;
-   my $text = 'Enrol [_1] on the [_2]';
+   my $text = 'Enroll [_1] on the [_2]';
 
    $course_name !~ m{ course \z }mx and $text .= ' course';
 
    my $tip = make_tip $req, $text, [ $person->label, $course_name ];
 
    p_button $form, 'enrol', 'add_course', {
-      class => 'table-link', label => locm( $req, 'Enrol' ), tip => $tip };
+      class => 'table-link', label => locm( $req, 'Enroll' ), tip => $tip };
    p_hidden $form, 'courses', $course_name;
 
    return $form;
