@@ -205,16 +205,16 @@ sub action_for_uri ($) {
 
    unless ($uri_action_path_map) {
       for my $actionp (keys %{ action_path_uri_map() }) {
-         my $key = action_path2uri( $actionp );
+         my $uri = action_path2uri( $actionp );
 
-         $key and $uri_action_path_map->{ $key } = $actionp;
+         $uri and $uri_action_path_map->{ $uri } = $actionp;
       }
    }
 
    my @parts = split m{ / }mx, $uri;
 
    while (@parts) {
-      my $key = join '/', @parts; my $actionp = $uri_action_path_map->{ $key };
+      my $uri = join '/', @parts; my $actionp = $uri_action_path_map->{ $uri };
 
       $actionp and return $actionp; pop @parts;
    }
