@@ -185,10 +185,10 @@ my $_new_shortcode = sub {
 };
 
 my $_assert_no_slot_collision = sub {
-   my ($self, $type_id, $dt, $shift_type, $slot_type) = @_;
+   my ($self, $rota_type, $dt, $shift_type, $slot_type) = @_;
 
    my $rs   = $self->result_source->schema->resultset( 'Slot' );
-   my $opts = { rota_type => $type_id, on => $dt };
+   my $opts = { rota_type => $rota_type->id, on => $dt };
 
    for my $slot ($rs->search_for_slots( $opts )->all) {
       $slot->shift eq $shift_type and $self->id == $slot->operator->id
