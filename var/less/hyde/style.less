@@ -924,16 +924,11 @@ table.embeded td { white-space: nowrap; }
       margin: 0 -40px; overflow-x: scroll; padding: 0 5px;
    }
 }
-.show-on-mobiles {
-   display: none;
-}
+.show-on-mobiles { display: none; }
 @media screen and (max-width: 768px) {
-   .show-on-mobiles {
-      display: block !important;
-   }
-   a .show-on-mobiles {
-      display: inline !important;
-   }
+   .dialog { max-width: 340px !important; }
+   .field-label, .show-on-mobiles { display: block !important; }
+   a .show-on-mobiles { display: inline !important; }
 }
 @media print {
    article { min-width: 650px !important; }
