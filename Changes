@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes missing send message link on contacts
           - Fixes #151. Mobile side scroller
           - Fixes implementation of Oudins algorithm
           - Fixes #149. Only claimant or rota_manager can yield slot

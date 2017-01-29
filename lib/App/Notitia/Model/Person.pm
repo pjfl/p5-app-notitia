@@ -251,7 +251,7 @@ my $_people_ops_links = sub {
    my $href = uri_for_action $req, "${moniker}/message", [], $params;
    my $message = $self->message_link( $req, $page, $href, $name );
 
-   $actionp = "${moniker}/people";
+   unshift @{ $links }, $message; $actionp = "${moniker}/people";
 
    my $page_links = page_link_set $req, $actionp, [], $params, $pager;
 
