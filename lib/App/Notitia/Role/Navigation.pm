@@ -293,13 +293,27 @@ my $_people_links = sub {
 my $_report_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
-   my $is_allowed_people = $self->$_allowed( $req, 'report/people' );
-   my $is_allowed_slots  = $self->$_allowed( $req, 'report/slots' );
-   my $is_allowed_calls  = $self->$_allowed( $req, 'report/calls' );
+   my $is_allowed_customers  = $self->$_allowed( $req, 'report/customers' );
+   my $is_allowed_deliveries = $self->$_allowed( $req, 'report/deliveries' );
+   my $is_allowed_people     = $self->$_allowed( $req, 'report/people' );
+   my $is_allowed_slots      = $self->$_allowed( $req, 'report/slots' );
 
-   $is_allowed_people or $is_allowed_slots or $is_allowed_calls or return;
+   $is_allowed_customers or $is_allowed_deliveries or $is_allowed_people
+      or $is_allowed_slots or return;
 
    push @{ $list }, $nav_folder->( $req, 'reports', { tip => 'Report Menu' } );
+
+   $is_allowed_customers and push @{ $list },
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'customer_report' ? 'selected' : NUL,
+         name => 'customer_report', }, 'report/customers', [],
+                     period => 'year-to-date' );
+
+   $is_allowed_deliveries and push @{ $list },
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'delivery_report' ? 'selected' : NUL,
+         name => 'delivery_report', }, 'report/deliveries', [],
+                     period => 'year-to-date' );
 
    $is_allowed_people and push @{ $list },
       $nav_linkto->( $req, {
@@ -319,12 +333,6 @@ my $_report_links = sub {
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'vehicle_report' ? 'selected' : NUL,
          name => 'vehicle_report', }, 'report/vehicles', [],
-                     period => 'year-to-date' );
-
-   $is_allowed_calls and push @{ $list },
-      $nav_linkto->( $req, {
-         class => $page->{selected} eq 'call_report' ? 'selected' : NUL,
-         name => 'call_report', }, 'report/calls', [],
                      period => 'year-to-date' );
 
    return;

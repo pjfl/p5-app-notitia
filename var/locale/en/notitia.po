@@ -207,32 +207,8 @@ msgstr "Call Category"
 msgid "call_manager"
 msgstr "Call Manager"
 
-msgid "call_report_link"
-msgstr "Call Report"
-
-msgid "call_report_tip"
-msgstr "View the counts by customer of delviery requests"
-
-msgid "call_report_title"
-msgstr "Call Report"
-
 msgid "calls_management_heading"
 msgstr "Calls"
-
-msgid "calls_report_heading_0"
-msgstr "Customer"
-
-msgid "calls_report_heading_1"
-msgstr "Routine"
-
-msgid "calls_report_heading_2"
-msgstr "Urgent"
-
-msgid "calls_report_heading_3"
-msgstr "Emergency"
-
-msgid "calls_report_heading_4"
-msgstr "Total"
 
 msgid "calls_tip"
 msgstr "Log incoming calls from other agencies"
@@ -484,6 +460,15 @@ msgstr "Add Customer"
 msgid "customer_create_tip"
 msgstr "Add a named customer for deliveries"
 
+msgid "customer_report_link"
+msgstr "Customer Report"
+
+msgid "customer_report_tip"
+msgstr "View the counts by customer of delivery requests"
+
+msgid "customer_report_title"
+msgstr "Customer Report"
+
 msgid "customers_heading_0"
 msgstr "Customer Name"
 
@@ -495,6 +480,21 @@ msgstr "Setup customers for deliveries"
 
 msgid "customers_list_title"
 msgstr "Customers"
+
+msgid "customers_report_heading_0"
+msgstr "Customer"
+
+msgid "customers_report_heading_1"
+msgstr "Routine"
+
+msgid "customers_report_heading_2"
+msgstr "Urgent"
+
+msgid "customers_report_heading_3"
+msgstr "Emergency"
+
+msgid "customers_report_heading_4"
+msgstr "Total"
 
 msgid "day_controller_0"
 msgstr "Ctrl. AM"
@@ -552,6 +552,15 @@ msgstr "Delete the [_1] record for [_2]"
 
 msgid "delivered"
 msgstr "Delivered"
+
+msgid "delivery_report_link"
+msgstr "Delivery Report"
+
+msgid "delivery_report_tip"
+msgstr "View a dump of the deliveries table"
+
+msgid "delivery_report_title"
+msgstr "Delivery Report"
 
 msgid "delivery_request_tip"
 msgstr "Select this existing delivery request"
@@ -2005,10 +2014,10 @@ msgid "training_event_name"
 msgstr "Course Name"
 
 msgid "training_event_tip"
-msgstr "Edit the details of this training event"
+msgstr "Edit the details of this training course"
 
 msgid "training_event_title"
-msgstr "Training Event"
+msgstr "Training Course"
 
 msgid "training_event_type"
 msgstr "Training"
@@ -2023,13 +2032,13 @@ msgid "training_events_heading_2"
 msgstr "View"
 
 msgid "training_events_link"
-msgstr "Training Events"
+msgstr "Training Courses"
 
 msgid "training_events_tip"
-msgstr "Create and view training events"
+msgstr "Create and view training courses"
 
 msgid "training_events_title"
-msgstr "Training Events"
+msgstr "Training Courses"
 
 msgid "training_header_0"
 msgstr "Person"

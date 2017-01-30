@@ -33,9 +33,9 @@ sub search_for_journeys {
          $where->{controller_id} = $self->$_find_by_shortcode( $scode )->id;
       }
 
-      $opts->{order_by} = { -desc => 'delivered' };
+      $opts->{order_by} //= { -desc => 'delivered' };
    }
-   else { $opts->{order_by} = 'requested' }
+   else { $opts->{order_by} //= 'requested' }
 
    $opts->{prefetch} //= [ 'controller', 'customer' ];
 

@@ -2,13 +2,15 @@ package App::Notitia::Model::Report;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_cell p_date
-                                p_hidden p_list p_row p_select p_table );
+use App::Notitia::Form      qw( blank_form f_link p_cell p_container p_date
+                                p_hidden p_js p_link p_list p_row p_select
+                                p_table );
 use App::Notitia::Util      qw( js_submit_config local_dt locd locm make_tip
                                 now_dt to_dt register_action_paths
                                 slot_limit_index uri_for_action );
+use Class::Null;
 use Class::Usul::Functions  qw( sum throw );
-use Scalar::Util            qw( weaken );
+use Scalar::Util            qw( blessed weaken );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -20,8 +22,9 @@ with    q(App::Notitia::Role::Navigation);
 has '+moniker' => default => 'report';
 
 register_action_paths
-   'report/calls' => 'calls-report',
+   'report/customers' => 'customer-report',
    'report/controls' => 'report-controls',
+   'report/deliveries' => 'delivery-report',
    'report/people_meta' => 'people-meta-report',
    'report/people' => 'people-report',
    'report/slots' => 'slots-report',
@@ -54,6 +57,15 @@ around 'get_stash' => sub {
 my @ROLES = qw( active rider controller driver fund_raiser );
 
 # Private functions
+my $_localise = sub {
+   my $v = shift; my $class;
+
+   defined $v and $class = blessed $v and $class eq 'DateTime'
+       and $v = local_dt $v;
+
+   return $v;
+};
+
 my $_select_periods = sub {
    return
       [ 'Last month', 'last-month' ],
@@ -72,6 +84,41 @@ my $_compare_counts = sub {
       <=> $data->{ $k1 }->{count}->[ $index ];
 };
 
+my $_delivery_columns = sub {
+   return qw( controller created customer delivered dropoff notes
+              original_priority pickup priority requested );
+};
+
+my $_stage_columns = sub {
+   my $prefix = shift;
+   my @cols = qw( beginning called collected collection_eta created delivered
+                  ending on_station operator vehicle );
+
+   return $prefix ? map { "${prefix}_${_}" } @cols : @cols;
+};
+
+my $_delivery_headers = sub {
+   return [ map { { value => $_ } } $_delivery_columns->(),
+            $_stage_columns->( 'leg1' ), $_stage_columns->( 'leg2' ) ];
+};
+
+my $_delivery_row = sub {
+   my ($req, $delivery) = @_; my @stages = $delivery->legs->all;
+
+   while (@stages > 2) { splice @stages, 1, 1 }
+
+   my $first_stage = $stages[ 0 ] // Class::Null->new;
+   my $last_stage = $stages[ 1 ] // Class::Null->new;
+   my @delivery_cols = map {
+      { value => $_localise->( $delivery->$_() ) } } $_delivery_columns->();
+   my @first_stage_cols = map {
+      { value => $_localise->( $first_stage->$_() ) } } $_stage_columns->();
+   my @last_stage_cols = map {
+      { value => $_localise->( $last_stage->$_() ) } } $_stage_columns->();
+
+   return [ @delivery_cols, @first_stage_cols, @last_stage_cols ];
+};
+
 my $_display_period = sub {
    my $opts = shift; my $period = $opts->{period} // NUL;
 
@@ -81,7 +128,7 @@ my $_display_period = sub {
 };
 
 my $_dl_links = sub {
-   my ($req, $type, $opts) = @_;
+   my ($req, $type, $opts) = @_; my $links = [];
 
    my $after = local_dt( $opts->{after} )->ymd;
    my $before = local_dt( $opts->{before} )->ymd;
@@ -93,8 +140,9 @@ my $_dl_links = sub {
    my %query = $href->query_form;
 
    exists $query{format} or $href->query_form( %query, format => 'csv' );
+   p_link $links, 'download_csv', $href, $csv_opts;
 
-   return [ f_link 'download_csv', $href, $csv_opts ];
+   return $links;
 };
 
 my $_exclusive_date_range = sub {
@@ -255,9 +303,8 @@ my $_link_opts = sub {
 my $_onchange_submit = sub {
    my ($page, $k) = @_;
 
-   push @{ $page->{literal_js} },
-      js_submit_config $k, 'change', 'submitForm',
-                       [ 'date_control', 'date-control' ];
+   p_js $page, js_submit_config $k,
+      'change', 'submitForm', [ 'date_control', 'date-control' ];
 
    return;
 };
@@ -352,26 +399,6 @@ my $_people_meta_table = sub {
 };
 
 # Private methods
-my $_calls_by_customer = sub {
-   my ($self, $opts) = @_;
-
-   $opts = $_exclusive_date_range->( $opts ); $opts->{done} = TRUE;
-
-   my $rs = $self->schema->resultset( 'Journey' ); my $data = {};
-
-   for my $journey ($rs->search_for_journeys( $opts )->all) {
-      my $customer = $journey->customer;
-      my $rec = $data->{ $customer->id } //= { customer => $customer };
-      my $index = 0;
-
-      $journey->priority eq 'urgent' and $index = 1;
-      $journey->priority eq 'emergency' and $index = 2;
-      $rec->{count}->[ $index ] //= 0; $rec->{count}->[ $index ]++;
-   }
-
-   return $data;
-};
-
 my $_counts_by_person = sub {
    my ($self, $opts) = @_;
 
@@ -496,6 +523,29 @@ my $_counts_of_people = sub {
    return $data;
 };
 
+my $_deliveries_by_customer = sub {
+   my ($self, $opts) = @_; my $data = { _deliveries => [] };
+
+   my $rs = $self->schema->resultset( 'Journey' );
+
+   $opts = $_exclusive_date_range->( $opts );
+   $opts->{done} = TRUE; $opts->{order_by} = 'requested';
+
+   for my $journey ($rs->search_for_journeys( $opts )->all) {
+      push @{ $data->{_deliveries} }, $journey;
+
+      my $customer = $journey->customer;
+      my $rec = $data->{ $customer->id } //= { customer => $customer };
+      my $index = 0;
+
+      $journey->priority eq 'urgent' and $index = 1;
+      $journey->priority eq 'emergency' and $index = 2;
+      $rec->{count}->[ $index ] //= 0; $rec->{count}->[ $index ]++;
+   }
+
+   return $data;
+};
+
 my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
 };
@@ -595,28 +645,29 @@ my $_slots_row = sub {
 };
 
 # Public methods
-sub calls : Role(controller) {
+sub customers : Role(controller) {
    my ($self, $req) = @_;
 
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options( $req, 0 );
-   my $href = uri_for_action $req, $actp, [ 'calls' ];
+   my $href = uri_for_action $req, $actp, [ 'customers' ];
    my $form = blank_form 'date-control', $href, { class => 'wide-form' };
-   my $page = { forms => [ $form ], selected => 'call_report',
-                title => locm $req, 'call_report_title' };
+   my $page = { forms => [ $form ], selected => 'customer_report',
+                title => locm $req, 'customer_report_title' };
 
    $_push_date_controls->( $page, $opts );
 
-   my $data = $self->$_calls_by_customer( $opts );
-   my $headers = $_report_headers->( $req, 'calls', 4 );
+   my $data = $self->$_deliveries_by_customer( $opts );
+   my $headers = $_report_headers->( $req, 'customers', 4 );
    my $table = $page->{content} = p_table $form, { headers => $headers };
 
    p_row $table, [ map   { $_report_row->( $_->{customer}->name, $_, 3 ) }
                    map   { $data->{ $_ } }
                    map   { $_sum_counts->( $data, $_, 3 ) }
+                   grep  { not m{ \A _ }mx }
                    keys %{ $data } ];
 
-   p_list $form, NUL, $_dl_links->( $req, 'calls', $opts ), $_link_opts->();
+   p_list $form, NUL, $_dl_links->( $req, 'customers', $opts ), $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
@@ -646,6 +697,38 @@ sub date_control_action : Role(person_manager) Role(rota_manager) {
    my $location = uri_for_action $req, $actionp, $args, $params;
 
    return { redirect => { location => $location } };
+}
+
+sub deliveries : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $actp = $self->moniker.'/controls';
+   my $opts = $self->$_get_period_options( $req, 0 );
+   my $href = uri_for_action $req, $actp, [ 'deliveries' ];
+   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $page = { forms => [ $form ],
+                selected => 'delivery_report',
+                title => locm $req, 'delivery_report_title' };
+
+   $_push_date_controls->( $page, $opts );
+
+   my $outer_table = p_table $form, {};
+   my $full_table = $page->{content} = p_table {}, {
+      headers => $_delivery_headers->( $req ) };
+   my $sample_table = p_table {}, {
+      class => 'embeded', headers => $_delivery_headers->( $req ) };
+   my $container = p_container {}, $sample_table, { class => 'wide-content' };
+   my $data = $self->$_deliveries_by_customer( $opts )->{_deliveries};
+   my @rows = map { $_delivery_row->( $req, $_ ) } @{ $data };
+
+   p_row $outer_table,  [ { class => 'embeded', value => $container } ];
+   p_row $sample_table, [ @rows[ 0 .. 10 ] ];
+   p_row $full_table,   [ @rows ];
+
+   p_list $form, NUL, $_dl_links->( $req, 'deliveries', $opts ),
+          $_link_opts->();
+
+   return $self->get_stash( $req, $page );
 }
 
 sub people : Role(person_manager) {

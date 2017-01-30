@@ -396,7 +396,7 @@ sub summary : Role(training_manager) {
    my $course_table = p_table {}, {
       class => 'embeded no-header-wrap',
       headers => $self->$_summary_headers( $req, $all_courses ) };
-   my $container = p_container {}, $course_table, { class => 'wide-table' };
+   my $container = p_container {}, $course_table, { class => 'limited-table' };
    my $suppress = not $req->session->show_training;
 
    p_row $outer_table, [ { class => 'embeded person-column',

@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Fixes #153. Adds delivery report
+            Renames call report to customer report
           - Fixes missing send message link on contacts
           - Fixes #151. Mobile side scroller
           - Fixes implementation of Oudins algorithm
