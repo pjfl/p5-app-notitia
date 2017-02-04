@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds driver vehicle allocation to spreadsheet
           - Fixes #153. Adds delivery report
             Renames call report to customer report
           - Fixes missing send message link on contacts

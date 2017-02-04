@@ -112,6 +112,12 @@ sub validation_attributes {
    };
 }
 
+sub vehicle_requested {
+   defined $_[ 1 ] and $_[ 0 ]->bike_requested( $_[ 1 ] );
+
+   return $_[ 0 ]->bike_requested;
+}
+
 1;
 
 __END__

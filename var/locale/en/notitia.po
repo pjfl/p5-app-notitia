@@ -505,6 +505,9 @@ msgstr "Ctrl. PM"
 msgid "day_driver_0"
 msgstr "Day Driver"
 
+msgid "day_driver_0_abbrv"
+msgstr "DD"
+
 msgid "day_rider_0"
 msgstr "Day North"
 
@@ -1328,6 +1331,9 @@ msgstr "Ctrl. Night"
 
 msgid "night_driver_0"
 msgstr "Night Driver"
+
+msgid "night_driver_0_abbrv"
+msgstr "ND"
 
 msgid "night_rider_0"
 msgstr "Night North"

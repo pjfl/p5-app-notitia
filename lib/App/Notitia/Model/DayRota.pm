@@ -545,7 +545,7 @@ sub day_rota : Role(any) {
            slov        => $slot->operator_vehicle,
            type        => $vehicle_type,
            vehicle     => $slot->vehicle,
-           vehicle_req => $slot->bike_requested };
+           vehicle_req => $slot->vehicle_requested };
    }
 
    my $page = $self->$_day_page( $req, $name, $rota_dt, $events, $slot_data );

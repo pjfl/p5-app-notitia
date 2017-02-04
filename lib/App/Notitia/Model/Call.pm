@@ -801,7 +801,7 @@ sub create_delivery_request_action : Role(controller) {
 
    my $jid = $journey->id;
    my $c_tag = lc $c_name; $c_tag =~ s{ [ ] }{_}gmx;
-   my $message = "action:create-delivery delivery_id:${jid} customer:${c_tag}";
+   my $message = "action:create-delivery customer:${c_tag} delivery_id:${jid}";
 
    $self->send_event( $req, $message );
 
@@ -827,8 +827,8 @@ sub create_delivery_stage_action : Role(controller) {
 
    my $lid = $leg->id;
    my $scode = $leg->operator;
-   my $message = "action:create-delivery_stage shortcode:${scode} "
-               . "stage_id:${lid}";
+   my $message = "action:create-delivery_stage delivery_id:${jid} "
+               . "shortcode:${scode} stage_id:${lid}";
 
    $self->send_event( $req, $message );
 

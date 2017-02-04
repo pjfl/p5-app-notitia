@@ -241,12 +241,16 @@ my $_vehicle_select_cell = sub {
    return { class => 'spreadsheet-fixed-select', value => $form };
 };
 
+my $_union = sub {
+   return [ @{ $_[ 0 ]->{ $_[ 1 ]->[ 0 ] } }, @{ $_[ 0 ]->{ $_[ 1 ]->[ 1 ] } }];
+};
+
 my $_alloc_slot_row = sub {
    my ($req, $page, $data, $dt, $slot_key, $cno) = @_;
 
    my $local_ymd = local_dt( $dt )->ymd;
    my $dt_key = "${local_ymd}_${slot_key}";
-   my $slot = $data->{slots}->{ $dt_key }; $slot or $slot = Class::Null->new;
+   my $slot = $data->{slots}->{ $dt_key } // Class::Null->new;
    my $style = NUL; $slot->vehicle and $slot->vehicle->colour
       and $style = 'background-color: '.$slot->vehicle->colour.';';
    my $operator = $slot->operator;
@@ -255,14 +259,18 @@ my $_alloc_slot_row = sub {
    $cno == 0 and p_cell $row, { class => 'rota-header align-center',
                                 value => locm $req, "${slot_key}_abbrv" };
 
-   if ($operator->id and $slot->bike_requested) {
+   if ($operator->id and $slot->vehicle_requested) {
       my $args = [ $page->{rota_name}, $local_ymd, $slot_key ];
       my $href = uri_for_action $req, 'asset/vehicle', $args;
       my $vrn  = $slot->vehicle ? $slot->vehicle->vrn : NUL;
+      my $vehicles = $slot->type_name->is_driver ?
+                      $_union->( $data->{vehicles}, [ '4x4', 'car' ] )
+                   : $slot->type_name->is_rider  ? $data->{vehicles}->{bike}
+                   : [];
       my $opts = { assignee => $operator,
                    journal => $data->{journal},
                    start => ($slot->duration)[ 0 ],
-                   vehicles => $data->{vehicles}->{bike} };
+                   vehicles => $vehicles };
 
       p_cell $row, $_vehicle_select_cell->
          ( $page, $opts, $dt_key, $href, 'assign_vehicle', $vrn );
@@ -416,24 +424,22 @@ my $_alloc_vevent_row = sub {
 my $_alloc_cell = sub {
    my ($req, $page, $data, $cno) = @_;
 
-   my $name = $page->{name};
-   my $rota_dt = $page->{rota_dt};
-   my $limits = $page->{limits};
-   my $dr_max = $limits->[ slot_limit_index 'day', 'rider' ];
-   my $nr_max = $limits->[ slot_limit_index 'night', 'rider' ];
    my $table = blank_form {
       class => 'embeded-spreadsheet-table', type => 'table' };
-   my $dt = $rota_dt->clone->add( days => $cno );
+   my $dt = $page->{rota_dt}->clone->add( days => $cno );
+   my $limits = $page->{limits};
    my $count = 0;
 
    $table->{headers} = $_alloc_cell_headers->( $req, $cno );
 
-   for my $key (map { "day_rider_${_}" } 0 .. $dr_max - 1) {
-      p_row $table, $_alloc_slot_row->( $req, $page, $data, $dt, $key, $cno );
-   }
+   for my $pair ([ 'day',   'rider' ], [ 'day',   'driver' ],
+                 [ 'night', 'rider' ], [ 'night', 'driver' ]) {
+      my $max = $limits->[ slot_limit_index $pair->[ 0 ], $pair->[ 1 ] ]
+         or next;
 
-   for my $key (map { "night_rider_${_}" } 0 .. $nr_max - 1) {
-      p_row $table, $_alloc_slot_row->( $req, $page, $data, $dt, $key, $cno );
+      for my $key (map { $pair->[ 0 ].'_'.$pair->[ 1 ].'_'.$_ } 0 .. $max - 1) {
+         p_row $table, $_alloc_slot_row->( $req, $page, $data, $dt, $key, $cno);
+      }
    }
 
    for my $tuple (@{ $data->{events}->{ local_dt( $dt )->ymd } // [] }) {
@@ -448,13 +454,15 @@ my $_alloc_cell = sub {
    return { class => 'embeded', value => $table };
 };
 
-my $_allocation_js = sub {
-   my ($req, $moniker, $dt) = @_; $dt = local_dt $dt;
+my $_push_allocation_js = sub {
+   my ($req, $page, $moniker, $dt) = @_; $dt = local_dt $dt;
 
    my $href = uri_for_action $req, "${moniker}/alloc_key", [ $dt->ymd ];
 
-   return [ js_server_config( 'allocation-key', 'load',
-                              'request', [ "${href}", 'allocation-key' ] ) ];
+   p_js $page, js_server_config
+      'allocation-key', 'load', 'request', [ "${href}", 'allocation-key' ];
+
+   return;
 };
 
 my $_week_rota_assignments = sub {
@@ -482,7 +490,7 @@ my $_week_rota_assignments = sub {
          map  { my $id = local_dt( $date )->ymd.'_'.$_->key;
                 $_add_slot_tip->( $req, $page, $id ); [ $id, $_ ] }
          grep { $_->vehicle->vrn eq $vehicle->vrn }
-         grep { $_->bike_requested and $_->vehicle }
+         grep { $_->vehicle_requested and $_->vehicle }
              @{ $cache->[ $cno ] };
 
       push @{ $table->{rows} },
@@ -676,7 +684,7 @@ my $_search_for_slots = sub {
 
    my $slot_rs = $self->schema->resultset( 'Slot' ); my $slots = {};
 
-   for my $slot (grep { $_->type_name->is_rider }
+   for my $slot (grep { $_->type_name->is_driver || $_->type_name->is_rider }
                  $slot_rs->search_for_slots( $opts )->all) {
       my $k = local_dt( $slot->start_date )->ymd.'_'.$slot->key;
 
@@ -715,7 +723,7 @@ my $_week_rota_requests = sub {
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
          map  { my $id = local_dt( $date )->ymd.'_'.$_->key;
                 $_add_slot_tip->( $req, $page, $id ); [ $id, $_ ] }
-         grep { $_->bike_requested and not $_->vehicle }
+         grep { $_->vehicle_requested and not $_->vehicle }
          map  { push @{ $slot_cache->[ $cno ] }, $_; $_ }
          grep { $_->date eq $date } @{ $slots };
 
@@ -771,6 +779,41 @@ my $_alloc_query = sub {
    return { control => $form };
 };
 
+my $_allocation_page = sub {
+   my ($self, $req, $rota_name, $rota_dt, $params) = @_;
+
+   my $list = blank_form { class => 'spreadsheet' };
+   my $form = blank_form {
+      class => 'spreadsheet-key-table server', id => 'allocation-key' };
+
+   return {
+      fields   => {
+         nav   => $self->$_alloc_nav( $req, $rota_name, $rota_dt, $params ), },
+      forms    => [ $list, $form ],
+      off_grid => TRUE,
+      template => [ 'none', 'custom/two-week-table' ],
+      title    => locm $req, 'Vehicle Allocation'
+   }
+};
+
+my $_week_rota_page = sub {
+   my ($self, $req, $rota_name, $rota_dt) = @_;
+
+   return {
+      fields    => { nav => {
+         lshift => $self->$_left_shift( $req, $rota_name, $rota_dt ),
+         next   => $self->$_next_week_uri
+            ( $req, 'week_rota', $rota_name, $rota_dt, { cols => 7 } ),
+         prev   => $self->$_prev_week_uri
+            ( $req, 'week_rota', $rota_name, $rota_dt, { cols => 7 } ),
+         rshift => $self->$_right_shift( $req, $rota_name, $rota_dt ), }, },
+      rota      => { headers => $_week_rota_headers->( $req, $rota_dt ),
+                     name    => $rota_name,
+                     rows    => [] },
+      template  => [ '/menu', 'custom/week-table' ],
+         title  => $_week_rota_title->( $req, $rota_name, $rota_dt ), };
+};
+
 # Public methods
 sub alloc_key : Dialog Role(rota_manager) {
    my ($self, $req) = @_;
@@ -802,11 +845,8 @@ sub alloc_table : Dialog Role(rota_manager) {
    my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
    my $cols = $req->uri_params->( 2, { optional => TRUE } ) // 7;
    my $rota_dt = to_dt $rota_date;
-   my $stash = $self->dialog_stash( $req );
-   my $table = $stash->{page}->{forms}->[ 0 ]
-             = blank_form { class => 'spreadsheet-table', type => 'table' };
    my $opts = {
-      after => $rota_dt->clone->subtract( days => 1),
+      after => $rota_dt->clone->subtract( days => 1 ),
       before => $rota_dt->clone->add( days => $cols ),
       rota_type => $self->$_find_rota_type( $rota_name )->id };
    my $vehicles = $self->$_search_for_vehicles();
@@ -814,9 +854,13 @@ sub alloc_table : Dialog Role(rota_manager) {
    my $events = $self->$_search_for_events( $opts, $journal );
    my $slots = $self->$_search_for_slots( $opts, $journal );
    my $vevents = $self->$_search_for_vehicle_events( $opts, $journal );
-   my $data = { events => $events, journal => $journal, slots => $slots,
-                vehicles => $vehicles, vevents => $vevents };
+   my $data = {
+      events => $events, journal => $journal, slots => $slots,
+      vehicles => $vehicles, vevents => $vevents };
+   my $stash = $self->dialog_stash( $req );
    my $page = $stash->{page};
+   my $table = $page->{forms}->[ 0 ] = blank_form {
+      class => 'spreadsheet-table', type => 'table' };
    my $row = p_row $table;
 
    $table->{headers} = $_alloc_table_headers->( $req, $rota_dt, $cols );
@@ -843,19 +887,12 @@ sub allocation : Role(rota_manager) {
    my $args = [ $rota_name, $rota_date ];
    my $params = $_alloc_query_params->( $req );
    my $rota_dt = to_dt $rota_date;
-   my $list = blank_form { class => 'spreadsheet' };
-   my $form = blank_form {
-      class => 'spreadsheet-key-table server', id => 'allocation-key' };
-   my $page = { fields => {
-         nav => $self->$_alloc_nav( $req, $rota_name, $rota_dt, $params ), },
-      forms => [ $list, $form ],
-      off_grid => TRUE,
-      template => [ 'none', 'custom/two-week-table' ],
-      title => locm $req, 'Vehicle Allocation'
-   };
+   my $page = $self->$_allocation_page( $req, $rota_name, $rota_dt, $params );
+   my $list = $page->{forms}->[ 0 ];
    my $fields = $page->{fields};
 
-   $page->{literal_js} = $_allocation_js->( $req, $moniker, $rota_dt );
+   $_push_allocation_js->( $req, $page, $moniker, $rota_dt );
+
    $fields->{query} = $self->$_alloc_query( $req, $page, $args, $params );
 
    for my $rno (0 .. $params->{rows} - 1) {
@@ -896,19 +933,7 @@ sub week_rota : Role(any) {
    my $rota_name  =  $req->uri_params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date  =  $req->uri_params->( 1, { optional => TRUE } ) // $today;
    my $rota_dt    =  to_dt $rota_date;
-   my $page       =  {
-      fields      => { nav => {
-         lshift   => $self->$_left_shift( $req, $rota_name, $rota_dt ),
-         next     => $self->$_next_week_uri
-            ( $req, 'week_rota', $rota_name, $rota_dt, { cols => 7 } ),
-         prev     => $self->$_prev_week_uri
-            ( $req, 'week_rota', $rota_name, $rota_dt, { cols => 7 } ),
-         rshift   => $self->$_right_shift( $req, $rota_name, $rota_dt ), }, },
-      rota        => { headers => $_week_rota_headers->( $req, $rota_dt ),
-                       name    => $rota_name,
-                       rows    => [] },
-      template    => [ '/menu', 'custom/week-table' ],
-      title       => $_week_rota_title->( $req, $rota_name, $rota_dt ), };
+   my $page       =  $self->$_week_rota_page( $req, $rota_name, $rota_dt );
    my $opts       =  {
       after       => $rota_dt->clone->subtract( days => 1),
       before      => $rota_dt->clone->add( days => 7 ),

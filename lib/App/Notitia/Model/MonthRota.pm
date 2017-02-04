@@ -390,7 +390,7 @@ my $_slot_assignments = sub {
                         operator    => $slot->operator,
                         slot        => $slot,
                         vehicle     => $slot->vehicle,
-                        vehicle_req => $slot->bike_requested };
+                        vehicle_req => $slot->vehicle_requested };
    }
 
    return $data;
