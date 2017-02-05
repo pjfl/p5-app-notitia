@@ -1302,8 +1302,9 @@ sub update_delivery_stage_action : Role(controller) Role(driver) Role(rider) {
 
    my $key = 'Stage [_2] of delivery request [_1] updated by [_3]';
    my $message = [ to_msg $key, $jid, $lid, $req->session->user_label ];
+   my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
 
-   return { redirect => { location => $req->uri, message => $message } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub update_location_action : Role(controller) {

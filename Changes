@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Fixes #155. Stage update returns to delivery request
+
 0.12.1    2017-02-04 16:18:10
           - Adds driver vehicle allocation to spreadsheet
           - Fixes #153. Adds delivery report
