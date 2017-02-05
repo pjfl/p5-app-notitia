@@ -86,7 +86,7 @@ my $_compare_counts = sub {
 
 my $_delivery_columns = sub {
    return qw( controller created customer delivered dropoff notes
-              original_priority pickup priority requested );
+              original_priority pickup priority requested consignment );
 };
 
 my $_stage_columns = sub {
@@ -98,25 +98,31 @@ my $_stage_columns = sub {
 };
 
 my $_delivery_headers = sub {
+   my $stages = shift;
    return [ map { { value => $_ } } $_delivery_columns->(),
-            $_stage_columns->( 'leg1' ), $_stage_columns->( 'leg2' ) ];
+          map { $_stage_columns->( 'stage' . $_ ) } (1 .. $stages)
+   ];
 };
 
 my $_delivery_row = sub {
-   my ($req, $delivery) = @_; my @stages = $delivery->legs->all;
+   my ($req, $peak_stages, $delivery) = @_; my @stages = $delivery->legs->all;
+   my @delivery_cols = map { { value =>
+         $_ eq 'consignment'
+             ? join ' ',  map { join ' ', $_->package_type , ' x'.$_->quantity,
+                                 $_->description ? '('.$_->description.')' : ''
+                          } $delivery->packages
+             : $_localise->( $delivery->$_() ) } } $_delivery_columns->();
 
-   while (@stages > 2) { splice @stages, 1, 1 }
+   my @stage_cols = map { my $s = $_; map {
+                       { value =>
+                           $s <= $#stages
+                           ? $_ eq 'operator'
+                             ? join ' ', $stages[ $s -1 ]->operator->first_name, $stages[ $s -1 ]->operator->last_name
+                             : $_localise->( $stages[ $s -1 ]->$_() )
+                           : '' }} $_stage_columns->()
+                    } (1 .. $peak_stages );
 
-   my $first_stage = $stages[ 0 ] // Class::Null->new;
-   my $last_stage = $stages[ 1 ] // Class::Null->new;
-   my @delivery_cols = map {
-      { value => $_localise->( $delivery->$_() ) } } $_delivery_columns->();
-   my @first_stage_cols = map {
-      { value => $_localise->( $first_stage->$_() ) } } $_stage_columns->();
-   my @last_stage_cols = map {
-      { value => $_localise->( $last_stage->$_() ) } } $_stage_columns->();
-
-   return [ @delivery_cols, @first_stage_cols, @last_stage_cols ];
+   return [ @delivery_cols, @stage_cols ];
 };
 
 my $_display_period = sub {
@@ -712,14 +718,18 @@ sub deliveries : Role(controller) {
 
    $_push_date_controls->( $page, $opts );
 
-   my $outer_table = p_table $form, {};
-   my $full_table = $page->{content} = p_table {}, {
-      headers => $_delivery_headers->( $req ) };
-   my $sample_table = p_table {}, {
-      class => 'embeded', headers => $_delivery_headers->( $req ) };
-   my $container = p_container {}, $sample_table, { class => 'wide-content' };
    my $data = $self->$_deliveries_by_customer( $opts )->{_deliveries};
-   my @rows = map { $_delivery_row->( $req, $_ ) } @{ $data };
+   my $peak_stages = 0;
+   map { $_->legs->count > $peak_stages and $peak_stages = $_->legs->count }  @{ $data };
+   my $outer_table = p_table $form, {};
+
+   my $full_table = $page->{content} = p_table {}, {
+      headers => $_delivery_headers->( $peak_stages ) };
+   my $sample_table = p_table {}, {
+      class => 'embeded', headers => $_delivery_headers->( $peak_stages  ) };
+   my $container = p_container {}, $sample_table, { class => 'wide-content' };
+
+   my @rows = map { $_delivery_row->( $req, $peak_stages, $_ ) } @{ $data };
 
    p_row $outer_table,  [ { class => 'embeded', value => $container } ];
    p_row $sample_table, [ @rows[ 0 .. 10 ] ];
