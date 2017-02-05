@@ -86,7 +86,7 @@ my $_compare_counts = sub {
 
 my $_delivery_columns = sub {
    return qw( controller created customer delivered dropoff notes
-              original_priority pickup priority requested );
+              original_priority pickup priority requested consignment );
 };
 
 my $_stage_columns = sub {
@@ -99,20 +99,28 @@ my $_stage_columns = sub {
 
 my $_delivery_headers = sub {
    my $stages = shift;
-   return [ map { { value => $_ } } $_delivery_columns->(), 
-          map { $_stage_columns->( 'stage' . $_ ) } (1 .. $stages)  
+   return [ map { { value => $_ } } $_delivery_columns->(),
+          map { $_stage_columns->( 'stage' . $_ ) } (1 .. $stages)
    ];
 };
 
 my $_delivery_row = sub {
    my ($req, $peak_stages, $delivery) = @_; my @stages = $delivery->legs->all;
-   my @delivery_cols = map {
-      { value => $_localise->( $delivery->$_() ) } } $_delivery_columns->();
+   my @delivery_cols = map { { value =>
+         $_ eq 'consignment'
+             ? join ' ',  map { join ' ', $_->package_type , ' x'.$_->quantity,
+                                 $_->description ? '('.$_->description.')' : ''
+                          } $delivery->packages
+             : $_localise->( $delivery->$_() ) } } $_delivery_columns->();
 
    my @stage_cols = map { my $s = $_; map {
-                       { value => $s <= $#stages ? $_localise->( $stages[ $s -1 ]->$_() ) 
-                                                 : '' }} $_stage_columns->() 
-                    } (1 .. $peak_stages ); 
+                       { value =>
+                           $s <= $#stages
+                           ? $_ eq 'operator'
+                             ? join ' ', $stages[ $s -1 ]->operator->first_name, $stages[ $s -1 ]->operator->last_name
+                             : $_localise->( $stages[ $s -1 ]->$_() )
+                           : '' }} $_stage_columns->()
+                    } (1 .. $peak_stages );
 
    return [ @delivery_cols, @stage_cols ];
 };
