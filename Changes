@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #157. Delivery report columns
           - Fixes #155. Stage update returns to delivery request
 
 0.12.1    2017-02-04 16:18:10

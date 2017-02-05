@@ -3,7 +3,7 @@ package App::Notitia::Schema::Schedule::Result::Journey;
 use strictures;
 use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::Constants qw( FALSE PRIORITY_TYPE_ENUM SPC
+use App::Notitia::Constants qw( FALSE NUL PRIORITY_TYPE_ENUM SPC
                                 TRUE VARCHAR_MAX_SIZE );
 use App::Notitia::DataTypes qw( bool_data_type date_data_type
                                 enumerated_data_type foreign_key_data_type
@@ -42,6 +42,18 @@ $class->has_many( legs => "${result}::Leg", 'journey_id' );
 $class->has_many( packages => "${result}::Package", 'journey_id' );
 
 # Public methods
+sub consignment {
+   my $self = shift; my $r = NUL;
+
+   for my $package ($self->packages->all) {
+      $r and $r .= ', ';
+      $r .= $package->package_type.' x '.$package->quantity.SPC
+         . ($package->description ? '('.$package->description.')' : NUL );
+   }
+
+   return $r;
+}
+
 sub created_label {
    return datetime_label $_[ 1 ], $_[ 0 ]->created;
 }

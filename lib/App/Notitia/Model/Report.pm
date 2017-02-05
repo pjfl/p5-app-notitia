@@ -60,8 +60,11 @@ my @ROLES = qw( active rider controller driver fund_raiser );
 my $_localise = sub {
    my $v = shift; my $class;
 
-   defined $v and $class = blessed $v and $class eq 'DateTime'
-       and $v = local_dt $v;
+   (defined $v and $class = blessed $v) or return $v;
+
+   $class->isa( 'DateTime' ) and $v = local_dt $v;
+   $class->isa( 'App::Notitia::Schema::Schedule::Result::Person' )
+      and $v = $v->label;
 
    return $v;
 };
@@ -85,7 +88,7 @@ my $_compare_counts = sub {
 };
 
 my $_delivery_columns = sub {
-   return qw( controller created customer delivered dropoff notes
+   return qw( consignment controller created customer delivered dropoff notes
               original_priority pickup priority requested );
 };
 
@@ -99,20 +102,28 @@ my $_stage_columns = sub {
 
 my $_delivery_headers = sub {
    my $stages = shift;
-   return [ map { { value => $_ } } $_delivery_columns->(), 
-          map { $_stage_columns->( 'stage' . $_ ) } (1 .. $stages)  
-   ];
+
+   return [ map { { value => $_ } } $_delivery_columns->(),
+            map { $_stage_columns->( 'stage' . $_ ) } (1 .. $stages) ];
+};
+
+my $_delivery_stage = sub {
+   my $stage = shift;
+
+   return map { { value => $stage ? $_localise->( $stage->$_() ) : NUL } }
+              $_stage_columns->();
 };
 
 my $_delivery_row = sub {
-   my ($req, $peak_stages, $delivery) = @_; my @stages = $delivery->legs->all;
+   my ($req, $max_stages, $delivery) = @_;
+
    my @delivery_cols = map {
       { value => $_localise->( $delivery->$_() ) } } $_delivery_columns->();
 
-   my @stage_cols = map { my $s = $_; map {
-                       { value => $s <= $#stages ? $_localise->( $stages[ $s -1 ]->$_() ) 
-                                                 : '' }} $_stage_columns->() 
-                    } (1 .. $peak_stages ); 
+   my @stages = $delivery->legs->all;
+
+   my @stage_cols = map {
+      $_delivery_stage->( $stages[ $_ ] ) } (0 .. $max_stages - 1);
 
    return [ @delivery_cols, @stage_cols ];
 };
@@ -541,6 +552,14 @@ my $_deliveries_by_customer = sub {
       $rec->{count}->[ $index ] //= 0; $rec->{count}->[ $index ]++;
    }
 
+   my $max_stages = 0;
+
+   for my $count (map { $_->legs->count } @{ $data->{_deliveries} }) {
+      $count > $max_stages and $max_stages = $count;
+   }
+
+   $data->{_max_stages} = $max_stages;
+
    return $data;
 };
 
@@ -710,18 +729,17 @@ sub deliveries : Role(controller) {
 
    $_push_date_controls->( $page, $opts );
 
-   my $data = $self->$_deliveries_by_customer( $opts )->{_deliveries};
-   my $peak_stages = 0;
-   map { $_->legs->count > $peak_stages and $peak_stages = $_->legs->count }  @{ $data };
-   my $outer_table = p_table $form, {};
+   my $data = $self->$_deliveries_by_customer( $opts );
+   my $headers = $_delivery_headers->( my $max_stages = $data->{_max_stages} );
+   my $deliveries = $data->{_deliveries};
 
-   my $full_table = $page->{content} = p_table {}, {
-      headers => $_delivery_headers->( $peak_stages ) };
-   my $sample_table = p_table {}, {
-      class => 'embeded', headers => $_delivery_headers->( $peak_stages  ) };
+   my $outer_table = p_table $form, {};
+   my $full_table = $page->{content} = p_table {}, { headers => $headers };
+   my $sample_table = p_table {}, { class => 'embeded', headers => $headers };
+
    my $container = p_container {}, $sample_table, { class => 'wide-content' };
 
-   my @rows = map { $_delivery_row->( $req, $peak_stages, $_ ) } @{ $data };
+   my @rows = map { $_delivery_row->( $req, $max_stages, $_ ) } @{ $deliveries};
 
    p_row $outer_table,  [ { class => 'embeded', value => $container } ];
    p_row $sample_table, [ @rows[ 0 .. 10 ] ];
