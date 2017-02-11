@@ -31,6 +31,8 @@ around 'to_psgi_app' => sub {
       enable 'ContentLength';
       enable 'FixMissingBodyInRedirect';
       enable 'ConditionalGET';
+      enable_if { $_[ 0 ]->{REMOTE_ADDR} eq '127.0.0.1' }
+         'Plack::Middleware::ReverseProxy';
       mount $conf->mount_point => builder {
          enable 'Deflater',
             content_type => $conf->deflate_types, vary_user_agent => TRUE;

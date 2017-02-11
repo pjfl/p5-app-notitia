@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds Starman dependencies
           - Fixes excess mids in passed query params
           - Fixes excess mids in referer redirects
           - Fixes #156. Delivery report columns
