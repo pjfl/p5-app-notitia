@@ -319,7 +319,8 @@ sub dialog : Dialog Role(training_manager) {
 sub events : Role(any) {
    my ($self, $req) = @_;
 
-   my $params = $req->query_params->( { optional => TRUE } );
+   my $params = $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
    my $after = $params->{after} ? to_dt( $params->{after} ) : FALSE;
    my $before = $params->{before} ? to_dt( $params->{before} ) : FALSE;
    my $opts = { after      => $after,
@@ -372,7 +373,8 @@ sub remove_course_action : Role(training_manager) {
 sub summary : Role(training_manager) {
    my ($self, $req) = @_;
 
-   my $params = $req->query_params->( { optional => TRUE } );
+   my $params = $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
    my $opts = { page => delete $params->{page} // 1,
                 rows => $req->session->rows_per_page, };
    my $form = blank_form;

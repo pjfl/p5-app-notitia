@@ -404,7 +404,8 @@ sub incident_party : Role(controller) {
 sub incidents : Role(controller) {
    my ($self, $req) = @_;
 
-   my $params = $req->query_params->( { optional => TRUE } );
+   my $params = $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
    my $form = blank_form;
    my $page = {
       forms => [ $form ], selected => 'incidents',

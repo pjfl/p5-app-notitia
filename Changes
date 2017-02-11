@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes excess mids in passed query params
           - Fixes excess mids in referer redirects
           - Fixes #156. Delivery report columns
           - Fixes #155. Stage update returns to delivery request

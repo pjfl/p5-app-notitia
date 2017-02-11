@@ -703,7 +703,7 @@ sub management_link ($$$;$) {
    my ($req, $actionp, $name, $opts) = @_; $opts //= {};
 
    my $args   = $opts->{args} // [ $name ];
-   my $params = $opts->{params} // {};
+   my $params = $opts->{params} // {}; delete $params->{mid};
    my ($moniker, $method) = split m{ / }mx, $actionp, 2;
    my $href   = uri_for_action( $req, $actionp, $args, $params );
    my $type   = $opts->{type} // 'link';

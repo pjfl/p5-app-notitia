@@ -673,7 +673,8 @@ sub events : Role(any) {
    my ($self, $req) = @_;
 
    my $moniker   =  $self->moniker;
-   my $params    =  $req->query_params->( { optional => TRUE } );
+   my $params    =  $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
    my $after     =  $params->{after} ? to_dt $params->{after} : FALSE;
    my $before    =  $params->{before} ? to_dt $params->{before} : FALSE;
    my $opts      =  { after      => $after,

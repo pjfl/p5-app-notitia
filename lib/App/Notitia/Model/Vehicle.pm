@@ -804,7 +804,8 @@ sub vehicles : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $moniker  =  $self->moniker;
-   my $params   =  $req->query_params->( { optional => TRUE } );
+   my $params   =  $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
    my $type     =  $params->{type};
    my $private  =  $params->{private} || FALSE;
    my $service  =  $params->{service} || FALSE;

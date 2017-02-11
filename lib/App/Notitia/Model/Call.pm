@@ -1076,7 +1076,8 @@ sub journey : Role(controller) Role(driver) Role(rider) {
 sub journeys : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
-   my $params =  $req->query_params->( { optional => TRUE } );
+   my $params =  $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
    my $status =  $params->{status} // NUL;
    my $done   =  $status eq 'completed' ? TRUE : FALSE;
    my $select =  $done ? 'completed_journeys' : 'journeys';

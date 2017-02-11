@@ -33,12 +33,12 @@ my $_session_file = sub {
 };
 
 my $_flatten = sub {
-   my ($self, $req) = @_;
+   my ($self, $req) = @_; my $r = NUL;
 
-   my $selected = $req->body_params->( 'selected',
-                                       { optional => TRUE, multiple => TRUE } );
-   my $params   = $req->query_params->( { optional => TRUE } ) // {};
-   my $r        = NUL; delete $params->{mid};
+   my $selected = $req->body_params->( 'selected', {
+      optional => TRUE, multiple => TRUE } );
+   my $params = $req->query_params->( {
+      optional => TRUE } ) // {}; delete $params->{mid};
 
    if (defined $selected->[ 0 ]) {
       my $path = $self->$_session_file;

@@ -62,7 +62,8 @@ my $_endorsement_js = sub {
 my $_endorsement_ops_links = sub {
    my ($req, $actionp, $person) = @_;
 
-   my $params = $req->query_params->( { optional => TRUE } );
+   my $params = $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
    my $href = uri_for_action $req, $actionp, [ $person->shortcode ], $params;
    my $opts = { action => 'add', args => [ $person->label ], request => $req };
 

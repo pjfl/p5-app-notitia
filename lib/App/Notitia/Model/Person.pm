@@ -556,7 +556,8 @@ sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
    my ($self, $req, $type) = @_;
 
    my $actionp =  $self->moniker.'/people';
-   my $params  =  $req->query_params->( { optional => TRUE } );
+   my $params  =  $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
    my $role    =  $params->{role  };
    my $status  =  $params->{status};
 

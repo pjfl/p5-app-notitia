@@ -85,7 +85,8 @@ my $_certs_ops_links = sub {
 
    my $scode = $person->shortcode;
    my $actionp = $self->moniker.'/certification';
-   my $params = $req->query_params->( { optional => TRUE } );
+   my $params = $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
    my $href  = uri_for_action $req, $actionp, [ $scode ], $params;
    my $opts  = { action => 'add', args => [ $person->label ],
                  container_class => 'ops-links right', request => $req };
