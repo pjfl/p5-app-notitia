@@ -3,7 +3,7 @@ package App::Notitia::Role::Editor;
 use namespace::autoclean;
 
 use App::Notitia::Form     qw( blank_form f_tag p_button p_checkbox p_file
-                               p_hidden p_list p_radio p_span p_text
+                               p_hidden p_js p_list p_radio p_span p_text
                                p_textfield );
 use App::Notitia::Util     qw( dialog_anchor locm make_id_from
                                make_name_from mtime set_element_focus
@@ -32,11 +32,12 @@ has '_ipc' => is => 'lazy', isa => ProcCommer, handles => [ 'run_cmd' ],
 my $_add_dialog_js = sub {
    my ($self, $req, $page, $name, $opts) = @_;
 
-   my $action = $self->moniker.'/dialog';
-   my $href   = uri_for_action( $req, $action, [], { name => $name } );
+   my $actionp = $self->moniker.'/dialog';
+   my $href = uri_for_action( $req, $actionp, [], { name => $name } );
 
-   push @{ $page->{literal_js} }, dialog_anchor
-      "${name}-file", $href, { name => "${name}-file", %{ $opts } };
+   p_js $page, dialog_anchor "${name}-file", $href, {
+      name => "${name}-file", %{ $opts } };
+
    return;
 };
 
@@ -108,7 +109,7 @@ my $_copy_element_value = sub {
 };
 
 my $_prepare_path = sub {
-   my $path = shift; $path =~ s{ [\\] }{/}gmx;
+   my $path = shift; $path =~ s{ [\\] }{/}gmx; $path =~ s{ // }{/}gmx;
 
    return (map { s{ [ ] }{_}gmx; $_ }
            map { trim $_            } split m{ / }mx, $path);

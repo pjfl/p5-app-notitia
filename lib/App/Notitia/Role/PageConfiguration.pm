@@ -27,9 +27,14 @@ around 'execute' => sub {
 
    $req->authenticated and $self->activity_cache( $session->user_label );
 
-   exists $stash->{redirect} and $req->authenticated and $req->referer
-      and $stash->{redirect}->{location} //=
-          new_uri $req->scheme, $req->referer;
+   if (exists $stash->{redirect} and $req->authenticated and $req->referer) {
+      unless ($stash->{redirect}->{location}) {
+         my $location = new_uri $req->scheme, $req->referer;
+
+         $location->query_form( {} );
+         $stash->{redirect}->{location} = $location;
+      }
+   }
 
    my $key; $self->application->debug
       and $key = $self->config->appclass->env_var( 'trace' )
