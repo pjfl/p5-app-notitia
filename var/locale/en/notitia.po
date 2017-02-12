@@ -928,6 +928,15 @@ msgstr "Involved Parties"
 msgid "incident_record_tip"
 msgstr "View this incident record"
 
+msgid "incident_report_link"
+msgstr "Incident Report"
+
+msgid "incident_report_tip"
+msgstr "View a dump of the incident table"
+
+msgid "incident_report_title"
+msgstr "Incident Report"
+
 msgid "incident_title"
 msgstr "Incident"
 
