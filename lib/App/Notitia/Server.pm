@@ -31,7 +31,7 @@ around 'to_psgi_app' => sub {
       enable 'ContentLength';
       enable 'FixMissingBodyInRedirect';
       enable 'ConditionalGET';
-      enable_if { $_[ 0 ]->{REMOTE_ADDR} eq '127.0.0.1' }
+      enable_if { defined $_[ 0 ]->{HTTP_X_FORWARDED_FOR} }
          'Plack::Middleware::ReverseProxy';
       mount $conf->mount_point => builder {
          enable 'Deflater',
