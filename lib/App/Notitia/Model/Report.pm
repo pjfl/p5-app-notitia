@@ -25,6 +25,7 @@ register_action_paths
    'report/customers' => 'customer-report',
    'report/controls' => 'report-controls',
    'report/deliveries' => 'delivery-report',
+   'report/incidents' => 'incident-report',
    'report/people_meta' => 'people-meta-report',
    'report/people' => 'people-report',
    'report/slots' => 'slots-report',
@@ -274,6 +275,27 @@ my $_inc_resource_count = sub {
    defined $index or return;
    $rec->{count}->[ $index ] //= 0; $rec->{count}->[ $index ]++;
    return;
+};
+
+my $_incident_columns = sub {
+   return qw( category category_other committee_informed committee_member
+              controller notes raised reporter reporter_phone title );
+};
+
+my $_incident_headers = sub {
+   return [ map { { value => $_ } } $_incident_columns->(), 'involved' ];
+};
+
+my $_incident_row = sub {
+   my ($req, $incident) = @_;
+
+   my @incident_cols = map {
+      { value => $_localise->( $incident->$_() ) } } $_incident_columns->();
+
+   my @involved_cols = map {
+      { value => $_ } } join ', ', map { $_->person->label } $incident->parties;
+
+   return [ @incident_cols, @involved_cols ];
 };
 
 my $_link_args = sub {
@@ -622,6 +644,21 @@ my $_get_rota_name = sub {
    return $opts;
 };
 
+my $_incidents_for_period = sub {
+   my ($self, $opts) = @_; my $incidents = [];
+
+   my $rs = $self->schema->resultset( 'Incident' );
+
+   $opts = $_exclusive_date_range->( $opts );
+   $opts->{is_manager} = TRUE; $opts->{order_by} = 'raised';
+
+   for my $incident ($rs->search_for_incidents( $opts )->all) {
+      push @{ $incidents }, $incident;
+   }
+
+   return $incidents;
+};
+
 my $_people_meta_summary_table = sub {
    my ($self, $req, $form, $data, $opts) = @_;
 
@@ -747,6 +784,39 @@ sub deliveries : Role(controller) {
 
    p_list $form, NUL, $_dl_links->( $req, 'deliveries', $opts ),
           $_link_opts->();
+
+   return $self->get_stash( $req, $page );
+}
+
+sub incidents : Role(controller) {
+   my ($self, $req) = @_;
+
+   my $actp = $self->moniker.'/controls';
+   my $opts = $self->$_get_period_options( $req, 0 );
+   my $href = uri_for_action $req, $actp, [ 'incidents' ];
+   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $page = { forms => [ $form ],
+                selected => 'incident_report',
+                title => locm $req, 'incident_report_title', };
+
+   $_push_date_controls->( $page, $opts );
+
+   my $incidents = $self->$_incidents_for_period( $opts );
+   my $headers = $_incident_headers->();
+
+   my $outer_table = p_table $form, {};
+   my $full_table = $page->{content} = p_table {}, { headers => $headers };
+   my $sample_table = p_table {}, { class => 'embeded', headers => $headers };
+
+   my $container = p_container {}, $sample_table, { class => 'wide-content' };
+
+   my @rows = map { $_incident_row->( $req, $_ ) } @{ $incidents };
+
+   p_row $outer_table,  [ { class => 'embeded', value => $container } ];
+   p_row $sample_table, [ @rows[ 0 .. 10 ] ];
+   p_row $full_table,   [ @rows ];
+
+   p_list $form, NUL, $_dl_links->( $req, 'incidents', $opts ), $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }

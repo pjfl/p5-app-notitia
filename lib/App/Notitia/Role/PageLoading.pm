@@ -3,10 +3,11 @@ package App::Notitia::Role::PageLoading;
 use namespace::autoclean;
 
 use App::Notitia::Util     qw( build_navigation clone is_access_authorised
-                               js_togglers_config loc mtime );
+                               js_togglers_config loc local_dt mtime to_dt );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::File;
 use Class::Usul::Functions qw( is_arrayref is_member throw );
+use Class::Usul::Time      qw( time2str );
 use Class::Usul::Types     qw( HashRef );
 use Unexpected::Functions  qw( AuthenticationRequired );
 use Moo::Role;
@@ -84,18 +85,6 @@ around 'load_page' => sub {
    throw 'Page [_1] not found', [ $req->path ];
 };
 
-# Private methods
-my $_update_filesys = sub {
-   my ($self, $text, $file, $mtime) = @_;
-
-   if ($mtime) { $file->touch( $mtime ) }
-   else { $file->exists and $file->unlink }
-
-   $self->log->debug( $text );
-
-   return;
-};
-
 # Public methods
 sub find_node {
    my ($self, $locale, $ids) = @_;
@@ -122,11 +111,17 @@ sub initialise_page {
 }
 
 sub invalidate_docs_cache {
-   my ($self, $mtime) = @_;
+   my ($self, $mtime) = @_; my $file = $self->config->docs_mtime;
 
-   my $filesys = $self->config->docs_mtime;
-
-   $self->$_update_filesys( 'Document cache invalidated', $filesys, $mtime );
+   if ($mtime) {
+      $file->touch( $mtime );
+      $mtime = local_dt to_dt time2str undef, $mtime;
+      $self->log->info( "Invalidate docs cache ${mtime}" );
+   }
+   else {
+      $file->exists and $file->unlink;
+      $self->log->info( 'Invalidate docs cache' );
+   }
 
    return;
 }

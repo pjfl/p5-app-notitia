@@ -295,11 +295,12 @@ my $_report_links = sub {
 
    my $is_allowed_customers  = $self->$_allowed( $req, 'report/customers' );
    my $is_allowed_deliveries = $self->$_allowed( $req, 'report/deliveries' );
+   my $is_allowed_incidents  = $self->$_allowed( $req, 'report/incidents' );
    my $is_allowed_people     = $self->$_allowed( $req, 'report/people' );
    my $is_allowed_slots      = $self->$_allowed( $req, 'report/slots' );
 
-   $is_allowed_customers or $is_allowed_deliveries or $is_allowed_people
-      or $is_allowed_slots or return;
+   $is_allowed_customers or $is_allowed_deliveries or $is_allowed_incidents
+      or $is_allowed_people or $is_allowed_slots or return;
 
    push @{ $list }, $nav_folder->( $req, 'reports', { tip => 'Report Menu' } );
 
@@ -313,6 +314,12 @@ my $_report_links = sub {
       $nav_linkto->( $req, {
          class => $page->{selected} eq 'delivery_report' ? 'selected' : NUL,
          name => 'delivery_report', }, 'report/deliveries', [],
+                     period => 'year-to-date' );
+
+   $is_allowed_incidents and push @{ $list },
+      $nav_linkto->( $req, {
+         class => $page->{selected} eq 'incident_report' ? 'selected' : NUL,
+         name => 'incident_report', }, 'report/incidents', [],
                      period => 'year-to-date' );
 
    $is_allowed_people and push @{ $list },

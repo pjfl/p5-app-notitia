@@ -309,7 +309,7 @@ my $_update_event_post = sub {
    if ($event) {
       my $markdown = $self->$_format_as_markdown( $req, $event );
 
-      $path->assert_filepath->println( $markdown );
+      $path->assert_filepath->println( $markdown ); $path->close;
       $posts_model->invalidate_docs_cache( $path->stat->{mtime} );
    }
    else {

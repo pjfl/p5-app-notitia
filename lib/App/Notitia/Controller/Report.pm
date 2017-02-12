@@ -11,6 +11,8 @@ sub dispatch_request {
    sub (GET  + /customer-report/**    + ?*) { [ 'report/customers',    @_ ] },
    sub (GET  + /delivery-report       + ?*) { [ 'report/deliveries',   @_ ] },
    sub (GET  + /delivery-report/**    + ?*) { [ 'report/deliveries',   @_ ] },
+   sub (GET  + /incident-report       + ?*) { [ 'report/incidents',    @_ ] },
+   sub (GET  + /incident-report/**    + ?*) { [ 'report/incidents',    @_ ] },
    sub (GET  + /people-meta-report    + ?*) { [ 'report/people_meta',  @_ ] },
    sub (GET  + /people-meta-report/** + ?*) { [ 'report/people_meta',  @_ ] },
    sub (GET  + /people-report         + ?*) { [ 'report/people',       @_ ] },
