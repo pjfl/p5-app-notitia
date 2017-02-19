@@ -8,9 +8,8 @@ use App::Notitia::Form      qw( blank_form p_cell p_js p_link p_list p_row
                                 p_table p_tag );
 use App::Notitia::Util      qw( dialog_anchor display_duration js_server_config
                                 js_submit_config lcm_for local_dt locm
-                                now_dt register_action_paths
-                                slot_identifier slot_limit_index to_dt
-                                uri_for_action );
+                                now_dt register_action_paths slot_limit_index
+                                to_dt uri_for_action );
 use Class::Usul::Functions  qw( sum );
 use Class::Usul::Time       qw( time2str );
 use Moo;

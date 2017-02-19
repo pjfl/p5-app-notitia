@@ -353,24 +353,19 @@ my $_toggle_slot_assignment = sub {
    my $slot_name = $params->( 2 );
    my $schema = $self->schema;
    my $vehicle = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
-   my $method = "${action}_slot";
-   my $rota_dt = to_dt( $rota_date );
-
-   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
-
-   my $slot = $vehicle->$method( $rota_name, $rota_dt, $shift_type,
-                                 $slot_type, $subslot, $req->username );
-
+   my $method = "${action}_slot"; # Assign or unassign
+   my $rota_dt = to_dt $rota_date;
+   my $assignee = $req->username;
+   my $slot = $vehicle->$method( $rota_name, $rota_dt, $slot_name, $assignee );
    my $prep = $action eq 'assign' ? 'to' : 'from';
-   my $key = "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]";
-   my $label = slot_identifier
-      ( $rota_name, $rota_date, $shift_type, $slot_type, $subslot );
+   my $key = "Vehicle [_1] ${action}ed ${prep} slot [_2] by [_3]";
    my $operator = $slot->operator;
    my $dmy = locd $req, $rota_dt;
    my $kv = $action eq 'assign' ? 'action:vehicle-assignment'
                                 : 'action:vehicle-unassignment';
    my $message = "${kv} date:${dmy} "
                . "shortcode:${operator} slot_key:${slot_name} vehicle:${vrn}";
+   my $label = slot_identifier $rota_name, $rota_date, $slot_name;
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $vrn, $label, $req->session->user_label ];

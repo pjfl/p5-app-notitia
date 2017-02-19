@@ -868,13 +868,19 @@ sub slot_claimed ($) {
    return defined $_[ 0 ] && exists $_[ 0 ]->{operator} ? TRUE : FALSE;
 }
 
-sub slot_identifier ($$@) {
-   my ($rota_name, $rota_date, $shift_type, $slot_type, $subslot) = @_;
+sub slot_identifier ($$$) {
+   my ($rota_name, $rota_date, $slot_name) = @_;
 
    $rota_name =~ s{ _ }{ }gmx;
 
-   return sprintf '%s rota on %s %s shift %s slot %s',
-          ucfirst( $rota_name ), $rota_date, $shift_type, $slot_type, $subslot;
+   my $rota_label = $rota_name eq 'main' ? NUL : '('.ucfirst( $rota_name ).')';
+
+   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
+
+   my $region = { 0 => 'north', 1 => 'central', 2 => 'south' }->{ $subslot };
+
+   return sprintf '%s %s %s region %s %s',
+          $shift_type, $slot_type, $region, $rota_date, $rota_label;
 }
 
 sub slot_limit_index ($$) {

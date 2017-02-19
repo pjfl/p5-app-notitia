@@ -205,11 +205,13 @@ sub assign_to_event {
 }
 
 sub assign_slot {
-   my ($self, $rota_name, $rota_dt, $shift_t, $slot_t, $subslot, $name) = @_;
+   my ($self, $rota_name, $rota_dt, $slot_name, $assigner) = @_;
+
+   my ($shift_t, $slot_t, $subslot) = split m{ _ }mx, $slot_name, 3;
 
    my $slot   = $self->$_find_slot
       ( $rota_name, $rota_dt, $shift_t, $slot_t, $subslot );
-   my $person = $self->$_find_assigner( $name );
+   my $person = $self->$_find_assigner( $assigner );
    my $vehicle_req = $slot->bike_requested;
 
    $self->$_assert_slot_assignment_allowed
@@ -269,7 +271,9 @@ sub unassign_from_event {
 }
 
 sub unassign_slot {
-   my ($self, $rota_name, $date, $shift_type, $slot_type, $subslot, $name) = @_;
+   my ($self, $rota_name, $date, $slot_name, $unassigner) = @_;
+
+   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
 
    my $slot = $self->$_find_slot
       ( $rota_name, $date, $shift_type, $slot_type, $subslot );

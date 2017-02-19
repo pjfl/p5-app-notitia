@@ -712,7 +712,9 @@ sub validation_attributes {
 }
 
 sub yield_slot {
-   my ($self, $rota_name, $dt, $shift_type, $slot_type, $slotno) = @_;
+   my ($self, $rota_name, $dt, $slot_name) = @_;
+
+   my ($shift_type, $slot_type, $slotno) = split m{ _ }mx, $slot_name, 3;
 
    my $shift = $self->find_shift( $rota_name, $dt, $shift_type );
    my $slot  = $self->find_slot( $shift, $slot_type, $slotno );

@@ -449,7 +449,9 @@ my $_find_rota_type = sub {
 };
 
 my $_find_slot = sub {
-   my ($result, $rota_name, $date, $shift_type, $slot_type, $subslot) = @_;
+   my ($result, $rota_name, $date, $slot_name) = @_;
+
+   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
 
    my $shift = $result->find_shift( $rota_name, $date, $shift_type );
    my $slot  = $result->find_slot( $shift, $slot_type, $subslot );
@@ -460,9 +462,8 @@ my $_find_slot = sub {
 my $_push_vehicle_select = sub {
    my ($self, $req, $form, $id, $person, $args) = @_;
 
-   my @slot_key = split m{ _ }mx, $args->[ 2 ];
    my $rota_dt = to_dt $args->[ 1 ];
-   my $slot = $_find_slot->( $person, $args->[ 0 ], $rota_dt, @slot_key );
+   my $slot = $_find_slot->( $person, $args->[ 0 ], $rota_dt, $args->[ 2 ] );
    my $vehicle_id = $slot ? $slot->operator_vehicle_id : undef;
    my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
    my $vehicle = $vehicle_id ? $vehicle_rs->find( $vehicle_id ) : NUL;
@@ -510,8 +511,7 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
 
    my $args     = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;
-   my $label    = slot_identifier
-                     $rota_name, $rota_date, split m{ _ }mx, $name, 3;
+   my $label    = slot_identifier $rota_name, $rota_date, $name;
    my $message  = [ to_msg '[_1] claimed slot [_2]', $person->label, $label ];
 
    return { redirect => { location => $location, message => $message } };
@@ -671,20 +671,21 @@ sub yield_slot_action : Role(rota_manager) Role(rider) Role(controller)
    my $rota_name = $params->( 0 );
    my $rota_date = $params->( 1 );
    my $slot_name = $params->( 2 );
-   my $person    = $self->$_find_by_shortcode( $req->username );
+   my $rota_dt   = to_dt $rota_date;
+   my $user      = $self->$_find_by_shortcode( $req->username );
+   my $slot      = $_find_slot->( $user, $rota_name, $rota_dt, $slot_name );
+   my $assignee  = $self->$_find_by_shortcode( $slot->operator );
 
-   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
+   $user->yield_slot( $rota_name, $rota_dt, $slot_name );
 
-   $person->yield_slot( $rota_name, to_dt( $rota_date ), $shift_type,
-                        $slot_type, $subslot );
-
-   $self->send_event( $req, "action:slot-yield slot:${slot_name}" );
+   $self->send_event( $req, "action:slot-yield shortcode:${assignee} "
+                          . "rota_name:${rota_name} rota_date:${rota_date} "
+                          . "slot:${slot_name}" );
 
    my $args = [ $rota_name, $rota_date ];
    my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;
-   my $label = slot_identifier
-                  $rota_name, $rota_date,$shift_type, $slot_type, $subslot;
-   my $message = [ to_msg '[_1] yielded slot [_2]', $person->label, $label ];
+   my $label = slot_identifier $rota_name, $rota_date, $slot_name;
+   my $message = [ to_msg '[_1] yielded slot [_2]', $assignee->label, $label ];
 
    return { redirect => { location => $location, message => $message } };
 }
