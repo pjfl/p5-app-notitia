@@ -41,23 +41,27 @@ option 'workers' => is => 'lazy', isa => NonZeroPositiveInt, format => 'i',
 # Private methods
 my $_get_listener_args = sub {
    my $self = shift;
+   my $port = $self->port;
    my $conf = $self->config;
    my $logs = $conf->logsdir;
+   my $logfile = $logs->catfile( "access-${port}.log" );
    my $args = { '--app'    => $conf->binsdir->catfile( $self->app ),
                 '--server' => $self->server, };
 
    if ($self->server eq 'FCGI') {
-      $args->{ '--access-log' } = $logs->catfile( 'access.log' );
-      $args->{ '--listen'     } = $conf->tempdir->catfile( 'fastcgi.sock' );
-      $args->{ '--nprocs'     } = $self->workers;
+      $logfile = $logs->catfile( 'access.log' );
+      $args->{ '--listen'  } = $conf->tempdir->catfile( 'fastcgi.sock' );
+      $args->{ '--nprocs'  } = $self->workers;
+   }
+   elsif ($self->server eq 'Starman') {
+      $conf->appclass->env_var( 'port', $args->{ '--port' } = $port );
+      $args->{ '--workers' } = $self->workers;
    }
    else {
-      $conf->appclass->env_var( 'port', my $port = $self->port );
-      $args->{ '--access-log' } = $logs->catfile( "access-${port}.log" );
-      $args->{ '--port'       } = $port;
-
-      $self->server eq 'Starman' and $args->{ '--workers' } = $self->workers;
+      $conf->appclass->env_var( 'port', $args->{ '--port' } = $port );
    }
+
+   $ENV{PLACK_ENV} ne 'production' and $args->{ '--access-log' } = $logfile;
 
    for my $k (keys %{ $self->options }) {
       $args->{ "--${k}" } = $self->options->{ $k };
@@ -204,7 +208,7 @@ if [ ! -x [% SCRIPT %] ]; then
    exit 1
 fi
 
-[% SCRIPT %] ${DAEMON_ARGS} ${*}
+[% SCRIPT %] ${DAEMON_ARGS} "${@}"
 
 exit ${?}
 __END__

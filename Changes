@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes logrotation of access log in production
           - Fixes #154. Adds incident report
           - Mitigates failure to invalidate docs cache
           - Adds Starman dependencies
