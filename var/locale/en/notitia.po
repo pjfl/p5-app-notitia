@@ -2355,6 +2355,9 @@ msgstr "Vehicle"
 msgid "vehicle_type_create_tip"
 msgstr "Create a vehicle type record"
 
+msgid "vehicle_used"
+msgstr "Vehicle Used"
+
 msgid "vehicles_heading_0"
 msgstr "Vehicle"
 

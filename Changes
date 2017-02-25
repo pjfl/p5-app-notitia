@@ -1,5 +1,8 @@
 Revision history for App::Notitia
 
+          - References #152. Vehicle used on call
+            Can select from the list of service and personal vehicles
+            when updated a delivery request stage
           - Better slot identifier descriptions
           - Fixes logrotation of access log in production
           - Fixes #154. Adds incident report

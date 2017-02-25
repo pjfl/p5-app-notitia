@@ -207,6 +207,14 @@ my $_stages_headers = sub {
    return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 1 ];
 };
 
+my $_vehicle_tuple = sub {
+   my ($selected, $vehicle) = @_;
+
+   my $opts = { selected => $vehicle->id == $selected ? TRUE : FALSE };
+
+   return [ $vehicle->label, $vehicle->id, $opts ];
+};
+
 # Private methods
 my $_bind_beginning_location = sub {
    my ($self, $leg, $opts) = @_;
@@ -285,17 +293,35 @@ my $_bind_journey_fields = sub {
       ];
 };
 
+my $_bind_vehicle = sub {
+   my ($self, $leg, $opts) = @_; my $selected = $leg->vehicle_id;
+
+   return [ [ NUL, undef ],
+            map { $_vehicle_tuple->( $selected, $_ ) }
+               @{ $opts->{vehicles} } ];
+};
+
 my $_bind_leg_fields = sub {
    my ($self, $req, $leg, $opts) = @_; $opts //= {};
 
    my $schema     = $self->schema;
    my $disabled   = $opts->{disabled} // FALSE;
    my $journey_rs = $schema->resultset( 'Journey' );
+   my $vehicle_rs = $schema->resultset( 'Vehicle' );
 
    $opts->{journey  } = $journey_rs->find( $opts->{journey_id} );
    $opts->{locations} = [ $schema->resultset( 'Location' )->search( {} )->all ];
    $opts->{people   } = $schema->resultset( 'Person' )->search_for_people( {
       roles => [ 'driver', 'rider' ], status => 'current' } );
+
+   my $service_vehicles = $vehicle_rs->search_for_vehicles( {
+      service => TRUE, } );
+   my @personal_vehicles = ();
+
+   $leg->operator_id and @personal_vehicles =
+      $vehicle_rs->search_for_vehicles( { owner => $leg->operator } )->all;
+
+   $opts->{vehicles } = [ $service_vehicles->all, @personal_vehicles ];
 
    my $on_station_disabled =
       $opts->{request}->username ne $opts->{journey}->controller
@@ -334,6 +360,10 @@ my $_bind_leg_fields = sub {
          on_station     => $leg->id ? {
             disabled    => $on_station_disabled, type => 'datetime',
             value       => $leg->on_station_label( $req ) } : FALSE,
+         vehicle_id     => {
+            disabled    => $opts->{done},
+            label       => 'vehicle_used', type => 'select',
+            value       => $self->$_bind_vehicle( $leg, $opts ), },
       ];
 };
 
@@ -716,12 +746,13 @@ my $_update_leg_from_request = sub {
    my $params = $req->body_params; my $opts = { optional => TRUE };
 
    for my $attr (qw( beginning_id called collection_eta collected delivered
-                     ending_id on_station operator_id )) {
+                     ending_id on_station operator_id vehicle_id )) {
       my $v = $supplied->{ $attr } // $params->( $attr, $opts );
 
       defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
       $attr eq 'operator_id' and not $v and next;
+      $attr eq 'vehicle_id'  and not $v and undef $v;
 
       if (length $v and is_member $attr,
           [ qw( called collection_eta collected delivered on_station ) ]) {
@@ -875,7 +906,7 @@ sub create_package_action : Role(controller) {
    my $type = $package->package_type || NUL;
 
    try   { $package->insert }
-   catch { $self->blow_smoke( $_, 'create', 'package', $type ) };
+   catch { $self->blow_smoke( $_, 'create', 'package of type', $type ) };
 
    my $message = "action:create-package delivery_id:${journey_id} "
                . "package_type:${type}";
