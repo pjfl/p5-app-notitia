@@ -4,7 +4,8 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
                                 p_date p_fields p_hidden p_list
-                                p_row p_select p_table p_tag p_textfield );
+                                p_row p_select p_table p_tag p_textarea
+                                p_textfield );
 use App::Notitia::Util      qw( assign_link check_field_js display_duration
                                 loc locd now_dt make_tip management_link
                                 page_link_set register_action_paths
@@ -24,6 +25,7 @@ with    q(App::Notitia::Role::Navigation);
 has '+moniker' => default => 'asset';
 
 register_action_paths
+   'asset/adhoc_vehicle'   => 'adhoc-vehicle',
    'asset/assign'          => 'vehicle-assign',
    'asset/request_info'    => 'vehicle-request-info',
    'asset/request_vehicle' => 'vehicle-request',
@@ -257,7 +259,7 @@ my $_vehicle_type_list = sub {
    my ($schema, $vehicle, $disabled) = @_;
 
    my $opts   = { fields => { selected => $vehicle->type } };
-   my $values = [ [ NUL, NUL ], @{ $_list_vehicle_types->( $schema, $opts ) } ];
+   my $values = [ [ NUL, undef ], @{ $_list_vehicle_types->( $schema, $opts )}];
 
    $opts = { class => 'standard-field required', label  => 'vehicle_type',
              name  => 'type',                    numify => TRUE,
@@ -510,6 +512,25 @@ my $_vehicles_ops_links = sub {
 };
 
 # Public methods
+sub adhoc_vehicle : Dialog Role(any) {
+   my ($self, $req) = @_;
+
+   my $stash  = $self->dialog_stash( $req );
+   my $href   = uri_for_action $req, $self->moniker.'/vehicle';
+   my $form   = $stash->{page}->{forms}->[ 0 ]
+              = blank_form 'adhoc-vehicle', $href;
+   my $schema = $self->schema;
+   my $values = [ [ NUL, undef ], @{ $_list_vehicle_types->( $schema, {} ) } ];
+
+   p_textfield $form, 'vrn',  NUL;
+   p_select    $form, 'type', $values, {
+      label => 'vehicle_type', numify => TRUE };
+   p_textarea  $form, 'notes', NUL, { class => 'standard-field autosize' };
+   p_action    $form, 'create', [ 'vehicle' ], { request => $req };
+
+   return $stash;
+}
+
 sub assign : Dialog Role(rota_manager) {
    my ($self, $req) = @_; my $params = $req->uri_params;
 
@@ -569,7 +590,7 @@ sub create_vehicle_action : Role(rota_manager) {
 
    $self->send_event( $req, "action:create-vehicle vehicle:${vrn}" );
 
-   return { redirect => { location => $location, message => $message } };
+   return { redirect => { message => $message } }; # location referer
 }
 
 sub delete_vehicle_action : Role(rota_manager) {
@@ -804,11 +825,12 @@ sub vehicles : Role(rota_manager) {
    my $type     =  $params->{type};
    my $private  =  $params->{private} || FALSE;
    my $service  =  $params->{service} || FALSE;
-   my $opts     =  { page    => $params->{page} // 1,
-                     private => $private,
-                     rows    => $req->session->rows_per_page,
-                     service => $service,
-                     type    => $type };
+   my $opts     =  {
+      page      => $params->{page} // 1,
+      private   => $private,
+      rows      => $req->session->rows_per_page,
+      service   => $service,
+      type      => $type };
    my $rs       =  $self->schema->resultset( 'Vehicle' );
    my $vehicles =  $rs->search_for_vehicles( $opts );
    my $form     =  blank_form;

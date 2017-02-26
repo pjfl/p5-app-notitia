@@ -2,56 +2,30 @@ package App::Notitia::GeoLocation;
 
 use namespace::autoclean;
 
-use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use Class::Usul::Functions qw( throw );
-use Class::Usul::Time      qw( nap );
-use Class::Usul::Types     qw( HashRef Logger NonEmptySimpleStr PositiveInt );
-use HTTP::Tiny;
-use JSON::MaybeXS;
-use Unexpected::Functions  qw( Unspecified );
+use App::Notitia::Constants qw( EXCEPTION_CLASS );
+use Class::Usul::Functions  qw( ensure_class_loaded );
+use Class::Usul::Types      qw( ClassName HashRef );
 use Moo;
 
-# Public attributes
-has 'base_uri'     => is => 'ro',   isa => NonEmptySimpleStr,
-   default         => 'http://www.uk-postcodes.com';
+has 'provider' => is => 'lazy', isa => sub { __PACKAGE__.'::Base' },
+   builder => sub { $_[ 0 ]->provider_class->new( $_[ 0 ]->provider_attr ) },
+   handles => [ 'find_by_postcode' ];
 
-has 'http_options' => is => 'ro',   isa => HashRef, builder => sub { {} };
+has 'provider_attr' => is => 'ro', isa => HashRef;
 
-has 'num_tries'    => is => 'ro',   isa => PositiveInt, default => 3;
+has 'provider_class' => is => 'ro', isa => ClassName;
 
-has 'timeout'      => is => 'ro',   isa => PositiveInt, default => 10;
+around 'BUILDARGS' => sub {
+   my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
 
-has 'uri_template' => is => 'ro',   isa => NonEmptySimpleStr,
-   default         => '%s/postcode/%s.json';
+   my $class = delete $attr->{provider};
 
-# Public methods
-sub find_by_postcode {
-   my ($self, $postcode, $opts) = @_; $postcode //= NUL; $opts //= {};
+   if ('+' eq substr $class, 0, 1) { $class = substr $class, 1 }
+   else { $class = __PACKAGE__."::${class}" }
 
-   $postcode =~ s{ [ ] }{}gmx; $postcode or throw Unspecified, [ 'postcode' ];
+   ensure_class_loaded $class;
 
-   my $uri  = sprintf $self->uri_template, $self->base_uri, uc $postcode;
-   my $attr = { %{ $self->http_options }, timeout => $self->timeout };
-   my $http = HTTP::Tiny->new( %{ $attr } );
-   my $res;
-
-   for (1 .. $self->num_tries) {
-      $res = $http->get( $uri ); $res->{success} and last; nap 0.25;
-   }
-
-   $res->{success} or throw
-      'Postcode lookup error [_1]: [_2]', [ $res->{status}, $res->{reason} ];
-
-   my $json_coder = JSON::MaybeXS->new( utf8 => FALSE );
-   my $data = $json_coder->decode( $res->{content} );
-
-   $opts->{raw} and return $data;
-
-   my $parish = $data->{administrative}->{parish}->{title};
-   my $coords = $data->{geo}->{easting} && $data->{geo}->{northing}
-              ? $data->{geo}->{easting}.','.$data->{geo}->{northing} : undef;
-
-   return { coordinates => $coords, location => $parish, };
+   return { provider_attr => $attr, provider_class => $class };
 };
 
 1;

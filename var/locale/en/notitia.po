@@ -97,6 +97,15 @@ msgstr "Address"
 msgid "address_viewer"
 msgstr "Address Viewer"
 
+msgid "adhoc_vehicle_add"
+msgstr "Add Vehicle"
+
+msgid "adhoc_vehicle_tip"
+msgstr "Create an adhoc vehicle registration"
+
+msgid "adhoc_vehicle_title"
+msgstr "Adhoc Vehicle Registration"
+
 msgid "admin_index_link"
 msgstr "Management"
 

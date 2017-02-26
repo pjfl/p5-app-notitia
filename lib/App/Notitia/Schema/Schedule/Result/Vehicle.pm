@@ -63,8 +63,6 @@ my $_assert_public_or_private = sub {
 
    $self->name and $self->owner_id
       and throw 'Cannot set name and owner', level => 2;
-   $self->name or  $self->owner_id
-      or  throw 'Must set either name or owner', level => 2;
 
    return;
 };

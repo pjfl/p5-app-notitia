@@ -294,7 +294,7 @@ my $_bind_journey_fields = sub {
 };
 
 my $_bind_vehicle = sub {
-   my ($self, $leg, $opts) = @_; my $selected = $leg->vehicle_id;
+   my ($self, $leg, $opts) = @_; my $selected = $leg->vehicle_id // 0;
 
    return [ [ NUL, undef ],
             map { $_vehicle_tuple->( $selected, $_ ) }
@@ -314,14 +314,18 @@ my $_bind_leg_fields = sub {
    $opts->{people   } = $schema->resultset( 'Person' )->search_for_people( {
       roles => [ 'driver', 'rider' ], status => 'current' } );
 
-   my $service_vehicles = $vehicle_rs->search_for_vehicles( {
-      service => TRUE, } );
+   my @service_vehicles = $vehicle_rs->search_for_vehicles( {
+      service => TRUE } )->all;
    my @personal_vehicles = ();
 
    $leg->operator_id and @personal_vehicles =
       $vehicle_rs->search_for_vehicles( { owner => $leg->operator } )->all;
 
-   $opts->{vehicles } = [ $service_vehicles->all, @personal_vehicles ];
+   my @adhoc_vehicles = $vehicle_rs->search_for_vehicles( {
+      adhoc => TRUE } )->all;
+
+   $opts->{vehicles}
+      = [ @service_vehicles, @personal_vehicles, @adhoc_vehicles ];
 
    my $on_station_disabled =
       $opts->{request}->username ne $opts->{journey}->controller
@@ -576,6 +580,17 @@ my $_journeys_row = sub {
 
 my $_leg_ops_links = sub {
    my ($self, $req, $page, $jid) = @_; my $links = [];
+
+   my $name  = 'adhoc_vehicle';
+   my $href  = uri_for_action $req, "asset/${name}";
+   my $tip   = locm $req, "${name}_tip";
+   my $title = locm $req, "${name}_title";
+   my $value = locm $req, "${name}_add";
+
+   p_link $links, $name, '#', {
+      class => 'windows', request => $req, tip => $tip, value => $value };
+
+   p_js $page, dialog_anchor $name, $href, { name => $name, title => $title };
 
    my $actionp = $self->moniker.'/journey';
 
@@ -1158,14 +1173,14 @@ sub leg : Role(controller) Role(driver) Role(rider) {
    my $links    = $self->$_leg_ops_links( $req, $page, $jid );
    my $count    = !$lid ? $self->$_count_legs( $jid ) : undef;
    my $disabled = $self->$_is_disabled( $req, $journey, $done );
+   my $fields   = $self->$_bind_leg_fields( $req, $leg, {
+      disabled  => $disabled, done => $done, journey_id => $jid,
+      leg_count => $count, request => $req } );
    my $label    = locm( $req, 'stage' ).SPC.($lid // NUL);
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
-   p_fields $form, $self->schema, 'Leg', $leg,
-      $self->$_bind_leg_fields( $req, $leg, {
-         disabled => $disabled, done => $done,
-         journey_id => $jid, leg_count => $count, request => $req } );
+   p_fields $form, $self->schema, 'Leg', $leg, $fields;
 
    ($done and $leg->on_station)
       or p_action $form, $action, [ 'delivery_stage', $label ], {

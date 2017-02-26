@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - References #152. Can create adhoc vehicles
+          - Adds VirtualEarth as geolocation provider
           - References #152. Vehicle used on call
             Can select from the list of service and personal vehicles
             when updated a delivery request stage

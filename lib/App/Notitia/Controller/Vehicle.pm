@@ -7,6 +7,7 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'vehicle';
 
 sub dispatch_request {
+   sub (GET  + /adhoc-vehicle         + ?*) { [ 'asset/adhoc_vehicle',   @_ ] },
    sub (GET  + /vehicles              + ?*) { [ 'asset/vehicles',        @_ ] },
    sub (GET  + /vehicle-assign/**     + ?*) { [ 'asset/assign',          @_ ] },
    sub (GET  + /vehicle-events/*      + ?*) { [ 'asset/vehicle_events',  @_ ] },

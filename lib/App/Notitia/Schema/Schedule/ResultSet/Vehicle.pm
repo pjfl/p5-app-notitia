@@ -67,7 +67,8 @@ sub list_vehicles {
 sub search_for_vehicles {
    my ($self, $opts) = @_;
 
-   $opts = { columns  => [ 'colour', 'id', 'name', 'vrn' ], order_by => 'vrn',
+   $opts = { columns  => [ 'colour', 'id', 'name', 'vrn' ],
+             order_by => [ 'type.name', 'vrn' ],
              prefetch => [ 'type', 'owner' ], %{ $opts } };
    delete $opts->{fields};
 
@@ -79,8 +80,22 @@ sub search_for_vehicles {
 
    ($opts->{private} or $opts->{service} or $owner)
       and $where->{disposed} = { '=' => undef };
-   delete $opts->{private} and $where->{owner_id} = { '!=' => undef };
-   delete $opts->{service} and $where->{owner_id} = { '='  => undef };
+
+   if (delete $opts->{private}) {
+      $where->{ 'owner_id' } = { '!=' => undef };
+      $opts->{order_by} = [ 'type.name', 'owner.name', 'vrn' ];
+   }
+
+   if (delete $opts->{service}) {
+      $where->{ 'me.name' } = { '!=' => NUL };
+      $opts->{order_by} = [ 'type.name', 'me.name' ];
+
+   }
+
+   if (delete $opts->{adhoc}) {
+      $where->{ 'owner_id' } = { '='  => undef };
+      $where->{ 'me.name'  } = { '='  => NUL };
+   }
 
    return $self->search( $where, $opts );
 }

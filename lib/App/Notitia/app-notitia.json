@@ -10,6 +10,10 @@
       }
    },
    "description": "People and resource scheduling",
+   "geolocation": {
+      "provider": "VirtualEarth",
+      "api_key": "ArlvIVHu0f4jQc4rKVYbaSKXIp5v1w36r51xF4HNFM5DdbTOTyuuC-LXPncjWW0h"
+   },
    "import_people": {
       "extra2csv_map": {
          "blots": "points",
