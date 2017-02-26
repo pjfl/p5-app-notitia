@@ -30,6 +30,9 @@ lib/App/Notitia/DataTypes.pm
 lib/App/Notitia/Exception.pm
 lib/App/Notitia/Form.pm
 lib/App/Notitia/GeoLocation.pm
+lib/App/Notitia/GeoLocation/Base.pm
+lib/App/Notitia/GeoLocation/UKPostcodes.pm
+lib/App/Notitia/GeoLocation/VirtualEarth.pm
 lib/App/Notitia/Import.pm
 lib/App/Notitia/JobDaemon.pm
 lib/App/Notitia/Markdown.pm
