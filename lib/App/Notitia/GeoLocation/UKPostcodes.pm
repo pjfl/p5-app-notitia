@@ -2,26 +2,33 @@ package App::Notitia::GeoLocation::UKPostcodes;
 
 use namespace::autoclean;
 
+use Class::Usul::Types qw( NonEmptySimpleStr );
 use Moo;
 
 extends qw( App::Notitia::GeoLocation::Base );
 
-has '+base_uri' => default => 'http://www.uk-postcodes.com';
+# Public attributes
+has 'base_uri' => is => 'ro', isa => NonEmptySimpleStr,
+   default => 'http://www.uk-postcodes.com';
 
-has '+uri_template' => builder => sub {
-   (sprintf '%s/postcode/', $_[ 0 ]->base_uri).'%s.json' };
+has 'uri_template' => is => 'ro', isa => NonEmptySimpleStr,
+   default => '%s/postcode/';
+
+has '+query_uri' => builder => sub {
+   return (sprintf $_[ 0 ]->uri_template, $_[ 0 ]->base_uri).'%s.json';
+};
 
 # Public methods
-around 'find_by_postcode' => sub {
-   my ($orig, $self, $postcode, $opts) = @_;
+around 'locate_by_postcode' => sub {
+   my ($orig, $self, $postcode) = @_;
 
-   my $r = $orig->( $self, $postcode, $opts ); $opts->{raw} and return $r;
+   my $r        = $orig->( $self, $postcode );
+   my $data     = $self->decode_json( $r->{content} );
+   my $coords   = $data->{geo}->{easting} && $data->{geo}->{northing}
+                ? $data->{geo}->{easting}.','.$data->{geo}->{northing} : undef;
+   my $location = $data->{administrative}->{parish}->{title};
 
-   my $parish = $r->{administrative}->{parish}->{title};
-   my $coords = $r->{geo}->{easting} && $r->{geo}->{northing}
-              ? $r->{geo}->{easting}.','.$r->{geo}->{northing} : undef;
-
-   return { coordinates => $coords, location => $parish, };
+   return { coordinates => $coords, location => $location };
 };
 
 1;

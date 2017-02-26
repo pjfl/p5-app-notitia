@@ -362,7 +362,7 @@ sub geolocation : method {
    my $object = $object_type eq 'Person'
               ? $rs->find_by_shortcode( $id ) : $rs->find( $id );
    my $postcode = $object->postcode;
-   my $data = $self->geolocator->find_by_postcode( $postcode );
+   my $data = $self->geolocator->locate_by_postcode( $postcode );
    my $coords = defined $data->{coordinates}
               ? $object->coordinates( $data->{coordinates} ) : 'undefined';
    my $location = defined $data->{location}

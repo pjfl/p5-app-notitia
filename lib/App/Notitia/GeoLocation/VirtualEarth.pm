@@ -7,29 +7,42 @@ use Moo;
 
 extends qw( App::Notitia::GeoLocation::Base );
 
-has '+base_uri' => default => 'http://dev.virtualearth.net';
-
-has '+uri_template' => builder => sub {
-   return (sprintf '%s/REST/v1/Locations?key=%s&o=json&q=',
-           $_[ 0 ]->base_uri, $_[ 0 ]->api_key).'%s' };
-
+# Public attributes
 has 'api_key' => is => 'ro', isa => NonEmptySimpleStr;
 
+has 'base_uri' => is => 'ro', isa => NonEmptySimpleStr,
+   default => 'http://dev.virtualearth.net';
+
+has 'uri_template' => is => 'ro', isa => NonEmptySimpleStr,
+   default => '%s/REST/v1/Locations?key=%s&o=json&q=';
+
+has '+query_uri' => builder => sub {
+   my $self = shift;
+
+   return (sprintf $self->uri_template, $self->base_uri, $self->api_key).'%s';
+};
+
+# Private functions
+my $_convert_to_grid = sub {
+   my $coords = shift;
+
+   my $x = int 0.5 + (54593.4200005706 * $coords->[ 0 ] - 2369741.15453625);
+   my $y = int 0.5 + (137612.696873342 * $coords->[ 1 ] + 370838.290679448);
+
+   return "${x},${y}";
+};
+
 # Public methods
-around 'find_by_postcode' => sub {
-   my ($orig, $self, $postcode, $opts) = @_;
+around 'locate_by_postcode' => sub {
+   my ($orig, $self, $postcode) = @_;
 
-   my $r = $orig->( $self, $postcode, $opts ); $opts->{raw} and return $r;
+   my $r        = $orig->( $self, $postcode );
+   my $data     = $self->decode_json( $r->{content} );
+   my $src      = $data->{resourceSets}->[ 0 ]->{resources}->[ 0 ];
+   my $coords   = $_convert_to_grid->( $src->{point}->{coordinates} );
+   my $location = $src->{address}->{locality};
 
-   my $src = $r->{resourceSets}->[ 0 ]->{resources}->[ 0 ];
-   my $points = $src->{point}->{coordinates};
-
-   my $x = int 0.5 + (54593.4200005706 * $points->[ 0 ] - 2369741.15453625);
-   my $y = int 0.5 + (137612.696873342 * $points->[ 1 ] + 370838.290679448);
-
-   my $coords = "${x},${y}"; my $parish = $src->{address}->{locality};
-
-   return { coordinates => $coords, location => $parish, };
+   return { coordinates => $coords, location => $location };
 };
 
 1;

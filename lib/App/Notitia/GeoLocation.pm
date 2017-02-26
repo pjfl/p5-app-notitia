@@ -9,7 +9,7 @@ use Moo;
 
 has 'provider' => is => 'lazy', isa => sub { __PACKAGE__.'::Base' },
    builder => sub { $_[ 0 ]->provider_class->new( $_[ 0 ]->provider_attr ) },
-   handles => [ 'find_by_postcode' ];
+   handles => [ 'locate_by_postcode' ];
 
 has 'provider_attr' => is => 'ro', isa => HashRef;
 
