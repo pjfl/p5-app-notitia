@@ -36,8 +36,7 @@ my $_convert_to_grid = sub {
 around 'locate_by_postcode' => sub {
    my ($orig, $self, $postcode) = @_;
 
-   my $r        = $orig->( $self, $postcode );
-   my $data     = $self->decode_json( $r->{content} );
+   my $data     = $orig->( $self, $postcode );
    my $src      = $data->{resourceSets}->[ 0 ]->{resources}->[ 0 ];
    my $coords   = $_convert_to_grid->( $src->{point}->{coordinates} );
    my $location = $src->{address}->{locality};

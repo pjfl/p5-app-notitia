@@ -2,7 +2,7 @@ package App::Notitia::GeoLocation::Base;
 
 use namespace::autoclean;
 
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions  qw( throw );
 use Class::Usul::Time       qw( nap );
 use Class::Usul::Types      qw( HashRef NonEmptySimpleStr PositiveInt );
@@ -24,14 +24,18 @@ has 'query_uri'    => is => 'lazy', isa => NonEmptySimpleStr;
 sub assert_lookup_success {
    my ($self, $res) = @_;
 
-   $res->{success} or throw
+   $self->is_success( $res ) or throw
       'Geolocation lookup error [_1]: [_2]', [ $res->{status}, $res->{reason} ];
 
    return;
 }
 
-sub decode_json {
-   return JSON::MaybeXS->new( utf8 => FALSE )->decode( $_[ 1 ] );
+sub decode_response {
+   return JSON::MaybeXS->new( utf8 => FALSE )->decode( $_[ 1 ]->{content} );
+}
+
+sub is_success {
+   return $_[ 1 ]->{success} ? TRUE : FALSE;
 }
 
 sub locate_by_postcode {
@@ -45,12 +49,12 @@ sub locate_by_postcode {
    my $res;
 
    for (1 .. $self->num_tries) {
-      $res = $http->get( $uri ); $res->{success} and last; nap 0.25;
+      $res = $http->get( $uri ); $self->is_success( $res ) and last; nap 0.25;
    }
 
    $self->assert_lookup_success( $res );
 
-   return $res;
+   return $self->decode_response( $res );
 }
 
 1;

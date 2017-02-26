@@ -22,8 +22,7 @@ has '+query_uri' => builder => sub {
 around 'locate_by_postcode' => sub {
    my ($orig, $self, $postcode) = @_;
 
-   my $r        = $orig->( $self, $postcode );
-   my $data     = $self->decode_json( $r->{content} );
+   my $data     = $orig->( $self, $postcode );
    my $coords   = $data->{geo}->{easting} && $data->{geo}->{northing}
                 ? $data->{geo}->{easting}.','.$data->{geo}->{northing} : undef;
    my $location = $data->{administrative}->{parish}->{title};
