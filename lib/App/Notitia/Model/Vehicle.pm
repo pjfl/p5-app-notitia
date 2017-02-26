@@ -191,13 +191,14 @@ my $_vehicle_request_headers = sub {
 };
 
 my $_vehicle_title = sub {
-   my ($req, $type, $private, $service) = @_;
+   my ($req, $params) = @_;
 
    my $k = 'vehicles_management_heading';
 
-   if    ($private) { $k = 'vehicle_private_heading' }
-   elsif ($service) { $k = 'vehicle_service_heading' }
-   elsif ($type)    { $k = "${type}_list_link" }
+   if    ($params->{adhoc  }) { $k = 'adhoc_vehicles_heading' }
+   elsif ($params->{private}) { $k = 'vehicle_private_heading' }
+   elsif ($params->{service}) { $k = 'vehicle_service_heading' }
+   elsif ($params->{type   }) { $k = $params->{type}.'_list_link' }
 
    return loc $req, $k;
 };
@@ -212,7 +213,7 @@ my $_vehicle_type_tuple = sub {
 };
 
 my $_vehicles_headers = sub {
-   my ($req, $service) = @_; my $max = $service ? 5 : 2;
+   my ($req, $params) = @_; my $max = $params->{service} ? 5 : 2;
 
    return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } }
             0 .. $max ];
@@ -248,11 +249,12 @@ my $_req_quantity = sub {
 };
 
 my $_select_nav_link_name = sub {
-   my $opts = { %{ $_[ 0 ] } };
+   my $params = { %{ $_[ 0 ] } };
 
-   return $opts->{private} ? 'private_vehicles'
-      :   $opts->{service} ? 'service_vehicles'
-      :   'vehicles_list';
+   return $params->{adhoc  } ? 'adhoc_vehicles'
+        : $params->{private} ? 'private_vehicles'
+        : $params->{service} ? 'service_vehicles'
+                             : 'vehicles_list';
 };
 
 my $_vehicle_type_list = sub {
@@ -469,7 +471,7 @@ my $_vehicle_events = sub {
 };
 
 my $_vehicle_links = sub {
-   my ($self, $req, $service, $vehicle) = @_; my $moniker = $self->moniker;
+   my ($self, $req, $params, $vehicle) = @_; my $moniker = $self->moniker;
 
    my $vrn = $vehicle->vrn; my $links = [ { value => $vehicle->label } ];
 
@@ -479,7 +481,7 @@ my $_vehicle_links = sub {
       { value => management_link( $req, "${moniker}/vehicle", $vrn, {
          params => $req->query_params->( { optional => TRUE } ) } ) };
 
-   $service or return $links;
+   $params->{service} or return $links;
 
    my $now  = now_dt;
    my $opts = $_create_action->( $req );
@@ -499,10 +501,10 @@ my $_vehicle_links = sub {
 };
 
 my $_vehicles_ops_links = sub {
-   my ($self, $req, $params, $pager) = @_; my $moniker = $self->moniker;
+   my ($self, $req, $opts, $pager) = @_; my $moniker = $self->moniker;
 
    my $actionp = "${moniker}/vehicles";
-   my $page_links = page_link_set $req, $actionp, [], $params, $pager;
+   my $page_links = page_link_set $req, $actionp, [], $opts, $pager;
    my $href = uri_for_action $req, "${moniker}/vehicle";
    my $links = [ f_link 'vehicle', $href, $_create_action->( $req ) ];
 
@@ -822,30 +824,28 @@ sub vehicles : Role(rota_manager) {
    my $moniker  =  $self->moniker;
    my $params   =  $req->query_params->( {
       optional => TRUE } ); delete $params->{mid};
-   my $type     =  $params->{type};
-   my $private  =  $params->{private} || FALSE;
-   my $service  =  $params->{service} || FALSE;
    my $opts     =  {
-      page      => $params->{page} // 1,
-      private   => $private,
+      adhoc     => $params->{adhoc  } || FALSE,
+      page      => $params->{page   } // 1,
+      private   => $params->{private} || FALSE,
       rows      => $req->session->rows_per_page,
-      service   => $service,
-      type      => $type };
+      service   => $params->{service} || FALSE,
+      type      => $params->{type   } };
    my $rs       =  $self->schema->resultset( 'Vehicle' );
    my $vehicles =  $rs->search_for_vehicles( $opts );
    my $form     =  blank_form;
    my $page     =  {
       forms     => [ $form ],
-      selected  => $_select_nav_link_name->( $opts ),
-      title     => $_vehicle_title->( $req, $type, $private, $service ), };
+      selected  => $_select_nav_link_name->( $params ),
+      title     => $_vehicle_title->( $req, $params ), };
    my $links    =  $self->$_vehicles_ops_links( $req, $opts, $vehicles->pager );
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $table = p_table $form, {
-      headers => $_vehicles_headers->( $req, $service ) };
+      headers => $_vehicles_headers->( $req, $params ) };
 
-   p_row $table, [ map { $self->$_vehicle_links( $req, $service, $_ ) }
+   p_row $table, [ map { $self->$_vehicle_links( $req, $params, $_ ) }
                    $vehicles->all ];
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();

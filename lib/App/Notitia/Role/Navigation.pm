@@ -468,6 +468,9 @@ my $_vehicle_links = sub {
          class => $page->{selected} eq 'vehicles_list' ? 'selected' : NUL,
          name => 'vehicles_list' }, 'asset/vehicles', [] ),
       $nav_linkto->( $req, {
+         class => $page->{selected} eq 'adhoc_vehicles' ? 'selected' : NUL,
+         name => 'adhoc_vehicles' }, 'asset/vehicles', [], adhoc => TRUE ),
+      $nav_linkto->( $req, {
          class => $page->{selected} eq 'service_vehicles' ? 'selected' : NUL,
          name => 'service_vehicles' },
                      'asset/vehicles', [], service => TRUE ),
