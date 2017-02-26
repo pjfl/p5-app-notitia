@@ -21,6 +21,15 @@ has 'timeout'      => is => 'ro',   isa => PositiveInt, default => 10;
 has 'query_uri'    => is => 'lazy', isa => NonEmptySimpleStr;
 
 # Public methods
+sub assert_lookup_success {
+   my ($self, $res) = @_;
+
+   $res->{success} or throw
+      'Geolocation lookup error [_1]: [_2]', [ $res->{status}, $res->{reason} ];
+
+   return;
+}
+
 sub decode_json {
    return JSON::MaybeXS->new( utf8 => FALSE )->decode( $_[ 1 ] );
 }
@@ -39,8 +48,7 @@ sub locate_by_postcode {
       $res = $http->get( $uri ); $res->{success} and last; nap 0.25;
    }
 
-   $res->{success} or throw
-      'Geolocation lookup error [_1]: [_2]', [ $res->{status}, $res->{reason} ];
+   $self->assert_lookup_success( $res );
 
    return $res;
 }
