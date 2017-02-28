@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Switched to Geo::Coordinates::UTM for latlong to utm
           - Adds adhoc vehicle view
           - References #152. Can create adhoc vehicles
           - Adds VirtualEarth as geolocation provider
