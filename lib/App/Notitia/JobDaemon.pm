@@ -211,9 +211,10 @@ my $_runjob = sub {
 
       $self->log->info( 'Running job '.$job->label );
 
-      my $opts = { timeout => 60 * ($job->period - 1) };
+      my $opts = { err => 'out', timeout => $job->period - 60 };
       my $r = $self->run_cmd( [ split SPC, $job->command ], $opts );
 
+      $self->log->info( $r->out );
       $self->log->info( 'Job '.$job->label.' rv '.$r->rv );
       $job->delete;
    }
@@ -246,7 +247,7 @@ my $_should_run_job = sub {
    my ($self, $job) = @_;
 
    $job->updated
-      and $job->updated->clone->add( minutes => $job->period ) > now_dt
+      and $job->updated->clone->add( seconds => $job->period ) > now_dt
       and return FALSE;
 
    if ($job->run + 1 > $job->max_runs) {

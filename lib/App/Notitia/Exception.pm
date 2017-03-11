@@ -19,6 +19,9 @@ has_exception 'AccountInactive' => parents => [ 'Authentication' ],
 has_exception 'AuthenticationRequired' => parents => [ 'Authentication' ],
    error   => 'Resource [_1] authentication required';
 
+has_exception 'FailedTokenVerification' => parents => [ 'Authentication' ],
+   error   => 'CSRF token validation failed';
+
 has_exception 'FailedSecurityCheck' => parents => [ 'Authentication' ],
    error   => 'User [_1] authentication failed';
 

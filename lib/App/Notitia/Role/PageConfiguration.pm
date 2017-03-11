@@ -2,14 +2,47 @@ package App::Notitia::Role::PageConfiguration;
 
 use namespace::autoclean;
 
-use App::Notitia::Constants qw( TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS NUL TRUE );
+use App::Notitia::Form      qw( p_hidden );
 use App::Notitia::Util      qw( loc );
-use Class::Usul::Functions  qw( throw );
+use Class::Usul::Functions  qw( bson64id create_token64 is_member throw );
 use Try::Tiny;
+use Unexpected::Functions   qw( FailedTokenVerification );
 use Web::ComposableRequest::Util qw( new_uri );
 use Moo::Role;
 
-requires qw( config initialise_stash load_page log );
+requires qw( config execute initialise_stash load_page log );
+
+# Private functions
+my $_create_csrf_token = sub {
+   my ($salt, $session) = @_;
+
+   return create_token64
+      ( join NUL, $salt, $session->username, @{ $session->roles } );
+};
+
+# Private methods
+my $_add_form0_csrf_token = sub {
+   my ($self, $req, $stash) = @_;
+
+   my $page  = $stash->{page} or return;
+   my $forms = $page->{forms} or return;
+   my $form  = $forms->[ 0 ]  or return;
+
+   $self->add_csrf_token( $req, $form );
+   return;
+};
+
+my $_verify_csrf_token = sub {
+   my ($self, $req) = @_;
+
+   my ($salt, $token) = split m{ \- }mx, $req->body_params->( '_verify' );
+
+   $token eq $_create_csrf_token->( $salt, $req->session )
+      or throw FailedTokenVerification;
+
+   return;
+};
 
 # Construction
 around 'execute' => sub {
@@ -23,7 +56,13 @@ around 'execute' => sub {
             [ $sess_version, $conf->session_version ];
    }
 
+   $req->method eq 'post'
+      and $conf->preferences->{verify_csrf_token}
+      and $self->$_verify_csrf_token( $req );
+
    my $stash = $orig->( $self, $method, $req );
+
+   $self->$_add_form0_csrf_token( $req, $stash );
 
    $req->authenticated and $self->activity_cache( $session->user_label );
 
@@ -47,9 +86,10 @@ around 'execute' => sub {
 around 'initialise_stash' => sub {
    my ($orig, $self, $req, @args) = @_;
 
-   my $stash  = $orig->( $self, $req, @args ); my $conf = $self->config;
-
-   my $params = $req->query_params; my $sess = $req->session;
+   my $stash  = $orig->( $self, $req, @args );
+   my $params = $req->query_params;
+   my $sess   = $req->session;
+   my $conf   = $self->config;
 
    for my $k (@{ $conf->stash_attr->{session} }) {
       try {
@@ -96,6 +136,32 @@ around 'load_page' => sub {
 
    return $page;
 };
+
+# Class attributes
+my $_activity_cache = [];
+
+# Public methods
+sub activity_cache {
+   my ($self, $v) = @_;
+
+   defined $v and not is_member $v, $_activity_cache
+      and unshift @{ $_activity_cache }, $v;
+
+   scalar @{ $_activity_cache } > 3 and pop @{ $_activity_cache };
+
+   return join ', ', @{ $_activity_cache };
+}
+
+sub add_csrf_token {
+   my ($self, $req, $form) = @_;
+
+   my $salt = bson64id;
+   my $token = $_create_csrf_token->( $salt, $req->session );
+
+   p_hidden $form, '_verify', "${salt}-${token}";
+
+   return;
+}
 
 1;
 

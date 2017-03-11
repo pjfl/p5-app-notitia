@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.12.$Rev: 21 $ of **App::Notitia**
+This documents version v0.12.$Rev: 22 $ of **App::Notitia**
 
 # Description
 
@@ -203,7 +203,6 @@ A typical logroate configuration in the file `/etc/logrotate.d/notitia`
 might look like this:
 
     /home/notitia/local/var/logs/*.log {
-       copytruncate
        missingok
        notifempty
        rotate 4

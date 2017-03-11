@@ -192,7 +192,7 @@ my $_should_send_email = sub {
          ( 'Would email [_1] but unsub. from action [_2]', {
             args => [ $person->label, $action ] } ) and return FALSE;
 
-   $self->config->no_message_send and $self->info
+   $self->config->preferences->{no_message_send} and $self->info
       ( 'Would email [_1] but off in config', { args => [ $person->label ] } )
       and return FALSE;
 
@@ -262,7 +262,8 @@ my $_send_sms = sub {
          map { s{ \A 07 }{447}mx; $_ } $person->mobile_phone;
    }
 
-   $conf->no_message_send and $self->info( 'SMS turned off in config' )
+   $conf->preferences->{no_message_send}
+      and $self->info( 'SMS turned off in config' )
       and return;
 
    $attr->{log     } //= $self->log;

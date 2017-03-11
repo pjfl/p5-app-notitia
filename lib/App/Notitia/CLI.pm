@@ -23,7 +23,7 @@ my $_build_less = sub {
    my $self = shift; my $conf = $self->config;
 
    return $self->less_class->new
-      ( compress      =>   $conf->compress_css,
+      ( compress      => ! $conf->preferences->{no_compress_css},
         include_paths => [ $conf->vardir->catdir( $conf->less )->pathname ],
         tmp_path      =>   $conf->tempdir, );
 };

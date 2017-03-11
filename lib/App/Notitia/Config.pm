@@ -114,8 +114,6 @@ has 'cdnjs'           => is => 'lazy', isa => HashRef,
 has 'components'      => is => 'lazy', isa => HashRef,
    builder            => $_build_components, init_arg => undef;
 
-has 'compress_css'    => is => 'ro',   isa => Bool, default => TRUE;
-
 has 'connect_attr'    => is => 'ro',   isa => HashRef,
    builder            => sub { { quote_names => TRUE } };
 
@@ -217,8 +215,6 @@ has 'no_index'        => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    builder            => sub {
    [ qw( \.contributors\.md$ \.git$ \.json$ \.mtime$ \.svn$ assets$ posts$ ) ]};
 
-has 'no_message_send' => is => 'ro',   isa => Bool, default => FALSE;
-
 has 'owner'           => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => sub { $_[ 0 ]->prefix };
 
@@ -244,6 +240,9 @@ has 'port'            => is => 'lazy', isa => NonZeroPositiveInt,
 
 has 'posts'           => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'posts';
+
+has 'preferences'     => is => 'ro',   isa => HashRef[Bool],
+   default            => sub { {} };
 
 has 'rdbms'           => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    default            => sub { [ 'MySQL' ] };
@@ -494,11 +493,6 @@ The RSS event feed title
 
 =back
 
-=item C<compress_css>
-
-Boolean default to true. Should the command line C<make-css> method compress
-it's output
-
 =item C<connect_attr>
 
 A hash reference which defaults to C<< { quote_names => TRUE } >>. These
@@ -709,11 +703,6 @@ which the application is mounted
 An array reference that defaults to C<[ .git .svn cgi-bin  ]>.
 List of files and directories under the document root to ignore
 
-=item C<no_message_send>
-
-Suppress the sending of user activation emails and using SMS. Used in
-development only
-
 =item C<owner>
 
 A non empty simple string that defaults to the configuration C<prefix>
@@ -743,6 +732,29 @@ in production mode with a L<Plack> engine that listens on a port
 A non empty simple string the defaults to F<posts>.  The directory
 name where dated markdown files are created in category
 directories. These are the blogs posts or news articles
+
+=item C<preferences>
+
+Boolean options turned on from the local configuration file
+
+=over
+
+=item C<verify_csrf_token>
+
+If set to false, do not bother to verify the CSRF token on a posted form.
+Defaults to false
+
+=item C<no_compress_css>
+
+Boolean defaults to false. Should the command line C<make-css> method compress
+it's output
+
+=item C<no_message_send>
+
+Suppress the sending of user activation emails and using SMS. Used in
+development only. Defaults to false
+
+=back
 
 =item C<rdbms>
 

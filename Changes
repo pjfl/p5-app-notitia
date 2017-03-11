@@ -1,5 +1,10 @@
 Revision history for App::Notitia
 
+          - Fixes retry period in jobdaemon
+          - Adds csrf token verfication
+          - Adds preferences config hash
+            Moves some config flags to preference hash
+          - Adds fudge factor for more realistic distances
           - Switched to Geo::Coordinates::UTM for latlong to utm
           - Adds adhoc vehicle view
           - References #152. Can create adhoc vehicles

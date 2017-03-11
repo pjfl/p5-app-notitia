@@ -12,7 +12,7 @@ use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
 use Moo::Role;
 
-requires qw( components );
+requires qw( add_csrf_token components );
 
 # Private package variables
 my $_method_roles_cache = {};
@@ -672,6 +672,8 @@ sub primary_navigation_links {
       class => 'none',
       label => locm( $req, 'Logout' ).' ('.$req->session->user_label.')',
       tip   => make_tip $req, 'Logout from [_1]', [ $self->config->title ] };
+
+   $self->add_csrf_token( $req, $form );
 
    p_item $nav, $form;
 

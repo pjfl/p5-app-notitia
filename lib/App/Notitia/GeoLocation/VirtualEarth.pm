@@ -2,8 +2,9 @@ package App::Notitia::GeoLocation::VirtualEarth;
 
 use namespace::autoclean;
 
-use Class::Usul::Types    qw( NonEmptySimpleStr );
-use Geo::Coordinates::UTM qw( latlon_to_utm );
+use Class::Usul::Constants qw( COMMA );
+use Class::Usul::Types     qw( NonEmptySimpleStr );
+use Geo::Coordinates::UTM  qw( latlon_to_utm );
 use Moo;
 
 extends qw( App::Notitia::GeoLocation::Base );
@@ -33,7 +34,7 @@ my $_convert_to_grid = sub {
 
    my ($zone, $x, $y) = latlon_to_utm( 23 , $coords->[ 0 ], $coords->[ 1 ] );
 
-   return sprintf "%d,%d", $_round->( 10 * $x ) / 10, $_round->( 10 * $y ) / 10;
+   return $_round->( $x ).COMMA.$_round->( $y );
 };
 
 
