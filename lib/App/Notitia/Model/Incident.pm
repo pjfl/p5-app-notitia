@@ -2,8 +2,8 @@ package App::Notitia::Model::Incident;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
-                                p_container p_fields p_link p_list p_row
+use App::Notitia::Form      qw( blank_form f_tag p_action p_button p_cell
+                                p_container p_fields p_item p_link p_list p_row
                                 p_select p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js js_window_config locm make_tip
                                 page_link_set register_action_paths to_dt
@@ -203,14 +203,18 @@ my $_incidents_ops_links = sub {
 };
 
 my $_incidents_row = sub {
-   my ($self, $req, $incident) = @_;
+   my ($self, $req, $incident) = @_; my $row = [];
 
-   my $href = uri_for_action $req, $self->moniker.'/incident', [ $incident->id];
+   my $id   = $incident->id;
+   my $href = uri_for_action $req, $self->moniker.'/incident', [ $id ];
+   my $cell = p_cell $row, {};
 
-   return [ { value => f_link 'incident_record', $href, {
-      request => $req, value => $incident->title, } },
-            { value => $incident->raised_label( $req ) },
-            { value => locm $req, $incident->category }, ];
+   p_link $cell, "incident_record_${id}", $href, {
+      request => $req, value => $incident->title };
+   p_item $row, $incident->raised_label( $req );
+   p_item $row, locm $req, $incident->category;
+
+   return $row;
 };
 
 my $_list_all_people = sub {

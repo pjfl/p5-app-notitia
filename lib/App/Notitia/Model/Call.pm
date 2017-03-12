@@ -540,25 +540,20 @@ my $_journeys_ops_links = sub {
    my $actionp = $self->moniker.'/journeys';
    my $page_links = page_link_set $req, $actionp, [], $params, $pager;
 
-   $page_links and push @{ $links }, $page_links;
+   $page_links and push @{ $links }, $page_links; $done and return $links;
 
-   unless ($done) {
-      my $name = 'delivery_stages';
-      my $actionp = $self->moniker."/${name}";
-      my $href = uri_for_action $req, $actionp, [ $req->username ];
-      my $title = locm( $req, "${name}_title" );
+   my $name  = 'delivery_stages'; $actionp = $self->moniker."/${name}";
+   my $href  = uri_for_action $req, $actionp, [ $req->username ];
+   my $title = locm( $req, "${name}_title" );
 
-      p_link $links, $name, '#', { class => 'windows', request => $req };
-      p_js $page, dialog_anchor $name, $href, {
-         name => $name, title => $title };
+   p_link $links, $name, '#', { class => 'windows', request => $req };
+   p_js $page, dialog_anchor $name, $href, { name => $name, title => $title };
 
-      $actionp = $self->moniker.'/journey';
+   $actionp = $self->moniker.'/journey';
 
-      is_member 'controller', $req->session->roles
-         and p_link $links, 'journey', uri_for_action( $req, $actionp ), {
-            action => 'create', container_class => 'add-link',
-            request => $req };
-   }
+   is_member 'controller', $req->session->roles
+      and p_link $links, 'journey', uri_for_action( $req, $actionp ), {
+         action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
 };

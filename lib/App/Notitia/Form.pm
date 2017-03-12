@@ -138,7 +138,7 @@ sub blank_form (;$$$) {
    return $opts;
 }
 
-sub f_link (@) {
+sub f_link (@) { # Deprecated
    my ($name, $x, $opts) = @_; $opts = { %{ $opts // {} } };
 
    my $href   = !defined( $x )  ? HASH_CHAR

@@ -2,7 +2,7 @@ package App::Notitia::Role::Messaging;
 
 use namespace::autoclean;
 
-use App::Notitia::Form      qw( blank_form f_link p_button p_js
+use App::Notitia::Form      qw( blank_form p_button p_js p_link
                                 p_radio p_select p_textarea );
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( js_togglers_config js_window_config locm
@@ -188,7 +188,7 @@ sub message_create {
 }
 
 sub message_link {
-   my ($self, $req, $page, $href, $name) = @_;
+   my ($self, $req, $page, $href, $name, $links) = @_;
 
    my $args   =  [ "${href}", {
       name    => $name,
@@ -198,7 +198,8 @@ sub message_link {
 
    p_js $page, js_window_config 'send_message', 'click', 'inlineDialog', $args;
 
-   return f_link 'message', C_DIALOG, { action => 'send', request => $req };
+   p_link $links, 'message', C_DIALOG, { action => 'send', request => $req };
+   return;
 }
 
 sub message_stash {

@@ -58,9 +58,9 @@ my $_validation_errors = sub {
 
    p_tag $form, 'h5', locm $req, 'Form validation errors';
 
-   for my $e (@{ $e->args }) {
-      p_tag $form, 'p', ($_parse_error->( $e ))[ 1 ];
-      $e->can( 'explain' ) and $e->explain and p_tag $form, 'p', $e->explain;
+   for my $ve (@{ $e->args }) {
+      p_tag $form, 'p', ($_parse_error->( $ve ))[ 1 ];
+      $ve->can( 'explain' ) and $ve->explain and p_tag $form, 'p', $ve->explain;
    }
 
    return;
@@ -68,27 +68,24 @@ my $_validation_errors = sub {
 
 # Private methods
 my $_auth_redirect = sub {
-   my ($self, $req, $e, $message) = @_; my $class = $e->class;
+   my ($self, $req, $e, $message) = @_;
 
    my $location = uri_for_action $req, $self->config->places->{login};
 
-   if ($class eq IncorrectPassword->() or $class eq IncorrectAuthCode->()) {
-      $self->send_event( $req, 'action:failed-login' );
-   }
+   (   $e->instance_of( IncorrectPassword )
+    or $e->instance_of( IncorrectAuthCode ))
+      and $self->send_event( $req, 'action:failed-login' );
 
-   if ($e->instance_of( AuthenticationRequired->() )) {
+   if ($e->instance_of( AuthenticationRequired )) {
       my $wanted = $req->path || NUL; my $actionp = action_for_uri $wanted;
 
       (($actionp and not is_dialog $self->components, $actionp
                  and not is_action $self->components, $actionp)
        or (not $actionp and $wanted)) and $req->session->wanted( $wanted );
-
-      return { redirect => { location => $location, message => [ $message ] } };
    }
 
-   if ($e->instance_of( Authentication->() )) {
+   $e->instance_of( Authentication ) and
       return { redirect => { location => $location, message => [ $message ] } };
-   }
 
    return;
 };
@@ -145,7 +142,7 @@ sub exception_handler {
    my $page = { forms => [ $form ], template => [ 'none', NUL ],
                 title => locm $req, 'exception_handler_title', $name };
 
-   if ($e->class eq ValidationErrors->()) {
+   if ($e->instance_of( ValidationErrors )) {
       $_validation_errors->( $req, $e, $form );
    }
    else {

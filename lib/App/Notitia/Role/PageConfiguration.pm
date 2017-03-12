@@ -18,7 +18,7 @@ my $_create_csrf_token = sub {
    my ($salt, $session) = @_;
 
    return create_token64
-      ( join NUL, $salt, $session->username, @{ $session->roles } );
+      ( join NUL, $salt, $session->username, $session->roles_mtime );
 };
 
 # Private methods

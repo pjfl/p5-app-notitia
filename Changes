@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Deprecates f_link
           - Fixes retry period in jobdaemon
           - Adds csrf token verfication
           - Adds preferences config hash

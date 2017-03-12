@@ -2,10 +2,9 @@ package App::Notitia::Model::Vehicle;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
-                                p_date p_fields p_hidden p_list
-                                p_row p_select p_table p_tag p_textarea
-                                p_textfield );
+use App::Notitia::Form      qw( blank_form f_link p_action p_button p_date
+                                p_fields p_hidden p_list p_row p_select
+                                p_table p_tag p_textarea p_textfield );
 use App::Notitia::Util      qw( assign_link check_field_js display_duration
                                 loc locd now_dt make_tip management_link
                                 page_link_set register_action_paths

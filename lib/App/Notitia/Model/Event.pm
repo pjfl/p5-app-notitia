@@ -257,14 +257,14 @@ my $_participent_links = sub {
 };
 
 my $_participent_ops_links = sub {
-   my ($self, $req, $page, $params) = @_;
+   my ($self, $req, $page, $params) = @_; my $links = [];
 
-   my $name         = 'message_participents';
-   my $actionp      = $self->moniker.'/message';
-   my $href         = uri_for_action $req, $actionp, [], $params;
-   my $message_link = $self->message_link( $req, $page, $href, $name );
+   my $href = uri_for_action $req, $self->moniker.'/message', [], $params;
+   my $name = 'message_participents';
 
-   return [ $message_link ];
+   $self->message_link( $req, $page, $href, $name, $links );
+
+   return $links;
 };
 
 my $_update_event_from_request = sub {

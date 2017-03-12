@@ -2,9 +2,9 @@ package App::Notitia::Model::Certification;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link f_tag p_action p_button
-                                p_cell p_link p_list p_fields p_row p_table
-                                p_tag p_textfield );
+use App::Notitia::Form      qw( blank_form f_tag p_action p_button p_cell
+                                p_item p_js p_link p_list p_fields p_radio
+                                p_row p_table p_tag p_textfield );
 use App::Notitia::Util      qw( check_field_js dialog_anchor loc locm
                                 make_tip register_action_paths to_dt to_msg
                                 uri_for_action );
@@ -58,15 +58,17 @@ my $_personal_docs_headers = sub {
 
 # Private methods
 my $_cert_row = sub {
-   my ($self, $req, $scode, $cert) = @_;
+   my ($self, $req, $scode, $cert) = @_; my $row = [];
 
-   my $args = [ $cert->recipient->label ];
+   p_item $row, $cert->label( $req );
+
    my $actionp = $self->moniker.'/certification';
-   my $href = uri_for_action $req, $actionp, [ $scode, $cert->type ];
-   my $opts = { action => 'update', args => $args, request => $req };
+   my $href    = uri_for_action $req, $actionp, [ $scode, $cert->type ];
+   my $args    = [ $cert->recipient->label ];
+   my $cell    = p_cell $row, {}; p_link $cell, 'certification', $href, {
+      action => 'update', args => $args, request => $req };
 
-   return [ { value => $cert->label( $req ) },
-            { value => f_link 'certification', $href, $opts } ];
+   return $row;
 };
 
 my $_certification_js = sub {
@@ -97,31 +99,32 @@ my $_certs_ops_links = sub {
 };
 
 my $_file_row = sub {
-   my ($self, $req, $scode, $path) = @_; my $conf = $self->config; my $row = [];
+   my ($self, $req, $scode, $path) = @_; my $row = [];
 
+   my $conf = $self->config;
    my $file = $path->filename;
    my $href = $req->uri_for( $conf->assets."/personal/${scode}/${file}" );
+   my $cell = p_cell $row, { class => 'narrow align-center' };
+   my $tip  = locm $req, 'download_document_tip';
 
-   p_cell $row, {
-      class => 'narrow align-center',
-      value => f_link $file, $href, {
-         action => 'download', download => $file, request => $req,
-         tip    => locm( $req, 'download_document_tip' ),
-         value  => f_tag 'i', NUL, { class => 'download-icon', close => TRUE },
-      } };
+   p_link $cell, $file, $href, {
+      action => 'download', download => $file, request => $req, tip => $tip,
+      value  => f_tag 'i', NUL, { class => 'download-icon', close => TRUE },
+   };
 
-   p_cell $row, { value => f_link "view_${file}", $href, {
-      request => $req, tip => locm( $req, 'view_document_tip' ),
-      value   => $file } };
+   $cell = p_cell $row, {}; $tip = locm $req, 'view_document_tip';
 
-   p_cell $row, { class => 'narrow align-right', value => $path->stat->{size} };
+   p_link $cell, "view_${file}", $href, {
+      request => $req, tip => $tip, value => $file };
 
-   p_cell $row, {
-      class => 'file-date align-right',
-      value => time2str '%Y-%m-%d %H:%M:%S', $path->stat->{mtime} };
+   p_item $row, $path->stat->{size}, { class => 'narrow align-right' };
 
-   p_cell $row, { class => 'narrow align-center', value => {
-      name => 'selected', type => 'radio', value => [ { value => $file } ] } };
+   p_item $row, time2str( '%Y-%m-%d %H:%M:%S', $path->stat->{mtime} ), {
+      class => 'file-date align-right' };
+
+   $cell = p_cell $row, { class => 'narrow align-center' };
+
+   p_radio $cell, 'selected', [ [ NUL, $file ] ], { label => NUL };
 
    return $row;
 };
@@ -149,9 +152,8 @@ my $_files_ops_links = sub {
    my $actionp = $self->moniker.'/upload_document';
    my $href = uri_for_action $req, $actionp, [ $person->shortcode ];
 
-   push @{ $page->{literal_js} //= [] },
-      dialog_anchor( 'upload_document', $href, {
-         name => 'document_upload', title => loc( $req, 'Document Upload' ) } );
+   p_js $page, dialog_anchor 'upload_document', $href, {
+      name => 'document_upload', title => loc $req, 'Document Upload' };
 
    return $links;
 };

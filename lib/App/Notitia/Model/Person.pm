@@ -241,21 +241,20 @@ my $_people_links = sub {
 my $_people_ops_links = sub {
    my ($self, $req, $page, $params, $pager) = @_; my $links = [];
 
-   my $moniker = $self->moniker;
-   my $actionp = "${moniker}/person";
-
-   p_link $links, 'person', uri_for_action( $req, $actionp ), {
-      action => 'create', container_class => 'add-link', request => $req };
-
-   my $name = 'message_people';
-   my $href = uri_for_action $req, "${moniker}/message", [], $params;
-   my $message = $self->message_link( $req, $page, $href, $name );
-
-   unshift @{ $links }, $message; $actionp = "${moniker}/people";
+   my $moniker = $self->moniker; my $actionp = "${moniker}/people";
 
    my $page_links = page_link_set $req, $actionp, [], $params, $pager;
 
-   $page_links and unshift @{ $links }, $page_links;
+   $page_links and push @{ $links }, $page_links;
+
+   my $href = uri_for_action $req, "${moniker}/message", [], $params;
+
+   $self->message_link( $req, $page, $href, 'message_people', $links );
+
+   $actionp = "${moniker}/person";
+
+   p_link $links, 'person', uri_for_action( $req, $actionp ), {
+      action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
 };
