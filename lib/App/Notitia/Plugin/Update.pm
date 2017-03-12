@@ -3,7 +3,7 @@ package App::Notitia::Plugin::Update;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE NUL TRUE );
-use App::Notitia::Util      qw( event_handler );
+use App::Notitia::Util      qw( event_handler new_request );
 use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Types      qw( ArrayRef NonEmptySimpleStr );
 use Moo;
@@ -21,13 +21,16 @@ my $_maybe_delete_cert = sub {
    my ($self, $stash) = @_;
 
    is_member $stash->{course}, $self->plugins->{update}->certifiable_courses
-      and return {
-         action_path => 'certs/delete_certification_action',
-         recipient   => $stash->{shortcode},
-         type        => $stash->{course},
-      };
+      or return;
 
-   return;
+   return {
+      action_path   => 'certs/delete_certification_action',
+      request       => new_request( {
+         config     => $self->config,
+         method     => 'post',
+         uri_params => $stash->{shortcode}.'/'.$stash->{course},
+      } ),
+   };
 };
 
 # Event handlers
@@ -38,17 +41,24 @@ event_handler 'update', remove_course => sub {
 event_handler 'update', update_course => sub {
    my ($self, $req, $stash) = @_;
 
-   $stash->{status} eq 'completed' and
-      is_member $stash->{course}, $self->plugins->{update}->certifiable_courses
-      and return {
-         action_path => 'certs/create_certification_action',
-         recipient   => $stash->{shortcode},
-         type        => $stash->{course},
-         completed   => $stash->{date},
-         notes       => 'Automatically awarded by '.$self->config->title,
-      };
+   $stash->{status} eq 'completed' or return;
 
-   return;
+   is_member $stash->{course}, $self->plugins->{update}->certifiable_courses
+      or return;
+
+   return {
+      action_path      => 'certs/create_certification_action',
+      request          => new_request( {
+         body          => {
+            cert_types => $stash->{course},
+            completed  => $stash->{date},
+            notes      => 'Automatically awarded by '.$self->config->title,
+         },
+         config        => $self->config,
+         method        => 'post',
+         uri_params    => $stash->{shortcode},
+      } ),
+   };
 };
 
 event_handler 'update', update_course => sub {

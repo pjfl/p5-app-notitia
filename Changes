@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Returns model calling signature to self, req
           - Deprecates f_link
           - Fixes retry period in jobdaemon
           - Adds csrf token verfication

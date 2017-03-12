@@ -3,7 +3,7 @@ package App::Notitia::GeoLocation;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS );
-use Class::Usul::Functions  qw( ensure_class_loaded );
+use Class::Usul::Functions  qw( ensure_class_loaded first_char );
 use Class::Usul::Types      qw( ClassName HashRef );
 use Moo;
 
@@ -20,7 +20,7 @@ around 'BUILDARGS' => sub {
 
    my $class = delete $attr->{provider};
 
-   if ('+' eq substr $class, 0, 1) { $class = substr $class, 1 }
+   if (first_char $class eq '+') { $class = substr $class, 1 }
    else { $class = __PACKAGE__."::${class}" }
 
    ensure_class_loaded $class;

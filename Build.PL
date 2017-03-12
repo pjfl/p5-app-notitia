@@ -45,6 +45,7 @@ my $prereqs  = {
     'Geo::Coordinates::UTM' => '0.11',
     'HTML::GenerateUtil' => '1.20',
     'HTTP::Message' => '6.06',
+    'IO::String' => '1.08',
     'JSON::MaybeXS' => '1.003005',
     'List::SomeUtils' => '0.53',
     'List::Util' => '1.42',

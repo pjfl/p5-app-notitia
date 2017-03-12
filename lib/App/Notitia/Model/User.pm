@@ -7,8 +7,8 @@ use App::Notitia::Form      qw( blank_form f_tag p_button p_checkbox p_container
                                 p_slider p_tag p_text p_textfield );
 use App::Notitia::Util      qw( check_field_js check_form_field event_actions
                                 js_server_config js_slider_config locm make_tip
-                                register_action_paths set_element_focus
-                                to_msg uri_for_action );
+                                new_request register_action_paths
+                                set_element_focus to_msg uri_for_action );
 use Class::Usul::Functions  qw( is_arrayref is_member create_token throw );
 use Class::Usul::Types      qw( ArrayRef HashRef Object );
 use HTTP::Status            qw( HTTP_OK );
@@ -145,6 +145,21 @@ my $_fetch_shortcode = sub {
    $scode eq 'unknown' and $req->authenticated and $scode = $req->username;
 
    return $scode;
+};
+
+my $_new_subscribe_request = sub {
+   my ($self, $req, $field) = @_;
+
+   return new_request {
+      body      => {
+         $field => $req->body_params->( $field, { multiple => TRUE } ),
+      },
+      config    => $self->config,
+      hostport  => $req->hostport,
+      method    => 'post',
+      scheme    => $req->scheme,
+      username  => $req->uri_params->( 0 ),
+   };
 };
 
 my $_push_login_js = sub {
@@ -373,27 +388,35 @@ sub email_subs : Role(any) {
 }
 
 sub force_subscribe_email_action : Role(person_manager) {
-   my ($self, $req) = @_; my $scode = $req->uri_params->( 0 );
+   my ($self, $req) = @_;
 
-   return $self->subscribe_email_action( $req, { shortcode => $scode } );
+   my $request = $self->$_new_subscribe_request( $req, 'unsubscribed_emails' );
+
+   return $self->subscribe_email_action( $request );
 }
 
 sub force_subscribe_sms_action : Role(person_manager) {
-   my ($self, $req) = @_; my $scode = $req->uri_params->( 0 );
+   my ($self, $req) = @_;
 
-   return $self->subscribe_sms_action( $req, { shortcode => $scode } );
+   my $request = $self->$_new_subscribe_request( $req, 'unsubscribed_messages');
+
+   return $self->subscribe_sms_action( $request );
 }
 
 sub force_unsubscribe_email_action : Role(person_manager) {
-   my ($self, $req) = @_; my $scode = $req->uri_params->( 0 );
+   my ($self, $req) = @_;
 
-   return $self->unsubscribe_email_action( $req, { shortcode => $scode } );
+   my $request = $self->$_new_subscribe_request( $req, 'subscribed_emails' );
+
+   return $self->unsubscribe_email_action( $request );
 }
 
 sub force_unsubscribe_sms_action : Role(person_manager) {
-   my ($self, $req) = @_; my $scode = $req->uri_params->( 0 );
+   my ($self, $req) = @_;
 
-   return $self->unsubscribe_sms_action( $req, { shortcode => $scode } );
+   my $request = $self->$_new_subscribe_request( $req, 'subscribed_messages' );
+
+   return $self->unsubscribe_sms_action( $request );
 }
 
 sub login : Role(anon) {
@@ -607,13 +630,13 @@ sub sms_subs : Role(any) {
 }
 
 sub subscribe_email_action : Role(any) {
-   my ($self, $req, $params) = @_; $params //= {};
+   my ($self, $req) = @_;
 
-   my $scode = $params->{shortcode} // $req->username;
+   my $scode = $req->username;
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person = $person_rs->find_by_shortcode( $scode );
-   my $actions = $params->{unsubscribed_emails}
-      // $req->body_params->( 'unsubscribed_emails', { multiple => TRUE } );
+   my $actions = $req->body_params->( 'unsubscribed_emails', {
+      multiple => TRUE } );
 
    for my $action (@{ $actions }) {
       $person->subscribe_to_email( $action );
@@ -621,7 +644,7 @@ sub subscribe_email_action : Role(any) {
       my $message = "action:subscribe-email shortcode:${scode} "
                   . "event_action:${action}";
 
-      $self->send_event( $req, $message, $params );
+      $self->send_event( $req, $message );
    }
 
    my $message  = [ to_msg 'Email subscription list for [_1] updated',
@@ -632,13 +655,13 @@ sub subscribe_email_action : Role(any) {
 }
 
 sub subscribe_sms_action : Role(any) {
-   my ($self, $req, $params) = @_; $params //= {};
+   my ($self, $req) = @_;
 
-   my $scode = $params->{shortcode} // $req->username;
+   my $scode = $req->username;
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person = $person_rs->find_by_shortcode( $scode );
-   my $actions = $params->{unsubscribed_messages}
-      // $req->body_params->( 'unsubscribed_messages', { multiple => TRUE } );
+   my $actions = $req->body_params->( 'unsubscribed_messages', {
+      multiple => TRUE } );
 
    for my $action (@{ $actions }) {
       $person->subscribe_to_sms( $action );
@@ -646,7 +669,7 @@ sub subscribe_sms_action : Role(any) {
       my $message = "action:subscribe-sms shortcode:${scode} "
                   . "event_action:${action}";
 
-      $self->send_event( $req, $message, $params );
+      $self->send_event( $req, $message );
    }
 
    my $message  = [ to_msg 'SMS subscription list for [_1] updated',
@@ -725,13 +748,13 @@ sub totp_secret : Role(anon) {
 }
 
 sub unsubscribe_email_action : Role(any) {
-   my ($self, $req, $params) = @_; $params //= {};
+   my ($self, $req) = @_;
 
-   my $scode = $params->{shortcode} // $req->username;
+   my $scode = $req->username;
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person = $person_rs->find_by_shortcode( $scode );
-   my $actions = $params->{subscribed_emails}
-      // $req->body_params->( 'subscribed_emails', { multiple => TRUE } );
+   my $actions = $req->body_params->( 'subscribed_emails', {
+      multiple => TRUE } );
 
    for my $action (@{ $actions }) {
       $person->unsubscribe_from_email( $action );
@@ -739,7 +762,7 @@ sub unsubscribe_email_action : Role(any) {
       my $message = "action:unsubscribe-email shortcode:${scode} "
                   . "event_action:${action}";
 
-      $self->send_event( $req, $message, $params );
+      $self->send_event( $req, $message );
    }
 
    my $message  = [ to_msg 'Email subscription list for [_1] updated',
@@ -750,13 +773,13 @@ sub unsubscribe_email_action : Role(any) {
 }
 
 sub unsubscribe_sms_action : Role(any) {
-   my ($self, $req, $params) = @_; $params //= {};
+   my ($self, $req) = @_;
 
-   my $scode = $params->{shortcode} // $req->username;
+   my $scode = $req->username;
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person = $person_rs->find_by_shortcode( $scode );
-   my $actions = $params->{subscribed_messages}
-      // $req->body_params->( 'subscribed_messages', { multiple => TRUE } );
+   my $actions = $req->body_params->( 'subscribed_messages', {
+      multiple => TRUE } );
 
    for my $action (@{ $actions }) {
       $person->unsubscribe_from_sms( $action );
@@ -764,7 +787,7 @@ sub unsubscribe_sms_action : Role(any) {
       my $message = "action:unsubscribe-sms shortcode:${scode} "
                   . "event_action:${action}";
 
-      $self->send_event( $req, $message, $params );
+      $self->send_event( $req, $message );
    }
 
    my $message  = [ to_msg 'SMS subscription list for [_1] updated',

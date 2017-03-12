@@ -679,20 +679,18 @@ my $_packages_and_stages = sub {
 };
 
 my $_send_stage_events = sub {
-   my ($self, $req, $journey, $leg, $completed, $params) = @_;
+   my ($self, $req, $journey, $leg, $completed) = @_;
 
-   my $jid = $journey->id;
-   my $lid = $leg->id;
-   my $status = $leg->status;
-   my $c_tag = lc $journey->customer->name; $c_tag =~ s{ [ ] }{_}gmx;
+   my $jid     = $journey->id;
+   my $lid     = $leg->id;
+   my $status  = $leg->status;
+   my $c_tag   = lc $journey->customer->name; $c_tag =~ s{ [ ] }{_}gmx;
    my $message = "action:update-delivery-stage delivery_id:${jid} "
                . "stage_id:${lid} status:${status} customer:${c_tag}";
 
-   $self->send_event( $req, $message, $params );
-
-   $completed and $message = "action:delivery-complete delivery_id:${jid} "
-                           . "customer:${c_tag}"
-              and $self->send_event( $req, $message, $params );
+   $self->send_event( $req, $message );
+   $message = "action:delivery-complete delivery_id:${jid} customer:${c_tag}";
+   $completed and $self->send_event( $req, $message );
    return;
 };
 
@@ -751,13 +749,13 @@ my $_update_journey_from_request = sub {
 };
 
 my $_update_leg_from_request = sub {
-   my ($self, $req, $leg, $supplied) = @_; $supplied //= {};
+   my ($self, $req, $leg) = @_;
 
    my $params = $req->body_params; my $opts = { optional => TRUE };
 
    for my $attr (qw( beginning_id called collection_eta collected delivered
                      ending_id on_station operator_id vehicle_id )) {
-      my $v = $supplied->{ $attr } // $params->( $attr, $opts );
+      my $v = $params->( $attr, $opts );
 
       defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
@@ -782,10 +780,10 @@ my $_update_leg_from_request = sub {
 };
 
 my $_update_location_from_request = sub {
-   my ($self, $req, $location, $supplied) = @_; my $params = $req->body_params;
+   my ($self, $req, $location) = @_; my $params = $req->body_params;
 
    for my $attr (qw( address coordinates location postcode )) {
-      my $v = $supplied->{ $attr } // $params->( $attr, { optional => TRUE } );
+      my $v = $params->( $attr, { optional => TRUE } );
 
       (defined $v and length $v) or next;
       $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
@@ -882,19 +880,19 @@ sub create_delivery_stage_action : Role(controller) {
 }
 
 sub create_location_action : Role(controller) {
-   my ($self, $req, $params) = @_; $params //= {};
+   my ($self, $req) = @_;
 
-   my $address  = $params->{address} // $req->body_params->( 'address' );
-   my $rs = $self->schema->resultset( 'Location' );
+   my $address  = $req->body_params->( 'address' );
+   my $rs       = $self->schema->resultset( 'Location' );
    my $location = $rs->new_result( {} );
 
-   $self->$_update_location_from_request( $req, $location, $params );
+   $self->$_update_location_from_request( $req, $location );
    $location->insert;
 
    my $lid = $location->id;
    my $message = "action:create-location location_id:${lid}";
 
-   $self->send_event( $req, $message, $params );
+   $self->send_event( $req, $message );
 
    my $key = 'Location [_1] created by [_2]';
 
@@ -1310,7 +1308,7 @@ sub update_delivery_request_action : Role(controller) {
 }
 
 sub update_delivery_stage_action : Role(controller) Role(driver) Role(rider) {
-   my ($self, $req, $params) = @_; $params //= {};
+   my ($self, $req) = @_;
 
    my $schema    = $self->schema;
    my $jid       = $req->uri_params->( 0 );
@@ -1324,7 +1322,7 @@ sub update_delivery_stage_action : Role(controller) Role(driver) Role(rider) {
       or $self->$_is_manager( $req, $journey )
       or throw 'Updating someone elses delivery stage is not allowed';
 
-   $self->$_update_leg_from_request( $req, $leg, $params );
+   $self->$_update_leg_from_request( $req, $leg );
 
    my $completed = FALSE; not $delivered and $leg->delivered
       and $leg->ending_id == $journey->dropoff_id
@@ -1340,7 +1338,7 @@ sub update_delivery_stage_action : Role(controller) Role(driver) Role(rider) {
    try   { $self->schema->txn_do( $update ) }
    catch { $self->blow_smoke( $_, 'update', 'delivery stage', $lid ) };
 
-   $self->$_send_stage_events( $req, $journey, $leg, $completed, $params );
+   $self->$_send_stage_events( $req, $journey, $leg, $completed );
 
    my $key = 'Stage [_2] of delivery request [_1] updated by [_3]';
    my $message = [ to_msg $key, $jid, $lid, $req->session->user_label ];
@@ -1350,17 +1348,17 @@ sub update_delivery_stage_action : Role(controller) Role(driver) Role(rider) {
 }
 
 sub update_location_action : Role(controller) {
-   my ($self, $req, $params) = @_; $params //= {};
+   my ($self, $req) = @_;
 
-   my $lid = $params->{location_id} // $req->uri_params->( 0 );
+   my $lid = $req->uri_params->( 0 );
    my $location = $self->schema->resultset( 'Location' )->find( $lid );
 
-   $self->$_update_location_from_request( $req, $location, $params );
+   $self->$_update_location_from_request( $req, $location );
    $location->update;
 
    my $message = "action:update-location location_id:${lid}";
 
-   $self->send_event( $req, $message, $params );
+   $self->send_event( $req, $message );
 
    my $key = 'Location [_1] updated by [_2]';
 

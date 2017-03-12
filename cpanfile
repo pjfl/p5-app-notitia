@@ -23,6 +23,7 @@ requires "Format::Human::Bytes" => "0.06";
 requires "Geo::Coordinates::UTM" => "0.11";
 requires "HTML::GenerateUtil" => "1.20";
 requires "HTTP::Message" => "6.06";
+requires "IO::String" => "1.08";
 requires "JSON::MaybeXS" => "1.003005";
 requires "List::SomeUtils" => "0.53";
 requires "List::Util" => "1.42";

@@ -16,6 +16,7 @@ use Class::Usul::Time          qw( str2date_time str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
 use Data::Validation;
 use HTTP::Status               qw( HTTP_OK );
+use IO::String;
 use JSON::MaybeXS;
 use Scalar::Util               qw( blessed weaken );
 use Try::Tiny;
@@ -570,7 +571,7 @@ sub iterator ($) {
 }
 
 sub js_server_config ($$$$) {
-   my ($k, $event, $method, $args) = @_; $args = $json_coder->encode( $args );
+   my ($k, $event, $method, $args) = @_; $args = to_json( $args );
 
    return "   behaviour.config.server[ '${k}' ] = {",
           "      event     : '${event}',",
@@ -579,13 +580,13 @@ sub js_server_config ($$$$) {
 }
 
 sub js_slider_config ($$) {
-   my ($k, $params) = @_; $params = $json_coder->encode( $params );
+   my ($k, $params) = @_; $params = to_json( $params );
 
    return "   behaviour.config.slider[ '${k}' ] = ${params};";
 }
 
 sub js_submit_config ($$$$) {
-   my ($k, $event, $method, $args) = @_; $args = $json_coder->encode( $args );
+   my ($k, $event, $method, $args) = @_; $args = to_json( $args );
 
    return "   behaviour.config.submit[ '${k}' ] = {",
           "      event     : '${event}',",
@@ -594,7 +595,7 @@ sub js_submit_config ($$$$) {
 }
 
 sub js_togglers_config ($$$$) {
-   my ($k, $event, $method, $args) = @_; $args = $json_coder->encode( $args );
+   my ($k, $event, $method, $args) = @_; $args = to_json( $args );
 
    return "   behaviour.config.togglers[ '${k}' ] = {",
           "      event     : '${event}',",
@@ -603,7 +604,7 @@ sub js_togglers_config ($$$$) {
 }
 
 sub js_window_config ($$$$) {
-   my ($k, $event, $method, $args) = @_; $args = $json_coder->encode( $args );
+   my ($k, $event, $method, $args) = @_; $args = to_json( $args );
 
    return "   behaviour.config.window[ '${k}' ] = {",
           "      event     : '${event}',",
@@ -730,17 +731,29 @@ sub mtime ($) {
 }
 
 sub new_request ($) {
-   my $args = shift; ensure_class_loaded 'Web::ComposableRequest';
-   my $conf = $args->{config};
-   my $factory = Web::ComposableRequest->new( config => $conf );
-   my $uri_params = $args->{uri_params} // NUL;
+   my $args         = shift; ensure_class_loaded 'Web::ComposableRequest';
+   my $factory      = Web::ComposableRequest->new( config => $args->{config} );
+   my $uri_params   = $args->{uri_params} // NUL;
    my $query_params = $args->{query_params} // {};
-   my $env = { HTTP_ACCEPT_LANGUAGE => $args->{locale} // 'en',
-               HTTP_HOST => $args->{hostport} // 'localhost:5000',
-               SCRIPT_NAME => $conf->mount_point,
-               'psgi.url_scheme' => $args->{scheme} // 'http',
-               'psgix.session' => { username => $args->{username} // 'admin' },
-               %{ $args->{env} // {} } };
+   my $env          = {
+      HTTP_ACCEPT_LANGUAGE => $args->{locale  } // 'en',
+      HTTP_HOST            => $args->{hostport} // 'localhost:5000',
+      SCRIPT_NAME          => $args->{config  }->mount_point,
+      'psgi.url_scheme'    => $args->{scheme  } // 'http',
+      'psgix.session'      => {
+         username          => $args->{username} // 'admin',
+      },
+      %{ $args->{env} // {} }
+   };
+
+   if ($args->{method} and $args->{method} eq 'post') {
+      my $body = to_json( $args->{body} // {} );
+
+      $env->{CONTENT_LENGTH} = length $body;
+      $env->{CONTENT_TYPE  } = 'application/json';
+      $env->{REQUEST_METHOD} = 'POST';
+      $env->{ 'psgi.input' } = IO::String->new( $body );
+   }
 
    return $factory->new_from_simple_request
       ( {}, $uri_params, $query_params, $env );

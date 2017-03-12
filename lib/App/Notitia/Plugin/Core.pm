@@ -132,19 +132,17 @@ event_handler 'sms', '_output_' => sub {
 event_handler 'update', '_output_' => sub {
    my ($self, $req, $stash) = @_;
 
-   my $actionp = delete $stash->{action_path}; $actionp
-      and return $self->event_component_update( $req, $stash, $actionp );
+   my $actionp = delete $stash->{action_path}; $actionp or return;
 
-   return;
+   return $self->event_component_update( $req, $stash, $actionp );
 };
 
 event_handler 'update', '_output_' => sub {
    my ($self, $req, $stash) = @_;
 
-   my $resultp = delete $stash->{result_path}; $resultp
-      and return $self->event_schema_update( $req, $stash, $resultp );
+   my $resultp = delete $stash->{result_path}; $resultp or return;
 
-   return;
+   return $self->event_schema_update( $req, $stash, $resultp );
 };
 
 1;

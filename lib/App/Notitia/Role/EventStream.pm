@@ -58,7 +58,11 @@ my $_clean_and_log = sub {
    my $address = $req->address || 'localhost';
 
    $message = "user:${user} client:${address} ${message}";
-   exists $params->{level} and $message .= ' level:'.$params->{level};
+
+   my $level = $req->query_params->( 'level', { optional => TRUE } );
+
+   exists $params->{level} and $level = $params->{level};
+   $level and $message .= " level:${level}";
    get_logger( 'activity' )->log( $message );
 
    return $message;
@@ -94,7 +98,7 @@ my $_handle = sub {
    catch { $self->log->warn( $_ ); $processed = TRUE };
 
    is_hashref $processed or return $processed;
-   delete $processed->{_event_control};
+   delete $processed->{_event_control}; $processed->{level} = $level;
 
    for my $output (@{ event_handler( $stream, '_output_' ) }) {
       my $chained = $output->( $self, $req, { %{ $processed } } );
@@ -216,7 +220,10 @@ sub event_component_update {
    $component->can( $method ) or
       throw 'Model [_1] has no method [_2]', [ $moniker, $method ];
 
-   $component->$method( $req, $stash );
+   my $request = $stash->{request} or throw 'No request object';
+
+   $request->_params->{level} = $stash->{level};
+   $component->$method( $request );
    return;
 }
 

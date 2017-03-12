@@ -2,8 +2,8 @@ package App::Notitia::Model::Endorsement;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_action p_list p_fields
-                                p_row p_table p_textfield );
+use App::Notitia::Form      qw( blank_form p_action p_cell p_item p_link
+                                p_list p_fields p_row p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js loc local_dt locm now_dt
                                 register_action_paths to_dt to_msg
                                 uri_for_action );
@@ -60,14 +60,18 @@ my $_endorsement_js = sub {
 };
 
 my $_endorsement_ops_links = sub {
-   my ($req, $actionp, $person) = @_;
+   my ($req, $actionp, $person) = @_; my $links = [];
 
-   my $params = $req->query_params->( {
-      optional => TRUE } ); delete $params->{mid};
+   my $params = $req->query_params->( { optional => TRUE } );
+
+   delete $params->{mid};
+
    my $href = uri_for_action $req, $actionp, [ $person->shortcode ], $params;
-   my $opts = { action => 'add', args => [ $person->label ], request => $req };
 
-   return [ f_link 'endorsement', $href, $opts ];
+   p_link $links, 'endorsement', $href, {
+      action => 'add', args => [ $person->label ], request => $req };
+
+   return $links;
 };
 
 my $_endorsements_headers = sub {
@@ -82,18 +86,21 @@ my $_link_opts = sub {
 
 # Private methods
 my $_endorsement_links = sub {
-   my ($self, $req, $scode, $blot) = @_;
+   my ($self, $req, $scode, $blot) = @_; my $links = [];
+
+   p_item $links, $blot->label( $req );
 
    my $args = [ $blot->recipient->label ]; my @links;
 
    for my $actionp (map { $self->moniker."/${_}" } 'endorsement' ) {
       my $href = uri_for_action $req, $actionp, [ $scode, $blot->uri ];
-      my $opts = { action => 'update', args => $args, request => $req };
+      my $cell = p_cell $links, {};
 
-      push @links, { value => f_link 'endorsement', $href, $opts };
+      p_link $cell, 'endorsement', $href, {
+         action => 'update', args => $args, request => $req };
    }
 
-   return [ { value => $blot->label( $req ) }, @links ];
+   return $links;
 };
 
 my $_find_endorsement_by = sub {
@@ -108,7 +115,7 @@ my $_maybe_find_endorsement = sub {
 };
 
 my $_update_endorsement_from_request = sub {
-   my ($self, $req, $blot, $supplied) = @_; $supplied //= {};
+   my ($self, $req, $blot) = @_;
 
    my $params = $req->body_params; my $opts = { optional => TRUE };
 
@@ -116,7 +123,7 @@ my $_update_endorsement_from_request = sub {
       if (is_member $attr, [ 'notes' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 
-      my $v = $supplied->{ $attr } // $params->( $attr, $opts );
+      my $v = $params->( $attr, $opts );
 
       defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
@@ -130,13 +137,13 @@ my $_update_endorsement_from_request = sub {
 
 # Public methods
 sub create_endorsement_action : Role(person_manager) {
-   my ($self, $req, $params) = @_; $params //= {};
+   my ($self, $req) = @_;
 
-   my $scode   = $params->{recipient} // $req->uri_params->( 0 );
+   my $scode   = $req->uri_params->( 0 );
    my $blot_rs = $self->schema->resultset( 'Endorsement' );
    my $blot    = $blot_rs->new_result( { recipient => $scode } );
 
-   $self->$_update_endorsement_from_request( $req, $blot, $params );
+   $self->$_update_endorsement_from_request( $req, $blot );
 
    my $label   = $blot->label( $req );
 
@@ -148,7 +155,7 @@ sub create_endorsement_action : Role(person_manager) {
    my $message  = "action:create-endorsement endorsement_uri:${uri} "
                 . "shortcode:${scode} endorsement_type:${type}";
 
-   $self->send_event( $req, $message, $params );
+   $self->send_event( $req, $message );
 
    my $action   = $self->moniker.'/endorsements';
    my $location = uri_for_action $req, $action, [ $scode ];
@@ -160,15 +167,15 @@ sub create_endorsement_action : Role(person_manager) {
 }
 
 sub delete_endorsement_action : Role(person_manager) {
-   my ($self, $req, $params) = @_; $params //= {};
+   my ($self, $req) = @_;
 
-   my $scode    = $params->{recipient} // $req->uri_params->( 0 );
-   my $uri      = $params->{uri} // $req->uri_params->( 1 );
+   my $scode    = $req->uri_params->( 0 );
+   my $uri      = $req->uri_params->( 1 );
    my $blot     = $self->$_find_endorsement_by( $scode, $uri ); $blot->delete;
    my $message  = "action:delete-endorsement endorsement_uri:${uri} "
                 . "shortcode:${scode} endorsement_type:".$blot->type_code;
 
-   $self->send_event( $req, $message, $params );
+   $self->send_event( $req, $message );
 
    my $actionp  = $self->moniker.'/endorsements';
    my $location = uri_for_action $req, $actionp, [ $scode ];
@@ -241,19 +248,19 @@ sub endorsements : Role(person_manager) {
 }
 
 sub update_endorsement_action : Role(person_manager) {
-   my ($self, $req, $params) = @_; $params //= {};
+   my ($self, $req) = @_;
 
-   my $scode = $params->{recipient} // $req->uri_params->( 0 );
-   my $uri   = $params->{uri} // $req->uri_params->( 1 );
+   my $scode = $req->uri_params->( 0 );
+   my $uri   = $req->uri_params->( 1 );
    my $blot  = $self->$_find_endorsement_by( $scode, $uri );
 
-   $self->$_update_endorsement_from_request( $req, $blot, $params );
+   $self->$_update_endorsement_from_request( $req, $blot );
    $blot->update;
 
    my $message = "action:update-endorsement endorsement_uri:${uri} "
                . "shortcode:${scode} endorsement_type:".$blot->type_code;
 
-   $self->send_event( $req, $message, $params );
+   $self->send_event( $req, $message );
 
    my $key = 'Endorsement [_1] for [_2] updated by [_3]';
 

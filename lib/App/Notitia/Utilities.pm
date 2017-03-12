@@ -353,19 +353,19 @@ sub dump_route_attr : method {
 }
 
 sub geolocation : method {
-   my $self = shift;
+   my $self        = shift;
    my $object_type = $self->next_argv or throw Unspecified, [ 'object type' ];
-   my $id = $self->next_argv or throw Unspecified, [ 'id' ];
+   my $id          = $self->next_argv or throw Unspecified, [ 'id' ];
 
    $self->info( 'Geolocating [_1] [_2]', { args => [ $object_type, $id ] } );
 
-   my $rs = $self->schema->resultset( $object_type );
-   my $object = $object_type eq 'Person'
-              ? $rs->find_by_shortcode( $id ) : $rs->find( $id );
+   my $rs       = $self->schema->resultset( $object_type );
+   my $object   = $object_type eq 'Person'
+                ? $rs->find_by_shortcode( $id ) : $rs->find( $id );
    my $postcode = $object->postcode;
-   my $data = $self->geolocator->locate_by_postcode( $postcode );
-   my $coords = defined $data->{coordinates}
-              ? $object->coordinates( $data->{coordinates} ) : 'undefined';
+   my $data     = $self->geolocator->locate_by_postcode( $postcode );
+   my $coords   = defined $data->{coordinates}
+                ? $object->coordinates( $data->{coordinates} ) : 'undefined';
    my $location = defined $data->{location}
                 ? $object->location( $data->{location} ) : 'undefined';
 
@@ -377,19 +377,19 @@ sub geolocation : method {
 }
 
 sub impending_slot : method {
-   my $self = shift; $self->components;
-   my $req = $self->$_new_request( $self->next_argv, $self->next_argv );
-   my $days = $self->next_argv // 3;
+   my $self      = shift; $self->components;
+   my $req       = $self->$_new_request( $self->next_argv, $self->next_argv );
+   my $days      = $self->next_argv // 3;
    my $rota_name = $self->next_argv // 'main';
-   my $rota_dt = now_dt->add( days => $days );
-   my $data = $self->$_assigned_slots( $req, $rota_name, $rota_dt );
-   my $dmy = locd $req, $rota_dt;
-   my $ymd = local_dt( $rota_dt )->ymd;
-   my $sent = FALSE;
+   my $rota_dt   = now_dt->add( days => $days );
+   my $data      = $self->$_assigned_slots( $req, $rota_name, $rota_dt );
+   my $dmy       = locd $req, $rota_dt;
+   my $ymd       = local_dt( $rota_dt )->ymd;
+   my $sent      = FALSE;
 
    for my $key (grep { $_ =~ m{ \A $ymd _ }mx } sort keys %{ $data }) {
       my $slot_key = $data->{ $key }->key;
-      my $scode = $data->{ $key }->operator;
+      my $scode    = $data->{ $key }->operator;
       my $message = "action:impending-slot date:${dmy} days_in_advance:${days} "
                   . "shortcode:${scode} rota_name:${rota_name} "
                   . "rota_date:${ymd} slot_key:${slot_key}";
@@ -455,15 +455,15 @@ sub should_upgrade : method {
 }
 
 sub vacant_slot : method {
-   my $self = shift; $self->components;
-   my $req = $self->$_new_request( $self->next_argv, $self->next_argv );
-   my $days = $self->next_argv // 7;
+   my $self      = shift; $self->components;
+   my $req       = $self->$_new_request( $self->next_argv, $self->next_argv );
+   my $days      = $self->next_argv // 7;
    my $rota_name = $self->next_argv // 'main';
-   my $rota_dt = now_dt->add( days => $days );
-   my $data = $self->$_assigned_slots( $req, $rota_name, $rota_dt );
-   my $limits = $self->config->slot_limits;
-   my $dmy = locd $req, $rota_dt;
-   my $ymd = local_dt( $rota_dt )->ymd;
+   my $rota_dt   = now_dt->add( days => $days );
+   my $data      = $self->$_assigned_slots( $req, $rota_name, $rota_dt );
+   my $limits    = $self->config->slot_limits;
+   my $dmy       = locd $req, $rota_dt;
+   my $ymd       = local_dt( $rota_dt )->ymd;
 
    for my $slot_type (@{ SLOT_TYPE_ENUM() }) {
       my $wanted = $self->$_slots_wanted( $limits, $rota_dt, $slot_type );

@@ -131,6 +131,8 @@ my $_enrol_link = sub {
       class => 'table-link', label => locm( $req, 'Enroll' ), tip => $tip };
    p_hidden $form, 'courses', $course_name;
 
+   $self->add_csrf_token( $req, $form );
+
    return $form;
 };
 
