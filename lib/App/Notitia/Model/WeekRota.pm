@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_cell p_container p_hidden
+use App::Notitia::DOM       qw( new_container p_cell p_container p_hidden
                                 p_js p_link p_row p_select p_span p_table );
 use App::Notitia::Util      qw( js_server_config js_submit_config local_dt
                                 locm make_tip register_action_paths
@@ -382,7 +382,7 @@ my $_vehicle_select_cell = sub {
    my ($self, $req, $page, $data, $form_name, $href, $action, $vrn) = @_;
 
    my $disabled = $form_name eq 'disabled' ? TRUE : FALSE;
-   my $form = blank_form $form_name, $href, {
+   my $form = new_container $form_name, $href, {
       class => 'spreadsheet-fixed-form align-center' };
    my $jsid = "vehicle-${form_name}";
 
@@ -505,7 +505,7 @@ my $_alloc_vevent_row = sub {
 my $_alloc_cell = sub {
    my ($self, $req, $page, $data, $cno) = @_;
 
-   my $table = blank_form {
+   my $table = new_container {
       class => 'embeded-spreadsheet-table', type => 'table' };
    my $dt = $page->{rota_dt}->clone->add( days => $cno );
    my $limits = $page->{limits};
@@ -773,7 +773,7 @@ my $_alloc_query = sub {
 
    my $moniker = $self->moniker;
    my $href = $req->uri_for_action( "${moniker}/allocation", $args );
-   my $form = blank_form 'display-control', $href, {
+   my $form = new_container 'display-control', $href, {
       class => 'standard-form display-control' };
 
    p_select $form, 'display_rows', $_select_number->( 10, $params->{rows} ), {
@@ -794,8 +794,8 @@ my $_alloc_query = sub {
 my $_allocation_page = sub {
    my ($self, $req, $rota_name, $rota_dt, $params) = @_;
 
-   my $list = blank_form { class => 'spreadsheet' };
-   my $form = blank_form {
+   my $list = new_container { class => 'spreadsheet' };
+   my $form = new_container {
       class => 'spreadsheet-key-table server', id => 'allocation-key' };
 
    return {
@@ -833,7 +833,7 @@ sub alloc_key : Dialog Role(rota_manager) {
    my $rota_date = $req->uri_params->( 0 );
    my $rota_dt = to_dt $rota_date;
    my $stash = $self->dialog_stash( $req );
-   my $table = $stash->{page}->{forms}->[ 0 ] = blank_form {
+   my $table = $stash->{page}->{forms}->[ 0 ] = new_container {
       class => 'key-table', type => 'table' };
    my $columns = [ qw( colour id name notes vrn ) ];
    my $vehicles = $self->schema->resultset( 'Vehicle' )->search_for_vehicles( {
@@ -871,7 +871,7 @@ sub alloc_table : Dialog Role(rota_manager) {
       vehicles => $vehicles, vevents => $vevents };
    my $stash = $self->dialog_stash( $req );
    my $page = $stash->{page};
-   my $table = $page->{forms}->[ 0 ] = blank_form {
+   my $table = $page->{forms}->[ 0 ] = new_container {
       class => 'spreadsheet-table', type => 'table' };
    my $row = p_row $table;
 

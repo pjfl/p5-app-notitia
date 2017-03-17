@@ -2,9 +2,10 @@ package App::Notitia::Model::User;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_tag p_button p_checkbox p_container
-                                p_image p_js p_label p_password p_radio p_select
-                                p_slider p_tag p_text p_textfield );
+use App::Notitia::DOM       qw( new_container f_tag p_button p_checkbox
+                                p_container p_image p_js p_label p_password
+                                p_radio p_select p_slider p_tag p_text
+                                p_textfield );
 use App::Notitia::Util      qw( check_field_js check_form_field event_actions
                                 js_server_config js_slider_config locm make_tip
                                 new_request register_action_paths
@@ -255,7 +256,7 @@ sub about : Dialog Role(anon) {
    my ($self, $req) = @_;
 
    my $stash = $self->dialog_stash( $req );
-   my $form  = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $form  = $stash->{page}->{forms}->[ 0 ] = new_container;
    my $root  = $self->config->docs_root;
    my $path  = $root->catdir( $req->locale )->catfile( '.contributors.md' );
    my $coder = $self->formatters->{markdown};
@@ -274,7 +275,7 @@ sub change_password : Role(anon) {
    my $person     =  $name ? $person_rs->find_person( $name ) : FALSE;
    my $username   =  $person ? $person->name : $req->username;
    my $href       =  $req->uri_for_action( $self->moniker.'/change_password' );
-   my $form       =  blank_form 'change-password', $href;
+   my $form       =  new_container 'change-password', $href;
    my $page       =  {
       first_field => $username ? 'oldpass' : 'username',
       forms       => [ $form ],
@@ -326,7 +327,7 @@ sub change_password_action : Role(anon) {
 sub changes : Role(anon) {
    my ($self, $req) = @_;
 
-   my $form = blank_form;
+   my $form = new_container;
    my $page = { forms => [ $form ], title => locm $req, 'Changes' };
    my $path = $self->config->appldir->catfile( 'Changes' );
 
@@ -349,7 +350,7 @@ sub email_subs : Role(any) {
 
    my $scode = $req->uri_params->( 0, { optional => TRUE } ) // $req->username;
    my $href  = $req->uri_for_action( $self->moniker.'/email_subs', [ $scode ] );
-   my $form  = blank_form 'email-subscription', $href;
+   my $form  = new_container 'email-subscription', $href;
    my $page  = {
       forms    => [ $form ],
       location => 'account_management', selected => 'email_subscription',
@@ -424,7 +425,7 @@ sub login : Role(anon) {
    my ($self, $req) = @_;
 
    my $href = $req->uri_for_action( $self->moniker.'/login' );
-   my $form = blank_form 'login-user', $href;
+   my $form = new_container 'login-user', $href;
    my $page = {
       first_field => 'username', forms => [ $form ],
       location => 'login', selected => 'login',
@@ -491,7 +492,7 @@ sub profile : Role(any) {
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $person_rs->find_by_shortcode( $req->username );
    my $href       =  $req->uri_for_action( $self->moniker.'/profile' );
-   my $form       =  blank_form 'profile-user', $href;
+   my $form       =  new_container 'profile-user', $href;
    my $page       =  {
       first_field => 'address',
       forms       => [ $form ],
@@ -517,7 +518,7 @@ sub request_reset : Dialog Role(anon) {
    my $stash = $self->dialog_stash( $req );
    my $href  = $req->uri_for_action( $self->moniker.'/reset' );
    my $form  = $stash->{page}->{forms}->[ 0 ]
-             = blank_form 'request-reset', $href;
+             = new_container 'request-reset', $href;
 
    p_js $stash->{page}, set_element_focus 'request-reset', 'username';
 
@@ -592,7 +593,7 @@ sub sms_subs : Role(any) {
 
    my $scode = $req->uri_params->( 0, { optional => TRUE } ) // $req->username;
    my $href  = $req->uri_for_action( $self->moniker.'/sms_subs', [ $scode ] );
-   my $form  = blank_form 'sms-subscription', $href;
+   my $form  = new_container 'sms-subscription', $href;
    my $page  = {
       forms    => [ $form ],
       location => 'account_management', selected => 'sms_subscription',
@@ -688,7 +689,7 @@ sub totp_request : Dialog Role(anon) {
    my $stash = $self->dialog_stash( $req );
    my $href  = $req->uri_for_action( $self->moniker.'/reset' );
    my $form  = $stash->{page}->{forms}->[ 0 ]
-             = blank_form 'totp-request', $href;
+             = new_container 'totp-request', $href;
 
    p_js $stash->{page}, set_element_focus 'totp-request', 'username';
    p_textfield $form, 'username';
@@ -730,7 +731,7 @@ sub totp_secret : Role(anon) {
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $scode );
    my $href      =  $req->uri_for_action( $self->moniker.'/totp_secret' );
-   my $form      =  blank_form 'totp-secret', $href;
+   my $form      =  new_container 'totp-secret', $href;
    my $page      =  {
       forms      => [ $form ],
       location   => 'account_management', selected => 'totp_secret',

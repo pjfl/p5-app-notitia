@@ -1,4 +1,4 @@
-package App::Notitia::Form;
+package App::Notitia::DOM;
 
 use strictures;
 use parent 'Exporter::Tiny';
@@ -8,7 +8,7 @@ use App::Notitia::Constants qw( FALSE HASH_CHAR NUL TRUE );
 use Class::Usul::Functions  qw( is_arrayref is_hashref throw );
 use Scalar::Util            qw( blessed );
 
-our @EXPORT_OK = qw( blank_form f_tag p_action p_button p_cell
+our @EXPORT_OK = qw( new_container f_tag p_action p_button p_cell
                      p_checkbox p_container p_date p_fields p_file p_hidden
                      p_image p_item p_js p_label p_link p_list p_password
                      p_radio p_row p_select p_slider p_span p_table p_tag
@@ -147,7 +147,7 @@ my $_push_field = sub {
 };
 
 # Public functions
-sub blank_form (;$$$) {
+sub new_container (;$$$) {
    my $attr = $_parse_args->( @_ ); my $opts = { %{ $attr->{opts} // {} } };
 
    $attr->{name} and $attr->{href} and return {
@@ -357,11 +357,11 @@ __END__
 
 =head1 Name
 
-App::Notitia::Form - People and resource scheduling
+App::Notitia::DOM - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia::Form;
+   use App::Notitia::DOM;
    # Brief but working code examples
 
 =head1 Description

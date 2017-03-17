@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP SHIFT_TYPE_ENUM SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_cell p_js p_link p_list p_row
+use App::Notitia::DOM       qw( new_container p_cell p_js p_link p_list p_row
                                 p_table p_tag );
 use App::Notitia::Util      qw( dialog_anchor display_duration js_server_config
                                 js_submit_config lcm_for local_dt locm
@@ -303,7 +303,7 @@ my $_month_rota_page = sub {
          lcm       => lcm_for( 4, @{ $max_slots } ),
          max_slots => $max_slots,
          name      => $rota_name, },
-      forms    => [ blank_form { class => 'mobile-side-scroller' } ],
+      forms    => [ new_container { class => 'mobile-side-scroller' } ],
       template => [ '/menu', 'custom/month-table' ],
       title    => $_month_rota_title->( $req, $rota_name, $rota_dt ), };
 };
@@ -404,7 +404,7 @@ sub assign_summary : Dialog Role(any) {
    my $key      =  "${shift_type}_${slot_type}_${subslot}";
    my $rota_dt  =  to_dt $rota_date;
    my $stash    =  $self->dialog_stash( $req );
-   my $form     =  $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $form     =  $stash->{page}->{forms}->[ 0 ] = new_container;
    my $data     =  $self->$_slot_assignments( {
       rota_type => $self->$_find_rota_type( $rota_name )->id,
       on        => $rota_dt } )->{ local_dt( $rota_dt )->ymd."_${key}" };
@@ -434,7 +434,7 @@ sub events_summary : Dialog Role(any) {
       = split m{ _ }mx, $req->uri_params->( 0 ), 3;
    my $rota_dt = to_dt $rota_date;
    my $stash = $self->dialog_stash( $req );
-   my $form = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $form = $stash->{page}->{forms}->[ 0 ] = new_container;
    my $rota_type_id = $self->$_find_rota_type( $rota_name )->id;
    my $event_rs = $self->schema->resultset( 'Event' );
    my $opts = { class => 'label-column' };
@@ -503,7 +503,7 @@ sub user_events : Dialog Role(any) {
    my $stash = $self->dialog_stash( $req );
    my $rs = $self->schema->resultset( 'Person' );
    my $person = $rs->find_by_shortcode( $req->username );
-   my $form = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $form = $stash->{page}->{forms}->[ 0 ] = new_container;
    my $table = p_table $form, { headers => $_user_events_headers->( $req ) };
 
    for my $event (@{ $person->list_events( { after => $yesterday } ) }) {
@@ -528,7 +528,7 @@ sub user_slots : Dialog Role(rota_manager) Role(rider)
 
    my $assigned = $self->$_slot_assignments( $opts );
    my $stash = $self->dialog_stash( $req );
-   my $form = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $form = $stash->{page}->{forms}->[ 0 ] = new_container;
    my $table = p_table $form, { headers => $_user_slots_headers->( $req ) };
 
    for my $slot (map { $assigned->{ $_ }->{slot} } sort keys %{ $assigned }) {

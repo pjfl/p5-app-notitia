@@ -2,7 +2,7 @@ package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_action p_button p_list p_fields
+use App::Notitia::DOM       qw( new_container p_action p_button p_list p_fields
                                 p_item p_js p_link p_row p_table p_tag p_text
                                 p_textfield );
 use App::Notitia::Util      qw( check_field_js datetime_label display_duration
@@ -597,7 +597,7 @@ sub event : Role(event_manager) {
    my $disabled   =  $req->query_params->( 'before', $opts ) ? TRUE : FALSE;
    my $actionp    =  $self->moniker.'/event';
    my $href       =  $req->uri_for_action( $actionp, [ $uri ] );
-   my $form       =  blank_form 'event-admin', $href;
+   my $form       =  new_container 'event-admin', $href;
    my $action     =  $uri ? 'update' : 'create';
    my $page       =  {
       first_field => 'name',
@@ -628,7 +628,7 @@ sub event_info : Dialog Role(any) {
    my $uri   = $req->uri_params->( 0 );
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
    my $stash = $self->dialog_stash( $req );
-   my $form  = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $form  = $stash->{page}->{forms}->[ 0 ] = new_container;
    my $label = $event->owner->label;
    my $title = $event->name;
    my ($start, $end) = display_duration $req, $event;
@@ -653,7 +653,7 @@ sub event_summary : Role(any) {
    my $event   =  $schema->resultset( 'Event' )->find_event_by( $uri );
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $user );
    my $href    =  $req->uri_for_action( $actionp, [ $uri ] );
-   my $form    =  blank_form 'event-admin', $href;
+   my $form    =  new_container 'event-admin', $href;
    my $opts    =  { optional => TRUE };
    my $page    =  {
       forms    => [ $form ],
@@ -689,7 +689,7 @@ sub events : Role(any) {
    my $event_rs  =  $self->schema->resultset( 'Event' );
    my $events    =  $event_rs->search_for_events( $opts );
    my $pager     =  $events->pager;
-   my $form      =  blank_form;
+   my $form      =  new_container;
    my $form_name =  $after  ? 'current_events'
                  :  $before ? 'previous_events'
                  :            'events_management';
@@ -745,7 +745,7 @@ sub participents : Role(any) {
    my $params    =  { event => $uri };
    my $actionp   =  $self->moniker.'/participents';
    my $href      =  $req->uri_for_action( $actionp, [ $uri ], $params );
-   my $form      =  blank_form 'message-participents', $href, {
+   my $form      =  new_container 'message-participents', $href, {
       class      => 'wider-table', id => 'message-participents' };
    my $page      =  {
       disabled   => $disabled,
@@ -776,7 +776,7 @@ sub training_event : Role(training_manager) {
    my $date = $req->query_params->( 'date', { optional => TRUE } );
    my $actionp = $self->moniker.'/training_event';
    my $href = $req->uri_for_action( $actionp, [ $uri ] );
-   my $form = blank_form 'training-event', $href;
+   my $form = new_container 'training-event', $href;
    my $action = $uri ? 'update' : 'create';
    my $page = {
       forms => [ $form ], selected => 'training_events',
@@ -879,7 +879,7 @@ sub vehicle_event : Role(rota_manager) {
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
    my $uri        =  $req->uri_params->( 1, { optional => TRUE } );
    my $href       =  $req->uri_for_action( $actionp, [ $vrn, $uri ] );
-   my $form       =  blank_form 'vehicle-event-admin', $href;
+   my $form       =  new_container 'vehicle-event-admin', $href;
    my $action     =  $uri ? 'update' : 'create';
    my $page       =  {
       first_field => 'name',
@@ -909,7 +909,7 @@ sub vehicle_info : Dialog Role(rota_manager) {
    my $uri     = $req->uri_params->( 0 );
    my $event   = $self->schema->resultset( 'Event' )->find_event_by( $uri );
    my $stash   = $self->dialog_stash( $req );
-   my $form    = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $form    = $stash->{page}->{forms}->[ 0 ] = new_container;
    my $owner   = $event->owner->label;
    my $vehicle = $event->vehicle->label;
    my $title   = $event->name;

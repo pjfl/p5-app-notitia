@@ -2,7 +2,7 @@ package App::Notitia::Model::Role;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_tag p_button p_container
+use App::Notitia::DOM       qw( new_container f_tag p_button p_container
                                 p_select p_textfield );
 use App::Notitia::Util      qw( loc make_tip register_action_paths to_msg );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
@@ -100,7 +100,7 @@ sub role : Role(administrator) Role(person_manager) {
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $name );
    my $href      =  $req->uri_for_action( $self->moniker.'/role', [ $name ] );
-   my $form      =  blank_form 'role-admin', $href;
+   my $form      =  new_container 'role-admin', $href;
    my $page      =  {
       forms      => [ $form ],
       selected   => $role ? "${role}_list"

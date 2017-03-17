@@ -2,7 +2,7 @@ package App::Notitia::Role::Editor;
 
 use namespace::autoclean;
 
-use App::Notitia::Form     qw( blank_form f_tag p_button p_checkbox p_file
+use App::Notitia::DOM      qw( new_container f_tag p_button p_checkbox p_file
                                p_hidden p_js p_list p_radio p_span p_text
                                p_textfield );
 use App::Notitia::Util     qw( dialog_anchor locm make_id_from
@@ -273,7 +273,7 @@ sub get_dialog {
               : $name eq 'upload' ? $req->uri_for_action( $places->{upload} )
                                   : NUL;
    my $form   = $stash->{page}->{forms}->[ 0 ]
-              = blank_form "${name}-file", $href;
+              = new_container "${name}-file", $href;
    my $page   = $stash->{page};
    my $opts   = { class => 'button right-last' };
 

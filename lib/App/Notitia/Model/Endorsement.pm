@@ -2,7 +2,7 @@ package App::Notitia::Model::Endorsement;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_action p_cell p_item p_link
+use App::Notitia::DOM       qw( new_container p_action p_cell p_item p_link
                                 p_list p_fields p_row p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js loc local_dt locm now_dt
                                 register_action_paths to_dt to_msg );
@@ -194,7 +194,7 @@ sub endorsement : Role(person_manager) {
    my $role       =  $req->query_params->( 'role', { optional => TRUE } );
    my $action     =  $uri ? 'update' : 'create';
    my $href       =  $req->uri_for_action( $actionp, [ $scode, $uri ] );
-   my $form       =  blank_form 'endorsement-admin', $href;
+   my $form       =  new_container 'endorsement-admin', $href;
    my $page       =  {
       first_field => $uri ? 'endorsed' : 'type_code',
       forms       => [ $form ],
@@ -224,7 +224,7 @@ sub endorsements : Role(person_manager) {
    my $actionp =  $self->moniker.'/endorsement';
    my $scode   =  $req->uri_params->( 0 );
    my $role    =  $req->query_params->( 'role', { optional => TRUE } );
-   my $form    =  blank_form;
+   my $form    =  new_container;
    my $page    =  {
       forms    => [ $form ],
       selected => $role ? "${role}_list" : NUL,

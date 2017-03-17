@@ -3,7 +3,7 @@ package App::Notitia::Role::PageConfiguration;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS NUL TRUE );
-use App::Notitia::Form      qw( p_hidden );
+use App::Notitia::DOM       qw( p_hidden );
 use App::Notitia::Util      qw( loc );
 use Class::Usul::Functions  qw( bson64id create_token64 is_member throw );
 use Try::Tiny;

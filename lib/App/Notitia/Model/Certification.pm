@@ -2,7 +2,7 @@ package App::Notitia::Model::Certification;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_tag p_action p_button p_cell
+use App::Notitia::DOM       qw( new_container f_tag p_action p_button p_cell
                                 p_item p_js p_link p_list p_fields p_radio
                                 p_row p_table p_tag p_textfield );
 use App::Notitia::Util      qw( check_field_js dialog_anchor loc locm
@@ -216,7 +216,7 @@ sub certification : Role(person_manager) Role(training_manager) {
    my $type      =  $req->uri_params->( 1, { optional => TRUE } );
    my $role      =  $req->query_params->( 'role', { optional => TRUE } );
    my $href      =  $req->uri_for_action( $actionp, [ $scode, $type ] );
-   my $form      =  blank_form 'certification-admin', $href;
+   my $form      =  new_container 'certification-admin', $href;
    my $action    =  $type ? 'update' : 'create';
    my $page      =  {
       forms      => [ $form ],
@@ -247,7 +247,7 @@ sub certifications : Role(person_manager) Role(training_manager) {
    my $actionp =  $self->moniker.'/certifications';
    my $href    =  $req->uri_for_action( $actionp, [ $scode ] );
    my $role    =  $req->query_params->( 'role', { optional => TRUE } );
-   my $form    =  blank_form 'certifications', $href, { class => 'wide-form' };
+   my $form    =  new_container 'certifications', $href, { class => 'wide-form' };
    my $page    =  {
       forms    => [ $form ],
       selected => $role ? "${role}_list" : 'people_list',
@@ -385,7 +385,7 @@ sub upload_document : Dialog Role(person_manager) Role(training_manager) {
    my $places = $self->config->places;
    my $href   = $req->uri_for_action( $places->{upload}, [], $params );
 
-   $stash->{page}->{forms}->[ 0 ] = blank_form 'upload-file', $href;
+   $stash->{page}->{forms}->[ 0 ] = new_container 'upload-file', $href;
    $self->components->{docs}->upload_dialog( $req, $stash->{page} );
 
    return $stash;

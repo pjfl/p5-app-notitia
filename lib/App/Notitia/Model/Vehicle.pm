@@ -2,7 +2,7 @@ package App::Notitia::Model::Vehicle;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_action p_button p_date p_fields
+use App::Notitia::DOM       qw( new_container p_action p_button p_date p_fields
                                 p_hidden p_item p_link p_list p_row p_select
                                 p_table p_tag p_textarea p_textfield );
 use App::Notitia::Util      qw( assign_link check_field_js display_duration
@@ -518,7 +518,7 @@ sub adhoc_vehicle : Dialog Role(any) {
    my $stash  = $self->dialog_stash( $req );
    my $href   = $req->uri_for_action( $self->moniker.'/vehicle' );
    my $form   = $stash->{page}->{forms}->[ 0 ]
-              = blank_form 'adhoc-vehicle', $href;
+              = new_container 'adhoc-vehicle', $href;
    my $schema = $self->schema;
    my $values = [ [ NUL, undef ], @{ $_list_vehicle_types->( $schema, {} ) } ];
 
@@ -549,7 +549,7 @@ sub assign : Dialog Role(rota_manager) {
    my $stash  = $self->dialog_stash( $req );
    my $href   = $req->uri_for_action( $self->moniker.'/vehicle', $args );
    my $form   = $stash->{page}->{forms}->[ 0 ]
-              = blank_form "${action}-vehicle", $href;
+              = new_container "${action}-vehicle", $href;
    my $page   = $stash->{page};
 
    if ($action eq 'assign') {
@@ -642,7 +642,7 @@ sub request_info : Dialog Role(rota_manager) {
    my $event   = $self->schema->resultset( 'Event' )->find_event_by( $uri );
    my $stash   = $self->dialog_stash( $req );
    my $vreq_rs = $self->schema->resultset( 'VehicleRequest' );
-   my $form    = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $form    = $stash->{page}->{forms}->[ 0 ] = new_container;
    my $id      = $event->id;
 
    my ($start, $end) = display_duration $req, $event;
@@ -665,7 +665,7 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    my $event    =  $schema->resultset( 'Event' )->find_event_by
                    ( $uri, { prefetch => [ 'owner' ] } );
    my $href     =  $req->uri_for_action( $self->moniker.'/vehicle', [ $uri ] );
-   my $form     =  blank_form 'vehicle-request', $href, {
+   my $form     =  new_container 'vehicle-request', $href, {
       class     => 'wide-form no-header-wrap' };
    my $selected =  $event->event_type eq 'training' ? 'training_events'
                 :  now_dt > $event->start_date      ? 'previous_events'
@@ -764,7 +764,7 @@ sub vehicle : Role(rota_manager) {
    my $service    =  $req->query_params->( 'service', { optional => TRUE } );
    my $private    =  $req->query_params->( 'private', { optional => TRUE } );
    my $href       =  $req->uri_for_action( $actionp, [ $vrn ] );
-   my $form       =  blank_form 'vehicle-admin', $href;
+   my $form       =  new_container 'vehicle-admin', $href;
    my $action     =  $vrn ? 'update' : 'create';
    my $page       =  {
       first_field => 'vrn',
@@ -805,7 +805,7 @@ sub vehicle_events : Role(rota_manager) {
                    before     => $before ? to_dt( $before ) : FALSE,
                    event_type => 'vehicle',
                    vehicle    => $vrn, };
-   my $form   =  blank_form { class => 'wide-form no-header-wrap' };
+   my $form   =  new_container { class => 'wide-form no-header-wrap' };
    my $page   =  {
       forms   => [ $form ], selected => 'service_vehicles',
       title   => loc $req, 'vehicle_events_management_heading' };
@@ -842,7 +842,7 @@ sub vehicles : Role(rota_manager) {
       type      => $params->{type   } };
    my $rs       =  $self->schema->resultset( 'Vehicle' );
    my $vehicles =  $rs->search_for_vehicles( $opts );
-   my $form     =  blank_form;
+   my $form     =  new_container;
    my $page     =  {
       forms     => [ $form ],
       selected  => $_select_nav_link_name->( $params ),

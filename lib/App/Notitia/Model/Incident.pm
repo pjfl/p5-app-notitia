@@ -2,7 +2,7 @@ package App::Notitia::Model::Incident;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_tag p_action p_button p_cell
+use App::Notitia::DOM       qw( new_container f_tag p_action p_button p_cell
                                 p_container p_fields p_item p_link p_list p_row
                                 p_select p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js js_window_config locm make_tip
@@ -338,7 +338,7 @@ sub incident : Role(controller) {
    my $i_id = $req->uri_params->( 0, { optional => TRUE } );
    my $href = $req->uri_for_action( $self->moniker.'/incident', [ $i_id ] );
    my $action = $i_id ? 'update' : 'create';
-   my $form = blank_form 'incident', $href;
+   my $form = new_container 'incident', $href;
    my $page = {
       forms => [ $form ], selected => 'incidents',
       title => locm $req, 'incident_title',
@@ -368,7 +368,7 @@ sub incident_party : Role(controller) {
    my $i_id = $req->uri_params->( 0 );
    my $actp = $self->moniker.'/incident_party';
    my $href = $req->uri_for_action( $actp, [ $i_id ] );
-   my $form = blank_form 'incident_party', $href;
+   my $form = new_container 'incident_party', $href;
    my $page = {
       forms => [ $form ], selected => 'incidents',
       title => locm $req, 'incident_party_title'
@@ -411,7 +411,7 @@ sub incidents : Role(controller) {
 
    my $params = $req->query_params->( {
       optional => TRUE } ); delete $params->{mid};
-   my $form = blank_form;
+   my $form = new_container;
    my $page = {
       forms => [ $form ], selected => 'incidents',
       title => locm $req, 'incidents_title',

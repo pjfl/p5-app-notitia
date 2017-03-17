@@ -2,9 +2,9 @@ package App::Notitia::Role::Messaging;
 
 use namespace::autoclean;
 
-use App::Notitia::Form      qw( blank_form p_button p_js p_link
-                                p_radio p_select p_textarea );
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE NUL SPC TRUE );
+use App::Notitia::DOM       qw( new_container p_button p_js p_link
+                                p_radio p_select p_textarea );
 use App::Notitia::Util      qw( js_togglers_config js_window_config locm
                                 mail_domain set_element_focus to_msg );
 use Class::Usul::File;
@@ -208,7 +208,7 @@ sub message_stash {
    my $id = substr create_token, 0, 5;
    my $stash = $self->dialog_stash( $req );
    my $form = $stash->{page}->{forms}->[ 0 ]
-            = blank_form NUL, { class => 'standard-form' };
+            = new_container NUL, { class => 'standard-form' };
    my $templates = $self->$_list_message_templates( $req );
    my $plate_eml_id = "template_email_${id}";
    my $adhoc_eml_id = "adhoc_email_${id}";

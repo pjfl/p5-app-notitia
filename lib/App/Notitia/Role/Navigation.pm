@@ -4,7 +4,7 @@ use attributes ();
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE HASH_CHAR NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_button p_image p_item p_js
+use App::Notitia::DOM       qw( new_container p_button p_image p_item p_js
                                 p_link p_list p_text );
 use App::Notitia::Util      qw( dialog_anchor local_dt locd locm
                                 make_tip now_dt to_dt );
@@ -568,7 +568,7 @@ sub call_navigation_links {
 }
 
 sub credit_links {
-   my ($self, $req, $page) = @_; my $form = blank_form { type => 'list' };
+   my ($self, $req, $page) = @_; my $list = new_container { type => 'list' };
 
    my $links = []; my $places = $self->config->places;
 
@@ -586,13 +586,13 @@ sub credit_links {
       class => 'link-help', label_class => 'none',
       label_field_class => 'link-help' };
 
-   p_list $form, PIPE_SEP, $links;
+   p_list $list, PIPE_SEP, $links;
 
-   return $form;
+   return $list;
 }
 
 sub external_links {
-   my ($self, $req) = @_; my $form = blank_form { type => 'list' };
+   my ($self, $req) = @_; my $list = new_container { type => 'list' };
 
    my $links = [];
 
@@ -602,9 +602,9 @@ sub external_links {
          tip => locm( $req, 'external_link_tip' ), value => $link->{name} };
    }
 
-   p_list $form, PIPE_SEP, $links;
+   p_list $list, PIPE_SEP, $links;
 
-   return $form;
+   return $list;
 }
 
 sub login_navigation_links {
@@ -639,7 +639,7 @@ sub navigation_links {
 sub primary_navigation_links {
    my ($self, $req, $page) = @_;
 
-   my $nav = blank_form { type => 'unordered' };
+   my $nav = new_container { type => 'unordered' };
    my $location = $page->{location} // NUL;
    my $places = $self->config->places;
 
@@ -666,7 +666,7 @@ sub primary_navigation_links {
       value => 'Account', }, $places->{profile} );
 
    my $href = $req->uri_for_action( 'user/logout_action' );
-   my $form = blank_form  'authentication', $href, { class => 'none' };
+   my $form = new_container  'authentication', $href, { class => 'none' };
 
    p_button $form, 'logout-user', 'logout', {
       class => 'none',
@@ -718,7 +718,7 @@ sub rota_navigation_links {
 sub secondary_navigation_links {
    my ($self, $req, $page) = @_;
 
-   my $nav = blank_form { type => 'unordered' };
+   my $nav = new_container { type => 'unordered' };
 
    $req->authenticated
       and $self->$_secondary_authenticated_links( $req, $page, $nav );

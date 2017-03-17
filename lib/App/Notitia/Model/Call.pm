@@ -3,7 +3,7 @@ package App::Notitia::Model::Call;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PRIORITY_TYPE_ENUM
                                 PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_action p_button p_fields p_js
+use App::Notitia::DOM       qw( new_container p_action p_button p_fields p_js
                                 p_link p_list p_row p_select p_table
                                 p_tag p_textfield );
 use App::Notitia::Util      qw( check_field_js datetime_label dialog_anchor
@@ -706,7 +706,7 @@ my $_stages_row = sub {
    p_link $cell0, 'stage_'.$stage->id, $href, {
       request => $req, tip => $tip, value => $stage->label( $req ) };
 
-   my $form = blank_form 'leg', $href;
+   my $form = new_container 'leg', $href;
    my $status = $stage->status;
 
    $status eq 'on_station'
@@ -935,7 +935,7 @@ sub customer : Role(controller) Role(driver) Role(rider) {
 
    my $cid     =  $req->uri_params->( 0, { optional => TRUE } );
    my $href    =  $req->uri_for_action( $self->moniker.'/customer', [ $cid ] );
-   my $form    =  blank_form 'customer', $href;
+   my $form    =  new_container 'customer', $href;
    my $action  =  $cid ? 'update' : 'create';
    my $page    =  {
       first_field => 'name', forms => [ $form ], selected => 'customers',
@@ -958,7 +958,7 @@ sub customer : Role(controller) Role(driver) Role(rider) {
 sub customers : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
-   my $form = blank_form { class => 'standard-form' };
+   my $form = new_container { class => 'standard-form' };
    my $page = {
       forms => [ $form ], selected => 'customers',
       title => locm $req, 'customers_list_title'
@@ -1066,7 +1066,7 @@ sub delivery_stages : Dialog Role(controller) Role(driver) Role(rider) {
 
    my $scode = $req->uri_params->( 0 );
    my $stash = $self->dialog_stash( $req );
-   my $form  = $stash->{page}->{forms}->[ 0 ] = blank_form;
+   my $form  = $stash->{page}->{forms}->[ 0 ] = new_container;
    my $table = p_table $form, { headers => $_stages_headers->( $req ) };
 
    for my $stage (@{ $self->$_delivery_stages( $scode ) }) {
@@ -1081,9 +1081,9 @@ sub journey : Role(controller) Role(driver) Role(rider) {
 
    my $jid     =  $req->uri_params->( 0, { optional => TRUE } );
    my $href    =  $req->uri_for_action( $self->moniker.'/journey', [ $jid ] );
-   my $jform   =  blank_form 'journey', $href;
-   my $pform   =  blank_form { class => 'wide-form' };
-   my $lform   =  blank_form { class => 'wide-form' };
+   my $jform   =  new_container 'journey', $href;
+   my $pform   =  new_container { class => 'wide-form' };
+   my $lform   =  new_container { class => 'wide-form' };
    my $action  =  $jid ? 'update' : 'create';
    my $journey =  $self->$_maybe_find( 'Journey', $jid );
    my $done    =  $jid && $journey->completed ? TRUE : FALSE;
@@ -1120,7 +1120,7 @@ sub journeys : Role(controller) Role(driver) Role(rider) {
    my $status =  $params->{status} // NUL;
    my $done   =  $status eq 'completed' ? TRUE : FALSE;
    my $select =  $done ? 'completed_journeys' : 'journeys';
-   my $form   =  blank_form;
+   my $form   =  new_container;
    my $page   =  {
       forms   => [ $form ], selected => $select,
       title   => locm $req, "${select}_title",
@@ -1157,7 +1157,7 @@ sub leg : Role(controller) Role(driver) Role(rider) {
    my $done    =  $lid && $leg->delivered ? TRUE : FALSE;
    my $href    =  $req->uri_for_action( $self->moniker.'/leg', [ $jid, $lid ] );
    my $action  =  $lid ? 'update' : 'create';
-   my $form    =  blank_form 'leg', $href;
+   my $form    =  new_container 'leg', $href;
    my $page    =  {
       forms    => [ $form ],
       selected => $done ? 'completed_journeys' : 'journeys',
@@ -1191,7 +1191,7 @@ sub location : Role(controller) Role(driver) Role(rider) {
 
    my $lid = $req->uri_params->( 0, { optional => TRUE } );
    my $href = $req->uri_for_action( $self->moniker.'/location', [ $lid ] );
-   my $form = blank_form 'location', $href;
+   my $form = new_container 'location', $href;
    my $action = $lid ? 'update' : 'create';
    my $page = {
       first_field => 'address', forms => [ $form ], selected => 'locations',
@@ -1214,7 +1214,7 @@ sub location : Role(controller) Role(driver) Role(rider) {
 sub locations : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
-   my $form = blank_form { class => 'standard-form' };
+   my $form = new_container { class => 'standard-form' };
    my $page = {
       forms => [ $form ], selected => 'locations',
       title => locm $req, 'locations_list_title'
@@ -1240,7 +1240,7 @@ sub package : Dialog Role(controller) {
    my $stash = $self->dialog_stash( $req );
    my $actionp = $self->moniker.'/package';
    my $href = $req->uri_for_action( $actionp, [ $journey_id, $package_type ] );
-   my $form = $stash->{page}->{forms}->[ 0 ] = blank_form 'package', $href;
+   my $form = $stash->{page}->{forms}->[ 0 ] = new_container 'package', $href;
    my $type_rs = $self->schema->resultset( 'Type' );
    my $types = $type_rs->search_for_package_types;
    my $label = locm( $req, 'delivery request' )." ${journey_id}";

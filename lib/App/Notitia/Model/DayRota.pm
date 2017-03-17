@@ -5,7 +5,7 @@ use namespace::autoclean;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG FALSE NUL SPC
                                 SHIFT_TYPE_ENUM TILDE TRUE );
-use App::Notitia::Form      qw( blank_form p_button p_checkbox p_hidden
+use App::Notitia::DOM       qw( new_container p_button p_checkbox p_hidden
                                 p_js p_link p_select );
 use App::Notitia::Util      qw( assign_link dialog_anchor js_submit_config
                                 js_togglers_config local_dt locm make_tip
@@ -563,7 +563,7 @@ sub operator_vehicle : Dialog Role(any) {
    my $args      = [ $rota_name, $rota_date, $slot_key, $person ];
    my $href      = $req->uri_for_action( $actionp, $args );
    my $form      = $stash->{page}->{forms}->[ 0 ]
-                 = blank_form 'operator-vehicle', $href;
+                 = new_container 'operator-vehicle', $href;
    my $id        = 'vehicle';
 
    $self->$_push_vehicle_select( $req, $form, $id, $person, $args );
@@ -631,7 +631,7 @@ sub slot : Dialog Role(rota_manager) Role(rider) Role(controller) Role(driver) {
    my $stash  = $self->dialog_stash( $req );
    my $href   = $req->uri_for_action( $self->moniker.'/slot', $args );
    my $form   = $stash->{page}->{forms}->[ 0 ]
-              = blank_form "${action}-slot", $href;
+              = new_container "${action}-slot", $href;
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
 
    if ($action eq 'claim') {

@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRAINING_STATUS_ENUM TRUE );
-use App::Notitia::Form      qw( blank_form f_tag p_button p_cell p_container
+use App::Notitia::DOM       qw( new_container f_tag p_button p_cell p_container
                                 p_date p_hidden p_item p_link p_list p_row
                                 p_select p_table p_textfield );
 use App::Notitia::Util      qw( dialog_anchor js_submit_config local_dt locd
@@ -122,7 +122,7 @@ my $_enrol_link = sub {
 
    my $actp = $self->moniker.'/training';
    my $href = $req->uri_for_action( $actp, [ "${person}" ] );
-   my $form = blank_form 'training', $href;
+   my $form = new_container 'training', $href;
    my $text = 'Enroll [_1] on the [_2]';
 
    $course_name !~ m{ course \z }mx and $text .= ' course';
@@ -219,7 +219,7 @@ my $_summary_cell = sub {
    my $actionp = $self->moniker.'/dialog';
    my $href = $req->uri_for_action( $actionp, [ $scode, $course_type ] );
    my $id = "${scode}_${course_type}";
-   my $form = blank_form $id, $href, {
+   my $form = new_container $id, $href, {
       class => 'spreadsheet-fixed-form align-center' };
    my $title = locm $req, '[_1] Training For [_2]',
                     locm( $req, $course_type ), $tuple->[ 0 ]->label;
@@ -247,7 +247,7 @@ my $_summary_ops_links = sub {
    my $link_opts = { class => 'log-links' };
    my $dp = Data::Page->new( $max_rows, $opts->{rows}, $opts->{page} );
    my $page_links = page_link_set $req, $actionp, [], $opts, $dp, $link_opts;
-   my $form = blank_form 'training-summary', $req->uri_for_action( $actionp ), {
+   my $form = new_container 'training-summary', $req->uri_for_action( $actionp ), {
       class => 'none' };
    my $show_training = $req->session->show_training;
    my $select_opts =
@@ -304,7 +304,7 @@ sub dialog : Dialog Role(training_manager) {
    my $actionp = $self->moniker.'/training';
    my $href = $req->uri_for_action( $actionp, [ $scode, $course_name ] );
    my $form = $stash->{page}->{forms}->[ 0 ]
-            = blank_form 'user-training', $href, { class => 'dialog-form' };
+            = new_container 'user-training', $href, { class => 'dialog-form' };
 
    for my $status (@{ TRAINING_STATUS_ENUM() }) {
       my $date = $course->$status() // NUL; $date and $date = locd $req, $date;
@@ -337,7 +337,7 @@ sub events : Role(any) {
    my $event_rs = $self->schema->resultset( 'Event' );
    my $events = $event_rs->search_for_events( $opts );
    my $pager = $events->pager;
-   my $form = blank_form;
+   my $form = new_container;
    my $page = {
       forms => [ $form ], selected => 'training_events',
       title => locm $req, 'training_events_title',
@@ -383,7 +383,7 @@ sub summary : Role(training_manager) {
       optional => TRUE } ); delete $params->{mid};
    my $opts = { page => delete $params->{page} // 1,
                 rows => $req->session->rows_per_page, };
-   my $form = blank_form;
+   my $form = new_container;
    my $page = {
       forms => [ $form ], selected => 'training',
       title => locm $req, 'training_summary_title'
@@ -441,7 +441,7 @@ sub training : Role(training_manager) {
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person = $person_rs->find_by_shortcode( $scode );
    my $href = $req->uri_for_action( $self->moniker.'/training', [ $scode ] );
-   my $form = blank_form 'training', $href;
+   my $form = new_container 'training', $href;
    my $page = {
       forms => [ $form ], selected => $role ? "${role}_list" : 'summary',
       title => locm $req, 'training_enrolment_title'

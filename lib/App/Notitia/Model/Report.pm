@@ -2,7 +2,7 @@ package App::Notitia::Model::Report;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_cell p_container p_date p_hidden
+use App::Notitia::DOM       qw( new_container p_cell p_container p_date p_hidden
                                 p_js p_link p_list p_row p_select p_table );
 use App::Notitia::Util      qw( js_submit_config local_dt locd locm make_tip
                                 now_dt to_dt register_action_paths
@@ -705,7 +705,7 @@ sub customers : Role(controller) {
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options( $req, 0 );
    my $href = $req->uri_for_action( $actp, [ 'customers' ] );
-   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'customer_report',
                 title => locm $req, 'customer_report_title' };
 
@@ -759,7 +759,7 @@ sub deliveries : Role(controller) {
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options( $req, 0 );
    my $href = $req->uri_for_action( $actp, [ 'deliveries' ] );
-   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
                 selected => 'delivery_report',
                 title => locm $req, 'delivery_report_title' };
@@ -794,7 +794,7 @@ sub incidents : Role(controller) {
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options( $req, 0 );
    my $href = $req->uri_for_action( $actp, [ 'incidents' ] );
-   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
                 selected => 'incident_report',
                 title => locm $req, 'incident_report_title', };
@@ -828,7 +828,7 @@ sub people : Role(person_manager) {
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
    my $href = $req->uri_for_action( $actp, [ 'people', $opts->{rota_name} ] );
-   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'people_report',
                 title => locm $req, 'people_report_title' };
 
@@ -857,7 +857,7 @@ sub people_meta : Role(person_manager) {
       ( $req, 1, $self->$_get_role_name( $req ) );
    my $name = $opts->{role_name};
    my $href = $req->uri_for_action( $actp, [ 'people_meta', $name ] );
-   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'people_meta_report',
                 title => $_people_meta_report_title->( $req, $name ) };
 
@@ -887,7 +887,7 @@ sub slots : Role(rota_manager) {
       ( $req, 1, $self->$_get_rota_name( $req ) );
    my $name = $opts->{rota_name};
    my $href = $req->uri_for_action( $actp, [ 'slots', $name ] );
-   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'slot_report',
                 title => locm $req, 'slot_report_title' };
 
@@ -916,7 +916,7 @@ sub vehicles : Role(rota_manager) {
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
    my $href = $req->uri_for_action( $actp, [ 'vehicles', $opts->{rota_name} ] );
-   my $form = blank_form 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'vehicle_report',
                 title => locm $req, 'vehicle_report_title' };
 

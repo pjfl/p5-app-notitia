@@ -3,7 +3,7 @@ package App::Notitia::Model::Admin;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP
                                 SLOT_TYPE_ENUM SPC TRUE TYPE_CLASS_ENUM );
-use App::Notitia::Form      qw( blank_form f_tag p_action p_button p_cell
+use App::Notitia::DOM       qw( new_container f_tag p_action p_button p_cell
                                 p_container p_item p_js p_link p_list p_radio
                                 p_select p_span p_row p_table p_text
                                 p_textarea p_textfield );
@@ -237,7 +237,7 @@ my $_event_controls_row = sub {
    $actionp = $self->moniker.'/event_controls';
    $href = $req->uri_for_action( $actionp, [ $sink, $action ] );
 
-   my $form = blank_form 'event-control-status', $href;
+   my $form   = new_container 'event-control-status', $href;
    my $status = $control->status ? 'Enabled' : 'Disabled';
    my $value  = $control->status ? 'disable_event' : 'enable_event';
    my $colour = $control->status ? '#99ff33' : '#c00';
@@ -250,7 +250,7 @@ my $_event_controls_row = sub {
    my $form_name = "${sink}-${action}-role";
    my $id = "${sink}_${action}_role";
 
-   $form = blank_form $form_name, $href;
+   $form = new_container $form_name, $href;
 
    p_item $row, ($sink eq 'email' or $sink eq 'sms')
       ? $form : NUL, { class => 'embeded narrow' };
@@ -273,7 +273,7 @@ my $_filter_controls = sub {
 
    my $f_col = $params->{filter_column} // 'none';
    my $href = $req->uri_for_action( $self->moniker.'/logs', [ $logname ] );
-   my $form = blank_form 'filter-controls', $href, { class => 'link-group' };
+   my $form = new_container 'filter-controls', $href, { class => 'link-group' };
    my $opts = { class => 'single-character filter-column',
                 label_field_class => 'control-label' };
    my @columns = $logname eq 'activity'
@@ -530,7 +530,7 @@ sub event_control : Role(administrator) {
    my $action = $sink && $ev_action ? 'update' : 'create';
    my $args = [ $sink, $ev_action ];
    my $href = $req->uri_for_action( $self->moniker.'/event_control', $args );
-   my $form = blank_form 'event-control', $href;
+   my $form = new_container 'event-control', $href;
    my $page = {
       forms => [ $form ], selected => 'event_controls',
       title => locm $req, 'event_control_title',
@@ -568,7 +568,7 @@ sub event_control : Role(administrator) {
 sub event_controls : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $form = blank_form;
+   my $form = new_container;
    my $page = {
       forms => [ $form ], selected => 'event_controls',
       title => locm $req, 'event_controls_title',
@@ -587,7 +587,7 @@ sub event_controls : Role(administrator) {
 
    my $href = $req->uri_for_action( $self->moniker.'/event_controls' );
 
-   $form = $page->{forms}->[ 1 ] = blank_form 'event-controls', $href, {
+   $form = $page->{forms}->[ 1 ] = new_container 'event-controls', $href, {
       class => 'wide-form' };
 
    p_button $form, 'init_event_controls', 'init_event_controls', {
@@ -624,9 +624,9 @@ sub logs : Role(administrator) {
    my ($self, $req) = @_;
 
    my $logname = $req->uri_params->( 0 );
-   my $form = blank_form;
+   my $form = new_container;
    my $page = {
-      selected => $logname, forms => [ $form ],
+      forms => [ $form ], selected => $logname,
       title => locm $req, 'logs_title', ucfirst locm $req, $logname,
    };
    my $dir = $self->config->logsdir;
@@ -705,7 +705,7 @@ sub slot_certs : Role(administrator) {
    my $slot_type  =  $req->uri_params->( 0 );
    my $actionp    =  $self->moniker.'/slot_certs';
    my $href       =  $req->uri_for_action( $actionp, [ $slot_type ] );
-   my $form       =  blank_form 'role-certs-admin', $href;
+   my $form       =  new_container 'role-certs-admin', $href;
    my $page       =  {
       forms       => [ $form ],
       selected    => 'slot_roles_list',
@@ -737,7 +737,7 @@ sub slot_certs : Role(administrator) {
 sub slot_roles : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $form    =  blank_form;
+   my $form    =  new_container;
    my $page    =  {
       forms    => [ $form ],
       selected => 'slot_roles_list',
@@ -762,7 +762,7 @@ sub type : Role(administrator) {
    my $type       =  $_maybe_find_type->( $type_rs, $type_class, $name );
    my $args       =  [ $type_class ]; $name and push @{ $args }, $name;
    my $href       =  $req->uri_for_action( $actionp, $args );
-   my $form       =  blank_form 'type-admin', $href;
+   my $form       =  new_container 'type-admin', $href;
    my $disabled   =  $name ? TRUE : FALSE;
    my $class_name =  ucfirst locm $req, $type_class;
    my $page       =  {
@@ -793,7 +793,7 @@ sub types : Role(administrator) {
 
    my $moniker    =  $self->moniker;
    my $type_class =  $req->query_params->( 'type_class', { optional => TRUE } );
-   my $form       =  blank_form;
+   my $form       =  new_container;
    my $page       =  {
       forms       => [ $form ],
       selected    => $type_class ? "${type_class}_list" : 'types_list',

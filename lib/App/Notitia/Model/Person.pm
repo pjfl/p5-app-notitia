@@ -3,7 +3,7 @@ package App::Notitia::Model::Person;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
                                 NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_action p_fields p_js
+use App::Notitia::DOM       qw( new_container p_action p_fields p_js
                                 p_link p_list p_row p_table );
 use App::Notitia::Util      qw( check_field_js dialog_anchor loc make_tip
                                 management_link page_link_set
@@ -485,7 +485,7 @@ sub mugshot : Dialog Role(person_manager) {
    my $params = { name => $scode, type => 'mugshot' };
    my $href   = $req->uri_for_action( $places->{upload}, [], $params );
 
-   $stash->{page}->{forms}->[ 0 ] = blank_form 'upload-file', $href;
+   $stash->{page}->{forms}->[ 0 ] = new_container 'upload-file', $href;
    $self->components->{docs}->upload_dialog( $req, $stash->{page} );
 
    return $stash;
@@ -499,7 +499,7 @@ sub person : Role(person_manager) {
    my $role       =  $req->query_params->( 'role', { optional => TRUE } );
    my $status     =  $req->query_params->( 'status', { optional => TRUE } );
    my $href       =  $req->uri_for_action( "${moniker}/person", [ $name ] );
-   my $form       =  blank_form 'person-admin', $href;
+   my $form       =  new_container 'person-admin', $href;
    my $action     =  $name ? 'update' : 'create';
    my $page       =  {
       first_field => 'first_name',
@@ -535,7 +535,7 @@ sub person_summary : Role(person_manager) Role(address_viewer)
    my $name       =  $req->uri_params->( 0 );
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $_maybe_find_person->( $person_rs, $name );
-   my $form       =  blank_form { class => 'standard-form' };
+   my $form       =  new_container { class => 'standard-form' };
    my $opts       =  { disabled => TRUE };
    my $fields     =  $self->$_bind_person_fields( $req, $form, $person, $opts );
    my $page       =  {
@@ -565,7 +565,7 @@ sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
                     status => $status,
                     type   => $type, };
    my $href    =  $req->uri_for_action( $actionp, [], $params );
-   my $form    =  blank_form 'people', $href, {
+   my $form    =  new_container 'people', $href, {
       class    => 'wider-table', id => 'people' };
    my $page    =  {
       forms    => [ $form ],

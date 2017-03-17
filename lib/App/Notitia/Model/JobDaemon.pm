@@ -2,7 +2,7 @@ package App::Notitia::Model::JobDaemon;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL TRUE );
-use App::Notitia::Form      qw( blank_form p_button p_row
+use App::Notitia::DOM       qw( new_container p_button p_row
                                 p_select p_table p_textfield );
 use App::Notitia::Util      qw( locm make_tip register_action_paths to_msg );
 use Class::Usul::Time       qw( time2str );
@@ -107,7 +107,7 @@ sub status : Role(administrator) {
    my ($self, $req) = @_;
 
    my $href = $req->uri_for_action( $self->moniker.'/status' );
-   my $form = blank_form 'jobdaemon-status', $href;
+   my $form = new_container 'jobdaemon-status', $href;
    my $page = {
       forms    => [ $form ],
       selected => 'jobdaemon_status',

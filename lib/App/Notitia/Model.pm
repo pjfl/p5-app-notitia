@@ -2,7 +2,7 @@ package App::Notitia::Model;
 
 use App::Notitia::Attributes qw( is_action is_dialog );
 use App::Notitia::Constants  qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use App::Notitia::Form       qw( blank_form p_tag );
+use App::Notitia::DOM        qw( new_container p_tag );
 use App::Notitia::Util       qw( action_for_uri locm to_json );
 use Class::Usul::Functions   qw( exception throw trim );
 use Class::Usul::Time        qw( time2str );
@@ -26,18 +26,18 @@ has 'application' => is => 'ro', isa => Plinth,
 
 # Private functions
 my $_debug_output = sub {
-   my ($req, $e, $form, $leader) = @_;
+   my ($req, $e, $list, $leader) = @_;
 
    my $line1 = 'Exception thrown ';
    my $when  = time2str 'on %Y-%m-%d at %H:%M hours', $e->time;
 
    if ($leader) {
-      $line1 .= "from ${leader}"; p_tag $form, 'p', "${line1}<br>${when}";
+      $line1 .= "from ${leader}"; p_tag $list, 'p', "${line1}<br>${when}";
    }
-   else { p_tag $form, 'p', "${line1} ${when}" }
+   else { p_tag $list, 'p', "${line1} ${when}" }
 
-   p_tag $form, 'h6', 'HTTP status code&nbsp;'.$e->code;
-   p_tag $form, 'h6', 'Have a nice day...';
+   p_tag $list, 'h6', 'HTTP status code&nbsp;'.$e->code;
+   p_tag $list, 'h6', 'Have a nice day...';
    return;
 };
 
@@ -54,13 +54,13 @@ my $_parse_error = sub {
 };
 
 my $_validation_errors = sub {
-   my ($req, $e, $form) = @_;
+   my ($req, $e, $list) = @_;
 
-   p_tag $form, 'h5', locm $req, 'Form validation errors';
+   p_tag $list, 'h5', locm $req, 'Form validation errors';
 
    for my $ve (@{ $e->args }) {
-      p_tag $form, 'p', ($_parse_error->( $ve ))[ 1 ];
-      $ve->can( 'explain' ) and $ve->explain and p_tag $form, 'p', $ve->explain;
+      p_tag $list, 'p', ($_parse_error->( $ve ))[ 1 ];
+      $ve->can( 'explain' ) and $ve->explain and p_tag $list, 'p', $ve->explain;
    }
 
    return;
@@ -138,19 +138,19 @@ sub exception_handler {
       $redirect and return $redirect;
 
    my $name = $req->session->first_name || $req->username || 'unknown';
-   my $form = blank_form { type => 'list' };
-   my $page = { forms => [ $form ], template => [ 'none', NUL ],
+   my $list = new_container { type => 'list' };
+   my $page = { forms => [ $list ], template => [ 'none', NUL ],
                 title => locm $req, 'exception_handler_title', $name };
 
    if ($e->instance_of( ValidationErrors )) {
-      $_validation_errors->( $req, $e, $form );
+      $_validation_errors->( $req, $e, $list );
    }
    else {
-      p_tag $form, 'h5', locm $req, 'The following exception was thrown';
-      p_tag $form, 'p', $summary;
+      p_tag $list, 'h5', locm $req, 'The following exception was thrown';
+      p_tag $list, 'p', $summary;
    }
 
-   $self->application->debug and $_debug_output->( $req, $e, $form, $leader );
+   $self->application->debug and $_debug_output->( $req, $e, $list, $leader );
 
    my $stash = $self->get_stash( $req, $page ); $self->$_log_error( $req, $e );
 
