@@ -37,7 +37,7 @@ our @EXPORT_OK = qw( action_for_uri action_path_uri_map assert_unique
                      new_salt now_dt page_link_set register_action_paths
                      set_element_focus set_event_date set_rota_date slot_claimed
                      slot_identifier slot_limit_index show_node stash_functions
-                     time2int to_dt to_json to_msg uri_for_action );
+                     time2int to_dt to_json to_msg );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -136,7 +136,7 @@ my $page_link = sub {
 
    return { class => 'table-link',
             hint  => loc( $req, 'Hint' ),
-            href  => uri_for_action( $req, $actionp, $args, $params ),
+            href  => $req->uri_for_action( $actionp, $args, $params ),
             name  => $name,
             tip   => locm( $req, "${name}_tip", $page ),
             type  => 'link',
@@ -182,7 +182,7 @@ my $vehicle_link = sub {
    $opts->{type} and $params->{type} = $opts->{type};
 
    my $path = "asset/${action}";
-   my $href = uri_for_action( $req, $path, $args, $params );
+   my $href = $req->uri_for_action( $path, $args, $params );
    my $tip  = loc( $req, "${action}_management_tip" );
    my $js   = $page->{literal_js} //= [];
    my $name = $opts->{name};
@@ -324,7 +324,7 @@ sub build_navigation ($$) {
 
       $link->{class}  = $node->{type} eq 'folder' ? 'folder-link' : 'file-link';
       $link->{depth} -= $opts->{depth_offset};
-      $link->{href }  = uri_for_action( $req, $opts->{path}, [ $link->{url} ] );
+      $link->{href }  = $req->uri_for_action( $opts->{path}, [ $link->{url} ] );
       $link->{tip  }  = $get_tip_text->( $req, $opts->{config}, $node );
       $link->{value}  = $opts->{label}->( $link );
 
@@ -706,7 +706,7 @@ sub management_link ($$$;$) {
    my $args   = $opts->{args} // [ $name ];
    my $params = $opts->{params} // {}; delete $params->{mid};
    my ($moniker, $method) = split m{ / }mx, $actionp, 2;
-   my $href   = uri_for_action( $req, $actionp, $args, $params );
+   my $href   = $req->uri_for_action( $actionp, $args, $params );
    my $type   = $opts->{type} // 'link';
    my $button = { class => 'table-link',
                   hint  => loc( $req, 'Hint' ),
@@ -916,16 +916,16 @@ sub stash_functions ($$$) {
    $dest->{time2str      } = \&time2str;
    $dest->{ucfirst       } = sub { ucfirst $_[ 0 ] };
    $dest->{uri_for       } = sub { $req->uri_for( @_ ), };
-   $dest->{uri_for_action} = sub { uri_for_action( $req, @_ ), };
+   $dest->{uri_for_action} = sub { $req->uri_for_action( @_ ), };
    return;
-}
-
-sub to_json ($) {
-   return $json_coder->encode( $_[ 0 ] );
 }
 
 sub time2int ($) {
    my $x = shift; $x or $x = 0; $x =~ s{ : }{}mx; return $x;
+}
+
+sub to_json ($) {
+   return $json_coder->encode( $_[ 0 ] );
 }
 
 sub to_dt ($;$) {
@@ -943,26 +943,6 @@ sub to_msg (@) {
    my $k = shift; return $k, { no_quote_bind_values => TRUE, params => [ @_ ] };
 }
 
-sub uri_for_action ($$;@) {
-   my ($req, $action, @args) = @_;
-
-   blessed $req or throw 'Not a request object [_1]', [ $req ];
-
-   my $uri = action_path2uri( $action ) // $action;
-
-   $uri =~ m{ \* }mx or return $req->uri_for( $uri, @args );
-
-   my $args = shift @args;
-
-   while ($uri =~ m{ \* }mx) {
-      my $arg = (shift @{ $args }) || q(); $uri =~ s{ \* }{$arg}mx;
-   }
-
-   unshift @args, $args;
-
-   return $req->uri_for( $uri, @args );
-}
-
 1;
 
 __END__
@@ -977,9 +957,7 @@ App::Notitia::Util - Functions used in this application
 
 =head1 Synopsis
 
-   use App::Notitia::Util qw( uri_for_action );
-
-   my $uri = uri_for_action $req, $action_path, $args, $params;
+   use App::Notitia::Util qw( to_dt to_json to_msg );
 
 =head1 Description
 
@@ -1126,15 +1104,6 @@ on the request object
 =head2 C<to_json>
 
 =head2 C<to_msg>
-
-=head2 C<uri_for_action>
-
-   !uri = uri_for_action !request, $action_path, \@uri_args, \%query_params;
-
-Looks up the action path in the map created by calls to
-L</register_action_path>.  It then calls the
-L<uri_for|Web::ComposableRequest::Base/uri_for> method which is provided by the
-request object. Returns a L<URI> object reference
 
 =head1 Diagnostics
 

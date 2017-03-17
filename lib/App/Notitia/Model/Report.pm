@@ -2,12 +2,11 @@ package App::Notitia::Model::Report;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_cell p_container p_date
-                                p_hidden p_js p_link p_list p_row p_select
-                                p_table );
+use App::Notitia::Form      qw( blank_form p_cell p_container p_date p_hidden
+                                p_js p_link p_list p_row p_select p_table );
 use App::Notitia::Util      qw( js_submit_config local_dt locd locm make_tip
                                 now_dt to_dt register_action_paths
-                                slot_limit_index uri_for_action );
+                                slot_limit_index );
 use Class::Null;
 use Class::Usul::Functions  qw( sum throw );
 use Scalar::Util            qw( blessed weaken );
@@ -401,9 +400,10 @@ my $_people_meta_header_link = sub {
    my $from = local_dt( $opts->{after} )->ymd;
    my $to   = local_dt( $opts->{before} )->ymd;
    my $args = [ $ROLES[ $col - 1 ], $from, $to ];
-   my $href = uri_for_action $req,"${moniker}/people_meta", $args;
+   my $href = $req->uri_for_action( "${moniker}/people_meta", $args );
+   my $cell = {}; p_link $cell, $name, $href, { request => $req };
 
-   return { value => f_link $name, $href, { request => $req } };
+   return $cell;
 };
 
 my $_people_meta_report_title = sub {
@@ -673,9 +673,8 @@ my $_people_meta_summary_table = sub {
    for my $bucket (@{ $data }) {
       my $row  = p_row $table;
       my $args = $_link_args->( $opts->{role_name}, $basis, $bucket->{date} );
-      my $href = uri_for_action $req, "${moniker}/people_meta", $args;
-
-      p_cell $row, { value => f_link $bucket->{key}, $href };
+      my $href = $req->uri_for_action( "${moniker}/people_meta", $args );
+      my $cell = p_cell $row, {}; p_link $cell, $bucket->{key}, $href;
 
       for my $role (@ROLES) {
          p_cell $row, { class => 'align-right',
@@ -690,10 +689,11 @@ my $_slots_row = sub {
    my ($self, $req, $rota_name, $df, $basis, $rec, $max_count) = @_;
 
    my $counts = $rec->{count};
-   my $args = $_link_args->( $rota_name, $basis, $rec->{date} );
-   my $href = uri_for_action $req, $self->moniker.'/slots', $args;
+   my $args   = $_link_args->( $rota_name, $basis, $rec->{date} );
+   my $href   = $req->uri_for_action( $self->moniker.'/slots', $args );
+   my $cell   = {}; p_link $cell, $df->( $rec->{date} ), $href;
 
-   return [ { value => f_link $df->( $rec->{date} ), $href },
+   return [ $cell,
             map { { class => 'align-right', value => $counts->[ $_ ] // 0 } }
             0 .. $max_count ];
 };
@@ -704,7 +704,7 @@ sub customers : Role(controller) {
 
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options( $req, 0 );
-   my $href = uri_for_action $req, $actp, [ 'customers' ];
+   my $href = $req->uri_for_action( $actp, [ 'customers' ] );
    my $form = blank_form 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'customer_report',
                 title => locm $req, 'customer_report_title' };
@@ -748,7 +748,7 @@ sub date_control_action : Role(person_manager) Role(rota_manager) {
    push @{ $args }, local_dt( to_dt $before )->ymd;
 
    my $actionp = $self->moniker."/${report}";
-   my $location = uri_for_action $req, $actionp, $args, $params;
+   my $location = $req->uri_for_action( $actionp, $args, $params );
 
    return { redirect => { location => $location } };
 }
@@ -758,7 +758,7 @@ sub deliveries : Role(controller) {
 
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options( $req, 0 );
-   my $href = uri_for_action $req, $actp, [ 'deliveries' ];
+   my $href = $req->uri_for_action( $actp, [ 'deliveries' ] );
    my $form = blank_form 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
                 selected => 'delivery_report',
@@ -793,7 +793,7 @@ sub incidents : Role(controller) {
 
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options( $req, 0 );
-   my $href = uri_for_action $req, $actp, [ 'incidents' ];
+   my $href = $req->uri_for_action( $actp, [ 'incidents' ] );
    my $form = blank_form 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
                 selected => 'incident_report',
@@ -827,7 +827,7 @@ sub people : Role(person_manager) {
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
-   my $href = uri_for_action $req, $actp, [ 'people', $opts->{rota_name} ];
+   my $href = $req->uri_for_action( $actp, [ 'people', $opts->{rota_name} ] );
    my $form = blank_form 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'people_report',
                 title => locm $req, 'people_report_title' };
@@ -856,7 +856,7 @@ sub people_meta : Role(person_manager) {
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_role_name( $req ) );
    my $name = $opts->{role_name};
-   my $href = uri_for_action $req, $actp, [ 'people_meta', $name ];
+   my $href = $req->uri_for_action( $actp, [ 'people_meta', $name ] );
    my $form = blank_form 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'people_meta_report',
                 title => $_people_meta_report_title->( $req, $name ) };
@@ -886,7 +886,7 @@ sub slots : Role(rota_manager) {
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
    my $name = $opts->{rota_name};
-   my $href = uri_for_action $req, $actp, [ 'slots', $name ];
+   my $href = $req->uri_for_action( $actp, [ 'slots', $name ] );
    my $form = blank_form 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'slot_report',
                 title => locm $req, 'slot_report_title' };
@@ -915,7 +915,7 @@ sub vehicles : Role(rota_manager) {
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
-   my $href = uri_for_action $req, $actp, [ 'vehicles', $opts->{rota_name} ];
+   my $href = $req->uri_for_action( $actp, [ 'vehicles', $opts->{rota_name} ] );
    my $form = blank_form 'date-control', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'vehicle_report',
                 title => locm $req, 'vehicle_report_title' };

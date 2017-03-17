@@ -4,8 +4,7 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form      qw( blank_form f_tag p_button p_container
                                 p_select p_textfield );
-use App::Notitia::Util      qw( loc make_tip register_action_paths
-                                to_msg uri_for_action );
+use App::Notitia::Util      qw( loc make_tip register_action_paths to_msg );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Moo;
 
@@ -60,7 +59,7 @@ sub add_role_action : Role(administrator) Role(person_manager) {
 
    $self->config->roles_mtime->touch;
 
-   my $location = uri_for_action $req, $self->moniker.'/role', [ $name ];
+   my $location = $req->uri_for_action( $self->moniker.'/role', [ $name ] );
    my $message  = [ to_msg '[_1] role(s) added by [_2]',
                     $person->label, $req->session->user_label ];
 
@@ -85,7 +84,7 @@ sub remove_role_action : Role(administrator) Role(person_manager) {
 
    $self->config->roles_mtime->touch;
 
-   my $location = uri_for_action $req, $self->moniker.'/role', [ $name ];
+   my $location = $req->uri_for_action( $self->moniker.'/role', [ $name ] );
    my $message  = [ to_msg '[_1] role(s) removed by [_2]',
                     $person->label, $req->session->user_label ];
 
@@ -100,7 +99,7 @@ sub role : Role(administrator) Role(person_manager) {
    my $status    =  $req->query_params->( 'status', { optional => TRUE } );
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $name );
-   my $href      =  uri_for_action $req, $self->moniker.'/role', [ $name ];
+   my $href      =  $req->uri_for_action( $self->moniker.'/role', [ $name ] );
    my $form      =  blank_form 'role-admin', $href;
    my $page      =  {
       forms      => [ $form ],

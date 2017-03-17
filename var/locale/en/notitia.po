@@ -676,6 +676,12 @@ msgstr "Go to page [_1]"
 msgid "editor"
 msgstr "Editor"
 
+msgid "edit_event_link"
+msgstr "Edit Event"
+
+msgid "edit_event_tip"
+msgstr "Edit the event that relates to these vehicle requests"
+
 msgid "email_address"
 msgstr "Email Address"
 
@@ -2042,6 +2048,12 @@ msgstr "Training"
 
 msgid "training_enrolment_title"
 msgstr "Course Enrollment"
+
+msgid "training_event_create_link"
+msgstr "Add Course"
+
+msgid "training_event_create_tip"
+msgstr "Create a new training course record"
 
 msgid "training_event_name"
 msgstr "Course Name"

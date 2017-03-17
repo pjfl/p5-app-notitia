@@ -9,8 +9,7 @@ use App::Notitia::Form      qw( blank_form f_tag p_action p_button p_cell
                                 p_textarea p_textfield );
 use App::Notitia::Util      qw( event_handler event_streams js_submit_config
                                 loc locm make_tip management_link page_link_set
-                                register_action_paths to_msg
-                                uri_for_action );
+                                register_action_paths to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( classdir is_arrayref is_member throw );
 use Class::Usul::Types      qw( ArrayRef NonEmptySimpleStr );
@@ -178,14 +177,14 @@ my $_type_create_links = sub {
 
    if ($type_class) {
       my $k = "${type_class}_type";
-      my $href = uri_for_action $req, $actionp, [ $type_class ];
+      my $href = $req->uri_for_action( $actionp, [ $type_class ] );
 
       p_link $links, $k, $href, $_create_action->( $req );
    }
    else {
       for my $type_class (@{ TYPE_CLASS_ENUM() }) {
          my $k = "${type_class}_type";
-         my $href = uri_for_action $req, $actionp, [ $type_class ];
+         my $href = $req->uri_for_action( $actionp, [ $type_class ] );
 
          p_link $links, $k, $href, $_create_action->( $req );
       }
@@ -212,7 +211,7 @@ my $_types_links = sub {
 my $_event_controls_links = sub {
    my ($self, $req) = @_; my $links = [];
 
-   my $href = uri_for_action $req, $self->moniker.'/event_control';
+   my $href = $req->uri_for_action( $self->moniker.'/event_control' );
 
    p_link $links, 'event_control', $href, {
       action => 'create', container_class => 'add-link', request => $req };
@@ -227,7 +226,7 @@ my $_event_controls_row = sub {
 
    my $action = $control->action;
    my $actionp = $self->moniker.'/event_control';
-   my $href = uri_for_action $req, $actionp, [ $sink, $action ];
+   my $href = $req->uri_for_action( $actionp, [ $sink, $action ] );
    my $label = ucfirst $action; $label =~ s{ _ }{ }gmx;
    my $tip = $control->notes || locm $req, 'event_action_tip';
    my $cell = p_cell $row, {};
@@ -236,7 +235,7 @@ my $_event_controls_row = sub {
       request => $req, tip => $tip, value => $label };
 
    $actionp = $self->moniker.'/event_controls';
-   $href = uri_for_action $req, $actionp, [ $sink, $action ];
+   $href = $req->uri_for_action( $actionp, [ $sink, $action ] );
 
    my $form = blank_form 'event-control-status', $href;
    my $status = $control->status ? 'Enabled' : 'Disabled';
@@ -273,7 +272,7 @@ my $_filter_controls = sub {
    my ($self, $req, $logname, $params) = @_;
 
    my $f_col = $params->{filter_column} // 'none';
-   my $href = uri_for_action $req, $self->moniker.'/logs', [ $logname ];
+   my $href = $req->uri_for_action( $self->moniker.'/logs', [ $logname ] );
    my $form = blank_form 'filter-controls', $href, { class => 'link-group' };
    my $opts = { class => 'single-character filter-column',
                 label_field_class => 'control-label' };
@@ -456,7 +455,7 @@ sub add_certification_action : Role(administrator) {
 
    my $message  = [ to_msg '[_1] slot role cert(s). added by [_2]',
                     $slot_type, $req->session->user_label ];
-   my $location = uri_for_action $req, $self->moniker.'/slot_roles';
+   my $location = $req->uri_for_action( $self->moniker.'/slot_roles' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -472,7 +471,7 @@ sub add_type_action : Role(administrator) {
       name      => $name, type_class => $type_class } );
    my $message  =  [ to_msg 'Type [_1] class [_2] created by [_3]',
                      $name, $type_class, $req->session->user_label ];
-   my $location =  uri_for_action $req, $self->moniker.'/types';
+   my $location =  $req->uri_for_action( $self->moniker.'/types' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -488,7 +487,7 @@ sub create_event_control_action : Role(administrator) {
    my $control = $rs->create( $params );
    my $message = [ to_msg 'Stream [_1] action [_2] control created by [_3]',
                    $control->sink, $control->action, $req->session->user_label];
-   my $location = uri_for_action $req, $self->moniker.'/event_controls';
+   my $location = $req->uri_for_action( $self->moniker.'/event_controls' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -502,7 +501,7 @@ sub delete_event_control_action : Role(administrator) {
    my $control = $rs->find( $sink, $ev_action ); $control->delete;
    my $message = [ to_msg 'Stream [_1] action [_2] control deleted by [_3]',
                    $sink, $ev_action, $req->session->user_label];
-   my $location = uri_for_action $req, $self->moniker.'/event_controls';
+   my $location = $req->uri_for_action( $self->moniker.'/event_controls' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -530,7 +529,7 @@ sub event_control : Role(administrator) {
    my $ev_action = $req->uri_params->( 1, { optional => TRUE } );
    my $action = $sink && $ev_action ? 'update' : 'create';
    my $args = [ $sink, $ev_action ];
-   my $href = uri_for_action $req, $self->moniker.'/event_control', $args;
+   my $href = $req->uri_for_action( $self->moniker.'/event_control', $args );
    my $form = blank_form 'event-control', $href;
    my $page = {
       forms => [ $form ], selected => 'event_controls',
@@ -586,7 +585,7 @@ sub event_controls : Role(administrator) {
    p_row $table, [ map { $self->$_event_controls_row( $req, $page, $roles, $_ )}
                    $ec_rs->search( {} )->all ];
 
-   my $href = uri_for_action $req, $self->moniker.'/event_controls';
+   my $href = $req->uri_for_action( $self->moniker.'/event_controls' );
 
    $form = $page->{forms}->[ 1 ] = blank_form 'event-controls', $href, {
       class => 'wide-form' };
@@ -601,11 +600,12 @@ sub event_controls : Role(administrator) {
 sub filter_log_action : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $args = [ $req->uri_params->( 0 ) ];
-   my $column = $req->body_params->( 'filter_column' );
-   my $pattern = $req->body_params->( 'filter_pattern' );
-   my $params = { filter_column => $column, filter_pattern => $pattern };
-   my $location = uri_for_action $req, $self->moniker.'/logs', $args, $params;
+   my $actionp  = $self->moniker.'/logs';
+   my $args     = [ $req->uri_params->( 0 ) ];
+   my $column   = $req->body_params->( 'filter_column' );
+   my $pattern  = $req->body_params->( 'filter_pattern' );
+   my $params   = { filter_column => $column, filter_pattern => $pattern };
+   my $location = $req->uri_for_action( $actionp, $args, $params );
 
    return { redirect => { location => $location } };
 }
@@ -678,7 +678,7 @@ sub remove_certification_action : Role(administrator) {
 
    my $message  = [ to_msg '[_1] slot role cert(s). deleted by [_2]',
                     $slot_type, $req->session->user_label ];
-   my $location = uri_for_action $req, $self->moniker.'/slot_roles';
+   my $location = $req->uri_for_action( $self->moniker.'/slot_roles' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -694,7 +694,7 @@ sub remove_type_action : Role(administrator) {
    my $type     = $type_rs->find_type_by( $name, $type_class ); $type->delete;
    my $message  = [ to_msg 'Type [_1] class [_2] deleted by [_3]',
                     $name, $type_class, $req->session->user_label ];
-   my $location =  uri_for_action $req, $self->moniker.'/types';
+   my $location = $req->uri_for_action( $self->moniker.'/types' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -704,7 +704,7 @@ sub slot_certs : Role(administrator) {
 
    my $slot_type  =  $req->uri_params->( 0 );
    my $actionp    =  $self->moniker.'/slot_certs';
-   my $href       =  uri_for_action $req, $actionp, [ $slot_type ];
+   my $href       =  $req->uri_for_action( $actionp, [ $slot_type ] );
    my $form       =  blank_form 'role-certs-admin', $href;
    my $page       =  {
       forms       => [ $form ],
@@ -761,7 +761,7 @@ sub type : Role(administrator) {
    my $type_rs    =  $self->schema->resultset( 'Type' );
    my $type       =  $_maybe_find_type->( $type_rs, $type_class, $name );
    my $args       =  [ $type_class ]; $name and push @{ $args }, $name;
-   my $href       =  uri_for_action $req, $actionp, $args;
+   my $href       =  $req->uri_for_action( $actionp, $args );
    my $form       =  blank_form 'type-admin', $href;
    my $disabled   =  $name ? TRUE : FALSE;
    my $class_name =  ucfirst locm $req, $type_class;
@@ -832,7 +832,7 @@ sub update_event_control_action : Role(administrator) {
 
    my $message = [ to_msg 'Stream [_1] action [_2] control updated by [_3]',
                    $sink, $ev_action, $req->session->user_label];
-   my $location = uri_for_action $req, $self->moniker.'/event_controls';
+   my $location = $req->uri_for_action( $self->moniker.'/event_controls' );
 
    return { redirect => { location => $location, message => $message } };
 }

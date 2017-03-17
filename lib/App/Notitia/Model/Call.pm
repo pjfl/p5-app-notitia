@@ -8,8 +8,7 @@ use App::Notitia::Form      qw( blank_form p_action p_button p_fields p_js
                                 p_tag p_textfield );
 use App::Notitia::Util      qw( check_field_js datetime_label dialog_anchor
                                 locm make_tip now_dt page_link_set
-                                register_action_paths to_dt to_msg
-                                uri_for_action );
+                                register_action_paths to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
@@ -397,7 +396,7 @@ my $_customers_ops_links = sub {
 
    my $actionp = $self->moniker.'/customer';
 
-   p_link $links, 'customer', uri_for_action( $req, $actionp ), {
+   p_link $links, 'customer', $req->uri_for_action( $actionp ), {
       action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
@@ -406,7 +405,7 @@ my $_customers_ops_links = sub {
 my $_customers_row = sub {
    my ($self, $req, $customer) = @_; my $moniker = $self->moniker;
 
-   my $href = uri_for_action $req, "${moniker}/customer", [ $customer->id ];
+   my $href = $req->uri_for_action( "${moniker}/customer", [ $customer->id ] );
    my $cell = {}; p_link $cell, 'customer', $href, {
       request => $req, value => "${customer}" };
 
@@ -470,7 +469,7 @@ my $_is_disabled = sub {
 my $_journey_leg_row = sub {
    my ($self, $req, $jid, $leg) = @_;
 
-   my $href = uri_for_action $req, $self->moniker.'/leg', [ $jid, $leg->id ];
+   my $href = $req->uri_for_action( $self->moniker.'/leg', [ $jid, $leg->id ] );
    my $cell = {}; p_link $cell, 'leg_operator', $href, {
       request => $req, value => $leg->operator->label };
 
@@ -486,7 +485,7 @@ my $_journey_package_row = sub {
 
    my $actionp = $self->moniker.'/package';
    my $package_type = $package->package_type;
-   my $href = uri_for_action $req, $actionp, [ $jid, $package_type ];
+   my $href = $req->uri_for_action( $actionp, [ $jid, $package_type ] );
    my $title = locm $req, 'Update Package Details';
    my $name = "update_${package_type}_package";
    my $value = locm $req, $package_type;
@@ -508,7 +507,7 @@ my $_journey_leg_ops_links = sub {
 
    my $actionp = $self->moniker.'/leg';
 
-   p_link $links, 'leg', uri_for_action( $req, $actionp, [ $jid ] ), {
+   p_link $links, 'leg', $req->uri_for_action( $actionp, [ $jid ] ), {
       action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
@@ -526,7 +525,7 @@ my $_journey_package_ops_links = sub {
       action => 'create', class => 'windows', container_class => 'add-link',
       request => $req, tip => $tip, value => $value };
 
-   my $href = uri_for_action $req, $actionp, [ $jid ];
+   my $href = $req->uri_for_action( $actionp, [ $jid ] );
 
    p_js $page, dialog_anchor 'create_package', $href, {
       name => 'create_package', title => $title };
@@ -543,7 +542,7 @@ my $_journeys_ops_links = sub {
    $page_links and push @{ $links }, $page_links; $done and return $links;
 
    my $name  = 'delivery_stages'; $actionp = $self->moniker."/${name}";
-   my $href  = uri_for_action $req, $actionp, [ $req->username ];
+   my $href  = $req->uri_for_action( $actionp, [ $req->username ] );
    my $title = locm( $req, "${name}_title" );
 
    p_link $links, $name, '#', { class => 'windows', request => $req };
@@ -552,7 +551,7 @@ my $_journeys_ops_links = sub {
    $actionp = $self->moniker.'/journey';
 
    is_member 'controller', $req->session->roles
-      and p_link $links, 'journey', uri_for_action( $req, $actionp ), {
+      and p_link $links, 'journey', $req->uri_for_action( $actionp ), {
          action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
@@ -561,10 +560,11 @@ my $_journeys_ops_links = sub {
 my $_journeys_row = sub {
    my ($self, $req, $done, $journey) = @_;
 
+   my $actionp =  $self->moniker.'/journey';
+   my $href    =  $req->uri_for_action( $actionp, [ $journey->id ] );
+   my $cell    =  {}; p_link $cell, 'delivery_request', $href, {
+      request  => $req, value => $journey->customer, };
    my $package = ($journey->packages->all)[ 0 ];
-   my $href = uri_for_action $req, $self->moniker.'/journey', [ $journey->id ];
-   my $cell = {}; p_link $cell, 'delivery_request', $href, {
-      request => $req, value => $journey->customer, };
 
    return [ $cell,
             { value => $done ? $journey->delivered_label( $req )
@@ -577,7 +577,7 @@ my $_leg_ops_links = sub {
    my ($self, $req, $page, $jid) = @_; my $links = [];
 
    my $name  = 'adhoc_vehicle';
-   my $href  = uri_for_action $req, "asset/${name}";
+   my $href  = $req->uri_for_action( "asset/${name}" );
    my $tip   = locm $req, "${name}_tip";
    my $title = locm $req, "${name}_title";
    my $value = locm $req, "${name}_add";
@@ -589,7 +589,7 @@ my $_leg_ops_links = sub {
 
    my $actionp = $self->moniker.'/journey';
 
-   p_link $links, 'journey', uri_for_action( $req, $actionp, [ $jid ] ), {
+   p_link $links, 'journey', $req->uri_for_action( $actionp, [ $jid ] ), {
       action => 'view', container_class => 'table-link', request => $req };
 
    return $links;
@@ -600,7 +600,7 @@ my $_locations_ops_links = sub {
 
    my $actionp = $self->moniker.'/location';
 
-   p_link $links, 'location', uri_for_action( $req, $actionp ), {
+   p_link $links, 'location', $req->uri_for_action( $actionp ), {
       action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
@@ -609,7 +609,7 @@ my $_locations_ops_links = sub {
 my $_locations_row = sub {
    my ($self, $req, $location) = @_; my $moniker = $self->moniker;
 
-   my $href = uri_for_action $req, "${moniker}/location", [ $location->id ];
+   my $href = $req->uri_for_action( "${moniker}/location", [ $location->id ] );
    my $cell = {}; p_link $cell, 'location', $href, {
       request => $req, value => "${location}" };
 
@@ -699,7 +699,7 @@ my $_stages_row = sub {
 
    my $jid = $stage->journey_id;
    my $actionp = $self->moniker.'/leg';
-   my $href = uri_for_action $req, $actionp, [ $jid, $stage->id ];
+   my $href = $req->uri_for_action( $actionp, [ $jid, $stage->id ] );
    my $tip  = locm $req, 'stages_row_link_tip';
    my $cell0 = {};
 
@@ -818,7 +818,7 @@ sub create_customer_action : Role(controller) {
    my $cid      = $rs->create( { name => $name } )->id;
    my $key      = 'Customer [_1] created by [_2]';
    my $message  = [ to_msg $key, $name, $req->session->user_label ];
-   my $location = uri_for_action $req, $self->moniker.'/customers';
+   my $location = $req->uri_for_action( $self->moniker.'/customers' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -844,7 +844,7 @@ sub create_delivery_request_action : Role(controller) {
 
    $self->send_event( $req, $message );
 
-   my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
+   my $location = $req->uri_for_action( $self->moniker.'/journey', [ $jid ] );
    my $key = 'Delivery request [_1] for [_2] created by [_3]';
 
    $message = [ to_msg $key, $jid, $customer->name, $req->session->user_label ];
@@ -871,7 +871,7 @@ sub create_delivery_stage_action : Role(controller) {
 
    $self->send_event( $req, $message );
 
-   my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
+   my $location = $req->uri_for_action( $self->moniker.'/journey', [ $jid ] );
    my $key = 'Stage [_2] of delivery request [_1] created by [_3]';
 
    $message = [ to_msg $key, $jid, $lid, $req->session->user_label ];
@@ -897,7 +897,7 @@ sub create_location_action : Role(controller) {
    my $key = 'Location [_1] created by [_2]';
 
    $message = [ to_msg $key, $lid, $req->session->user_label ];
-   $location = uri_for_action $req, $self->moniker.'/locations';
+   $location = $req->uri_for_action( $self->moniker.'/locations' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -922,7 +922,7 @@ sub create_package_action : Role(controller) {
    $self->send_event( $req, $message );
 
    my $actionp = $self->moniker.'/journey';
-   my $location = uri_for_action $req, $actionp, [ $journey_id ];
+   my $location = $req->uri_for_action( $actionp, [ $journey_id ] );
    my $key = 'Package type [_1] for delivery request [_2] created by [_3]';
 
    $message = [ to_msg $key, $type, $journey_id, $req->session->user_label ];
@@ -934,7 +934,7 @@ sub customer : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $cid     =  $req->uri_params->( 0, { optional => TRUE } );
-   my $href    =  uri_for_action $req, $self->moniker.'/customer', [ $cid ];
+   my $href    =  $req->uri_for_action( $self->moniker.'/customer', [ $cid ] );
    my $form    =  blank_form 'customer', $href;
    my $action  =  $cid ? 'update' : 'create';
    my $page    =  {
@@ -983,7 +983,7 @@ sub delete_customer_action : Role(controller) {
    my $c_name = $custer->name; $custer->delete;
    my $who = $req->session->user_label;
    my $message = [ to_msg 'Customer [_1] deleted by [_2]', $c_name, $who ];
-   my $location = uri_for_action $req, $self->moniker.'/customers';
+   my $location = $req->uri_for_action( $self->moniker.'/customers' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -1002,7 +1002,7 @@ sub delete_delivery_request_action : Role(controller) {
    $self->send_event( $req, $message );
 
    my $who = $req->session->user_label;
-   my $location = uri_for_action $req, $self->moniker.'/journeys';
+   my $location = $req->uri_for_action( $self->moniker.'/journeys' );
 
    $message = [ to_msg 'Delivery request [_1] deleted by [_2]', $jid, $who ];
 
@@ -1017,7 +1017,7 @@ sub delete_delivery_stage_action : Role(controller) {
    my $leg      = $self->schema->resultset( 'Leg' )->find( $lid ); $leg->delete;
    my $key      = 'Stage [_2] of delivery request [_1] deleted by [_3]';
    my $message  = [ to_msg $key, $jid, $lid, $req->session->user_label ];
-   my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
+   my $location = $req->uri_for_action( $self->moniker.'/journey', [ $jid ] );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -1031,7 +1031,7 @@ sub delete_location_action : Role(controller) {
    my $who = $req->session->user_label;
    my $message = [ to_msg 'Location [_1] deleted by [_2]', $address, $who ];
 
-   $location = uri_for_action $req, $self->moniker.'/locations';
+   $location = $req->uri_for_action( $self->moniker.'/locations' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -1052,7 +1052,7 @@ sub delete_package_action : Role(controller) {
    $self->send_event( $req, $message );
 
    my $actionp = $self->moniker.'/journey';
-   my $location = uri_for_action $req, $actionp, [ $journey_id ];
+   my $location = $req->uri_for_action( $actionp, [ $journey_id ] );
    my $key = 'Package type [_2] for delivery request [_1] deleted by [_3]';
    my $who = $req->session->user_label;
 
@@ -1080,7 +1080,7 @@ sub journey : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $jid     =  $req->uri_params->( 0, { optional => TRUE } );
-   my $href    =  uri_for_action $req, $self->moniker.'/journey', [ $jid ];
+   my $href    =  $req->uri_for_action( $self->moniker.'/journey', [ $jid ] );
    my $jform   =  blank_form 'journey', $href;
    my $pform   =  blank_form { class => 'wide-form' };
    my $lform   =  blank_form { class => 'wide-form' };
@@ -1155,7 +1155,7 @@ sub leg : Role(controller) Role(driver) Role(rider) {
    my $journey =  $self->$_maybe_find( 'Journey', $jid );
    my $leg     =  $self->$_maybe_find( 'Leg', $lid );
    my $done    =  $lid && $leg->delivered ? TRUE : FALSE;
-   my $href    =  uri_for_action $req, $self->moniker.'/leg', [ $jid, $lid ];
+   my $href    =  $req->uri_for_action( $self->moniker.'/leg', [ $jid, $lid ] );
    my $action  =  $lid ? 'update' : 'create';
    my $form    =  blank_form 'leg', $href;
    my $page    =  {
@@ -1190,7 +1190,7 @@ sub location : Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $lid = $req->uri_params->( 0, { optional => TRUE } );
-   my $href = uri_for_action $req, $self->moniker.'/location', [ $lid ];
+   my $href = $req->uri_for_action( $self->moniker.'/location', [ $lid ] );
    my $form = blank_form 'location', $href;
    my $action = $lid ? 'update' : 'create';
    my $page = {
@@ -1239,7 +1239,7 @@ sub package : Dialog Role(controller) {
    my $action = $package_type ? 'update' : 'create';
    my $stash = $self->dialog_stash( $req );
    my $actionp = $self->moniker.'/package';
-   my $href = uri_for_action $req, $actionp, [ $journey_id, $package_type ];
+   my $href = $req->uri_for_action( $actionp, [ $journey_id, $package_type ] );
    my $form = $stash->{page}->{forms}->[ 0 ] = blank_form 'package', $href;
    my $type_rs = $self->schema->resultset( 'Type' );
    my $types = $type_rs->search_for_package_types;
@@ -1273,7 +1273,7 @@ sub update_customer_action : Role(controller) {
    my $c_name = $custer->name( $req->body_params->( 'name' ) ); $custer->update;
    my $who = $req->session->user_label;
    my $message = [ to_msg 'Customer [_1] updated by [_2]', $c_name, $who ];
-   my $location = uri_for_action $req, $self->moniker.'/customers';
+   my $location = $req->uri_for_action( $self->moniker.'/customers' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -1342,7 +1342,7 @@ sub update_delivery_stage_action : Role(controller) Role(driver) Role(rider) {
 
    my $key = 'Stage [_2] of delivery request [_1] updated by [_3]';
    my $message = [ to_msg $key, $jid, $lid, $req->session->user_label ];
-   my $location = uri_for_action $req, $self->moniker.'/journey', [ $jid ];
+   my $location = $req->uri_for_action( $self->moniker.'/journey', [ $jid ] );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -1363,7 +1363,7 @@ sub update_location_action : Role(controller) {
    my $key = 'Location [_1] updated by [_2]';
 
    $message = [ to_msg $key, $location->address, $req->session->user_label ];
-   $location = uri_for_action $req, $self->moniker.'/locations';
+   $location = $req->uri_for_action( $self->moniker.'/locations' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -1386,7 +1386,7 @@ sub update_package_action : Role(controller) {
    $self->send_event( $req, $message );
 
    my $actionp = $self->moniker.'/journey';
-   my $location = uri_for_action $req, $actionp, [ $journey_id ];
+   my $location = $req->uri_for_action( $actionp, [ $journey_id ] );
    my $key = 'Package type [_2] for delivery request [_1] updated by [_3]';
    my $who = $req->session->user_label;
 

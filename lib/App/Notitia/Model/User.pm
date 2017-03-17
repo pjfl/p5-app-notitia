@@ -8,7 +8,7 @@ use App::Notitia::Form      qw( blank_form f_tag p_button p_checkbox p_container
 use App::Notitia::Util      qw( check_field_js check_form_field event_actions
                                 js_server_config js_slider_config locm make_tip
                                 new_request register_action_paths
-                                set_element_focus to_msg uri_for_action );
+                                set_element_focus to_msg );
 use Class::Usul::Functions  qw( is_arrayref is_member create_token throw );
 use Class::Usul::Types      qw( ArrayRef HashRef Object );
 use HTTP::Status            qw( HTTP_OK );
@@ -165,8 +165,8 @@ my $_new_subscribe_request = sub {
 my $_push_login_js = sub {
    my ($self, $req, $page) = @_;
 
-   my $href = uri_for_action $req, $self->moniker.'/show_if_needed', [],
-      { class => 'Person', test => 'totp_secret', };
+   my $href = $req->uri_for_action( $self->moniker.'/show_if_needed', [],
+      { class => 'Person', test => 'totp_secret', } );
 
    p_js $page, js_server_config 'username', 'blur',
       'showIfNeeded', [ "${href}", 'username', 'auth_code_label' ];
@@ -273,7 +273,7 @@ sub change_password : Role(anon) {
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $name ? $person_rs->find_person( $name ) : FALSE;
    my $username   =  $person ? $person->name : $req->username;
-   my $href       =  uri_for_action $req, $self->moniker.'/change_password';
+   my $href       =  $req->uri_for_action( $self->moniker.'/change_password' );
    my $form       =  blank_form 'change-password', $href;
    my $page       =  {
       first_field => $username ? 'oldpass' : 'username',
@@ -302,6 +302,7 @@ sub change_password : Role(anon) {
 sub change_password_action : Role(anon) {
    my ($self, $req) = @_;
 
+   my $conf     = $self->config;
    my $session  = $req->session;
    my $params   = $req->body_params;
    my $name     = $params->( 'username' );
@@ -314,7 +315,7 @@ sub change_password_action : Role(anon) {
    $person->set_password( $oldpass, $password );
    $self->$_update_session( $session, $person );
 
-   my $location = uri_for_action $req, $self->config->places->{login_redirect};
+   my $location = $req->uri_for_action( $conf->places->{login_redirect} );
    my $message  = [ to_msg '[_1] password changed', $person->label ];
 
    $self->send_event( $req, 'action:change-password' );
@@ -347,9 +348,9 @@ sub email_subs : Role(any) {
    my ($self, $req) = @_; $self->plugins;
 
    my $scode = $req->uri_params->( 0, { optional => TRUE } ) // $req->username;
-   my $href = uri_for_action $req, $self->moniker.'/email_subs', [ $scode ];
-   my $form = blank_form 'email-subscription', $href;
-   my $page = {
+   my $href  = $req->uri_for_action( $self->moniker.'/email_subs', [ $scode ] );
+   my $form  = blank_form 'email-subscription', $href;
+   my $page  = {
       forms    => [ $form ],
       location => 'account_management', selected => 'email_subscription',
       title    => locm $req, 'email_subscription_title' };
@@ -422,7 +423,7 @@ sub force_unsubscribe_sms_action : Role(person_manager) {
 sub login : Role(anon) {
    my ($self, $req) = @_;
 
-   my $href = uri_for_action $req, $self->moniker.'/login';
+   my $href = $req->uri_for_action( $self->moniker.'/login' );
    my $form = blank_form 'login-user', $href;
    my $page = {
       first_field => 'username', forms => [ $form ],
@@ -449,6 +450,7 @@ sub login : Role(anon) {
 sub login_action : Role(anon) {
    my ($self, $req) = @_;
 
+   my $conf      = $self->config;
    my $session   = $req->session;
    my $params    = $req->body_params;
    my $name      = $params->( 'username' );
@@ -464,7 +466,7 @@ sub login_action : Role(anon) {
    my $message   = [ to_msg '[_1] logged in', $person->label ];
    my $wanted    = $session->wanted; $session->wanted( NUL );
    my $location  = $wanted ? $req->uri_for( $wanted )
-                 : uri_for_action $req, $self->config->places->{login_redirect};
+                 : $req->uri_for_action( $conf->places->{login_redirect} );
 
    $self->send_event( $req, 'action:logged-in' );
 
@@ -488,7 +490,7 @@ sub profile : Role(any) {
 
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $person_rs->find_by_shortcode( $req->username );
-   my $href       =  uri_for_action $req, $self->moniker.'/profile';
+   my $href       =  $req->uri_for_action( $self->moniker.'/profile' );
    my $form       =  blank_form 'profile-user', $href;
    my $page       =  {
       first_field => 'address',
@@ -513,7 +515,7 @@ sub request_reset : Dialog Role(anon) {
    my ($self, $req) = @_;
 
    my $stash = $self->dialog_stash( $req );
-   my $href  = uri_for_action $req, $self->moniker.'/reset';
+   my $href  = $req->uri_for_action( $self->moniker.'/reset' );
    my $form  = $stash->{page}->{forms}->[ 0 ]
              = blank_form 'request-reset', $href;
 
@@ -554,7 +556,7 @@ sub reset_password : Role(anon) {
 
       $person->password( $password ); $person->password_expired( TRUE );
       $person->update;
-      $location = uri_for_action $req, $places->{password}, [ $scode ];
+      $location = $req->uri_for_action( $places->{password}, [ $scode ] );
       $message  = [ to_msg '[_1] password reset', $person->label ];
    }
    else {
@@ -589,9 +591,9 @@ sub sms_subs : Role(any) {
    my ($self, $req) = @_; $self->plugins;
 
    my $scode = $req->uri_params->( 0, { optional => TRUE } ) // $req->username;
-   my $href = uri_for_action $req, $self->moniker.'/sms_subs', [ $scode ];
-   my $form = blank_form 'sms-subscription', $href;
-   my $page = {
+   my $href  = $req->uri_for_action( $self->moniker.'/sms_subs', [ $scode ] );
+   my $form  = blank_form 'sms-subscription', $href;
+   my $page  = {
       forms    => [ $form ],
       location => 'account_management', selected => 'sms_subscription',
       title    => locm $req, 'sms_subscription_title' };
@@ -649,7 +651,8 @@ sub subscribe_email_action : Role(any) {
 
    my $message  = [ to_msg 'Email subscription list for [_1] updated',
                     $person->label ];
-   my $location = uri_for_action $req, $self->moniker.'/email_subs', [ $scode ];
+   my $actionp  = $self->moniker.'/email_subs';
+   my $location = $req->uri_for_action( $actionp, [ $scode ] );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -674,7 +677,7 @@ sub subscribe_sms_action : Role(any) {
 
    my $message  = [ to_msg 'SMS subscription list for [_1] updated',
                     $person->label ];
-   my $location = uri_for_action $req, $self->moniker.'/sms_subs', [ $scode ];
+   my $location = $req->uri_for_action( $self->moniker.'/sms_subs', [ $scode ]);
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -683,7 +686,7 @@ sub totp_request : Dialog Role(anon) {
    my ($self, $req) = @_;
 
    my $stash = $self->dialog_stash( $req );
-   my $href  = uri_for_action $req, $self->moniker.'/reset';
+   my $href  = $req->uri_for_action( $self->moniker.'/reset' );
    my $form  = $stash->{page}->{forms}->[ 0 ]
              = blank_form 'totp-request', $href;
 
@@ -726,7 +729,7 @@ sub totp_secret : Role(anon) {
    my $scode     =  $self->$_fetch_shortcode( $req );
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $scode );
-   my $href      =  uri_for_action $req, $self->moniker.'/totp_secret';
+   my $href      =  $req->uri_for_action( $self->moniker.'/totp_secret' );
    my $form      =  blank_form 'totp-secret', $href;
    my $page      =  {
       forms      => [ $form ],
@@ -767,7 +770,8 @@ sub unsubscribe_email_action : Role(any) {
 
    my $message  = [ to_msg 'Email subscription list for [_1] updated',
                     $person->label ];
-   my $location = uri_for_action $req, $self->moniker.'/email_subs', [ $scode ];
+   my $actionp  = $self->moniker.'/email_subs';
+   my $location = $req->uri_for_action( $actionp, [ $scode ] );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -792,7 +796,7 @@ sub unsubscribe_sms_action : Role(any) {
 
    my $message  = [ to_msg 'SMS subscription list for [_1] updated',
                     $person->label ];
-   my $location = uri_for_action $req, $self->moniker.'/sms_subs', [ $scode ];
+   my $location = $req->uri_for_action( $self->moniker.'/sms_subs', [ $scode ]);
 
    return { redirect => { location => $location, message => $message } };
 }

@@ -4,11 +4,11 @@ use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_cell p_container p_hidden
-                                p_js p_row p_select p_span p_table );
+use App::Notitia::Form      qw( blank_form p_cell p_container p_hidden
+                                p_js p_link p_row p_select p_span p_table );
 use App::Notitia::Util      qw( js_server_config js_submit_config local_dt
                                 locm make_tip register_action_paths
-                                slot_limit_index to_dt uri_for_action );
+                                slot_limit_index to_dt );
 use Class::Null;
 use Class::Usul::Time       qw( time2str );
 use Scalar::Util            qw( blessed );
@@ -46,7 +46,7 @@ around 'get_stash' => sub {
 my $_add_event_tip = sub {
    my ($req, $page, $event) = @_;
 
-   my $href = uri_for_action $req, 'event/event_info', [ $event->uri ];
+   my $href = $req->uri_for_action( 'event/event_info', [ $event->uri ] );
 
    p_js $page, js_server_config
       $event->uri, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
@@ -58,7 +58,7 @@ my $_add_slot_tip = sub {
 
    my $name    = $page->{rota}->{name};
    my $actionp = 'month/assign_summary';
-   my $href    = uri_for_action $req, $actionp, [ "${name}_${id}" ];
+   my $href    = $req->uri_for_action( $actionp, [ "${name}_${id}" ] );
 
    p_js $page, js_server_config
       $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
@@ -68,7 +68,7 @@ my $_add_slot_tip = sub {
 my $_add_v_event_tip = sub {
    my ($req, $page, $event) = @_;
 
-   my $href = uri_for_action $req, 'event/vehicle_info', [ $event->uri ];
+   my $href = $req->uri_for_action( 'event/vehicle_info', [ $event->uri ] );
 
    p_js $page, js_server_config
       $event->uri, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
@@ -79,7 +79,7 @@ my $_add_vreq_tip = sub {
    my ($req, $page, $event) = @_;
 
    my $actionp = 'asset/request_info';
-   my $href    = uri_for_action $req, $actionp, [ $event->uri ];
+   my $href    = $req->uri_for_action( $actionp, [ $event->uri ] );
    my $id      = 'request-'.$event->uri;
 
    p_js $page, js_server_config
@@ -309,7 +309,7 @@ my $_alloc_cell_event_owner = sub {
 my $_push_allocation_js = sub {
    my ($req, $page, $moniker, $dt) = @_; $dt = local_dt $dt;
 
-   my $href = uri_for_action $req, "${moniker}/alloc_key", [ $dt->ymd ];
+   my $href = $req->uri_for_action( "${moniker}/alloc_key", [ $dt->ymd ] );
 
    p_js $page, js_server_config
       'allocation-key', 'load', 'request', [ "${href}", 'allocation-key' ];
@@ -336,8 +336,8 @@ my $_week_rota_assignments = sub {
                     name  => $_->[ 0 ],
                     title => locm( $req, 'Rider Assignment' ),
                     value => locm( $req, $_->[ 1 ]->key ) } ] }
-         map  { my $href = uri_for_action $req, 'day/day_rota',
-                           [ $rota_name, local_dt( $date )->ymd ];
+         map  { my $href = $req->uri_for_action
+                   ( 'day/day_rota', [ $rota_name, local_dt( $date )->ymd ] );
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
          map  { my $id = local_dt( $date )->ymd.'_'.$_->key;
                 $_add_slot_tip->( $req, $page, $id ); [ $id, $_ ] }
@@ -350,8 +350,8 @@ my $_week_rota_assignments = sub {
                     name  => $_->[ 0 ],
                     title => locm( $req, 'Event Information' ),
                     value => $_->[ 1 ]->event->name } ] }
-         map  { my $href = uri_for_action $req, 'asset/request_vehicle',
-                           [ $_->[ 0 ] ];
+         map  { my $href = $req->uri_for_action
+                   ( 'asset/request_vehicle', [ $_->[ 0 ] ] );
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
          map  { $_add_event_tip->( $req, $page, $_->event );
                 [ $_->event->uri, $_ ] }
@@ -363,8 +363,9 @@ my $_week_rota_assignments = sub {
                     name  => $_->[ 0 ],
                     title => locm( $req, 'Vechicle Event' ),
                     value => $_->[ 1 ]->name } ] }
-         map  { my $href = uri_for_action $req, 'event/vehicle_event',
-                           [ $_->[ 1 ]->vehicle->vrn, $_->[ 0 ] ];
+         map  { my $href = $req->uri_for_action
+                   ( 'event/vehicle_event', [ $_->[ 1 ]->vehicle->vrn,
+                                              $_->[ 0 ] ] );
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
          map  { $_add_v_event_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
          grep { $_->vehicle->vrn eq $vehicle->vrn }
@@ -401,7 +402,7 @@ my $_alloc_event_row = sub {
    my ($self, $req, $page, $data, $count, $tuple, $cno) = @_;
 
    my $event = $tuple->[ 0 ];
-   my $href = uri_for_action $req, 'asset/vehicle', [ $event->uri ];
+   my $href = $req->uri_for_action( 'asset/vehicle', [ $event->uri ] );
    my $opts = { assignee => $event->owner, journal => $data->{journal},
                 start => ($event->duration)[ 0 ] };
    my $action = 'assign_vehicle';
@@ -456,7 +457,7 @@ my $_alloc_slot_row = sub {
 
    if ($operator->id and $slot->vehicle_requested) {
       my $args = [ $page->{rota_name}, $local_ymd, $slot_key ];
-      my $href = uri_for_action $req, 'asset/vehicle', $args;
+      my $href = $req->uri_for_action( 'asset/vehicle', $args );
       my $vrn  = $slot->vehicle ? $slot->vehicle->vrn : NUL;
       my $vehicles = $slot->type_name->is_driver ?
                       $_union->( $data->{vehicles}, [ '4x4', 'car' ] )
@@ -563,7 +564,7 @@ my $_left_shift = sub {
 
    $date = local_dt( $date )->truncate( to => 'day' )->subtract( days => 1 );
 
-   return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
+   return $req->uri_for_action( $actionp, [ $rota_name, $date->ymd ] );
 };
 
 my $_next_week_uri = sub {
@@ -574,7 +575,7 @@ my $_next_week_uri = sub {
    $date = local_dt( $date )->truncate( to => 'day' )
                             ->add( days => $params->{cols} );
 
-   return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ], $params;
+   return $req->uri_for_action( $actionp, [ $rota_name, $date->ymd ], $params );
 };
 
 my $_next_week = sub {
@@ -582,7 +583,7 @@ my $_next_week = sub {
 
    my $href = $self->$_next_week_uri( $req, $method, $name, $date, $params );
 
-   return f_link 'next-week', $href, {
+   return p_link {}, 'next-week', $href, {
       class => 'next-rota', request => $req, value => locm $req, 'Next' };
 };
 
@@ -594,7 +595,7 @@ my $_prev_week_uri = sub {
    $date = local_dt( $date )->truncate( to => 'day' )
                             ->subtract( days => $params->{cols} );
 
-   return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ], $params;
+   return $req->uri_for_action( $actionp, [ $rota_name, $date->ymd ], $params );
 };
 
 my $_prev_week = sub {
@@ -602,7 +603,7 @@ my $_prev_week = sub {
 
    my $href = $self->$_prev_week_uri( $req, $method, $name, $date, $params );
 
-   return f_link 'prev-week', $href, {
+   return p_link {}, 'prev-week', $href, {
       class => 'prev-rota', request => $req, value => locm $req, 'Prev' };
 };
 
@@ -613,7 +614,7 @@ my $_right_shift = sub {
 
    $date = local_dt( $date )->truncate( to => 'day' )->add( days => 1 );
 
-   return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
+   return $req->uri_for_action( $actionp, [ $rota_name, $date->ymd ] );
 };
 
 my $_search_for_vehicle_events = sub {
@@ -729,8 +730,8 @@ my $_week_rota_requests = sub {
                     name  => $_->[ 0 ],
                     title => locm( $req, 'Rider Assignment' ),
                     value => locm( $req, $_->[ 1 ]->key ) } ] }
-         map  { my $href = uri_for_action $req, 'day/day_rota',
-                           [ $rota_name, local_dt( $date )->ymd ];
+         map  { my $href = $req->uri_for_action
+                   ( 'day/day_rota', [ $rota_name, local_dt( $date )->ymd ] );
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
          map  { my $id = local_dt( $date )->ymd.'_'.$_->key;
                 $_add_slot_tip->( $req, $page, $id ); [ $id, $_ ] }
@@ -743,8 +744,8 @@ my $_week_rota_requests = sub {
                     name  => 'request-'.$_->[ 0 ],
                     title => locm( $req, 'Vehicle Request' ),
                     value => $_->[ 1 ]->name } ] }
-         map  { my $href = uri_for_action $req, 'asset/request_vehicle',
-                           [ $_->[ 0 ] ];
+         map  { my $href = $req->uri_for_action
+                   ( 'asset/request_vehicle', [ $_->[ 0 ] ] );
                 $_onclick_relocate->( $page, 'request-'.$_->[ 0 ], $href ); $_ }
          map  { $_add_vreq_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
          grep { $_->start_date eq $date } @{ $events };
@@ -771,7 +772,7 @@ my $_alloc_query = sub {
    my ($self, $req, $page, $args, $params) = @_;
 
    my $moniker = $self->moniker;
-   my $href = uri_for_action $req, "${moniker}/allocation", $args;
+   my $href = $req->uri_for_action( "${moniker}/allocation", $args );
    my $form = blank_form 'display-control', $href, {
       class => 'standard-form display-control' };
 
@@ -913,7 +914,7 @@ sub allocation : Role(rota_manager) {
 
       my $date = local_dt( $rota_dt )->add( days => $cols * $rno )->ymd;
       my $args = [ $rota_name, $date, $cols ];
-      my $href = uri_for_action $req, "${moniker}/alloc_table", $args;
+      my $href = $req->uri_for_action( "${moniker}/alloc_table", $args );
       my $opts = [ "${href}", $id ];
 
       p_js $page, js_server_config $id, 'load', 'request', $opts;
@@ -925,14 +926,14 @@ sub allocation : Role(rota_manager) {
 sub display_control_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $moniker = $self->moniker;
    my $rota_name = $req->uri_params->( 0 );
    my $rota_date = $req->uri_params->( 1 );
-   my $cols = $req->body_params->( 'display_cols' );
-   my $rows = $req->body_params->( 'display_rows' );
-   my $args = [ $rota_name, $rota_date ];
-   my $params = { cols => $cols, rows => $rows };
-   my $location = uri_for_action $req, "${moniker}/allocation", $args, $params;
+   my $cols      = $req->body_params->( 'display_cols' );
+   my $rows      = $req->body_params->( 'display_rows' );
+   my $actionp   = $self->moniker.'/allocation';
+   my $args      = [ $rota_name, $rota_date ];
+   my $params    = { cols => $cols, rows => $rows };
+   my $location  = $req->uri_for_action( $actionp, $args, $params );
 
    return { redirect => { location => $location } };
 }

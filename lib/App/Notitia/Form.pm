@@ -8,7 +8,7 @@ use App::Notitia::Constants qw( FALSE HASH_CHAR NUL TRUE );
 use Class::Usul::Functions  qw( is_arrayref is_hashref throw );
 use Scalar::Util            qw( blessed );
 
-our @EXPORT_OK = qw( blank_form f_link f_tag p_action p_button p_cell
+our @EXPORT_OK = qw( blank_form f_tag p_action p_button p_cell
                      p_checkbox p_container p_date p_fields p_file p_hidden
                      p_image p_item p_js p_label p_link p_list p_password
                      p_radio p_row p_select p_slider p_span p_table p_tag
@@ -51,6 +51,30 @@ my $_bind = sub {
    else { $opts->{value} = NUL }
 
    return $opts;
+};
+
+my $_f_link = sub {
+   my ($name, $x, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   my $href   = !defined( $x )  ? HASH_CHAR
+              :  blessed( $x ) || !is_hashref( $x ) ? $x
+              : ($opts = { %{ $x }, %{ $opts } })   ? HASH_CHAR : undef;
+   my $req    = delete $opts->{request};
+   my $action = delete $opts->{action} // NUL;
+   my $args   = delete $opts->{args};
+   my $dvalue = $action ? ucfirst "${action} ${name}" : ucfirst $name;
+
+   $action and $action .= '_';
+
+   my $tkey   = "${name}_${action}tip";
+   my $tip    = $req ? locm( $req, $tkey, @{ $args // [] } ) : $tkey;
+   my $vkey   = "${name}_${action}link";
+   my $value  = $req ? locm( $req, $vkey ) : $dvalue;
+   my $hint   = $req ? locm( $req, 'Hint' ) : 'Hint';
+
+   return { hint => $hint, href => $href,
+            name => "${action}${name}", tip => $tip,
+            type => 'link', value => $value, %{ $opts } };
 };
 
 my $_f_list = sub {
@@ -136,30 +160,6 @@ sub blank_form (;$$$) {
    $opts->{type} //= 'container';
 
    return $opts;
-}
-
-sub f_link (@) { # Deprecated
-   my ($name, $x, $opts) = @_; $opts = { %{ $opts // {} } };
-
-   my $href   = !defined( $x )  ? HASH_CHAR
-              :  blessed( $x ) || !is_hashref( $x ) ? $x
-              : ($opts = { %{ $x }, %{ $opts } })   ? HASH_CHAR : undef;
-   my $req    = delete $opts->{request};
-   my $action = delete $opts->{action} // NUL;
-   my $args   = delete $opts->{args};
-   my $dvalue = $action ? ucfirst "${action} ${name}" : ucfirst $name;
-
-   $action and $action .= '_';
-
-   my $tkey   = "${name}_${action}tip";
-   my $tip    = $req ? locm( $req, $tkey, @{ $args // [] } ) : $tkey;
-   my $vkey   = "${name}_${action}link";
-   my $value  = $req ? locm( $req, $vkey ) : $dvalue;
-   my $hint   = $req ? locm( $req, 'Hint' ) : 'Hint';
-
-   return { hint => $hint, href => $href,
-            name => "${action}${name}", tip => $tip,
-            type => 'link', value => $value, %{ $opts } };
 }
 
 sub f_tag (@) {
@@ -282,7 +282,7 @@ sub p_label ($@) {
 }
 
 sub p_link ($@) {
-   my $f = shift; return $_push_to->( $f, f_link( @_ ) );
+   my $f = shift; return $_push_to->( $f, $_f_link->( @_ ) );
 }
 
 sub p_list ($@) {

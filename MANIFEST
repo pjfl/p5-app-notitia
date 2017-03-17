@@ -67,6 +67,7 @@ lib/App/Notitia/Role/Navigation.pm
 lib/App/Notitia/Role/PageConfiguration.pm
 lib/App/Notitia/Role/PageLoading.pm
 lib/App/Notitia/Role/RSS.pm
+lib/App/Notitia/Role/Request.pm
 lib/App/Notitia/Role/Schema.pm
 lib/App/Notitia/Role/WebAuthorisation.pm
 lib/App/Notitia/SMS.pm

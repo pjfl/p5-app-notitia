@@ -6,8 +6,7 @@ use App::Notitia::Form      qw( blank_form f_tag p_action p_button p_cell
                                 p_item p_js p_link p_list p_fields p_radio
                                 p_row p_table p_tag p_textfield );
 use App::Notitia::Util      qw( check_field_js dialog_anchor loc locm
-                                make_tip register_action_paths to_dt to_msg
-                                uri_for_action );
+                                make_tip register_action_paths to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -63,7 +62,7 @@ my $_cert_row = sub {
    p_item $row, $cert->label( $req );
 
    my $actionp = $self->moniker.'/certification';
-   my $href    = uri_for_action $req, $actionp, [ $scode, $cert->type ];
+   my $href    = $req->uri_for_action( $actionp, [ $scode, $cert->type ] );
    my $args    = [ $cert->recipient->label ];
    my $cell    = p_cell $row, {}; p_link $cell, 'certification', $href, {
       action => 'update', args => $args, request => $req };
@@ -89,7 +88,7 @@ my $_certs_ops_links = sub {
    my $actionp = $self->moniker.'/certification';
    my $params = $req->query_params->( {
       optional => TRUE } ); delete $params->{mid};
-   my $href  = uri_for_action $req, $actionp, [ $scode ], $params;
+   my $href  = $req->uri_for_action( $actionp, [ $scode ], $params );
    my $opts  = { action => 'add', args => [ $person->label ],
                  container_class => 'ops-links right', request => $req };
 
@@ -150,7 +149,7 @@ my $_files_ops_links = sub {
       container_class => 'action-links right', request => $req };
 
    my $actionp = $self->moniker.'/upload_document';
-   my $href = uri_for_action $req, $actionp, [ $person->shortcode ];
+   my $href = $req->uri_for_action( $actionp, [ $person->shortcode ] );
 
    p_js $page, dialog_anchor 'upload_document', $href, {
       name => 'document_upload', title => loc $req, 'Document Upload' };
@@ -216,7 +215,7 @@ sub certification : Role(person_manager) Role(training_manager) {
    my $scode     =  $req->uri_params->( 0 );
    my $type      =  $req->uri_params->( 1, { optional => TRUE } );
    my $role      =  $req->query_params->( 'role', { optional => TRUE } );
-   my $href      =  uri_for_action $req, $actionp, [ $scode, $type ];
+   my $href      =  $req->uri_for_action( $actionp, [ $scode, $type ] );
    my $form      =  blank_form 'certification-admin', $href;
    my $action    =  $type ? 'update' : 'create';
    my $page      =  {
@@ -244,10 +243,10 @@ sub certification : Role(person_manager) Role(training_manager) {
 sub certifications : Role(person_manager) Role(training_manager) {
    my ($self, $req) = @_;
 
-   my $moniker =  $self->moniker;
    my $scode   =  $req->uri_params->( 0 );
+   my $actionp =  $self->moniker.'/certifications';
+   my $href    =  $req->uri_for_action( $actionp, [ $scode ] );
    my $role    =  $req->query_params->( 'role', { optional => TRUE } );
-   my $href    =  uri_for_action $req, "${moniker}/certifications", [ $scode ];
    my $form    =  blank_form 'certifications', $href, { class => 'wide-form' };
    my $page    =  {
       forms    => [ $form ],
@@ -303,8 +302,8 @@ sub create_certification_action : Role(person_manager) Role(training_manager) {
 
    $self->send_event( $req, $message );
 
-   my $action   = $self->moniker.'/certifications';
-   my $location = uri_for_action $req, $action, [ $scode ];
+   my $actionp  = $self->moniker.'/certifications';
+   my $location = $req->uri_for_action( $actionp, [ $scode ] );
    my $key      = 'Certertification [_1] for [_2] added by [_3]';
 
    $message = [ to_msg $key, $type, $scode, $req->session->user_label ];
@@ -323,7 +322,7 @@ sub delete_certification_action : Role(person_manager) Role(training_manager) {
    $self->send_event( $req, $message );
 
    my $action   = $self->moniker.'/certifications';
-   my $location = uri_for_action $req, $action, [ $scode ];
+   my $location = $req->uri_for_action( $action, [ $scode ] );
    my $key      = 'Certification [_1] for [_2] deleted by [_3]';
 
    $message = [ to_msg $key, $type, $scode, $req->session->user_label ];
@@ -384,7 +383,7 @@ sub upload_document : Dialog Role(person_manager) Role(training_manager) {
    my $stash  = $self->dialog_stash( $req );
    my $params = { name => $scode, type => 'personal' };
    my $places = $self->config->places;
-   my $href   = uri_for_action $req, $places->{upload}, [], $params;
+   my $href   = $req->uri_for_action( $places->{upload}, [], $params );
 
    $stash->{page}->{forms}->[ 0 ] = blank_form 'upload-file', $href;
    $self->components->{docs}->upload_dialog( $req, $stash->{page} );

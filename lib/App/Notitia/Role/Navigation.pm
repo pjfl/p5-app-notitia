@@ -6,8 +6,8 @@ use namespace::autoclean;
 use App::Notitia::Constants qw( FALSE HASH_CHAR NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form p_button p_image p_item p_js
                                 p_link p_list p_text );
-use App::Notitia::Util      qw( dialog_anchor local_dt locd locm make_tip now_dt
-                                to_dt uri_for_action );
+use App::Notitia::Util      qw( dialog_anchor local_dt locd locm
+                                make_tip now_dt to_dt );
 use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
 use Moo::Role;
@@ -41,7 +41,7 @@ my $nav_linkto = sub {
    my $tip   = locm $req, $opts->{tip} // "${name}_tip",
                    @{ $opts->{tip_args} // [] };
    my $href  = $actionp eq HASH_CHAR
-             ? $actionp : uri_for_action $req, $actionp, @args;
+             ? $actionp : $req->uri_for_action( $actionp, @args );
 
    return { class => $opts->{class} // NUL,
             container_class => $opts->{container_class} // NUL,
@@ -440,7 +440,7 @@ my $_unauthenticated_login_links = sub {
          tip   => 'Request a password reset email',
          value => 'Forgot Password?', }, '#' ) };
 
-   my $href = uri_for_action $req, 'user/reset';
+   my $href = $req->uri_for_action( 'user/reset' );
 
    p_js $page, dialog_anchor 'request-reset', $href, {
       name => 'request-reset', title => locm $req, 'Reset Password', };
@@ -451,7 +451,7 @@ my $_unauthenticated_login_links = sub {
          tip   => 'Request a TOTP recovery email',
          value => 'Lost TOTP?', }, '#' ) };
 
-   $href = uri_for_action $req, 'user/totp_request';
+   $href = $req->uri_for_action( 'user/totp_request' );
 
    p_js $page, dialog_anchor 'totp-request', $href, {
       name => 'totp-request', title => locm $req, 'TOTP Information Request' };
@@ -536,7 +536,7 @@ sub application_logo {
    my $opts = { request => $req, args => [ $conf->title ], value => $image };
    my $cell = {};
 
-   return p_link $cell, 'logo', uri_for_action( $req, $places->{logo} ), $opts;
+   return p_link $cell, 'logo', $req->uri_for_action( $places->{logo} ), $opts;
 }
 
 sub call_navigation_links {
@@ -574,12 +574,12 @@ sub credit_links {
 
    p_link $links, 'about', '#', { class => 'windows', request => $req };
 
-   my $href = uri_for_action $req, $places->{about};
+   my $href = $req->uri_for_action( $places->{about} );
 
    p_js $page, dialog_anchor 'about', $href, {
       name => 'about', title => locm $req, 'About' };
 
-   p_link $links, 'changes', uri_for_action( $req, $places->{changes} ), {
+   p_link $links, 'changes', $req->uri_for_action( $places->{changes} ), {
       request => $req };
 
    p_text $links, 'recent_activity', $self->activity_cache, {
@@ -665,7 +665,7 @@ sub primary_navigation_links {
       tip   => 'Manage account profile and email subscription',
       value => 'Account', }, $places->{profile} );
 
-   my $href = uri_for_action $req, 'user/logout_action';
+   my $href = $req->uri_for_action( 'user/logout_action' );
    my $form = blank_form  'authentication', $href, { class => 'none' };
 
    p_button $form, 'logout-user', 'logout', {

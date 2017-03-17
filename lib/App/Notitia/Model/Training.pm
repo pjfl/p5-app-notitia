@@ -4,13 +4,12 @@ use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRAINING_STATUS_ENUM TRUE );
-use App::Notitia::Form      qw( blank_form f_link f_tag p_button p_container
-                                p_date p_hidden p_link p_list p_row p_select
-                                p_table p_textfield );
+use App::Notitia::Form      qw( blank_form f_tag p_button p_cell p_container
+                                p_date p_hidden p_item p_link p_list p_row
+                                p_select p_table p_textfield );
 use App::Notitia::Util      qw( dialog_anchor js_submit_config local_dt locd
                                 locm make_tip management_link page_link_set
-                                register_action_paths to_dt to_msg
-                                uri_for_action );
+                                register_action_paths to_dt to_msg );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Data::Page;
 use Moo;
@@ -27,7 +26,7 @@ has '+moniker' => default => 'train';
 
 register_action_paths
    'train/dialog' => 'training-dialog',
-   'train/events' => 'training-events',
+   'train/events' => 'training-courses',
    'train/summary' => 'training-summary',
    'train/training' => 'training';
 
@@ -91,17 +90,19 @@ my $_cell_colours = sub {
 };
 
 my $_event_links = sub {
-   my ($self, $req, $event) = @_;
+   my ($self, $req, $event) = @_; my $links = [];
 
-   my $uri = $event->uri;
-   my $href = uri_for_action $req, 'event/training_event', [ $uri ];
+   my $uri   = $event->uri;
+   my $href  = $req->uri_for_action( 'event/training_event', [ $uri ] );
    my $value = $event->localised_label( $req );
-   my $event_link = f_link 'training_event', $href, { value => $value };
-   my $links = [ { value => $event_link } ];
+   my $cell  = p_cell $links;
+
+   p_link $cell, 'training_event', $href, { value => $value };
+
    my @actions = qw( event/participents event/event_summary );
 
    for my $actionp (@actions) {
-      push @{ $links }, { value => management_link( $req, $actionp, $uri ) };
+      p_item $links, management_link $req, $actionp, $uri;
    }
 
    return $links;
@@ -119,7 +120,8 @@ my $_summary_caption = sub {
 my $_enrol_link = sub {
    my ($self, $req, $person, $course_name) = @_;
 
-   my $href = uri_for_action $req, $self->moniker.'/training', [ "${person}" ];
+   my $actp = $self->moniker.'/training';
+   my $href = $req->uri_for_action( $actp, [ "${person}" ] );
    my $form = blank_form 'training', $href;
    my $text = 'Enroll [_1] on the [_2]';
 
@@ -139,13 +141,15 @@ my $_enrol_link = sub {
 my $_events_ops_links = sub {
    my ($self, $req, $params, $pager) = @_; my $links = [];
 
-   p_link $links, 'event', uri_for_action( $req, 'event/training_event' ), {
-      action => 'create', container_class => 'add-link', request => $req };
-
    my $actionp = $self->moniker.'/events';
    my $page_links = page_link_set $req, $actionp, [], $params, $pager;
 
-   $page_links and unshift @{ $links }, $page_links;
+   $page_links and push @{ $links }, $page_links;
+
+   $actionp = 'event/training_event';
+
+   p_link $links, 'training_event', $req->uri_for_action( $actionp ), {
+      action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
 };
@@ -213,7 +217,7 @@ my $_summary_cell = sub {
    my $date = locd $req, $course->$status();
    my $course_type = $course->course_type;
    my $actionp = $self->moniker.'/dialog';
-   my $href = uri_for_action $req, $actionp, [ $scode, $course_type ];
+   my $href = $req->uri_for_action( $actionp, [ $scode, $course_type ] );
    my $id = "${scode}_${course_type}";
    my $form = blank_form $id, $href, {
       class => 'spreadsheet-fixed-form align-center' };
@@ -243,7 +247,7 @@ my $_summary_ops_links = sub {
    my $link_opts = { class => 'log-links' };
    my $dp = Data::Page->new( $max_rows, $opts->{rows}, $opts->{page} );
    my $page_links = page_link_set $req, $actionp, [], $opts, $dp, $link_opts;
-   my $form = blank_form 'training-summary', uri_for_action( $req, $actionp ), {
+   my $form = blank_form 'training-summary', $req->uri_for_action( $actionp ), {
       class => 'none' };
    my $show_training = $req->session->show_training;
    my $select_opts =
@@ -285,7 +289,7 @@ sub add_course_action : Role(training_manager) {
 
    my $message = [ to_msg '[_1] enrolled on course(s): [_2]',
                    $person->label, join ', ', @{ $courses } ];
-   my $location = uri_for_action $req, $self->moniker.'/training', [ $scode ];
+   my $location = $req->uri_for_action( $self->moniker.'/training', [ $scode ]);
 
    return { redirect => { message => $message } }; # location referer
 }
@@ -298,7 +302,7 @@ sub dialog : Dialog Role(training_manager) {
    my ($course) = $self->$_find_course( $req, $scode, $course_name );
    my $stash = $self->dialog_stash( $req );
    my $actionp = $self->moniker.'/training';
-   my $href = uri_for_action $req, $actionp, [ $scode, $course_name ];
+   my $href = $req->uri_for_action( $actionp, [ $scode, $course_name ] );
    my $form = $stash->{page}->{forms}->[ 0 ]
             = blank_form 'user-training', $href, { class => 'dialog-form' };
 
@@ -367,7 +371,7 @@ sub remove_course_action : Role(training_manager) {
 
    my $message = [ to_msg '[_1] removed from course(s): [_2]',
                    $person->label, join ', ', @{ $courses } ];
-   my $location = uri_for_action $req, $self->moniker.'/training', [ $scode ];
+   my $location = $req->uri_for_action( $self->moniker.'/training', [ $scode ]);
 
    return { redirect => { message => $message } }; # location referer
 }
@@ -424,7 +428,7 @@ sub toggle_suppress_action : Role(training_manager) {
    $req->session->show_training
       ( $req->body_params->( 'show_completed_training' ) );
 
-   my $location = uri_for_action $req, $self->moniker.'/summary';
+   my $location = $req->uri_for_action( $self->moniker.'/summary' );
 
    return { redirect => { location => $location } };
 }
@@ -436,7 +440,7 @@ sub training : Role(training_manager) {
    my $role = $req->query_params->( 'role', { optional => TRUE } );
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person = $person_rs->find_by_shortcode( $scode );
-   my $href = uri_for_action $req, $self->moniker.'/training', [ $scode ];
+   my $href = $req->uri_for_action( $self->moniker.'/training', [ $scode ] );
    my $form = blank_form 'training', $href;
    my $page = {
       forms => [ $form ], selected => $role ? "${role}_list" : 'summary',

@@ -5,8 +5,7 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::Form      qw( blank_form p_action p_cell p_item p_link
                                 p_list p_fields p_row p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js loc local_dt locm now_dt
-                                register_action_paths to_dt to_msg
-                                uri_for_action );
+                                register_action_paths to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
@@ -66,7 +65,7 @@ my $_endorsement_ops_links = sub {
 
    delete $params->{mid};
 
-   my $href = uri_for_action $req, $actionp, [ $person->shortcode ], $params;
+   my $href = $req->uri_for_action( $actionp, [ $person->shortcode ], $params );
 
    p_link $links, 'endorsement', $href, {
       action => 'add', args => [ $person->label ], request => $req };
@@ -93,7 +92,7 @@ my $_endorsement_links = sub {
    my $args = [ $blot->recipient->label ]; my @links;
 
    for my $actionp (map { $self->moniker."/${_}" } 'endorsement' ) {
-      my $href = uri_for_action $req, $actionp, [ $scode, $blot->uri ];
+      my $href = $req->uri_for_action( $actionp, [ $scode, $blot->uri ] );
       my $cell = p_cell $links, {};
 
       p_link $cell, 'endorsement', $href, {
@@ -158,7 +157,7 @@ sub create_endorsement_action : Role(person_manager) {
    $self->send_event( $req, $message );
 
    my $action   = $self->moniker.'/endorsements';
-   my $location = uri_for_action $req, $action, [ $scode ];
+   my $location = $req->uri_for_action( $action, [ $scode ] );
    my $key      = 'Endorsement [_1] for [_2] added by [_3]';
 
    $message = [ to_msg $key, $type, $scode, $req->session->user_label ];
@@ -178,7 +177,7 @@ sub delete_endorsement_action : Role(person_manager) {
    $self->send_event( $req, $message );
 
    my $actionp  = $self->moniker.'/endorsements';
-   my $location = uri_for_action $req, $actionp, [ $scode ];
+   my $location = $req->uri_for_action( $actionp, [ $scode ] );
    my $key      = 'Endorsement [_1] for [_2] deleted by [_3]';
 
    $message = [ to_msg $key, $uri, $scode, $req->session->user_label ];
@@ -194,7 +193,7 @@ sub endorsement : Role(person_manager) {
    my $uri        =  $req->uri_params->( 1, { optional => TRUE } );
    my $role       =  $req->query_params->( 'role', { optional => TRUE } );
    my $action     =  $uri ? 'update' : 'create';
-   my $href       =  uri_for_action $req, $actionp, [ $scode, $uri ];
+   my $href       =  $req->uri_for_action( $actionp, [ $scode, $uri ] );
    my $form       =  blank_form 'endorsement-admin', $href;
    my $page       =  {
       first_field => $uri ? 'endorsed' : 'type_code',

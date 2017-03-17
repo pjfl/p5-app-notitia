@@ -1,23 +1,40 @@
-package App::Notitia::Controller::Training;
+package App::Notitia::Role::Request;
 
-use Web::Simple;
+use namespace::autoclean;
 
-with q(Web::Components::Role);
+use Web::ComposableRequest::Util qw( add_config_role );
+use Moo::Role;
 
-has '+moniker' => default => 'training';
+requires qw( _config uri_for );
 
-sub dispatch_request {
-   sub (POST + /training/**        + ?*) { [ 'train/from_request',    @_ ] },
-   sub (GET  + /training/*         + ?*) { [ 'train/training',        @_ ] },
-   sub (GET  + /training-dialog/** + ?*) { [ 'train/dialog',          @_ ] },
-   sub (POST + /training-event/*   + ?*) { [ 'event/from_request',    @_ ] },
-   sub (POST + /training-event     + ?*) { [ 'event/from_request',    @_ ] },
-   sub (GET  + /training-event     + ?*) { [ 'event/training_event',  @_ ] },
-   sub (GET  + /training-event/*   + ?*) { [ 'event/training_event',  @_ ] },
-   sub (GET  + /training-courses   + ?*) { [ 'train/events',          @_ ] },
-   sub (POST + /training-summary   + ?*) { [ 'train/from_request',    @_ ] },
-   sub (GET  + /training-summary   + ?*) { [ 'train/summary',         @_ ] };
+add_config_role __PACKAGE__.'::Config';
+
+sub uri_for_action {
+   my ($self, $action, @args) = @_;
+
+   my $uri = $self->_config->action_path2uri->( $action ) // $action;
+
+   $uri =~ m{ \* }mx or return $self->uri_for( $uri, @args );
+
+   my $args = shift @args;
+
+   while ($uri =~ m{ \* }mx) {
+      my $arg = (shift @{ $args }) || q(); $uri =~ s{ \* }{$arg}mx;
+   }
+
+   unshift @args, $args;
+
+   return $self->uri_for( $uri, @args );
 }
+
+package App::Notitia::Role::Request::Config;
+
+use namespace::autoclean;
+
+use Unexpected::Types qw( CodeRef );
+use Moo::Role;
+
+has 'action_path2uri' => is => 'ro', isa => CodeRef, builder => sub { {} };
 
 1;
 
@@ -29,11 +46,11 @@ __END__
 
 =head1 Name
 
-App::Notitia::Controller::Training - People and resource scheduling
+App::Notitia::Role::Request - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia::Controller::Training;
+   use App::Notitia::Role::Request;
    # Brief but working code examples
 
 =head1 Description

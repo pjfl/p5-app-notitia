@@ -3,7 +3,7 @@ package App::Notitia::Plugin::Email;
 use namespace::autoclean;
 
 use App::Notitia::Constants qw( FALSE NUL TRUE );
-use App::Notitia::Util      qw( event_handler locd locm uri_for_action );
+use App::Notitia::Util      qw( event_handler locd locm );
 use Class::Usul::Functions  qw( throw );
 use Moo;
 
@@ -26,7 +26,7 @@ my $_event_email = sub {
    $stash->{template} = 'event_email.md';
    $stash->{owner} = $event->owner->label;
    $stash->{date} = locd $req, $event->start_date;
-   $stash->{uri} = uri_for_action $req, 'event/event_summary', [ $event->uri ];
+   $stash->{uri} = $req->uri_for_action( 'event/event_summary', [ $event->uri]);
 
    return $stash;
 };
@@ -36,7 +36,7 @@ event_handler 'email', add_course => sub {
    my ($self, $req, $stash) = @_;
 
    $stash->{course} = locm $req, $stash->{course};
-   $stash->{uri} = uri_for_action $req, 'train/events';
+   $stash->{uri} = $req->uri_for_action( 'train/events' );
 
    return $stash;
 };
@@ -100,7 +100,7 @@ event_handler 'email', vacant_slot => sub {
    my $args = [ $stash->{rota_name}, $stash->{rota_date} ];
 
    $stash->{role} = $stash->{slot_type};
-   $stash->{uri} = uri_for_action $req, 'day/day_rota', $args;
+   $stash->{uri} = $req->uri_for_action( 'day/day_rota', $args );
 
    return $stash;
 };

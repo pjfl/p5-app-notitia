@@ -7,7 +7,7 @@ use App::Notitia::Form     qw( blank_form f_tag p_button p_checkbox p_file
                                p_textfield );
 use App::Notitia::Util     qw( dialog_anchor locm make_id_from
                                make_name_from mtime set_element_focus
-                               stash_functions to_msg uri_for_action );
+                               stash_functions to_msg );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::Functions qw( io is_member throw trim untaint_path );
 use Class::Usul::IPC;
@@ -33,7 +33,7 @@ my $_add_dialog_js = sub {
    my ($self, $req, $page, $name, $opts) = @_;
 
    my $actionp = $self->moniker.'/dialog';
-   my $href = uri_for_action( $req, $actionp, [], { name => $name } );
+   my $href    = $req->uri_for_action( $actionp, [], { name => $name } );
 
    p_js $page, dialog_anchor "${name}-file", $href, {
       name => "${name}-file", %{ $opts } };
@@ -174,7 +174,7 @@ my $_prepare_search_results = sub {
       my $name     = make_name_from $path; $name =~ s{/}{ / }gmx;
 
       $tuple->[ 0 ] = $name;
-      $tuple->[ 1 ] = uri_for_action $req, $actionp, [ $path ];
+      $tuple->[ 1 ] = $req->uri_for_action( $actionp, [ $path ] );
    }
 
    return @tuples;
@@ -269,8 +269,8 @@ sub get_dialog {
    my $places = $self->config->places;
    my $href   = $name eq 'create' ? $links->{root_uri}
               : $name eq 'rename' ? $self->base_uri( $req, [ $val ] )
-              : $name eq 'search' ? uri_for_action $req, $places->{search}
-              : $name eq 'upload' ? uri_for_action $req, $places->{upload}
+              : $name eq 'search' ? $req->uri_for_action( $places->{search} )
+              : $name eq 'upload' ? $req->uri_for_action( $places->{upload} )
                                   : NUL;
    my $form   = $stash->{page}->{forms}->[ 0 ]
               = blank_form "${name}-file", $href;

@@ -2,7 +2,7 @@ package App::Notitia::Model::Posts;
 
 use App::Notitia::Attributes;  # Will do cleaning
 use App::Notitia::Util     qw( build_tree iterator localise_tree mtime
-                               register_action_paths uri_for_action );
+                               register_action_paths );
 use Class::Usul::Constants qw( SPC TRUE );
 use Class::Usul::Types     qw( NonZeroPositiveInt PositiveInt );
 use Moo;
@@ -48,7 +48,7 @@ around 'initialise_stash' => sub {
    my $stash = $orig->( $self, $req, @args ); my $links = $stash->{links};
 
    $links->{rss_uri}
-      = uri_for_action( $req, 'posts/rss_feed', { extension => '.xml' } );
+      = $req->uri_for_action( 'posts/rss_feed', { extension => '.xml' } );
 
    return $stash;
 };
@@ -90,7 +90,7 @@ my $_chain_nodes = sub {
 
 # Public methods
 sub base_uri {
-   return uri_for_action( $_[ 1 ], 'posts/page', $_[ 2 ] );
+   return $_[ 1 ]->uri_for_action( 'posts/page', $_[ 2 ] );
 }
 
 sub cancel_edit_action : Role(anon) {
@@ -104,7 +104,7 @@ sub create_file_action : Role(editor) Role(event_manager) Role(person_manager) {
 sub delete_file_action : Role(editor) Role(event_manager) Role(person_manager) {
    my ($self, $req) = @_; my $stash = $self->delete_file( $req );
 
-   $stash->{redirect}->{location} = uri_for_action( $req, 'posts/page' );
+   $stash->{redirect}->{location} = $req->uri_for_action( 'posts/page' );
 
    return $stash;
 }

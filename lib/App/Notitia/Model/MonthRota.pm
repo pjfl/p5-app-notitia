@@ -9,7 +9,7 @@ use App::Notitia::Form      qw( blank_form p_cell p_js p_link p_list p_row
 use App::Notitia::Util      qw( dialog_anchor display_duration js_server_config
                                 js_submit_config lcm_for local_dt locm
                                 now_dt register_action_paths slot_limit_index
-                                to_dt uri_for_action );
+                                to_dt );
 use Class::Usul::Functions  qw( sum );
 use Class::Usul::Time       qw( time2str );
 use Moo;
@@ -102,7 +102,7 @@ my $_next_month = sub {
    $date = local_dt( $date )->truncate( to => 'day' )
                             ->set( day => 1 )->add( months => 1 );
 
-   return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
+   return $req->uri_for_action( $actionp, [ $rota_name, $date->ymd ] );
 };
 
 my $_prev_month = sub {
@@ -111,7 +111,7 @@ my $_prev_month = sub {
    $date = local_dt( $date )->truncate( to => 'day' )
                             ->set( day => 1 )->subtract( months => 1 );
 
-   return uri_for_action $req, $actionp, [ $rota_name, $date->ymd ];
+   return $req->uri_for_action( $actionp, [ $rota_name, $date->ymd ] );
 };
 
 my $_summary_link_value = sub {
@@ -158,7 +158,7 @@ my $_user_events_headers = sub {
 my $_user_events_row = sub {
    my ($req, $event) = @_; my $cell = {};
 
-   my $href = uri_for_action $req, 'event/event_summary', [ $event->uri ];
+   my $href = $req->uri_for_action( 'event/event_summary', [ $event->uri ] );
    my $tip  = locm $req, 'user_events_row_link_tip';
 
    p_link $cell, $event->uri, $href, {
@@ -177,7 +177,7 @@ my $_user_slots_row = sub {
    my ($req, $rota_name, $slot) = @_; my $cell = {};
 
    my $date = local_dt( $slot->start_date )->ymd;
-   my $href = uri_for_action $req, 'day/day_rota', [ $rota_name, $date ];
+   my $href = $req->uri_for_action( 'day/day_rota', [ $rota_name, $date ] );
    my $tip  = locm $req, 'user_slots_row_link_tip';
 
    p_link $cell, 'slot_'.$slot->key, $href, {
@@ -206,7 +206,7 @@ my $_first_day_of_table = sub {
 my $_p_ops_link = sub {
    my ($self, $links, $req, $page, $name, $args) = @_;
 
-   my $href = uri_for_action $req, $self->moniker."/${name}", $args;
+   my $href = $req->uri_for_action( $self->moniker."/${name}", $args );
 
    p_link $links, $name, '#', { class => 'windows', request => $req };
 
@@ -241,7 +241,7 @@ my $_summary_cells = sub {
          for my $slotno (0 .. $limits->[ $i ] - 1) {
             my $key  = "${shift_type}_${slot_type}_${slotno}";
             my $id   = $date->ymd."_${key}";
-            my $href = uri_for_action $req, $actionp, [ "${name}_${id}" ];
+            my $href = $req->uri_for_action( $actionp, [ "${name}_${id}" ] );
             my $slot = $data->{ $id };
 
             push @{ $cells },
@@ -346,7 +346,7 @@ my $_rota_summary = sub {
       $label = locm $req, 'Events';
 
       my $actionp = $self->moniker.'/events_summary';
-      my $href = uri_for_action $req, $actionp, [ "${name}_${id}" ];
+      my $href = $req->uri_for_action( $actionp, [ "${name}_${id}" ] );
 
       p_js $page, js_server_config
          $id, 'mouseover', 'asyncTips', [ "${href}", 'tips-defn' ];
@@ -370,7 +370,7 @@ my $_rota_summary = sub {
    push @{ $table->{rows} }, $self->$_summary_cells
       ( $req, $page, $local_dt, [ 'night' ], [ 'rider', 'driver' ], $data, 2 );
 
-   my $href = uri_for_action $req, 'day/day_rota', [ $name, $local_dt->ymd ];
+   my $href = $req->uri_for_action( 'day/day_rota', [ $name, $local_dt->ymd ] );
 
    $id = "${name}_".$local_dt->ymd; $_onclick_relocate->( $page, $id, $href );
 

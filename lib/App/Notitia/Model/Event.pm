@@ -2,13 +2,13 @@ package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_action p_button p_list
-                                p_fields p_js p_row p_table p_tag p_text
+use App::Notitia::Form      qw( blank_form p_action p_button p_list p_fields
+                                p_item p_js p_link p_row p_table p_tag p_text
                                 p_textfield );
 use App::Notitia::Util      qw( check_field_js datetime_label display_duration
                                 loc local_dt locd locm make_tip management_link
                                 now_dt page_link_set register_action_paths
-                                to_dt to_msg uri_for_action );
+                                to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -87,13 +87,15 @@ my $_events_headers = sub {
 };
 
 my $_event_ops_links = sub {
-   my ($req, $actionp, $uri) = @_;
+   my ($req, $actionp, $uri) = @_; my $links = [];
 
-   my $href = uri_for_action $req, $actionp;
-   my $add_event = f_link 'event', $href, $_create_action->( $req );
-   my $vehicle_request = management_link $req, 'asset/request_vehicle', $uri;
+   push @{ $links }, management_link $req, 'asset/request_vehicle', $uri;
 
-   return [ $vehicle_request, $add_event ];
+   my $href = $req->uri_for_action( $actionp );
+
+   p_link $links, 'event', $href, $_create_action->( $req );
+
+   return $links;
 };
 
 my $_link_opts = sub {
@@ -158,19 +160,21 @@ my $_participents_title = sub {
 my $_vehicle_events_uri = sub {
    my ($req, $vrn) = @_; my $after = now_dt->subtract( days => 1 )->ymd;
 
-   return uri_for_action $req, 'asset/vehicle_events', [ $vrn ],
-                         after => $after, service => TRUE;
+   return $req->uri_for_action( 'asset/vehicle_events', [ $vrn ],
+                                after => $after, service => TRUE );
 };
 
 my $_events_ops_links = sub {
-   my ($req, $moniker, $params, $pager) = @_;
+   my ($req, $moniker, $params, $pager) = @_; my $links = [];
 
    my $actionp = "${moniker}/events";
    my $page_links = page_link_set $req, $actionp, [], $params, $pager;
-   my $href = uri_for_action $req, "${moniker}/event";
-   my $links = [ f_link 'event', $href, $_create_action->( $req ) ];
 
-   $page_links and unshift @{ $links }, $page_links;
+   $page_links and push @{ $links }, $page_links;
+
+   my $href = $req->uri_for_action( "${moniker}/event" );
+
+   p_link $links, 'event', $href, $_create_action->( $req );
 
    return $links;
 };
@@ -218,7 +222,7 @@ my $_format_as_markdown = sub {
                ? 'event_single_day' : 'event_multi_day';
    my $when    = locm( $req, $key, @opts )."\n\n";
    my $actionp = $self->moniker.'/event_summary';
-   my $href    = uri_for_action $req, $actionp, [ $event->uri ];
+   my $href    = $req->uri_for_action( $actionp, [ $event->uri ] );
    my $link    = locm( $req, 'event_blog_link', $href )."\n\n";
 
    return $yaml.$desc.$when.$link;
@@ -259,7 +263,7 @@ my $_participent_links = sub {
 my $_participent_ops_links = sub {
    my ($self, $req, $page, $params) = @_; my $links = [];
 
-   my $href = uri_for_action $req, $self->moniker.'/message', [], $params;
+   my $href = $req->uri_for_action( $self->moniker.'/message', [], $params );
    my $name = 'message_participents';
 
    $self->message_link( $req, $page, $href, $name, $links );
@@ -492,7 +496,7 @@ sub create_event_action : Role(event_manager) {
 
    my $actionp  = $self->moniker.'/event';
    my $who      = $req->session->user_label;
-   my $location = uri_for_action $req, $actionp, [ $event->uri ];
+   my $location = $req->uri_for_action( $actionp, [ $event->uri ] );
    my $message  = [ to_msg 'Event [_1] created by [_2]', $event->label, $who ];
 
    $self->send_event( $req, 'action:create-event event_uri:'.$event->uri );
@@ -511,7 +515,7 @@ sub create_training_event_action : Role(training_manager) {
    my $who = $req->session->user_label;
    my $message = [ to_msg 'Training event [_1] created by [_2]', $label, $who ];
    my $actionp = $self->moniker.'/training_event';
-   my $location = uri_for_action $req, $actionp, [ $uri ];
+   my $location = $req->uri_for_action( $actionp, [ $uri ] );
 
    $self->send_event( $req, "action:create-training-event event_uri:${uri}" );
 
@@ -544,7 +548,7 @@ sub delete_event_action : Role(event_manager) {
    $self->$_delete_event_post( $req, $event->post_filename );
 
    my $who      = $req->session->user_label;
-   my $location = uri_for_action $req, $self->moniker.'/events';
+   my $location = $req->uri_for_action( $self->moniker.'/events' );
    my $message  = [ to_msg 'Event [_1] deleted by [_2]', $label, $who ];
 
    $self->send_event( $req, "action:delete-event event_uri:${uri}" );
@@ -560,7 +564,7 @@ sub delete_training_event_action : Role(training_manager) {
    my $label = $event->localised_label( $req );
    my $who = $req->session->user_label;
    my $message = [ to_msg 'Training event [_1] deleted by [_2]', $label, $who ];
-   my $location = uri_for_action $req, 'train/events';
+   my $location = $req->uri_for_action( 'train/events' );
 
    $self->send_event( $req, "action:delete-training-event event_uri:${uri}" );
 
@@ -592,7 +596,7 @@ sub event : Role(event_manager) {
    my $date       =  $req->query_params->( 'date', $opts );
    my $disabled   =  $req->query_params->( 'before', $opts ) ? TRUE : FALSE;
    my $actionp    =  $self->moniker.'/event';
-   my $href       =  uri_for_action $req, $actionp, [ $uri ];
+   my $href       =  $req->uri_for_action( $actionp, [ $uri ] );
    my $form       =  blank_form 'event-admin', $href;
    my $action     =  $uri ? 'update' : 'create';
    my $page       =  {
@@ -648,7 +652,7 @@ sub event_summary : Role(any) {
    my $uri     =  $req->uri_params->( 0 );
    my $event   =  $schema->resultset( 'Event' )->find_event_by( $uri );
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $user );
-   my $href    =  uri_for_action $req, $actionp, [ $uri ];
+   my $href    =  $req->uri_for_action( $actionp, [ $uri ] );
    my $form    =  blank_form 'event-admin', $href;
    my $opts    =  { optional => TRUE };
    my $page    =  {
@@ -724,7 +728,7 @@ sub participate_event_action : Role(any) {
    $person->add_participent_for( $uri );
 
    my $actionp   = $self->moniker.'/event_summary';
-   my $location  = uri_for_action $req, $actionp, [ $uri ];
+   my $location  = $req->uri_for_action( $actionp, [ $uri ] );
    my $message   = [ to_msg 'Event [_1] attendee [_2]', $uri, $person->label ];
 
    $self->send_event( $req, "action:participate-in-event event_uri:${uri}" );
@@ -740,7 +744,7 @@ sub participents : Role(any) {
    my $disabled  =  now_dt > $event->start_date ? TRUE : FALSE;
    my $params    =  { event => $uri };
    my $actionp   =  $self->moniker.'/participents';
-   my $href      =  uri_for_action $req, $actionp, [ $uri ], $params;
+   my $href      =  $req->uri_for_action( $actionp, [ $uri ], $params );
    my $form      =  blank_form 'message-participents', $href, {
       class      => 'wider-table', id => 'message-participents' };
    my $page      =  {
@@ -771,7 +775,7 @@ sub training_event : Role(training_manager) {
    my $uri  = $req->uri_params->( 0, { optional => TRUE } );
    my $date = $req->query_params->( 'date', { optional => TRUE } );
    my $actionp = $self->moniker.'/training_event';
-   my $href = uri_for_action $req, $actionp, [ $uri ];
+   my $href = $req->uri_for_action( $actionp, [ $uri ] );
    my $form = blank_form 'training-event', $href;
    my $action = $uri ? 'update' : 'create';
    my $page = {
@@ -807,7 +811,7 @@ sub unparticipate_event_action : Role(any) {
 
    my $who       = $person->label;
    my $actionp   = $self->moniker.'/event_summary';
-   my $location  = uri_for_action $req, $actionp, [ $uri ];
+   my $location  = $req->uri_for_action( $actionp, [ $uri ] );
    my $message   = [ to_msg 'Event [_1] attendence cancelled for [_2]',
                      $uri, $who ];
 
@@ -826,7 +830,7 @@ sub update_event_action : Role(event_manager) {
 
    my $who      = $req->session->user_label;
    my $actionp  = $self->moniker.'/event';
-   my $location = uri_for_action $req, $actionp, [ $uri ];
+   my $location = $req->uri_for_action( $actionp, [ $uri ] );
    my $message  = [ to_msg 'Event [_1] updated by [_2]', $event->label, $who ];
 
    $self->send_event( $req, "action:update-event event_uri:${uri}" );
@@ -843,7 +847,7 @@ sub update_training_event_action : Role(training_manager) {
    my $label = $event->localised_label( $req );
    my $message = [ to_msg 'Training event [_1] updated by [_2]', $label, $who ];
    my $actionp = $self->moniker.'/training_event';
-   my $location = uri_for_action $req, $actionp, [ $uri ];
+   my $location = $req->uri_for_action( $actionp, [ $uri ] );
 
    $self->send_event( $req, "action:update-training-event event_uri:${uri}" );
 
@@ -874,7 +878,7 @@ sub vehicle_event : Role(rota_manager) {
    my $actionp    =  $self->moniker.'/vehicle_event';
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
    my $uri        =  $req->uri_params->( 1, { optional => TRUE } );
-   my $href       =  uri_for_action $req, $actionp, [ $vrn, $uri ];
+   my $href       =  $req->uri_for_action( $actionp, [ $vrn, $uri ] );
    my $form       =  blank_form 'vehicle-event-admin', $href;
    my $action     =  $uri ? 'update' : 'create';
    my $page       =  {

@@ -7,7 +7,7 @@ use App::Notitia::Form      qw( blank_form f_tag p_action p_button p_cell
                                 p_select p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js js_window_config locm make_tip
                                 page_link_set register_action_paths to_dt
-                                to_msg uri_for_action );
+                                to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
@@ -163,23 +163,22 @@ my $_find_person = sub {
 };
 
 my $_incident_ops_links = sub {
-   my ($self, $req, $iid) = @_; my $links = [];
+   my ($self, $req, $i_id) = @_; my $links = [];
 
    my $actionp = $self->moniker.'/incident_party';
-   my $href = uri_for_action $req, $actionp, [ $iid ];
 
-   p_link $links, 'incident_party', $href, {
+   p_link $links, 'incident_party', $req->uri_for_action( $actionp, [ $i_id ]),{
       action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
 };
 
 my $_incident_party_ops_links = sub {
-   my ($self, $req, $page, $iid) = @_; my $links = [];
+   my ($self, $req, $page, $i_id) = @_; my $links = [];
 
    my $actionp = $self->moniker.'/incident';
 
-   p_link $links, 'incident', uri_for_action( $req, $actionp, [ $iid ] ), {
+   p_link $links, 'incident', $req->uri_for_action( $actionp, [ $i_id ] ), {
       action => 'view', container_class => 'table-link', request => $req };
 
    return $links;
@@ -190,7 +189,7 @@ my $_incidents_ops_links = sub {
 
    my $actionp = $self->moniker.'/incident';
 
-   p_link $links, 'incident', uri_for_action( $req, $actionp ), {
+   p_link $links, 'incident', $req->uri_for_action( $actionp ), {
       action => 'create', container_class => 'add-link', request => $req };
 
    $actionp = $self->moniker.'/incidents';
@@ -205,11 +204,11 @@ my $_incidents_ops_links = sub {
 my $_incidents_row = sub {
    my ($self, $req, $incident) = @_; my $row = [];
 
-   my $id   = $incident->id;
-   my $href = uri_for_action $req, $self->moniker.'/incident', [ $id ];
+   my $i_id = $incident->id;
+   my $href = $req->uri_for_action( $self->moniker.'/incident', [ $i_id ] );
    my $cell = p_cell $row, {};
 
-   p_link $cell, "incident_record_${id}", $href, {
+   p_link $cell, "incident_record_${i_id}", $href, {
       request => $req, value => $incident->title };
    p_item $row, $incident->raised_label( $req );
    p_item $row, locm $req, $incident->category;
@@ -262,8 +261,8 @@ my $_update_incident_from_request = sub {
 sub add_incident_party_action : Role(controller) {
    my ($self, $req) = @_;
 
-   my $iid = $req->uri_params->( 0 );
-   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
+   my $i_id = $req->uri_params->( 0 );
+   my $incident = $self->schema->resultset( 'Incident' )->find( $i_id );
    my $parties = $req->body_params->( 'people', { multiple => TRUE } );
    my $incident_party_rs = $self->schema->resultset( 'IncidentParty' );
 
@@ -271,9 +270,9 @@ sub add_incident_party_action : Role(controller) {
       my $person = $self->$_find_person( $scode );
 
       $incident_party_rs->create( {
-         incident_party_id => $person->id, incident_id => $iid } );
+         incident_party_id => $person->id, incident_id => $i_id } );
 
-      my $message = "action:add-incident_party incident_id:${iid} "
+      my $message = "action:add-incident_party incident_id:${i_id} "
                   . "shortcode:${scode}";
 
       $self->send_event( $req, $message );
@@ -297,16 +296,16 @@ sub create_incident_action : Role(controller) {
    try   { $incident->insert }
    catch { $self->blow_smoke( $_, 'create', 'incident', $title ) };
 
-   my $iid = $incident->id; $title =~ s{ [ ] }{_}gmx; $title = lc $title;
-   my $message = "action:create-incident incident_id:${iid} "
+   my $i_id = $incident->id; $title =~ s{ [ ] }{_}gmx; $title = lc $title;
+   my $message = "action:create-incident incident_id:${i_id} "
                . "incident_title:${title}";
 
    $self->send_event( $req, $message );
 
    my $who = $req->session->user_label;
-   my $location = uri_for_action $req, $self->moniker.'/incident', [ $iid ];
+   my $location = $req->uri_for_action( $self->moniker.'/incident', [ $i_id ] );
 
-   $message = [ to_msg 'Incident [_1] created by [_2]', $iid, $who ];
+   $message = [ to_msg 'Incident [_1] created by [_2]', $i_id, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -314,21 +313,21 @@ sub create_incident_action : Role(controller) {
 sub delete_incident_action : Role(controller) {
    my ($self, $req) = @_;
 
-   my $iid      = $req->uri_params->( 0 );
-   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
-   my $title    = $incident->title;
+   my $i_id = $req->uri_params->( 0 );
+   my $incident = $self->schema->resultset( 'Incident' )->find( $i_id );
+   my $title = $incident->title;
 
    $incident->delete; $title =~ s{ [ ] }{_}gmx; $title = lc $title;
 
-   my $message  = "action:delete-incident incident_id:${iid} "
-                . "incident_title:${title}";
+   my $message = "action:delete-incident incident_id:${i_id} "
+               . "incident_title:${title}";
 
    $self->send_event( $req, $message );
 
-   my $who      = $req->session->user_label;
-   my $location = uri_for_action $req, $self->moniker.'/incidents';
+   my $who = $req->session->user_label;
+   my $location = $req->uri_for_action( $self->moniker.'/incidents' );
 
-   $message = [ to_msg 'Incident [_1] deleted by [_2]', $iid, $who ];
+   $message = [ to_msg 'Incident [_1] deleted by [_2]', $i_id, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -336,28 +335,29 @@ sub delete_incident_action : Role(controller) {
 sub incident : Role(controller) {
    my ($self, $req) = @_;
 
-   my $iid = $req->uri_params->( 0, { optional => TRUE } );
-   my $href = uri_for_action $req, $self->moniker.'/incident', [ $iid ];
-   my $action = $iid ? 'update' : 'create';
+   my $i_id = $req->uri_params->( 0, { optional => TRUE } );
+   my $href = $req->uri_for_action( $self->moniker.'/incident', [ $i_id ] );
+   my $action = $i_id ? 'update' : 'create';
    my $form = blank_form 'incident', $href;
    my $page = {
       forms => [ $form ], selected => 'incidents',
       title => locm $req, 'incident_title',
    };
-   my $links = $self->$_incident_ops_links( $req, $iid );
-   my $incident = $self->$_maybe_find( 'Incident', $iid );
+   my $links = $self->$_incident_ops_links( $req, $i_id );
+   my $incident = $self->$_maybe_find( 'Incident', $i_id );
    my $fopts = { disabled => FALSE };
 
-   $iid and p_list $form, PIPE_SEP, $links, $_link_opts->();
+   $i_id and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    p_fields $form, $self->schema, 'Incident', $incident,
       $self->$_bind_incident_fields( $req, $page, $incident, $fopts );
 
-   p_action $form, $action, [ 'incident', $iid ], { request => $req };
+   p_action $form, $action, [ 'incident', $i_id ], { request => $req };
 
-   $iid and p_action $form, 'delete', [ 'incident', $iid ], { request => $req };
+   $i_id and p_action $form, 'delete', [ 'incident', $i_id ], {
+      request => $req };
 
-   $_add_incident_js->( $page, $iid );
+   $_add_incident_js->( $page, $i_id );
 
    return $self->get_stash( $req, $page );
 }
@@ -365,19 +365,20 @@ sub incident : Role(controller) {
 sub incident_party : Role(controller) {
    my ($self, $req) = @_;
 
-   my $iid  = $req->uri_params->( 0 );
-   my $href = uri_for_action $req, $self->moniker.'/incident_party', [ $iid ];
+   my $i_id = $req->uri_params->( 0 );
+   my $actp = $self->moniker.'/incident_party';
+   my $href = $req->uri_for_action( $actp, [ $i_id ] );
    my $form = blank_form 'incident_party', $href;
    my $page = {
       forms => [ $form ], selected => 'incidents',
       title => locm $req, 'incident_party_title'
    };
-   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
+   my $incident = $self->schema->resultset( 'Incident' )->find( $i_id );
    my $title = $incident->title;
    my $parties = [ map { [ $_->person->label, $_->person->shortcode ] }
                    $incident->parties->all ];
    my $people = $_subtract->( $self->$_list_all_people, $parties );
-   my $links = $self->$_incident_party_ops_links( $req, $page, $iid );
+   my $links = $self->$_incident_party_ops_links( $req, $page, $i_id );
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
@@ -415,11 +416,11 @@ sub incidents : Role(controller) {
       forms => [ $form ], selected => 'incidents',
       title => locm $req, 'incidents_title',
    };
-   my $opts      =  {
+   my $opts = {
       controller => $req->username,
       is_manager => is_member( 'incident_manager', $req->session->roles ),
-      page       => delete $params->{page} // 1,
-      rows       => $req->session->rows_per_page,
+      page => delete $params->{page} // 1,
+      rows => $req->session->rows_per_page,
    };
    my $rs = $self->schema->resultset( 'Incident' );
    my $incidents = $rs->search_for_incidents( $opts );
@@ -439,17 +440,17 @@ sub incidents : Role(controller) {
 sub remove_incident_party_action : Role(controller) {
    my ($self, $req) = @_;
 
-   my $iid = $req->uri_params->( 0 );
-   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
+   my $i_id = $req->uri_params->( 0 );
+   my $incident = $self->schema->resultset( 'Incident' )->find( $i_id );
    my $parties = $req->body_params->( 'incident_party', { multiple => TRUE } );
    my $incident_party_rs = $self->schema->resultset( 'IncidentParty' );
 
    for my $scode (@{ $parties }) {
       my $person = $self->$_find_person( $scode );
 
-      $incident_party_rs->find( $iid, $person->id )->delete;
+      $incident_party_rs->find( $i_id, $person->id )->delete;
 
-      my $message = "action:remove-incident_party incident_id:${iid} "
+      my $message = "action:remove-incident_party incident_id:${i_id} "
                   . "shortcode:${scode}";
 
       $self->send_event( $req, $message );
@@ -465,25 +466,25 @@ sub remove_incident_party_action : Role(controller) {
 sub update_incident_action : Role(controller) {
    my ($self, $req) = @_;
 
-   my $iid = $req->uri_params->( 0 );
-   my $incident = $self->schema->resultset( 'Incident' )->find( $iid );
+   my $i_id = $req->uri_params->( 0 );
+   my $incident = $self->schema->resultset( 'Incident' )->find( $i_id );
    my $title = $incident->title;
 
    $self->$_update_incident_from_request( $req, $incident );
 
    try   { $incident->update }
-   catch { $self->blow_smoke( $_, 'update', 'incident', $iid ) };
+   catch { $self->blow_smoke( $_, 'update', 'incident', $i_id ) };
 
    $title =~ s{ [ ] }{_}gmx; $title = lc $title;
 
-   my $message = "action:update-incident incident_id:${iid} "
+   my $message = "action:update-incident incident_id:${i_id} "
                . "incident_title:${title}";
 
    $self->send_event( $req, $message );
 
    my $who = $req->session->user_label;
 
-   $message = [ to_msg 'Incident [_1] updated by [_2]', $iid, $who ];
+   $message = [ to_msg 'Incident [_1] updated by [_2]', $i_id, $who ];
 
    return { redirect => { location => $req->uri, message => $message } };
 }

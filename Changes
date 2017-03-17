@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Make uri_for_action a method on the request object
           - Returns model calling signature to self, req
           - Deprecates f_link
           - Fixes retry period in jobdaemon

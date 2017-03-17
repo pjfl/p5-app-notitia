@@ -2,7 +2,7 @@ package App::Notitia::Model::Documentation;
 
 use App::Notitia::Attributes;  # Will do cleaning
 use App::Notitia::Util     qw( build_tree iterator localise_tree mtime
-                               register_action_paths uri_for_action );
+                               register_action_paths );
 use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( first_char throw );
 use Class::Usul::Types     qw( NonZeroPositiveInt PositiveInt );
@@ -82,7 +82,7 @@ my $_docs_url = sub {
 
 # Public methods
 sub base_uri {
-   return uri_for_action( $_[ 1 ], 'docs/page', $_[ 2 ] );
+   return $_[ 1 ]->uri_for_action( 'docs/page', $_[ 2 ] );
 }
 
 sub cancel_edit_action : Role(anon) {
@@ -102,8 +102,8 @@ sub delete_file_action : Role(editor) {
 }
 
 sub docs_url {
-   return uri_for_action
-      (   $_[ 1 ], $_[ 0 ]->moniker.'/page',
+   return $_[ 1 ]->uri_for_action
+      (   $_[ 0 ]->moniker.'/page',
         [ $_[ 0 ]->$_docs_url( $_[ 2 ] // $_[ 1 ]->locale ) ] );
 }
 

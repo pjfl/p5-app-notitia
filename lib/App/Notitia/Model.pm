@@ -3,7 +3,7 @@ package App::Notitia::Model;
 use App::Notitia::Attributes qw( is_action is_dialog );
 use App::Notitia::Constants  qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Form       qw( blank_form p_tag );
-use App::Notitia::Util       qw( action_for_uri locm to_json uri_for_action );
+use App::Notitia::Util       qw( action_for_uri locm to_json );
 use Class::Usul::Functions   qw( exception throw trim );
 use Class::Usul::Time        qw( time2str );
 use Class::Usul::Types       qw( Plinth );
@@ -70,7 +70,7 @@ my $_validation_errors = sub {
 my $_auth_redirect = sub {
    my ($self, $req, $e, $message) = @_;
 
-   my $location = uri_for_action $req, $self->config->places->{login};
+   my $location = $req->uri_for_action( $self->config->places->{login} );
 
    (   $e->instance_of( IncorrectPassword )
     or $e->instance_of( IncorrectAuthCode ))

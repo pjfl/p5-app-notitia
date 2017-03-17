@@ -3,12 +3,11 @@ package App::Notitia::Model::Person;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
                                 NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form p_action p_fields p_js p_link
-                                p_list p_row p_table );
+use App::Notitia::Form      qw( blank_form p_action p_fields p_js
+                                p_link p_list p_row p_table );
 use App::Notitia::Util      qw( check_field_js dialog_anchor loc make_tip
                                 management_link page_link_set
-                                register_action_paths to_dt to_msg
-                                uri_for_action );
+                                register_action_paths to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Types      qw( ArrayRef );
@@ -247,13 +246,11 @@ my $_people_ops_links = sub {
 
    $page_links and push @{ $links }, $page_links;
 
-   my $href = uri_for_action $req, "${moniker}/message", [], $params;
+   my $href = $req->uri_for_action( "${moniker}/message", [], $params );
 
    $self->message_link( $req, $page, $href, 'message_people', $links );
 
-   $actionp = "${moniker}/person";
-
-   p_link $links, 'person', uri_for_action( $req, $actionp ), {
+   p_link $links, 'person', $req->uri_for_action( "${moniker}/person" ), {
       action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
@@ -271,7 +268,7 @@ my $_person_ops_links = sub {
       push @{ $links }, management_link $req, $actionp, $scode;
    }
 
-   my $href = uri_for_action $req, "${moniker}/mugshot", [ $scode ];
+   my $href = $req->uri_for_action( "${moniker}/mugshot", [ $scode ] );
 
    p_js $page, dialog_anchor 'upload_mugshot', $href, {
       name => 'mugshot_upload', title => loc( $req, 'Mugshot Upload' ), };
@@ -281,11 +278,11 @@ my $_person_ops_links = sub {
    my $actionp = "${moniker}/person"; my $view_nok;
 
    if (my $nok = $person->next_of_kin) {
-      p_link $links, 'nok', uri_for_action( $req, $actionp, [ $nok ] ), {
+      p_link $links, 'nok', $req->uri_for_action( $actionp, [ $nok ] ), {
          action => 'view', container_class => 'add-link', request => $req };
    }
 
-   p_link $links, 'person', uri_for_action( $req, $actionp ), {
+   p_link $links, 'person', $req->uri_for_action( $actionp ), {
       action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
@@ -399,7 +396,7 @@ sub activate : Role(anon) {
 
       $req->session->username( $name );
       $self->send_event( $req, "action:activate-person shortcode:${name}" );
-      $location = uri_for_action $req, $places->{password}, [ $name ];
+      $location = $req->uri_for_action( $places->{password}, [ $name ] );
       $message  = [ to_msg '[_1] account activated', $person->label ];
    }
    else {
@@ -442,7 +439,7 @@ sub create_person_action : Role(person_manager) {
 
    my $who      = $req->session->user_label;
    my $key      = '[_1] created by [_2] ref. [_3]';
-   my $location = uri_for_action $req, $self->moniker.'/people';
+   my $location = $req->uri_for_action( $self->moniker.'/people' );
 
    $message = [ to_msg $key, $person->label, $who, $job->label ];
 
@@ -461,7 +458,7 @@ sub delete_person_action : Role(person_manager) {
    $self->send_event( $req, "action:delete-person shortcode:${name}" );
 
    my $who      = $req->session->user_label;
-   my $location = uri_for_action $req, $self->moniker.'/people';
+   my $location = $req->uri_for_action( $self->moniker.'/people' );
    my $message  = [ to_msg '[_1] deleted by [_2]', $label, $who ];
 
    return { redirect => { location => $location, message => $message } };
@@ -484,9 +481,9 @@ sub mugshot : Dialog Role(person_manager) {
 
    my $scode  = $req->uri_params->( 0 );
    my $stash  = $self->dialog_stash( $req );
-   my $params = { name => $scode, type => 'mugshot' };
    my $places = $self->config->places;
-   my $href   = uri_for_action $req, $places->{upload}, [], $params;
+   my $params = { name => $scode, type => 'mugshot' };
+   my $href   = $req->uri_for_action( $places->{upload}, [], $params );
 
    $stash->{page}->{forms}->[ 0 ] = blank_form 'upload-file', $href;
    $self->components->{docs}->upload_dialog( $req, $stash->{page} );
@@ -501,7 +498,7 @@ sub person : Role(person_manager) {
    my $name       =  $req->uri_params->( 0, { optional => TRUE } );
    my $role       =  $req->query_params->( 'role', { optional => TRUE } );
    my $status     =  $req->query_params->( 'status', { optional => TRUE } );
-   my $href       =  uri_for_action $req, "${moniker}/person", [ $name ];
+   my $href       =  $req->uri_for_action( "${moniker}/person", [ $name ] );
    my $form       =  blank_form 'person-admin', $href;
    my $action     =  $name ? 'update' : 'create';
    my $page       =  {
@@ -567,7 +564,7 @@ sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
                     rows   => $req->session->rows_per_page,
                     status => $status,
                     type   => $type, };
-   my $href    =  uri_for_action $req, $actionp, [], $params;
+   my $href    =  $req->uri_for_action( $actionp, [], $params );
    my $form    =  blank_form 'people', $href, {
       class    => 'wider-table', id => 'people' };
    my $page    =  {
@@ -614,7 +611,7 @@ sub update_person_action : Role(person_manager) {
    $self->send_event( $req, "action:update-person shortcode:${scode}" );
 
    my $who      = $req->session->user_label;
-   my $location = uri_for_action $req, $self->moniker.'/people';
+   my $location = $req->uri_for_action( $self->moniker.'/people' );
    my $message  = [ to_msg '[_1] updated by [_2]', $label, $who ];
 
    return { redirect => { location => $location, message => $message } };

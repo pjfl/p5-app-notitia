@@ -8,10 +8,9 @@ use App::Notitia::Constants qw( C_DIALOG FALSE NUL SPC
 use App::Notitia::Form      qw( blank_form p_button p_checkbox p_hidden
                                 p_js p_link p_select );
 use App::Notitia::Util      qw( assign_link dialog_anchor js_submit_config
-                                js_togglers_config local_dt locm make_tip now_dt
-                                register_action_paths slot_claimed
-                                slot_identifier slot_limit_index to_dt to_msg
-                                uri_for_action );
+                                js_togglers_config local_dt locm make_tip
+                                now_dt register_action_paths slot_claimed
+                                slot_identifier slot_limit_index to_dt to_msg );
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
 use Moo;
@@ -51,7 +50,7 @@ my $_add_js_dialog = sub {
    my ($req, $page, $args, $action, $name, $title) = @_;
 
    my $actionp = $page->{moniker}.'/slot';
-   my $href = uri_for_action $req, $actionp, $args, { action => $action };
+   my $href = $req->uri_for_action( $actionp, $args, { action => $action } );
 
    p_js $page, dialog_anchor $args->[ 2 ], $href, {
       name  => "${action}-${name}",
@@ -144,7 +143,7 @@ my $_operators_vehicle_link = sub {
          value => $_operators_vehicle_label->( $slot_data->{slov} ),
       };
 
-      p_js $page, dialog_anchor $id, uri_for_action( $req, $actionp, $args ), {
+      p_js $page, dialog_anchor $id, $req->uri_for_action( $actionp, $args ), {
          name => 'operator-vehicle' ,
          title => locm $req, 'operators_vehicle_title' };
    }
@@ -159,7 +158,7 @@ my $_operators_vehicle_link = sub {
 my $_participents_link = sub {
    my ($req, $page, $event) = @_; $event or return;
 
-   my $href = uri_for_action $req, 'event/participents', [ $event->uri ];
+   my $href = $req->uri_for_action( 'event/participents', [ $event->uri ] );
    my $tip  = locm $req, 'participents_view_link', $event->label;
 
    return { class   => 'narrow',
@@ -250,13 +249,14 @@ my $_vreqs_for_event = sub {
 };
 
 my $_vehicle_request_link = sub {
-   my ($schema, $req, $page, $event) = @_; $event or return;
+   my ($req, $page, $schema, $event) = @_; $event or return;
 
-   my $vreqs   = $_vreqs_for_event->( $schema, $event );
-   my $href    = uri_for_action $req, 'asset/request_vehicle', [ $event->uri ];
+   my $actionp = 'asset/request_vehicle';
+   my $href    = $req->uri_for_action( $actionp, [ $event->uri ] );
    my $link    = { class => 'align-center embeded small-slot tips' };
    my $tip     = locm $req, 'vehicle_request_tip', $event->label;
    my $hint    = locm $req, 'Event Assignment';
+   my $vreqs   = $_vreqs_for_event->( $schema, $event );
    my $summary = $_summary_link->( $vreqs );
 
    $link->{title} = $hint.SPC.TILDE.SPC.$tip;
@@ -310,17 +310,17 @@ my $_event_link = sub {
    my ($req, $page, $local_dt, $event) = @_;
 
    unless ($event) {
-      my $name  = 'create-event';
-      my $class = 'blank-event submit';
-      my $href  =
-         uri_for_action $req, 'event/event', [], { date => $local_dt->ymd };
+      my $name   = 'create-event';
+      my $class  = 'blank-event submit';
+      my $params = { date => $local_dt->ymd };
+      my $href   = $req->uri_for_action( 'event/event', [], $params );
 
       $_onclick_relocate->( $page, $name, $href );
 
       return { class => $class, colspan => $_max_rota_cols, name => $name, };
    }
 
-   my $href = uri_for_action $req, 'event/event_summary', [ $event->uri ];
+   my $href = $req->uri_for_action( 'event/event_summary', [ $event->uri ] );
    my $tip  = locm $req, 'Click to view the [_1] event',
       ucfirst $event->localised_label( $req );
 
@@ -334,15 +334,15 @@ my $_event_link = sub {
 };
 
 my $_events = sub {
-   my ($schema, $req, $page, $name, $local_dt, $todays_events) = @_;
+   my ($req, $page, $name, $local_dt, $schema, $todays_events) = @_;
 
-   my $href    = uri_for_action $req, $page->{moniker}.'/day_rota';
+   my $href    = $req->uri_for_action( $page->{moniker}.'/day_rota' );
    my $picker  = $_date_picker->( $name, $local_dt, $href );
    my $col1    = { value => $picker, class => 'rota-date narrow' };
    my $first   = TRUE;
 
    while (defined (my $event = $todays_events->next) or $first) {
-      my $col2 = $_vehicle_request_link->( $schema, $req, $page, $event );
+      my $col2 = $_vehicle_request_link->( $req, $page, $schema, $event );
       my $col3 = $_event_link->( $req, $page, $local_dt, $event );
       my $col4 = $_participents_link->( $req, $page, $event );
       my $cols = [ $col1, $col2, $col3 ];
@@ -409,17 +409,14 @@ my $_riders_n_drivers = sub {
 my $_day_page = sub {
    my ($self, $req, $name, $rota_dt, $todays_events, $data) = @_;
 
-   my $schema   =  $self->schema;
-   my $limits   =  $self->config->slot_limits;
    my $local_dt =  local_dt $rota_dt;
-   my $date     =  $local_dt->month_name.SPC.$local_dt->day.SPC.$local_dt->year;
-   my $title    =  locm $req, 'day_rota_title', locm( $req, $name ), $date;
    my $actionp  =  $self->moniker.'/day_rota';
-   my $next     =  uri_for_action $req, $actionp,
-                   [ $name, $local_dt->clone->add( days => 1 )->ymd ];
-   my $prev     =  uri_for_action $req, $actionp,
-                   [ $name, $local_dt->clone->subtract( days => 1 )->ymd ];
+   my $args     =  [ $name, $local_dt->clone->add( days => 1 )->ymd ];
+   my $next     =  $req->uri_for_action( $actionp, $args );
+      $args     =  [ $name, $local_dt->clone->subtract( days => 1 )->ymd ];
+   my $prev     =  $req->uri_for_action( $actionp, $args );
    my $sod      =  local_dt( now_dt )->truncate( to => 'day' );
+   my $date     =  $local_dt->month_name.SPC.$local_dt->day.SPC.$local_dt->year;
    my $page     =  {
       disabled  => $local_dt < $sod ? TRUE : FALSE,
       fields    => { nav => { next => $next, prev => $prev }, },
@@ -429,9 +426,11 @@ my $_day_page = sub {
                      headers     => $_day_rota_headers->( $req ),
                      shifts      => [], },
       template  => [ '/menu', 'custom/day-table' ],
-      title     => $title };
+      title     => locm $req, 'day_rota_title', locm( $req, $name ), $date };
+   my $limits   =  $self->config->slot_limits;
+   my $schema   =  $self->schema;
 
-   $_events->( $schema, $req, $page, $name, $local_dt, $todays_events );
+   $_events->( $req, $page, $name, $local_dt, $schema, $todays_events );
    $_controllers->( $req, $page, $name, $local_dt, $data, $limits );
    $_riders_n_drivers->( $req, $page, $name, $local_dt, $data, $limits );
 
@@ -471,9 +470,8 @@ my $_push_vehicle_select = sub {
       fields => { selected => $vehicle }, owner => $person } );
 
    p_select $form, 'vehicle', [ [ NUL, undef ], @{ $vehicles } ], {
-      container_class => 'dialog-contrast',
-      label => 'personal_vehicle', label_id => "${id}_label",
-      tip => make_tip $req, 'personal_vehicle_tip' };
+      container_class => 'dialog-contrast', label => 'personal_vehicle',
+      label_id => "${id}_label", tip => make_tip $req, 'personal_vehicle_tip' };
 
    p_hidden $form, 'original_vehicle', $vehicle;
 
@@ -510,7 +508,7 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
                           . "slot:${name} vehicle_requested:${request_sv}" );
 
    my $args     = [ $rota_name, $rota_date ];
-   my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;
+   my $location = $req->uri_for_action( $self->moniker.'/day_rota', $args );
    my $label    = slot_identifier $rota_name, $rota_date, $name;
    my $message  = [ to_msg '[_1] claimed slot [_2]', $person->label, $label ];
 
@@ -558,14 +556,15 @@ sub operator_vehicle : Dialog Role(any) {
 
    my $rota_name = $req->uri_params->( 0 );
    my $rota_date = $req->uri_params->( 1 );
-   my $slot_key = $req->uri_params->( 2 );
-   my $stash = $self->dialog_stash( $req );
-   my $person = $self->$_find_by_shortcode( $req->username );
-   my $args = [ $rota_name, $rota_date, $slot_key, $person ];
-   my $href = uri_for_action $req, $self->moniker.'/operator_vehicle', $args;
-   my $form = $stash->{page}->{forms}->[ 0 ]
-            = blank_form 'operator-vehicle', $href;
-   my $id = 'vehicle';
+   my $slot_key  = $req->uri_params->( 2 );
+   my $stash     = $self->dialog_stash( $req );
+   my $person    = $self->$_find_by_shortcode( $req->username );
+   my $actionp   = $self->moniker.'/operator_vehicle';
+   my $args      = [ $rota_name, $rota_date, $slot_key, $person ];
+   my $href      = $req->uri_for_action( $actionp, $args );
+   my $form      = $stash->{page}->{forms}->[ 0 ]
+                 = blank_form 'operator-vehicle', $href;
+   my $id        = 'vehicle';
 
    $self->$_push_vehicle_select( $req, $form, $id, $person, $args );
 
@@ -586,7 +585,7 @@ sub rota_redirect_action : Role(any) {
    my $actionp   = $self->moniker."/${period}_rota";
    my $args      = [ $rota_name, $local_dt->ymd ];
    my $params    = $mid ? { mid => $mid } : {};
-   my $location  = uri_for_action $req, $actionp, $args, $params;
+   my $location  = $req->uri_for_action( $actionp, $args, $params );
 
    return { redirect => { location => $location } };
 }
@@ -594,13 +593,13 @@ sub rota_redirect_action : Role(any) {
 sub select_operator_vehicle_action : Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
-   my $rota_name = $req->uri_params->( 0 );
-   my $rota_date = $req->uri_params->( 1 );
-   my $slot_key = $req->uri_params->( 2 );
-   my $scode = $req->uri_params->( 3 );
-   my $rota_dt = to_dt $rota_date;
-   my @slot_key = split m{ _ }mx, $slot_key;
-   my $opts = { optional => TRUE };
+   my $rota_name  = $req->uri_params->( 0 );
+   my $rota_date  = $req->uri_params->( 1 );
+   my $slot_key   = $req->uri_params->( 2 );
+   my $scode      = $req->uri_params->( 3 );
+   my $rota_dt    = to_dt $rota_date;
+   my @slot_key   = split m{ _ }mx, $slot_key;
+   my $opts       = { optional => TRUE };
    my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
 
    $scode ne $req->username
@@ -630,7 +629,7 @@ sub slot : Dialog Role(rota_manager) Role(rider) Role(controller) Role(driver) {
    my $args   = [ $params->( 0 ), $params->( 1 ), $name ];
    my $action = $req->query_params->( 'action' ); # claim or yield
    my $stash  = $self->dialog_stash( $req );
-   my $href   = uri_for_action $req, $self->moniker.'/slot', $args;
+   my $href   = $req->uri_for_action( $self->moniker.'/slot', $args );
    my $form   = $stash->{page}->{forms}->[ 0 ]
               = blank_form "${action}-slot", $href;
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $name, 3;
@@ -682,10 +681,10 @@ sub yield_slot_action : Role(rota_manager) Role(rider) Role(controller)
                           . "rota_name:${rota_name} rota_date:${rota_date} "
                           . "slot:${slot_name}" );
 
-   my $args = [ $rota_name, $rota_date ];
-   my $location = uri_for_action $req, $self->moniker.'/day_rota', $args;
-   my $label = slot_identifier $rota_name, $rota_date, $slot_name;
-   my $message = [ to_msg '[_1] yielded slot [_2]', $assignee->label, $label ];
+   my $args     = [ $rota_name, $rota_date ];
+   my $location = $req->uri_for_action( $self->moniker.'/day_rota', $args );
+   my $label    = slot_identifier $rota_name, $rota_date, $slot_name;
+   my $message  = [ to_msg '[_1] yielded slot [_2]', $assignee->label, $label ];
 
    return { redirect => { location => $location, message => $message } };
 }

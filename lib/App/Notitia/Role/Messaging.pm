@@ -6,8 +6,7 @@ use App::Notitia::Form      qw( blank_form p_button p_js p_link
                                 p_radio p_select p_textarea );
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::Util      qw( js_togglers_config js_window_config locm
-                                mail_domain set_element_focus to_msg
-                                uri_for_action );
+                                mail_domain set_element_focus to_msg );
 use Class::Usul::File;
 use Class::Usul::Functions  qw( create_token throw trim );
 use Moo::Role;
@@ -106,7 +105,7 @@ sub create_person_email {
    my $key      = 'Account activation for [_2]@[_1]';
    my $template = $self->$_template_path( 'user_email' );
    my $subject  = locm $req, $key, $conf->title, $person->name;
-   my $link     = uri_for_action $req, $self->moniker.'/activate', [ $token ];
+   my $link     = $req->uri_for_action( $self->moniker.'/activate', [ $token ]);
    my $stash    = { app_name => $conf->title, link => $link,
                     password => $password, shortcode => $scode,
                     subject  => $subject, };
@@ -125,7 +124,7 @@ sub create_reset_email {
    my $key      = 'Password reset for [_2]@[_1]';
    my $template = $self->$_template_path( 'password_email' );
    my $subject  = locm $req, $key, $conf->title, $person->name;
-   my $link     = uri_for_action $req, $self->moniker.'/reset', [ $token ];
+   my $link     = $req->uri_for_action( $self->moniker.'/reset', [ $token ] );
    my $stash    = { app_name => $conf->title, link => $link,
                     password => $password, shortcode => $scode,
                     subject  => $subject, };
@@ -139,12 +138,13 @@ sub create_totp_request_email {
    my ($self, $req, $person) = @_;
 
    my $conf     = $self->config;
-   my $scode    = $person->shortcode;
-   my $token    = substr create_token, 0, 32;
    my $key      = 'TOTP Request for [_2]@[_1]';
    my $template = $self->$_template_path( 'totp_request_email' );
    my $subject  = locm $req, $key, $conf->title, $person->name;
-   my $link     = uri_for_action $req, $self->moniker.'/totp_secret', [ $token];
+   my $token    = substr create_token, 0, 32;
+   my $actionp  = $self->moniker.'/totp_secret';
+   my $link     = $req->uri_for_action( $actionp, [ $token ] );
+   my $scode    = $person->shortcode;
    my $stash    = { app_name => $conf->title, link => $link,
                     shortcode => $scode, subject => $subject, };
 
@@ -180,7 +180,7 @@ sub message_create {
                 . $self->$_flatten( $req )."send_message ${sink} ${template}";
    my $job_rs   = $self->schema->resultset( 'Job' );
    my $job      = $job_rs->create( { command => $cmd, name => 'send_message' });
-   my $location = uri_for_action $req, $self->moniker.'/'.$opts->{action};
+   my $location = $req->uri_for_action( $self->moniker.'/'.$opts->{action} );
    my $message  = [ to_msg 'Job [_1] created by [_2]',
                            $job->label, $req->session->user_label ];
 

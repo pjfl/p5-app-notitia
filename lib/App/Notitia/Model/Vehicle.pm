@@ -2,14 +2,14 @@ package App::Notitia::Model::Vehicle;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::Form      qw( blank_form f_link p_action p_button p_date
-                                p_fields p_hidden p_list p_row p_select
+use App::Notitia::Form      qw( blank_form p_action p_button p_date p_fields
+                                p_hidden p_item p_link p_list p_row p_select
                                 p_table p_tag p_textarea p_textfield );
 use App::Notitia::Util      qw( assign_link check_field_js display_duration
                                 loc locd now_dt make_tip management_link
                                 page_link_set register_action_paths
                                 set_element_focus slot_identifier time2int
-                                to_dt to_msg uri_for_action );
+                                to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
@@ -128,9 +128,8 @@ my $_transport_links = sub {
 
    my $moniker = $self->moniker; my $uri = $event->uri;
 
-   push @links, {
-      value => management_link
-         ( $req, "${moniker}/request_vehicle", 'edit', { args => [ $uri ] } ) };
+   p_item \@links, management_link
+      $req, "${moniker}/request_vehicle", 'edit', { args => [ $uri ] };
 
    return @links;
 };
@@ -472,42 +471,42 @@ my $_vehicle_events = sub {
 my $_vehicle_links = sub {
    my ($self, $req, $params, $vehicle) = @_; my $moniker = $self->moniker;
 
-   my $vrn = $vehicle->vrn; my $links = [ { value => $vehicle->label } ];
+   my $vrn = $vehicle->vrn; my $links = [];
 
-   push @{ $links }, { value => loc $req, $vehicle->type };
+   p_item $links, $vehicle->label; p_item $links, loc $req, $vehicle->type;
 
-   push @{ $links },
-      { value => management_link( $req, "${moniker}/vehicle", $vrn, {
-         params => $req->query_params->( { optional => TRUE } ) } ) };
+   p_item $links, management_link $req, "${moniker}/vehicle", $vrn, {
+      params => $req->query_params->( { optional => TRUE } ) };
 
    $params->{service} or return $links;
 
    my $now  = now_dt;
    my $opts = $_create_action->( $req );
-   my $href = uri_for_action $req, 'event/vehicle_event', [ $vrn ];
+   my $href = $req->uri_for_action( 'event/vehicle_event', [ $vrn ] );
 
-   push @{ $links }, { value => f_link 'event', $href, $opts };
+   p_link $links, 'event', $href, $opts;
 
-   push @{ $links },
-      { value => management_link( $req, "${moniker}/vehicle_events", $vrn, {
-         params => { after => $now->subtract( days => 1 )->ymd } } ) };
+   p_item $links, management_link $req, "${moniker}/vehicle_events", $vrn, {
+      params => { after => $now->subtract( days => 1 )->ymd } };
 
    my $keeper = $self->find_last_keeper( $req, $now, $vehicle );
 
-   push @{ $links }, { value => $keeper ? $keeper->[ 0 ]->label : NUL };
+   p_item $links, $keeper ? $keeper->[ 0 ]->label : NUL;
 
    return $links;
 };
 
 my $_vehicles_ops_links = sub {
-   my ($self, $req, $opts, $pager) = @_; my $moniker = $self->moniker;
+   my ($self, $req, $opts, $pager) = @_; my $links = [];
 
-   my $actionp = "${moniker}/vehicles";
+   my $actionp = $self->moniker.'/vehicles';
    my $page_links = page_link_set $req, $actionp, [], $opts, $pager;
-   my $href = uri_for_action $req, "${moniker}/vehicle";
-   my $links = [ f_link 'vehicle', $href, $_create_action->( $req ) ];
 
-   $page_links and unshift @{ $links }, $page_links;
+   $page_links and push @{ $links }, $page_links;
+
+   my $href = $req->uri_for_action( $self->moniker.'/vehicle' );
+
+   p_link $links, 'vehicle', $href, $_create_action->( $req );
 
    return $links;
 };
@@ -517,7 +516,7 @@ sub adhoc_vehicle : Dialog Role(any) {
    my ($self, $req) = @_;
 
    my $stash  = $self->dialog_stash( $req );
-   my $href   = uri_for_action $req, $self->moniker.'/vehicle';
+   my $href   = $req->uri_for_action( $self->moniker.'/vehicle' );
    my $form   = $stash->{page}->{forms}->[ 0 ]
               = blank_form 'adhoc-vehicle', $href;
    my $schema = $self->schema;
@@ -548,7 +547,7 @@ sub assign : Dialog Role(rota_manager) {
       multiple => TRUE, optional => TRUE } ) // [ 'bike' ];
 
    my $stash  = $self->dialog_stash( $req );
-   my $href   = uri_for_action $req, $self->moniker.'/vehicle', $args;
+   my $href   = $req->uri_for_action( $self->moniker.'/vehicle', $args );
    my $form   = $stash->{page}->{forms}->[ 0 ]
               = blank_form "${action}-vehicle", $href;
    my $page   = $stash->{page};
@@ -586,7 +585,7 @@ sub create_vehicle_action : Role(rota_manager) {
 
    my $vrn = $vehicle->vrn;
    my $who = $req->session->user_label;
-   my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];
+   my $location = $req->uri_for_action( $self->moniker.'/vehicle', [ $vrn ] );
    my $message = [ to_msg 'Vehicle [_1] created by [_2]', $vrn, $who ];
 
    $self->send_event( $req, "action:create-vehicle vehicle:${vrn}" );
@@ -603,7 +602,7 @@ sub delete_vehicle_action : Role(rota_manager) {
    $vehicle->delete;
 
    my $who = $req->session->user_label;
-   my $location = uri_for_action $req, $self->moniker.'/vehicles';
+   my $location = $req->uri_for_action( $self->moniker.'/vehicles' );
    my $message = [ to_msg 'Vehicle [_1] deleted by [_2]', $vrn, $who ];
 
    $self->send_event( $req, "action:delete-vehicle vehicle:${vrn}" );
@@ -665,7 +664,7 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    my $uri      =  $req->uri_params->( 0 );
    my $event    =  $schema->resultset( 'Event' )->find_event_by
                    ( $uri, { prefetch => [ 'owner' ] } );
-   my $href     =  uri_for_action $req, $self->moniker.'/vehicle', [ $uri ];
+   my $href     =  $req->uri_for_action( $self->moniker.'/vehicle', [ $uri ] );
    my $form     =  blank_form 'vehicle-request', $href, {
       class     => 'wide-form no-header-wrap' };
    my $selected =  $event->event_type eq 'training' ? 'training_events'
@@ -683,6 +682,13 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
       disabled => TRUE, label => 'event_name' };
 
    p_date $form, 'start_date', $event->start_date, { disabled => TRUE };
+
+   my $links = []; $href = $req->uri_for_action( 'event/event', [ $uri ] );
+
+   p_link $links, 'edit_event', $href, {
+      container_class => 'table-link', request => $req };
+
+   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $table = p_table $form, { headers => $_vehicle_request_headers->( $req )};
 
@@ -719,7 +725,7 @@ sub request_vehicle_action : Role(event_manager) {
    }
 
    my $actionp  = $self->moniker.'/request_vehicle';
-   my $location = uri_for_action $req, $actionp, [ $uri ];
+   my $location = $req->uri_for_action( $actionp, [ $uri ] );
    my $message  = [ to_msg 'Vehicle request for event [_1] updated by [_2]',
                     $event->label, $req->session->user_label ];
 
@@ -742,7 +748,7 @@ sub update_vehicle_action : Role(rota_manager) {
    catch { $self->blow_smoke( $_, 'delete', 'vehicle', $vehicle->vrn ) };
 
    my $who      = $req->session->user_label; $vrn = $vehicle->vrn;
-   my $location = uri_for_action $req, $self->moniker.'/vehicle', [ $vrn ];
+   my $location = $req->uri_for_action( $self->moniker.'/vehicle', [ $vrn ] );
    my $message  = [ to_msg 'Vehicle [_1] updated by [_2]', $vrn, $who ];
 
    $self->send_event( $req, "action:update-vehicle vehicle:${vrn}" );
@@ -757,7 +763,7 @@ sub vehicle : Role(rota_manager) {
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
    my $service    =  $req->query_params->( 'service', { optional => TRUE } );
    my $private    =  $req->query_params->( 'private', { optional => TRUE } );
-   my $href       =  uri_for_action $req, $actionp, [ $vrn ];
+   my $href       =  $req->uri_for_action( $actionp, [ $vrn ] );
    my $form       =  blank_form 'vehicle-admin', $href;
    my $action     =  $vrn ? 'update' : 'create';
    my $page       =  {
@@ -770,9 +776,11 @@ sub vehicle : Role(rota_manager) {
    my $schema     =  $self->schema;
    my $vehicle    =  $_maybe_find_vehicle->( $schema, $vrn );
    my $fields     =  $_bind_vehicle_fields->( $schema, $req, $vehicle );
-      $href       =  uri_for_action $req, $actionp;
-   my $links      =  [ f_link 'vehicle', $href, $_create_action->( $req ) ];
    my $args       =  [ 'vehicle', $vehicle->label ];
+   my $links      =  [];
+
+   p_link $links, 'vehicle', $req->uri_for_action( $actionp ),
+       $_create_action->( $req );
 
    $vrn and p_list $form, PIPE_SEP, $links, $_link_opts->();
 
@@ -809,8 +817,10 @@ sub vehicle_events : Role(rota_manager) {
 
    p_row $table, [ map { $_->[ 1 ] } @{ $events } ];
 
-   my $href   = uri_for_action $req, 'event/vehicle_event', [ $vrn ];
-   my $links  = [ f_link 'event', $href, $_create_action->( $req ) ];
+   my $links  = [];
+   my $href   = $req->uri_for_action( 'event/vehicle_event', [ $vrn ] );
+
+   p_link $links, 'event', $href, $_create_action->( $req );
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
