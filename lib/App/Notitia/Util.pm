@@ -820,9 +820,9 @@ sub register_action_paths (;@) {
 sub set_element_focus ($$) {
    my ($form, $name) = @_;
 
-   return [ "var form = document.forms[ '${form}' ];",
-            "var f = function() { behaviour.rebuild(); form.${name}.focus() };",
-            'f.delay( 100 );', ];
+   return "var form = document.forms[ '${form}' ];\n"
+        . "var f = function() { behaviour.rebuild(); form.${name}.focus() };\n"
+        . 'f.delay( 100 );';
 }
 
 sub set_event_date ($$$) {

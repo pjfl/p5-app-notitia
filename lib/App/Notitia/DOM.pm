@@ -9,10 +9,11 @@ use Class::Usul::Functions  qw( is_arrayref is_hashref throw );
 use Scalar::Util            qw( blessed );
 
 our @EXPORT_OK = qw( new_container f_tag p_action p_button p_cell
-                     p_checkbox p_container p_date p_fields p_file p_hidden
-                     p_image p_item p_js p_label p_link p_list p_password
-                     p_radio p_row p_select p_slider p_span p_table p_tag
-                     p_text p_textarea p_textfield p_unordered );
+                     p_checkbox p_container p_date p_fields p_file p_folder
+                     p_hidden p_image p_item p_js p_label p_link p_list
+                     p_navlink p_password p_radio p_row p_select p_slider
+                     p_span p_table p_tag p_text p_textarea p_textfield
+                     p_unordered );
 
 # Private package variables
 my @ARG_NAMES = qw( name href opts );
@@ -249,6 +250,24 @@ sub p_file ($@) {
    my $f = shift; return $_push_field->( $f, 'file', $_bind->( @_ ) );
 }
 
+sub p_folder ($$;$) {
+   my ($f, $title, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   my $tip = $opts->{tip} // NUL;
+
+   if (my $req = $opts->{request}) {
+      $tip   = locm $req, $tip, @{ $opts->{tip_args} // [] };
+      $title = locm $req, "${title}_management_heading";
+   }
+
+   return $_push_field->( $f, 'folder', {
+      class => $opts->{class},
+      depth => $opts->{depth} // 0,
+      label => NUL,
+      tip   => $tip,
+      title => $title, } );
+}
+
 sub p_hidden ($@) {
    my $f = shift; return $_push_field->( $f, 'hidden', $_bind->( @_ ) );
 }
@@ -289,6 +308,36 @@ sub p_list ($@) {
    my ($f, $sep, $list, $opts) = @_;
 
    return p_container $f, $_f_list->( $sep, $list ), $opts;
+}
+
+sub p_navlink ($$$;$) {
+   my ($f, $name, $href, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   my $hint  = $opts->{hint } // 'Hint';
+   my $tip   = $opts->{tip  } // "${name}_tip";
+   my $value = $opts->{value} // "${name}_link";
+
+   if (my $req = $opts->{request}) {
+      $hint  = locm $req, $hint;
+      $tip   = locm $req, $tip,   @{ $opts->{tip_args  } // [] };
+      $value = locm $req, $value, @{ $opts->{value_args} // [] };
+      is_arrayref $href and $href = $req->uri_for_action( @{ $href } );
+   }
+
+   my $link =  {
+      class => $opts->{class} // NUL,
+      container_class => $opts->{container_class} // NUL,
+      depth => $opts->{depth} // 1,
+      hint  => $hint,
+      href  => $href,
+      name  => $name,
+      tip   => $tip,
+      type  => 'link',
+      value => $value, };
+
+   is_arrayref $f and push @{ $f }, $link;
+   is_hashref  $f and is_arrayref $f->{list} and p_item( $f, $link );
+   return;
 }
 
 sub p_password ($@) {

@@ -518,9 +518,9 @@ sub request_reset : Dialog Role(anon) {
    my $stash = $self->dialog_stash( $req );
    my $href  = $req->uri_for_action( $self->moniker.'/reset' );
    my $form  = $stash->{page}->{forms}->[ 0 ]
-             = new_container 'request-reset', $href;
+             = new_container 'request_reset', $href;
 
-   p_js $stash->{page}, set_element_focus 'request-reset', 'username';
+   p_js $stash->{page}, set_element_focus 'request_reset', 'username';
 
    p_textfield $form, 'username';
 

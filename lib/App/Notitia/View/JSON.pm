@@ -3,7 +3,7 @@ package App::Notitia::View::JSON;
 use namespace::autoclean;
 
 use App::Notitia::Util     qw( stash_functions );
-use Class::Usul::Constants qw( FALSE );
+use Class::Usul::Constants qw( FALSE NUL );
 use Class::Usul::Types     qw( Object );
 use Encode                 qw( encode );
 use JSON::MaybeXS          qw( );
@@ -36,8 +36,8 @@ sub serialize {
 
    $content->{ $_ } = $meta->{ $_ } for (keys %{ $meta });
 
-   my $js; $js = join "\n", @{ $page->{literal_js} // [] }
-      and $content->{script} = $js;
+   my $js = $page->{literal_js} // []; $js->[ 0 ]
+      and $content->{script} = join "\n", @{ $js };
 
    $content = encode( $self->encoding, $self->_transcoder->encode( $content ) );
 
