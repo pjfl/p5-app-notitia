@@ -3,9 +3,9 @@ package App::Notitia::Model::Person;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
                                 NUL PIPE_SEP SPC TRUE );
-use App::Notitia::DOM       qw( new_container p_action p_fields p_js
+use App::Notitia::DOM       qw( new_container p_action p_fields p_item p_js
                                 p_link p_list p_row p_table );
-use App::Notitia::Util      qw( check_field_js dialog_anchor loc make_tip
+use App::Notitia::Util      qw( check_field_js dialog_anchor locm make_tip
                                 management_link page_link_set
                                 register_action_paths to_dt to_msg );
 use Class::Null;
@@ -86,7 +86,7 @@ my $_bind_mugshot = sub {
    $href //= $req->uri_for( $uri.'nomugshot.png' );
 
    return { class => 'mugshot', href => $href,
-            title => loc( $req, 'mugshot' ), type => 'image' };
+            title => locm( $req, 'mugshot' ), type => 'image' };
 };
 
 my $_contact_links = sub {
@@ -134,13 +134,13 @@ my $_people_headers = sub {
    else {
       $header = 'people_role_heading';
 
-      if ($role eq 'driver' or $role eq 'rider') { $max = 5 }
-      elsif ($role eq 'controller' or $role eq 'fund_raiser') { $max = 4 }
-      elsif ($role) { $max = 2 }
-      else { $header = 'people_heading'; $max = 4 }
+      if ($role eq 'driver' or $role eq 'rider') { $max = 4 }
+      elsif ($role eq 'controller' or $role eq 'fund_raiser') { $max = 3 }
+      elsif ($role) { $max = 1 }
+      else { $header = 'people_heading'; $max = 3 }
    }
 
-   return [ map { { value => loc( $req, "${header}_${_}" ) } } 0 .. $max ];
+   return [ map { { value => locm( $req, "${header}_${_}" ) } } 0 .. $max ];
 };
 
 my $_people_title = sub {
@@ -151,7 +151,7 @@ my $_people_title = sub {
          : $status ? "${status}_people_list_link"
          :           'people_management_heading';
 
-   return loc( $req, $k );
+   return locm $req, $k;
 };
 
 my $_select_nav_link_name = sub {
@@ -206,19 +206,25 @@ my $_next_badge_id = sub {
 };
 
 my $_people_links = sub {
-   my ($self, $req, $params, $person) = @_;
-
-   my $moniker = $self->moniker; my $role = $params->{role};
+   my ($self, $req, $params, $person) = @_; my $links = [];
 
    $params->{type} and $params->{type} eq 'contacts'
                    and return $_contact_links->( $req, $person );
 
-   my @links; my $scode = $person->shortcode; my @paths = ();
+   my $scode   =  $person->shortcode;
+   my $action  =  is_member( 'person_manager', $req->session->roles )
+               ?  'person' : 'person_summary';
+   my $actionp =  $self->moniker.'/${action}';
+   my $href    =  $req->uri_for_action( $actionp, [ $scode ], $params );
+   my $link    =  p_link {}, "${scode}-${action}", $href, {
+      request  => $req,
+      tip      => locm( $req, "${action}_management_tip", $scode ),
+      value    => $person->label };
 
-   push @paths, is_member( 'person_manager', $req->session->roles )
-      ? "${moniker}/person" : "${moniker}/person_summary";
+   p_item $links, $link;
 
-   push @paths, 'role/role';
+   my @paths = (); push @paths, 'role/role';
+   my $role  = $params->{role};
 
    $role or  push @paths, 'user/email_subs', 'user/sms_subs';
 
@@ -229,12 +235,12 @@ my $_people_links = sub {
          and push @paths, 'blots/endorsements';
 
    for my $actionp ( @paths ) {
-      push @links, {
+      push @{ $links }, {
          value => management_link
             ( $req, $actionp, $scode, { params => $params } ) };
    }
 
-   return [ { value => $person->label }, @links ];
+   return $links;
 };
 
 my $_people_ops_links = sub {
@@ -271,7 +277,7 @@ my $_person_ops_links = sub {
    my $href = $req->uri_for_action( "${moniker}/mugshot", [ $scode ] );
 
    p_js $page, dialog_anchor 'upload_mugshot', $href, {
-      name => 'mugshot_upload', title => loc( $req, 'Mugshot Upload' ), };
+      name => 'mugshot_upload', title => locm( $req, 'Mugshot Upload' ), };
 
    p_link $links, 'mugshot', C_DIALOG, { action => 'upload', request => $req };
 
@@ -507,7 +513,7 @@ sub person : Role(person_manager) {
       selected    => $role ? "${role}_list"
                    : $status && $status eq 'current' ? 'current_people_list'
                    : 'people_list',
-      title       => loc $req,  "person_${action}_heading" };
+      title       => locm $req,  "person_${action}_heading" };
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $_maybe_find_person->( $person_rs, $name );
    my $opts       =  { action => $action };
@@ -541,7 +547,7 @@ sub person_summary : Role(person_manager) Role(address_viewer)
    my $page       =  {
       first_field => 'first_name',
       forms       => [ $form ],
-      title       => loc( $req, 'person_summary_heading' ), };
+      title       => locm $req, 'person_summary_heading', };
 
    p_fields $form, $self->schema, 'Person', $person, $fields;
 

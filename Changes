@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #160. Fewer person management links
           - Refactors navigation links
           - Renames the Form package to DOM
           - Make uri_for_action a method on the request object
