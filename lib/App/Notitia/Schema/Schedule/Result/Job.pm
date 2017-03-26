@@ -2,7 +2,7 @@ package App::Notitia::Schema::Schedule::Result::Job;
 
 use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
-use parent 'App::Notitia::Schema::Base';
+use parent 'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( NUL TRUE );
 use App::Notitia::DataTypes qw( date_data_type nullable_varchar_data_type

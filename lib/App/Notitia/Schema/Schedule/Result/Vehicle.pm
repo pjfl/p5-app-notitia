@@ -3,7 +3,7 @@ package App::Notitia::Schema::Schedule::Result::Vehicle;
 use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string },
              '+'  => sub { $_[ 0 ]->_as_number }, fallback => 1;
-use parent   'App::Notitia::Schema::Base';
+use parent   'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS VARCHAR_MAX_SIZE SPC TRUE );
 use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type

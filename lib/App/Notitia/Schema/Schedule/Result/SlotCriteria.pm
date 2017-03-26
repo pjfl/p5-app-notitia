@@ -1,7 +1,7 @@
 package App::Notitia::Schema::Schedule::Result::SlotCriteria;
 
 use strictures;
-use parent 'App::Notitia::Schema::Base';
+use parent 'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( SLOT_TYPE_ENUM );
 use App::Notitia::DataTypes qw( enumerated_data_type foreign_key_data_type );

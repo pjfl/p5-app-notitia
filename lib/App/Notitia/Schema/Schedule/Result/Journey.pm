@@ -1,7 +1,7 @@
 package App::Notitia::Schema::Schedule::Result::Journey;
 
 use strictures;
-use parent 'App::Notitia::Schema::Base';
+use parent 'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( FALSE NUL PRIORITY_TYPE_ENUM SPC
                                 TRUE VARCHAR_MAX_SIZE );

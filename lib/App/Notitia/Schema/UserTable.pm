@@ -1,41 +1,11 @@
-package App::Notitia::Schema::Schedule::Result::Rota;
+package App::Notitia::Schema::UserTable;
 
 use strictures;
-use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
-use parent   'App::Notitia::Schema::Schedule::Base::Result';
+use parent 'App::Notitia::Schema::Base';
 
-use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type
-                                serial_data_type );
+use App::Notitia; our $VERSION = App::Notitia->schema_version;
 
-my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
-
-$class->table( 'rota' );
-
-$class->add_columns
-   ( id      => serial_data_type,
-     type_id => foreign_key_data_type,
-     date    => date_data_type, );
-
-$class->set_primary_key( 'id' );
-
-$class->add_unique_constraint( [ 'type_id', 'date' ] );
-
-$class->belongs_to( type   => "${result}::Type",  'type_id' );
-$class->has_many  ( events => "${result}::Event", 'start_rota_id' );
-$class->has_many  ( shifts => "${result}::Shift", 'rota_id' );
-
-# Private methods
-sub _as_string {
-   return $_[ 0 ]->date;
-}
-
-sub sqlt_deploy_hook {
-   my ($self, $sql) = @_;
-
-   $sql->add_index( name => 'rota_idx_date', fields => [ 'date' ] );
-
-   return;
-}
+__PACKAGE__->load_namespaces;
 
 1;
 
@@ -47,11 +17,11 @@ __END__
 
 =head1 Name
 
-App::Notitia::Schema::Schedule::Result::Rota - People and resource scheduling
+App::Notitia::Schema::UserTable - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia::Schema::Schedule::Result::Rota;
+   use App::Notitia::Schema::UserTable;
    # Brief but working code examples
 
 =head1 Description

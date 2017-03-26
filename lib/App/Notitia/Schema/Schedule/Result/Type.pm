@@ -3,7 +3,7 @@ package App::Notitia::Schema::Schedule::Result::Type;
 use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string },
              '+'  => sub { $_[ 0 ]->_as_number }, fallback => 1;
-use parent   'App::Notitia::Schema::Base';
+use parent   'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( FALSE TRUE TYPE_CLASS_ENUM );
 use App::Notitia::DataTypes qw( enumerated_data_type serial_data_type

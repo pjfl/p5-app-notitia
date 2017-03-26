@@ -2,7 +2,7 @@ package App::Notitia::Schema::Schedule::Result::Shift;
 
 use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
-use parent   'App::Notitia::Schema::Base';
+use parent   'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( SHIFT_TYPE_ENUM );
 use App::Notitia::DataTypes qw( enumerated_data_type foreign_key_data_type

@@ -1,7 +1,7 @@
 package App::Notitia::Schema::Schedule::Result::EventControl;
 
 use strictures;
-use parent 'App::Notitia::Schema::Base';
+use parent 'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( FALSE TRUE VARCHAR_MAX_SIZE );
 use App::Notitia::DataTypes qw( bool_data_type nullable_foreign_key_data_type

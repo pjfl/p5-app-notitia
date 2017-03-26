@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Fixes #162. Calls blow_smoke when delete_person fails
+          - Starts to add UserTable schema
           - Fixes #160. Fewer person management links
           - Refactors navigation links
           - Renames the Form package to DOM

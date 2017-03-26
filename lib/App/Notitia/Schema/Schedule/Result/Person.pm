@@ -3,7 +3,7 @@ package App::Notitia::Schema::Schedule::Result::Person;
 use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string },
              '+'  => sub { $_[ 0 ]->_as_number }, fallback => 1;
-use parent   'App::Notitia::Schema::Base';
+use parent   'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia;
 use App::Notitia::Constants    qw( EXCEPTION_CLASS SPC TRUE

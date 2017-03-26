@@ -1,7 +1,7 @@
 package App::Notitia::Schema::Schedule::Result::Training;
 
 use strictures;
-use parent 'App::Notitia::Schema::Base';
+use parent 'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( FALSE TRAINING_STATUS_ENUM TRUE );
 use App::Notitia::DataTypes qw( date_data_type enumerated_data_type

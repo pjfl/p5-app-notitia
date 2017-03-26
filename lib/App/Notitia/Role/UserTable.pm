@@ -1,4 +1,4 @@
-package App::Notitia::Role::Schema;
+package App::Notitia::Role::UserTable;
 
 use namespace::autoclean;
 
@@ -10,7 +10,8 @@ requires qw( config get_connect_info );
 # Attribute constructors
 my $_build_schema = sub {
    my $self   = shift;
-   my $schema = $self->schema_class->connect( @{ $self->schema_connect_attr } );
+   my $schema = $self->table_schema_class->connect
+      ( @{ $self->table_schema_connect_attr } );
 
    $schema->can( 'accept_context' ) and $schema->accept_context( $self );
 
@@ -20,22 +21,22 @@ my $_build_schema = sub {
 my $_build_schema_connect_attr = sub {
    my $self  = shift;
    my $extra = $self->config->connect_attr;
-   my $opts  = { database => $self->schema_database };
+   my $opts  = { database => $self->table_schema_database };
    my $info  = $self->get_connect_info( $self, $opts );
 
    return [ @{ $info }[ 0 .. 2 ], { %{ $extra }, %{ $info->[ 3 ] } } ];
 };
 
 # Public attributes
-has 'schema' => is => 'lazy', isa => Object, builder => $_build_schema;
+has 'table_schema' => is => 'lazy', isa => Object, builder => $_build_schema;
 
-has 'schema_class' => is => 'lazy', isa => LoadableClass,
-   builder => sub { $_[ 0 ]->config->schema_classes->{default} };
+has 'table_schema_class' => is => 'lazy', isa => LoadableClass,
+   builder => sub { $_[ 0 ]->config->schema_classes->{user_table} };
 
-has 'schema_connect_attr' => is => 'lazy', isa => ArrayRef,
+has 'table_schema_connect_attr' => is => 'lazy', isa => ArrayRef,
    builder => $_build_schema_connect_attr;
 
-has 'schema_database' => is => 'lazy', isa => NonEmptySimpleStr,
+has 'table_schema_database' => is => 'lazy', isa => NonEmptySimpleStr,
    builder => sub { $_[ 0 ]->config->database };
 
 1;
@@ -48,11 +49,11 @@ __END__
 
 =head1 Name
 
-App::Notitia::Role::Schema - People and resource scheduling
+App::Notitia::Role::UserTable - People and resource scheduling
 
 =head1 Synopsis
 
-   use App::Notitia::Role::Schema;
+   use App::Notitia::Role::UserTable;
    # Brief but working code examples
 
 =head1 Description

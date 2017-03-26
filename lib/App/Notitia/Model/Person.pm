@@ -459,7 +459,10 @@ sub delete_person_action : Role(person_manager) {
    my $person   = $self->find_by_shortcode( $name );
    my $label    = $person->label;
 
-   $name eq 'admin' and throw 'Cannot delete the admin user'; $person->delete;
+   $name eq 'admin' and throw 'Cannot delete the admin user';
+
+   try   { $self->schema->txn_do( sub { $person->delete } ) }
+   catch { $self->blow_smoke( $_, 'delete', 'person', $name ) };
 
    $self->send_event( $req, "action:delete-person shortcode:${name}" );
 

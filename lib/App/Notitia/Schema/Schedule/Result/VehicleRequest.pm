@@ -2,7 +2,7 @@ package App::Notitia::Schema::Schedule::Result::VehicleRequest;
 
 use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
-use parent   'App::Notitia::Schema::Base';
+use parent   'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( TRUE );
 use App::Notitia::DataTypes qw( foreign_key_data_type numerical_id_data_type );

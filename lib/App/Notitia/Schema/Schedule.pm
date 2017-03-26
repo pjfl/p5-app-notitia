@@ -1,19 +1,13 @@
 package App::Notitia::Schema::Schedule;
 
 use strictures;
-use parent 'DBIx::Class::Schema';
-
-use File::Spec::Functions qw( catfile );
-use Scalar::Util          qw( blessed );
+use parent 'App::Notitia::Schema::Base';
 
 use App::Notitia; our $VERSION = App::Notitia->schema_version;
 
 __PACKAGE__->load_namespaces;
 
 __PACKAGE__->load_components( qw( Schema::Versioned ) );
-
-# TODO: Work a plan for row life
-my $_config;
 
 sub deploy {
    my ($self, @args) = @_;
@@ -23,43 +17,6 @@ sub deploy {
    };
 
    return $self->next::method( @args );
-}
-
-sub accept_context {
-   my ($self, $v) = @_;
-
-   return defined $v ? $self->{_context} = $v : $self->{_context};
-}
-
-sub application {
-   return $_[ 0 ]->{_context};
-}
-
-sub config {
-   return ref $_[ 0 ] && $_[ 0 ]->{_context} ? $_[ 0 ]->{_context}->config
-        :                    defined $_[ 1 ] ? $_config = $_[ 1 ] : $_config;
-}
-
-sub ddl_filename {
-    my ($self, $type, $version, $dir, $preversion) = @_;
-
-    $DBIx::Class::VERSION < 0.08100 and ($dir, $version) = ($version, $dir);
-
-   (my $filename = (blessed $self || $self)) =~ s{ :: }{-}gmx;
-    $preversion and $version = "${preversion}-${version}";
-    return catfile( $dir, "${filename}-${version}-${type}.sql" );
-}
-
-sub datetime_parser {
-   return shift->storage->datetime_parser;
-}
-
-sub parse_datetime {
-   return shift->datetime_parser->parse_datetime( @_ );
-}
-
-sub format_datetime {
-   return shift->datetime_parser->format_datetime( @_ );
 }
 
 1;

@@ -1,7 +1,7 @@
 package App::Notitia::Schema::Schedule::Result::Leg;
 
 use strictures;
-use parent 'App::Notitia::Schema::Base';
+use parent 'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( TRUE );
 use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type

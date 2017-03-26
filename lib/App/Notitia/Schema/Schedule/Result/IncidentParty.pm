@@ -1,7 +1,7 @@
 package App::Notitia::Schema::Schedule::Result::IncidentParty;
 
 use strictures;
-use parent 'App::Notitia::Schema::Base';
+use parent 'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( FALSE TRUE );
 use App::Notitia::DataTypes qw( foreign_key_data_type );
