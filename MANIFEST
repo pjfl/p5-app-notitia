@@ -25,10 +25,10 @@ lib/App/Notitia/Controller/Root.pm
 lib/App/Notitia/Controller/Rota.pm
 lib/App/Notitia/Controller/Training.pm
 lib/App/Notitia/Controller/Vehicle.pm
+lib/App/Notitia/DOM.pm
 lib/App/Notitia/Daemon.pm
 lib/App/Notitia/DataTypes.pm
 lib/App/Notitia/Exception.pm
-lib/App/Notitia/Form.pm
 lib/App/Notitia/GeoLocation.pm
 lib/App/Notitia/GeoLocation/Base.pm
 lib/App/Notitia/GeoLocation/UKPostcodes.pm
@@ -69,11 +69,13 @@ lib/App/Notitia/Role/PageLoading.pm
 lib/App/Notitia/Role/RSS.pm
 lib/App/Notitia/Role/Request.pm
 lib/App/Notitia/Role/Schema.pm
+lib/App/Notitia/Role/UserTable.pm
 lib/App/Notitia/Role/WebAuthorisation.pm
 lib/App/Notitia/SMS.pm
 lib/App/Notitia/Schema.pm
 lib/App/Notitia/Schema/Base.pm
 lib/App/Notitia/Schema/Schedule.pm
+lib/App/Notitia/Schema/Schedule/Base/Result.pm
 lib/App/Notitia/Schema/Schedule/Result/Certification.pm
 lib/App/Notitia/Schema/Schedule/Result/Customer.pm
 lib/App/Notitia/Schema/Schedule/Result/Endorsement.pm
@@ -113,6 +115,7 @@ lib/App/Notitia/Schema/Schedule/ResultSet/Transport.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Type.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Vehicle.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/VehicleRequest.pm
+lib/App/Notitia/Schema/UserTable.pm
 lib/App/Notitia/Server.pm
 lib/App/Notitia/Util.pm
 lib/App/Notitia/Utilities.pm

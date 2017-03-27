@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.12.$Rev: 24 $ of **App::Notitia**
+This documents version v0.12.$Rev: 30 $ of **App::Notitia**
 
 # Description
 
@@ -205,6 +205,9 @@ might look like this:
     /home/notitia/local/var/logs/*.log {
        missingok
        notifempty
+       postrotate
+          kill -HUP `cat /home/notitia/local/var/run/daemon.pid`
+       endscript
        rotate 4
        weekly
     }
