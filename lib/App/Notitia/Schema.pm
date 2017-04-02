@@ -130,6 +130,13 @@ sub backup_data : method {
              $path->pathname, '--user', $self->db_admin_ids->{mysql},
              '--databases', $self->database ] );
    }
+   elsif (lc $self->driver eq 'pg') {
+      my $cmd = 'PGPASSWORD='.$self->admin_password.' pg_dumpall '
+              . '--file='.$path.' -h '.$self->host.' '
+              . '-U '.$self->db_admin_ids->{pg};
+
+      $self->run_cmd( $cmd );
+   }
 
    chdir $conf->appldir; ensure_class_loaded 'Archive::Tar';
 
@@ -192,12 +199,22 @@ sub restore_data : method {
    my $bdir = $conf->vardir->catdir( 'backups' );
    my $sql  = $conf->tempdir->catfile( $self->database."-${date}.sql" );
 
-   if ($sql->exists and lc $self->driver eq 'mysql') {
-      $self->run_cmd
-         ( [ 'mysql', '--host', $self->host,
-             '--password='.$self->admin_password, '--user',
-             $self->db_admin_ids->{mysql}, $self->database ],
-           { in => $sql } );
+   if ($sql->exists) {
+      if (lc $self->driver eq 'mysql') {
+         my $cmd = [ 'mysql', '--host', $self->host,
+                     '--password='.$self->admin_password, '--user',
+                     $self->db_admin_ids->{mysql}, $self->database ];
+
+         $self->run_cmd( $cmd, { in => $sql } );
+      }
+      elsif (lc $self->driver eq 'pg') {
+         my $cmd = 'PGPASSWORD='.$self->admin_password.' pg_restore '
+                 . '-C -d postgres -h '.$self->host.' '
+                 . '-U '.$self->db_admin_ids->{pg}." ${sql}";
+
+         $self->run_cmd( $cmd );
+      }
+
       $sql->unlink;
    }
 

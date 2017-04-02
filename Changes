@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds Postgres backup and restore data commands
           - Fixes #162. Calls blow_smoke when delete_person fails
           - Starts to add UserTable schema
           - Fixes #160. Fewer person management links

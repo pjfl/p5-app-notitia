@@ -261,8 +261,7 @@ has 'roles_mtime'     => is => 'lazy', isa => Path, coerce => TRUE,
 
 has 'schema_classes'  => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
    builder            => sub { {
-      'default'       => 'App::Notitia::Schema::Schedule',
-      'user_table'    => 'App::Notitia::Schema::UserTable', } };
+      'default'       => 'App::Notitia::Schema::Schedule', } };
 
 has 'scrubber'        => is => 'ro',   isa => Str,
    default            => '[^ !\"#%&\'\(\)\*\+\,\-\./0-9:;=\?@A-Z\[\]_a-z\|\~]';
