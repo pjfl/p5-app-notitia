@@ -430,6 +430,7 @@ sub datetime_label ($;$) {
 sub dialog_anchor ($$$) {
    my ($k, $href, $opts) = @_;
 
+   exists $opts->{name} or $opts->{name} //= $k;
    exists $opts->{useIcon} or $opts->{useIcon} = \1;
 
    return js_window_config( $k, 'click', 'modalDialog', [ "${href}", $opts ] );
@@ -703,12 +704,12 @@ sub make_tip ($$;$) {
 sub management_link ($$$;$) {
    my ($req, $actionp, $name, $opts) = @_; $opts //= {};
 
-   my $args   = $opts->{args} // [ $name ];
+   my $args   = $opts->{args  } // [ $name ];
    my $params = $opts->{params} // {}; delete $params->{mid};
+   my $type   = $opts->{type  } // 'link';
    my ($moniker, $method) = split m{ / }mx, $actionp, 2;
    my $href   = $req->uri_for_action( $actionp, $args, $params );
-   my $type   = $opts->{type} // 'link';
-   my $button = { class => 'table-link',
+   my $link   = { class => 'table-link',
                   hint  => loc( $req, 'Hint' ),
                   href  => $href,
                   name  => "${name}-${method}",
@@ -717,13 +718,13 @@ sub management_link ($$$;$) {
                   value => loc( $req, "${method}_management_link" ), };
 
    if ($type eq 'form_button') {
-      $button->{form_name} = "${name}-${method}";
-      $button->{label    } = loc( $req, "${name}_${method}_link" );
-      $button->{tip      } = locm( $req, "${name}_${method}_tip", @{ $args } );
-      $button->{value    } = "${name}_${method}";
+      $link->{form_name} = "${name}-${method}";
+      $link->{label    } = loc( $req, "${name}_${method}_link" );
+      $link->{tip      } = locm( $req, "${name}_${method}_tip", @{ $args } );
+      $link->{value    } = "${name}_${method}";
    }
 
-   return $button;
+   return $link;
 }
 
 sub mtime ($) {
@@ -915,8 +916,8 @@ sub stash_functions ($$$) {
    $dest->{str2time      } = \&str2time;
    $dest->{time2str      } = \&time2str;
    $dest->{ucfirst       } = sub { ucfirst $_[ 0 ] };
-   $dest->{uri_for       } = sub { $req->uri_for( @_ ), };
-   $dest->{uri_for_action} = sub { $req->uri_for_action( @_ ), };
+   $dest->{uri_for       } = sub { $req->uri_for( @_ ) };
+   $dest->{uri_for_action} = sub { $req->uri_for_action( @_ ) };
    return;
 }
 

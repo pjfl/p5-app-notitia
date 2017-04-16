@@ -9,7 +9,8 @@ use App::Notitia::Constants qw( AS_PASSWORD EXCEPTION_CLASS FALSE
 use App::Notitia::Util      qw( encrypted_attr new_request now_dt );
 use Archive::Tar::Constant  qw( COMPRESS_GZIP );
 use Class::Usul::Functions  qw( ensure_class_loaded io throw );
-use Class::Usul::Types      qw( HashRef NonEmptySimpleStr Object );
+use Class::Usul::Types      qw( HashRef LoadableClass
+                                NonEmptySimpleStr Object );
 use Format::Human::Bytes;
 use Unexpected::Functions   qw( PathNotFound Unspecified );
 use Web::Components::Util   qw( load_components );
@@ -17,6 +18,7 @@ use Moo;
 
 extends q(Class::Usul::Schema);
 with    q(App::Notitia::Role::Schema);
+with    q(App::Notitia::Role::UserTable);
 
 has 'components' => is => 'lazy', isa => HashRef[Object], builder => sub {
    return load_components 'Model', application => $_[ 0 ];
@@ -40,13 +42,18 @@ has '+config_class'   => default => 'App::Notitia::Config';
 
 has '+database'       => default => sub { $_[ 0 ]->schema_database };
 
-has '+preversion'     => is => 'rwp';
+has 'driver2producer' => is => 'ro', isa => HashRef, builder => sub { {
+   mysql => 'MySQL', pg => 'PostgreSQL', sqlite => 'SQLite',
+} };
 
 has '+rdbms'          => default => sub { $_[ 0 ]->config->rdbms };
 
 has '+schema_classes' => default => sub { $_[ 0 ]->config->schema_classes };
 
 has '+schema_version' => default => sub { App::Notitia->schema_version.NUL };
+
+has 'sqlt_class'      => is => 'lazy', isa => LoadableClass,
+   builder            => sub { 'SQL::Translator' };
 
 # Construction
 around 'deploy_file' => sub {
@@ -55,6 +62,30 @@ around 'deploy_file' => sub {
    $self->config->appclass->env_var( 'bulk_insert', TRUE );
 
    return $orig->( $self, @args );
+};
+
+# Private functions
+my $_create_table = sub {
+   my ($sqlt, $args) = @_;
+
+   my $ud_table   = ${ $args }->[ 1 ];
+   my $sqlt_table = $sqlt->schema->add_table( name => $ud_table->name )
+      or throw $sqlt->error;
+
+   for my $column ($ud_table->columns->all) {
+      $sqlt_table->add_field(
+         data_type         => $column->data_type,
+         default_value     => $column->default_value,
+         is_auto_increment => $column->name eq 'id' ? TRUE : FALSE,
+         is_nullable       => $column->nullable,
+         name              => $column->name,
+         size              => $column->size,
+      ) or throw $sqlt_table->error;
+
+      $column->name eq 'id' and $sqlt_table->primary_key( 'id' );
+   }
+
+   return TRUE;
 };
 
 # Private methods
@@ -84,6 +115,15 @@ my $_new_request = sub {
       locale   => $_[ 0 ]->locale,
       scheme   => $_[ 1 ],
       hostport => $_[ 2 ], };
+};
+
+my $_table_connect_attr = sub {
+   my $self = shift;
+
+   return {
+      database => 'usertable',
+      password => $self->table_schema_connect_attr->[ 2 ],
+      user     => $self->table_schema_connect_attr->[ 1 ], };
 };
 
 my $_add_backup_files = sub {
@@ -155,14 +195,51 @@ sub backup_data : method {
    return OK;
 }
 
+sub create_column : method {
+   my $self     = shift;
+   my $table_id = $self->next_argv or throw Unspecified, [ 'table id' ];
+   my $name     = $self->next_argv or throw Unspecified, [ 'column name' ];
+   my $ud_table = $self->schema->resultset( 'UserTable' )->find( $table_id )
+      or throw 'Table id [_1] unknown', [ $table_id ];
+   my $col_rs   = $self->schema->resultset( 'UserColumn' );
+   my $column   = $col_rs->find( $table_id, $name );
+   my $ddl      = "ALTER TABLE ${ud_table} ADD ${name} ".$column->data_type;
+
+   defined $column->size and $ddl .= '('.$column->size.')';
+
+   $ddl .= $column->nullable ? ' NULL' : ' NOT NULL';
+
+   defined $column->default_value
+       and $ddl .= " default '".$column->default_value."'";
+
+   $self->execute_ddl( $ddl, $self->$_table_connect_attr );
+
+   return OK;
+}
+
 sub create_ddl : method {
    my $self = shift; $self->db_attr->{ignore_version} = TRUE;
 
    return $self->SUPER::create_ddl;
 }
 
-sub dump_connect_attr : method {
-   my $self = shift; $self->dumper( $self->schema_connect_attr ); return OK;
+sub create_table : method {
+   my $self     = shift;
+   my $table_id = $self->next_argv or throw Unspecified, [ 'table id' ];
+   my $ud_table = $self->schema->resultset( 'UserTable' )->find( $table_id )
+      or throw 'Table id [_1] unknown', [ $table_id ];
+   my $args     = [ $self, $ud_table ];
+   my $sqlt     = $self->sqlt_class->new
+      ( data              => \$args,
+        no_comments       => TRUE,
+        parser            => $_create_table,
+        producer          => $self->driver2producer->{ lc $self->driver },
+        quote_identifiers => FALSE );
+   my $ddl      = $sqlt->translate or throw $sqlt->error;
+
+   $self->execute_ddl( $ddl, $self->$_table_connect_attr );
+
+   return OK;
 }
 
 sub deploy_and_populate : method {
@@ -181,6 +258,38 @@ sub deploy_and_populate : method {
    }
 
    return $rv;
+}
+
+sub drop_column : method {
+   my $self        = shift;
+   my $table_name  = $self->next_argv or throw Unspecified, [ 'table name' ];
+   my $column_name = $self->next_argv or throw Unspecified, [ 'column name' ];
+   my $ddl         = "ALTER TABLE ${table_name} DROP ${column_name};";
+
+   $self->execute_ddl( $ddl, $self->$_table_connect_attr );
+
+   return OK;
+}
+
+sub drop_table : method {
+   my $self       = shift;
+   my $table_name = $self->next_argv or throw Unspecified, [ 'table name' ];
+   my $ddl        = "DROP TABLE IF EXISTS ${table_name};";
+
+   $self->execute_ddl( $ddl, $self->$_table_connect_attr );
+
+   return OK;
+}
+
+sub dump_connect_attr : method {
+   my $self = shift;
+   my $db   = $self->database;
+   my $attr = $db eq 'schedule'  ? $self->schema_connect_attr
+            : $db eq 'usertable' ? $self->table_schema_connect_attr
+            : throw 'Database [_1] unknown', [ $db ];
+
+   $self->dumper( $attr );
+   return OK;
 }
 
 sub restore_data : method {
@@ -272,13 +381,21 @@ Defines the following attributes;
 
 =head2 C<backup_data> - Creates a backup of the database and documents
 
+=head2 C<create_column> - Creates a user defined database table column
+
 =head2 C<create_ddl> - Dump the database schema definition
 
 Creates the DDL for multiple RDBMs
 
-=head2 C<dump_connect_attr> - Displays database connection information
+=head2 C<create_table> - Creates a user defined database table
 
 =head2 C<deploy_and_populate> - Create tables and populates them with initial data
+
+=head2 C<drop_column> - Drops a user defined database table column
+
+=head2 C<drop_table> - Drops a user defined database table
+
+=head2 C<dump_connect_attr> - Displays database connection information
 
 =head2 C<restore_data> - Restore a backup of the database and documents
 

@@ -41,6 +41,15 @@ my $_debug_output = sub {
    return;
 };
 
+my $_is_validation_error = sub {
+   my $e = shift;
+
+   blessed $e and $e->can( 'instance_of' )
+       and $e->instance_of( ValidationErrors ) and return TRUE;
+
+   return FALSE;
+};
+
 my $_parse_error = sub {
    my $e = shift; my ($leader, $message, $summary);
 
@@ -70,8 +79,6 @@ my $_validation_errors = sub {
 my $_auth_redirect = sub {
    my ($self, $req, $e, $message) = @_;
 
-   my $location = $req->uri_for_action( $self->config->places->{login} );
-
    (   $e->instance_of( IncorrectPassword )
     or $e->instance_of( IncorrectAuthCode ))
       and $self->send_event( $req, 'action:failed-login' );
@@ -83,6 +90,8 @@ my $_auth_redirect = sub {
                  and not is_action $self->components, $actionp)
        or (not $actionp and $wanted)) and $req->session->wanted( $wanted );
    }
+
+   my $location = $req->uri_for_action( $self->config->places->{login} );
 
    $e->instance_of( Authentication ) and
       return { redirect => { location => $location, message => [ $message ] } };
@@ -103,12 +112,12 @@ sub blow_smoke {
    my ($self, $e, $verb, $noun, $label) = @_;
 
    $self->application->debug and throw $e;
-   $e->can( 'class' ) and $e->class eq ValidationErrors->() and throw $e;
-   $e =~ m{ duplicate }imx and throw 'Duplicate [_1] [_2]', [ $noun, $label ],
-                                     no_quote_bind_values => TRUE;
+   $_is_validation_error->( $e ) and throw $e;
+   $e =~ m{ duplicate }imx and throw 'Duplicate [_1] [_2]',
+      [ $noun, $label ], no_quote_bind_values => TRUE;
    $self->log->error( $e );
-   throw 'Failed to [_1] [_2] [_3]', [ $verb, $noun, $label ],
-         no_quote_bind_values => TRUE;
+   throw 'Failed to [_1] [_2] [_3]',
+      [ $verb, $noun, $label ], no_quote_bind_values => TRUE;
 }
 
 sub dialog_stash {

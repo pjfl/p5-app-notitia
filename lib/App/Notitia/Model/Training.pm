@@ -5,7 +5,7 @@ use namespace::autoclean;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRAINING_STATUS_ENUM TRUE );
 use App::Notitia::DOM       qw( new_container f_tag p_button p_cell p_container
-                                p_date p_hidden p_item p_link p_list p_row
+                                p_date p_hidden p_item p_js p_link p_list p_row
                                 p_select p_table p_textfield );
 use App::Notitia::Util      qw( dialog_anchor js_submit_config local_dt locd
                                 locm make_tip management_link page_link_set
@@ -51,9 +51,8 @@ my $_events_headers = sub {
 my $_onchange_submit = sub {
    my ($page, $k) = @_;
 
-   push @{ $page->{literal_js} },
-      js_submit_config $k, 'change', 'submitForm',
-                       [ 'toggle_suppress', 'training-summary' ];
+   p_js $page, js_submit_config
+      $k, 'change', 'submitForm', [ 'toggle_suppress', 'training-summary' ];
 
    return;
 };
@@ -196,8 +195,7 @@ my $_list_courses = sub {
 my $_summary_cell_js = sub {
    my ($page, $id, $href, $title) = @_;
 
-   push @{ $page->{literal_js} }, dialog_anchor( $id, $href, {
-      name => $id, title => $title, } );
+   p_js $page, dialog_anchor $id, $href, { title => $title, };
 
    return;
 };

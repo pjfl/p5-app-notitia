@@ -2,6 +2,7 @@ package App::Notitia::Role::PageLoading;
 
 use namespace::autoclean;
 
+use App::Notitia::DOM      qw( p_js );
 use App::Notitia::Util     qw( build_navigation clone is_access_authorised
                                js_togglers_config loc local_dt mtime to_dt );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
@@ -20,11 +21,10 @@ has 'type_map' => is => 'ro', isa => HashRef, builder => sub { {} };
 # Private functions
 my $_add_edit_js = sub {
    my $page = shift;
-   my $js   = $page->{literal_js} //= [];
    my $t1   = "<i class='edit-panel-icon true'></i>";
    my $t2   = "<i class='edit-panel-icon false'></i>";
 
-   push @{ $js }, js_togglers_config 'toggle-edit', 'click',
+   p_js $page, js_togglers_config 'toggle-edit', 'click',
       'toggleSwapText', [ 'toggle-edit', 'edit-panel', $t1, $t2 ];
 
    return;

@@ -2,7 +2,7 @@ package App::Notitia::Model::Endorsement;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::DOM       qw( new_container p_action p_cell p_item p_link
+use App::Notitia::DOM       qw( new_container p_action p_cell p_item p_js p_link
                                 p_list p_fields p_row p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js loc local_dt locm now_dt
                                 register_action_paths to_dt to_msg );
@@ -54,8 +54,8 @@ my $_bind_endorsement_fields = sub {
 my $_endorsement_js = sub {
    my $opts = { domain => 'schedule', form => 'Endorsement' };
 
-   return [ check_field_js( 'type_code', $opts ),
-            check_field_js( 'endorsed',  $opts ), ];
+   return check_field_js( 'type_code', $opts ),
+          check_field_js( 'endorsed',  $opts );
 };
 
 my $_endorsement_ops_links = sub {
@@ -198,13 +198,14 @@ sub endorsement : Role(person_manager) {
    my $page       =  {
       first_field => $uri ? 'endorsed' : 'type_code',
       forms       => [ $form ],
-      literal_js  => $_endorsement_js->(),
       selected    => $role ? "${role}_list" : 'people_list',
       title       => loc $req, "endorsement_${action}_heading" };
    my $blot       =  $self->$_maybe_find_endorsement( $scode, $uri );
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $person_rs->find_by_shortcode( $scode );
    my $args       =  [ 'endorsement', $person->label ];
+
+   p_js $page, $_endorsement_js->(),
 
    p_textfield $form, 'username', $person->label, { disabled => TRUE };
 

@@ -202,26 +202,35 @@ my $_raise_semaphore = sub {
 
 # TODO: Add expected_rv
 my $_runjob = sub {
-   my ($self, $job_id) = @_;
+   my ($self, $job_id) = @_; my $job;
+
+   unless ($job = $self->schema->resultset( 'Job' )->find( $job_id )) {
+      $self->log->error( "Job ${job_id} unknown" );
+      return OK;
+   }
+
+   my $label = $job->label;
 
    try {
-      my $job = $self->schema->resultset( 'Job' )->find( $job_id );
-
+      $self->log->info( "Running job ${label}" );
       $job->run( $job->run + 1 ); $job->update;
-
-      $self->log->info( 'Running job '.$job->label );
 
       my $opts = { err => 'out', timeout => $job->period - 60 };
       my $r = $self->run_cmd( [ split SPC, $job->command ], $opts );
 
       $self->log->info( $r->out );
-      $self->log->info( 'Job '.$job->label.' rv '.$r->rv );
+      $self->log->info( "Job ${label} rv ".$r->rv );
       $job->delete;
    }
    catch {
       my ($msg) = split m{ \n }mx, "${_}";
 
-      $self->log->error( "Job ${job_id} rv ".$_->rv.": ${msg}" );
+      $self->log->error( "Job ${label} rv ".$_->rv.": ${msg}" );
+
+      if ($job->run + 1 > $job->max_runs) {
+         $self->log->error( "Job ${label} killed max. retries exceeded" );
+         $job->delete;
+      }
    };
 
    return OK;

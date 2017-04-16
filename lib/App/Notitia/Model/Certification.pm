@@ -39,6 +39,12 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_certification_js = sub {
+   my $opts = { domain => 'schedule', form => 'Certification' };
+
+   return check_field_js 'completed', $opts;
+};
+
 my $_certs_headers = sub {
    my $req = shift;
 
@@ -68,13 +74,6 @@ my $_cert_row = sub {
       action => 'update', args => $args, request => $req };
 
    return $row;
-};
-
-my $_certification_js = sub {
-   my $self = shift;
-   my $opts = { domain => 'schedule', form => 'Certification' };
-
-   return [ check_field_js( 'completed', $opts ), ];
 };
 
 my $_certs_ops_links = sub {
@@ -220,13 +219,14 @@ sub certification : Role(person_manager) Role(training_manager) {
    my $action    =  $type ? 'update' : 'create';
    my $page      =  {
       forms      => [ $form ],
-      literal_js => $self->$_certification_js(),
       selected   => $role ? "${role}_list" : 'people_list',
       title      => loc $req, "certification_${action}_heading" };
    my $person_rs =  $self->schema->resultset( 'Person' );
    my $person    =  $person_rs->find_by_shortcode( $scode );
    my $cert      =  $self->$_maybe_find_cert( $scode, $type );
    my $args      =  [ 'certification', $person->label ];
+
+   p_js $page, $_certification_js->();
 
    p_textfield $form, 'username', $person->label, { disabled => TRUE };
 

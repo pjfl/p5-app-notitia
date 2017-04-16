@@ -30,14 +30,14 @@ my $_build_schema_connect_attr = sub {
 # Public attributes
 has 'table_schema' => is => 'lazy', isa => Object, builder => $_build_schema;
 
-has 'table_schema_class' => is => 'lazy', isa => LoadableClass,
-   builder => sub { $_[ 0 ]->config->schema_classes->{user_table} };
+has 'table_schema_class' => is => 'lazy', isa => LoadableClass, builder => sub {
+   $_[ 0 ]->config->schema_classes->{ $_[ 0 ]->table_schema_database } };
 
 has 'table_schema_connect_attr' => is => 'lazy', isa => ArrayRef,
    builder => $_build_schema_connect_attr;
 
 has 'table_schema_database' => is => 'lazy', isa => NonEmptySimpleStr,
-   builder => sub { $_[ 0 ]->config->database };
+   builder => sub { 'usertable' };
 
 1;
 

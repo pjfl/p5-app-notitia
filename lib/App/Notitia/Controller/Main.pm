@@ -40,6 +40,13 @@ sub dispatch_request {
    sub (POST + /slot-certs/*          + ?*) { [ 'admin/from_request',    @_ ] },
    sub (GET  + /slot-certs/*          + ?*) { [ 'admin/slot_certs',      @_ ] },
    sub (GET  + /slot-roles            + ?*) { [ 'admin/slot_roles',      @_ ] },
+   sub (POST + /table/*/column/*      + ?*) { [ 'table/from_request',    @_ ] },
+   sub (POST + /table/*/column        + ?*) { [ 'table/from_request',    @_ ] },
+   sub (GET  + /table/*/column/*      + ?*) { [ 'table/column',          @_ ] },
+   sub (GET  + /table/*/column        + ?*) { [ 'table/column',          @_ ] },
+   sub (POST + /table/* | /table      + ?*) { [ 'table/from_request',    @_ ] },
+   sub (GET  + /table/* | /table      + ?*) { [ 'table/table',           @_ ] },
+   sub (GET  + /tables                + ?*) { [ 'table/tables',          @_ ] },
    sub (GET  + /types                 + ?*) { [ 'admin/types',           @_ ] },
    sub (POST + /type/**               + ?*) { [ 'admin/from_request',    @_ ] },
    sub (GET  + /type/**  | /type/*    + ?*) { [ 'admin/type',            @_ ] };

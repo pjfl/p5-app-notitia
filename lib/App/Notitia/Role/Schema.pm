@@ -29,8 +29,8 @@ my $_build_schema_connect_attr = sub {
 # Public attributes
 has 'schema' => is => 'lazy', isa => Object, builder => $_build_schema;
 
-has 'schema_class' => is => 'lazy', isa => LoadableClass,
-   builder => sub { $_[ 0 ]->config->schema_classes->{default} };
+has 'schema_class' => is => 'lazy', isa => LoadableClass, builder => sub {
+   $_[ 0 ]->config->schema_classes->{ $_[ 0 ]->schema_database } };
 
 has 'schema_connect_attr' => is => 'lazy', isa => ArrayRef,
    builder => $_build_schema_connect_attr;

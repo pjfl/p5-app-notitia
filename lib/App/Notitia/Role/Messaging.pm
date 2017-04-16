@@ -239,7 +239,7 @@ sub message_stash {
 
    p_button $form, 'confirm', 'message_create', { class => 'button right-last'};
 
-   $stash->{page}->{literal_js} = set_element_focus "people", 'email_message';
+   p_js $stash->{page}, set_element_focus "people", 'email_message';
 
    p_js $stash->{page}, js_togglers_config $plate_eml_id, 'checked',
       'showSelected', [ $plate_eml_id, "${plate_eml_id}_label" ];

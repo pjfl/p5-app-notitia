@@ -3,8 +3,8 @@ package App::Notitia::Model::Vehicle;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::DOM       qw( new_container p_action p_button p_date p_fields
-                                p_hidden p_item p_link p_list p_row p_select
-                                p_table p_tag p_textarea p_textfield );
+                                p_hidden p_item p_js p_link p_list p_row
+                                p_select p_table p_tag p_textarea p_textfield );
 use App::Notitia::Util      qw( assign_link check_field_js display_duration
                                 loc locd now_dt make_tip management_link
                                 page_link_set register_action_paths
@@ -165,7 +165,7 @@ my $_vehicle_js = sub {
    my $vrn  = shift;
    my $opts = { domain => $vrn ? 'update' : 'insert', form => 'Vehicle' };
 
-   return [ check_field_js( 'vrn', $opts ) ];
+   return check_field_js 'vrn', $opts;
 };
 
 my $_vehicle_slot_links = sub {
@@ -559,7 +559,7 @@ sub assign : Dialog Role(rota_manager) {
 
       p_select $form, 'vehicle', $values, {
          class => 'right-last', label => NUL };
-      $page->{literal_js} = set_element_focus 'assign-vehicle', 'vehicle';
+      p_js $page, set_element_focus 'assign-vehicle', 'vehicle';
    }
    else { p_hidden $form, 'vehicle', $req->query_params->( 'vehicle' ) }
 
@@ -769,7 +769,6 @@ sub vehicle : Role(rota_manager) {
    my $page       =  {
       first_field => 'vrn',
       forms       => [ $form ],
-      literal_js  => $_vehicle_js->( $vrn ),
       selected    => $service ? 'service_vehicles'
                   :  $private ? 'private_vehicles' : 'vehicles_list',
       title       => loc $req, "vehicle_${action}_heading" };
@@ -778,6 +777,8 @@ sub vehicle : Role(rota_manager) {
    my $fields     =  $_bind_vehicle_fields->( $schema, $req, $vehicle );
    my $args       =  [ 'vehicle', $vehicle->label ];
    my $links      =  [];
+
+   p_js $page, $_vehicle_js->( $vrn );
 
    p_link $links, 'vehicle', $req->uri_for_action( $actionp ),
        $_create_action->( $req );

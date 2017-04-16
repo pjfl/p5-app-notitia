@@ -22,6 +22,15 @@ with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
 
+register_action_paths
+   'admin/event_control'  => 'event-control',
+   'admin/event_controls' => 'event-controls',
+   'admin/logs'           => 'log',
+   'admin/slot_certs'     => 'slot-certs',
+   'admin/slot_roles'     => 'slot-roles',
+   'admin/type'           => 'type',
+   'admin/types'          => 'types';
+
 # Attribute constructors
 my $_build_actions = sub {
    my $self = shift;
@@ -49,15 +58,6 @@ has '+moniker' => default => 'admin';
 
 has 'actions' => is => 'lazy', isa => ArrayRef[NonEmptySimpleStr],
    builder => $_build_actions;
-
-register_action_paths
-   'admin/event_control'  => 'event-control',
-   'admin/event_controls' => 'event-controls',
-   'admin/logs'           => 'log',
-   'admin/slot_certs'     => 'slot-certs',
-   'admin/slot_roles'     => 'slot-roles',
-   'admin/type'           => 'type',
-   'admin/types'          => 'types';
 
 # Construction
 around 'get_stash' => sub {
@@ -100,6 +100,15 @@ my $_event_controls_headers = sub {
 
 };
 
+my $_link_opts = sub {
+   my $align = shift // NUL;
+
+   $align eq 'right' and return {
+      class => 'operation-links align-right right-last' };
+
+   return { class => 'operation-links' };
+};
+
 my $_list_slot_certs = sub {
    my ($schema, $slot_type) = @_; my $rs = $schema->resultset( 'SlotCriteria' );
 
@@ -140,26 +149,8 @@ my $_onchange_submit_event_controls = sub {
    return;
 };
 
-my $_ops_link_opts = sub {
-   return { class => 'operation-links' };
-};
-
-my $_ops_link_right_opts = sub {
-   return { class => 'operation-links align-right right-last' };
-};
-
 my $_slot_roles_headers = sub {
    return [ map { { value => loc $_[ 0 ], "slot_roles_heading_${_}" } } 0 .. 1];
-};
-
-my $_slot_roles_links = sub {
-   my ($req, $moniker, $slot_role) = @_;
-
-   my $actionp = $moniker.'/slot_certs'; my $opts = { args => [ $slot_role ] };
-
-   my @links = { value => management_link( $req, $actionp, $slot_role, $opts )};
-
-   return [ { value => loc( $req, $slot_role ) }, @links ];
 };
 
 my $_subtract = sub {
@@ -198,13 +189,14 @@ my $_types_headers = sub {
 };
 
 my $_types_links = sub {
-   my ($req, $type) = @_; my $name = $type->name;
+   my ($req, $type) = @_; my $links = [];
 
-   my $opts = { args => [ $type->type_class, $name ] };
+   p_item $links, ucfirst locm $req, $type->type_class;
+   p_item $links, locm $req, $type->name;
+   p_item $links, management_link $req, 'admin/type', $type->name, {
+      args => [ $type->type_class, $type->name ] };
 
-   return [ { value => ucfirst locm $req, $type->type_class },
-            { value => loc( $req, $type->name ) },
-            { value => management_link( $req, 'admin/type', $name, $opts ) } ];
+   return $links;
 };
 
 # Private methods
@@ -425,6 +417,17 @@ my $_maybe_find_control = sub {
    return $object ? $object : Class::Null->new;
 };
 
+my $_slot_roles_links = sub {
+   my ($self, $req, $slot_role) = @_; my $links = [];
+
+   p_item $links, loc $req, $slot_role;
+
+   p_item $links,
+      management_link $req, $self->moniker.'/slot_certs', $slot_role;
+
+   return $links;
+};
+
 my $_toggle_event_status = sub {
    my ($self, $req, $status, $verb) = @_;
 
@@ -560,7 +563,7 @@ sub event_control : Role(administrator) {
 
    $sink and $ev_action
       and not event_handler( $sink, $ev_action )->[ 0 ]
-      and p_action $form, 'delete', $args, { request => $req};
+      and p_action $form, 'delete', $args, { request => $req };
 
    return $self->get_stash( $req, $page );
 }
@@ -578,7 +581,7 @@ sub event_controls : Role(administrator) {
    my $ec_rs = $self->schema->resultset( 'EventControl' );
    my $links = $self->$_event_controls_links( $req );
 
-   p_list $form, PIPE_SEP, $links, $_ops_link_right_opts->();
+   p_list $form, PIPE_SEP, $links, $_link_opts->( 'right' );
 
    my $table = p_table $form, { headers => $_event_controls_headers->( $req ) };
 
@@ -652,13 +655,13 @@ sub logs : Role(administrator) {
    my $plinks = page_link_set $req, $actp, [ $logname ], $params, $dp, $opts;
    my $links = [ $self->$_filter_controls( $req, $logname, $params ), $plinks ];
 
-   p_list $form, NUL, $links, $_ops_link_opts->();
+   p_list $form, NUL, $links, $_link_opts->();
 
    my $table = p_table $form, {
       class => 'smaller-table', headers => $_log_headers->( $req, $logname ) };
 
    p_row $table, [ @rows ];
-   p_list $form, NUL, $links, $_ops_link_opts->();
+   p_list $form, NUL, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
@@ -744,7 +747,7 @@ sub slot_roles : Role(administrator) {
       title    => loc $req, 'slot_roles_list_link' };
    my $table   =  p_table $form, { headers => $_slot_roles_headers->( $req ) };
 
-   p_row $table, [ map { $_slot_roles_links->( $req, $self->moniker, $_ ) }
+   p_row $table, [ map { $self->$_slot_roles_links( $req, $_ ) }
                       @{ SLOT_TYPE_ENUM() } ];
 
    return $self->get_stash( $req, $page );
@@ -796,21 +799,21 @@ sub types : Role(administrator) {
    my $form       =  new_container;
    my $page       =  {
       forms       => [ $form ],
-      selected    => $type_class ? "${type_class}_list" : 'types_list',
-      title       => loc( $req, $type_class ? "${type_class}_list_link"
-                                            : 'types_management_heading' ), };
+      selected    => $type_class ? "${type_class}_type_list" : 'types_list',
+      title       => loc( $req, $type_class ? "${type_class}_type_list_title"
+                                            : 'types_list_title' ), };
    my $type_rs    =  $self->schema->resultset( 'Type' );
    my $types      =  $type_class ? $type_rs->search_for_types( $type_class )
                                  : $type_rs->search_for_all_types;
    my $links      =  $_type_create_links->( $req, $moniker, $type_class );
 
-   p_list $form, PIPE_SEP, $links, $_ops_link_right_opts->();
+   p_list $form, PIPE_SEP, $links, $_link_opts->( 'right' );
 
    my $table = p_table $form, { headers => $_types_headers->( $req ) };
 
    p_row $table, [ map { $_types_links->( $req, $_ ) } $types->all ];
 
-   p_list $form, PIPE_SEP, $links, $_ops_link_right_opts->();
+   p_list $form, PIPE_SEP, $links, $_link_opts->( 'right' );
 
    return $self->get_stash( $req, $page );
 }

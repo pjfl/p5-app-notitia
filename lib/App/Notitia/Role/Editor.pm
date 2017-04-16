@@ -35,8 +35,7 @@ my $_add_dialog_js = sub {
    my $actionp = $self->moniker.'/dialog';
    my $href    = $req->uri_for_action( $actionp, [], { name => $name } );
 
-   p_js $page, dialog_anchor "${name}-file", $href, {
-      name => "${name}-file", %{ $opts } };
+   p_js $page, dialog_anchor "${name}-file", $href, $opts;
 
    return;
 };
@@ -104,8 +103,8 @@ my $_append_suffix = sub {
 };
 
 my $_copy_element_value = sub {
-   return [ "\$( 'upload-btn' ).addEvent( 'change', function( ev ) {",
-            "   ev.stop(); \$( 'upload-path' ).value = this.value } )", ];
+   return "\$( 'upload-btn' ).addEvent( 'change', function( ev ) {"
+        . "   ev.stop(); \$( 'upload-path' ).value = this.value } )";
 };
 
 my $_prepare_path = sub {
@@ -281,20 +280,20 @@ sub get_dialog {
       p_textfield $form, 'pathname', NUL, { class => 'pathname', label => NUL };
       p_radio     $form, 'draft', [ [ 'Draft', TRUE ] ], { label => NUL };
       p_button    $form, 'Create', 'create_file', $opts;
-      $page->{literal_js} = set_element_focus "${name}-file", 'pathname';
+      p_js        $page, set_element_focus "${name}-file", 'pathname';
    }
    elsif ($name eq 'rename') {
       p_hidden    $form, 'old_path', $val;
       p_textfield $form, 'pathname', NUL, { class => 'pathname', label => NUL };
       p_text      $form, NUL, $val, { class => 'field-text info-field' };
       p_button    $form, 'Rename', 'rename_file', $opts;
-      $page->{literal_js} = set_element_focus "${name}-file", 'pathname';
+      p_js        $page, set_element_focus "${name}-file", 'pathname';
    }
    elsif ($name eq 'search') {
       $form->{method} = 'get';
       p_textfield $form, 'query', $req->session->query, { label => NUL };
       p_button    $form, 'Search', NUL, $opts;
-      $page->{literal_js} = set_element_focus "${name}-file", 'query';
+      p_js        $page, set_element_focus "${name}-file", 'query';
    }
    elsif ($name eq 'upload') {
       $page->{offer_public} = TRUE; $self->upload_dialog( $req, $page );
@@ -372,8 +371,8 @@ sub upload_dialog {
    p_span $list, locm $req, 'Browse';
    p_file $list, 'file', NUL, { class => 'upload', id => 'upload-btn' };
    p_button $form, 'Upload', 'upload_file', { class => 'button right-last' };
+   p_js $page, $_copy_element_value->();
 
-   $page->{literal_js} = $_copy_element_value->();
    $form->{enctype} = 'multipart/form-data';
    return;
 }

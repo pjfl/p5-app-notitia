@@ -3,8 +3,8 @@ package App::Notitia::Model::Incident;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::DOM       qw( new_container f_tag p_action p_button p_cell
-                                p_container p_fields p_item p_link p_list p_row
-                                p_select p_table p_textfield );
+                                p_container p_fields p_item p_js p_link p_list
+                                p_row p_select p_table p_textfield );
 use App::Notitia::Util      qw( check_field_js js_window_config locm make_tip
                                 page_link_set register_action_paths to_dt
                                 to_msg );
@@ -46,9 +46,8 @@ my $_add_incident_js = sub {
 
    my $opts = { domain => $name ? 'update' : 'insert', form => 'Incident' };
 
-   push @{ $page->{literal_js} },
-      check_field_js( 'reporter', $opts ),
-      check_field_js( 'title', $opts );
+   p_js $page, check_field_js( 'reporter', $opts ),
+               check_field_js( 'title', $opts );
 
    return;
 };
@@ -117,7 +116,7 @@ my $_bind_incident_fields = sub {
    my $categories = $type_rs->search_for_call_categories;
    my $other_type_id = $type_rs->find_type_by( 'other', 'call_category' )->id;
 
-   push @{ $page->{literal_js} }, js_window_config 'category', 'change',
+   p_js $page, js_window_config 'category', 'change',
       'showIfNeeded', [ 'category', $other_type_id, 'category_other_field' ];
 
    return

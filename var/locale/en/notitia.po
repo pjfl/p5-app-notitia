@@ -225,6 +225,9 @@ msgstr "Advanced Car"
 msgid "call_category_type_create_link"
 msgstr "Call Category"
 
+msgid "call_category_type_create_tip"
+msgstr "Create a call category type record"
+
 msgid "call_category"
 msgstr "Call Category"
 
@@ -439,6 +442,9 @@ msgstr "Eastings/Northings"
 msgid "course_type_create_link"
 msgstr "Course"
 
+msgid "course_type_create_tip"
+msgstr "Create a course type record"
+
 msgid "courses"
 msgstr "All Courses"
 
@@ -529,6 +535,12 @@ msgstr "Emergency"
 msgid "customers_report_heading_4"
 msgstr "Total"
 
+msgid "data_management_heading"
+msgstr "Data"
+
+msgid "data_type"
+msgstr "Data Type"
+
 msgid "day_controller_0"
 msgstr "Ctrl. AM"
 
@@ -576,6 +588,9 @@ msgstr "Edit"
 
 msgid "day_rota_title"
 msgstr "[_1] rota for [_2]"
+
+msgid "default_value"
+msgstr "Default Value"
 
 msgid "delete"
 msgstr "Delete"
@@ -1204,6 +1219,9 @@ msgstr "Level"
 msgid "log_header_2"
 msgstr "Detail"
 
+msgid "login_action"
+msgstr "Login"
+
 msgid "login_management_heading"
 msgstr "Account Management"
 
@@ -1435,6 +1453,9 @@ msgstr "N. Route"
 msgid "notes"
 msgstr "Notes"
 
+msgid "nullable_column"
+msgstr "Nullable"
+
 msgid "old_password"
 msgstr "Old Password"
 
@@ -1467,6 +1488,9 @@ msgstr "Package Type"
 
 msgid "package_type_create_link"
 msgstr "Package"
+
+msgid "package_type_create_tip"
+msgstr "Create a package type record"
 
 msgid "Parameter [_1] is not a valid email address"
 msgstr "Not a valid email address"
@@ -2223,8 +2247,8 @@ msgstr "All Types"
 msgid "types_list_tip"
 msgstr "Manage the list of resource types"
 
-msgid "types_management_heading"
-msgstr "Types"
+msgid "types_list_title"
+msgstr "All Types"
 
 msgid "unassign_management_tip"
 msgstr "Unassign a vehicle from this slot"
@@ -2286,6 +2310,39 @@ msgstr "Urgent"
 msgid "username"
 msgstr "User name"
 
+msgid "user_column_dialog_title"
+msgstr "Edit Column Details"
+
+msgid "user_column_heading_0"
+msgstr "Column Name"
+
+msgid "user_column_heading_1"
+msgstr "Data Type"
+
+msgid "user_column_heading_2"
+msgstr "Default Value"
+
+msgid "user_column_heading_3"
+msgstr "Size"
+
+msgid "user_column_name"
+msgstr "Column Name"
+
+msgid "user_column_create_link"
+msgstr "Add Column"
+
+msgid "user_column_create_tip"
+msgstr "Add another user defined column to this table"
+
+msgid "user_column_edit_tip"
+msgstr "Edit this user defined column"
+
+msgid "user_column_size"
+msgstr "Size"
+
+msgid "user_column_title"
+msgstr "User Defined Columns"
+
 msgid "user_events_heading_0"
 msgstr "Event Link"
 
@@ -2315,6 +2372,33 @@ msgstr "Links to your currently claimed upcoming slots"
 
 msgid "user_slots_title"
 msgstr "Claimed Slots"
+
+msgid "user_table_create_link"
+msgstr "Add Table"
+
+msgid "user_table_create_tip"
+msgstr "Create a new user defined table"
+
+msgid "user_table_list_heading_0"
+msgstr "Table Name"
+
+msgid "user_table_list_link"
+msgstr "User Defined Tables"
+
+msgid "user_table_list_tip"
+msgstr "Manage the list of user defined tables"
+
+msgid "user_table_list_title"
+msgstr "User Defined Tables"
+
+msgid "user_table_name"
+msgstr "Table Name"
+
+msgid "user_table_title"
+msgstr "User Defined Table"
+
+msgid "user_table_update_tip"
+msgstr "Edit this user defined table"
 
 msgid "username_field_tip"
 msgstr "If left blank a username will be generated from the "

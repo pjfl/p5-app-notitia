@@ -15,7 +15,9 @@ requires qw( add_csrf_token components );
 
 # Private functions
 my $_location_class = sub {
-   return $_[ 0 ]->{location} eq $_[ 1 ] ? 'current' : NUL
+   my $location = $_[ 0 ]->{location} or return NUL;
+
+   return $location eq $_[ 1 ] ? 'current' : NUL
 };
 
 my $_selected_class = sub {
@@ -124,10 +126,30 @@ my $_admin_links = sub {
    p_folder $list, 'admin', {
       request => $req, tip => "Administrator's Menu" };
 
+   my $class = $page->{selected} eq 'user_table_list'
+            || $page->{selected} eq 'types_list'
+            || $page->{selected} eq 'slot_roles_list' ? 'open' : NUL;
+
+   p_folder $list, 'data', {
+         class => $class, depth => 1, request => $req,
+         tip => 'Data Management Menu' };
+
+   p_navlink $list, 'user_table_list', [ 'table/tables' ], {
+      class => $_selected_class->( $page, 'user_table_list' ),
+      depth => 2, request => $req };
+
+   p_navlink $list, 'types_list', [ 'admin/types' ], {
+      class => $_selected_class->( $page, 'types_list' ),
+      depth => 2, request => $req };
+
+   p_navlink $list, 'slot_roles_list', [ 'admin/slot_roles' ], {
+      class => $_selected_class->( $page, 'slot_roles_list' ),
+      depth => 2, request => $req };
+
    $self->$_admin_log_links( $req, $page, $nav );
 
-   my $class = $page->{selected} eq 'jobdaemon_status' ? 'open'
-             : $page->{selected} eq 'event_controls'   ? 'open' : NUL;
+   $class = $page->{selected} eq 'jobdaemon_status'
+         || $page->{selected} eq 'event_controls' ? 'open' : NUL;
 
    p_folder $list, 'process_control', {
       class => $class, depth => 1, request => $req,
@@ -139,20 +161,6 @@ my $_admin_links = sub {
 
    p_navlink $list, 'event_controls', [ 'admin/event_controls' ], {
       class => $_selected_class->( $page, 'event_controls' ),
-      depth => 2, request => $req };
-
-   $class = $page->{selected} eq 'types_list'
-         || $page->{selected} eq 'slot_roles_list' ? 'open' : NUL;
-
-   p_folder $list, 'types', {
-         class => $class, depth => 1, request => $req, tip => 'Types Menu' };
-
-   p_navlink $list, 'types_list', [ 'admin/types' ], {
-      class => $_selected_class->( $page, 'types_list' ),
-      depth => 2, request => $req };
-
-   p_navlink $list, 'slot_roles_list', [ 'admin/slot_roles' ], {
-      class => $_selected_class->( $page, 'slot_roles_list' ),
       depth => 2, request => $req };
 
    return;
@@ -387,7 +395,7 @@ my $_unauthenticated_login_links = sub {
    my $href = $req->uri_for_action( 'user/reset' );
 
    p_js $page, dialog_anchor 'request_reset', $href, {
-      name => 'request_reset', title => locm $req, 'request_reset_title', };
+      title => locm $req, 'request_reset_title', };
 
    p_navlink $nav->{menu}, 'totp_request', '#', {
       class => 'windows', request => $req, };
@@ -397,7 +405,7 @@ my $_unauthenticated_login_links = sub {
    $href = $req->uri_for_action( 'user/totp_request' );
 
    p_js $page, dialog_anchor 'totp_request', $href, {
-      name => 'totp_request', title => locm $req, 'totp_request_title', };
+      title => locm $req, 'totp_request_title', };
 
    return;
 };
@@ -524,8 +532,7 @@ sub credit_links {
 
    my $href = $req->uri_for_action( $places->{about} );
 
-   p_js $page, dialog_anchor 'about', $href, {
-      name => 'about', title => locm $req, 'About' };
+   p_js $page, dialog_anchor 'about', $href, { title => locm $req, 'About' };
 
    p_link $links, 'changes', $req->uri_for_action( $places->{changes} ), {
       request => $req };
