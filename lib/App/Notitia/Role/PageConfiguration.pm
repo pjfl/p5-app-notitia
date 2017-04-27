@@ -4,22 +4,14 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS NUL TRUE );
 use App::Notitia::DOM       qw( p_hidden );
-use App::Notitia::Util      qw( loc );
-use Class::Usul::Functions  qw( bson64id create_token64 is_member throw );
+use App::Notitia::Util      qw( csrf_token loc );
+use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
 use Unexpected::Functions   qw( FailedTokenVerification );
 use Web::ComposableRequest::Util qw( new_uri );
 use Moo::Role;
 
 requires qw( config execute initialise_stash load_page log );
-
-# Private functions
-my $_create_csrf_token = sub {
-   my ($salt, $session) = @_;
-
-   return create_token64
-      ( join NUL, $salt, $session->username, $session->roles_mtime );
-};
 
 # Private methods
 my $_add_form0_csrf_token = sub {
@@ -36,10 +28,10 @@ my $_add_form0_csrf_token = sub {
 my $_verify_csrf_token = sub {
    my ($self, $req) = @_;
 
-   my ($salt, $token) = split m{ \- }mx, $req->body_params->( '_verify' );
+   my $supplied = $req->body_params->( '_verify' );
+   my ($salt, $token) = split m{ \- }mx, $supplied;
 
-   $token eq $_create_csrf_token->( $salt, $req->session )
-      or throw FailedTokenVerification;
+   $supplied eq csrf_token( $req, $salt ) or throw FailedTokenVerification;
 
    return;
 };
@@ -155,10 +147,7 @@ sub activity_cache {
 sub add_csrf_token {
    my ($self, $req, $form) = @_;
 
-   my $salt = bson64id;
-   my $token = $_create_csrf_token->( $salt, $req->session );
-
-   p_hidden $form, '_verify', "${salt}-${token}";
+   p_hidden $form, '_verify', csrf_token $req;
 
    return;
 }

@@ -8,10 +8,10 @@ use App::Notitia::Constants    qw( EXCEPTION_CLASS FALSE HASH_CHAR NUL SPC
                                    TILDE TRUE );
 use Class::Usul::Crypt::Util   qw( decrypt_from_config encrypt_for_config );
 use Class::Usul::File;
-use Class::Usul::Functions     qw( class2appdir create_token
-                                   ensure_class_loaded exception find_apphome
-                                   first_char fold get_cfgfiles io is_arrayref
-                                   is_hashref is_member throw );
+use Class::Usul::Functions     qw( class2appdir bson64id create_token
+                                   create_token64 ensure_class_loaded exception
+                                   find_apphome first_char fold get_cfgfiles io
+                                   is_arrayref is_hashref is_member throw );
 use Class::Usul::Time          qw( str2date_time str2time time2str );
 use Crypt::Eksblowfish::Bcrypt qw( en_base64 );
 use Data::Validation;
@@ -25,19 +25,20 @@ use YAML::Tiny;
 
 our @EXPORT_OK = qw( action_for_uri action_path_uri_map assert_unique
                      assign_link authenticated_only build_navigation build_tree
-                     check_field_js check_form_field clone datetime_label
-                     dialog_anchor display_duration encrypted_attr enhance
-                     event_actions event_handler event_handler_cache
-                     event_streams get_hashed_pw get_salt is_access_authorised
-                     is_draft is_encrypted iterator js_slider_config
-                     js_server_config js_submit_config js_togglers_config
-                     js_window_config lcm_for load_file_data loc local_dt
-                     localise_tree locd locm mail_domain make_id_from
-                     make_name_from make_tip management_link mtime new_request
-                     new_salt now_dt page_link_set register_action_paths
-                     set_element_focus set_event_date set_rota_date slot_claimed
-                     slot_identifier slot_limit_index show_node stash_functions
-                     time2int to_dt to_json to_msg );
+                     check_field_js check_form_field clone csrf_token
+                     datetime_label dialog_anchor display_duration
+                     encrypted_attr enhance event_actions event_handler
+                     event_handler_cache event_streams get_hashed_pw get_salt
+                     is_access_authorised is_draft is_encrypted iterator
+                     js_slider_config js_server_config js_submit_config
+                     js_togglers_config js_window_config lcm_for link_options
+                     load_file_data loc local_dt localise_tree locd locm
+                     mail_domain make_id_from make_name_from make_tip
+                     management_link mtime new_request new_salt now_dt
+                     page_link_set register_action_paths set_element_focus
+                     set_event_date set_rota_date slot_claimed slot_identifier
+                     slot_limit_index show_node stash_functions time2int to_dt
+                     to_json to_msg );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -417,6 +418,15 @@ sub clone (;$) {
    return $v;
 }
 
+sub csrf_token ($;$) {
+   my ($req, $salt) = @_; $salt //= bson64id;
+
+   my $token = create_token64
+      ( join NUL, $salt, $req->session->username, $req->session->roles_mtime );
+
+   return "${salt}-${token}";
+}
+
 sub datetime_label ($;$) {
    my ($req, $dt) = @_; $req or return NUL;
 
@@ -619,6 +629,15 @@ sub lcm ($$) {
 
 sub lcm_for (@) {
    return ((fold { lcm $_[ 0 ], $_[ 1 ] })->( shift ))->( @_ );
+}
+
+sub link_options (;$) {
+   my $align = shift // NUL;
+
+   $align eq 'right' and return {
+      class => 'operation-links align-right right-last' };
+
+   return { class => 'operation-links' };
 }
 
 sub load_file_data {
@@ -990,6 +1009,8 @@ Defines no attributes
 
 =head2 C<clone>
 
+=head2 C<csrf_token>
+
 =head2 C<datetime_label>
 
 =head2 C<dialog_anchor>
@@ -1041,6 +1062,8 @@ Least common muliple
 =head2 C<lcm_for>
 
 LCM for a list of integers
+
+=head2 C<link_options>
 
 =head2 C<load_file_data>
 

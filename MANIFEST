@@ -53,6 +53,8 @@ lib/App/Notitia/Model/Report.pm
 lib/App/Notitia/Model/Role.pm
 lib/App/Notitia/Model/Training.pm
 lib/App/Notitia/Model/User.pm
+lib/App/Notitia/Model/UserForm.pm
+lib/App/Notitia/Model/UserTable.pm
 lib/App/Notitia/Model/Vehicle.pm
 lib/App/Notitia/Model/WeekRota.pm
 lib/App/Notitia/Plugin/Core.pm
@@ -81,6 +83,7 @@ lib/App/Notitia/Schema/Schedule/Result/Customer.pm
 lib/App/Notitia/Schema/Schedule/Result/Endorsement.pm
 lib/App/Notitia/Schema/Schedule/Result/Event.pm
 lib/App/Notitia/Schema/Schedule/Result/EventControl.pm
+lib/App/Notitia/Schema/Schedule/Result/FieldGroup.pm
 lib/App/Notitia/Schema/Schedule/Result/Incident.pm
 lib/App/Notitia/Schema/Schedule/Result/IncidentParty.pm
 lib/App/Notitia/Schema/Schedule/Result/Job.pm
@@ -100,6 +103,10 @@ lib/App/Notitia/Schema/Schedule/Result/Training.pm
 lib/App/Notitia/Schema/Schedule/Result/Transport.pm
 lib/App/Notitia/Schema/Schedule/Result/Type.pm
 lib/App/Notitia/Schema/Schedule/Result/Unsubscribe.pm
+lib/App/Notitia/Schema/Schedule/Result/UserColumn.pm
+lib/App/Notitia/Schema/Schedule/Result/UserField.pm
+lib/App/Notitia/Schema/Schedule/Result/UserForm.pm
+lib/App/Notitia/Schema/Schedule/Result/UserTable.pm
 lib/App/Notitia/Schema/Schedule/Result/Vehicle.pm
 lib/App/Notitia/Schema/Schedule/Result/VehicleRequest.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Certification.pm

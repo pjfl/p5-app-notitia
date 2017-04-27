@@ -11,9 +11,10 @@ use Web::ComposableRequest::Constants ();
 Class::Usul::Constants->Exception_Class( 'App::Notitia::Exception' );
 Web::ComposableRequest::Constants->Exception_Class( 'App::Notitia::Exception' );
 
-our @EXPORT = qw( C_DIALOG DOTS DATA_TYPE_ENUM HASH_CHAR PIPE_SEP
-                  PRIORITY_TYPE_ENUM SHIFT_TYPE_ENUM SLOT_TYPE_ENUM TILDE
-                  TRAINING_STATUS_ENUM TYPE_CLASS_ENUM VARCHAR_MAX_SIZE );
+our @EXPORT = qw( C_DIALOG DOTS DATA_TYPE_ENUM FIELD_TYPE_ENUM HASH_CHAR
+                  PIPE_SEP PRIORITY_TYPE_ENUM SHIFT_TYPE_ENUM SLOT_TYPE_ENUM
+                  TILDE TRAINING_STATUS_ENUM TYPE_CLASS_ENUM VARCHAR_MAX_SIZE
+                  );
 
 sub import {
    my $class       = shift;
@@ -40,6 +41,9 @@ sub DATA_TYPE_ENUM       () {
    [ qw( bigint binary bit blob char date datetime dec decimal double float int
          integer numeric real smallint text time timestamp tinyblob tinyint
          varbinary varchar ) ] }
+sub FIELD_TYPE_ENUM      () {
+   [ qw( button checkbox date datetime hidden image label link list password
+         radio select slider table text textarea textfield time unordered ) ] }
 sub PRIORITY_TYPE_ENUM   () { [ qw( routine urgent emergency ) ] }
 sub SHIFT_TYPE_ENUM      () { [ qw( day night ) ] }
 sub SLOT_TYPE_ENUM       () { [ qw( controller rider driver ) ] }

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes post install
           - Adds user defined tables
           - Adds Postgres backup and restore data commands
           - Fixes #162. Calls blow_smoke when delete_person fails

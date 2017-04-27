@@ -5,7 +5,7 @@ use namespace::autoclean;
 use App::Notitia::DOM      qw( new_container f_tag p_button p_checkbox p_file
                                p_hidden p_js p_list p_radio p_span p_text
                                p_textfield );
-use App::Notitia::Util     qw( dialog_anchor locm make_id_from
+use App::Notitia::Util     qw( dialog_anchor csrf_token locm make_id_from
                                make_name_from mtime set_element_focus
                                stash_functions to_msg );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
@@ -79,7 +79,9 @@ around 'load_page' => sub {
                ? TRUE : FALSE;
 
    $page->{editing} =  $page->{cancel_edit} ? FALSE : $editing;
-   $page->{editing} or $self->$_add_editing_js( $req, $page );
+
+   if ($page->{editing}) { $page->{token} = csrf_token $req }
+   else { $self->$_add_editing_js( $req, $page ) }
 
    $req->authenticated and $page->{user}
       = $self->components->{person}->find_by_shortcode( $req->username );

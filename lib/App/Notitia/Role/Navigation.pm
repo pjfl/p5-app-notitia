@@ -8,6 +8,7 @@ use App::Notitia::DOM       qw( new_container p_button p_folder p_image p_item
                                 p_js p_link p_list p_navlink p_text );
 use App::Notitia::Util      qw( dialog_anchor local_dt locd locm
                                 make_tip now_dt to_dt );
+use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
 use Moo::Role;
 
@@ -99,19 +100,47 @@ my $_allowed = sub {
    return FALSE;
 };
 
+my $_admin_data_links = sub {
+   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
+
+   my @pages = qw( slot_roles types user_form user_table ); my $class = NUL;
+
+   is_member $page->{selected}, map { "${_}_list" } @pages and $class = 'open';
+
+   p_folder $list, 'data', {
+         class => $class, depth => 1, request => $req,
+         tip => 'Data Management Menu' };
+
+   p_navlink $list, 'types_list', [ 'admin/types' ], {
+      class => $_selected_class->( $page, 'types_list' ),
+      depth => 2, request => $req };
+
+   p_navlink $list, 'slot_roles_list', [ 'admin/slot_roles' ], {
+      class => $_selected_class->( $page, 'slot_roles_list' ),
+      depth => 2, request => $req };
+
+   p_navlink $list, 'user_form_list', [ 'form/form_list' ], {
+      class => $_selected_class->( $page, 'user_form_list' ),
+      depth => 2, request => $req };
+
+   p_navlink $list, 'user_table_list', [ 'table/table_list' ], {
+      class => $_selected_class->( $page, 'user_table_list' ),
+      depth => 2, request => $req };
+
+   return;
+};
+
 my $_admin_log_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
-   my $class = $page->{selected} eq 'activity'
-            || $page->{selected} eq 'jobdaemon'
-            || $page->{selected} eq 'schema'
-            || $page->{selected} eq 'server'
-            || $page->{selected} eq 'util' ? 'open' : NUL;
+   my @logs  = qw( activity jobdaemon schema server util );
+
+   my $class = NUL; is_member $page->{selected}, \@logs and $class = 'open';
 
    p_folder $list, 'logs', {
       class => $class, depth => 1, request => $req, tip => 'Logs Menu' };
 
-   for my $log_name (qw( activity jobdaemon schema server util )) {
+   for my $log_name (@logs) {
       p_navlink $list, "${log_name}_log", [ 'log', [ $log_name ] ], {
          class => $_selected_class->( $page, $log_name ),
          depth => 2, request => $req };
@@ -126,30 +155,12 @@ my $_admin_links = sub {
    p_folder $list, 'admin', {
       request => $req, tip => "Administrator's Menu" };
 
-   my $class = $page->{selected} eq 'user_table_list'
-            || $page->{selected} eq 'types_list'
-            || $page->{selected} eq 'slot_roles_list' ? 'open' : NUL;
-
-   p_folder $list, 'data', {
-         class => $class, depth => 1, request => $req,
-         tip => 'Data Management Menu' };
-
-   p_navlink $list, 'user_table_list', [ 'table/tables' ], {
-      class => $_selected_class->( $page, 'user_table_list' ),
-      depth => 2, request => $req };
-
-   p_navlink $list, 'types_list', [ 'admin/types' ], {
-      class => $_selected_class->( $page, 'types_list' ),
-      depth => 2, request => $req };
-
-   p_navlink $list, 'slot_roles_list', [ 'admin/slot_roles' ], {
-      class => $_selected_class->( $page, 'slot_roles_list' ),
-      depth => 2, request => $req };
+   $self->$_admin_data_links( $req, $page, $nav );
 
    $self->$_admin_log_links( $req, $page, $nav );
 
-   $class = $page->{selected} eq 'jobdaemon_status'
-         || $page->{selected} eq 'event_controls' ? 'open' : NUL;
+   my $class = $page->{selected} eq 'jobdaemon_status'
+            || $page->{selected} eq 'event_controls' ? 'open' : NUL;
 
    p_folder $list, 'process_control', {
       class => $class, depth => 1, request => $req,
@@ -198,20 +209,16 @@ my $_authenticated_login_links = sub {
 my $_people_by_role_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
-   my $class = $page->{selected} eq 'committee_list'
-            || $page->{selected} eq 'controller_list'
-            || $page->{selected} eq 'driver_list'
-            || $page->{selected} eq 'fund_raiser_list'
-            || $page->{selected} eq 'rider_list'
-            || $page->{selected} eq 'staff_list'
-            || $page->{selected} eq 'trustee_list' ? 'open' : NUL;
+   my @roles = qw( committee controller driver fund_raiser rider staff trustee);
+
+   my $class = NUL; is_member $page->{selected}, map { "${_}_list" } @roles
+      and $class = 'open';
 
    p_folder $list, 'people_by_type', {
-      class => $class, depth => 1, request => $req,
-      tip   => 'people_by_type_tip' };
+      class   => $class, depth => 1,
+      request => $req, tip => 'people_by_type_tip' };
 
-   for my $role (qw( committee controller driver
-                     fund_raiser rider staff trustee )) {
+   for my $role (@roles) {
       p_navlink $list, "${role}_list",
          [ 'person/people', [], role => $role, status => 'current' ], {
             class => $_selected_class->( $page, "${role}_list" ),
@@ -488,9 +495,8 @@ sub application_logo {
    my $image  =  p_image {}, $conf->title.' Logo', $href, {
       height  => $logo->[ 2 ], width => $logo->[ 1 ] };
    my $opts   =  { request => $req, args => [ $conf->title ], value => $image };
-   my $cell   =  {};
 
-   return p_link $cell, 'logo', $req->uri_for_action( $places->{logo} ), $opts;
+   return p_link {}, 'logo', $req->uri_for_action( $places->{logo} ), $opts;
 }
 
 sub call_navigation_links {

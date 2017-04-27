@@ -33,7 +33,7 @@ $class->set_primary_key( 'shift_id', 'type_name', 'subslot' );
 $class->belongs_to( shift    => "${result}::Shift",   'shift_id' );
 $class->belongs_to( operator => "${result}::Person",  'operator_id' );
 $class->belongs_to( operator_vehicle => "${result}::Vehicle",
-                    'operator_vehicle_id', $left_join);
+                    'operator_vehicle_id', $left_join );
 $class->belongs_to( vehicle  => "${result}::Vehicle", 'vehicle_id', $left_join);
 $class->belongs_to( vehicle_assigner => "${result}::Person",
                     'vehicle_assigner_id', $left_join );

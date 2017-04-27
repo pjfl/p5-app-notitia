@@ -6,7 +6,8 @@ use App::Notitia::Constants qw( DATA_TYPE_ENUM FALSE HASH_CHAR
 use App::Notitia::DOM       qw( new_container p_action p_checkbox  p_item p_js
                                 p_link p_list p_row p_select p_table p_tag
                                 p_textfield );
-use App::Notitia::Util      qw( dialog_anchor locm register_action_paths
+use App::Notitia::Util      qw( dialog_anchor link_options locm
+                                register_action_paths
                                 set_element_focus to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( throw );
@@ -21,9 +22,9 @@ with    q(App::Notitia::Role::Navigation);
 has '+moniker' => default => 'table';
 
 register_action_paths
-   'table/column' => 'table/*/column',
-   'table/table'  => 'table',
-   'table/tables' => 'tables';
+   'table/column_view' => 'table/*/column',
+   'table/table_list'  => 'tables',
+   'table/table_view'  => 'table';
 
 # Construction
 around 'get_stash' => sub {
@@ -40,7 +41,7 @@ around 'get_stash' => sub {
 # Private functions
 my $_column_headers = sub {
    return [ map { { value => locm $_[ 0 ], "user_column_heading_${_}" } }
-            0 .. 3 ];
+            0 .. 2 ];
 };
 
 my $_data_type = sub {
@@ -53,15 +54,6 @@ my $_data_types = sub {
 
    return [ [ NUL, undef ],
             map { $_data_type->( $column, $_ ) } @{ DATA_TYPE_ENUM() } ];
-};
-
-my $_link_opts = sub {
-   my $align = shift // NUL;
-
-   $align eq 'right' and return {
-      class => 'operation-links align-right right-last' };
-
-   return { class => 'operation-links' };
 };
 
 my $_table_page = sub {
@@ -93,7 +85,7 @@ my $_column_dialog_link = sub {
       value   => $column->name };
 
    my $args = [ $table->name, $column->name ];
-   my $href = $req->uri_for_action( $self->moniker.'/column', $args );
+   my $href = $req->uri_for_action( $self->moniker.'/column_view', $args );
 
    p_js $page, dialog_anchor $name, $href, {
       title => locm $req, 'user_column_dialog_title' };
@@ -104,14 +96,12 @@ my $_column_dialog_link = sub {
 my $_column_cells = sub {
    my ($self, $req, $page, $table, $column) = @_; my $cells = [];
 
-   if ($column->name eq 'id') { p_item $cells, $column->name }
+   if ($column->name eq 'id') { p_item $cells, "${column}" }
    else { $self->$_column_dialog_link( $req, $page, $table, $column, $cells ) }
 
    p_item $cells, $column->data_type;
 
    p_item $cells, $column->default_value;
-
-   p_item $cells, $column->size;
 
    return $cells;
 };
@@ -123,7 +113,8 @@ my $_column_ops_links = sub {
       action  => 'create', class => 'windows', container_class => 'add-link',
       request => $req };
 
-   my $href = $req->uri_for_action( $self->moniker.'/column', [ $table->name ]);
+   my $args = [ $table->name ];
+   my $href = $req->uri_for_action( $self->moniker.'/column_view', $args );
 
    p_js $page, dialog_anchor "create_${name}", $href, {
       name => $name, title => locm $req, "${name}_dialog_title" };
@@ -165,7 +156,8 @@ my $_maybe_find_table = sub {
 my $_tables_cells = sub {
    my ($self, $req, $table) = @_; my $cells = [];
 
-   my $href = $req->uri_for_action( $self->moniker.'/table', [ $table->name ] );
+   my $args = [ $table->name ];
+   my $href = $req->uri_for_action( $self->moniker.'/table_view', $args );
 
    p_item $cells, p_link {}, 'user_table_update', $href, {
       request => $req, value => $table->name };
@@ -176,7 +168,7 @@ my $_tables_cells = sub {
 my $_tables_ops_links = sub {
    my ($self, $req) = @_; my $links = [];
 
-   my $href = $req->uri_for_action( $self->moniker.'/table' );
+   my $href = $req->uri_for_action( $self->moniker.'/table_view' );
 
    p_link $links, 'user_table', $href, {
       action => 'create', container_class => 'add-link', request => $req };
@@ -185,14 +177,14 @@ my $_tables_ops_links = sub {
 };
 
 # Public methods
-sub column : Dialog Role(administrator) {
+sub column_view : Dialog Role(administrator) {
    my ($self, $req) = @_;
 
    my $table_name  = $req->uri_params->( 0 );
    my $column_name = $req->uri_params->( 1, { optional => TRUE } );
    my $stash  = $self->dialog_stash( $req );
    my $args   = [ $table_name, $column_name ];
-   my $href   = $req->uri_for_action( $self->moniker.'/column', $args );
+   my $href   = $req->uri_for_action( $self->moniker.'/column_view', $args );
    my $form   = $stash->{page}->{forms}->[ 0 ] = new_container 'column', $href;
    my $table  = $self->$_find_user_table( $req );
    my $column = $self->$_maybe_find_column( $table, $column_name );
@@ -238,10 +230,10 @@ sub create_user_column_action : Role(administrator) {
       default_value => $params->( 'default_value', { optional => TRUE } ),
       size          => $params->( 'size', { optional => TRUE } ),
    } );
-   my $name     = $table->name;
-   my $message  = [ to_msg 'User column [_1].[_2] created by [_3]',
-                    $name, $column->name, $req->session->user_label ];
-   my $location = $req->uri_for_action( $self->moniker.'/table', [ $name ] );
+   my $args     = [ $table->name ];
+   my $message  = [ to_msg 'User column [_1] created by [_2]',
+                    $column, $req->session->user_label ];
+   my $location = $req->uri_for_action( $self->moniker.'/table_view', $args );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -253,8 +245,8 @@ sub create_user_table_action : Role(administrator) {
    my $rs       = $self->schema->resultset( 'UserTable' );
    my $table    = $rs->create( { name => $params->( 'name' ) } );
    my $message  = [ to_msg 'User table [_1] created by [_2]',
-                    $table->name, $req->session->user_label ];
-   my $location = $req->uri_for_action( $self->moniker.'/tables' );
+                    $table, $req->session->user_label ];
+   my $location = $req->uri_for_action( $self->moniker.'/table_list' );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -271,9 +263,9 @@ sub delete_user_column_action : Role(administrator) {
    $column->delete;
 
    my $args     = [ $table->name ];
-   my $location = $req->uri_for_action( $self->moniker.'/table', $args );
-   my $message  = [ to_msg 'User column [_1].[_2] deleted by [_3]',
-                    $table->name, $name, $req->session->user_label ];
+   my $location = $req->uri_for_action( $self->moniker.'/table_view', $args );
+   my $message  = [ to_msg 'User column [_1] deleted by [_2]',
+                    $column, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -282,22 +274,43 @@ sub delete_user_table_action : Role(administrator) {
    my ($self, $req) = @_;
 
    my $table = $self->$_find_user_table( $req );
-   my $name  = $table->name;
 
    $table->delete;
 
    my $message  = [ to_msg 'User table [_1] deleted by [_2]',
-                    $name, $req->session->user_label ];
-   my $location = $req->uri_for_action( $self->moniker.'/tables' );
+                    $table, $req->session->user_label ];
+   my $location = $req->uri_for_action( $self->moniker.'/table_list' );
 
    return { redirect => { location => $location, message => $message } };
 }
 
-sub table : Role(administrator) {
+sub table_list : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $page = {
+      selected => 'user_table_list',
+      title    => locm $req, 'user_table_list_title'
+   };
+   my $form  = $page->{forms}->[ 0 ] = new_container;
+   my $links = $self->$_tables_ops_links( $req );
+
+   p_list $form, PIPE_SEP, $links, link_options 'right';
+
+   my $table = p_table $form, { headers => $_tables_headers->( $req ) };
+   my $table_rs = $self->schema->resultset( 'UserTable' );
+
+   p_row $table, [ map { $self->$_tables_cells( $req, $_ ) } $table_rs->all ];
+
+   p_list $form, PIPE_SEP, $links, link_options 'right';
+
+   return $self->get_stash( $req, $page );
+}
+
+sub table_view : Role(administrator) {
    my ($self, $req) = @_;
 
    my $name   = $req->uri_params->( 0, { optional => TRUE } );
-   my $href   = $req->uri_for_action( $self->moniker.'/table', [ $name ] );
+   my $href   = $req->uri_for_action( $self->moniker.'/table_view', [ $name ] );
    my $form_a = new_container 'user-table', $href;
    my $form_b = new_container { class => 'wide-form' };
    my $page   = $_table_page->( $req, $form_a, $form_b );
@@ -317,7 +330,7 @@ sub table : Role(administrator) {
 
    my $links = $self->$_column_ops_links( $req, $page, $table );
 
-   p_list $form_b, PIPE_SEP, $links, $_link_opts->( 'right' );
+   p_list $form_b, PIPE_SEP, $links, link_options 'right';
 
    my $cols    = p_table $form_b, { headers => $_column_headers->( $req ) };
    my $cols_rs = $self->schema->resultset( 'UserColumn' );
@@ -325,29 +338,7 @@ sub table : Role(administrator) {
    p_row $cols, [ map { $self->$_column_cells( $req, $page, $table, $_ ) }
                   $cols_rs->search( { table_id => $table->id } )->all ];
 
-   p_list $form_b, PIPE_SEP, $links, $_link_opts->( 'right' );
-
-   return $self->get_stash( $req, $page );
-}
-
-sub tables : Role(administrator) {
-   my ($self, $req) = @_;
-
-   my $page = {
-      selected => 'user_table_list',
-      title    => locm $req, 'user_table_list_title'
-   };
-   my $form  = $page->{forms}->[ 0 ] = new_container;
-   my $links = $self->$_tables_ops_links( $req );
-
-   p_list $form, PIPE_SEP, $links, $_link_opts->( 'right' );
-
-   my $table = p_table $form, { headers => $_tables_headers->( $req ) };
-   my $table_rs = $self->schema->resultset( 'UserTable' );
-
-   p_row $table, [ map { $self->$_tables_cells( $req, $_ ) } $table_rs->all ];
-
-   p_list $form, PIPE_SEP, $links, $_link_opts->( 'right' );
+   p_list $form_b, PIPE_SEP, $links, link_options 'right';
 
    return $self->get_stash( $req, $page );
 }
@@ -369,7 +360,7 @@ sub update_user_column_action : Role(administrator) {
    } );
 
    my $args     = [ $table->name ];
-   my $location = $req->uri_for_action( $self->moniker.'/table', $args );
+   my $location = $req->uri_for_action( $self->moniker.'/table_view', $args );
    my $message  = [ to_msg 'User column [_1].[_2] updated by [_3]',
                     $table->name, $column->name, $req->session->user_label ];
 

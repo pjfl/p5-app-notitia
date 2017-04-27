@@ -80,6 +80,7 @@ Thumbs.db
 \bvar/logs
 \bvar/run
 \bvar/share/App-Notitia-Schema-Schedule-.+\.sql
+\bvar/share/App-Notitia-Schema-UserTable-.+\.sql
 \bvar/session
 \bvar/tmp
 

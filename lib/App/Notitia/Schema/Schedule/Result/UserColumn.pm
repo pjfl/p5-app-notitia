@@ -5,9 +5,11 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( DATA_TYPE_ENUM FALSE TRUE );
-use App::Notitia::DataTypes qw( bool_data_type enumerated_data_type
-                                foreign_key_data_type nullable_varchar_data_type
-                                numerical_id_data_type serial_data_type
+use App::Notitia::DataTypes qw( bool_data_type
+                                enumerated_data_type
+                                foreign_key_data_type
+                                nullable_varchar_data_type
+                                numerical_id_data_type
                                 varchar_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -29,12 +31,12 @@ $class->belongs_to( table => "${result}::UserTable", 'table_id' );
 
 # Private functions
 my $_queue_column_job = sub {
-   my ($schema, $action, $table_id, $column_name) = @_;
+   my ($schema, $action, $table_id_or_name, $column_name) = @_;
 
    my $name    = "${action}_column";
    my $binsdir = $schema->config->binsdir;
    my $cmd     = $binsdir->catfile( 'notitia-schema' )
-               . " ${name} ${table_id} ${column_name}";
+               . " ${name} ${table_id_or_name} ${column_name}";
    my $rs      = $schema->resultset( 'Job' );
 
    return $rs->create( { command => $cmd, max_runs => 1, name => $name } );

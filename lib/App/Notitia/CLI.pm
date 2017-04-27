@@ -82,12 +82,9 @@ my $_create_schema = sub {
 
    my $opts = { err => 'stderr', in => 'stdin', out => 'stdout' };
 
-   $self->run_cmd( [ $cmd, '-o', 'bootstrap=1', 'edit-credentials' ], $opts );
-   $opts->{expected_rv} = 1;
-   $self->run_cmd( [ $cmd, 'drop-database' ], $opts );
-   delete $opts->{expected_rv};
-   $self->run_cmd( [ $cmd, 'create-database' ], $opts );
-   $self->run_cmd( [ $cmd, 'deploy-and-populate' ], $opts );
+   # TODO: Add -a option when C::U v0.81
+   $self->run_cmd( [ $cmd, '-o', 'bootstrap=1', 'create-schema' ], $opts );
+
    return;
 };
 

@@ -3,6 +3,7 @@
 <form action="[% links.edit_uri %]"
      enctype="application/x-www-form-urlencoded"
       method="post" name="edit">
+   <input name="_verify" type="hidden" value="[% page.token %]">
    <textarea class="standard-field autosize" id="markdown-editor" name="content">
 [%    page.content | html %]</textarea>
    <br/>

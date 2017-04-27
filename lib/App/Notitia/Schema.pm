@@ -203,11 +203,11 @@ sub create_column : method {
       or throw 'Table id [_1] unknown', [ $table_id ];
    my $col_rs   = $self->schema->resultset( 'UserColumn' );
    my $column   = $col_rs->find( $table_id, $name );
-   my $ddl      = "ALTER TABLE ${ud_table} ADD ${name} ".$column->data_type;
+   my $ddl      = "alter table ${ud_table} add ${name} ".$column->data_type;
 
    defined $column->size and $ddl .= '('.$column->size.')';
 
-   $ddl .= $column->nullable ? ' NULL' : ' NOT NULL';
+   $ddl .= $column->nullable ? ' null' : ' not null';
 
    defined $column->default_value
        and $ddl .= " default '".$column->default_value."'";
@@ -243,8 +243,11 @@ sub create_table : method {
 }
 
 sub deploy_and_populate : method {
-   my $self    = shift; $self->db_attr->{ignore_version} = TRUE;
-   my $rv      = $self->SUPER::deploy_and_populate;
+   my $self = shift; $self->db_attr->{ignore_version} = TRUE;
+   my $rv   = $self->SUPER::deploy_and_populate;
+
+   $self->dry_run and return $rv;
+
    my $type_rs = $self->schema->resultset( 'Type' );
    my $sc_rs   = $self->schema->resultset( 'SlotCriteria' );
 
@@ -264,7 +267,7 @@ sub drop_column : method {
    my $self        = shift;
    my $table_name  = $self->next_argv or throw Unspecified, [ 'table name' ];
    my $column_name = $self->next_argv or throw Unspecified, [ 'column name' ];
-   my $ddl         = "ALTER TABLE ${table_name} DROP ${column_name};";
+   my $ddl         = "alter table ${table_name} drop ${column_name};";
 
    $self->execute_ddl( $ddl, $self->$_table_connect_attr );
 
@@ -274,9 +277,8 @@ sub drop_column : method {
 sub drop_table : method {
    my $self       = shift;
    my $table_name = $self->next_argv or throw Unspecified, [ 'table name' ];
-   my $ddl        = "DROP TABLE IF EXISTS ${table_name};";
-
-   $self->execute_ddl( $ddl, $self->$_table_connect_attr );
+   my $ddl        = "drop table if exists ${table_name};";
+   my $r          = $self->execute_ddl( $ddl, $self->$_table_connect_attr );
 
    return OK;
 }
