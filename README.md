@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.12.$Rev: 33 $ of **App::Notitia**
+This documents version v0.12.$Rev: 35 $ of **App::Notitia**
 
 # Description
 
@@ -159,7 +159,7 @@ standard output in response to the command:
 
     bin/notitia-daemon get-init-file
 
-As the root user you could redirect this to `/etc/init.d/notitia`, then
+As the root user you should redirect this to `/etc/init.d/notitia`, then
 restart the notitia service with:
 
     service notitia restart
@@ -205,10 +205,16 @@ might look like this:
     /home/notitia/local/var/logs/*.log {
        missingok
        notifempty
+       prerotate
+          su -c "/home/notitia/local/bin/notitia-jobdaemon stop" notitia
+          /etc/init.d/notitia stop
+       endscript
        postrotate
-          kill -HUP `cat /home/notitia/local/var/run/daemon.pid`
+          /etc/init.d/notitia start
+          su -c "/home/notitia/local/bin/notitia-jobdaemon start" notitia
        endscript
        rotate 4
+       sharedscripts
        weekly
     }
 
