@@ -51,6 +51,16 @@ my $_random_chars = sub {
 };
 
 # Private methods
+my $_check_env_vars = sub {
+   my $self = shift;
+
+   $self->output( 'Env var PERL5LIB is '.$ENV{PERL5LIB} );
+   $self->yorn( '+Is this correct', FALSE, TRUE, 0 ) or return;
+   $self->output( 'Env var PERL_LOCAL_LIB_ROOT is '.$ENV{PERL_LOCAL_LIB_ROOT} );
+   $self->yorn( '+Is this correct', FALSE, TRUE, 0 ) or return;
+   return;
+};
+
 my $_create_profile = sub {
    my ($self, $localdir) = @_; my ($cmd, $profile);
 
@@ -220,6 +230,8 @@ sub post_install : method {
    my $conf     = $self->config;
    my $appldir  = $conf->appldir;
    my $localdir = $appldir->catdir( 'local' );
+
+   $self->$_check_env_vars;
 
    for my $dir (qw( etc logs run session tmp )) {
       my $path = $localdir->exists ? $localdir->catdir( 'var', $dir )

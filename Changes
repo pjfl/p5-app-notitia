@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Addes environment check to post-install
           - Fixes post install
           - Adds user defined tables
           - Adds Postgres backup and restore data commands
