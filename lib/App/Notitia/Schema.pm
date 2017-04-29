@@ -38,6 +38,9 @@ my $_build_admin_password = sub {
 has 'admin_password'  => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => $_build_admin_password;
 
+has 'admin_user'      => is => 'lazy', isa => NonEmptySimpleStr,
+   builder            => sub { $_[ 0 ]->db_admin_ids->{ $_[ 0 ]->driver } };
+
 has '+config_class'   => default => 'App::Notitia::Config';
 
 has '+database'       => default => sub { $_[ 0 ]->schema_database };
@@ -151,6 +154,44 @@ my $_add_backup_files = sub {
    return;
 };
 
+my $_backup_command = sub {
+   my ($self, $path) = @_; my $cmd;
+
+   if (lc $self->driver eq 'mysql') {
+      $cmd = [ 'mysqldump', '--opt', '--host', $self->host,
+               '--password='.$self->admin_password, '--result-file',
+               $path->pathname, '--user', $self->admin_user,
+               '--databases', $self->database ];
+   }
+   elsif (lc $self->driver eq 'pg') {
+      $cmd = 'PGPASSWORD='.$self->admin_password.' pg_dumpall '
+           . '--file='.$path.' -h '.$self->host.' -U '.$self->admin_user;
+   }
+
+   $cmd or throw 'No backup command for driver '.$self->driver;
+
+   return $cmd;
+};
+
+my $_restore_command = sub {
+   my ($self, $sql) = @_; my $cmd;
+
+   my $user = $self->admin_user;
+
+   if (lc $self->driver eq 'mysql') {
+      $cmd  = 'mysql --host '.$self->host.' --password='.$self->admin_password
+            . " --user ${user} ".$self->database." < ${sql}";
+   }
+   elsif (lc $self->driver eq 'pg') {
+      $cmd  = 'PGPASSWORD='.$self->admin_password.' pg_restore '
+            . '-C -d postgres -h '.$self->host." -U ${user} ${sql}";
+   }
+
+   $cmd or throw 'No restore command for driver '.$self->driver;
+
+   return $cmd;
+};
+
 # Public methods
 sub backup_data : method {
    my $self = shift;
@@ -163,20 +204,7 @@ sub backup_data : method {
    my $tarb = $conf->title."-${date}.tgz";
    my $out  = $bdir->catfile( $tarb )->assert_filepath;
 
-   if (lc $self->driver eq 'mysql') {
-      $self->run_cmd
-         ( [ 'mysqldump', '--opt', '--host', $self->host,
-             '--password='.$self->admin_password, '--result-file',
-             $path->pathname, '--user', $self->db_admin_ids->{mysql},
-             '--databases', $self->database ] );
-   }
-   elsif (lc $self->driver eq 'pg') {
-      my $cmd = 'PGPASSWORD='.$self->admin_password.' pg_dumpall '
-              . '--file='.$path.' -h '.$self->host.' '
-              . '-U '.$self->db_admin_ids->{pg};
-
-      $self->run_cmd( $cmd );
-   }
+   $self->run_cmd( $self->$_backup_command( $path ) );
 
    chdir $conf->appldir; ensure_class_loaded 'Archive::Tar';
 
@@ -311,21 +339,7 @@ sub restore_data : method {
    my $sql  = $conf->tempdir->catfile( $self->database."-${date}.sql" );
 
    if ($sql->exists) {
-      if (lc $self->driver eq 'mysql') {
-         my $cmd = [ 'mysql', '--host', $self->host,
-                     '--password='.$self->admin_password, '--user',
-                     $self->db_admin_ids->{mysql}, $self->database ];
-
-         $self->run_cmd( $cmd, { in => $sql } );
-      }
-      elsif (lc $self->driver eq 'pg') {
-         my $cmd = 'PGPASSWORD='.$self->admin_password.' pg_restore '
-                 . '-C -d postgres -h '.$self->host.' '
-                 . '-U '.$self->db_admin_ids->{pg}." ${sql}";
-
-         $self->run_cmd( $cmd );
-      }
-
+      $self->run_cmd( $self->$_restore_command( $sql ) );
       $sql->unlink;
    }
 
