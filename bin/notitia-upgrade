@@ -11,8 +11,6 @@ release=${1:-'unspecified'}
 repo=${2:-'git://github.com/pjfl/p5-app-notitia.git'}
 service=${3:-'notitia'}
 method=${4:-'service'}
-driver=${5}
-adminuser=${6}
 
 # Functions
 service_home() {
@@ -45,8 +43,7 @@ upgrade_application() {
       notitia-util should_upgrade ${release} || \
       return 1
    notitia-jobdaemon stop
-   notitia-schema ${adminuser:+"--db-admin-ids ${driver}=${adminuser}"} \
-      backup-data
+   notitia-schema backup-data
    cpanm --notest ${target} && \
       notitia-schema upgrade-schema && \
       notitia-schema -q repopulate-class type && \
@@ -59,8 +56,7 @@ upgrade_service() {
    local dir; dir=$(install_directory); [ ${?} -gt 0 ] && return 1
    local prog; prog="${dir}/bin/notitia-upgrade"
    service ${service} stop
-   su - ${service} -c \
-      "${prog} ${release} ${repo} ${service} application ${driver} ${adminuser}"
+   su - ${service} -c "${prog} ${release} ${repo} ${service} application"
    service ${service} start
    return 0
 }
