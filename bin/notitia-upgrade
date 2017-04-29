@@ -29,7 +29,7 @@ install_directory() {
 
 append_release() {
    local target; target=${repo}
-   [ "${release}" = "blead" ] || target="${target}@${release}"
+   [ "${release}" = "bleed" ] || target="${target}@${release}"
    [ "${release}" != "unspecified" ] && echo -n "${target}" && return 0
    echo "Release target not specified" >&2
    return 1
@@ -39,7 +39,7 @@ upgrade_application() {
    local dir; dir=$(install_directory); [ ${?} -gt 0 ] && return 1; cd $dir
    local target; target=$(append_release);  [ ${?} -gt 0 ] && return 1
    source var/etc/profile
-   [ "${release}" = "blead" ] || \
+   [ "${release}" = "bleed" ] || \
       notitia-util should_upgrade ${release} || \
       return 1
    notitia-jobdaemon stop
