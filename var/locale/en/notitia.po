@@ -925,6 +925,9 @@ msgstr "I'm sorry [_1], I can't do that"
 msgid "eyes"
 msgstr "Eyes"
 
+msgid "field_type"
+msgstr "Field Type"
+
 msgid "filter_column"
 msgstr "Column"
 
@@ -2357,6 +2360,54 @@ msgstr "Links to upcoming events that you are participating in"
 
 msgid "user_events_title"
 msgstr "Events"
+
+msgid "user_field_create_link"
+msgstr "Add Field"
+
+msgid "user_field_create_tip"
+msgstr "Create a user defined field"
+
+msgid "user_field_dialog_title"
+msgstr "Field Definition"
+
+msgid "user_field_heading_0"
+msgstr "Field Name"
+
+msgid "user_field_heading_1"
+msgstr "Type"
+
+msgid "user_field_heading_2"
+msgstr "Default Value"
+
+msgid "user_field_name"
+msgstr "Field Name"
+
+msgid "user_field_title"
+msgstr "Form Fields"
+
+msgid "user_form_create_link"
+msgstr "Add Form"
+
+msgid "user_form_create_tip"
+msgstr "Create a user defined form"
+
+msgid "user_form_list_heading_0"
+msgstr "Form Name"
+
+msgid "user_form_list_link"
+msgstr "User Defined Forms"
+
+msgid "user_form_list_tip"
+msgstr "Manage the list of user defined forms"
+
+msgid "user_form_list_title"
+msgstr "User Defined Forms"
+
+msgid "user_form_name"
+msgstr "Form Name"
+
+msgid "user_form_title"
+msgstr "User Defined Form"
 
 msgid "user_slots_heading_0"
 msgstr "Slot Link"
