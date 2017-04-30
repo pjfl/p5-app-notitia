@@ -6,7 +6,7 @@ use App::Notitia::DOM       qw( new_container p_action p_button p_date p_fields
                                 p_hidden p_item p_js p_link p_list p_row
                                 p_select p_table p_tag p_textarea p_textfield );
 use App::Notitia::Util      qw( assign_link check_field_js display_duration
-                                loc locd now_dt make_tip management_link
+                                loc locd locm now_dt make_tip management_link
                                 page_link_set register_action_paths
                                 set_element_focus slot_identifier time2int
                                 to_dt to_msg );
@@ -211,7 +211,7 @@ my $_vehicle_type_tuple = sub {
 };
 
 my $_vehicles_headers = sub {
-   my ($req, $params) = @_; my $max = $params->{service} ? 5 : 2;
+   my ($req, $params) = @_; my $max = $params->{service} ? 4 : 1;
 
    return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } }
             0 .. $max ];
@@ -469,22 +469,26 @@ my $_vehicle_events = sub {
 };
 
 my $_vehicle_links = sub {
-   my ($self, $req, $params, $vehicle) = @_; my $moniker = $self->moniker;
+   my ($self, $req, $params, $vehicle) = @_; my $links = [];
 
-   my $vrn = $vehicle->vrn; my $links = [];
+   my $vrn     = $vehicle->vrn;
+   my $moniker = $self->moniker;
+   my $href    = $req->uri_for_action( "${moniker}/vehicle", [ $vrn ] );
 
-   p_item $links, $vehicle->label; p_item $links, loc $req, $vehicle->type;
+   p_item $links, p_link {}, "${vrn}-vehicle", $href, {
+      request => $req,
+      tip     => locm( $req, 'vehicle_management_tip', $vrn ),
+      value   => $vehicle->label };
 
-   p_item $links, management_link $req, "${moniker}/vehicle", $vrn, {
-      params => $req->query_params->( { optional => TRUE } ) };
+   p_item $links, loc $req, $vehicle->type;
 
    $params->{service} or return $links;
 
-   my $now  = now_dt;
-   my $opts = $_create_action->( $req );
-   my $href = $req->uri_for_action( 'event/vehicle_event', [ $vrn ] );
+   my $now  = now_dt; my $opts = $_create_action->( $req );
 
-   p_link $links, 'event', $href, $opts;
+   $href = $req->uri_for_action( 'event/vehicle_event', [ $vrn ] );
+
+   p_item $links, p_link {}, 'event', $href, $opts;
 
    p_item $links, management_link $req, "${moniker}/vehicle_events", $vrn, {
       params => { after => $now->subtract( days => 1 )->ymd } };

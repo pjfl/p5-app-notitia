@@ -893,15 +893,12 @@ msgid "events_heading_0"
 msgstr "Event"
 
 msgid "events_heading_1"
-msgstr "Edit"
-
-msgid "events_heading_2"
 msgstr "Participants"
 
-msgid "events_heading_3"
+msgid "events_heading_2"
 msgstr "Vehicles"
 
-msgid "events_heading_4"
+msgid "events_heading_3"
 msgstr "View"
 
 msgid "events_list_link"
@@ -2596,15 +2593,12 @@ msgid "vehicles_heading_1"
 msgstr "Type"
 
 msgid "vehicles_heading_2"
-msgstr "Edit"
-
-msgid "vehicles_heading_3"
 msgstr "Add Event"
 
-msgid "vehicles_heading_4"
+msgid "vehicles_heading_3"
 msgstr "Events"
 
-msgid "vehicles_heading_5"
+msgid "vehicles_heading_4"
 msgstr "Current Keeper"
 
 msgid "vehicles_management_heading"

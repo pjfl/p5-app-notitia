@@ -83,7 +83,7 @@ my $_create_action = sub {
 };
 
 my $_events_headers = sub {
-   return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 4 ];
+   return [ map { { value => loc( $_[ 0 ], "events_heading_${_}" ) } } 0 .. 3 ];
 };
 
 my $_event_ops_links = sub {
@@ -193,17 +193,27 @@ my $_bind_owner = sub {
 };
 
 my $_event_links = sub {
-   my ($self, $req, $event) = @_; my $links = []; my $uri = $event->uri;
+   my ($self, $req, $event) = @_; my $links = [];
 
-   my @actions = qw( event/event event/participents
+   my $uri     = $event->uri;
+   my $actionp = $self->moniker.'/event';
+   my $params  = $req->query_params->( { optional => TRUE } );
+   my $href    = $req->uri_for_action( $actionp, [ $uri ], $params );
+
+   p_item $links, p_link {}, "${uri}-event", $href, {
+      request  => $req,
+      tip      => locm( $req, 'event_management_tip', $uri ),
+      value    => $event->label };
+
+   my @actions = qw( event/participents
                      asset/request_vehicle event/event_summary );
 
    for my $actionp (@actions) {
-      push @{ $links }, { value => management_link $req, $actionp, $uri, {
-         params => $req->query_params->( { optional => TRUE } ) } };
+      p_item $links, management_link $req, $actionp, $uri, {
+         params => $params };
    }
 
-   return [ { value => $event->label }, @{ $links } ];
+   return $links;
 };
 
 my $_format_as_markdown = sub {

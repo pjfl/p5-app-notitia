@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #169. Removes edit links from list views
           - POD update
           - Addes environment check to post-install
           - Fixes post install
