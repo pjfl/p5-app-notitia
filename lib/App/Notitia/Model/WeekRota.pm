@@ -231,7 +231,8 @@ my $_vehicle_list = sub {
 };
 
 my $_union = sub {
-   return [ @{ $_[ 0 ]->{ $_[ 1 ]->[ 0 ] } }, @{ $_[ 0 ]->{ $_[ 1 ]->[ 1 ] } }];
+   return [ @{ $_[ 0 ]->{ $_[ 1 ]->[ 0 ] } // [] },
+            @{ $_[ 0 ]->{ $_[ 1 ]->[ 1 ] } // [] } ];
 };
 
 my $_alloc_key_row = sub {
@@ -460,7 +461,7 @@ my $_alloc_slot_row = sub {
       my $href = $req->uri_for_action( 'asset/vehicle', $args );
       my $vrn  = $slot->vehicle ? $slot->vehicle->vrn : NUL;
       my $vehicles = $slot->type_name->is_driver ?
-                      $_union->( $data->{vehicles}, [ '4x4', 'car' ] )
+                     $_union->( $data->{vehicles}, [ '4x4', 'car' ] )
                    : $slot->type_name->is_rider  ? $data->{vehicles}->{bike}
                    : [];
       my $opts = { assignee => $operator,

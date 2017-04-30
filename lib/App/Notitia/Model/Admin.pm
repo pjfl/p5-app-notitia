@@ -661,7 +661,6 @@ sub logs : Role(administrator) {
       class => 'smaller-table', headers => $_log_headers->( $req, $logname ) };
 
    p_row $table, [ @rows ];
-   p_list $form, NUL, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }
