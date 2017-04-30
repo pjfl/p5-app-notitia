@@ -335,7 +335,6 @@ sub restore_data : method {
 
    my $file = $path->basename( '.tgz' );
    my (undef, $date) = split m{ - }mx, $file, 2;
-   my $bdir = $conf->vardir->catdir( 'backups' );
    my $sql  = $conf->tempdir->catfile( $self->database."-${date}.sql" );
 
    if ($sql->exists) {

@@ -214,7 +214,7 @@ my $_people_links = sub {
    my $scode   =  $person->shortcode;
    my $action  =  is_member( 'person_manager', $req->session->roles )
                ?  'person' : 'person_summary';
-   my $actionp =  $self->moniker.'/${action}';
+   my $actionp =  $self->moniker."/${action}";
    my $href    =  $req->uri_for_action( $actionp, [ $scode ], $params );
    my $link    =  p_link {}, "${scode}-${action}", $href, {
       request  => $req,
