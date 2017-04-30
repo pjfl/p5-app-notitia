@@ -576,12 +576,14 @@ sub show_if_needed : Role(anon) {
    my $v = $req->query_params->( 'val', { raw => TRUE } );
    my $meta = { display => 'inline-block', needed => TRUE };
 
-   try {
-      my $r = $self->schema->resultset( $class )->find_by_key( $v );
+   if ($v) {
+      try {
+         my $r = $self->schema->resultset( $class )->find_by_key( $v );
 
-      $r->execute( $test ) or delete $meta->{needed};
+         $r->execute( $test ) or delete $meta->{needed};
+      }
+      catch { $self->log->error( $_ ) };
    }
-   catch { $self->log->error( $_ ) };
 
    return { code => HTTP_OK,
             page => { content => {}, meta => $meta },
