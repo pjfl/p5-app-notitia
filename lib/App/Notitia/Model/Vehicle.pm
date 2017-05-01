@@ -530,7 +530,7 @@ sub adhoc_vehicle : Dialog Role(any) {
    p_select    $form, 'type', $values, {
       label => 'vehicle_type', numify => TRUE };
    p_textarea  $form, 'notes', NUL, { class => 'standard-field autosize' };
-   p_action    $form, 'create', [ 'vehicle' ], { request => $req };
+   p_action    $form, 'create', [ 'adhoc_vehicle' ], { request => $req };
 
    return $stash;
 }
@@ -575,6 +575,13 @@ sub assign : Dialog Role(rota_manager) {
 
 sub assign_vehicle_action : Role(rota_manager) {
    return $_[ 0 ]->$_toggle_assignment( $_[ 1 ], 'assign' );
+}
+
+sub create_adhoc_vehicle_action : Role(controller) Role(driver) Role(rider)
+                                  Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   return $self->create_vehicle_action( $req );
 }
 
 sub create_vehicle_action : Role(rota_manager) {
