@@ -726,7 +726,8 @@ sub customers : Role(controller) {
    return $self->get_stash( $req, $page );
 }
 
-sub date_control_action : Role(person_manager) Role(rota_manager) {
+sub date_control_action : Role(controller) Role(person_manager)
+                          Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $report = $req->uri_params->( 0 );

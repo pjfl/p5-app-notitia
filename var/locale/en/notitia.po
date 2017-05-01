@@ -127,6 +127,9 @@ msgstr "Management"
 msgid "admin_index_tip"
 msgstr "Administration Index"
 
+msgid "admin_index_title"
+msgstr "Management Index"
+
 msgid "admin_management_heading"
 msgstr "Admin"
 
@@ -900,6 +903,12 @@ msgstr "Vehicles"
 
 msgid "events_heading_3"
 msgstr "View"
+
+msgid "events_index_link"
+msgstr "Events"
+
+msgid "events_index_tip"
+msgstr "Fund raising and training events"
 
 msgid "events_list_link"
 msgstr "All Events"

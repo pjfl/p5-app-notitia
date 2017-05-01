@@ -25,6 +25,7 @@ with    q(App::Notitia::Role::Navigation);
 register_action_paths
    'admin/event_control'  => 'event-control',
    'admin/event_controls' => 'event-controls',
+   'admin/index'          => 'admin-index',
    'admin/logs'           => 'log',
    'admin/slot_certs'     => 'slot-certs',
    'admin/slot_roles'     => 'slot-roles',
@@ -611,6 +612,18 @@ sub filter_log_action : Role(administrator) {
    my $location = $req->uri_for_action( $actionp, $args, $params );
 
    return { redirect => { location => $location } };
+}
+
+sub index : Role(administrator) Role(address_viewer) Role(controller)
+            Role(event_manager) Role(person_manager) Role(rota_manager)
+            Role(training_manager) {
+   my ($self, $req) = @_;
+
+   my $page = {
+      title => locm $req, 'admin_index_title'
+   };
+
+   return $self->get_stash( $req, $page );
 }
 
 sub init_event_controls_action : Role(administrator) {

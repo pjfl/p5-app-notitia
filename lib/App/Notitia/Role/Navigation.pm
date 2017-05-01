@@ -370,14 +370,18 @@ my $_secondary_authenticated_links = sub {
       tip   => 'rota_link_tip', };
 
    my $after = now_dt->subtract( days => 1 )->ymd;
-   my $index = $places->{admin_index};
+   my $index = $places->{events_index};
 
-   p_navlink $nav, 'admin_index', [ $index, [], after => $after ], {
-      class => $_location_class->( $page, 'admin' ), request => $req, };
+   p_navlink $nav, 'events_index', [ $index, [], after => $after ], {
+      class => $_location_class->( $page, 'events' ), request => $req };
 
    $self->$_allowed( $req, 'call/journeys' )
       and p_navlink $nav, 'calls', [ 'call/journeys' ], {
          class => $_location_class->( $page, 'calls' ), request => $req, };
+
+   $self->$_allowed( $req, $places->{admin_index} )
+      and p_navlink $nav, 'admin_index', [ $places->{admin_index}, [] ], {
+         class => $_location_class->( $page, 'admin' ), request => $req, };
 
    return;
 };
@@ -447,37 +451,14 @@ my $_vehicle_links = sub {
 sub admin_navigation_links {
    my ($self, $req, $page) = @_; $page->{selected} //= NUL;
 
-   my $nav  = $self->navigation_links( $req, $page );
+   my $nav = $self->navigation_links( $req, $page );
    my $list = $nav->{menu}->{list} //= []; $nav->{menu}->{class} = 'dropmenu';
-   my $now  = now_dt;
 
    $self->$_allowed( $req, 'admin/types' )
       and $self->$_admin_links( $req, $page, $nav );
 
-   p_folder $list, 'events', { request => $req, tip => 'Event Menu' };
-
-   p_navlink $list, 'current_events',
-      [ 'event/events', [], after => $now->clone->subtract( days => 1 )->ymd ],{
-         class   => $_selected_class->( $page, 'current_events' ),
-         request => $req };
-
-   p_navlink $list, 'previous_events',
-      [ 'event/events', [], before => $now->ymd ], {
-         class   => $_selected_class->( $page, 'previous_events' ),
-         request => $req };
-
    $self->$_people_links( $req, $page, $nav );
    $self->$_report_links( $req, $page, $nav );
-
-   p_folder $list, 'training', { request => $req, tip => 'Training Menu' };
-
-   $self->$_allowed( $req, 'train/summary' )
-      and p_navlink $list, 'training_summary', [ 'train/summary' ], {
-         class => $_selected_class->( $page, 'training' ), request => $req };
-
-   p_navlink $list, 'training_events', [ 'train/events' ], {
-      class   => $_selected_class->( $page, 'training_events' ),
-      request => $req };
 
    $self->$_allowed( $req, 'asset/vehicles' )
       and $self->$_vehicle_links( $req, $page, $nav );
@@ -550,6 +531,38 @@ sub credit_links {
    p_list $list, PIPE_SEP, $links;
 
    return $list;
+}
+
+sub events_navigation_links {
+   my ($self, $req, $page) = @_; $page->{selected} //= NUL;
+
+   my $nav  = $self->navigation_links( $req, $page );
+   my $list = $nav->{menu}->{list} //= []; $nav->{menu}->{class} = 'dropmenu';
+   my $now  = now_dt;
+
+   p_folder $list, 'events', { request => $req, tip => 'Event Menu' };
+
+   p_navlink $list, 'current_events',
+      [ 'event/events', [], after => $now->clone->subtract( days => 1 )->ymd ],{
+         class   => $_selected_class->( $page, 'current_events' ),
+         request => $req };
+
+   p_navlink $list, 'previous_events',
+      [ 'event/events', [], before => $now->ymd ], {
+         class   => $_selected_class->( $page, 'previous_events' ),
+         request => $req };
+
+   p_folder $list, 'training', { request => $req, tip => 'Training Menu' };
+
+   $self->$_allowed( $req, 'train/summary' )
+      and p_navlink $list, 'training_summary', [ 'train/summary' ], {
+         class => $_selected_class->( $page, 'training' ), request => $req };
+
+   p_navlink $list, 'training_events', [ 'train/events' ], {
+      class   => $_selected_class->( $page, 'training_events' ),
+      request => $req };
+
+   return $nav;
 }
 
 sub external_links {
