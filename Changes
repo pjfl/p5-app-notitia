@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #171. Left justifies grid rather than centering it
           - Fixes #170. Controllers etc can create adhoc vehicles
           - Fixes #169. Removes edit links from list views
           - POD update
