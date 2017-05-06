@@ -286,6 +286,7 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       display_rows    => [ PositiveInt, 2                   ],
       enable_2fa      => [ Bool, FALSE                      ],
       first_name      => [ SimpleStr | Undef                ],
+      grid_type       => [ NonEmptySimpleStr, 'wrap'        ],
       grid_width      => [ PositiveInt, 978                 ],
       query           => [ SimpleStr | Undef                ],
       roles           => [ ArrayRef, sub { [] }             ],
@@ -299,7 +300,7 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       version         => [ NonEmptySimpleStr, $sess_version ],
       wanted          => [ SimpleStr | Undef                ], } };
 
-has 'session_version' => is => 'ro',   isa => NonZeroPositiveInt, default => 2;
+has 'session_version' => is => 'ro',   isa => NonZeroPositiveInt, default => 3;
 
 has 'shift_times'     => is => 'ro',   isa => HashRef,
    builder            => sub { {
@@ -329,7 +330,8 @@ has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
       config          => [ qw( description keywords ) ],
       links           => [ qw( assets css images js ) ],
       request         => [ qw( authenticated host language locale username ) ],
-      session         => [ qw( grid_width rota_date skin theme ) ], } };
+      session         => [ qw(
+         grid_type grid_width rota_date skin theme ) ], } };
 
 has 'template_dir'    => is => 'ro',   isa => Directory, coerce => TRUE,
    builder            => sub { $_[ 0 ]->vardir->catdir( 'templates' ) };

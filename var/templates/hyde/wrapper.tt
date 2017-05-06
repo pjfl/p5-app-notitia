@@ -19,7 +19,7 @@
          type="application/rss+xml">
 [%    END -%]
 </head>
-<body class="wrap" id="body">
+<body class="[% session.grid_type %]" id="body">
    [% content -%]
 </body>
 </html>

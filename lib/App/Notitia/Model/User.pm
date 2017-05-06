@@ -72,6 +72,17 @@ around 'get_stash' => sub {
 };
 
 # Private functions
+my $_grid_type = sub {
+   my $selected = shift;
+   my $opts_t   = { container_class => 'radio-group', selected => TRUE };
+   my $opts_f   = { container_class => 'radio-group', };
+   my $labels   = { fixed => 'Left', wrap => 'Centre' };
+
+   return [ map { [ $labels->{ $_ }, $_,
+                    ($_ eq $selected) ? $opts_t : $opts_f ] }
+            'fixed', 'wrap' ];
+};
+
 my $_listify = sub {
    return [ map { my $x = ucfirst $_; $x =~ s{ _ }{ }gmx; [ $x, $_ ] }
                @{ $_[ 0 ] } ];
@@ -237,11 +248,15 @@ my $_bind_profile_fields = sub {
    p_textfield $form, 'home_phone', $person->home_phone, {
       class => 'standard-field server' };
 
-   p_select $form, 'theme', $self->$_themes_list( $req );
+   p_select $form, 'theme', $self->$_themes_list( $req ), {
+      label_class => 'clear' };
 
    p_slider $form, 'grid_width', $page->{grid_width}, {
       class => 'smallint-field', fieldsize => $gw_size,
       id    => 'grid_width_slider', label_class => 'clear' };
+
+   p_radio $form, 'grid_type', $_grid_type->( $page->{grid_type} ), {
+      label => 'Page Justification' };
 
    p_radio $form, 'rows_per_page', $_rows_per_page->( $person ), {
       label => 'Rows Per Page' };
@@ -496,6 +511,7 @@ sub profile : Role(any) {
    my $page       =  {
       first_field => 'address',
       forms       => [ $form ],
+      grid_type   => $req->session->grid_type,
       grid_width  => $req->session->grid_width,
       location    => 'account_management',
       range       => [ 940, 1560 ],
@@ -820,6 +836,7 @@ sub update_profile_action : Role(any) {
    $person->update;
 
    $sess->enable_2fa( $person->totp_secret ? TRUE : FALSE );
+   $sess->grid_type( $params->( 'grid_type' ) );
    $sess->grid_width( $params->( 'grid_width' ) );
    $sess->rows_per_page( $person->rows_per_page );
    $sess->theme( $params->( 'theme' ) );
