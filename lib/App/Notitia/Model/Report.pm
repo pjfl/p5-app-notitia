@@ -3,7 +3,8 @@ package App::Notitia::Model::Report;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::DOM       qw( new_container p_cell p_container p_date p_hidden
-                                p_js p_link p_list p_row p_select p_table );
+                                p_item p_js p_link p_list p_row
+                                p_select p_table );
 use App::Notitia::Util      qw( js_submit_config local_dt locd locm make_tip
                                 now_dt to_dt register_action_paths
                                 slot_limit_index );
@@ -770,18 +771,14 @@ sub deliveries : Role(controller) {
    my $data = $self->$_deliveries_by_customer( $opts );
    my $headers = $_delivery_headers->( my $max_stages = $data->{_max_stages} );
    my $deliveries = $data->{_deliveries};
-
-   my $outer_table = p_table $form, {};
+   my @rows = map { $_delivery_row->( $req, $max_stages, $_ ) } @{ $deliveries};
    my $full_table = $page->{content} = p_table {}, { headers => $headers };
    my $sample_table = p_table {}, { class => 'embeded', headers => $headers };
 
-   my $container = p_container {}, $sample_table, { class => 'wide-content' };
-
-   my @rows = map { $_delivery_row->( $req, $max_stages, $_ ) } @{ $deliveries};
-
-   p_row $outer_table,  [ { class => 'embeded', value => $container } ];
-   p_row $sample_table, [ @rows[ 0 .. 10 ] ];
    p_row $full_table,   [ @rows ];
+   p_row $sample_table, [ @rows[ 0 .. 10 ] ];
+
+   p_container $form, $sample_table, { class => 'wide-content' };
 
    p_list $form, NUL, $_dl_links->( $req, 'deliveries', $opts ),
           $_link_opts->();
@@ -802,20 +799,16 @@ sub incidents : Role(controller) {
 
    $_push_date_controls->( $page, $opts );
 
-   my $incidents = $self->$_incidents_for_period( $opts );
    my $headers = $_incident_headers->();
-
-   my $outer_table = p_table $form, {};
+   my $incidents = $self->$_incidents_for_period( $opts );
+   my @rows = map { $_incident_row->( $req, $_ ) } @{ $incidents };
    my $full_table = $page->{content} = p_table {}, { headers => $headers };
    my $sample_table = p_table {}, { class => 'embeded', headers => $headers };
 
-   my $container = p_container {}, $sample_table, { class => 'wide-content' };
-
-   my @rows = map { $_incident_row->( $req, $_ ) } @{ $incidents };
-
-   p_row $outer_table,  [ { class => 'embeded', value => $container } ];
-   p_row $sample_table, [ @rows[ 0 .. 10 ] ];
    p_row $full_table,   [ @rows ];
+   p_row $sample_table, [ @rows[ 0 .. 10 ] ];
+
+   p_container $form, $sample_table, { class => 'wide-content' };
 
    p_list $form, NUL, $_dl_links->( $req, 'incidents', $opts ), $_link_opts->();
 
