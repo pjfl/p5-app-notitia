@@ -119,7 +119,7 @@ my $_admin_data_links = sub {
       class => $_selected_class->( $page, 'slot_roles_list' ),
       depth => 2, request => $req };
 
-   p_navlink $list, 'user_form_list', [ 'form/form_list' ], {
+   p_navlink $list, 'user_form_list', [ 'form/form_defn_list' ], {
       class => $_selected_class->( $page, 'user_form_list' ),
       depth => 2, request => $req };
 

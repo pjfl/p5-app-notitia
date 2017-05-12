@@ -1504,6 +1504,9 @@ msgstr "Create a package type record"
 msgid "Parameter [_1] is not a valid email address"
 msgstr "Not a valid email address"
 
+msgid "partial_uri"
+msgstr "Partial URI"
+
 msgid "participate_event"
 msgstr "Participate"
 
@@ -2316,6 +2319,9 @@ msgstr "Update the [_1] record for [_2]"
 msgid "urgent"
 msgstr "Urgent"
 
+msgid "uri_prefix"
+msgstr "URI Prefix"
+
 msgid "username"
 msgstr "User name"
 
@@ -2412,6 +2418,9 @@ msgstr "User Defined Forms"
 msgid "user_form_name"
 msgstr "Form Name"
 
+msgid "user_form_notes"
+msgstr "Description"
+
 msgid "user_form_title"
 msgstr "User Defined Form"
 
@@ -2471,8 +2480,8 @@ msgid "vehicle_allocation_management_heading"
 msgstr "Vehicle Allocation"
 
 msgid "vehicle_colour_field_tip"
-msgstr "Leave blank to assign a random colour. Colours are either a name or"
-       "or a hexadecimal number, e.g. #1b00b5"
+msgstr "Leave blank to assign a random colour. Colours are either a name or "
+       "a hexadecimal number, e.g. #1b00b5"
 
 msgid "vehicle_create_link"
 msgstr "Add Vehicle"

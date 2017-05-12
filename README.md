@@ -16,7 +16,7 @@ App::Notitia - People and resource scheduling
 
 # Version
 
-This documents version v0.12.$Rev: 49 $ of **App::Notitia**
+This documents version v0.12.$Rev: 50 $ of **App::Notitia**
 
 # Description
 
@@ -206,12 +206,12 @@ might look like this:
        missingok
        notifempty
        prerotate
-          su -c "/home/notitia/local/bin/notitia-jobdaemon stop" notitia
           /etc/init.d/notitia stop
+          su -c "/home/notitia/local/bin/notitia-jobdaemon stop" notitia
        endscript
        postrotate
-          /etc/init.d/notitia start
           su -c "/home/notitia/local/bin/notitia-jobdaemon start" notitia
+          /etc/init.d/notitia start
        endscript
        rotate 4
        sharedscripts

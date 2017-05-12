@@ -64,7 +64,9 @@ my $_spring = sub {
 };
 
 my $_summer = sub {
-   return $_skip_weekend->( $_[ 0 ]->clone->set( month => 8, day => 25 ) );
+   # In England, Wales and Northern Ireland, the summer bank holiday is on the
+   # last Monday of August
+   return $_prev_monday->( $_[ 0 ]->clone->set( month => 8, day => 31 ) );
 };
 
 my $_easter = sub {

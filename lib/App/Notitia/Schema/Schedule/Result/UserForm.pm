@@ -4,8 +4,9 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Schedule::Base::Result';
 
-use App::Notitia::Constants qw( SPC TRUE );
+use App::Notitia::Constants qw( FALSE NUL SPC TRUE VARCHAR_MAX_SIZE );
 use App::Notitia::DataTypes qw( serial_data_type varchar_data_type );
+use App::Notitia::Util      qw( from_json to_json );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -14,6 +15,16 @@ $class->table( 'user_form' );
 $class->add_columns
    ( id   => serial_data_type,
      name => varchar_data_type( 64 ),
+     uri_prefix => varchar_data_type( 64 ),
+     partial_uri => varchar_data_type( 64 ),
+     template => varchar_data_type( 64 ),
+     notes => varchar_data_type,
+     response => varchar_data_type,
+     content => {
+        accessor      => '_content',
+        data_type     => 'text',
+        default_value => NUL,
+        is_nullable   => FALSE, },
      );
 
 $class->set_primary_key( 'id' );
@@ -25,6 +36,54 @@ $class->has_many( fields => "${result}::UserField", 'form_id' );
 # Private methods
 sub _as_string {
    return $_[ 0 ]->name;
+}
+
+sub content {
+   my ($self, $k, $v) = @_;
+
+   my $content = $self->{_content_cache}
+             //= from_json( $self->_content || '{}' );
+
+   defined $k or return $content; defined $v or return $content->{ $k };
+
+   return $content->{ $k } = $v;
+}
+
+sub insert {
+   my $self = shift;
+
+   $self->_content( to_json $self->content );
+
+   App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
+
+   return $self->next::method;
+}
+
+sub update {
+   my ($self, $columns) = @_;
+
+   $columns and $self->set_inflated_columns( $columns );
+   $self->_content( to_json $self->content );
+   $self->validate( TRUE );
+
+   return $self->next::method;
+}
+
+sub validation_attributes {
+   return { # Keys: constraints, fields, and filters (all hashes)
+      constraints    => {
+         name        => { max_length => 64, min_length => 3, },
+         notes       => { max_length => VARCHAR_MAX_SIZE(), min_length => 0 },
+      },
+      fields         => {
+         name        => {
+            unique   => TRUE,
+            filters  => 'filterWhiteSpace filterLowerCase',
+            validate => 'isMandatory isValidLength isValidIdentifier' },
+         notes       => { validate => 'isValidLength isValidText' },
+      },
+      level => 8,
+   };
 }
 
 1;

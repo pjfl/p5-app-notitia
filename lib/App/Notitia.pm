@@ -12,7 +12,7 @@ sub env_var {
 
 # TODO: Automate incrementing of schema versions
 sub schema_version {
-   return qv( '0.12.33' );
+   return qv( '0.12.51' );
 }
 
 1;
@@ -248,12 +248,12 @@ might look like this:
       missingok
       notifempty
       prerotate
-         su -c "/home/notitia/local/bin/notitia-jobdaemon stop" notitia
          /etc/init.d/notitia stop
+         su -c "/home/notitia/local/bin/notitia-jobdaemon stop" notitia
       endscript
       postrotate
-         /etc/init.d/notitia start
          su -c "/home/notitia/local/bin/notitia-jobdaemon start" notitia
+         /etc/init.d/notitia start
       endscript
       rotate 4
       sharedscripts

@@ -165,6 +165,7 @@ sub tree_root {
                            ->filter( sub { not m{ (?: $no_index ) }mx } );
 
          $dir->exists or next;
+         $self->log->info( "Tree building ${dir}" );
          $lcache->{tree} = build_tree( $self->type_map, $dir, 2 );
          $lcache->{type} = 'folder';
          $self->$_chain_nodes( $lcache );

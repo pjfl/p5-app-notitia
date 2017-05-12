@@ -28,17 +28,17 @@ our @EXPORT_OK = qw( action_for_uri action_path_uri_map assert_unique
                      check_field_js check_form_field clone csrf_token
                      datetime_label dialog_anchor display_duration
                      encrypted_attr enhance event_actions event_handler
-                     event_handler_cache event_streams get_hashed_pw get_salt
-                     is_access_authorised is_draft is_encrypted iterator
-                     js_slider_config js_server_config js_submit_config
-                     js_togglers_config js_window_config lcm_for link_options
-                     load_file_data loc local_dt localise_tree locd locm
-                     mail_domain make_id_from make_name_from make_tip
-                     management_link mtime new_request new_salt now_dt
-                     page_link_set register_action_paths set_element_focus
-                     set_event_date set_rota_date slot_claimed slot_identifier
-                     slot_limit_index show_node stash_functions time2int to_dt
-                     to_json to_msg );
+                     event_handler_cache event_streams from_json get_hashed_pw
+                     get_salt is_access_authorised is_draft is_encrypted
+                     iterator js_slider_config js_server_config
+                     js_submit_config js_togglers_config js_window_config
+                     lcm_for link_options load_file_data loc local_dt
+                     localise_tree locd locm mail_domain make_id_from
+                     make_name_from make_tip management_link mtime new_request
+                     new_salt now_dt page_link_set register_action_paths
+                     set_element_focus set_event_date set_rota_date
+                     slot_claimed slot_identifier slot_limit_index show_node
+                     stash_functions time2int to_dt to_json to_msg );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -349,6 +349,8 @@ sub build_tree {
 
    my $fcount = 0; my $max_mtime = 0; my $tree = {}; $depth++;
 
+   $depth > 65536 and throw "Tree is out of it's depth";
+
    for my $path (grep { defined $_->stat } $dir->all) {
       my ($id, $pref) =  @{ make_id_from( $path->utf8->filename ) };
       my  $name       =  make_name_from( $id );
@@ -504,6 +506,10 @@ sub event_handler_cache () {
 
 sub event_streams () {
    return sort keys %{ $handler_cache };
+}
+
+sub from_json ($) {
+   return $json_coder->decode( $_[ 0 ] );
 }
 
 sub gcf ($$) {
@@ -1028,6 +1034,8 @@ Defines no attributes
 =head2 C<event_handler_cache>
 
 =head2 C<event_streams>
+
+=head2 C<from_json>
 
 =head2 C<gcf>
 

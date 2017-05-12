@@ -10,7 +10,7 @@ use Scalar::Util            qw( blessed );
 
 our @EXPORT_OK = qw( new_container f_tag p_action p_button p_cell
                      p_checkbox p_container p_date p_fields p_file p_folder
-                     p_hidden p_image p_item p_js p_label p_link p_list
+                     p_hidden p_iframe p_image p_item p_js p_label p_link p_list
                      p_navlink p_password p_radio p_row p_select p_slider
                      p_span p_table p_tag p_text p_textarea p_textfield
                      p_unordered );
@@ -270,6 +270,14 @@ sub p_folder ($$;$) {
 
 sub p_hidden ($@) {
    my $f = shift; return $_push_field->( $f, 'hidden', $_bind->( @_ ) );
+}
+
+sub p_iframe ($@) {
+   my ($f, $name, $href, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   $opts->{href} = $href;
+
+   return $_push_field->( $f, 'iframe', $opts );
 }
 
 sub p_image ($@) {

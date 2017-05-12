@@ -19,6 +19,7 @@ lib/App/Notitia/Constants.pm
 lib/App/Notitia/Controller/CMS.pm
 lib/App/Notitia/Controller/Call.pm
 lib/App/Notitia/Controller/Event.pm
+lib/App/Notitia/Controller/Form.pm
 lib/App/Notitia/Controller/Main.pm
 lib/App/Notitia/Controller/Report.pm
 lib/App/Notitia/Controller/Root.pm

@@ -10,6 +10,7 @@
 [%       CASE 'form'; Form( f ); -%]
 [%       CASE 'form_button'; FormWithButton( f ) -%]
 [%       CASE 'hidden'; HiddenField( f ); -%]
+[%       CASE 'iframe'; IFrame( f); -%]
 [%       CASE 'image'; Image( f ); -%]
 [%       CASE 'label'; Label( f ); -%]
 [%       CASE 'link'; Link( f ) -%]
@@ -115,6 +116,11 @@
 [%# -%]
 [% MACRO HiddenField( f ) BLOCK -%]
       <input name="[% f.name %]" type="hidden" value="[% f.value %]">
+[% END -%]
+[%# -%]
+[% MACRO IFrame( f ) BLOCK -%]
+      <iframe height="[% f.height %]" src="[% f.href %]" width="[% f.width %]"
+       frameborder="0" marginheight="0" marginwidth="0">Loading...</iframe>
 [% END -%]
 [%# -%]
 [% MACRO Image( f ) WRAPPER label -%]

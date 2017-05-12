@@ -756,7 +756,7 @@ sub update_vehicle_action : Role(rota_manager) {
    $self->$_update_vehicle_from_request( $req, $vehicle );
 
    try   { $vehicle->update }
-   catch { $self->blow_smoke( $_, 'delete', 'vehicle', $vehicle->vrn ) };
+   catch { $self->blow_smoke( $_, 'update', 'vehicle', $vehicle->vrn ) };
 
    my $who      = $req->session->user_label; $vrn = $vehicle->vrn;
    my $location = $req->uri_for_action( $self->moniker.'/vehicle', [ $vrn ] );

@@ -165,6 +165,7 @@ sub tree_root {
       my $filter   = sub { not m{ (?: $no_index ) }mx };
       my $dir      = $conf->docs_root->clone->filter( $filter );
 
+      $self->log->info( "Tree building ${dir}" );
       $_docs_tree_cache = build_tree( $self->type_map, $dir );
       $filesys->touch( $_docs_tree_cache->{_mtime} );
    }
