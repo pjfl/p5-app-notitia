@@ -1,8 +1,8 @@
 package App::Notitia::Model::Posts;
 
 use App::Notitia::Attributes;  # Will do cleaning
-use App::Notitia::Util     qw( build_tree iterator localise_tree mtime
-                               register_action_paths );
+use App::Notitia::Util     qw( build_tree docs_cache_mtime iterator
+                               localise_tree mtime register_action_paths );
 use Class::Usul::Constants qw( SPC TRUE );
 use Class::Usul::Types     qw( NonZeroPositiveInt PositiveInt );
 use Moo;
@@ -74,7 +74,7 @@ around 'load_page' => sub {
 };
 
 # Private package variables
-my $_posts_tree_cache = { _mtime => 0, };
+my $_posts_cache = { _mtime => 0, };
 
 # Private methods
 my $_chain_nodes = sub {
@@ -150,17 +150,16 @@ sub save_file_action : Role(editor) Role(event_manager) Role(person_manager) {
 }
 
 sub tree_root {
-   my $self = shift; my $conf = $self->config; my $filesys = $conf->docs_mtime;
+   my $self = shift; my $mtime = docs_cache_mtime;
 
-   my $mtime = $filesys->exists ? $filesys->stat->{mtime} // 0 : 0;
-
-   if ($mtime == 0 or $mtime > $_posts_tree_cache->{_mtime}) {
+   if ($mtime == 0 or $mtime > $_posts_cache->{_mtime}) {
+      my $conf      = $self->config;
       my $postd     = $conf->posts;
       my $no_index  = join '|', grep { not m{ $postd }mx } @{ $conf->no_index };
-      my $max_mtime = $_posts_tree_cache->{_mtime};
+      my $max_mtime = $_posts_cache->{_mtime};
 
       for my $locale (@{ $conf->locales }) {
-         my $lcache = $_posts_tree_cache->{ $locale } //= {};
+         my $lcache = $_posts_cache->{ $locale } //= {};
          my $dir    = $self->localised_posts_dir( $locale, { reverse => TRUE } )
                            ->filter( sub { not m{ (?: $no_index ) }mx } );
 
@@ -173,10 +172,10 @@ sub tree_root {
          my $mtime = mtime $lcache; $mtime > $max_mtime and $max_mtime = $mtime;
       }
 
-      $filesys->touch( $_posts_tree_cache->{_mtime} = $max_mtime );
+      docs_cache_mtime( $_posts_cache->{_mtime} = $max_mtime );
    }
 
-   return $_posts_tree_cache;
+   return $_posts_cache;
 }
 
 1;

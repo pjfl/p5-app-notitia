@@ -138,9 +138,6 @@ has 'deflate_types'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
 
 has 'description'     => is => 'ro',   isa => SimpleStr, default => NUL;
 
-has 'docs_mtime'      => is => 'lazy', isa => Path, coerce => TRUE,
-   builder            => sub { $_[ 0 ]->docs_root->catfile( '.mtime' ) };
-
 has 'docs_root'       => is => 'lazy', isa => Directory, coerce => TRUE,
    builder            => sub { $_[ 0 ]->vardir->catdir( 'docs' ) };
 
@@ -535,12 +532,6 @@ deflate in L<Plack> middleware
 
 A simple string that defaults to null. The HTML meta attributes description
 value
-
-=item C<docs_mtime>
-
-Path object for the document tree modification time file. The indexing program
-touches this file setting it to modification time of the most recently changed
-file in the document tree
 
 =item C<docs_root>
 

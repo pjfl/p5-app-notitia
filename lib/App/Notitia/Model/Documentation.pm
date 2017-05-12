@@ -1,8 +1,8 @@
 package App::Notitia::Model::Documentation;
 
 use App::Notitia::Attributes;  # Will do cleaning
-use App::Notitia::Util     qw( build_tree iterator localise_tree mtime
-                               register_action_paths );
+use App::Notitia::Util     qw( build_tree docs_cache_mtime iterator
+                               localise_tree mtime register_action_paths );
 use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( first_char throw );
 use Class::Usul::Types     qw( NonZeroPositiveInt PositiveInt );
@@ -45,7 +45,7 @@ around 'load_page' => sub {
 };
 
 # Private package variables
-my $_docs_tree_cache = { _mtime => 0, };
+my $_docs_cache = { _mtime => 0, };
 my $_docs_url_cache  = {};
 
 # Private methods
@@ -156,21 +156,20 @@ sub search : Role(any) {
 }
 
 sub tree_root {
-   my $self = shift; my $conf = $self->config; my $filesys = $conf->docs_mtime;
+   my $self = shift; my $mtime = docs_cache_mtime;
 
-   my $mtime = $filesys->exists ? $filesys->stat->{mtime} // 0 : 0;
-
-   if ($mtime == 0 or $mtime > $_docs_tree_cache->{_mtime}) {
+   if ($mtime == 0 or $mtime > $_docs_cache->{_mtime}) {
+      my $conf     = $self->config;
       my $no_index = join '|', @{ $conf->no_index };
       my $filter   = sub { not m{ (?: $no_index ) }mx };
       my $dir      = $conf->docs_root->clone->filter( $filter );
 
       $self->log->info( "Tree building ${dir}" );
-      $_docs_tree_cache = build_tree( $self->type_map, $dir );
-      $filesys->touch( $_docs_tree_cache->{_mtime} );
+      $_docs_cache = build_tree( $self->type_map, $dir );
+      docs_cache_mtime $_docs_cache->{_mtime};
    }
 
-   return $_docs_tree_cache;
+   return $_docs_cache;
 }
 
 sub upload : Role(editor) Role(event_manager) Role(person_manager) {

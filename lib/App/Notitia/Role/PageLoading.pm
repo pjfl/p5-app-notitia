@@ -3,8 +3,9 @@ package App::Notitia::Role::PageLoading;
 use namespace::autoclean;
 
 use App::Notitia::DOM      qw( p_js );
-use App::Notitia::Util     qw( build_navigation clone is_access_authorised
-                               js_togglers_config loc local_dt mtime to_dt );
+use App::Notitia::Util     qw( build_navigation clone docs_cache_mtime
+                               is_access_authorised js_togglers_config
+                               loc local_dt mtime to_dt );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use Class::Usul::File;
 use Class::Usul::Functions qw( is_arrayref is_member throw );
@@ -111,15 +112,15 @@ sub initialise_page {
 }
 
 sub invalidate_docs_cache {
-   my ($self, $mtime) = @_; my $file = $self->config->docs_mtime;
+   my ($self, $mtime) = @_;
 
    if ($mtime) {
-      $file->touch( $mtime );
+      docs_cache_mtime $mtime;
       $mtime = local_dt to_dt time2str undef, $mtime;
       $self->log->info( "Invalidate docs cache ${mtime}" );
    }
    else {
-      $file->exists and $file->unlink;
+      docs_cache_mtime 0;
       $self->log->info( 'Invalidate docs cache' );
    }
 

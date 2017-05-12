@@ -27,10 +27,10 @@ our @EXPORT_OK = qw( action_for_uri action_path_uri_map assert_unique
                      assign_link authenticated_only build_navigation build_tree
                      check_field_js check_form_field clone csrf_token
                      datetime_label dialog_anchor display_duration
-                     encrypted_attr enhance event_actions event_handler
-                     event_handler_cache event_streams from_json get_hashed_pw
-                     get_salt is_access_authorised is_draft is_encrypted
-                     iterator js_slider_config js_server_config
+                     docs_cache_mtime encrypted_attr enhance event_actions
+                     event_handler event_handler_cache event_streams from_json
+                     get_hashed_pw get_salt is_access_authorised is_draft
+                     is_encrypted iterator js_slider_config js_server_config
                      js_submit_config js_togglers_config js_window_config
                      lcm_for link_options load_file_data loc local_dt
                      localise_tree locd locm mail_domain make_id_from
@@ -42,6 +42,7 @@ our @EXPORT_OK = qw( action_for_uri action_path_uri_map assert_unique
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
+my $docs_cache_mtime    = 0;
 my $handler_cache       = {};
 my $json_coder          = JSON::MaybeXS->new( utf8 => FALSE );
 my $result_class_cache  = {};
@@ -454,6 +455,15 @@ sub display_duration ($$) {
    return
       loc( $req, 'Starts' ).SPC.datetime_label( $req, $starts ),
       loc( $req, 'Ends' ).SPC.datetime_label( $req, $ends );
+}
+
+sub docs_cache_mtime (;$) {
+   my $v = shift; defined $v or return $docs_cache_mtime;
+
+   $v =~ m{ \A [0-9]+ \z }mx
+      or throw 'Docs cache mtime [_1] must be an integer', [ $v ];
+
+   return $docs_cache_mtime = $v;
 }
 
 sub encrypted_attr ($$$$) {
@@ -1022,6 +1032,8 @@ Defines no attributes
 =head2 C<dialog_anchor>
 
 =head2 C<display_duration>
+
+=head2 C<docs_cache_mtime>
 
 =head2 C<encrypted_attr>
 

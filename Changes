@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Stops using filesystem mtime for docs cache invalidation
           - Wide content more responsive
           - Adds grid_type profile/session attribute
           - Fixes #171. Left justifies grid rather than centering it
