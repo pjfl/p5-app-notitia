@@ -452,8 +452,6 @@ sub people : method {
       $lno = $self->$_create_person( $csv, $ncols, $dv, $cmap, $lno, $line );
    }
 
-   $self->config->badge_mtime->touch;
-
    return OK;
 }
 

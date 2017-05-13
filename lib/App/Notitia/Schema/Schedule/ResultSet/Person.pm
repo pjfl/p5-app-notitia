@@ -27,14 +27,6 @@ my $_find_role_type = sub {
    return $schema->resultset( 'Type' )->find_role_by( $name );
 };
 
-my $_get_max_badge_id = sub {
-   my $self = shift; my $dir = $self->result_source->schema->config->ctrldir;
-
-   my $path = $dir->catfile( 'max_badge_id' ); $path->exists or return;
-
-   return $path->lock->chomp->getline;
-};
-
 my $_load_cache = sub {
    my ($self, $cache) = @_; my $opts = { columns => [ 'badge_id' ] };
 
@@ -45,17 +37,6 @@ my $_load_cache = sub {
    }
 
    return;
-};
-
-my $_set_max_badge_id = sub {
-   my ($self, $v) = @_; my $conf = $self->result_source->schema->config;
-
-   $v >= $conf->badge_excludes->[ 0 ] and $v <= $conf->badge_excludes->[ 1 ]
-      and $v = $conf->badge_excludes->[ 1 ] + 1;
-
-   $conf->ctrldir->catfile( 'max_badge_id' )->lock->println( $v );
-
-   return $v;
 };
 
 # Public methods
@@ -147,16 +128,13 @@ sub list_people {
 sub max_badge_id {
    my ($self, $v) = @_;
 
-   defined $v and $v > $_max_badge_id->[ 1 ]
-       and return $_max_badge_id->[ 1 ] = $self->$_set_max_badge_id( $v );
+   my $schema = $self->result_source->schema;
+   my $max    = $schema->application->state_cache( 'badge_id' ) // 0;
 
-   my $conf    = $self->result_source->schema->config;
-   my $file    = $conf->badge_mtime; $file->exists or $file->touch;
-   my $f_mtime = $file->stat->{mtime};
+   defined $v and $v > $max
+       and return $schema->application->state_cache( 'badge_id', $v );
 
-   $f_mtime <= $_max_badge_id->[ 0 ] and return $_max_badge_id->[ 1 ];
-
-   my $max_f = $self->$_get_max_badge_id;
+   my $conf  = $schema->config;
    my $where = { 'badge_id' => { '!=' => undef } };
 
    $conf->badge_excludes->[ 0 ] and
@@ -164,13 +142,9 @@ sub max_badge_id {
          '<' => $conf->badge_excludes->[ 0 ] }, {
             '>' => $conf->badge_excludes->[ 1 ] } ] ] };
 
-   my $max_d = $self->search( $where )->get_column( 'badge_id' )->max;
-   my $max   = $_max_badge_id->[ 1 ]; $_max_badge_id->[ 0 ] = $f_mtime;
+   $max = $self->search( $where )->get_column( 'badge_id' )->max;
 
-   $max_f and $max_f > $max and $max = $max_f;
-   $max_d and $max_d > $max and $max = $max_d;
-
-   return $_max_badge_id->[ 1 ] = $self->$_set_max_badge_id( $max );
+   return $schema->application->state_cache( 'badge_id', $max );
 }
 
 sub next_badge_id {

@@ -3,19 +3,19 @@ package App::Notitia::Role::PageLoading;
 use namespace::autoclean;
 
 use App::Notitia::DOM      qw( p_js );
-use App::Notitia::Util     qw( build_navigation clone docs_cache_mtime
-                               is_access_authorised js_togglers_config
-                               loc local_dt mtime to_dt );
+use App::Notitia::Util     qw( build_navigation clone is_access_authorised
+                               js_togglers_config loc local_dt mtime to_dt );
 use Class::Usul::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
-use Class::Usul::File;
 use Class::Usul::Functions qw( is_arrayref is_member throw );
 use Class::Usul::Time      qw( time2str );
 use Class::Usul::Types     qw( HashRef );
+use English                qw( -no_match_vars );
 use Unexpected::Functions  qw( AuthenticationRequired );
 use Moo::Role;
 
 requires qw( components config depth_offset get_stash load_page
-             localised_tree max_navigation nav_label navigation_links );
+             localised_tree max_navigation nav_label
+             navigation_links state_cache );
 
 has 'type_map' => is => 'ro', isa => HashRef, builder => sub { {} };
 
@@ -87,6 +87,17 @@ around 'load_page' => sub {
 };
 
 # Public methods
+sub docs_mtime_cache {
+   my ($self, $v) = @_;
+
+   defined $v or return $self->state_cache( 'docs_mtime' ) // 0;
+
+   $v =~ m{ \A [0-9]+ \z }mx
+      or throw 'Docs cache mtime [_1] must be an integer', [ $v ];
+
+   return $self->state_cache( 'docs_mtime', $v );
+}
+
 sub find_node {
    my ($self, $locale, $ids) = @_;
 
@@ -115,13 +126,13 @@ sub invalidate_docs_cache {
    my ($self, $mtime) = @_;
 
    if ($mtime) {
-      docs_cache_mtime $mtime;
+      $self->docs_mtime_cache( $mtime );
       $mtime = local_dt to_dt time2str undef, $mtime;
-      $self->log->info( "Invalidate docs cache ${mtime}" );
+      $self->log->info( "Invalidate docs cache ${mtime} ${PID}" );
    }
    else {
-      docs_cache_mtime 0;
-      $self->log->info( 'Invalidate docs cache' );
+      $self->docs_mtime_cache( 0 );
+      $self->log->info( 'Invalidate docs cache 0 ${PID}' );
    }
 
    return;

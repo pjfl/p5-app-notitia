@@ -5,13 +5,18 @@ use namespace::autoclean;
 use App::Notitia::Constants qw( EXCEPTION_CLASS NUL TRUE );
 use App::Notitia::DOM       qw( p_hidden );
 use App::Notitia::Util      qw( csrf_token loc );
+use Class::Usul::File;
 use Class::Usul::Functions  qw( is_member throw );
+use Class::Usul::Types      qw( DataLumper );
 use Try::Tiny;
 use Unexpected::Functions   qw( FailedTokenVerification );
 use Web::ComposableRequest::Util qw( new_uri );
 use Moo::Role;
 
-requires qw( config execute initialise_stash load_page log );
+requires qw( config execute initialise_stash load_page lock log );
+
+has 'file_cache' => is => 'lazy', isa => DataLumper,
+   builder => sub { Class::Usul::File->new( builder => $_[ 0 ] ) };
 
 # Private methods
 my $_add_form0_csrf_token = sub {
@@ -150,6 +155,20 @@ sub add_csrf_token {
    p_hidden $form, '_verify', csrf_token $req;
 
    return;
+}
+
+sub state_cache {
+   my ($self, $k, $v) = @_;
+
+   my $path  = $self->config->ctrldir->catfile( 'state-cache.json' );
+   my $cache = $path->exists
+             ? $self->file_cache->data_load( paths => [ $path ] ) : {};
+
+   defined $k or return $cache; defined $v or return $cache->{ $k };
+
+   $cache->{ $k } = $v;
+   $self->file_cache->data_dump( data => $cache, path => $path );
+   return $v;
 }
 
 1;

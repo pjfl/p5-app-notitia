@@ -1,8 +1,8 @@
 package App::Notitia::Model::Documentation;
 
 use App::Notitia::Attributes;  # Will do cleaning
-use App::Notitia::Util     qw( build_tree docs_cache_mtime iterator
-                               localise_tree mtime register_action_paths );
+use App::Notitia::Util     qw( build_tree iterator localise_tree
+                               mtime register_action_paths );
 use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( first_char throw );
 use Class::Usul::Types     qw( NonZeroPositiveInt PositiveInt );
@@ -157,7 +157,7 @@ sub search : Role(any) {
 }
 
 sub tree_root {
-   my $self = shift; my $mtime = docs_cache_mtime;
+   my $self = shift; my $mtime = $self->docs_mtime_cache;
 
    if ($mtime == 0 or $mtime > $_docs_cache->{_mtime}) {
       my $conf     = $self->config;
@@ -167,7 +167,7 @@ sub tree_root {
 
       $self->log->info( "Tree building ${dir} ${PID}" );
       $_docs_cache = build_tree( $self->type_map, $dir );
-      docs_cache_mtime $_docs_cache->{_mtime};
+      $self->docs_mtime_cache( $_docs_cache->{_mtime} );
    }
 
    return $_docs_cache;

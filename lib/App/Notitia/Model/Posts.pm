@@ -1,10 +1,11 @@
 package App::Notitia::Model::Posts;
 
 use App::Notitia::Attributes;  # Will do cleaning
-use App::Notitia::Util     qw( build_tree docs_cache_mtime iterator
-                               localise_tree mtime register_action_paths );
+use App::Notitia::Util     qw( build_tree iterator localise_tree
+                               mtime register_action_paths );
 use Class::Usul::Constants qw( SPC TRUE );
 use Class::Usul::Types     qw( NonZeroPositiveInt PositiveInt );
+use English                qw( -no_match_vars );
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -150,7 +151,7 @@ sub save_file_action : Role(editor) Role(event_manager) Role(person_manager) {
 }
 
 sub tree_root {
-   my $self = shift; my $mtime = docs_cache_mtime;
+   my $self = shift; my $mtime = $self->docs_mtime_cache;
 
    if ($mtime == 0 or $mtime > $_posts_cache->{_mtime}) {
       my $conf      = $self->config;
@@ -164,7 +165,7 @@ sub tree_root {
                            ->filter( sub { not m{ (?: $no_index ) }mx } );
 
          $dir->exists or next;
-         $self->log->info( "Tree building ${dir}" );
+         $self->log->info( "Tree building ${dir} ${PID}" );
          $lcache->{tree} = build_tree( $self->type_map, $dir, 2 );
          $lcache->{type} = 'folder';
          $self->$_chain_nodes( $lcache );
@@ -172,7 +173,7 @@ sub tree_root {
          my $mtime = mtime $lcache; $mtime > $max_mtime and $max_mtime = $mtime;
       }
 
-      docs_cache_mtime( $_posts_cache->{_mtime} = $max_mtime );
+      $self->docs_mtime_cache( $_posts_cache->{_mtime} = $max_mtime );
    }
 
    return $_posts_cache;

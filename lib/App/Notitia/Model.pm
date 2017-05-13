@@ -22,7 +22,7 @@ with q(App::Notitia::Role::EventStream);
 
 # Public attributes
 has 'application' => is => 'ro', isa => Plinth,
-   required       => TRUE,  weak_ref => TRUE;
+   handles        => [ 'lock' ], required => TRUE, weak_ref => TRUE;
 
 # Private functions
 my $_debug_output = sub {

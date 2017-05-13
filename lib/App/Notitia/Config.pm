@@ -106,9 +106,6 @@ has 'assets'          => is => 'ro',   isa => NonEmptySimpleStr,
 has 'badge_excludes'  => is => 'ro',   isa => ArrayRef[PositiveInt],
    builder            => sub { [ 0, 0 ] };
 
-has 'badge_mtime'     => is => 'lazy', isa => Path, coerce => TRUE,
-   builder            => sub { $_[ 0 ]->tempdir->catfile( 'badge_mtime' ) };
-
 has 'cdn'             => is => 'ro',   isa => SimpleStr, default => NUL;
 
 has 'cdnjs'           => is => 'lazy', isa => HashRef,
@@ -253,9 +250,6 @@ has 'repo_url'        => is => 'ro',   isa => SimpleStr, default => NUL;
 has 'request_roles'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    builder            => sub {
       [ 'L10N', 'Session', 'JSON', 'Cookie', '+App::Notitia::Role::Request' ] };
-
-has 'roles_mtime'     => is => 'lazy', isa => Path, coerce => TRUE,
-   builder            => sub { $_[ 0 ]->tempdir->catfile( 'roles_mtime' ) };
 
 has 'schema_classes'  => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
    builder            => sub { {
@@ -451,11 +445,6 @@ that locates the asset files uploaded by users
 
 An array reference of positive integers which defaults to C<[ 0, 0 ]>. Numbers
 in this range will be ignored by the maximum badge id method
-
-=item C<badge_mtime>
-
-A path to the file used by the maximum badge id method. Touching this
-path will invalidate the cache. Defaults to F<var/tmp/badge_mtime>
 
 =item C<cdn>
 
@@ -770,9 +759,6 @@ for this project
 Defaults to C<L10N>, C<Session>, C<JSON>, and C<Cookie>. The list of roles to
 apply to the default request base class
 
-=item C<roles_mtime>
-
-Path object for the roles cache modification time file
 
 =item C<schema_classes>
 

@@ -24,7 +24,7 @@ lib/App/Notitia/app-notitia_local.json
 t/ipc_srlock*
 var/backups
 var/etc/app-notitia.json
-var/etc/max_badge_id
+var/etc/state-cache.json
 var/etc/profile
 var/docs/.mtime
 var/docs/assets
