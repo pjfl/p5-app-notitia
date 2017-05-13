@@ -7,13 +7,14 @@ use App::Notitia::Constants qw( COMMA EXCEPTION_CLASS FALSE
 use App::Notitia::Util      qw( to_dt );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
                                 io is_member squeeze throw trim );
-use Class::Usul::Types      qw( Bool );
+use Class::Usul::Types      qw( Bool HashRef Object );
 use Data::Record;
 use Data::Validation;
 use Scalar::Util            qw( blessed );
 use Text::CSV;
 use Try::Tiny;
 use Unexpected::Functions   qw( Unspecified ValidationErrors );
+use Web::Components::Util   qw( load_components );
 use Moo;
 use Class::Usul::Options;
 
@@ -23,6 +24,10 @@ with    q(App::Notitia::Role::Schema);
 
 # Override default in base class
 has '+config_class' => default => 'App::Notitia::Config';
+
+has 'components' => is => 'lazy', isa => HashRef[Object], builder => sub {
+   return load_components 'Model', application => $_[ 0 ];
+};
 
 option 'dry_run' => is => 'ro', isa => Bool, default => FALSE,
    documentation => 'Prints out commands, do not execute them',
@@ -391,10 +396,12 @@ my $_create_person = sub {
          = squeeze trim $columns->[ $cmap->{ $p2cmap->{ $col } } ];
    }
 
+   my $badge_id = $person_attr->{badge_id};
+
    $self->debug and $self->dumper( $columns, $nok_attr, $person_attr );
    $self->$_update_or_new_person( $cmap, $columns, $nok_attr, $person_attr );
 
-   return $lno;
+   return $lno, $badge_id;
 };
 
 my $_create_vehicle = sub {
@@ -446,11 +453,20 @@ sub people : method {
 
    ensure_class_loaded my $class = (blessed $self->schema).'::Result::Person';
 
-   my $dv = Data::Validation->new( $class->validation_attributes ); my $lno = 1;
+   my $dv = Data::Validation->new( $class->validation_attributes );
+
+   my $badge_id; my $lno = 1; my $max = 0;
 
    while (defined (my $line = $opts->{io}->getline)) {
-      $lno = $self->$_create_person( $csv, $ncols, $dv, $cmap, $lno, $line );
+      ($lno, $badge_id) = $self->$_create_person
+         ( $csv, $ncols, $dv, $cmap, $lno, $line );
+      $badge_id > $max and $max = $badge_id;
    }
+
+   my $admin_model = $self->components->{admin};
+
+   $badge_id = $admin_model->state_cache( 'badge_id' );
+   $max > $badge_id and $admin_model->state_cache( 'badge_id', $max );
 
    return OK;
 }

@@ -134,6 +134,8 @@ sub max_badge_id {
    defined $v and $v > $max
        and return $schema->application->state_cache( 'badge_id', $v );
 
+   $max and return $max;
+
    my $conf  = $schema->config;
    my $where = { 'badge_id' => { '!=' => undef } };
 
