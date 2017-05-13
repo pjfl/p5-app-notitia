@@ -173,6 +173,7 @@ sub tree_root {
          my $mtime = mtime $lcache; $mtime > $max_mtime and $max_mtime = $mtime;
       }
 
+      $mtime > $max_mtime and $max_mtime = $mtime;
       $self->docs_mtime_cache( $_posts_cache->{_mtime} = $max_mtime );
    }
 

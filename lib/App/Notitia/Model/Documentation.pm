@@ -167,7 +167,8 @@ sub tree_root {
 
       $self->log->info( "Tree building ${dir} ${PID}" );
       $_docs_cache = build_tree( $self->type_map, $dir );
-      $self->docs_mtime_cache( $_docs_cache->{_mtime} );
+      $_docs_cache->{_mtime} > $mtime and $mtime = $_docs_cache->{_mtime};
+      $self->docs_mtime_cache( $_docs_cache->{_mtime} = $mtime );
    }
 
    return $_docs_cache;

@@ -161,8 +161,8 @@ sub state_cache {
    my ($self, $k, $v) = @_;
 
    my $path  = $self->config->ctrldir->catfile( 'state-cache.json' );
-   my $cache = $path->exists
-             ? $self->file_cache->data_load( paths => [ $path ] ) : {};
+   my $cache = try {
+      $self->file_cache->data_load( paths => [ $path ] ) } catch { {} };
 
    defined $k or return $cache; defined $v or return $cache->{ $k };
 
