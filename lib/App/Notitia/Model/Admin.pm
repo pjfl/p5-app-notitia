@@ -284,6 +284,8 @@ my $_filter_controls = sub {
    p_button $form, 'filter_log', 'filter_log', {
       class => 'button', tip => make_tip $req, 'filter_log_tip' };
 
+   $self->add_csrf_token( $req, $form );
+
    return $form;
 };
 
@@ -607,7 +609,7 @@ sub filter_log_action : Role(administrator) {
    my $actionp  = $self->moniker.'/logs';
    my $args     = [ $req->uri_params->( 0 ) ];
    my $column   = $req->body_params->( 'filter_column' );
-   my $pattern  = $req->body_params->( 'filter_pattern' );
+   my $pattern  = $req->body_params->( 'filter_pattern', { raw => TRUE } );
    my $params   = { filter_column => $column, filter_pattern => $pattern };
    my $location = $req->uri_for_action( $actionp, $args, $params );
 
@@ -656,7 +658,8 @@ sub logs : Role(administrator) {
    my $last = $rows_pp * $pageno - 1;
    my $queryp = $req->query_params;
    my $column = $queryp->( 'filter_column', { optional => TRUE } ) // 'none';
-   my $pattern = $queryp->( 'filter_pattern', { optional => TRUE } ) // NUL;
+   my $pattern = $queryp->( 'filter_pattern', {
+      optional => TRUE, raw => TRUE } ) // NUL;
    my $data = { cache => {}, filter_column => $column,
                 filter_pattern => qr{ $pattern }imx,
                 person_rs => $self->schema->resultset( 'Person' ) };
