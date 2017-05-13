@@ -6,6 +6,7 @@ use App::Notitia::Util     qw( build_tree docs_cache_mtime iterator
 use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( first_char throw );
 use Class::Usul::Types     qw( NonZeroPositiveInt PositiveInt );
+use English                qw( -no_match_vars );
 use Try::Tiny;
 use Moo;
 
@@ -164,7 +165,7 @@ sub tree_root {
       my $filter   = sub { not m{ (?: $no_index ) }mx };
       my $dir      = $conf->docs_root->clone->filter( $filter );
 
-      $self->log->info( "Tree building ${dir}" );
+      $self->log->info( "Tree building ${dir} ${PID}" );
       $_docs_cache = build_tree( $self->type_map, $dir );
       docs_cache_mtime $_docs_cache->{_mtime};
    }
