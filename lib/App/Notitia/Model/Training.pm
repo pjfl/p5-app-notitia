@@ -7,9 +7,10 @@ use App::Notitia::Constants qw( FALSE NUL SPC TRAINING_STATUS_ENUM TRUE );
 use App::Notitia::DOM       qw( new_container f_tag p_button p_cell p_container
                                 p_date p_hidden p_item p_js p_link p_list p_row
                                 p_select p_table p_textfield );
-use App::Notitia::Util      qw( dialog_anchor js_submit_config local_dt locd
-                                locm make_tip management_link page_link_set
-                                register_action_paths to_dt to_msg );
+use App::Notitia::Util      qw( dialog_anchor js_submit_config link_options
+                                local_dt locd locm make_tip management_link
+                                page_link_set register_action_paths to_dt
+                                to_msg );
 use Class::Usul::Functions  qw( is_arrayref is_member throw );
 use Data::Page;
 use Moo;
@@ -147,8 +148,9 @@ my $_events_ops_links = sub {
 
    $actionp = 'event/training_event';
 
-   p_link $links, 'training_event', $req->uri_for_action( $actionp ), {
-      action => 'create', container_class => 'add-link', request => $req };
+   is_member 'training_manager', $req->session->{roles}
+      and p_link $links, 'training_event', $req->uri_for_action( $actionp ), {
+         action => 'create', container_class => 'add-link', request => $req };
 
    return $links;
 };
@@ -342,7 +344,7 @@ sub events : Role(any) {
    };
    my $page_links = $self->$_events_ops_links( $req, $params, $pager );
 
-   p_list $form, NUL, $page_links, { class => 'operation-links align-right' };
+   p_list $form, NUL, $page_links, link_options 'right';
 
    my $table = p_table $form, { headers => $_events_headers->( $req ) };
 

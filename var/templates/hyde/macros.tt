@@ -219,13 +219,13 @@
 [%# -%]
 [% MACRO Table( f ) WRAPPER label -%]
 [%    IF f.class; class = f.class; ELSE; class = 'standard-table'; END -%]
-   <table class="[% class %]">
+   <table class="[% class %]" id="[% f.name %]">
 [%    IF f.caption %]<caption>[% f.caption %]</caption>[% END -%]
 [%    IF f.headers.0 -%]
       <thead>
          <tr>
 [%       FOR cell IN f.headers -%]
-           <th class="[% cell.class %]">
+           <th class="[% cell.class %]" id="[% cell.name %]">
 [%          IF reference( cell.value ) == 'HASH'; Dispatch( cell.value ) %]
 [%          ELSE; cell.value; END %]</th>
 [%       END -%]
@@ -243,7 +243,7 @@
 [% END -%]
 [%# -%]
 [% MACRO TableRow( row ) BLOCK -%]
-      <tr>
+      <tr class="sortable_row" id="row[% loop.count %]">
 [%    FOR cell IN row -%]
          <td class="[% cell.class %]" id="[% cell.name %]"
            colspan="[% cell.colspan %]" style="[% cell.style %]"

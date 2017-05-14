@@ -2597,6 +2597,115 @@ var SubmitUtils = new Class( {
    }
 } );
 
+var TableSort = new Class( {
+   Implements: [ Events, Options ],
+
+   options          : {
+/*    onSortComplete: function() {}, */
+      selector      : 'th.sort',
+      sortRowClass  : 'sortable_row' },
+
+   initialize: function( options ) {
+      this.aroundSetOptions( options ); this.sortables = {}; this.build();
+   },
+
+   attach: function( el ) {
+      el.addEvent( 'click', function( ev ) {
+         ev.stop(); this.sortRows( el ) }.bind( this ) );
+   },
+
+   _get_sort_order: function( table_id, default_column, column_id ) {
+      var sortable = this.sortables[ table_id ]
+                  || { sort_column: default_column, reverse: false };
+      var reverse  = (column_id == sortable.sort_column)
+                   ? ! sortable.reverse : false;
+
+      sortable.reverse = reverse; sortable.sort_column = column_id;
+      this.sortables[ table_id ] = sortable;
+      return reverse ? [ 1, -1 ] : [ -1, 1 ];
+   },
+
+   _get_sort_value: function( cell, type ) {
+      var el = cell ? cell.firstChild : '', value = '';
+
+      while (el && !value) {
+         if      (el && el.nodeName == '#text') value = el.nodeValue;
+         else if (el && el.nodeName == 'INPUT') value = el.value;
+
+         if (el && !value) el = el.firstChild;
+      }
+
+      if (type && type == 'date') {
+         value = Date.parse( value ) || Date.parse( '01 Jan 1970' );
+      }
+      else if (type && type == 'hex') {
+         value = value.toLowerCase().pad( 64, '0', 'left' );
+      }
+      else if (type && type == 'ipaddr') {
+         var ipaddr = value; value = '';
+
+         ipaddr.split( '.' ).each( function( octet ) {
+            value = value + String.from( octet ).pad( 3, '0', 'left' );
+         } );
+      }
+      else if (type && type == 'money') {
+         value = value.substring( 1 );
+         value.replace( /[^0-9.]/g, '' );
+         value = parseFloat( value ) || 0;
+      }
+      else if (type && type == 'numeric') {
+         value.replace( /[^+\-0-9.]/g, '' );
+         value = parseFloat( value ) || 0;
+      }
+      else value = String.from( value );
+
+      return value;
+   },
+
+   sortRows: function( table_header ) {
+      var id       = table_header.id,
+          id_a     = id.split( '.' ),
+          table_id = id_a[ 0 ], column_type = id_a[ 2 ],
+          table    = $( table_id ),
+          columns  = table.getElements( 'th' ),
+          col_ids  = columns.map( function( column ) { return column.id } );
+
+      if (! col_ids.contains( id )) return;
+
+      var col_id   = col_ids.indexOf( id ),
+          order    = this._get_sort_order( table_id, col_ids[ 0 ], id ),
+          selector = 'tr.' + this.options.sortRowClass,
+          rows     = [];
+
+      table.getElements( selector ).map( function( row, index ) {
+         var value = this._get_sort_value( row.cells[ col_id ], column_type );
+
+         rows[ index ] = row;
+
+         return [ value, row.clone( true, true ) ];
+      }.bind( this ) ).sort( function( a, b ) {
+         return a[ 0 ] < b[ 0 ] ? order[ 0 ]
+             : (a[ 0 ] > b[ 0 ] ? order[ 1 ] : 0);
+      } ).map( function( sorted_rows, index ) {
+         var old_row    = rows[ index ],
+             new_row    = sorted_rows[ 1 ],
+             new_row_id = new_row.id;
+
+         new_row.removeAttribute( 'id' ); new_row.replaces( old_row );
+
+         return [ new_row, new_row_id ];
+      } ).map( function( sorted_rows, index ) {
+         var id, row = sorted_rows[ 0 ];
+
+         if (id = sorted_rows[ 1 ]) row.id = id;
+
+         return row;
+      } );
+
+      this.fireEvent( 'sortComplete' );
+   }
+} );
+
 /* Description: Class for creating nice tips that follow the mouse cursor
                 when hovering an element.
    License: MIT-style license

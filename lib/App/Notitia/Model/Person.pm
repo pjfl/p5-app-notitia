@@ -134,10 +134,10 @@ my $_people_headers = sub {
    else {
       $header = 'people_role_heading';
 
-      if ($role eq 'driver' or $role eq 'rider') { $max = 4 }
-      elsif ($role eq 'controller' or $role eq 'fund_raiser') { $max = 3 }
-      elsif ($role) { $max = 1 }
-      else { $header = 'people_heading'; $max = 3 }
+      if ($role eq 'driver' or $role eq 'rider') { $max = 5 }
+      elsif ($role eq 'controller' or $role eq 'fund_raiser') { $max = 4 }
+      elsif ($role) { $max = 2 }
+      else { $header = 'people_heading'; $max = 4 }
    }
 
    return [ map { { value => locm( $req, "${header}_${_}" ) } } 0 .. $max ];
@@ -216,12 +216,13 @@ my $_people_links = sub {
                ?  'person' : 'person_summary';
    my $actionp =  $self->moniker."/${action}";
    my $href    =  $req->uri_for_action( $actionp, [ $scode ], $params );
-   my $link    =  p_link {}, "${scode}-${action}", $href, {
+
+   p_item $links, $person->badge_id, { class => 'align-right narrow' };
+
+   p_item $links, p_link {}, "${scode}-${action}", $href, {
       request  => $req,
       tip      => locm( $req, "${action}_management_tip", $scode ),
       value    => $person->label };
-
-   p_item $links, $link;
 
    my @paths = (); push @paths, 'role/role';
    my $role  = $params->{role};
@@ -568,11 +569,12 @@ sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
 
    $type and $params->{type} = $type; $type = $params->{type} || NUL;
 
-   my $opts    =  { page   => delete $params->{page} // 1,
-                    role   => $role,
-                    rows   => $req->session->rows_per_page,
-                    status => $status,
-                    type   => $type, };
+   my $opts    =  { columns => [ 'badge_id' ],
+                    page    => delete $params->{page} // 1,
+                    role    => $role,
+                    rows    => $req->session->rows_per_page,
+                    status  => $status,
+                    type    => $type, };
    my $href    =  $req->uri_for_action( $actionp, [], $params );
    my $form    =  new_container 'people', $href, {
       class    => 'wider-table', id => 'people' };

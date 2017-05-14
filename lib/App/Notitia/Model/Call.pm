@@ -810,7 +810,7 @@ my $_update_package_from_request = sub {
 };
 
 # Public methods
-sub create_customer_action : Role(controller) {
+sub create_customer_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $name     = $req->body_params->( 'name' );
@@ -823,7 +823,7 @@ sub create_customer_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_delivery_request_action : Role(controller) {
+sub create_delivery_request_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $schema   = $self->schema;
@@ -852,7 +852,7 @@ sub create_delivery_request_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_delivery_stage_action : Role(controller) {
+sub create_delivery_stage_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $jid = $req->uri_params->( 0 );
@@ -879,7 +879,7 @@ sub create_delivery_stage_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_location_action : Role(controller) {
+sub create_location_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $address  = $req->body_params->( 'address' );
@@ -902,7 +902,7 @@ sub create_location_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_package_action : Role(controller) {
+sub create_package_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $journey_id = $req->uri_params->( 0 );
@@ -930,7 +930,7 @@ sub create_package_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 };
 
-sub customer : Role(controller) Role(driver) Role(rider) {
+sub customer : Role(call_manager) Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $cid     =  $req->uri_params->( 0, { optional => TRUE } );
@@ -955,7 +955,7 @@ sub customer : Role(controller) Role(driver) Role(rider) {
    return $self->get_stash( $req, $page );
 }
 
-sub customers : Role(controller) Role(driver) Role(rider) {
+sub customers : Role(call_manager) Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $form = new_container { class => 'standard-form' };
@@ -975,7 +975,7 @@ sub customers : Role(controller) Role(driver) Role(rider) {
    return $self->get_stash( $req, $page );
 }
 
-sub delete_customer_action : Role(controller) {
+sub delete_customer_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $cid = $req->uri_params->( 0 );
@@ -988,7 +988,7 @@ sub delete_customer_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_delivery_request_action : Role(controller) {
+sub delete_delivery_request_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $jid = $req->uri_params->( 0 );
@@ -1009,7 +1009,7 @@ sub delete_delivery_request_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_delivery_stage_action : Role(controller) {
+sub delete_delivery_stage_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $jid      = $req->uri_params->( 0 );
@@ -1022,7 +1022,7 @@ sub delete_delivery_stage_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_location_action : Role(controller) {
+sub delete_location_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $lid = $req->uri_params->( 0 );
@@ -1036,7 +1036,7 @@ sub delete_location_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_package_action : Role(controller) {
+sub delete_package_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $journey_id = $req->uri_params->( 0 );
@@ -1061,7 +1061,8 @@ sub delete_package_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delivery_stages : Dialog Role(controller) Role(driver) Role(rider) {
+sub delivery_stages : Role(call_manager) Dialog Role(controller) Role(driver)
+                      Role(rider) {
    my ($self, $req) = @_;
 
    my $scode = $req->uri_params->( 0 );
@@ -1076,7 +1077,7 @@ sub delivery_stages : Dialog Role(controller) Role(driver) Role(rider) {
    return $stash;
 }
 
-sub journey : Role(controller) Role(driver) Role(rider) {
+sub journey : Role(call_manager) Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $jid     =  $req->uri_params->( 0, { optional => TRUE } );
@@ -1112,7 +1113,7 @@ sub journey : Role(controller) Role(driver) Role(rider) {
    return $self->get_stash( $req, $page );
 }
 
-sub journeys : Role(controller) Role(driver) Role(rider) {
+sub journeys : Role(call_manager) Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $params =  $req->query_params->( {
@@ -1147,7 +1148,7 @@ sub journeys : Role(controller) Role(driver) Role(rider) {
    return $self->get_stash( $req, $page );
 }
 
-sub leg : Role(controller) Role(driver) Role(rider) {
+sub leg : Role(call_manager) Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $jid     =  $req->uri_params->( 0 );
@@ -1186,7 +1187,7 @@ sub leg : Role(controller) Role(driver) Role(rider) {
    return $self->get_stash( $req, $page );
 }
 
-sub location : Role(controller) Role(driver) Role(rider) {
+sub location : Role(call_manager) Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $lid = $req->uri_params->( 0, { optional => TRUE } );
@@ -1231,7 +1232,7 @@ sub locations : Role(controller) Role(driver) Role(rider) {
    return $self->get_stash( $req, $page );
 }
 
-sub package : Dialog Role(controller) {
+sub package : Role(call_manager) Dialog Role(controller) {
    my ($self, $req) = @_;
 
    my $journey_id = $req->uri_params->( 0 );
@@ -1265,7 +1266,7 @@ sub package : Dialog Role(controller) {
    return $stash;
 }
 
-sub update_customer_action : Role(controller) {
+sub update_customer_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $cid = $req->uri_params->( 0 );
@@ -1278,7 +1279,7 @@ sub update_customer_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub update_delivery_request_action : Role(controller) {
+sub update_delivery_request_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $jid     = $req->uri_params->( 0 );
@@ -1307,7 +1308,8 @@ sub update_delivery_request_action : Role(controller) {
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub update_delivery_stage_action : Role(controller) Role(driver) Role(rider) {
+sub update_delivery_stage_action : Role(call_manager) Role(controller)
+                                   Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $schema    = $self->schema;
@@ -1347,7 +1349,7 @@ sub update_delivery_stage_action : Role(controller) Role(driver) Role(rider) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub update_location_action : Role(controller) {
+sub update_location_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $lid = $req->uri_params->( 0 );
@@ -1368,7 +1370,7 @@ sub update_location_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub update_package_action : Role(controller) {
+sub update_package_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $journey_id = $req->uri_params->( 0 );
@@ -1395,7 +1397,8 @@ sub update_package_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub update_stage_collected_action : Role(controller) Role(driver) Role(rider) {
+sub update_stage_collected_action : Role(call_manager) Role(controller)
+                                    Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $stash = $self->update_delivery_stage_action
@@ -1404,7 +1407,8 @@ sub update_stage_collected_action : Role(controller) Role(driver) Role(rider) {
    return $stash;
 }
 
-sub update_stage_delivered_action : Role(controller) Role(driver) Role(rider) {
+sub update_stage_delivered_action : Role(call_manager)  Role(controller)
+                                    Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $stash = $self->update_delivery_stage_action

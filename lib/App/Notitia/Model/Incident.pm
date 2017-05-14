@@ -257,7 +257,7 @@ my $_update_incident_from_request = sub {
 };
 
 # Public methods
-sub add_incident_party_action : Role(controller) {
+sub add_incident_party_action : Role(controller) Role(incident_manager) {
    my ($self, $req) = @_;
 
    my $i_id = $req->uri_params->( 0 );
@@ -283,7 +283,7 @@ sub add_incident_party_action : Role(controller) {
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub create_incident_action : Role(controller) {
+sub create_incident_action : Role(controller) Role(incident_manager) {
    my ($self, $req) = @_;
 
    my $incident = $self->schema->resultset( 'Incident' )->new_result( {} );
@@ -309,7 +309,7 @@ sub create_incident_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_incident_action : Role(controller) {
+sub delete_incident_action : Role(controller) Role(incident_manager) {
    my ($self, $req) = @_;
 
    my $i_id = $req->uri_params->( 0 );
@@ -331,7 +331,7 @@ sub delete_incident_action : Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub incident : Role(controller) {
+sub incident : Role(controller) Role(incident_manager) {
    my ($self, $req) = @_;
 
    my $i_id = $req->uri_params->( 0, { optional => TRUE } );
@@ -361,7 +361,7 @@ sub incident : Role(controller) {
    return $self->get_stash( $req, $page );
 }
 
-sub incident_party : Role(controller) {
+sub incident_party : Role(controller) Role(incident_manager) {
    my ($self, $req) = @_;
 
    my $i_id = $req->uri_params->( 0 );
@@ -405,7 +405,7 @@ sub incident_party : Role(controller) {
    return $self->get_stash( $req, $page );
 }
 
-sub incidents : Role(controller) {
+sub incidents : Role(controller) Role(incident_manager) {
    my ($self, $req) = @_;
 
    my $params = $req->query_params->( {
@@ -436,7 +436,7 @@ sub incidents : Role(controller) {
    return $self->get_stash( $req, $page );
 }
 
-sub remove_incident_party_action : Role(controller) {
+sub remove_incident_party_action : Role(controller) Role(incident_manager) {
    my ($self, $req) = @_;
 
    my $i_id = $req->uri_params->( 0 );
@@ -462,7 +462,7 @@ sub remove_incident_party_action : Role(controller) {
    return { redirect => { location => $req->uri, message => $message } };
 }
 
-sub update_incident_action : Role(controller) {
+sub update_incident_action : Role(controller) Role(incident_manager) {
    my ($self, $req) = @_;
 
    my $i_id = $req->uri_params->( 0 );

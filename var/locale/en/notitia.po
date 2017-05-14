@@ -1549,6 +1549,21 @@ msgstr "People By Role"
 msgid "people_by_type_tip"
 msgstr "Lists of people grouped by the roles they belong to"
 
+msgid "people_heading_0"
+msgstr "ID"
+
+msgid "people_heading_1"
+msgstr "People"
+
+msgid "people_heading_2"
+msgstr "Roles"
+
+msgid "people_heading_3"
+msgstr "Emails"
+
+msgid "people_heading_4"
+msgstr "SMS"
+
 msgid "people_list_link"
 msgstr "All People"
 
@@ -1557,18 +1572,6 @@ msgstr "List all members past and present"
 
 msgid "people_management_heading"
 msgstr "People"
-
-msgid "people_heading_0"
-msgstr "People"
-
-msgid "people_heading_1"
-msgstr "Roles"
-
-msgid "people_heading_2"
-msgstr "Emails"
-
-msgid "people_heading_3"
-msgstr "SMS"
 
 msgid "people_meta_report_heading_0"
 msgstr "Period"
@@ -1640,18 +1643,21 @@ msgid "people_report_title"
 msgstr "People Report"
 
 msgid "people_role_heading_0"
-msgstr "People"
+msgstr "ID"
 
 msgid "people_role_heading_1"
-msgstr "Roles"
+msgstr "People"
 
 msgid "people_role_heading_2"
-msgstr "Training"
+msgstr "Roles"
 
 msgid "people_role_heading_3"
-msgstr "Certs"
+msgstr "Training"
 
 msgid "people_role_heading_4"
+msgstr "Certs"
+
+msgid "people_role_heading_5"
 msgstr "Endorsements"
 
 msgid "person"

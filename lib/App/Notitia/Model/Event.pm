@@ -185,11 +185,13 @@ my $_bind_owner = sub {
 
    my $rs = $self->schema->resultset( 'Person' );
    my $opts = { fields => { selected => $event->owner } };
-   my $people = $rs->list_people( 'event_manager', $opts );
+   my $em_people = $rs->list_people( 'event_manager', $opts );
+   my $fr_people = $rs->list_people( 'fund_raiser', $opts );
 
    return {
       class => 'standard-field required', disabled => $disabled, numify => TRUE,
-      type  => 'select', value => [ [ NUL, undef ], @{ $people } ] };
+      type  => 'select', value => [ [ NUL, undef ],
+                                    @{ $em_people }, @{ $fr_people } ] };
 };
 
 my $_event_links = sub {

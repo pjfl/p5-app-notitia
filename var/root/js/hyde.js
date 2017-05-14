@@ -86,6 +86,10 @@ var Behaviour = new Class( {
       this.server       = new ServerUtils( {
          context        : this,
          url            : opt.baseURL } );
+//      this.tableSort    = new TableSort( {
+//         context        : this,
+//         onSortComplete : function() {
+//            this.replacements.build() }.bind( this ) } );
       this.togglers     = new Togglers( { context: this } );
       this.tips         = new Tips( {
          context        : this,

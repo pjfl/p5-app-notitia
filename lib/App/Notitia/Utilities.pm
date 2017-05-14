@@ -8,7 +8,7 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FAILED FALSE OK
 use App::Notitia::Util      qw( action_path_uri_map event_handler_cache
                                 load_file_data local_dt locd new_request
                                 now_dt slot_limit_index to_dt );
-use Class::Usul::Functions  qw( io is_member sum throw );
+use Class::Usul::Functions  qw( io sum throw );
 use Class::Usul::File;
 use Class::Usul::Types      qw( Bool HashRef LoadableClass Object );
 use Unexpected::Functions   qw( PathNotFound Unspecified );

@@ -1,5 +1,9 @@
 Revision history for App::Notitia
 
+          - Adds badge id to people list
+          - Fixes #180. Any fund raiser can be an event owner
+          - Fixes #178. Add course link only visible to training manager
+          - Fixes #177. Call manager has access to all methods in calls model
           - Updates badge_id in state cache from people import
           - Consolidates state into mmaped state_cache
           - Stops using filesystem mtime for docs cache invalidation
