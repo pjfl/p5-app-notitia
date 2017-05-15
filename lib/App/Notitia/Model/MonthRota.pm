@@ -410,19 +410,18 @@ sub assign_summary : Dialog Role(any) {
       on        => $rota_dt } )->{ local_dt( $rota_dt )->ymd."_${key}" };
    my $operator =  $data->{operator};
    my $who      =  $operator->label;
-   my $opts     =  { class => 'label-column' };
    my ($start, $end) = display_duration $req, $data->{slot};
 
    $operator->postcode and $who .= ' ('.$operator->outer_postcode.')';
 
-   p_tag $form, 'p', $who, $opts;
+   p_tag $form, 'p', $who;
 
    $operator->mobile_phone and
-       p_tag $form, 'p', "\x{260E} ".$operator->mobile_phone, $opts;
+       p_tag $form, 'p', "\x{260E} ".$operator->mobile_phone;
 
-   $data->{vehicle} and p_tag $form, 'p', $data->{vehicle}->label, $opts;
+   $data->{vehicle} and p_tag $form, 'p', $data->{vehicle}->label;
 
-   p_tag $form, 'p', $start, $opts; p_tag $form, 'p', $end, $opts;
+   p_tag $form, 'p', $start; p_tag $form, 'p', $end;
 
    return $stash;
 }
@@ -437,7 +436,6 @@ sub events_summary : Dialog Role(any) {
    my $form = $stash->{page}->{forms}->[ 0 ] = new_container;
    my $rota_type_id = $self->$_find_rota_type( $rota_name )->id;
    my $event_rs = $self->schema->resultset( 'Event' );
-   my $opts = { class => 'label-column' };
 
    for my $event_type (qw( person training )) {
       my $first = TRUE;
@@ -445,7 +443,7 @@ sub events_summary : Dialog Role(any) {
       for my $event ($event_rs->search_for_a_days_events
          ( $rota_type_id, $rota_dt, { event_type => $event_type } )->all) {
          $first and p_tag $form, 'h6', locm $req, "${event_type}_event_type";
-         p_tag $form, 'p', ucfirst $event->localised_label( $req ), $opts;
+         p_tag $form, 'p', ucfirst $event->localised_label( $req );
          $first = FALSE;
       }
    }
