@@ -122,25 +122,12 @@ my $_maybe_find_person = sub {
    return $_[ 1 ] ? $_[ 0 ]->find_by_shortcode( $_[ 1 ] ) : Class::Null->new;
 };
 
-my $_people_headers = sub {
-   my ($req, $params) = @_; my ($header, $max);
+my $_people_order = sub {
+   my $params = shift;
 
-   my $role = $params->{role} // NUL; my $type = $params->{type} // NUL;
+   my ($dirn, $col) = split m{ \. }mx, $params->{orderby} // 'asc.name';
 
-   if ($type eq 'contacts') {
-      $header = 'contacts_heading';
-      $max = is_member( 'person_manager', $req->session->roles) ? 7 : 3;
-   }
-   else {
-      $header = 'people_role_heading';
-
-      if ($role eq 'driver' or $role eq 'rider') { $max = 5 }
-      elsif ($role eq 'controller' or $role eq 'fund_raiser') { $max = 4 }
-      elsif ($role) { $max = 2 }
-      else { $header = 'people_heading'; $max = 4 }
-   }
-
-   return [ map { { value => locm( $req, "${header}_${_}" ) } } 0 .. $max ];
+   return { "-${dirn}" => $col };
 };
 
 my $_people_title = sub {
@@ -203,6 +190,41 @@ my $_list_all_roles = sub {
 
 my $_next_badge_id = sub {
    return $_[ 0 ]->schema->resultset( 'Person' )->next_badge_id;
+};
+
+my $_people_headers = sub {
+   my ($self, $req, $params) = @_; my ($header, $max);
+
+   my $role = $params->{role} // NUL; my $type = $params->{type} // NUL;
+
+   if ($type eq 'contacts') {
+      $header = 'contacts_heading';
+      $max = is_member( 'person_manager', $req->session->roles) ? 7 : 3;
+
+      return [ map { { value => locm( $req, "${header}_${_}" ) } } 0 .. $max ];
+   }
+
+   $header = 'people_role_heading';
+
+   if ($role eq 'driver' or $role eq 'rider') { $max = 5 }
+   elsif ($role eq 'controller' or $role eq 'fund_raiser') { $max = 4 }
+   elsif ($role) { $max = 2 }
+   else { $header = 'people_heading'; $max = 4 }
+
+   my $actionp = $self->moniker.'/people';
+   my $sort_by_id = $req->uri_for_action( $actionp, [], { %{ $params },
+      orderby => ($params->{orderby} // NUL) eq 'desc.badge_id'
+         ? 'asc.badge_id' : 'desc.badge_id' } );
+   my $sort_by_name = $req->uri_for_action( $actionp, [], { %{ $params },
+      orderby => ($params->{orderby} // NUL) eq 'desc.name'
+         ? 'asc.name' : 'desc.name' } );
+   my $id_link = p_link {}, 'id-header', $sort_by_id, {
+      value => locm $req, "${header}_0" };
+   my $name_link = p_link {}, 'name-header', $sort_by_name, {
+      value => locm $req, "${header}_1" };
+
+   return  [ { value => $id_link }, { value => $name_link },
+             map { { value => locm( $req, "${header}_${_}" ) } } 2 .. $max ];
 };
 
 my $_people_links = sub {
@@ -569,12 +591,13 @@ sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
 
    $type and $params->{type} = $type; $type = $params->{type} || NUL;
 
-   my $opts    =  { columns => [ 'badge_id' ],
-                    page    => delete $params->{page} // 1,
-                    role    => $role,
-                    rows    => $req->session->rows_per_page,
-                    status  => $status,
-                    type    => $type, };
+   my $opts    =  { columns  => [ 'badge_id' ],
+                    order_by => $_people_order->( $params ),
+                    page     => delete $params->{page} // 1,
+                    role     => $role,
+                    rows     => $req->session->rows_per_page,
+                    status   => $status,
+                    type     => $type, };
    my $href    =  $req->uri_for_action( $actionp, [], $params );
    my $form    =  new_container 'people', $href, {
       class    => 'wider-table', id => 'people' };
@@ -589,7 +612,8 @@ sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
 
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
-   my $table = p_table $form, { headers => $_people_headers->( $req, $params )};
+   my $table = p_table $form, {
+      headers => $self->$_people_headers( $req, $params ) };
 
    $type eq 'contacts' and is_member( 'person_manager', $req->session->roles )
       and $table->{class} = 'smaller-table';
