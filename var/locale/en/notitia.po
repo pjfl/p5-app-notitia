@@ -970,6 +970,9 @@ msgstr "GMP"
 msgid "grid_width"
 msgstr "Grid Width"
 
+msgid "header_sort_tip"
+msgstr "Sort the table by [_2] [_1]"
+
 msgid "Hint"
 msgstr "Information"
 
@@ -978,6 +981,12 @@ msgstr "Home Phone"
 
 msgid "hospital_issue"
 msgstr "Hospital Issue"
+
+msgid "inactive_people_list_link"
+msgstr "Inactive People"
+
+msgid "inactive_people_list_tip"
+msgstr "List inactive members or next of kin"
 
 msgid "incident_create_link"
 msgstr "Add Incident"
@@ -1858,6 +1867,12 @@ msgstr "Password Reset Request"
 
 msgid "resigned"
 msgstr "Resigned"
+
+msgid "resigned_people_list_link"
+msgstr "Resigned People"
+
+msgid "resigned_people_list_tip"
+msgstr "List ex-members who have resigned"
 
 msgid "restart_jobdaemon"
 msgstr "Restart"

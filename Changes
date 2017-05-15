@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #176. Adds more people lists
           - Fixes #175. Can sort by id and name on people list
           - Adds badge id to people list
           - Fixes #180. Any fund raiser can be an event owner

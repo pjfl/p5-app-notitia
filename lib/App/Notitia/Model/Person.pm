@@ -5,8 +5,8 @@ use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
                                 NUL PIPE_SEP SPC TRUE );
 use App::Notitia::DOM       qw( new_container p_action p_fields p_item p_js
                                 p_link p_list p_row p_table );
-use App::Notitia::Util      qw( check_field_js dialog_anchor locm make_tip
-                                management_link page_link_set
+use App::Notitia::Util      qw( check_field_js dialog_anchor link_options locm
+                                make_tip management_link page_link_set
                                 register_action_paths to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
@@ -114,8 +114,18 @@ my $_contact_links = sub {
    return [ { value => $person->label }, @links ];
 };
 
-my $_link_opts = sub {
-   return { class => 'operation-links align-right right-last' };
+my $_header_link = sub {
+   my ($req, $params, $actionp, $header, $col, $count) = @_;
+
+   my $dirn = ($params->{orderby} // NUL) eq "desc.${col}" ? 'asc' : 'desc';
+   my $href = $req->uri_for_action
+      ( $actionp, [], { %{ $params }, orderby => "${dirn}.${col}" } );
+   my $dirn_label = { asc => 'ascending', desc => 'descending' };
+
+   return p_link {}, "${col}-header", $href, {
+      request => $req,
+      tip     => locm( $req, 'header_sort_tip', $col, $dirn_label->{ $dirn } ),
+      value   => locm( $req, "${header}_${count}" ) };
 };
 
 my $_maybe_find_person = sub {
@@ -127,7 +137,7 @@ my $_people_order = sub {
 
    my ($dirn, $col) = split m{ \. }mx, $params->{orderby} // 'asc.name';
 
-   return { "-${dirn}" => $col };
+   return { "-${dirn}" => "me.${col}" };
 };
 
 my $_people_title = sub {
@@ -154,6 +164,10 @@ my $_select_nav_link_name = sub {
       : $opts->{role} && $opts->{role} eq 'staff' ? 'staff_list'
       : $opts->{role} && $opts->{role} eq 'trustee' ? 'trustee_list'
       : $opts->{status} && $opts->{status} eq 'current' ? 'current_people_list'
+      : $opts->{status} && $opts->{status} eq 'inactive'
+         ? 'inactive_people_list'
+      : $opts->{status} && $opts->{status} eq 'resigned'
+         ? 'resigned_people_list'
       : 'people_list';
 };
 
@@ -212,19 +226,14 @@ my $_people_headers = sub {
    else { $header = 'people_heading'; $max = 4 }
 
    my $actionp = $self->moniker.'/people';
-   my $sort_by_id = $req->uri_for_action( $actionp, [], { %{ $params },
-      orderby => ($params->{orderby} // NUL) eq 'desc.badge_id'
-         ? 'asc.badge_id' : 'desc.badge_id' } );
-   my $sort_by_name = $req->uri_for_action( $actionp, [], { %{ $params },
-      orderby => ($params->{orderby} // NUL) eq 'desc.name'
-         ? 'asc.name' : 'desc.name' } );
-   my $id_link = p_link {}, 'id-header', $sort_by_id, {
-      value => locm $req, "${header}_0" };
-   my $name_link = p_link {}, 'name-header', $sort_by_name, {
-      value => locm $req, "${header}_1" };
 
-   return  [ { value => $id_link }, { value => $name_link },
-             map { { value => locm( $req, "${header}_${_}" ) } } 2 .. $max ];
+   return [ {
+      value => $_header_link->
+         ( $req, $params, $actionp, $header, 'badge_id', 0 ) }, {
+      value => $_header_link->
+         ( $req, $params, $actionp, $header, 'name', 1 ) }, map { {
+      value => locm( $req, "${header}_${_}" ) } } 2 .. $max
+   ];
 };
 
 my $_people_links = sub {
@@ -547,7 +556,7 @@ sub person : Role(person_manager) {
    my $links      =  $self->$_person_ops_links( $req, $page, $person );
    my $args       =  [ 'person', $person->label ];
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    p_fields $form, $self->schema, 'Person', $person, $fields;
 
@@ -610,7 +619,7 @@ sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
    my $links   =  $self->$_people_ops_links
       ( $req, $page, $params, $people->pager );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, {
       headers => $self->$_people_headers( $req, $params ) };
@@ -621,7 +630,7 @@ sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
    p_row $table, [ map { $self->$_people_links( $req, $params, $_ ) }
                    $people->all ];
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    return $self->get_stash( $req, $page );
 }

@@ -253,6 +253,18 @@ my $_people_links = sub {
          class   => $_selected_class->( $page, 'contacts_list' ),
          request => $req, };
 
+   if ($is_allowed_people) {
+      p_navlink $list, 'inactive_people_list',
+         [ 'person/people', [], status => 'inactive' ], {
+            class   => $_selected_class->( $page, 'inactive_people_list' ),
+            request => $req, };
+
+      p_navlink $list, 'resigned_people_list',
+         [ 'person/people', [], status => 'resigned' ], {
+            class   => $_selected_class->( $page, 'resigned_people_list' ),
+            request => $req, };
+   }
+
    $is_allowed_people and $self->$_people_by_role_links( $req, $page, $nav );
 
    return;

@@ -179,9 +179,15 @@ sub search_for_people {
    delete $opts->{fields}; $opts->{prefetch} //= [];
 
    my $status  = delete $opts->{status} // NUL;
-   my $where   = $status eq 'current'
-               ? { $self->me( 'resigned' ) => { '=' => undef },
-                   $self->me( 'active'   ) => TRUE, } : {};
+   my $where   = $status eq 'current'  ? {
+                    $self->me( 'resigned' ) => { '=' => undef },
+                    $self->me( 'active'   ) => TRUE, }
+               : $status eq 'inactive' ? {
+                    $self->me( 'resigned' ) => { '=' => undef },
+                    $self->me( 'active'   ) => FALSE }
+               : $status eq 'resigned' ? {
+                    $self->me( 'resigned' ) => { '!=' => undef } }
+               : {};
    my $columns = [ 'first_name', 'id', 'last_name', 'name', 'shortcode' ];
 
    $opts->{columns} and push @{ $columns }, @{ delete $opts->{columns} };
