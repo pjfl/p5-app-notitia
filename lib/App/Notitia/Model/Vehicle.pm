@@ -6,10 +6,10 @@ use App::Notitia::DOM       qw( new_container p_action p_button p_date p_fields
                                 p_hidden p_item p_js p_link p_list p_row
                                 p_select p_table p_tag p_textarea p_textfield );
 use App::Notitia::Util      qw( assign_link check_field_js display_duration
-                                loc locd locm now_dt make_tip management_link
-                                page_link_set register_action_paths
-                                set_element_focus slot_identifier time2int
-                                to_dt to_msg );
+                                link_options loc locd locm now_dt make_tip
+                                management_link page_link_set
+                                register_action_paths set_element_focus
+                                slot_identifier time2int to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
@@ -82,10 +82,6 @@ my $_find_vreq_by = sub {
 
    return $rs->search( { event_id => $event->id,
                          type_id  => $vehicle_type->id } )->single;
-};
-
-my $_link_opts = sub {
-   return { class => 'operation-links align-right right-last' };
 };
 
 my $_maybe_find_vehicle = sub {
@@ -297,25 +293,27 @@ my $_vreq_row = sub {
 };
 
 my $_bind_vehicle_fields = sub {
-   my ($schema, $req, $vehicle, $opts) = @_; $opts //= {};
+   my ($self, $req, $vehicle, $opts) = @_; $opts //= {};
 
-   my $disabled = $opts->{disabled} // FALSE;
+   my $disabled = $opts->{disabled} // FALSE; my $schema = $self->schema;
 
    return
-   [  vrn      => { class    => 'standard-field server',
-                    disabled => $disabled },
-      type     => $_vehicle_type_list->( $schema, $vehicle, $disabled ),
-      name     => { disabled => $disabled,
-                    label    => 'vehicle_name',
-                    tip      => make_tip $req, 'vehicle_name_field_tip' },
-      owner    => $_owner_list->( $schema, $vehicle, $disabled ),
-      colour   => { disabled => $disabled,
-                    tip      => make_tip $req, 'vehicle_colour_field_tip' },
-      aquired  => { disabled => $disabled, type => 'date' },
-      disposed => { class    => 'standard-field clearable',
-                    disabled => $disabled, type => 'date' },
-      notes    => { class    => 'standard-field autosize',
-                    disabled => $disabled, type => 'textarea' },
+   [  vrn         => { class    => 'standard-field server',
+                       disabled => $disabled },
+      type        => $_vehicle_type_list->( $schema, $vehicle, $disabled ),
+      name        => !$opts->{adhoc} && !$opts->{private} ? {
+         disabled => $disabled,
+         label    => 'vehicle_name',
+         tip      => make_tip $req, 'vehicle_name_field_tip' } : FALSE,
+      owner       => !$opts->{adhoc} && !$opts->{service} ?
+         $_owner_list->( $schema, $vehicle, $disabled ) : FALSE,
+      colour      => { disabled => $disabled,
+                       tip      => make_tip $req, 'vehicle_colour_field_tip' },
+      aquired     => { disabled => $disabled, type => 'date' },
+      disposed    => { class    => 'standard-field clearable',
+                       disabled => $disabled, type => 'date' },
+      notes       => { class    => 'standard-field autosize',
+                       disabled => $disabled, type => 'textarea' },
       ];
 };
 
@@ -473,7 +471,7 @@ my $_vehicle_links = sub {
 
    my $vrn     = $vehicle->vrn;
    my $moniker = $self->moniker;
-   my $href    = $req->uri_for_action( "${moniker}/vehicle", [ $vrn ] );
+   my $href    = $req->uri_for_action( "${moniker}/vehicle", [ $vrn ], $params);
 
    p_item $links, p_link {}, "${vrn}-vehicle", $href, {
       request => $req,
@@ -508,9 +506,12 @@ my $_vehicles_ops_links = sub {
 
    $page_links and push @{ $links }, $page_links;
 
-   my $href = $req->uri_for_action( $self->moniker.'/vehicle' );
+   my @keys   = qw( adhoc private service );
+   my %params = (); @params{ @keys } = @{ $opts }{ @keys };
 
-   p_link $links, 'vehicle', $href, $_create_action->( $req );
+   my $href = $req->uri_for_action( $self->moniker.'/vehicle', [], \%params );
+
+   p_link $links, 'vehicle', $href, $_create_action->( $req, $opts );
 
    return $links;
 };
@@ -699,7 +700,7 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    p_link $links, 'edit_event', $href, {
       container_class => 'table-link', request => $req };
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, { headers => $_vehicle_request_headers->( $req )};
 
@@ -772,29 +773,33 @@ sub vehicle : Role(rota_manager) {
 
    my $actionp    =  $self->moniker.'/vehicle';
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
-   my $service    =  $req->query_params->( 'service', { optional => TRUE } );
+   my $adhoc      =  $req->query_params->( 'adhoc',   { optional => TRUE } );
    my $private    =  $req->query_params->( 'private', { optional => TRUE } );
+   my $service    =  $req->query_params->( 'service', { optional => TRUE } );
    my $href       =  $req->uri_for_action( $actionp, [ $vrn ] );
    my $form       =  new_container 'vehicle-admin', $href;
    my $action     =  $vrn ? 'update' : 'create';
    my $page       =  {
       first_field => 'vrn',
       forms       => [ $form ],
-      selected    => $service ? 'service_vehicles'
-                  :  $private ? 'private_vehicles' : 'vehicles_list',
+      selected    => $adhoc   ? 'adhoc_vehicles'
+                  :  $private ? 'private_vehicles'
+                  :  $service ? 'service_vehicles'
+                  : 'vehicles_list',
       title       => loc $req, "vehicle_${action}_heading" };
-   my $schema     =  $self->schema;
-   my $vehicle    =  $_maybe_find_vehicle->( $schema, $vrn );
-   my $fields     =  $_bind_vehicle_fields->( $schema, $req, $vehicle );
+   my $vehicle    =  $_maybe_find_vehicle->( $self->schema, $vrn );
+   my $params     =  {
+      adhoc       => $adhoc, private => $private, service => $service };
+   my $fields     =  $self->$_bind_vehicle_fields( $req, $vehicle, $params );
    my $args       =  [ 'vehicle', $vehicle->label ];
    my $links      =  [];
 
    p_js $page, $_vehicle_js->( $vrn );
 
-   p_link $links, 'vehicle', $req->uri_for_action( $actionp ),
+   p_link $links, 'vehicle', $req->uri_for_action( $actionp, [], $params ),
        $_create_action->( $req );
 
-   $vrn and p_list $form, PIPE_SEP, $links, $_link_opts->();
+   $vrn and p_list $form, PIPE_SEP, $links, link_options 'right';
 
    p_fields $form, $self->schema, 'Vehicle', $vehicle, $fields;
 
@@ -834,7 +839,7 @@ sub vehicle_events : Role(rota_manager) {
 
    p_link $links, 'event', $href, $_create_action->( $req );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    return $self->get_stash( $req, $page );
 }
@@ -861,7 +866,7 @@ sub vehicles : Role(rota_manager) {
       title     => $_vehicle_title->( $req, $params ), };
    my $links    =  $self->$_vehicles_ops_links( $req, $opts, $vehicles->pager );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, {
       headers => $_vehicles_headers->( $req, $params ) };
@@ -869,7 +874,7 @@ sub vehicles : Role(rota_manager) {
    p_row $table, [ map { $self->$_vehicle_links( $req, $params, $_ ) }
                    $vehicles->all ];
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    return $self->get_stash( $req, $page );
 }
