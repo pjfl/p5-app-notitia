@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fices #181. Adds date picker to vehicle allocation
           - Fixes #183. Tips better contain their content
           - Fixes #172. Vehicle add only show relevant fields
           - Fixes #176. Adds more people lists

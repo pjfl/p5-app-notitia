@@ -661,11 +661,17 @@ article h2:first-child, { margin-top: 0; }
 }
 /* Rota */
 .rota-date-field {
-   border-top: 1px solid #747474; border-top: 1px solid rgba(0,0,0,.1);
-   .box-shadow; .table-background; border: 0; color: @contrast; font-size: 12px;
-   line-height: 28px; outline: none; padding: 0 10px 0 10px; width: 80px;
+   border: 0; color: @contrast; font-size: 12px; line-height: 28px;
+   outline: none; padding: 0 10px; width: 80px;
 }
-.rota-date-form { display: inline-block; }
+.day-selector-form .rota-date-field {
+   background: @background; margin-top: -2px;
+}
+table .rota-date-field {
+   border-top: 1px solid #747474; border-top: 1px solid rgba(0,0,0,.1);
+   .box-shadow; .table-background;
+}
+.rota-date-form, .day-selector-form { display: inline-block; }
 .rota-link { display: block; }
 table.month-rota { font-size: 0.625em; width: 100%; }
 td.embeded { padding: 0 !important; }

@@ -71,9 +71,9 @@ my $_day_rota_headers = sub {
 };
 
 my $_date_picker = sub {
-   my ($name, $local_dt, $href) = @_;
+   my ($self, $req, $name, $local_dt, $href) = @_;
 
-   return { class       => 'rota-date-form',
+   my $form = { class       => 'rota-date-form',
             content     => {
                list     => [ {
                   name  => 'rota_name',
@@ -97,6 +97,9 @@ my $_date_picker = sub {
             form_name   => 'day-rota',
             href        => $href,
             type        => 'form', };
+
+   $self->add_csrf_token( $req, $form );
+   return $form;
 };
 
 my $_onchange_submit = sub {
@@ -334,10 +337,10 @@ my $_event_link = sub {
 };
 
 my $_events = sub {
-   my ($req, $page, $name, $local_dt, $schema, $todays_events) = @_;
+   my ($self, $req, $page, $name, $local_dt, $schema, $todays_events) = @_;
 
    my $href    = $req->uri_for_action( $page->{moniker}.'/day_rota' );
-   my $picker  = $_date_picker->( $name, $local_dt, $href );
+   my $picker  = $self->$_date_picker( $req, $name, $local_dt, $href );
    my $col1    = { value => $picker, class => 'rota-date narrow' };
    my $first   = TRUE;
 
@@ -430,7 +433,7 @@ my $_day_page = sub {
    my $limits   =  $self->config->slot_limits;
    my $schema   =  $self->schema;
 
-   $_events->( $req, $page, $name, $local_dt, $schema, $todays_events );
+   $self->$_events( $req, $page, $name, $local_dt, $schema, $todays_events );
    $_controllers->( $req, $page, $name, $local_dt, $data, $limits );
    $_riders_n_drivers->( $req, $page, $name, $local_dt, $data, $limits );
 

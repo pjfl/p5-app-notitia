@@ -126,10 +126,12 @@ my $_alloc_query_params = sub {
 };
 
 my $_onchange_submit = sub {
-   my ($page, $k) = @_;
+   my ($page, $k, $form_id) = @_; $form_id //= 'display_control';
+
+   (my $form_name = $form_id) =~ s{ _ }{-}gmx;
 
    p_js $page, js_submit_config $k, 'change', 'submitForm',
-                  [ 'display_control', 'display-control' ];
+                  [ $form_id, $form_name ];
 
    return;
 };
@@ -538,6 +540,41 @@ my $_alloc_cell = sub {
    return { class => 'embeded', value => $table };
 };
 
+my $_date_picker = sub {
+   my ($self, $req, $rota_name, $rota_dt) = @_;
+
+   my $href       =  $req->uri_for_action( $self->moniker.'/allocation' );
+   my $local_dt   =  local_dt $rota_dt;
+   my $form       =  {
+      class       => 'day-selector-form',
+      content     => {
+         list     => [ {
+            name  => 'rota_name',
+            type  => 'hidden',
+            value => $rota_name,
+         }, {
+            class => 'rota-date-field shadow submit',
+            label => NUL,
+            name  => 'rota_date',
+            type  => 'date',
+            value => $local_dt->ymd,
+         }, {
+            class => 'rota-date-field',
+            disabled => TRUE,
+            name  => 'rota_date_display',
+            label => NUL,
+            type  => 'textfield',
+            value => $local_dt->day_abbr.SPC.$local_dt->day,
+         }, ],
+         type     => 'list', },
+      form_name   => 'day-selector',
+      href        => $href,
+      type        => 'form', };
+
+   $self->add_csrf_token( $req, $form );
+   return $form;
+};
+
 my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
 };
@@ -763,6 +800,7 @@ my $_alloc_nav = sub {
    return {
       next => $self->$_next_week
          ( $req, 'allocation', $rota_name, $rota_dt, $params ),
+      picker => $self->$_date_picker( $req, $rota_name, $rota_dt ),
       prev => $self->$_prev_week
          ( $req, 'allocation', $rota_name, $rota_dt, $params ),
       oplinks_style => 'max-width: '.($params->{cols} * 270).'px;'
@@ -798,33 +836,38 @@ my $_allocation_page = sub {
    my $list = new_container { class => 'spreadsheet' };
    my $form = new_container {
       class => 'spreadsheet-key-table server', id => 'allocation-key' };
-
-   return {
+   my $page = {
       fields   => {
          nav   => $self->$_alloc_nav( $req, $rota_name, $rota_dt, $params ), },
       forms    => [ $list, $form ],
       off_grid => TRUE,
       template => [ 'none', 'custom/two-week-table' ],
-      title    => locm $req, 'Vehicle Allocation'
-   }
+      title    => locm $req, 'Vehicle Allocation',
+   };
+
+   $_onchange_submit->( $page, 'rota_date', 'day_selector' );
+   return $page;
 };
 
 my $_week_rota_page = sub {
    my ($self, $req, $rota_name, $rota_dt) = @_;
 
    return {
-      fields    => { nav => {
-         lshift => $self->$_left_shift( $req, $rota_name, $rota_dt ),
-         next   => $self->$_next_week_uri
-            ( $req, 'week_rota', $rota_name, $rota_dt, { cols => 7 } ),
-         prev   => $self->$_prev_week_uri
-            ( $req, 'week_rota', $rota_name, $rota_dt, { cols => 7 } ),
-         rshift => $self->$_right_shift( $req, $rota_name, $rota_dt ), }, },
-      rota      => { headers => $_week_rota_headers->( $req, $rota_dt ),
-                     name    => $rota_name,
-                     rows    => [] },
-      template  => [ '/menu', 'custom/week-table' ],
-         title  => $_week_rota_title->( $req, $rota_name, $rota_dt ), };
+      fields => {
+         nav => {
+            lshift => $self->$_left_shift( $req, $rota_name, $rota_dt ),
+            next   => $self->$_next_week_uri
+               ( $req, 'week_rota', $rota_name, $rota_dt, { cols => 7 } ),
+            prev   => $self->$_prev_week_uri
+               ( $req, 'week_rota', $rota_name, $rota_dt, { cols => 7 } ),
+            rshift => $self->$_right_shift( $req, $rota_name, $rota_dt ),
+         }, },
+      rota       => {
+         headers => $_week_rota_headers->( $req, $rota_dt ),
+         name    => $rota_name,
+         rows    => [] },
+      template   => [ '/menu', 'custom/week-table' ],
+      title      => $_week_rota_title->( $req, $rota_name, $rota_dt ), };
 };
 
 # Public methods
@@ -922,6 +965,19 @@ sub allocation : Role(rota_manager) {
    }
 
    return $self->get_stash( $req, $page );
+}
+
+sub day_selector_action : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $rota_name = $req->body_params->( 'rota_name' );
+   my $rota_date = $req->body_params->( 'rota_date' );
+   my $rota_dt   = to_dt $rota_date;
+   my $actionp   = $self->moniker.'/allocation';
+   my $args      = [ $rota_name, local_dt( $rota_dt )->ymd ];
+   my $location  = $req->uri_for_action( $actionp, $args );
+
+   return { redirect => { location => $location } };
 }
 
 sub display_control_action : Role(rota_manager) {
