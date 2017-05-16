@@ -254,7 +254,7 @@ my $_event_controls_row = sub {
 
    $cell = p_cell $row, { class => 'centre narrow' }; $self->plugins;
 
-   event_handler( $sink, $action )->[ 0 ] or p_span $cell, '&dagger;', {
+   event_handler( $sink, $action )->[ 0 ] or p_span $cell, '&9432;', {
       class => 'table-cell-help tips',
       title => make_tip $req, 'no_event_handler_tip' };
 
