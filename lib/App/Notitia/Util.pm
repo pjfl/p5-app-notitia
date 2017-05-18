@@ -22,10 +22,11 @@ use Scalar::Util               qw( blessed weaken );
 use Try::Tiny;
 use Unexpected::Functions      qw( ValidationErrors );
 use YAML::Tiny;
+use Graphics::ColorNames;
 
 our @EXPORT_OK = qw( action_for_uri action_path_uri_map assert_unique
                      assign_link authenticated_only build_navigation build_tree
-                     check_field_js check_form_field clone csrf_token
+                     check_field_js check_form_field clone contrast_color csrf_token
                      datetime_label dialog_anchor display_duration
                      encrypted_attr enhance event_actions event_handler
                      event_handler_cache event_streams from_json get_hashed_pw
@@ -967,6 +968,15 @@ sub to_dt ($;$) {
 
 sub to_msg (@) {
    my $k = shift; return $k, { no_quote_bind_values => TRUE, params => [ @_ ] };
+}
+
+
+sub contrast_colour {
+   my $background = shift;
+   my $po = new Graphics::ColorNames( qw( X ) );
+   my ($r, $g, $b) = $po->rgb($background);
+   my $yiq = (($r*299)+($g*587)+($b*114))/1000;
+   return ($yiq >= 128) ? 'black' : 'white';
 }
 
 1;
