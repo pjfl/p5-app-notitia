@@ -82,7 +82,7 @@
 [%# -%]
 [% MACRO FieldHelp( f ) BLOCK %]
       <span class="field-help [% f.container_class %] tips" title="[% f.tip %]">
-         &dagger;</span>
+         [% loc( '&dagger;' ) %]</span>
 [% END -%]
 [%# -%]
 [% MACRO FileField( f ) BLOCK -%]
