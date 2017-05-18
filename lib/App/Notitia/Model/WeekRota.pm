@@ -6,7 +6,7 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL SPC TRUE );
 use App::Notitia::DOM       qw( new_container p_cell p_container p_hidden
                                 p_js p_link p_row p_select p_span p_table );
-use App::Notitia::Util      qw( js_server_config js_submit_config local_dt
+use App::Notitia::Util      qw( contrast_colour js_server_config js_submit_config local_dt
                                 locm make_tip register_action_paths
                                 slot_limit_index to_dt );
 use Class::Null;
@@ -243,7 +243,8 @@ my $_alloc_key_row = sub {
    my $keeper = $assets->find_last_keeper( $req, $keeper_dt, $vehicle );
    my $details = $vehicle->name.', '.$vehicle->notes.', '.$vehicle->vrn;
    my $style = NUL; $vehicle->colour
-      and $style = 'background-color: '.$vehicle->colour.';';
+      and $style = 'background-color: '.$vehicle->colour.';'.
+                   'color: '.contrast_colour($vehicle->colour).';';
    my $row = [];
 
    p_cell $row, { value => ucfirst $details };
@@ -327,7 +328,8 @@ my $_week_rota_assignments = sub {
    my $class = 'narrow week-rota submit server tips';
    my $vehicle = $tuple->[ 1 ];
    my $style = NUL; $vehicle->colour
-      and $style = 'background-color: '.$vehicle->colour.';';
+      and $style = 'background-color: '.$vehicle->colour.';'.
+                   'color: '.contrast_colour($vehicle->colour).';';
    my $row = [ { class => 'narrow', style => $style, value => $tuple->[ 0 ] } ];
 
    for my $cno (0 .. 6) {
@@ -424,7 +426,8 @@ my $_alloc_event_row = sub {
          ( $req, $page, $opts, $form_name, $href, $action, $vrn );
 
       $_add_event_tip->( $req, $page, $event );
-      $vehicle->colour and $style = 'background-color: '.$vehicle->colour.';';
+      $vehicle->colour and $style = 'background-color: '.$vehicle->colour.';'.
+                                    'color: '.contrast_colour($vehicle->colour).';';
    }
    else {
       my $type = $tuple->[ 1 ];
@@ -451,7 +454,8 @@ my $_alloc_slot_row = sub {
    my $dt_key = "${local_ymd}_${slot_key}";
    my $slot = $data->{slots}->{ $dt_key } // Class::Null->new;
    my $style = NUL; $slot->vehicle and $slot->vehicle->colour
-      and $style = 'background-color: '.$slot->vehicle->colour.';';
+      and $style = 'background-color: '.$slot->vehicle->colour.';'.
+                   'color: '.contrast_colour($slot->vehicle->colour).';';
    my $operator = $slot->operator;
    my $row = [];
 
@@ -492,7 +496,8 @@ my $_alloc_vevent_row = sub {
    my $row = []; my $style = NUL;
 
    my $vehicle = $vevent->vehicle; $vehicle->colour
-      and $style = 'background-color: '.$vehicle->colour.';';
+      and $style = 'background-color: '.$vehicle->colour.';'.
+                   'color: '.contrast_colour($vehicle->colour).';';
 
    my $opts = { assignee => $vevent->owner, journal => $data->{journal},
                 start => ($vevent->duration)[ 0 ], vehicles => [ $vehicle ] };
