@@ -26,7 +26,7 @@ use Graphics::ColorNames;
 
 our @EXPORT_OK = qw( action_for_uri action_path_uri_map assert_unique
                      assign_link authenticated_only build_navigation build_tree
-                     check_field_js check_form_field clone contrast_color csrf_token
+                     check_field_js check_form_field clone contrast_colour csrf_token
                      datetime_label dialog_anchor display_duration
                      encrypted_attr enhance event_actions event_handler
                      event_handler_cache event_streams from_json get_hashed_pw
