@@ -970,10 +970,9 @@ sub to_msg (@) {
    my $k = shift; return $k, { no_quote_bind_values => TRUE, params => [ @_ ] };
 }
 
-
 sub contrast_colour {
    my $background = shift;
-   my $po = new Graphics::ColorNames( qw( X ) );
+   my $po = Graphics::ColorNames->new( 'X' );
    my ($r, $g, $b) = $po->rgb($background);
    my $yiq = (($r*299)+($g*587)+($b*114))/1000;
    return ($yiq >= 128) ? 'black' : 'white';
