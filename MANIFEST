@@ -47,6 +47,7 @@ lib/App/Notitia/Model/Endorsement.pm
 lib/App/Notitia/Model/Event.pm
 lib/App/Notitia/Model/Incident.pm
 lib/App/Notitia/Model/JobDaemon.pm
+lib/App/Notitia/Model/Management.pm
 lib/App/Notitia/Model/MonthRota.pm
 lib/App/Notitia/Model/Person.pm
 lib/App/Notitia/Model/Posts.pm
@@ -203,9 +204,13 @@ var/templates/emails/application_upgraded_email.md
 var/templates/emails/backup_data_email.md
 var/templates/emails/create_certification_email.md
 var/templates/emails/delivery_stage_email.md
+var/templates/emails/email_layout.tt
 var/templates/emails/event_email.md
 var/templates/emails/impending_slot_email.md
+var/templates/emails/password_email.md
 var/templates/emails/slot_claim_email.md
+var/templates/emails/totp_request_email.md
+var/templates/emails/user_email.md
 var/templates/emails/vacant_slot_email.md
 var/templates/emails/vehicle_assignment_email.md
 var/templates/hyde/blank-page.tt
@@ -213,15 +218,11 @@ var/templates/hyde/dialog.tt
 var/templates/hyde/documentation.tt
 var/templates/hyde/editing-links.tt
 var/templates/hyde/editor.tt
-var/templates/hyde/email_layout.tt
 var/templates/hyde/footer.tt
 var/templates/hyde/header.tt
 var/templates/hyde/macros.tt
 var/templates/hyde/menu-mobile.tt
 var/templates/hyde/menu.tt
-var/templates/hyde/password_email.tt
 var/templates/hyde/section-nav.tt
 var/templates/hyde/standard.tt
-var/templates/hyde/totp_request_email.tt
-var/templates/hyde/user_email.tt
 var/templates/hyde/wrapper.tt
