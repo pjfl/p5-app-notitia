@@ -43,6 +43,7 @@ my $prereqs  = {
     'File::DataClass' => 'v0.69.0',
     'Format::Human::Bytes' => '0.06',
     'Geo::Coordinates::UTM' => '0.11',
+    'Graphics::ColourNames' => '2.11',
     'HTML::GenerateUtil' => '1.20',
     'HTTP::Message' => '6.06',
     'IO::String' => '1.08',

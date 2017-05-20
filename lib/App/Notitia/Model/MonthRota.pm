@@ -6,10 +6,10 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP SHIFT_TYPE_ENUM SPC TRUE );
 use App::Notitia::DOM       qw( new_container p_cell p_js p_link p_list p_row
                                 p_table p_tag );
-use App::Notitia::Util      qw( dialog_anchor display_duration js_server_config
-                                js_submit_config lcm_for local_dt locm
-                                now_dt register_action_paths slot_limit_index
-                                to_dt );
+use App::Notitia::Util      qw( contrast_colour dialog_anchor display_duration
+                                js_server_config js_submit_config lcm_for
+                                local_dt locm now_dt register_action_paths
+                                slot_limit_index to_dt );
 use Class::Usul::Functions  qw( sum );
 use Class::Usul::Time       qw( time2str );
 use Moo;
@@ -135,7 +135,8 @@ my $_summary_link = sub {
 
    my $title = locm $req, (ucfirst $type).' Assignment';
    my $style = NUL; $opts->{vehicle} and $opts->{vehicle}->colour
-      and $style = 'background-color: '.$opts->{vehicle}->colour.';';
+      and $style = 'background-color: '.$opts->{vehicle}->colour.';'
+                 . 'color: '.contrast_colour( $opts->{vehicle}->colour ).';';
 
    return { class => $class, colspan => $span,  name  => $id,
             style => $style, title   => $title, value => $value };
