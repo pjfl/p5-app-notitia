@@ -81,6 +81,7 @@ Thumbs.db
 \bvar/share/App-Notitia-Schema-Schedule-.+\.sql
 \bvar/share/App-Notitia-Schema-UserTable-.+\.sql
 \bvar/session
+\bvar/templates/emails/[A-Z]+
 \bvar/tmp
 
 # Avoid archives of this distribution

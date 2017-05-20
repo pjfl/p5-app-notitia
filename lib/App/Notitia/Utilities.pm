@@ -200,11 +200,9 @@ my $_should_send_email = sub {
 };
 
 my $_template_path = sub {
-   my ($self, $name) = @_; my $conf = $self->config;
+   my ($self, $name) = @_; my $dir = $self->config->email_templates;
 
-   my $path = $conf->template_dir->catfile( "custom/${name}.tt" );
-
-   return $path->exists ? "custom/${name}.tt" : $conf->skin."/${name}.tt";
+   return "${dir}/${name}.tt";
 };
 
 my $_send_email = sub {

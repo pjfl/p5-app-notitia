@@ -2,12 +2,16 @@ package App::Notitia::Role::Request;
 
 use namespace::autoclean;
 
-use Web::ComposableRequest::Util qw( add_config_role );
+use Class::Usul::Types           qw( Object );
+use Web::ComposableRequest::Util qw( add_config_role new_uri );
 use Moo::Role;
 
 requires qw( _config uri_for );
 
 add_config_role __PACKAGE__.'::Config';
+
+has 'uri_no_query' => is => 'lazy', isa => Object, builder => sub {
+   new_uri $_[ 0 ]->scheme, $_[ 0 ]->_base.$_[ 0 ]->path };
 
 sub uri_for_action {
    my ($self, $action, @args) = @_;

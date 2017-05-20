@@ -8,8 +8,8 @@ use App::Notitia::DOM       qw( new_container f_tag p_action p_button p_cell
                                 p_select p_span p_row p_table p_text
                                 p_textarea p_textfield );
 use App::Notitia::Util      qw( event_handler event_streams js_submit_config
-                                loc locm make_tip management_link page_link_set
-                                register_action_paths to_msg );
+                                link_options loc locm make_tip management_link
+                                page_link_set register_action_paths to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( classdir is_arrayref is_member throw );
 use Class::Usul::Types      qw( ArrayRef NonEmptySimpleStr );
@@ -99,15 +99,6 @@ my $_event_controls_headers = sub {
 
    return [ map { { value => loc $req, "${header}_${_}" } } 0 .. $max ];
 
-};
-
-my $_link_opts = sub {
-   my $align = shift // NUL;
-
-   $align eq 'right' and return {
-      class => 'operation-links align-right right-last' };
-
-   return { class => 'operation-links' };
 };
 
 my $_list_slot_certs = sub {
@@ -585,7 +576,7 @@ sub event_controls : Role(administrator) {
    my $ec_rs = $self->schema->resultset( 'EventControl' );
    my $links = $self->$_event_controls_links( $req );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->( 'right' );
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, { headers => $_event_controls_headers->( $req ) };
 
@@ -617,9 +608,7 @@ sub filter_log_action : Role(administrator) {
    return { redirect => { location => $location } };
 }
 
-sub index : Role(administrator) Role(address_viewer) Role(controller)
-            Role(event_manager) Role(person_manager) Role(rota_manager)
-            Role(training_manager) {
+sub index : Role(administrator) {
    my ($self, $req) = @_;
 
    my $page = {
@@ -672,7 +661,7 @@ sub logs : Role(administrator) {
    my $plinks = page_link_set $req, $actp, [ $logname ], $params, $dp, $opts;
    my $links = [ $self->$_filter_controls( $req, $logname, $params ), $plinks ];
 
-   p_list $form, NUL, $links, $_link_opts->();
+   p_list $form, NUL, $links, link_options;
 
    my $table = p_table $form, {
       class => 'smaller-table', headers => $_log_headers->( $req, $logname ) };
@@ -823,13 +812,13 @@ sub types : Role(administrator) {
                                  : $type_rs->search_for_all_types;
    my $links      =  $_type_create_links->( $req, $moniker, $type_class );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->( 'right' );
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, { headers => $_types_headers->( $req ) };
 
    p_row $table, [ map { $_types_links->( $req, $_ ) } $types->all ];
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->( 'right' );
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    return $self->get_stash( $req, $page );
 }

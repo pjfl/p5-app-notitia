@@ -142,7 +142,7 @@ has 'drafts'          => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'drafts';
 
 has 'editors'         => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
-   builder            => sub { [ qw( editor ) ] };
+   builder            => sub { [ qw( editor event_manager person_manager ) ] };
 
 has 'email_sender'    => is => 'lazy', isa => NonEmptySimpleStr,
    builder            => sub { $_[ 0 ]->title.'@'.mail_domain() };
@@ -227,6 +227,7 @@ has 'places'          => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
       login           => 'user/login',
       login_redirect  => 'month/month_rota',
       logo            => 'docs/index',
+      management_index => 'manage/index',
       password        => 'user/change_password',
       profile         => 'user/profile',
       rota            => 'month/month_rota',

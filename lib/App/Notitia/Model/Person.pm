@@ -38,8 +38,9 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{page}->{location} //= 'admin';
-   $stash->{navigation} = $self->admin_navigation_links( $req, $stash->{page} );
+   $stash->{page}->{location} //= 'management';
+   $stash->{navigation}
+      = $self->management_navigation_links( $req, $stash->{page} );
 
    return $stash;
 };

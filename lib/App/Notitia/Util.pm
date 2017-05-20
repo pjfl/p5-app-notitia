@@ -23,22 +23,23 @@ use Try::Tiny;
 use Unexpected::Functions      qw( ValidationErrors );
 use YAML::Tiny;
 
-our @EXPORT_OK = qw( action_for_uri action_path_uri_map assert_unique
-                     assign_link authenticated_only build_navigation build_tree
-                     check_field_js check_form_field clone csrf_token
-                     datetime_label dialog_anchor display_duration
-                     encrypted_attr enhance event_actions event_handler
-                     event_handler_cache event_streams from_json get_hashed_pw
-                     get_salt is_access_authorised is_draft is_encrypted
-                     iterator js_slider_config js_server_config
-                     js_submit_config js_togglers_config js_window_config
-                     lcm_for link_options load_file_data loc local_dt
-                     localise_tree locd locm mail_domain make_id_from
-                     make_name_from make_tip management_link mtime new_request
-                     new_salt now_dt page_link_set register_action_paths
-                     set_element_focus set_event_date set_rota_date
-                     slot_claimed slot_identifier slot_limit_index show_node
-                     stash_functions time2int to_dt to_json to_msg );
+our @EXPORT_OK = qw( action_for_uri action_path_uri_map add_dummies
+                     assert_unique assign_link authenticated_only
+                     build_navigation build_tree check_field_js
+                     check_form_field clone csrf_token datetime_label
+                     dialog_anchor display_duration encrypted_attr enhance
+                     event_actions event_handler event_handler_cache
+                     event_streams from_json get_hashed_pw get_salt
+                     is_access_authorised is_draft is_encrypted iterator
+                     js_slider_config js_server_config js_submit_config
+                     js_togglers_config js_window_config lcm_for link_options
+                     load_file_data loc local_dt localise_tree locd locm
+                     mail_domain make_id_from make_name_from make_tip
+                     management_link mtime new_request new_salt now_dt
+                     page_link_set register_action_paths set_element_focus
+                     set_event_date set_rota_date slot_claimed slot_identifier
+                     slot_limit_index show_node stash_functions time2int to_dt
+                     to_json to_msg );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -83,22 +84,23 @@ my $extension2format = sub {
 };
 
 my $get_tip_text = sub {
-   my ($req, $conf, $node) = @_; my $path = $node->{path} or return NUL;
+   my ($req, $conf, $node) = @_;
 
-   my $root = $conf->docs_root;
-   my $name = $path->abs2rel( $root ); $name =~ s{ \A [a-z]+ / }{}mx;
-   my $posts = $conf->posts; $name =~ s{ \A $posts / }{}mx;
+   my $path  = $node->{path} or return NUL;
+   my $tip   = $path->abs2rel( $conf->docs_root );
+   my $posts = $conf->posts;
 
-   $name =~ s{ \. .+ \z }{}mx;
+   $tip =~ s{ \A [a-z]+ / }{}mx; $tip =~ s{ \A $posts / }{}mx;
+   $tip =~ s{ \. .+ \z }{}mx;
 
    my $text; $node->{type} eq 'folder'
-      and $text = locm( $req, "${name}_folder" )
-      and $text ne "${name}_folder"
-      and $name = $text;
+      and $text = locm( $req, "${tip}_folder" )
+      and $text ne "${tip}_folder"
+      and $tip = $text;
 
-   $name =~ s{ [/] }{ / }gmx; $name =~ s{ [_] }{ }gmx;
+   $tip =~ s{ [/] }{ / }gmx; $tip =~ s{ [_] }{ }gmx;
 
-   return $name;
+   return $tip;
 };
 
 my $_is_access_authorised_for_folder; $_is_access_authorised_for_folder = sub {
@@ -234,6 +236,20 @@ sub action_path_uri_map () {
    return { %{ $action_path_uri_map } };
 }
 
+sub add_dummies ($) {
+   my $stash = shift;
+
+   for my $k (qw( app_name beginning called collection_eta controller date
+                  days_in_advance description end_time ending first_name label
+                  name owner password priority rota_date rota_name shift_type
+                  slot_type start_time type uri username vehicle )) {
+
+      $stash->{ $k } //= "_dummy_${k}_";
+   }
+
+   return;
+}
+
 sub assert_unique ($$$$) {
    my ($rs, $columns, $fields, $k) = @_;
 
@@ -327,7 +343,7 @@ sub build_navigation ($$) {
       $link->{depth} -= $opts->{depth_offset};
       $link->{href }  = $req->uri_for_action( $opts->{path}, [ $link->{url} ] );
       $link->{tip  }  = $get_tip_text->( $req, $opts->{config}, $node );
-      $link->{value}  = $opts->{label}->( $link );
+      $link->{value}  = $opts->{label}->( $req, $link );
 
       if (defined $ids->[ 0 ] and $ids->[ 0 ] eq $node->{id}) {
          $link->{class} .= ' open'; shift @{ $ids };
@@ -934,6 +950,7 @@ sub slot_limit_index ($$) {
 sub stash_functions ($$$) {
    my ($app, $req, $dest) = @_; weaken $req;
 
+   $dest->{csrf_token    } = sub { csrf_token $req };
    $dest->{is_member     } = \&is_member;
    $dest->{loc           } = sub { loc( $req, shift, @_ ) };
    $dest->{reference     } = sub { ref $_[ 0 ] };
@@ -998,6 +1015,8 @@ Defines no attributes
 =head2 C<action_for_uri>
 
 =head2 C<action_path_uri_map>
+
+=head2 C<add_dummies>
 
 =head2 C<assert_unique>
 

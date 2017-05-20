@@ -32,6 +32,18 @@ register_action_paths
    'docs/upload' => 'asset';
 
 # Construction
+around 'get_stash' => sub {
+   my ($orig, $self, $req, @args) = @_;
+
+   my $stash = $orig->( $self, $req, @args );
+
+   $stash->{navigation} = $self->navigation_links( $req, $stash->{page} );
+   $stash->{navigation}->{menu}->{list} = $self->navigation( $req );
+   $stash->{navigation}->{menu}->{class} = 'dropmenu';
+
+   return $stash;
+};
+
 around 'load_page' => sub {
    my ($orig, $self, $req, @args) = @_;
 
@@ -132,16 +144,20 @@ sub localised_tree {
    return localise_tree $_[ 0 ]->tree_root, $_[ 1 ];
 }
 
-sub make_draft {
-   my ($self, @pathname) = @_; return @pathname;
-}
-
 sub nav_label {
-   return sub { $_[ 0 ]->{title} };
+   return sub { my ($req, $link) = @_; $link->{title} };
 }
 
 sub page : Role(anon) {
    return $_[ 0 ]->get_stash( $_[ 1 ], $_[ 2 ] );
+}
+
+sub qualify_path {
+   my ($self, $locale, @pathname) = @_; my $opts = pop @pathname;
+
+   $opts->{draft} and unshift @pathname, $self->config->drafts;
+
+   return $self->config->docs_root->catfile( $locale, @pathname )->utf8;
 }
 
 sub rename_file_action : Role(editor) {

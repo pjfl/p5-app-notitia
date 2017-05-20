@@ -97,8 +97,6 @@ sub get_rss_feed {
    my $iter = iterator $tree;
 
    my @tuples; while (defined( my $node = $iter->() )) {
-      $node->{parent} and $node->{parent} eq $self->config->email_templates
-         and next;
       $node->{type} eq 'file' and $node->{id} ne 'index'
          and push @tuples, [ $node->{modified}, $node ];
    }

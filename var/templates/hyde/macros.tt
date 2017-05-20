@@ -107,11 +107,14 @@
 [%    IF f.href && f.form_name; %]<form action="[% f.href %]"
         enctype="application/x-www-form-urlencoded"
          method="post" name="[% f.form_name %]">[% END -%]
-      <span class="button-help tips" title="[% page.hint _ ' ~ ' _ f.tip %]">
-         <button class="[% f.class %]" id="[% f.name %]" name="_method"
-            type="submit" value="[% f.value %]">[% f.label -%]</button>
-      </span>
-[%    IF f.href && f.form_name; %]</form>[% END -%]
+         <span class="button-help tips" title="[% page.hint _ ' ~ ' _ f.tip %]">
+            <button class="[% f.class %]" id="[% f.name %]" name="_method"
+               type="submit" value="[% f.value %]">[% f.label -%]</button>
+         </span>
+[%    IF f.href && f.form_name; %]
+         <input name="_verify" type="hidden" value="[% f.token %]">
+      </form>
+[%    END -%]
 [% END -%]
 [%# -%]
 [% MACRO HiddenField( f ) BLOCK -%]

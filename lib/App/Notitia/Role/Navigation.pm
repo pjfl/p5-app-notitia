@@ -8,7 +8,7 @@ use App::Notitia::DOM       qw( new_container p_button p_folder p_image p_item
                                 p_js p_link p_list p_navlink p_text );
 use App::Notitia::Util      qw( dialog_anchor local_dt locd locm
                                 make_tip now_dt to_dt );
-use Class::Usul::Functions  qw( is_member );
+use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
 use Moo::Role;
 
@@ -75,9 +75,12 @@ my $_method_roles = sub {
    $map = $_method_roles_cache->{ $actionp } and return $map;
 
    my ($moniker, $method) = split m{ / }mx, $actionp, 2;
-   my $model = $self->components->{ $moniker };
+   my $model = $self->components->{ $moniker }
+      or throw 'Component [_1] unknown', [ $moniker ];
+   my $code = $model->can( $method )
+      or throw 'Model [_1] has no method [_2]', [ $moniker, $method ];
 
-   for my $role_name (@{ $_list_roles_of->( $model->can( $method ) ) }) {
+   for my $role_name (@{ $_list_roles_of->( $code ) }) {
       $map->{ $role_name } = TRUE;
    }
 
@@ -108,24 +111,23 @@ my $_admin_data_links = sub {
    is_member $page->{selected}, map { "${_}_list" } @pages and $class = 'open';
 
    p_folder $list, 'data', {
-         class => $class, depth => 1, request => $req,
-         tip => 'Data Management Menu' };
+      class => $class, request => $req, tip => 'Data Management Menu' };
 
    p_navlink $list, 'types_list', [ 'admin/types' ], {
       class => $_selected_class->( $page, 'types_list' ),
-      depth => 2, request => $req };
+      request => $req };
 
    p_navlink $list, 'slot_roles_list', [ 'admin/slot_roles' ], {
       class => $_selected_class->( $page, 'slot_roles_list' ),
-      depth => 2, request => $req };
+      request => $req };
 
    p_navlink $list, 'user_form_list', [ 'form/form_defn_list' ], {
       class => $_selected_class->( $page, 'user_form_list' ),
-      depth => 2, request => $req };
+      request => $req };
 
    p_navlink $list, 'user_table_list', [ 'table/table_list' ], {
       class => $_selected_class->( $page, 'user_table_list' ),
-      depth => 2, request => $req };
+      request => $req };
 
    return;
 };
@@ -138,12 +140,12 @@ my $_admin_log_links = sub {
    my $class = NUL; is_member $page->{selected}, \@logs and $class = 'open';
 
    p_folder $list, 'logs', {
-      class => $class, depth => 1, request => $req, tip => 'Logs Menu' };
+      class => $class, request => $req, tip => 'Logs Menu' };
 
    for my $log_name (@logs) {
       p_navlink $list, "${log_name}_log", [ 'log', [ $log_name ] ], {
          class => $_selected_class->( $page, $log_name ),
-         depth => 2, request => $req };
+         request => $req };
    }
 
    return;
@@ -151,9 +153,6 @@ my $_admin_log_links = sub {
 
 my $_admin_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
-
-   p_folder $list, 'admin', {
-      request => $req, tip => "Administrator's Menu" };
 
    $self->$_admin_data_links( $req, $page, $nav );
 
@@ -163,16 +162,15 @@ my $_admin_links = sub {
             || $page->{selected} eq 'event_controls' ? 'open' : NUL;
 
    p_folder $list, 'process_control', {
-      class => $class, depth => 1, request => $req,
-      tip   => 'Process Control Menu' };
+      class => $class, request => $req, tip => 'Process Control Menu' };
 
    p_navlink $list, 'jobdaemon_status', [ 'daemon/status' ], {
       class => $_selected_class->( $page, 'jobdaemon_status' ),
-      depth => 2, request => $req };
+      request => $req };
 
    p_navlink $list, 'event_controls', [ 'admin/event_controls' ], {
       class => $_selected_class->( $page, 'event_controls' ),
-      depth => 2, request => $req };
+      request => $req };
 
    return;
 };
@@ -202,6 +200,18 @@ my $_authenticated_login_links = sub {
       and p_navlink $list, 'totp_secret', [ 'user/totp_secret' ], {
          class   => $_selected_class->( $page, 'totp_secret' ),
          request => $req, };
+
+   return;
+};
+
+my $_emails_links = sub {
+   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
+
+   p_folder $list, 'emails', { request => $req, tip => 'Email Template Menu' };
+
+   p_navlink $list, 'email_templates', [ 'manage/template_list' ], {
+      class   => $_selected_class->( $page, 'email_templates' ),
+      request => $req };
 
    return;
 };
@@ -391,8 +401,16 @@ my $_secondary_authenticated_links = sub {
       and p_navlink $nav, 'calls', [ 'call/journeys' ], {
          class => $_location_class->( $page, 'calls' ), request => $req, };
 
-   $self->$_allowed( $req, $places->{admin_index} )
-      and p_navlink $nav, 'admin_index', [ $places->{admin_index}, [] ], {
+   my $actionp = $places->{management_index};
+
+   $self->$_allowed( $req, $actionp )
+      and p_navlink $nav, 'management_index', [ $actionp, [] ], {
+         class => $_location_class->( $page, 'management' ), request => $req, };
+
+   $actionp = $places->{admin_index};
+
+   $self->$_allowed( $req, $actionp )
+      and p_navlink $nav, 'admin_index', [ $actionp, [] ], {
          class => $_location_class->( $page, 'admin' ), request => $req, };
 
    return;
@@ -468,12 +486,6 @@ sub admin_navigation_links {
 
    $self->$_allowed( $req, 'admin/types' )
       and $self->$_admin_links( $req, $page, $nav );
-
-   $self->$_people_links( $req, $page, $nav );
-   $self->$_report_links( $req, $page, $nav );
-
-   $self->$_allowed( $req, 'asset/vehicles' )
-      and $self->$_vehicle_links( $req, $page, $nav );
 
    return $nav;
 }
@@ -564,6 +576,9 @@ sub events_navigation_links {
          class   => $_selected_class->( $page, 'previous_events' ),
          request => $req };
 
+   push @{ $list }, map { $_->{depth} += 2; $_ }
+        @{ $self->components->{posts}->navigation( $req ) };
+
    p_folder $list, 'training', { request => $req, tip => 'Training Menu' };
 
    $self->$_allowed( $req, 'train/summary' )
@@ -609,6 +624,24 @@ sub login_navigation_links {
    return $nav;
 }
 
+sub management_navigation_links {
+   my ($self, $req, $page) = @_; $page->{selected} //= NUL;
+
+   my $nav = $self->navigation_links( $req, $page );
+   my $list = $nav->{menu}->{list} //= []; $nav->{menu}->{class} = 'dropmenu';
+
+   $self->$_allowed( $req, 'manage/template_list' )
+      and $self->$_emails_links( $req, $page, $nav );
+
+   $self->$_people_links( $req, $page, $nav );
+   $self->$_report_links( $req, $page, $nav );
+
+   $self->$_allowed( $req, 'asset/vehicles' )
+      and $self->$_vehicle_links( $req, $page, $nav );
+
+   return $nav;
+}
+
 sub navigation_links {
    my ($self, $req, $page) = @_; my $nav = {};
 
@@ -630,10 +663,7 @@ sub primary_navigation_links {
    p_navlink $nav, 'documentation', [ 'docs/index' ], {
       class => $_location_class->( $page, 'documentation' ), request => $req };
 
-   $req->authenticated and p_navlink $nav, 'posts', [ 'posts/index' ], {
-      class => $_location_class->( $page, 'posts' ), request => $req };
-
-   $req->authenticated or  p_navlink $nav, 'login', [ $places->{login} ], {
+   $req->authenticated or p_navlink $nav, 'login', [ $places->{login} ], {
       class => $_location_class->( $page, 'login' ), request => $req };
 
    $req->authenticated or return $nav;

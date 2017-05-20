@@ -23,9 +23,9 @@ my $_event_control_role = sub {
 
 # Private methods
 my $_template_dir = sub {
-   my ($self, $req) = @_; my $conf = $self->config; my $root = $conf->docs_root;
+   my $self = shift; my $conf = $self->config;
 
-   return $root->catdir( $req->locale, $conf->posts, $conf->email_templates );
+   return $conf->template_dir->catdir( $conf->email_templates );
 };
 
 # Event callbacks. Zero or one _input_ handler. One or more _output_ handlers
@@ -70,7 +70,7 @@ event_handler 'email', '_output_' => sub {
    }
 
    my $template = delete $stash->{template}; blessed $template
-      or $template = $self->$_template_dir( $req )->catfile( $template );
+      or $template = $self->$_template_dir->catfile( $template );
 
    if ($template->exists) { $self->create_email_job( $stash, $template ) }
    else { $self->log->warn( "Email template ${template} does not exist" ) }

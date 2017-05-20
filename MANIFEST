@@ -198,6 +198,16 @@ var/templates/custom/day-table.tt
 var/templates/custom/month-table.tt
 var/templates/custom/two-week-table.tt
 var/templates/custom/week-table.tt
+var/templates/emails/add_course_email.md
+var/templates/emails/application_upgraded_email.md
+var/templates/emails/backup_data_email.md
+var/templates/emails/create_certification_email.md
+var/templates/emails/delivery_stage_email.md
+var/templates/emails/event_email.md
+var/templates/emails/impending_slot_email.md
+var/templates/emails/slot_claim_email.md
+var/templates/emails/vacant_slot_email.md
+var/templates/emails/vehicle_assignment_email.md
 var/templates/hyde/blank-page.tt
 var/templates/hyde/dialog.tt
 var/templates/hyde/documentation.tt

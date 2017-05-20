@@ -70,23 +70,19 @@ my $_make_template = sub {
 };
 
 my $_template_dir = sub {
-   my ($self, $req) = @_; my $conf = $self->config; my $root = $conf->docs_root;
+   my $self = shift; my $conf = $self->config;
 
-   return $root->catdir( $req->locale, $conf->posts, $conf->email_templates );
+   return $conf->template_dir->catdir( $conf->email_templates );
 };
 
 my $_template_path = sub {
-   my ($self, $name) = @_; my $conf = $self->config;
+   my ($self, $name) = @_;
 
-   my $file = $conf->template_dir->catfile( "custom/${name}.tt" );
-
-   $file->exists and return $file;
-
-   return $conf->template_dir->catfile( $conf->skin."/${name}.tt" );
+   return $self->$_template_dir->catfile( "${name}.md" );
 };
 
 my $_list_message_templates = sub {
-   my ($self, $req) = @_; my $dir = $self->$_template_dir( $req );
+   my ($self, $req) = @_; my $dir = $self->$_template_dir;
 
    $dir->exists or return [ [ NUL, NUL ] ];
 

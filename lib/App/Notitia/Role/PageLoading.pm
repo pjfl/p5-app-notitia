@@ -43,18 +43,6 @@ around 'BUILDARGS' => sub {
    return $attr;
 };
 
-around 'get_stash' => sub {
-   my ($orig, $self, $req, @args) = @_;
-
-   my $stash = $orig->( $self, $req, @args );
-
-   $stash->{navigation} = $self->navigation_links( $req, $stash->{page} );
-   $stash->{navigation}->{menu}->{list} = $self->navigation( $req );
-   $stash->{navigation}->{menu}->{class} = 'dropmenu';
-
-   return $stash;
-};
-
 around 'load_page' => sub {
    my ($orig, $self, $req, @args) = @_; my $page = $args[ 0 ]; my %seen = ();
 

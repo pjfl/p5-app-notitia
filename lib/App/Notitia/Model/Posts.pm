@@ -1,7 +1,7 @@
 package App::Notitia::Model::Posts;
 
 use App::Notitia::Attributes;  # Will do cleaning
-use App::Notitia::Util     qw( build_tree iterator localise_tree
+use App::Notitia::Util     qw( add_dummies build_tree iterator localise_tree
                                mtime register_action_paths );
 use Class::Usul::Constants qw( SPC TRUE );
 use Class::Usul::Types     qw( NonZeroPositiveInt PositiveInt );
@@ -32,13 +32,10 @@ register_action_paths
 around 'get_stash' => sub {
    my ($orig, $self, $req, @args) = @_;
 
-   my $stash = $orig->( $self, $req, @args );
+   my $stash = $orig->( $self, $req, @args ); add_dummies $stash;
 
-   for my $k (qw( date days_in_advance description end_time first_name label
-                  name owner rota_date rota_name shift_type slot_type
-                  start_time type uri vehicle )) {
-      $stash->{ $k } //= "_dummy_${k}_";
-   }
+   $stash->{page}->{location} = 'events';
+   $stash->{navigation} = $self->events_navigation_links( $req, $stash->{page});
 
    return $stash;
 };
@@ -66,7 +63,6 @@ around 'load_page' => sub {
    $ids[ 0 ] and $ids[ 0 ] eq 'index' and @ids = ();
    $page->{wanted_depth} = () = @ids;
    $page->{wanted      } = join '/', $self->config->posts, @ids;
-   $page->{location    } = 'posts';
 
    defined $page->{template}->[ 1 ]
         or $page->{template}->[ 1 ] = "${skin}/${plate}";
@@ -98,11 +94,11 @@ sub cancel_edit_action : Role(anon) {
    return $_[ 0 ]->page( $_[ 1 ], { cancel_edit => TRUE } );
 }
 
-sub create_file_action : Role(editor) Role(event_manager) Role(person_manager) {
+sub create_file_action : Role(editor) Role(event_manager) {
    return $_[ 0 ]->create_file( $_[ 1 ], { prefix => $_[ 0 ]->config->posts } );
 }
 
-sub delete_file_action : Role(editor) Role(event_manager) Role(person_manager) {
+sub delete_file_action : Role(editor) Role(event_manager) {
    my ($self, $req) = @_; my $stash = $self->delete_file( $req );
 
    $stash->{redirect}->{location} = $req->uri_for_action( 'posts/page' );
@@ -124,21 +120,27 @@ sub localised_tree {
    return localise_tree $_[ 0 ]->tree_root, $_[ 1 ];
 }
 
-sub make_draft {
-   my ($self, @pathname) = @_; my $conf = $self->config; shift @pathname;
-
-   return $conf->posts, $conf->drafts, @pathname;
-}
-
 sub nav_label {
-   return sub { $_[ 0 ]->{prefix}.SPC.$_[ 0 ]->{title} };
+   return sub { my ($req, $link) = @_; $link->{prefix}.SPC.$link->{title} };
 }
 
 sub page : Role(anon) {
    my $self = shift; return $self->get_stash( @_ );
 }
 
-sub rename_file_action : Role(editor) Role(event_manager) Role(person_manager) {
+sub qualify_path {
+   my ($self, $locale, @pathname) = @_;
+
+   my $opts = pop @pathname; my $conf = $self->config;
+
+   if ($opts->{draft}) { shift @pathname; unshift @pathname, $conf->drafts }
+
+   unshift @pathname, $conf->posts;
+
+   return $self->config->docs_root->catfile( $locale, @pathname )->utf8;
+}
+
+sub rename_file_action : Role(editor) Role(event_manager) {
    return $_[ 0 ]->rename_file( $_[ 1 ], { prefix => $_[ 0 ]->config->posts } );
 }
 
@@ -146,7 +148,7 @@ sub rss_feed : Role(anon) {
    return $_[ 0 ]->get_rss_feed( $_[ 1 ] );
 }
 
-sub save_file_action : Role(editor) Role(event_manager) Role(person_manager) {
+sub save_file_action : Role(editor) Role(event_manager) {
    return $_[ 0 ]->save_file( $_[ 1 ] );
 }
 

@@ -19,8 +19,8 @@ use Unexpected::Functions  qw( Unspecified );
 use Moo::Role;
 
 requires qw( application components config dialog_stash find_node
-             initialise_stash invalidate_docs_cache load_page log make_draft
-             send_event );
+             initialise_stash invalidate_docs_cache load_page log
+             qualify_path send_event );
 
 with q(Web::Components::Role::TT);
 
@@ -78,7 +78,7 @@ around 'load_page' => sub {
    my $editing = $req->query_params->( 'edit', { optional => TRUE } )
                ? TRUE : FALSE;
 
-   $page->{editing} =  $page->{cancel_edit} ? FALSE : $editing;
+   $page->{editing} = $page->{cancel_edit} ? FALSE : $editing;
 
    if ($page->{editing}) { $page->{token} = csrf_token $req }
    else { $self->$_add_editing_js( $req, $page ) }
@@ -129,26 +129,12 @@ my $_result_line = sub {
          .$_[ 1 ]->[ 2 ];
 };
 
-my $_fettle_path = sub {
-   my ($self, $locale, @pathname) = @_; my $opts = pop @pathname;
-
-   $opts->{draft} and @pathname = $self->make_draft( @pathname );
-
-   not $opts->{draft} and defined $opts->{prefix}
-      and unshift @pathname, $opts->{prefix};
-
-   return $self->config->docs_root->catfile( $locale, @pathname )->utf8;
-};
-
 # Private methods
 my $_new_node = sub {
-   my ($self, $locale, $pathname, $opts) = @_; my $conf = $self->config;
+   my ($self, $locale, $pathname, $opts) = @_;
 
    my @pathname = $_prepare_path->( $_append_suffix->( $pathname ) );
-
-   $opts->{draft} and unshift @pathname, $self->config->drafts;
-
-   my $path     = $self->$_fettle_path( $locale, @pathname, $opts );
+   my $path     = $self->qualify_path( $locale, @pathname, $opts );
    my @filepath = map { make_id_from( $_ )->[ 0 ] } @pathname;
    my $url      = join '/', @filepath;
    my $id       = pop @filepath;

@@ -122,13 +122,13 @@ msgid "adhoc_vehicles_tip"
 msgstr "List the adhoc vehicles"
 
 msgid "admin_index_link"
-msgstr "Management"
+msgstr "Admin"
 
 msgid "admin_index_tip"
 msgstr "Administration Index"
 
 msgid "admin_index_title"
-msgstr "Management Index"
+msgstr "Administration Index"
 
 msgid "admin_management_heading"
 msgstr "Admin"
@@ -742,8 +742,32 @@ msgstr "Emails"
 msgid "email_subs_management_tip"
 msgstr "Edit the email subscription list for [_1]"
 
-msgid "emails_folder"
+msgid "email_template_create_link"
+msgstr "Add Template"
+
+msgid "email_template_create_tip"
+msgstr "Create a new email template file"
+
+msgid "email_templates_heading_0"
+msgstr "Template Name"
+
+msgid "email_templates_heading_1"
+msgstr "Subject"
+
+msgid "email_templates_heading_2"
+msgstr "Author"
+
+msgid "email_templates_link"
+msgstr "Templates List"
+
+msgid "email_templates_tip"
 msgstr "Templates for emails sent by this application"
+
+msgid "email_templates_title"
+msgstr "Email Templates"
+
+msgid "emails_management_heading"
+msgstr "Emails"
 
 msgid "emergency"
 msgstr "Emergency"
@@ -1266,6 +1290,15 @@ msgstr "Advanced Motorcycle"
 
 msgid "main"
 msgstr "Main"
+
+msgid "management_index_link"
+msgstr "Management"
+
+msgid "management_index_tip"
+msgstr "Management Index"
+
+msgid "management_index_title"
+msgstr "Management Index"
 
 msgid "message_send_link"
 msgstr "Send Message"
