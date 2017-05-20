@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #179. Adds where in hell feature
           - Fixes #168. Moves the email template list
           - Can set field help symbol in local L10N file
           - Fices #181. Adds date picker to vehicle allocation

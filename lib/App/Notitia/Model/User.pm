@@ -224,6 +224,20 @@ my $_update_session = sub {
    return;
 };
 
+my $_where_in_hell = sub {
+   my ($self, $req) = @_;
+
+   my $session = $req->session;
+   my $wanted  = $session->wanted; $session->wanted( NUL );
+   my $places  = $self->config->places;
+   my $docs    = $self->components->{docs};
+   my $notice  = $docs->is_accessible( $req, $places->{notice} );
+
+   return $wanted ? $req->uri_for( $wanted )
+        : $notice ? $req->uri_for_action( 'docs/page', [ $places->{notice} ] )
+        :           $req->uri_for_action( $places->{login_redirect } );
+};
+
 my $_bind_profile_fields = sub {
    my ($self, $req, $page, $person) = @_;
 
@@ -480,9 +494,7 @@ sub login_action : Role(anon) {
    $self->$_update_session( $session, $person );
 
    my $message   = [ to_msg '[_1] logged in', $person->label ];
-   my $wanted    = $session->wanted; $session->wanted( NUL );
-   my $location  = $wanted ? $req->uri_for( $wanted )
-                 : $req->uri_for_action( $conf->places->{login_redirect} );
+   my $location  = $self->$_where_in_hell( $req );
 
    $self->send_event( $req, 'action:logged-in' );
 

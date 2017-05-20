@@ -126,6 +126,22 @@ sub invalidate_docs_cache {
    return;
 }
 
+sub is_accessible {
+   my ($self, $req, $path) = @_;
+
+   my @path = split m{ / }mx, $path; my %seen = ();
+
+   for my $locale ($req->locale, @{ $req->locales }, $self->config->locale) {
+      $seen{ $locale } and next; $seen{ $locale } = TRUE;
+
+      my $node = $self->find_node( $locale, \@path ) or next;
+
+      is_access_authorised( $req, $node ) and return TRUE;
+   }
+
+   return FALSE;
+}
+
 sub navigation {
    my ($self, $req) = @_;
 
