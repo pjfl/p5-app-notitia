@@ -3,8 +3,9 @@ package App::Notitia::Model::Person;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
                                 NUL PIPE_SEP SPC TRUE );
-use App::Notitia::DOM       qw( new_container p_action p_fields p_item p_js
-                                p_link p_list p_row p_table );
+use App::Notitia::DOM       qw( new_container p_action p_button p_fields p_item
+                                p_js p_link p_list p_row p_select p_table
+                                p_textfield );
 use App::Notitia::Util      qw( check_field_js dialog_anchor link_options locm
                                 make_tip management_link page_link_set
                                 register_action_paths to_dt to_msg );
@@ -141,6 +142,21 @@ my $_people_order = sub {
    return { "-${dirn}" => "me.${col}" };
 };
 
+my $_people_search_opts = sub {
+   my ($req, $params) = @_;
+
+   return  {
+      columns  => [ 'badge_id' ],
+      filter_column => $params->{filter_column} // 'none',
+      order_by => $_people_order->( $params ),
+      page     => delete $params->{page} // 1,
+      filter_pattern => $params->{filter_pattern} // NUL,
+      role     => $params->{role},
+      rows     => $req->session->rows_per_page,
+      status   => $params->{status},
+      type     => $params->{type} // NUL, };
+};
+
 my $_people_title = sub {
    my ($req, $role, $status, $type) = @_;
 
@@ -195,6 +211,33 @@ my $_bind_view_nok = sub {
    my $nok = $person->next_of_kin;
 
    return ;
+};
+
+my $_filter_controls = sub {
+   my ($self, $req, $params) = @_;
+
+   my $f_col = $params->{filter_column} // 'none';
+   my $href = $req->uri_for_action( $self->moniker.'/people' );
+   my $form = new_container 'filter-controls', $href, { class => 'link-group' };
+   my $opts = { class => 'single-character filter-column',
+                label_field_class => 'control-label' };
+   my @columns = qw( badge_id email_address joined name
+                     postcode resigned shortcode );
+
+   p_select $form, 'filter_column',
+      [ map { [ $_, $_, { selected => $_ eq $f_col ? TRUE : FALSE } ] }
+        'none', @columns ], $opts;
+
+   p_textfield $form, 'filter_pattern', $params->{filter_pattern}, {
+      class => 'single-character filter-pattern',
+      label_field_class => 'control-label' };
+
+   p_button $form, 'filter_list', 'filter_list', {
+      class => 'button', tip => make_tip $req, 'filter_list_tip' };
+
+   $self->add_csrf_token( $req, $form );
+
+   return [ $form ];
 };
 
 my $_list_all_roles = sub {
@@ -268,9 +311,8 @@ my $_people_links = sub {
          and push @paths, 'blots/endorsements';
 
    for my $actionp ( @paths ) {
-      push @{ $links }, {
-         value => management_link
-            ( $req, $actionp, $scode, { params => $params } ) };
+      push @{ $links }, { value => management_link $req, $actionp, $scode, {
+         params => $params } };
    }
 
    return $links;
@@ -506,6 +548,19 @@ sub delete_person_action : Role(person_manager) {
    return { redirect => { location => $location, message => $message } };
 }
 
+sub filter_list_action : Role(person_manager) {
+   my ($self, $req) = @_;
+
+   my $actionp  = $self->moniker.'/people';
+   my $column   = $req->body_params->( 'filter_column' );
+   my $pattern  = $req->body_params->( 'filter_pattern', { raw => TRUE } );
+   my $params   = { %{ $req->query_params->() },
+                    filter_column => $column, filter_pattern => $pattern, };
+   my $location = $req->uri_for_action( $actionp, [], $params );
+
+   return { redirect => { location => $location } };
+}
+
 sub find_by_shortcode {
    return shift->schema->resultset( 'Person' )->find_by_shortcode( @_ );
 }
@@ -593,36 +648,30 @@ sub person_summary : Role(person_manager) Role(address_viewer)
 sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
    my ($self, $req, $type) = @_;
 
-   my $actionp =  $self->moniker.'/people';
    my $params  =  $req->query_params->( {
       optional => TRUE } ); delete $params->{mid};
-   my $role    =  $params->{role  };
-   my $status  =  $params->{status};
 
    $type and $params->{type} = $type; $type = $params->{type} || NUL;
 
-   my $opts    =  { columns  => [ 'badge_id' ],
-                    order_by => $_people_order->( $params ),
-                    page     => delete $params->{page} // 1,
-                    role     => $role,
-                    rows     => $req->session->rows_per_page,
-                    status   => $status,
-                    type     => $type, };
+   my $role    =  $params->{role  };
+   my $status  =  $params->{status};
+   my $s_opts  =  $_people_search_opts->( $req, $params );
+   my $actionp =  $self->moniker.'/people';
    my $href    =  $req->uri_for_action( $actionp, [], $params );
    my $form    =  new_container 'people', $href, {
       class    => 'wider-table', id => 'people' };
    my $page    =  {
       forms    => [ $form ],
-      selected => $_select_nav_link_name->( $opts ),
+      selected => $_select_nav_link_name->( $s_opts ),
       title    => $_people_title->( $req, $role, $status, $type ), };
    my $rs      =  $self->schema->resultset( 'Person' );
-   my $people  =  $rs->search_for_people( $opts );
+   my $people  =  $rs->search_for_people( $s_opts );
    my $links   =  $self->$_people_ops_links
       ( $req, $page, $params, $people->pager );
 
    p_list $form, PIPE_SEP, $links, link_options 'right';
 
-   my $table = p_table $form, {
+   my $table   = p_table $form, {
       headers => $self->$_people_headers( $req, $params ) };
 
    $type eq 'contacts' and is_member( 'person_manager', $req->session->roles )
@@ -631,7 +680,7 @@ sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
    p_row $table, [ map { $self->$_people_links( $req, $params, $_ ) }
                    $people->all ];
 
-   p_list $form, PIPE_SEP, $links, link_options 'right';
+   p_list $form, NUL, $self->$_filter_controls( $req, $s_opts ), link_options;
 
    return $self->get_stash( $req, $page );
 }

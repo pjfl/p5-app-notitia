@@ -30,8 +30,9 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{page}->{location} = 'admin';
-   $stash->{navigation} = $self->admin_navigation_links( $req, $stash->{page} );
+   $stash->{page}->{location} = 'management';
+   $stash->{navigation}
+      = $self->management_navigation_links( $req, $stash->{page} );
 
    return $stash;
 };
@@ -228,7 +229,7 @@ sub endorsements : Role(person_manager) {
    my $form    =  new_container;
    my $page    =  {
       forms    => [ $form ],
-      selected => $role ? "${role}_list" : NUL,
+      selected => $role ? "${role}_list" : 'people_list',
       title    => loc $req, 'endorsements_management_heading' };
    my $schema  =  $self->schema;
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );

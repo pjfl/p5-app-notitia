@@ -3,7 +3,7 @@ package App::Notitia::Utilities;
 use version;
 use namespace::autoclean;
 
-use App::Notitia::Constants qw( EXCEPTION_CLASS FAILED FALSE OK
+use App::Notitia::Constants qw( EXCEPTION_CLASS FAILED FALSE NUL OK
                                 SLOT_TYPE_ENUM TRUE );
 use App::Notitia::Util      qw( action_path_uri_map event_handler_cache
                                 load_file_data local_dt locd new_request
@@ -79,19 +79,23 @@ my $_assigned_slots = sub {
 my $_list_from_stash = sub {
    my ($self, $stash) = @_;
 
-   $stash->{role} or $stash->{shortcode}
-      or throw Unspecified, [ 'role or shortcode' ];
+   $stash->{filter_column} or $stash->{role} or $stash->{shortcode}
+      or throw Unspecified, [ 'filter_column, role or shortcode' ];
 
+   my $ss        = $stash->{status};
+   my $opts      = { columns => [ 'email_address', 'mobile_phone' ] };
    my $person_rs = $self->schema->resultset( 'Person' );
 
-   if (my $role = $stash->{role}) {
-      my $ss = $stash->{status};
-      my $opts = { columns => [ 'email_address', 'mobile_phone' ] };
+   $opts->{status} = $ss && $ss eq 'all' ? undef : $ss ? $ss : 'current';
 
-      $opts->{status} = $ss && $ss eq 'all' ? undef : $ss ? $ss : 'current';
+   if ($stash->{filter_column}) {
+      $opts->{filter} = $stash->{filter_column};
+      $opts->{pattern} = $stash->{filter_pattern};
 
-      return $person_rs->list_people( $role, $opts );
+      return $person_rs->list_people( NUL, $opts );
    }
+
+   $stash->{role} and return $person_rs->list_people( $stash->{role}, $opts );
 
    my $person = $person_rs->find_by_shortcode( $stash->{shortcode} );
 

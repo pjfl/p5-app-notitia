@@ -38,7 +38,8 @@ around 'get_stash' => sub {
    my $stash = $orig->( $self, $req, @args );
 
    $stash->{page}->{location} //= 'events';
-   $stash->{navigation} = $self->events_navigation_links( $req, $stash->{page});
+   $stash->{navigation}
+      //= $self->events_navigation_links( $req, $stash->{page} );
 
    return $stash;
 };
@@ -444,6 +445,8 @@ sub training : Role(training_manager) {
    my $form = new_container 'training', $href;
    my $page = {
       forms => [ $form ], selected => $role ? "${role}_list" : 'summary',
+      location => 'management',
+      selected => $role ? "${role}_list" : 'people_list',
       title => locm $req, 'training_enrolment_title'
       };
    my $courses_taken = $person->list_courses;
@@ -466,7 +469,12 @@ sub training : Role(training_manager) {
       class => 'save-button', container_class => 'right-last',
       tip => make_tip $req, 'add_course_tip', [ 'course', $person->label ] };
 
-   return $self->get_stash( $req, $page );
+   my $stash = $self->get_stash( $req, $page );
+
+   $stash->{navigation}
+      = $self->management_navigation_links( $req, $stash->{page} );
+
+   return $stash;
 }
 
 sub update_training_action : Role(training_manager) {

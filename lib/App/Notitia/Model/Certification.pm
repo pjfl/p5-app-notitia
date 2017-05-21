@@ -32,8 +32,9 @@ around 'get_stash' => sub {
 
    my $stash = $orig->( $self, $req, @args );
 
-   $stash->{page}->{location} = 'admin';
-   $stash->{navigation} = $self->admin_navigation_links( $req, $stash->{page} );
+   $stash->{page}->{location} = 'management';
+   $stash->{navigation}
+      = $self->management_navigation_links( $req, $stash->{page} );
 
    return $stash;
 };
@@ -247,7 +248,8 @@ sub certifications : Role(person_manager) Role(training_manager) {
    my $actionp =  $self->moniker.'/certifications';
    my $href    =  $req->uri_for_action( $actionp, [ $scode ] );
    my $role    =  $req->query_params->( 'role', { optional => TRUE } );
-   my $form    =  new_container 'certifications', $href, { class => 'wide-form' };
+   my $form    =  new_container 'certifications', $href, {
+      class => 'wide-form' };
    my $page    =  {
       forms    => [ $form ],
       selected => $role ? "${role}_list" : 'people_list',

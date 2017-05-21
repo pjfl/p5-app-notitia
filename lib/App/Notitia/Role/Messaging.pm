@@ -49,7 +49,7 @@ my $_flatten = sub {
    else {
       scalar keys %{ $params } or throw 'Messaging all people is not allowed';
 
-      $_contains_one->( $params, [ qw( stash event role ) ] )
+      $_contains_one->( $params, [ qw( event filter_column role stash ) ] )
          or throw 'Must select a sub-set of people to message';
 
       exists $params->{type} and $params->{type} eq 'contacts'

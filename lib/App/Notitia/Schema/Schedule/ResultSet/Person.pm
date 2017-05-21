@@ -192,6 +192,12 @@ sub search_for_people {
 
    $opts->{columns} and push @{ $columns }, @{ delete $opts->{columns} };
 
+   if (my $col = delete $opts->{filter_column}
+       and my $pattern = delete $opts->{filter_pattern}) {
+      $pattern =~ s{ [\*] }{%}gmx; $pattern =~ s{ [\?] }{_}gmx;
+      $col ne 'none' and $where->{ $col } = { '-like' => $pattern };
+   }
+
    if (my $type = delete $opts->{type}) {
       if ($type eq 'contacts') {
          push @{ $opts->{prefetch} }, 'next_of_kin';

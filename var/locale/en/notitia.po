@@ -964,6 +964,12 @@ msgstr "Field Type"
 msgid "filter_column"
 msgstr "Column"
 
+msgid "filter_list"
+msgstr "Filter"
+
+msgid "filter_list_tip"
+msgstr "Limit the view to only the matching entries"
+
 msgid "filter_log"
 msgstr "Filter"
 
@@ -1492,6 +1498,9 @@ msgstr "Upload Mugshot"
 
 msgid "mugshot_upload_tip"
 msgstr "Upload the mugshot image file for this person"
+
+msgid "name"
+msgstr "Name"
 
 msgid "new_password"
 msgstr "New Password"
@@ -2056,6 +2065,9 @@ msgstr "Setup"
 
 msgid "Site Description"
 msgstr "People and resource scheduling"
+
+msgid "shortcode"
+msgstr "Short Code"
 
 msgid "show_completed_training"
 msgstr "Completed"
