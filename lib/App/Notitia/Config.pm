@@ -16,6 +16,10 @@ use Moo;
 extends q(Class::Usul::Config::Programs);
 
 # Private functions
+my $_path2theme = sub {
+   return (split m{ [\-] }mx, (shift)->basename( '.css' ))[ 1 ];
+};
+
 my $_to_array_of_hash = sub {
    my ($href, $key_key, $val_key) = @_;
 
@@ -70,6 +74,14 @@ my $_build_sms_attributes = sub {
       = encrypted_attr $self, $self->ctlfile, 'sms_password', \&create_token;
 
    return $attr;
+};
+
+my $_build_themes = sub {
+   my $self = shift;
+   my $dir  = $self->root->catdir( $self->css );
+   my $list = $dir->filter( sub { m{ \.css \z }mx } );
+
+   return [ map { $_path2theme->( $_ ) } $list->all ];
 };
 
 my $_build_transport_attr = sub {
@@ -330,7 +342,7 @@ has 'template_dir'    => is => 'ro',   isa => Directory, coerce => TRUE,
    builder            => sub { $_[ 0 ]->vardir->catdir( 'templates' ) };
 
 has 'themes'          => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
-   builder            => sub { [ qw( dark light grey ) ] };
+   builder            => $_build_themes;
 
 has 'time_zone'       => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'Europe/London';
