@@ -1,0 +1,19 @@
+[% IF page.preview -%]
+<div class="form-wrapper">
+[% ELSE -%]
+<div class="unit four-fifths">
+   <article>
+[% END -%]
+   <div class="form-banner"></div>
+   <div class="form-content">
+      <h4>[% page.title %]</h4>
+[% FOR form IN page.forms -%]
+[%    Dispatch( form ) -%]
+[% END -%]
+   </div>
+[% IF page.preview -%]
+</div>
+[% ELSE -%]
+   </article>
+</div>
+[% END -%]

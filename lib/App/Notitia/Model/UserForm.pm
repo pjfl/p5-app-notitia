@@ -3,9 +3,10 @@ package App::Notitia::Model::UserForm;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FIELD_TYPE_ENUM FALSE HASH_CHAR
                                 NUL PIPE_SEP TRUE );
-use App::Notitia::DOM       qw( new_container p_action p_checkbox p_fields
-                                p_iframe p_item p_js p_link p_list p_row
-                                p_select p_table p_tag p_textarea p_textfield );
+use App::Notitia::DOM       qw( new_container p_action p_checkbox
+                                p_container p_fields p_iframe p_item p_js
+                                p_link p_list p_row p_select p_table p_tag
+                                p_textarea p_textfield );
 use App::Notitia::Util      qw( dialog_anchor link_options locm
                                 register_action_paths
                                 set_element_focus to_msg );
@@ -26,8 +27,7 @@ register_action_paths
    'form/field_defn_view'   => 'form-defn/*/field',
    'form/form_defn_preview' => 'form-defn/*/preview',
    'form/form_defn_view'    => 'form-defn',
-   'form/form_defn_list'    => 'form-defns',
-   'form/form_view'         => 'form';
+   'form/form_defn_list'    => 'form-defns';
 
 # Construction
 around 'get_stash' => sub {
@@ -59,8 +59,8 @@ my $_field_types = sub {
             map { $_field_type->( $field, $_ ) } @{ FIELD_TYPE_ENUM() } ];
 };
 
-my $_forms_headers = sub {
-   return [ map { { value => locm $_[ 0 ], "user_form_list_heading_${_}" } }
+my $_form_defn_list_headers = sub {
+   return [ map { { value => locm $_[ 0 ], "form_defn_list_heading_${_}" } }
             0 .. 0 ];
 };
 
@@ -93,7 +93,7 @@ my $_field_cells = sub {
 
    p_item $cells, $field->field_type;
 
-   p_item $cells, $field->label;
+   p_item $cells, $field->value;
 
    return $cells;
 };
@@ -127,7 +127,8 @@ my $_field_list = sub {
    my $field_rs = $self->schema->resultset( 'UserField' );
 
    p_row $fields, [ map { $self->$_field_cells( $req, $page, $form, $_ ) }
-                    $field_rs->search( { form_id => $form->id } )->all ];
+                    $field_rs->search( { form_id => $form->id }, {
+                       order_by => 'order' } )->all ];
 
    p_list $form_1, PIPE_SEP, $links, link_options 'right';
    return;
@@ -142,6 +143,54 @@ my $_find_user_form = sub {
       or throw 'User form [_1] not found', args => [ $name ], level => 2;
 
    return $form;
+};
+
+my $_form_defn_list_cells = sub {
+   my ($self, $req, $form) = @_; my $cells = [];
+
+   my $args = [ $form->name ];
+   my $href = $req->uri_for_action( $self->moniker.'/form_defn_view', $args );
+
+   p_item $cells, p_link {}, 'user_form_update', $href, {
+      request => $req, value => $form->name };
+
+   return $cells;
+};
+
+my $_form_defn_tables = sub {
+   my ($self, $selected) = @_; $selected //= 0;
+
+   my $tables = $self->schema->resultset( 'UserTable' )->search( {} );
+
+   return { class => 'standard-field',
+            type  => 'select',
+            value => [ [ NUL, undef ], map { [ "${_}", $_->id, {
+               selected => $_->id == $selected ? TRUE : FALSE } ] }
+                       $tables->all ], };
+};
+
+my $_form_defn_templates = sub {
+   my ($self, $selected) = @_; $selected //= 0;
+
+   my $dir = $self->config->template_dir->catdir( 'custom' );
+
+   return { class => 'standard-field',
+            type  => 'select',
+            value => [ [ NUL, undef ], map { [ $_, "custom/${_}", {
+               selected => "custom/${_}" eq $selected ? TRUE : FALSE } ] }
+                       map { $_->basename( '.tt', '.tt2' ) } $dir->all ], };
+};
+
+my $_form_preview_ops_links = sub {
+   my ($self, $req, $name) = @_; my $links = [];
+
+   my $args = [ $name ];
+   my $href = $req->uri_for_action( $self->moniker.'/form_defn_view', $args );
+
+   p_link $links, 'form_defn', $href, {
+      container_class => 'add-link', request => $req };
+
+   return $links;
 };
 
 my $_form_view_ops_links = sub {
@@ -167,18 +216,6 @@ my $_forms_ops_links = sub {
    return $links;
 };
 
-my $_forms_cells = sub {
-   my ($self, $req, $form) = @_; my $cells = [];
-
-   my $args = [ $form->name ];
-   my $href = $req->uri_for_action( $self->moniker.'/form_defn_view', $args );
-
-   p_item $cells, p_link {}, 'user_form_update', $href, {
-      request => $req, value => $form->name };
-
-   return $cells;
-};
-
 my $_maybe_find_field = sub {
    my ($self, $form, $name) = @_; $name or return Class::Null->new;
 
@@ -199,12 +236,30 @@ my $_maybe_find_form = sub {
    return $form;
 };
 
+my $_update_field_from_request = sub {
+   my ($self, $req, $field) = @_; my $params = $req->body_params;
+
+   my $opts = { optional => TRUE };
+
+   for my $attr (qw( class container_class disabled fieldsize field_type label
+                     label_class maxlength order placeholder tip value )) {
+      my $v = $params->( $attr, $opts );
+
+      if (defined $v) { $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx }
+
+      $field->$attr( $v );
+   }
+
+   return;
+};
+
 my $_update_form_from_request = sub {
    my ($self, $req, $form) = @_; my $params = $req->body_params;
 
    my $opts = { optional => TRUE };
 
-   for my $attr (qw( name notes partial_uri response template uri_prefix )) {
+   for my $attr (qw( name notes partial_uri response table_id
+                     template uri_prefix )) {
       if (is_member $attr, [ 'notes', 'response' ]) { $opts->{raw} = TRUE }
       else { delete $opts->{raw} }
 
@@ -236,18 +291,22 @@ my $_update_form_from_request = sub {
 sub create_user_field_action : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $form     = $self->$_find_user_form( $req );
-   my $params   = $req->body_params;
-   my $field    = $self->schema->resultset( 'UserField' )->create( {
-      form_id    => $form->id,
-      name       => $params->( 'name' ),
-      field_type => $params->( 'field_type' ),
+   my $params =  $req->body_params;
+   my $form   =  $self->$_find_user_form( $req );
+   my $field  =  $self->schema->resultset( 'UserField' )->new_result( {
+      form_id => $form->id,
+      name    => $params->( 'name' ),
    } );
-   my $args     = [ $form->name ];
+
+   $self->$_update_field_from_request( $req, $field );
+
+   try   { $field->insert }
+   catch { $self->blow_smoke( $_, 'create', 'field', $field ) };
+
    my $message  = [ to_msg 'User field [_1] created by [_2]',
                     $field, $req->session->user_label ];
    my $actionp  = $self->moniker.'/form_defn_view';
-   my $location = $req->uri_for_action( $actionp, $args );
+   my $location = $req->uri_for_action( $actionp, [ $form->name ] );
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -278,11 +337,11 @@ sub delete_user_field_action : Role(administrator) {
    my $field = $rs->find( $form->id, $name )
       or throw 'User field [_1].[_2] unknown', [ "${form}", $name ];
 
-   $field->delete;
+   try   { $field->delete }
+   catch { $self->blow_smoke( $_, 'delete', 'field', $field ) };
 
-   my $args     = [ $form->name ];
    my $actionp  = $self->moniker.'/form_defn_view';
-   my $location = $req->uri_for_action( $actionp, $args );
+   my $location = $req->uri_for_action( $actionp, [ $form->name ] );
    my $message  = [ to_msg 'User field [_1] deleted by [_2]',
                     $field, $req->session->user_label ];
 
@@ -294,7 +353,8 @@ sub delete_user_form_action : Role(administrator) {
 
    my $form = $self->$_find_user_form( $req );
 
-   $form->delete;
+   try   { $form->delete }
+   catch { $self->blow_smoke( $_, 'delete', 'form', $form ) };
 
    my $message  = [ to_msg 'User form [_1] deleted by [_2]',
                     $form, $req->session->user_label ];
@@ -308,21 +368,36 @@ sub field_defn_view : Dialog Role(administrator) {
 
    my $form_name  = $req->uri_params->( 0 );
    my $field_name = $req->uri_params->( 1, { optional => TRUE } );
-   my $stash   = $self->dialog_stash( $req );
-   my $args    = [ $form_name, $field_name ];
-   my $actionp = $self->moniker.'/field_defn_view';
-   my $href    = $req->uri_for_action( $actionp, $args );
-   my $form_0  = $stash->{page}->{forms}->[ 0 ] = new_container 'field', $href;
-   my $form    = $self->$_find_user_form( $req );
-   my $field   = $self->$_maybe_find_field( $form, $field_name );
+   my $stash    = $self->dialog_stash( $req );
+   my $args     = [ $form_name, $field_name ];
+   my $actionp  = $self->moniker.'/field_defn_view';
+   my $href     = $req->uri_for_action( $actionp, $args );
+   my $form_0   = $stash->{page}->{forms}->[ 0 ] = new_container 'field', $href;
+   my $form     = $self->$_find_user_form( $req );
+   my $field    = $self->$_maybe_find_field( $form, $field_name );
 
-   p_js $stash->{page}, set_element_focus 'field', 'name';
+   p_js $stash->{page}, set_element_focus 'field',
+      $field_name ? 'field_type' : 'name';
 
    p_textfield $form_0, 'name', $field->name, {
-      class => 'standard-field required', label => 'user_field_name' };
+      class => 'standard-field required '.($field_name ? 'fake-disabled' : NUL),
+      label => 'user_field_name' };
 
    p_select $form_0, 'field_type', $_field_types->( $field ), {
       class => 'single-character required', };
+
+   p_textfield $form_0, 'class',           $field->class, {};
+   p_textfield $form_0, 'container_class', $field->container_class, {};
+   p_textfield $form_0, 'disabled',        $field->disabled, {};
+   p_textfield $form_0, 'fieldsize',       $field->fieldsize, {};
+   p_textfield $form_0, 'label',           $field->label, {};
+   p_textfield $form_0, 'label_class',     $field->label_class, {};
+   p_textfield $form_0, 'maxlength',       $field->maxlength, {};
+   p_textfield $form_0, 'order',           $field->order, {};
+   p_textfield $form_0, 'placeholder',     $field->placeholder, {};
+   p_textfield $form_0, 'tip',             $field->tip, {};
+   p_textarea  $form_0, 'value',           $field->value, {
+      class => 'standard-field autosize' };
 
    if ($field->name) {
       my $args = [ 'user_field', $field_name ];
@@ -338,19 +413,21 @@ sub field_defn_view : Dialog Role(administrator) {
 sub form_defn_list : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $page    = {
-      selected => 'user_form_list',
-      title    => locm $req, 'user_form_list_title',
+   my $form_0 = new_container { class => 'standard-form' };
+   my $page = {
+      forms    => [ $form_0 ],
+      selected => 'form_defn_list',
+      title    => locm $req, 'form_defn_list_title',
    };
-   my $form_0 = $page->{forms}->[ 0 ] = new_container;
-   my $links  = $self->$_forms_ops_links( $req );
+   my $links = $self->$_forms_ops_links( $req );
 
    p_list $form_0, PIPE_SEP, $links, link_options 'right';
 
-   my $table   = p_table $form_0, { headers => $_forms_headers->( $req ) };
-   my $form_rs = $self->schema->resultset( 'UserForm' );
+   my $table = p_table $form_0, {
+      headers => $_form_defn_list_headers->( $req ) };
 
-   p_row $table, [ map { $self->$_forms_cells( $req, $_ ) } $form_rs->all ];
+   p_row $table, [ map { $self->$_form_defn_list_cells( $req, $_ ) }
+                   $self->schema->resultset( 'UserForm' )->all ];
 
    p_list $form_0, PIPE_SEP, $links, link_options 'right';
 
@@ -360,14 +437,17 @@ sub form_defn_list : Role(administrator) {
 sub form_defn_preview : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $name = $req->uri_params->( 0, { optional => TRUE } );
-   my $page = {
-      selected => 'user_form_list',
-      title    => locm $req, 'form_preview_title',
+   my $name  = $req->uri_params->( 0, { optional => TRUE } );
+   my $page  = {
+      selected => 'form_defn_list',
+      title    => locm( $req, 'form_preview_title', ucfirst $name ),
    };
-   my $form = $page->{forms}->[ 0 ] = new_container;
-   my $href = $req->uri_for_action( $self->moniker.'/form_view', [ $name ], {
-      embeded => TRUE } );
+   my $form  = $page->{forms}->[ 0 ] = new_container;
+   my $href  = $req->uri_for_action( 'manage/form_view', [ $name ], {
+      preview => TRUE } );
+   my $links = $self->$_form_preview_ops_links( $req, $name );
+
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    p_iframe $form, 'preview', $href, { width => '98%', height => '500px' };
 
@@ -377,14 +457,15 @@ sub form_defn_preview : Role(administrator) {
 sub form_defn_view : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $page    = {
-      first_field => 'name',
-      selected    => 'user_form_list',
-      title       => locm $req, 'user_form_title', };
    my $name    = $req->uri_params->( 0, { optional => TRUE } );
    my $actionp = $self->moniker.'/form_defn_view';
    my $href    = $req->uri_for_action( $actionp, [ $name ] );
-   my $form_0  = $page->{forms}->[ 0 ] = new_container 'user-form', $href;
+   my $form_0  = new_container 'user-form', $href;
+   my $page    = {
+      first_field => 'name',
+      forms       => [ $form_0 ],
+      selected    => 'form_defn_list',
+      title       => locm $req, 'user_form_title', };
    my $links   = $self->$_form_view_ops_links( $req, $name );
    my $form    = $self->$_maybe_find_form( $name );
 
@@ -395,16 +476,18 @@ sub form_defn_view : Role(administrator) {
          class      => 'standard-field',
          disabled   => $name ? TRUE : FALSE, label => 'user_form_name' },
         notes       => { label => 'user_form_notes', type => 'textarea' },
+        table_id    => $self->$_form_defn_tables( $form->table_id ),
         uri_prefix  => { value => $form->uri_prefix || $req->base },
-        partial_uri => { value => $form->partial_uri || "form/${name}" },
-        template    => {},
+        partial_uri => { value => $form->partial_uri || 'form/'.($name // NUL)},
+        template    => $self->$_form_defn_templates( $form->template ),
         ];
 
    p_textfield $form_0, 'title',        $form->content( 'title' );
    p_textfield $form_0, 'logo_path',    $form->content( 'logo_path' );
    p_textfield $form_0, 'logo_href',    $form->content( 'logo_href' );
    p_textfield $form_0, 'logo_text',    $form->content( 'logo_text' );
-   p_textarea  $form_0, 'css',          $form->content( 'css' );
+   p_textarea  $form_0, 'css',          $form->content( 'css' ), {
+      class => 'standard-field autosize' };
    p_textarea  $form_0, 'javascript',   $form->content( 'javascript' );
    p_textarea  $form_0, 'head_content', $form->content( 'head_content' );
    p_textfield $form_0, 'response',     $form->response;
@@ -419,16 +502,27 @@ sub form_defn_view : Role(administrator) {
    return $self->get_stash( $req, $page );
 }
 
-sub form_view : Role(administrator) {
+sub update_user_field_action : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $page = { template => [ 'none' ] };
+   my $form   = $self->$_find_user_form( $req );
+   my $params = $req->body_params;
+   my $field  = $self->schema->resultset( 'UserField' )->find( {
+      form_id => $form->id,
+      name    => $params->( 'name' ),
+   } );
 
-   my $stash = $self->get_stash( $req, $page );
+   $self->$_update_field_from_request( $req, $field );
 
-   $stash->{navigation} = {};
+   try   { $field->update }
+   catch { $self->blow_smoke( $_, 'update', 'field', $field ) };
 
-   return $stash;
+   my $message  = [ to_msg 'User field [_1] updated by [_2]',
+                    $field, $req->session->user_label ];
+   my $actionp  = $self->moniker.'/form_defn_view';
+   my $location = $req->uri_for_action( $actionp, [ $form->name ] );
+
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub update_user_form_action : Role(administrator) {
@@ -443,7 +537,8 @@ sub update_user_form_action : Role(administrator) {
 
    my $message  = [ to_msg 'User form [_1] updated by [_2]',
                     $form, $req->session->user_label ];
-   my $location = $req->uri_for_action( $self->moniker.'/form_defn_list' );
+   my $actionp  = $self->moniker.'/form_defn_view';
+   my $location = $req->uri_for_action( $actionp, [ $form->name ] );
 
    return { redirect => { location => $location, message => $message } };
 }

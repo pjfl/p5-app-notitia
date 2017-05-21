@@ -20,6 +20,7 @@ $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'name' ] );
 
+$class->has_many( forms   => "${result}::UserForm",   'table_id' );
 $class->has_many( columns => "${result}::UserColumn", 'table_id' );
 
 # Private functions

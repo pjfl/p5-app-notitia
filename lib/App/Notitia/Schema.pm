@@ -147,6 +147,20 @@ my $_add_backup_files = sub {
       $arc->add_files( $pofile->abs2rel( $conf->appldir ) );
    }
 
+   my $customdir = $conf->template_dir->catdir( 'custom' )
+                        ->filter( sub { m{ \.tt[2]? \z }mx } );
+
+   for my $ttfile ($customdir->all_files) {
+      $arc->add_files( $ttfile->abs2rel( $conf->appldir ) );
+   }
+
+   my $emaildir = $conf->template_dir->catdir( 'emails' )
+                       ->filter( sub { m{ (?: \.md | \.tt[2]? ) \z }mx } );
+
+   for my $emailfile ($emaildir->all_files) {
+      $arc->add_files( $emailfile->abs2rel( $conf->appldir ) );
+   }
+
    for my $ddlfile ($self->$_ddl_paths) {
       $arc->add_files( $ddlfile->abs2rel( $conf->appldir) );
    }

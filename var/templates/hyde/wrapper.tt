@@ -9,15 +9,18 @@
    <meta name="keywords" content="[% page.keywords %]">
    <meta name="generator" content="[% config.title %] v[% application_version %]">
    <link href="[% links.images %][% config.favicon.0 %]" rel="shortcut icon">
-[%    IF page.font -%]
+[% IF page.font -%]
    <link href="[% page.font %]" rel="stylesheet" type="text/css">
-[%    END -%]
+[% END -%]
    <link href="[% links.css %][% session.skin %]-[% session.theme %].css"
           rel="stylesheet" type="text/css">
-[%    IF links.rss_uri -%]
+[% IF page.css -%]
+   <style>[% page.css %]</style>
+[% END -%]
+[% IF links.rss_uri -%]
    <link href="[% links.rss_uri %]" rel="alternate" title="RSS"
          type="application/rss+xml">
-[%    END -%]
+[% END -%]
 </head>
 <body class="[% session.grid_type %]" id="body">
    [% content -%]

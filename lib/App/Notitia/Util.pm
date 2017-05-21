@@ -290,7 +290,8 @@ sub assign_link ($$$$) {
    }
 
    my $style; $state eq 'vehicle-assigned' and $opts->{vehicle}->colour
-      and $style = 'background-color: '.$opts->{vehicle}->colour.';';
+      and $style = 'background-color: '.$opts->{vehicle}->colour.';'
+                 . 'color: '.contrast_colour( $opts->{vehicle}->colour ).';';
 
    my $class = "centre narrow ${state}";
 

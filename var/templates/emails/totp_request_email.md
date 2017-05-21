@@ -9,7 +9,7 @@ Hello [% first_name %].
 
 A TOTP account information request has been made for
 [% username %]@[% app_name %]. If this was not made by you please contact
-the adminstrators
+the administrators
 
 Click on this [link]([%link%]) to display the TOTP account information
 

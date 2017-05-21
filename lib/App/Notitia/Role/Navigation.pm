@@ -121,8 +121,8 @@ my $_admin_data_links = sub {
       class => $_selected_class->( $page, 'slot_roles_list' ),
       request => $req };
 
-   p_navlink $list, 'user_form_list', [ 'form/form_defn_list' ], {
-      class => $_selected_class->( $page, 'user_form_list' ),
+   p_navlink $list, 'form_defn_list', [ 'form/form_defn_list' ], {
+      class => $_selected_class->( $page, 'form_defn_list' ),
       request => $req };
 
    p_navlink $list, 'user_table_list', [ 'table/table_list' ], {
@@ -212,6 +212,17 @@ my $_emails_links = sub {
    p_navlink $list, 'email_templates', [ 'manage/template_list' ], {
       class   => $_selected_class->( $page, 'email_templates' ),
       request => $req };
+
+   return;
+};
+
+my $_forms_links = sub {
+   my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
+
+   p_folder $list, 'user_forms', { request => $req, tip => 'User Forms Menu' };
+
+   p_navlink $list, 'form_list', [ 'manage/form_list' ], {
+      class => $_selected_class->( $page, 'form_list' ), request => $req, };
 
    return;
 };
@@ -632,6 +643,9 @@ sub management_navigation_links {
 
    $self->$_allowed( $req, 'manage/template_list' )
       and $self->$_emails_links( $req, $page, $nav );
+
+   $self->$_allowed( $req, 'manage/form_view' )
+      and $self->$_forms_links( $req, $page, $nav );
 
    $self->$_people_links( $req, $page, $nav );
    $self->$_report_links( $req, $page, $nav );

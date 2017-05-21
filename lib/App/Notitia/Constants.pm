@@ -38,9 +38,9 @@ sub PIPE_SEP  () { '&nbsp;|&nbsp;' }
 sub TILDE     () { chr 126    }
 
 sub DATA_TYPE_ENUM       () {
-   [ qw( bigint binary bit blob char date datetime dec decimal double float int
-         integer numeric real smallint text time timestamp tinyblob tinyint
-         varbinary varchar ) ] }
+   [ qw( bigint binary bit boolean blob char date datetime dec decimal double
+         float int integer numeric real smallint text time timestamp tinyblob
+         tinyint varbinary varchar ) ] }
 sub FIELD_TYPE_ENUM      () {
    [ qw( button checkbox date datetime hidden image label link list password
          radio select slider table text textarea textfield time unordered ) ] }

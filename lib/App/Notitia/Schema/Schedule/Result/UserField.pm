@@ -10,6 +10,7 @@ use App::Notitia::DataTypes qw( bool_data_type
                                 foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 nullable_numerical_id_data_type
+                                nullable_varchar_data_type
                                 numerical_id_data_type
                                 varchar_data_type );
 
@@ -25,16 +26,16 @@ $class->add_columns
      field_type      => enumerated_data_type( FIELD_TYPE_ENUM, 'textfield' ),
      field_group_id  => nullable_foreign_key_data_type,
      order           => numerical_id_data_type,
-     class           => varchar_data_type( 64 ),
-     container_class => varchar_data_type( 64 ),
+     class           => nullable_varchar_data_type( 64 ),
+     container_class => nullable_varchar_data_type( 64 ),
      disabled        => bool_data_type,
      fieldsize       => nullable_numerical_id_data_type,
-     label           => varchar_data_type,
-     label_class     => varchar_data_type( 64 ),
+     label           => nullable_varchar_data_type,
+     label_class     => nullable_varchar_data_type( 64 ),
      maxlength       => nullable_numerical_id_data_type,
-     placeholder     => varchar_data_type,
-     tip             => varchar_data_type,
-     value           => varchar_data_type,
+     placeholder     => nullable_varchar_data_type,
+     tip             => nullable_varchar_data_type,
+     value           => nullable_varchar_data_type( 1024 ),
      );
 
 $class->set_primary_key( 'form_id', 'name' );

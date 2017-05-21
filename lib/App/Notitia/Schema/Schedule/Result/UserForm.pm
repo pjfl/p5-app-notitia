@@ -5,7 +5,8 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent 'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( FALSE NUL SPC TRUE VARCHAR_MAX_SIZE );
-use App::Notitia::DataTypes qw( serial_data_type varchar_data_type );
+use App::Notitia::DataTypes qw( foreign_key_data_type serial_data_type
+                                varchar_data_type );
 use App::Notitia::Util      qw( from_json to_json );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -14,6 +15,7 @@ $class->table( 'user_form' );
 
 $class->add_columns
    ( id   => serial_data_type,
+     table_id => foreign_key_data_type,
      name => varchar_data_type( 64 ),
      uri_prefix => varchar_data_type( 64 ),
      partial_uri => varchar_data_type( 64 ),
@@ -30,6 +32,8 @@ $class->add_columns
 $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'name' ] );
+
+$class->belongs_to( table => "${result}::UserTable", 'table_id' );
 
 $class->has_many( fields => "${result}::UserField", 'form_id' );
 
@@ -74,6 +78,7 @@ sub validation_attributes {
       constraints    => {
          name        => { max_length => 64, min_length => 3, },
          notes       => { max_length => VARCHAR_MAX_SIZE(), min_length => 0 },
+         template    => { max_length => 64, min_length => 3, },
       },
       fields         => {
          name        => {
@@ -81,6 +86,8 @@ sub validation_attributes {
             filters  => 'filterWhiteSpace filterLowerCase',
             validate => 'isMandatory isValidLength isValidIdentifier' },
          notes       => { validate => 'isValidLength isValidText' },
+         table_id    => { validate => 'isMandatory isValidInteger' },
+         template    => { validate => 'isValidLength isValidText' },
       },
       level => 8,
    };

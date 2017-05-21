@@ -424,6 +424,9 @@ msgstr "Contacts List"
 msgid "contacts_list_tip"
 msgstr "List contact information for current members"
 
+msgid "container_class"
+msgstr "Container Class"
+
 msgid "controller"
 msgstr "Controller"
 
@@ -976,6 +979,45 @@ msgstr "First &nbsp;…&nbsp;"
 msgid "first_page_tip"
 msgstr "Goto page 1"
 
+msgid "form_defn_link"
+msgstr "Form Definition"
+
+msgid "form_defn_tip"
+msgstr "Edit this form definition"
+
+msgid "form_defn_list_heading_0"
+msgstr "Form Name"
+
+msgid "form_defn_list_link"
+msgstr "Form Definitions"
+
+msgid "form_defn_list_tip"
+msgstr "Manage the list of user defined forms"
+
+msgid "form_defn_list_title"
+msgstr "Form Definitions"
+
+msgid "form_list_heading_0"
+msgstr "Form Name"
+
+msgid "form_list_link"
+msgstr "Forms List"
+
+msgid "form_list_tip"
+msgstr "Forms that can be filled in by users of this application"
+
+msgid "form_list_title"
+msgstr "Submit User Forms"
+
+msgid "form_preview_link"
+msgstr "Preview"
+
+msgid "form_preview_tip"
+msgstr "Take a sneeky peek at this magnificent form"
+
+msgid "form_preview_title"
+msgstr "[_1] Form Preview"
+
 msgid "fund_raiser"
 msgstr "Fund Raiser"
 
@@ -1183,6 +1225,9 @@ msgstr "List, create, and update call records leading to package delivery"
 msgid "journeys_title"
 msgstr "Deliveries"
 
+msgid "label_class"
+msgstr "Label Class"
+
 msgid "last_page_link"
 msgstr "&nbsp;…&nbsp;Last"
 
@@ -1275,6 +1320,15 @@ msgstr "Login to the application"
 
 msgid "login_title"
 msgstr "Please Login"
+
+msgid "logo_href"
+msgstr "Logo URI"
+
+msgid "logo_path"
+msgstr "Logo Path"
+
+msgid "logo_text"
+msgstr "Logo Alt. Text"
 
 msgid "logo_tip"
 msgstr "[_1] home page"
@@ -2148,6 +2202,12 @@ msgstr "Subscribed SMS"
 msgid "subscription"
 msgstr "Subscription"
 
+msgid "table_id"
+msgstr "User Table"
+
+msgid "title"
+msgstr "Title"
+
 msgid "toggle_status_tip"
 msgstr "Toggle the enabled / disabled status of this event control"
 
@@ -2457,17 +2517,8 @@ msgstr "Add Form"
 msgid "user_form_create_tip"
 msgstr "Create a user defined form"
 
-msgid "user_form_list_heading_0"
-msgstr "Form Name"
-
-msgid "user_form_list_link"
-msgstr "User Defined Forms"
-
-msgid "user_form_list_tip"
-msgstr "Manage the list of user defined forms"
-
-msgid "user_form_list_title"
-msgstr "User Defined Forms"
+msgid "user_form_fill_tip"
+msgstr "Fill in and submit this form"
 
 msgid "user_form_name"
 msgstr "Form Name"
@@ -2477,6 +2528,9 @@ msgstr "Description"
 
 msgid "user_form_title"
 msgstr "User Defined Form"
+
+msgid "user_forms_management_heading"
+msgstr "User Forms"
 
 msgid "user_slots_heading_0"
 msgstr "Slot Link"
@@ -2503,13 +2557,13 @@ msgid "user_table_list_heading_0"
 msgstr "Table Name"
 
 msgid "user_table_list_link"
-msgstr "User Defined Tables"
+msgstr "Table Definitions"
 
 msgid "user_table_list_tip"
 msgstr "Manage the list of user defined tables"
 
 msgid "user_table_list_title"
-msgstr "User Defined Tables"
+msgstr "Table Definitions"
 
 msgid "user_table_name"
 msgstr "Table Name"

@@ -9,7 +9,7 @@ roles:
 Hello [% first_name %],
 
 A password reset request has been made for [% username %]@[% app_name %].
-If this was not made by you please contact the adminstrators. If you did
+If this was not made by you please contact the administrators. If you did
 request a password reset, your machine generated password will be;
 
 User name: [% username %]<br/>

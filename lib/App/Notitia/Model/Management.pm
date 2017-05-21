@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE HASH_CHAR NUL PIPE_SEP SPC TRUE );
-use App::Notitia::DOM       qw( new_container p_js p_link p_list
+use App::Notitia::DOM       qw( new_container p_cell p_item p_js p_link p_list
                                 p_row p_table );
 use App::Notitia::Util      qw( add_dummies build_navigation build_tree
                                 dialog_anchor link_options locm
@@ -33,6 +33,8 @@ register_action_paths
    'manage/dialog' => 'management-dialog',
    'manage/template_view' => 'email-template',
    'manage/template_list' => 'email-templates',
+   'manage/form_list' => 'forms',
+   'manage/form_view' => 'form',
    'manage/index'  => 'management-index';
 
 # Construction
@@ -51,6 +53,12 @@ around 'get_stash' => sub {
 
 my $_docs_cache = { _mtime => 0, };
 
+my $_form_list_headers = sub {
+   my $req = shift; my $header = 'form_list_heading';
+
+   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 0 ];
+};
+
 my $_template_list_headers = sub {
    my $req = shift; my $header = 'email_templates_heading';
 
@@ -63,6 +71,18 @@ my $_template_list_row = sub {
    return [ { value => $template },
             { value => $template->{subject} },
             { value => $template->{author} } ]
+};
+
+my $_form_list_cells = sub {
+   my ($self, $req, $form) = @_; my $cells = [];
+
+   my $args = [ $form->name ];
+   my $href = $req->uri_for_action( $self->moniker.'/form_view', $args );
+
+   p_item $cells, p_link {}, 'user_form_fill', $href, {
+      request => $req, value => $form->name };
+
+   return $cells;
 };
 
 my $_template_list_ops_links = sub {
@@ -106,6 +126,68 @@ sub delete_file_action : Role(editor) Role(person_manager) {
 
 sub dialog : Dialog Role(editor) Role(person_manager) {
    return $_[ 0 ]->get_dialog( $_[ 1 ] );
+}
+
+sub form_list : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $form = new_container { class => 'standard-form' };
+   my $page = {
+      forms    => [ $form ],
+      selected => 'form_list',
+      title    => locm $req, 'form_list_title'
+   };
+   my $table = p_table $form, { headers => $_form_list_headers->( $req ) };
+   my $form_rs = $self->schema->resultset( 'UserForm' );
+
+   p_row $table, [ map { $self->$_form_list_cells( $req, $_ ) } $form_rs->all ];
+
+   return $self->get_stash( $req, $page );
+}
+
+sub form_view : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $name    = $req->uri_params->( 0 );
+   my $preview = $req->query_params->( 'preview', { optional => TRUE } );
+   my $rs      = $self->schema->resultset( 'UserForm' );
+   my $form    = $rs->search( { name => $name } )->first
+      or throw 'User form [_1] not found', [ $name ];
+   my $href    = $req->uri_for_action( $self->moniker.'/form_view', [ $name ] );
+   my $form_0  = new_container "${name}-form", $href, { class => 'wide-form' };
+   my $page    = {
+      css      => $form->content( 'css' ),
+      forms    => [ $form_0 ],
+      preview  => $preview ? TRUE : FALSE,
+      selected => 'form_list',
+      template => [ $preview ? 'none' : '/menu', $form->template ],
+      title    => $form->content( 'title' ),
+   };
+   my $field_rs = $self->schema->resultset( 'UserField' );
+
+   for my $field ($field_rs->search( { form_id => $form->id }, {
+      order_by => 'order' } )->all) {
+      p_cell $form_0->{content}->{list}, {
+         class       => $field->class,
+         container_class => $field->container_class,
+         disabled    => $field->disabled,
+         fieldsize   => $field->fieldsize,
+         label       => $field->label // $field->name,
+         label_class => $field->label_class,
+         maxlength   => $field->maxlength,
+         name        => $field->name,
+         placeholder => $field->placeholder,
+         tip         => $field->tip ? make_tip( $req, $field->tip, [] ) : FALSE,
+         type        => $field->field_type,
+         value       => $field->value,
+      };
+   }
+
+   my $stash = $self->get_stash( $req, $page );
+
+   $preview and $stash->{navigation} = {};
+
+   return $stash;
 }
 
 sub index : Role(administrator) Role(address_viewer) Role(controller)
