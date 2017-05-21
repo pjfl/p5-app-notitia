@@ -324,7 +324,7 @@ my $_people_links = sub {
 };
 
 my $_people_ops_links = sub {
-   my ($self, $req, $page, $params, $pager) = @_; my $links = [];
+   my ($self, $req, $params, $page, $pager) = @_; my $links = [];
 
    my $moniker = $self->moniker; my $actionp = "${moniker}/people";
 
@@ -672,7 +672,7 @@ sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
    my $rs      =  $self->schema->resultset( 'Person' );
    my $people  =  $rs->search_for_people( $s_opts );
    my $links   =  $self->$_people_ops_links
-      ( $req, $page, $params, $people->pager );
+      ( $req, $params, $page, $people->pager );
 
    p_list $form, PIPE_SEP, $links, link_options 'right';
 

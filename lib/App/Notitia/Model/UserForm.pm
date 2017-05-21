@@ -457,8 +457,8 @@ sub form_defn_preview : Role(administrator) {
 sub form_defn_view : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $name    = $req->uri_params->( 0, { optional => TRUE } );
    my $actionp = $self->moniker.'/form_defn_view';
+   my $name    = $req->uri_params->( 0, { optional => TRUE } );
    my $href    = $req->uri_for_action( $actionp, [ $name ] );
    my $form_0  = new_container 'user-form', $href;
    my $page    = {

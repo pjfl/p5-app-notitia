@@ -79,27 +79,32 @@ my $_assigned_slots = sub {
 my $_list_from_stash = sub {
    my ($self, $stash) = @_;
 
-   $stash->{filter_column} or $stash->{role} or $stash->{shortcode}
+   my $f_col = $stash->{filter_column}; my $role = $stash->{role};
+   my $scode = $stash->{shortcode};     my $ss   = $stash->{status};
+
+   $f_col or $role or $scode
       or throw Unspecified, [ 'filter_column, role or shortcode' ];
 
-   my $ss        = $stash->{status};
-   my $opts      = { columns => [ 'email_address', 'mobile_phone' ] };
    my $person_rs = $self->schema->resultset( 'Person' );
+
+   if ($scode) {
+      my $person = $person_rs->find_by_shortcode( $scode );
+
+      return [ [ $person->label, $person ] ];
+   }
+
+   my $opts = { columns => [ 'email_address', 'mobile_phone' ] };
 
    $opts->{status} = $ss && $ss eq 'all' ? undef : $ss ? $ss : 'current';
 
-   if ($stash->{filter_column}) {
-      $opts->{filter} = $stash->{filter_column};
-      $opts->{pattern} = $stash->{filter_pattern};
-
-      return $person_rs->list_people( NUL, $opts );
+   if ($f_col) {
+      $opts->{filter_column } = $f_col;
+      $opts->{filter_pattern} = $stash->{filter_pattern};
    }
 
-   $stash->{role} and return $person_rs->list_people( $stash->{role}, $opts );
+   $role and return $person_rs->list_people( $role, $opts );
 
-   my $person = $person_rs->find_by_shortcode( $stash->{shortcode} );
-
-   return [ [ $person->label, $person ] ];
+   return $person_rs->list_all_people( $opts );
 };
 
 my $_list_participents = sub {
@@ -113,12 +118,18 @@ my $_list_participents = sub {
 };
 
 my $_list_people = sub {
-   my $self = shift;
-   my $rs   = $self->schema->resultset( 'Person' );
-   my $opts = { columns => [ 'email_address', 'mobile_phone' ] };
-   my $role = $self->options->{role};
+   my $self  = shift;
+   my $rs    = $self->schema->resultset( 'Person' );
+   my $opts  = { columns => [ 'email_address', 'mobile_phone' ] };
+   my $f_col = $self->options->{filter_column};
+   my $role  = $self->options->{role};
 
    $self->options->{status} and $opts->{status} = $self->options->{status};
+
+   if ($f_col) {
+      $opts->{filter_column } = $f_col;
+      $opts->{filter_pattern} = $self->options->{filter_pattern};
+   }
 
    return $role ? $rs->list_people( $role, $opts )
                 : $rs->list_all_people( $opts );
