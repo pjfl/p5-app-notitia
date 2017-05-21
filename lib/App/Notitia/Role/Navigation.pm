@@ -644,11 +644,11 @@ sub management_navigation_links {
    $self->$_allowed( $req, 'manage/template_list' )
       and $self->$_emails_links( $req, $page, $nav );
 
-   $self->$_allowed( $req, 'manage/form_view' )
-      and $self->$_forms_links( $req, $page, $nav );
-
    $self->$_people_links( $req, $page, $nav );
    $self->$_report_links( $req, $page, $nav );
+
+   $self->$_allowed( $req, 'manage/form_view' )
+      and $self->$_forms_links( $req, $page, $nav );
 
    $self->$_allowed( $req, 'asset/vehicles' )
       and $self->$_vehicle_links( $req, $page, $nav );

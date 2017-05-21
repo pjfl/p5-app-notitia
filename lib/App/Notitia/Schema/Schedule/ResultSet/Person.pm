@@ -192,10 +192,20 @@ sub search_for_people {
 
    $opts->{columns} and push @{ $columns }, @{ delete $opts->{columns} };
 
-   if (my $col = delete $opts->{filter_column}
-       and my $pattern = delete $opts->{filter_pattern}) {
+   my $col = delete $opts->{filter_column};
+
+   if (my $pattern = delete $opts->{filter_pattern} and $col) {
       $pattern =~ s{ [\*] }{%}gmx; $pattern =~ s{ [\?] }{_}gmx;
-      $col ne 'none' and $where->{ $col } = { '-like' => $pattern };
+
+      if ($col eq 'joined' or $col eq 'resigned') {
+         my $parser = $self->result_source->schema->datetime_parser;
+
+         $pattern = $parser->format_datetime( $pattern );
+         $where->{ $col } = { '=' => $pattern };
+      }
+      elsif ($col ne 'none') {
+         $where->{ $col } = { '-like' => $pattern };
+      }
    }
 
    if (my $type = delete $opts->{type}) {

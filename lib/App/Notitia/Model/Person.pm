@@ -145,12 +145,17 @@ my $_people_order = sub {
 my $_people_search_opts = sub {
    my ($req, $params) = @_;
 
+   my $column  = $params->{filter_column } // 'none';
+   my $pattern = $params->{filter_pattern} // NUL;
+
+   ($column eq 'joined' or $column eq 'resigned') and $pattern = to_dt $pattern;
+
    return  {
       columns  => [ 'badge_id' ],
-      filter_column => $params->{filter_column} // 'none',
+      filter_column => $column,
       order_by => $_people_order->( $params ),
       page     => delete $params->{page} // 1,
-      filter_pattern => $params->{filter_pattern} // NUL,
+      filter_pattern => $pattern,
       role     => $params->{role},
       rows     => $req->session->rows_per_page,
       status   => $params->{status},
