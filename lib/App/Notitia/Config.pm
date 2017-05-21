@@ -330,7 +330,7 @@ has 'template_dir'    => is => 'ro',   isa => Directory, coerce => TRUE,
    builder            => sub { $_[ 0 ]->vardir->catdir( 'templates' ) };
 
 has 'themes'          => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
-   builder            => sub { [ qw( dark light ) ] };
+   builder            => sub { [ qw( dark light grey ) ] };
 
 has 'time_zone'       => is => 'ro',   isa => NonEmptySimpleStr,
    default            => 'Europe/London';
