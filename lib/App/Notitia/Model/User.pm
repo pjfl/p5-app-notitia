@@ -203,11 +203,13 @@ my $_subs_lists = sub {
 };
 
 my $_themes_list = sub {
-   my ($self, $req) = @_; my $selected = $req->session->theme;
+   my ($self, $req) = @_;
+
+   my $conf = $self->config; my $selected = $req->session->theme;
 
    return [ map { [ ucfirst $_, $_, {
       selected => $_ eq $selected ? TRUE : FALSE } ] }
-            @{ $self->config->themes } ];
+            @{ $conf->themes->{ $conf->skin } } ];
 };
 
 my $_update_session = sub {

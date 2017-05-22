@@ -16,6 +16,10 @@ use Moo;
 extends q(Class::Usul::Config::Programs);
 
 # Private functions
+my $_path2skin = sub {
+   return (split m{ [\-] }mx, (shift)->basename( '.css' ))[ 0 ];
+};
+
 my $_path2theme = sub {
    return (split m{ [\-] }mx, (shift)->basename( '.css' ))[ 1 ];
 };
@@ -77,11 +81,15 @@ my $_build_sms_attributes = sub {
 };
 
 my $_build_themes = sub {
-   my $self = shift;
-   my $dir  = $self->root->catdir( $self->css );
-   my $list = $dir->filter( sub { m{ \.css \z }mx } );
+   my $self   = shift;
+   my $dir    = $self->root->catdir( $self->css );
+   my $themes = {};
 
-   return [ map { $_path2theme->( $_ ) } $list->all ];
+   for ($dir->filter( sub { m{ \.css \z }mx } )->all) {
+      push @{ $themes->{ $_path2skin->( $_ ) } //= [] }, $_path2theme->( $_ );
+   }
+
+   return $themes;
 };
 
 my $_build_transport_attr = sub {
@@ -341,7 +349,8 @@ has 'stash_attr'      => is => 'lazy', isa => HashRef[ArrayRef],
 has 'template_dir'    => is => 'ro',   isa => Directory, coerce => TRUE,
    builder            => sub { $_[ 0 ]->vardir->catdir( 'templates' ) };
 
-has 'themes'          => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
+has 'themes'          => is => 'ro',
+   isa                => HashRef[ArrayRef[NonEmptySimpleStr]],
    builder            => $_build_themes;
 
 has 'time_zone'       => is => 'ro',   isa => NonEmptySimpleStr,

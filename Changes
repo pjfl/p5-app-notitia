@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Makes themes list skin dependent
           - Fixes #188. Adds filter controls to people list
           - Fixes #179. Adds where in hell feature
           - Fixes #168. Moves the email template list

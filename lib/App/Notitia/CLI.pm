@@ -191,11 +191,12 @@ sub housekeeping : method {
 
 sub make_css : method {
    my $self = shift;
+   my $skin = $self->skin;
    my $conf = $self->config;
    my $cssd = $conf->root->catdir( $conf->css );
 
    if (my $file = $self->next_argv) { $self->$_write_theme( $cssd, $file ) }
-   else { $self->$_write_theme( $cssd, $_ ) for (@{ $conf->themes }) }
+   else { $self->$_write_theme( $cssd, $_ ) for (@{ $conf->themes->{ $skin } })}
 
    return OK;
 }
