@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+0.13.1    2017-05-22 21:27:48
           - Makes themes list skin dependent
           - Fixes #188. Adds filter controls to people list
           - Fixes #179. Adds where in hell feature

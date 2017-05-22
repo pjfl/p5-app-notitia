@@ -172,6 +172,7 @@ var/docs/en/99_help/02_Menu_Help/07_calls/04_Incidents.md
 var/docs/en/99_help/02_Menu_Help/07_calls/06_Customers_and_Locations.md
 var/less/hyde/dark.less
 var/less/hyde/font-awesome.less
+var/less/hyde/grey.less
 var/less/hyde/gridism.less
 var/less/hyde/light.less
 var/less/hyde/mixins.less
@@ -180,6 +181,7 @@ var/less/hyde/pygments.less
 var/less/hyde/style.less
 var/locale/en/notitia.po
 var/root/css/hyde-dark.css
+var/root/css/hyde-grey.css
 var/root/css/hyde-light.css
 var/root/img/favicon.ico
 var/root/img/hyde/article-footer.png
@@ -198,6 +200,7 @@ var/share/App-Notitia-Schema-Schedule-003-Role.json
 var/templates/custom/day-table.tt
 var/templates/custom/month-table.tt
 var/templates/custom/two-week-table.tt
+var/templates/custom/user-defined-form.tt
 var/templates/custom/week-table.tt
 var/templates/emails/add_course_email.md
 var/templates/emails/application_upgraded_email.md
