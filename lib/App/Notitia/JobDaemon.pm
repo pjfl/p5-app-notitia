@@ -8,7 +8,7 @@ use App::Notitia::Util     qw( now_dt );
 use Class::Usul::Constants qw( COMMA EXCEPTION_CLASS FALSE NUL OK SPC TRUE );
 use Class::Usul::Functions qw( emit get_user is_member throw );
 use Class::Usul::Time      qw( nap time2str );
-use Class::Usul::Types     qw( NonEmptySimpleStr Object PositiveInt );
+use Class::Usul::Types     qw( NonEmptySimpleStr Object PositiveInt Str );
 use Daemon::Control;
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( Path );
@@ -130,8 +130,8 @@ has '_daemon_pid' => is => 'lazy', isa => PositiveInt, builder => sub {
    return (($path->exists && !$path->empty ? $path->getline : 0) // 0) },
    clearer => TRUE;
 
-has '_last_run_file' => is => 'lazy', isa => Path, builder => sub {
-   my $file = $_[ 0 ]->config->name.'_last_run';
+has '_last_run_path' => is => 'lazy', isa => Path, builder => sub {
+   my $file = $_[ 0 ]->_program_name.'.last_run';
 
    return $_[ 0 ]->config->tempdir->catfile( $file )->chomp->lock };
 
@@ -144,10 +144,17 @@ has '_program_name' => is => 'lazy', isa => NonEmptySimpleStr, builder => sub {
    return $_[ 0 ]->config->prefix.'-'.$_[ 0 ]->config->name };
 
 has '_socket_path' => is => 'lazy', isa => Path, builder => sub {
-   return $_[ 0 ]->config->tempdir->catfile( $_[ 0 ]->config->name.'.sock' ) };
+   my $file = $_[ 0 ]->_program_name.'.sock';
+
+   return $_[ 0 ]->config->tempdir->catfile( $file ) };
 
 has '_write_socket' => is => 'lazy', isa => Object, clearer => TRUE,
    builder => $_build_write_socket, init_arg => 'write_socket';
+
+has '_version_path' => is => 'lazy', isa => Path, builder => sub {
+   my $file = $_[ 0 ]->_program_name.'.version';
+
+   return $_[ 0 ]->config->tempdir->catfile( $file )->chomp->lock };
 
 # Construction
 around 'run' => sub {
@@ -299,8 +306,10 @@ my $_daemon_loop = sub {
          }
          catch { $self->log->error( $_ ) };
 
-         $self->_last_run_file->println( $job->label );
-         $self->_last_run_file->close;
+         my $line = time2str( '%Y-%m-%d %H:%M:%S' ).SPC.$job->label;
+
+         $self->_last_run_path->println( $line );
+         $self->_last_run_path->close;
       }
    }
 
@@ -340,11 +349,7 @@ my $_rundaemon = sub {
 };
 
 my $_write_version = sub {
-   my $self = shift;
-
-   $self->config->tempdir->catfile( 'jobdaemon_version' )->println( $VERSION );
-
-   return TRUE;
+   my $self = shift; $self->_version_path->println( $VERSION ); return TRUE;
 };
 
 # Public methods
@@ -379,14 +384,12 @@ sub is_running {
 }
 
 sub last_run {
-   my $self = shift; my $last_run = $self->_last_run_file;
+   my $self = shift; my $last_run = $self->_last_run_path;
 
    $last_run->exists or return 'Never';
 
-   my $r = time2str( '%Y-%m-%d %H:%M:%S', $last_run->stat->{mtime} ).SPC
-         . $last_run->getline;
+   my $r = $last_run->getline; $last_run->close;
 
-   $last_run->close;
    return $r;
 }
 
@@ -404,9 +407,8 @@ sub rundaemon : method {
 
 sub running_version {
    my $self = shift;
-   my $file = $self->config->tempdir->catfile( 'jobdaemon_version' )->chomp;
 
-   my $version; try { $version = $file->getline } catch {};
+   my $version; try { $version = $self->_version_path->getline } catch {};
 
    return $version;
 }
