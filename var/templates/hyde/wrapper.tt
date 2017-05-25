@@ -17,7 +17,7 @@
 [% IF page.css -%]
    <style>[% page.css %]</style>
 [% END -%]
-[% IF links.rss_uri -%]
+[% IF page.has_rss_feed -%]
    <link href="[% links.rss_uri %]" rel="alternate" title="RSS"
          type="application/rss+xml">
 [% END -%]

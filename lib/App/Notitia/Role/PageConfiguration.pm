@@ -112,6 +112,8 @@ around 'initialise_stash' => sub {
    $links->{cdnjs   } = $conf->cdnjs;
    $links->{base_uri} = $req->base;
    $links->{req_uri } = $req->uri;
+   $links->{rss_uri } = $req->uri_for_action( $conf->places->{rss_feed}, {
+      extension => '.xml' } );
 
    return $stash;
 };

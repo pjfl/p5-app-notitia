@@ -252,6 +252,7 @@ has 'places'          => is => 'ro',   isa => HashRef[NonEmptySimpleStr],
       password        => 'user/change_password',
       profile         => 'user/profile',
       rota            => 'month/month_rota',
+      rss_feed        => 'posts/rss_feed',
       search          => 'docs/search',
       upload          => 'docs/upload', } };
 

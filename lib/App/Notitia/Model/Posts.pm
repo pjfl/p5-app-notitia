@@ -40,17 +40,6 @@ around 'get_stash' => sub {
    return $stash;
 };
 
-around 'initialise_stash' => sub {
-   my ($orig, $self, $req, @args) = @_;
-
-   my $stash = $orig->( $self, $req, @args ); my $links = $stash->{links};
-
-   $links->{rss_uri}
-      = $req->uri_for_action( 'posts/rss_feed', { extension => '.xml' } );
-
-   return $stash;
-};
-
 around 'load_page' => sub {
    my ($orig, $self, $req, @args) = @_;
 
