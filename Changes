@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #190. Can create users with just first and last name
           - Fixes #191. Return page after certification update
           - Adds feed icon to events screens
           - Consolidates file names in the tmp directory

@@ -465,6 +465,8 @@ sub insert {
    my $last    = lc $columns->{last_name}; $last =~ s{[^a-z]}{}gmx;
 
    $columns->{name} or $columns->{name} = "${first}.${last}";
+   $columns->{email_address} or $columns->{email_address}
+      = $columns->{name}.'@example.com';
    $columns->{shortcode} or $columns->{shortcode}
       = $self->$_new_shortcode( $first, $last );
    $self->set_inflated_columns( $columns );
