@@ -2033,6 +2033,9 @@ msgstr "Create a rota type record"
 msgid "route"
 msgstr "Route"
 
+msgid "rss_feed_tip"
+msgstr "Download the RSS feed file for the event news stream"
+
 msgid "running_v"
 msgstr "Running Version"
 

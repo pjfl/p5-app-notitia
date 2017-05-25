@@ -614,6 +614,7 @@ sub event : Role(event_manager) {
    my $page       =  {
       first_field => 'name',
       forms       => [ $form ],
+      has_rss_feed => TRUE,
       selected    => $disabled ? 'previous_events' : 'current_events',
       title       => loc $req, "event_${action}_heading" };
    my $event      =  $self->$_maybe_find_event( $uri );
@@ -669,6 +670,7 @@ sub event_summary : Role(any) {
    my $opts    =  { optional => TRUE };
    my $page    =  {
       forms    => [ $form ],
+      has_rss_feed => TRUE,
       selected => $event->event_type eq 'training' ? 'training_events'
                :  now_dt > $event->start_date ? 'previous_events'
                :  'current_events',
@@ -707,6 +709,7 @@ sub events : Role(any) {
                  :            'events_management';
    my $page      =  {
       forms      => [ $form ],
+      has_rss_feed => TRUE,
       selected   => $form_name,
       title      => loc $req, "${form_name}_heading" };
    my $links     =  $_events_ops_links->( $req, $moniker, $params, $pager );

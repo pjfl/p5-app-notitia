@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds feed icon to events screens
           - Consolidates file names in the tmp directory
 
 0.13.1    2017-05-22 21:27:48

@@ -60,6 +60,8 @@ around 'load_page' => sub {
    my $skin  = $req->session->skin || $self->config->skin;
    my $plate = $type eq 'folder' ? 'posts-index' : 'documentation';
 
+   $page->{has_rss_feed} = TRUE;
+
    $ids[ 0 ] and $ids[ 0 ] eq 'index' and @ids = ();
    $page->{wanted_depth} = () = @ids;
    $page->{wanted      } = join '/', $self->config->posts, @ids;

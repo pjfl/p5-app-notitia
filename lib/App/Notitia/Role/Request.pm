@@ -2,6 +2,7 @@ package App::Notitia::Role::Request;
 
 use namespace::autoclean;
 
+use Class::Usul::Functions       qw( is_hashref );
 use Class::Usul::Types           qw( Object );
 use Web::ComposableRequest::Util qw( add_config_role new_uri );
 use Moo::Role;
@@ -17,6 +18,12 @@ sub uri_for_action {
    my ($self, $action, @args) = @_;
 
    my $uri = $self->_config->action_path2uri->( $action ) // $action;
+
+   if (is_hashref $args[ 0 ] and exists $args[ 0 ]->{extension}) {
+      my $opts = shift @args;
+
+      $uri .= delete $opts->{extension}; push @args, $opts;
+   }
 
    $uri =~ m{ \* }mx or return $self->uri_for( $uri, @args );
 

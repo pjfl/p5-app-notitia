@@ -336,6 +336,7 @@ sub p_navlink ($$$;$) {
       class => $opts->{class} // NUL,
       container_class => $opts->{container_class} // NUL,
       depth => $opts->{depth} // 1,
+      download => $opts->{download},
       hint  => $hint,
       href  => $href,
       name  => $name,
