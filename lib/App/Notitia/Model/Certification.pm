@@ -371,11 +371,13 @@ sub update_certification_action : Role(person_manager) Role(training_manager) {
 
    $self->send_event( $req, $message );
 
-   my $key  = 'Certification [_1] for [_2] updated by [_3]';
+   my $actionp  = $self->moniker.'/certifications';
+   my $location = $req->uri_for_action( $actionp, [ $scode ] );
+   my $key      = 'Certification [_1] for [_2] updated by [_3]';
 
    $message = [ to_msg $key, $type, $scode, $req->session->user_label ];
 
-   return { redirect => { location => $req->uri, message => $message } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub upload_document : Dialog Role(person_manager) Role(training_manager) {

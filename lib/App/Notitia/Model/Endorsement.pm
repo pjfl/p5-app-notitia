@@ -263,11 +263,13 @@ sub update_endorsement_action : Role(person_manager) {
 
    $self->send_event( $req, $message );
 
-   my $key = 'Endorsement [_1] for [_2] updated by [_3]';
+   my $actionp  = $self->moniker.'/endorsements';
+   my $location = $req->uri_for_action( $actionp, [ $scode ] );
+   my $key      = 'Endorsement [_1] for [_2] updated by [_3]';
 
    $message = [ to_msg $key, $uri, $scode, $req->session->user_label ];
 
-   return { redirect => { location => $req->uri, message => $message } };
+   return { redirect => { location => $location, message => $message } };
 }
 
 1;
