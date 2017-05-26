@@ -30,6 +30,7 @@ around 'to_psgi_app' => sub {
    return builder {
       enable 'ContentLength';
       enable 'FixMissingBodyInRedirect';
+      enable 'Options', allowed => [ qw( DELETE GET POST PUT HEAD ) ];
       enable 'ConditionalGET';
       enable_if { defined $_[ 0 ]->{HTTP_X_FORWARDED_FOR} }
          'Plack::Middleware::ReverseProxy';

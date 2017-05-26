@@ -36,6 +36,7 @@ requires "Plack::Middleware::Debug" => "0.16";
 requires "Plack::Middleware::Deflater" => "0.08";
 requires "Plack::Middleware::FixMissingBodyInRedirect" => "0.12";
 requires "Plack::Middleware::LogErrors" => "0.001";
+requires "Plack::Middleware::Options" => "0.01";
 requires "Plack::Middleware::ReverseProxy" => "0.15";
 requires "Plack::Middleware::Session" => "0.21";
 requires "Starman" => "0.4014";

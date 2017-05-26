@@ -58,6 +58,7 @@ my $prereqs  = {
     'Plack::Middleware::Deflater' => '0.08',
     'Plack::Middleware::FixMissingBodyInRedirect' => '0.12',
     'Plack::Middleware::LogErrors' => '0.001',
+    'Plack::Middleware::Options' => '0.01',
     'Plack::Middleware::ReverseProxy' => '0.15',
     'Plack::Middleware::Session' => '0.21',
     'Starman' => '0.4014',
