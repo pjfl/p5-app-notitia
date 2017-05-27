@@ -81,7 +81,9 @@ my $_load_template = sub {
 };
 
 my $_stdio_file = sub {
-   my ($self, $extn, $name) = @_; $name ||= $self->config->name;
+   my ($self, $extn, $name) = @_; my $conf = $self->config;
+
+   $name ||= $conf->prefix.'-'.$conf->name;
 
    return $self->file->tempdir->catfile( "${name}.${extn}" );
 };
