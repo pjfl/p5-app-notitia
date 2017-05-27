@@ -149,9 +149,9 @@ my $page_link = sub {
 };
 
 my $sorted_keys = sub {
-   my $folder = shift; my $tree = $folder->{tree};
-
-   my $order = $folder->{reverse_sort} ? [ 1, 0 ] : [ 0, 1 ];
+   my $folder  = shift;
+   my $tree    = $folder->{tree};
+   my $order   = $folder->{reverse_sort} ? [ 1, 0 ] : [ 0, 1 ];
    my $compare = sub {
       $tree->{ $_[ $order->[ 0 ] ] }->{_order}
          <=> $tree->{ $_[ $order->[ 1 ] ] }->{_order}

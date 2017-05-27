@@ -349,7 +349,11 @@ my $_rundaemon = sub {
 };
 
 my $_write_version = sub {
-   my $self = shift; $self->_version_path->println( $VERSION ); return TRUE;
+   my $self = shift;
+
+   $self->_version_path->println( $VERSION ); $self->_version_path->close;
+
+   return TRUE;
 };
 
 # Public methods
@@ -408,7 +412,9 @@ sub rundaemon : method {
 sub running_version {
    my $self = shift;
 
-   my $version; try { $version = $self->_version_path->getline } catch {};
+   my $version; try {
+      $version = $self->_version_path->getline; $self->_version_path->close;
+   } catch {};
 
    return $version;
 }
