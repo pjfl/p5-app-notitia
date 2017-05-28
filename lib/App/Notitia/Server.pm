@@ -12,15 +12,15 @@ use HTTP::Status           qw( HTTP_FOUND );
 use Plack::Builder;
 use Web::Simple;
 
-has 'fs_cache' => is => 'lazy', isa => Object, builder => sub {
+# Private attributes
+has '_config_attr' => is => 'ro', isa => HashRef,
+   builder  => sub { { name => 'server' } }, init_arg => 'config';
+
+has '_fs_cache' => is => 'lazy', isa => Object, builder => sub {
    File::DataClass::Schema->new( {
       builder          => $_[ 0 ],
       cache_attributes => { namespace => $_[ 0 ]->config->prefix.'-state' },
       storage_class    => 'Any' } ) };
-
-# Private attributes
-has '_config_attr' => is => 'ro', isa => HashRef,
-   builder  => sub { { name => 'server' } }, init_arg => 'config';
 
 has '_usul' => is => 'lazy', isa => Plinth,
    builder  => sub { Class::Usul->new( enhance $_[ 0 ]->_config_attr ) },
@@ -78,13 +78,22 @@ sub BUILD {
    return;
 }
 
-sub build_factory_args {
-   my $self = shift; my $fs_cache = $self->fs_cache;
+around '_build_factory_args' => sub {
+   my ($orig, $self) = @_;
+
+   my $code      = $orig->( $self );
+   my $fs_cache  = $self->_fs_cache;
+   my $localiser = sub { $self->l10n->localize( @_ ) };
 
    return sub {
-      my ($self, $attr) = @_; $attr->{fs_cache} = $fs_cache; return $attr;
+      my ($self, $attr) = @_; $attr = $code->( $self, $attr );
+
+      $attr->{fs_cache } = $fs_cache;
+      $attr->{localiser} = $localiser;
+
+      return $attr;
    };
-}
+};
 
 1;
 
