@@ -459,11 +459,12 @@ sub should_upgrade : method {
 
    $self->params->{should_upgrade} = [ { expected_rv => 1 } ];
 
-   qv( $candidate ) <= $self->config->appclass->VERSION
+   $candidate =~ m{ \A v \d+ \. \d+ }mx
+      and qv( $candidate ) <= $self->config->appclass->VERSION
       and $self->warning( "Version ${candidate} is not newer than current" )
       and return FAILED;
 
-   $self->info( "Upgrade to version ${candidate} is possible" );
+   $self->info( "Upgrade to ${candidate} is possible" );
    return OK;
 }
 
