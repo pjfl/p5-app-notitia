@@ -286,8 +286,11 @@ sub tree_root {
 
       $self->log->info( "Tree building ${dir} ${PID}" );
       $_docs_cache = build_tree( $self->type_map, $dir->filter( $filter ) );
-      $_docs_cache->{_mtime} > $mtime and $mtime = $_docs_cache->{_mtime};
-      $self->docs_mtime_cache( $req, $_docs_cache->{_mtime} = $mtime );
+
+      if ($_docs_cache->{_mtime} > $mtime) {
+         $self->docs_mtime_cache( $req, $_docs_cache->{_mtime} );
+      }
+      else { $_docs_cache->{_mtime} = $mtime }
    }
 
    return $_docs_cache;

@@ -213,7 +213,7 @@ sub create_file {
    my $path     = $new_node->{path};
 
    $path->assert_filepath->println( $content )->close;
-   $self->invalidate_docs_cache( $path->stat->{mtime} );
+   $self->invalidate_docs_cache( $req, $path->stat->{mtime} );
 
    my $who      = $req->session->user_label;
    my $rel_path = $path->abs2rel( $conf->docs_root );
@@ -233,7 +233,7 @@ sub delete_file {
    my $path = $node->{path};
 
    $path->exists and $path->unlink; $_prune->( $path );
-   $self->invalidate_docs_cache;
+   $self->invalidate_docs_cache( $req );
 
    my $location = $self->base_uri( $req );
    my $who      = $req->session->user_label;
@@ -302,7 +302,7 @@ sub rename_file {
 
    $new_node->{path}->assert_filepath;
    $node->{path}->close->move( $new_node->{path} ); $_prune->( $node->{path} );
-   $self->invalidate_docs_cache;
+   $self->invalidate_docs_cache( $req );
 
    my $who      = $req->session->user_label;
    my $rel_path = $node->{path}->abs2rel( $conf->docs_root );
@@ -323,7 +323,7 @@ sub save_file {
       $content  =~ s{ \r\n }{\n}gmx; $content =~ s{ \s+ \z }{}mx;
    my $path     =  $node->{path}; $path->println( $content );
 
-   $path->close; $self->invalidate_docs_cache( $path->stat->{mtime} );
+   $path->close; $self->invalidate_docs_cache( $req, $path->stat->{mtime} );
 
    my $who      =  $req->session->user_label;
    my $rel_path =  $path->abs2rel( $self->config->docs_root );

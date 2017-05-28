@@ -166,8 +166,8 @@ sub tree_root {
          my $mtime = mtime $lcache; $mtime > $max_mtime and $max_mtime = $mtime;
       }
 
-      $mtime > $max_mtime and $max_mtime = $mtime;
-      $self->docs_mtime_cache( $req, $_posts_cache->{_mtime} = $max_mtime );
+      if ($max_mtime > $mtime) { $self->docs_mtime_cache( $req, $max_mtime ) }
+      else { $_posts_cache->{_mtime} = $mtime }
    }
 
    return $_posts_cache;

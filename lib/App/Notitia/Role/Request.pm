@@ -64,7 +64,7 @@ sub state_cache {
 
    my $storage = $self->fs_cache->storage; my $path = $self->_state_cache_path;
 
-   return $storage->txn_do( $path, sub {
+   return $cache->{ $k } = $storage->txn_do( $path, sub {
       my ($cache) = $storage->read_file( $path, TRUE );
 
       $cache->{ $k } = $v; $storage->write_file( $path, $cache );
