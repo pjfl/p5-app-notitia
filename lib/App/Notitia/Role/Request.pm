@@ -60,9 +60,17 @@ sub state_cache {
    defined $k or return $cache;
    $self->_log->( { level => 'debug', message => "State cache key ${k}" } );
    defined $v or return $cache->{ $k };
-   $cache->{ $k } = $v;
-   $self->fs_cache->dump( { data => $cache, path => $self->_state_cache_path });
-   return $v;
+   $self->_log->( { level => 'debug', message => "State cache value ${v}" } );
+
+   my $storage = $self->fs_cache->storage; my $path = $self->_state_cache_path;
+
+   return $storage->txn_do( $path, sub {
+      my ($cache) = $storage->read_file( $path, TRUE );
+
+      $cache->{ $k } = $v; $storage->write_file( $path, $cache );
+
+      return $v;
+   } );
 }
 
 package App::Notitia::Role::Request::Config;

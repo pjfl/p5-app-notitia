@@ -788,7 +788,8 @@ sub new_request ($) {
    my $buildargs    = sub {
       my ($self, $attr) = @_;
 
-      $attr->{fs_cache} = Class::Usul::File->dataclass_schema;
+      $attr->{fs_cache} = Class::Usul::File->dataclass_schema( {
+         storage_class => 'JSON', } );
 
       return $attr;
    };

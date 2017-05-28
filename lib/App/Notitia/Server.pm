@@ -20,7 +20,7 @@ has '_fs_cache' => is => 'lazy', isa => Object, builder => sub {
    File::DataClass::Schema->new( {
       builder          => $_[ 0 ],
       cache_attributes => { namespace => $_[ 0 ]->config->prefix.'-state' },
-      storage_class    => 'Any' } ) };
+      storage_class    => 'JSON' } ) };
 
 has '_usul' => is => 'lazy', isa => Plinth,
    builder  => sub { Class::Usul->new( enhance $_[ 0 ]->_config_attr ) },
