@@ -92,7 +92,7 @@ my $_format_page = sub {
 sub get_rss_feed {
    my ($self, $req) = @_; my $locale = $req->locale;
 
-   my $tree = $self->localised_tree( $locale )
+   my $tree = $self->localised_tree( $req, $locale )
       or throw 'Locale [_1] has no document tree', [ $locale ];
    my $iter = iterator $tree;
 

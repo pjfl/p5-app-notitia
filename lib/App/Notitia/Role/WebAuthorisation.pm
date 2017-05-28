@@ -9,16 +9,16 @@ use Scalar::Util            qw( blessed );
 use Unexpected::Functions   qw( AuthenticationRequired );
 use Moo::Role;
 
-requires qw( components config execute state_cache );
+requires qw( components config execute );
 
 # Private functions
 my $_list_roles = sub {
    my ($self, $req) = @_; my $session = $req->session; my $person;
 
    my $roles = $session->roles;
-   my $roles_mtime = $self->state_cache( 'roles_mtime' ) // 0;
+   my $roles_mtime = $req->state_cache( 'roles_mtime' ) // 0;
 
-   $roles_mtime or $self->state_cache( 'roles_mtime', time );
+   $roles_mtime or $req->state_cache( 'roles_mtime', time );
    $session->roles_mtime < $roles_mtime and $roles = [];
 
    unless (defined $roles->[ 0 ]) {

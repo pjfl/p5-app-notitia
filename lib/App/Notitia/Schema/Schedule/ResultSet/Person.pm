@@ -126,13 +126,12 @@ sub list_people {
 }
 
 sub max_badge_id {
-   my ($self, $v) = @_;
+   my ($self, $req, $v) = @_;
 
    my $schema = $self->result_source->schema;
-   my $max    = $schema->application->state_cache( 'badge_id' ) // 0;
+   my $max    = $req->state_cache( 'badge_id' ) // 0;
 
-   defined $v and $v > $max
-       and return $schema->application->state_cache( 'badge_id', $v );
+   defined $v and $v > $max and return $req->state_cache( 'badge_id', $v );
 
    $max and return $max;
 
@@ -146,11 +145,11 @@ sub max_badge_id {
 
    $max = $self->search( $where )->get_column( 'badge_id' )->max;
 
-   return $schema->application->state_cache( 'badge_id', $max );
+   return $req->state_cache( 'badge_id', $max );
 }
 
 sub next_badge_id {
-   return $_[ 0 ]->max_badge_id( $_[ 0 ]->max_badge_id + 1 );
+   return $_[ 0 ]->max_badge_id( $_[ 1 ], $_[ 0 ]->max_badge_id( $_[ 1 ] ) + 1);
 }
 
 sub search_by_period {

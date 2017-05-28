@@ -80,9 +80,9 @@ my $_find_first_url = sub {
 };
 
 my $_docs_url = sub {
-   my ($self, $locale) = @_;
+   my ($self, $req, $locale) = @_;
 
-   my $tree  = $self->localised_tree( $locale )
+   my $tree  = $self->localised_tree( $req, $locale )
       or throw 'Locale [_1] has no document tree', [ $locale ];
    my $tuple = $_docs_url_cache->{ $locale };
    my $mtime = mtime $tree;
@@ -117,7 +117,7 @@ sub delete_file_action : Role(editor) {
 sub docs_url {
    return $_[ 1 ]->uri_for_action
       (   $_[ 0 ]->moniker.'/page',
-        [ $_[ 0 ]->$_docs_url( $_[ 2 ] // $_[ 1 ]->locale ) ] );
+        [ $_[ 0 ]->$_docs_url( $_[ 1 ], $_[ 2 ] // $_[ 1 ]->locale ) ] );
 }
 
 sub dialog : Dialog Role(any) {
@@ -136,12 +136,8 @@ sub index : Role(anon) {
    return { redirect => { location => $location } };
 }
 
-sub locales {
-   return grep { first_char $_ ne '_' } keys %{ $_[ 0 ]->tree_root };
-}
-
 sub localised_tree {
-   return localise_tree $_[ 0 ]->tree_root, $_[ 1 ];
+   return localise_tree $_[ 0 ]->tree_root( $_[ 1 ] ), $_[ 2 ];
 }
 
 sub nav_label {
@@ -173,7 +169,7 @@ sub search : Role(any) {
 }
 
 sub tree_root {
-   my $self = shift; my $mtime = $self->docs_mtime_cache;
+   my ($self, $req) = @_; my $mtime = $self->docs_mtime_cache( $req );
 
    if ($mtime == 0 or $mtime > $_docs_cache->{_mtime}) {
       my $conf     = $self->config;
@@ -184,7 +180,7 @@ sub tree_root {
       $self->log->info( "Tree building ${dir} ${PID}" );
       $_docs_cache = build_tree( $self->type_map, $dir );
       $_docs_cache->{_mtime} > $mtime and $mtime = $_docs_cache->{_mtime};
-      $self->docs_mtime_cache( $_docs_cache->{_mtime} = $mtime );
+      $self->docs_mtime_cache( $req, $_docs_cache->{_mtime} = $mtime );
    }
 
    return $_docs_cache;

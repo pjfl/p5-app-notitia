@@ -252,7 +252,7 @@ my $_list_all_roles = sub {
 };
 
 my $_next_badge_id = sub {
-   return $_[ 0 ]->schema->resultset( 'Person' )->next_badge_id;
+   return $_[ 0 ]->schema->resultset( 'Person' )->next_badge_id( $_[ 1 ] );
 };
 
 my $_people_headers = sub {
@@ -407,7 +407,7 @@ my $_update_person_from_request = sub {
    $person->next_of_kin_id
       ( $_assert_not_self->( $person, $params->( 'next_of_kin', $opts ) ) );
    $person->badge_id and $person->badge_id eq 'next'
-      and $person->badge_id( $self->$_next_badge_id );
+      and $person->badge_id( $self->$_next_badge_id( $req ) );
    return;
 };
 

@@ -6,10 +6,17 @@ use App::Notitia::Util     qw( authenticated_only enhance );
 use Class::Usul;
 use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( ensure_class_loaded );
-use Class::Usul::Types     qw( HashRef Plinth );
+use Class::Usul::Types     qw( HashRef Object Plinth );
+use File::DataClass::Schema;
 use HTTP::Status           qw( HTTP_FOUND );
 use Plack::Builder;
 use Web::Simple;
+
+has 'fs_cache' => is => 'lazy', isa => Object, builder => sub {
+   File::DataClass::Schema->new( {
+      builder          => $_[ 0 ],
+      cache_attributes => { namespace => $_[ 0 ]->config->prefix.'-state' },
+      storage_class    => 'Any' } ) };
 
 # Private attributes
 has '_config_attr' => is => 'ro', isa => HashRef,
@@ -69,6 +76,14 @@ sub BUILD {
    $self->log->info( "${server} Server started ${info}" );
 
    return;
+}
+
+sub build_factory_args {
+   my $self = shift; my $fs_cache = $self->fs_cache;
+
+   return sub {
+      my ($self, $attr) = @_; $attr->{fs_cache} = $fs_cache; return $attr;
+   };
 }
 
 1;

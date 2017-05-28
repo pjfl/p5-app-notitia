@@ -2,17 +2,33 @@ package App::Notitia::Role::Request;
 
 use namespace::autoclean;
 
+use Class::Usul::Constants       qw( TRUE );
 use Class::Usul::Functions       qw( is_hashref );
-use Class::Usul::Types           qw( Object );
+use Class::Usul::Types           qw( HashRef Object );
+use File::DataClass::Types       qw( Path );
+use Try::Tiny;
 use Web::ComposableRequest::Util qw( add_config_role new_uri );
 use Moo::Role;
 
-requires qw( _config uri_for );
+requires qw( _config _log uri_for );
 
 add_config_role __PACKAGE__.'::Config';
 
+has 'fs_cache' => is => 'lazy', isa => Object, required => TRUE;
+
 has 'uri_no_query' => is => 'lazy', isa => Object, builder => sub {
    new_uri $_[ 0 ]->scheme, $_[ 0 ]->_base.$_[ 0 ]->path };
+
+has '_state_cache' => is => 'lazy', isa => HashRef, builder => sub {
+   my $self  = shift;
+   my $path  = $self->_state_cache_path;
+   my $cache = try { $self->fs_cache->load( $path ) } catch { {} };
+
+   return $cache;
+};
+
+has '_state_cache_path' => is => 'lazy', isa => Path, builder => sub {
+   $_[ 0 ]->_config->ctrldir->catfile( 'state-cache.json' ) };
 
 sub uri_for_action {
    my ($self, $action, @args) = @_;
@@ -38,14 +54,29 @@ sub uri_for_action {
    return $self->uri_for( $uri, @args );
 }
 
+sub state_cache {
+   my ($self, $k, $v) = @_; my $cache = $self->_state_cache;
+
+   defined $k or return $cache;
+   $self->_log->( { level => 'debug', message => "State cache key ${k}" } );
+   defined $v or return $cache->{ $k };
+   $cache->{ $k } = $v;
+   $self->fs_cache->dump( { data => $cache, path => $self->_state_cache_path });
+   return $v;
+}
+
 package App::Notitia::Role::Request::Config;
 
 use namespace::autoclean;
 
-use Unexpected::Types qw( CodeRef );
+use Class::Usul::Constants qw( TRUE );
+use File::DataClass::Types qw( Directory );
+use Unexpected::Types      qw( CodeRef );
 use Moo::Role;
 
 has 'action_path2uri' => is => 'ro', isa => CodeRef, builder => sub { {} };
+
+has 'ctrldir' => is => 'ro', isa => Directory, required => TRUE;
 
 1;
 

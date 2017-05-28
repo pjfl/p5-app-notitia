@@ -108,7 +108,7 @@ sub localised_posts_dir {
 }
 
 sub localised_tree {
-   return localise_tree $_[ 0 ]->tree_root, $_[ 1 ];
+   return localise_tree $_[ 0 ]->tree_root( $_[ 1 ] ), $_[ 2 ];
 }
 
 sub nav_label {
@@ -144,7 +144,7 @@ sub save_file_action : Role(editor) Role(event_manager) {
 }
 
 sub tree_root {
-   my $self = shift; my $mtime = $self->docs_mtime_cache;
+   my ($self, $req) = @_; my $mtime = $self->docs_mtime_cache( $req );
 
    if ($mtime == 0 or $mtime > $_posts_cache->{_mtime}) {
       my $conf      = $self->config;
@@ -167,7 +167,7 @@ sub tree_root {
       }
 
       $mtime > $max_mtime and $max_mtime = $mtime;
-      $self->docs_mtime_cache( $_posts_cache->{_mtime} = $max_mtime );
+      $self->docs_mtime_cache( $req, $_posts_cache->{_mtime} = $max_mtime );
    }
 
    return $_posts_cache;
