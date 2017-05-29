@@ -520,7 +520,7 @@ sub create_person_action : Role(person_manager) {
 
    my $job; my $job_label = NUL;
 
-   $person->assert_can_email
+   $person->can_email
       and $job = $self->create_person_email( $req, $person, $password )
       and $job_label = $job->label;
 

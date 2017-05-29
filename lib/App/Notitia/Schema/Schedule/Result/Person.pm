@@ -316,10 +316,9 @@ sub add_participent_for {
 sub assert_can_email {
    my $self = shift;
 
-   $self->email_address
-      or  throw '[_1] has no email address', [ $self->label ];
-   $self->email_address =~ m{ \@example\.com \z }mx
-      and throw '[_1] has an example email address', [ $self->label ];
+   $self->email_address or throw '[_1] has no email address', [ $self->label ];
+   $self->can_email
+      or throw '[_1] has an example email address', [ $self->label ];
 
    return;
 }
@@ -408,6 +407,15 @@ sub authenticate_optional_2fa {
               and throw IncorrectAuthCode, [ $self ];
 
    return;
+}
+
+sub can_email {
+   my $self = shift;
+
+   $self->email_address or return FALSE;
+   $self->email_address =~ m{ \@example\.com \z }mx and return FALSE;
+
+   return TRUE;
 }
 
 sub claim_slot {
