@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Can reverse the log view row order using filter button
           - Stops attempts to email example addresses
           - Defaults background colour in contrast_colour
           - Adds Options middleware to Plack stack

@@ -4,8 +4,8 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP
                                 SLOT_TYPE_ENUM SPC TRUE TYPE_CLASS_ENUM );
 use App::Notitia::DOM       qw( new_container f_tag p_action p_button p_cell
-                                p_container p_item p_js p_link p_list p_radio
-                                p_select p_span p_row p_table p_text
+                                p_container p_hidden p_item p_js p_link p_list
+                                p_radio p_select p_span p_row p_table p_text
                                 p_textarea p_textfield );
 use App::Notitia::Util      qw( event_handler event_streams js_submit_config
                                 link_options loc locm make_tip management_link
@@ -269,6 +269,10 @@ my $_filter_controls = sub {
       [ map { [ $_, $_, { selected => $_ eq $f_col ? TRUE : FALSE } ] }
         'none', @columns ], $opts;
 
+   p_hidden $form, 'filter_direction',
+        $params->{filter_direction} eq 'forward' ? 'reverse'
+      : $params->{filter_direction} eq 'reverse' ? 'forward' : 'forward';
+
    p_textfield $form, 'filter_pattern', $params->{filter_pattern}, {
       class => 'single-character filter-pattern',
       label_field_class => 'control-label' };
@@ -374,15 +378,21 @@ my $_log_columns = sub {
 };
 
 my $_log_rows = sub {
-   my ($self, $path, $first, $last, $data, $logname) = @_; my @files = ($path);
+   my ($self, $path, $first, $last, $data, $logname) = @_;
 
    my $dir = $self->config->logsdir; my $file = $path->basename( '.log' );
 
+   my $reverse = $data->{filter_direction} eq 'forward' ? FALSE : TRUE;
+
+   $reverse and $path->backwards; my @files = ($path);
+
    for my $candidate (map { $dir->catfile( "${file}.log.${_}" ) } 1 .. 9) {
-      $candidate->exists or last; push @files, $candidate->backwards->chomp;
+      $candidate->exists or last;
+      $reverse and $candidate->backwards;
+      push @files, $candidate->chomp;
    }
 
-   my $lno = 0; my @rows;
+   my $lno = 0; my @rows; $reverse or @files = reverse @files;
 
    for my $logfile (@files) {
       while (defined (my $line = $logfile->getline)) {
@@ -598,12 +608,16 @@ sub event_controls : Role(administrator) {
 sub filter_log_action : Role(administrator) {
    my ($self, $req) = @_;
 
-   my $actionp  = $self->moniker.'/logs';
-   my $args     = [ $req->uri_params->( 0 ) ];
-   my $column   = $req->body_params->( 'filter_column' );
-   my $pattern  = $req->body_params->( 'filter_pattern', { raw => TRUE } );
-   my $params   = { filter_column => $column, filter_pattern => $pattern };
-   my $location = $req->uri_for_action( $actionp, $args, $params );
+   my $actionp   = $self->moniker.'/logs';
+   my $args      = [ $req->uri_params->( 0 ) ];
+   my $column    = $req->body_params->( 'filter_column' );
+   my $direction = $req->body_params->( 'filter_direction' );
+   my $pattern   = $req->body_params->( 'filter_pattern', { raw => TRUE } );
+   my $params    = {
+      filter_column    => $column,
+      filter_direction => $direction,
+      filter_pattern   => $pattern, };
+   my $location  = $req->uri_for_action( $actionp, $args, $params );
 
    return { redirect => { location => $location } };
 }
@@ -638,24 +652,32 @@ sub logs : Role(administrator) {
       title => locm $req, 'logs_title', ucfirst locm $req, $logname,
    };
    my $dir = $self->config->logsdir;
-   my $path = $dir->catfile( "${logname}.log" )->backwards->chomp;
+   my $path = $dir->catfile( "${logname}.log" )->chomp;
 
    $path->exists or return $self->get_stash( $req, $page );
 
-   my $pageno = $req->query_params->( 'page', { optional => TRUE } ) || 1;
+   my $queryp = $req->query_params;
+   my $pageno = $queryp->( 'page', { optional => TRUE } ) || 1;
    my $rows_pp = $req->session->rows_per_page;
    my $first = $rows_pp * ($pageno - 1);
    my $last = $rows_pp * $pageno - 1;
-   my $queryp = $req->query_params;
    my $column = $queryp->( 'filter_column', { optional => TRUE } ) // 'none';
+   my $direction = $queryp->( 'filter_direction', {
+      optional => TRUE } ) // 'none';
    my $pattern = $queryp->( 'filter_pattern', {
       optional => TRUE, raw => TRUE } ) // NUL;
-   my $data = { cache => {}, filter_column => $column,
-                filter_pattern => qr{ $pattern }imx,
-                person_rs => $self->schema->resultset( 'Person' ) };
+   my $data = {
+      cache            => {},
+      filter_column    => $column,
+      filter_direction => $direction,
+      filter_pattern   => qr{ $pattern }imx,
+      person_rs        => $self->schema->resultset( 'Person' ), };
    my ($lno, @rows) = $self->$_log_rows( $path, $first, $last, $data, $logname);
    my $actp = $self->moniker.'/logs';
-   my $params = { filter_column => $column, filter_pattern => $pattern, };
+   my $params = {
+      filter_column    => $column,
+      filter_direction => $direction,
+      filter_pattern   => $pattern, };
    my $dp = Data::Page->new( $lno, $rows_pp, $pageno );
    my $opts = { class => 'log-links right-last' };
    my $plinks = page_link_set $req, $actp, [ $logname ], $params, $dp, $opts;
