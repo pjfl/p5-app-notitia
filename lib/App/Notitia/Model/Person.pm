@@ -518,7 +518,12 @@ sub create_person_action : Role(person_manager) {
    try   { $self->schema->txn_do( $create ) }
    catch { $self->blow_smoke( $_, 'create', 'person', $name ) };
 
-   my $job      = $self->create_person_email( $req, $person, $password );
+   my $job; my $job_label = NUL;
+
+   $person->assert_can_email
+      and $job = $self->create_person_email( $req, $person, $password )
+      and $job_label = $job->label;
+
    my $message  = 'action:create-person shortcode:'.$person->shortcode;
 
    $self->send_event( $req, $message );
@@ -527,7 +532,7 @@ sub create_person_action : Role(person_manager) {
    my $key      = '[_1] created by [_2] ref. [_3]';
    my $location = $req->uri_for_action( $self->moniker.'/people' );
 
-   $message = [ to_msg $key, $person->label, $who, $job->label ];
+   $message = [ to_msg $key, $person->label, $who, $job_label ];
 
    return { redirect => { location => $location, message => $message } };
 }

@@ -564,6 +564,9 @@ sub request_reset_action : Role(anon) {
 
    my $name     = $req->body_params->( 'username' );
    my $person   = $self->schema->resultset( 'Person' )->find_person( $name );
+
+   $person->assert_can_email;
+
    my $password = substr create_token, 0, 12;
    my $job      = $self->create_reset_email( $req, $person, $password );
    my $key      = '[_1] password reset requested ref. [_2]';
@@ -747,6 +750,7 @@ sub totp_request_action : Role(anon) {
 
    $person->authenticate( $password );
    $person->security_check( { mobile_phone => $mobile, postcode => $postcode });
+   $person->assert_can_email;
 
    my $key      = '[_1] TOTP request sent ref. [_2]';
    my $job      = $self->create_totp_request_email( $req, $person );

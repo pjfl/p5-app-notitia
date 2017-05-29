@@ -313,6 +313,17 @@ sub add_participent_for {
    return $self->create_related( 'participents', { event_id => $event->id } );
 }
 
+sub assert_can_email {
+   my $self = shift;
+
+   $self->email_address
+      or  throw '[_1] has no email address', [ $self->label ];
+   $self->email_address =~ m{ \@example\.com \z }mx
+      and throw '[_1] has an example email address', [ $self->label ];
+
+   return;
+}
+
 sub assert_certified_for {
    my ($self, $cert_name, $type) = @_;
 

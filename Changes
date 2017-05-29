@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Stops attempts to email example addresses
           - Defaults background colour in contrast_colour
           - Adds Options middleware to Plack stack
           - Fixes #190. Can create users with just first and last name
