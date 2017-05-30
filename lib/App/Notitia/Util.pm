@@ -24,8 +24,8 @@ use Try::Tiny;
 use Unexpected::Functions      qw( ValidationErrors );
 use YAML::Tiny;
 
-our @EXPORT_OK = qw( action_for_uri action_path_uri_map add_dummies
-                     assert_unique assign_link authenticated_only
+our @EXPORT_OK = qw( action_for_uri action_path2uri action_path_uri_map
+                     add_dummies assert_unique assign_link authenticated_only
                      build_navigation build_tree check_field_js
                      check_form_field clone contrast_colour csrf_token
                      datetime_label dialog_anchor display_duration

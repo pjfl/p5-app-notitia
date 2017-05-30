@@ -198,17 +198,20 @@ my $_qualify_assets = sub {
 my $_should_send_email = sub {
    my ($self, $stash, $person) = @_;
 
-   $person->email_address =~ m{ \@ example\.com \z }imx and $self->info
-      ( 'Will not email [_1] example address', {
-         args => [ $person->label ] } ) and return FALSE;
+   not $person->can_email
+      and $self->info( 'Will not email [_1] example address', {
+         args => [ $person->label ] } )
+      and return FALSE;
 
    my $action; $action = $stash->{action}
-      and $person->has_stopped_email( $action ) and $self->info
-         ( 'Would email [_1] but unsub. from action [_2]', {
-            args => [ $person->label, $action ] } ) and return FALSE;
+      and $person->has_stopped_email( $action )
+      and $self->info( 'Would email [_1] but unsub. from action [_2]', {
+         args => [ $person->label, $action ] } )
+      and return FALSE;
 
-   $self->config->preferences->{no_message_send} and $self->info
-      ( 'Would email [_1] but off in config', { args => [ $person->label ] } )
+   $self->config->preferences->{no_message_send}
+      and $self->info( 'Would email [_1] but off in config', {
+         args => [ $person->label ] } )
       and return FALSE;
 
    return TRUE;

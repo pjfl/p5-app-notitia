@@ -110,9 +110,6 @@ my $_build_user_home = sub {
 };
 
 # Public attributes
-has 'action_path2uri' => is => 'ro',   isa => CodeRef,
-   builder            => sub { \&App::Notitia::Util::action_path2uri };
-
 has 'asset_manager'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    builder            => sub {
       [ qw( administrator person_manager training_manager ) ] };

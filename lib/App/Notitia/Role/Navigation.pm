@@ -425,7 +425,7 @@ my $_secondary_authenticated_links = sub {
          class => $_location_class->( $page, 'admin' ), request => $req, };
 
    $page->{has_rss_feed} and p_navlink $nav, 'rss_feed',
-      [ $places->{rss_feed}, { extension => '.xml' } ], {
+      [ $places->{rss_feed}, [], { extension => '.xml' } ], {
          class => 'rss-feed-icon', request => $req, value => NUL };
 
    return;
