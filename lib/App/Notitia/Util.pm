@@ -366,15 +366,16 @@ sub build_tree {
 
    $depth //= 0; $node_order //= 0; $url_base //= NUL; $parent //= NUL;
 
-   my $fcount = 0; my $max_mtime = 0; my $tree = {}; $depth++;
+   $depth++; $depth > 65536 and throw "Tree is out of it's depth";
 
-   $depth > 65536 and throw "Tree is out of it's depth";
+   my $fcount = 0; my $max_mtime = 0; my $tree = {};
 
-   for my $path (grep { defined $_->stat } $dir->all) {
+   for my $path ($dir->all) {
+      my  $stat       =  $path->stat or next;
       my ($id, $pref) =  @{ make_id_from( $path->utf8->filename ) };
       my  $name       =  make_name_from( $id );
       my  $url        =  $url_base ? "${url_base}/${id}" : $id;
-      my  $mtime      =  $path->stat->{mtime} // 0;
+      my  $mtime      =  $stat->{mtime} // 0;
       my  $node       =  $tree->{ $id } = {
           depth       => $depth,
           format      => $extension2format->( $map, "${path}" ),
