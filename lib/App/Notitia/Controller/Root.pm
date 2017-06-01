@@ -34,6 +34,7 @@ sub dispatch_request {
    sub (GET  + /user/totp-secret          + ?*) {[ 'user/totp_secret',    @_ ]},
    sub (GET  + /index | /                 + ?*) {[ 'docs/index',          @_ ]},
    sub (GET  + /**                        + ?*) {[ 'docs/not_found',      @_ ]},
+   sub (HEAD                              + ?*) {[ 'docs/index',          @_ ]},
    sub (DELETE                            + ?*) {[ 'docs/not_found',      @_ ]},
    sub (POST                              + ?*) {[ 'docs/not_found',      @_ ]},
    sub (PUT                               + ?*) {[ 'docs/not_found',      @_ ]},

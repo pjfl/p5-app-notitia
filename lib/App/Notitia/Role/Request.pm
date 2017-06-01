@@ -3,16 +3,37 @@ package App::Notitia::Role::Request;
 use namespace::autoclean;
 
 use App::Notitia::Util           qw( action_path2uri );
+use Class::Usul::Constants       qw( TRUE );
 use Class::Usul::Functions       qw( is_hashref );
-use Class::Usul::Types           qw( Object );
-use Web::ComposableRequest::Util qw( new_uri );
+use Class::Usul::Types           qw( HashRef Object );
+use File::DataClass::Types       qw( Path );
+use Try::Tiny;
+use Web::ComposableRequest::Util qw( add_config_role new_uri );
 use Moo::Role;
 
-requires qw( _config uri_for );
+requires qw( _config _log uri_for );
+
+add_config_role __PACKAGE__.'::Config';
+
+# Public attributes
+has 'fs_cache' => is => 'lazy', isa => Object, required => TRUE;
 
 has 'uri_no_query' => is => 'lazy', isa => Object, builder => sub {
    new_uri $_[ 0 ]->scheme, $_[ 0 ]->_base.$_[ 0 ]->path };
 
+# Private attributes
+has '_state_cache' => is => 'lazy', isa => HashRef, builder => sub {
+   my $self  = shift;
+   my $path  = $self->_state_cache_path;
+   my $cache = try { $self->fs_cache->load( $path ) } catch { {} };
+
+   return $cache;
+};
+
+has '_state_cache_path' => is => 'lazy', isa => Path, builder => sub {
+   $_[ 0 ]->_config->ctrldir->catfile( 'state-cache.json' ) };
+
+# Public methods
 sub uri_for_action {
    my ($self, $action, $args, @params) = @_;
 
@@ -27,6 +48,35 @@ sub uri_for_action {
 
    return $self->uri_for( $uri, $args, $params );
 }
+
+sub state_cache {
+   my ($self, $k, $v) = @_; my $cache = $self->_state_cache;
+
+   defined $k or return $cache;
+   $self->_log->( { level => 'debug', message => "State cache key ${k}" } );
+   defined $v or return $cache->{ $k };
+   $self->_log->( { level => 'debug', message => "State cache value ${v}" } );
+
+   my $storage = $self->fs_cache->storage; my $path = $self->_state_cache_path;
+
+   return $cache->{ $k } = $storage->txn_do( $path, sub {
+      my ($cache) = $storage->read_file( $path, TRUE );
+
+      $cache->{ $k } = $v; $storage->write_file( $path, $cache );
+
+      return $v;
+   } );
+}
+
+package App::Notitia::Role::Request::Config;
+
+use namespace::autoclean;
+
+use Class::Usul::Constants qw( TRUE );
+use File::DataClass::Types qw( Directory );
+use Moo::Role;
+
+has 'ctrldir' => is => 'ro', isa => Directory, required => TRUE;
 
 1;
 

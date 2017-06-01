@@ -786,7 +786,16 @@ sub mtime ($) {
 
 sub new_request ($) {
    my $args         = shift; ensure_class_loaded 'Web::ComposableRequest';
-   my $factory      = Web::ComposableRequest->new( config => $args->{config} );
+   my $buildargs    = sub {
+      my ($self, $attr) = @_;
+
+      $attr->{fs_cache} = Class::Usul::File->dataclass_schema( {
+         storage_class => 'JSON', } );
+
+      return $attr;
+   };
+   my $factory      = Web::ComposableRequest->new
+      ( buildargs => $buildargs, config => $args->{config} );
    my $uri_params   = $args->{uri_params} // NUL;
    my $query_params = $args->{query_params} // {};
    my $env          = {

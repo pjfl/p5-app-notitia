@@ -131,14 +131,14 @@ my $_result_line = sub {
 
 # Private methods
 my $_new_node = sub {
-   my ($self, $locale, $pathname, $opts) = @_;
+   my ($self, $req, $pathname, $opts) = @_;
 
    my @pathname = $_prepare_path->( $_append_suffix->( $pathname ) );
-   my $path     = $self->qualify_path( $locale, @pathname, $opts );
+   my $path     = $self->qualify_path( $req->locale, @pathname, $opts );
    my @filepath = map { make_id_from( $_ )->[ 0 ] } @pathname;
    my $url      = join '/', @filepath;
    my $id       = pop @filepath;
-   my $parent   = $self->find_node( $locale, \@filepath );
+   my $parent   = $self->find_node( $req, $req->locale, \@filepath );
 
    $parent and $parent->{type} eq 'folder'
       and exists $parent->{tree}->{ $id }
@@ -201,7 +201,7 @@ sub create_file {
 
    $opts->{draft} = $params->( 'draft', { optional => TRUE } ) || FALSE;
 
-   my $new_node = $self->$_new_node( $req->locale, $pathname, $opts );
+   my $new_node = $self->$_new_node( $req, $pathname, $opts );
    my $created  = time2str '%Y-%m-%d %H:%M:%S %z', time, 'GMT';
    my $skin     = $req->session->skin || $conf->skin;
    my $stash    = { page => { author => $req->username, created => $created, },
@@ -213,7 +213,7 @@ sub create_file {
    my $path     = $new_node->{path};
 
    $path->assert_filepath->println( $content )->close;
-   $self->invalidate_docs_cache( $path->stat->{mtime} );
+   $self->invalidate_docs_cache( $req, $path->stat->{mtime} );
 
    my $who      = $req->session->user_label;
    my $rel_path = $path->abs2rel( $conf->docs_root );
@@ -228,12 +228,12 @@ sub create_file {
 sub delete_file {
    my ($self, $req) = @_;
 
-   my $node = $self->find_node( $req->locale, $req->uri_params->() )
+   my $node = $self->find_node( $req, $req->locale, $req->uri_params->() )
       or throw 'Cannot find document tree node to delete';
    my $path = $node->{path};
 
    $path->exists and $path->unlink; $_prune->( $path );
-   $self->invalidate_docs_cache;
+   $self->invalidate_docs_cache( $req );
 
    my $location = $self->base_uri( $req );
    my $who      = $req->session->user_label;
@@ -296,14 +296,13 @@ sub rename_file {
    my $conf     = $self->config;
    my $params   = $req->body_params;
    my $old_path = [ split m{ / }mx, $params->( 'old_path' ) ];
-   my $node     = $self->find_node( $req->locale, $old_path )
+   my $node     = $self->find_node( $req, $req->locale, $old_path )
       or throw 'Cannot find document tree node to rename';
-   my $new_node = $self->$_new_node
-      ( $req->locale, $params->( 'pathname' ), $opts );
+   my $new_node = $self->$_new_node( $req, $params->( 'pathname' ), $opts );
 
    $new_node->{path}->assert_filepath;
    $node->{path}->close->move( $new_node->{path} ); $_prune->( $node->{path} );
-   $self->invalidate_docs_cache;
+   $self->invalidate_docs_cache( $req );
 
    my $who      = $req->session->user_label;
    my $rel_path = $node->{path}->abs2rel( $conf->docs_root );
@@ -318,13 +317,13 @@ sub rename_file {
 sub save_file {
    my ($self, $req) = @_;
 
-   my $node     =  $self->find_node( $req->locale, $req->uri_params->() )
+   my $node     =  $self->find_node( $req, $req->locale, $req->uri_params->() )
       or throw 'Cannot find document tree node to update';
    my $content  =  $req->body_params->( 'content', { raw => TRUE } );
       $content  =~ s{ \r\n }{\n}gmx; $content =~ s{ \s+ \z }{}mx;
    my $path     =  $node->{path}; $path->println( $content );
 
-   $path->close; $self->invalidate_docs_cache( $path->stat->{mtime} );
+   $path->close; $self->invalidate_docs_cache( $req, $path->stat->{mtime} );
 
    my $who      =  $req->session->user_label;
    my $rel_path =  $path->abs2rel( $self->config->docs_root );

@@ -14,8 +14,7 @@ use Unexpected::Functions  qw( AuthenticationRequired );
 use Moo::Role;
 
 requires qw( components config depth_offset get_stash load_page
-             localised_tree max_navigation nav_label
-             navigation_links state_cache );
+             localised_tree max_navigation nav_label navigation_links );
 
 has 'type_map' => is => 'ro', isa => HashRef, builder => sub { {} };
 
@@ -56,7 +55,8 @@ around 'load_page' => sub {
    for my $locale ($req->locale, @{ $req->locales }, $self->config->locale) {
       $seen{ $locale } and next; $seen{ $locale } = TRUE;
 
-      my $node = $self->find_node( $locale, $req->uri_params->() ) or next;
+      my $node = $self->find_node( $req, $locale, $req->uri_params->() )
+         or next;
 
       is_access_authorised( $req, $node )
          or throw '[_1] authentication required',
@@ -76,20 +76,20 @@ around 'load_page' => sub {
 
 # Public methods
 sub docs_mtime_cache {
-   my ($self, $v) = @_;
+   my ($self, $req, $v) = @_;
 
-   defined $v or return $self->state_cache( 'docs_mtime' ) // 0;
+   defined $v or return $req->state_cache( 'docs_mtime' ) // 0;
 
    $v =~ m{ \A [0-9]+ \z }mx
       or throw 'Docs cache mtime [_1] must be an integer', [ $v ];
 
-   return $self->state_cache( 'docs_mtime', $v );
+   return $req->state_cache( 'docs_mtime', $v );
 }
 
 sub find_node {
-   my ($self, $locale, $ids) = @_;
+   my ($self, $req, $locale, $ids) = @_;
 
-   my $node = $self->localised_tree( $locale ) or return FALSE;
+   my $node = $self->localised_tree( $req, $locale ) or return FALSE;
 
    $ids //= []; $ids->[ 0 ] //= 'index';
 
@@ -111,15 +111,15 @@ sub initialise_page {
 }
 
 sub invalidate_docs_cache {
-   my ($self, $mtime) = @_;
+   my ($self, $req, $mtime) = @_;
 
    if ($mtime) {
-      $self->docs_mtime_cache( $mtime );
+      $self->docs_mtime_cache( $req, $mtime );
       $mtime = local_dt to_dt time2str undef, $mtime;
       $self->log->info( "Invalidate docs cache ${mtime} ${PID}" );
    }
    else {
-      $self->docs_mtime_cache( 0 );
+      $self->docs_mtime_cache( $req, 0 );
       $self->log->info( 'Invalidate docs cache 0 ${PID}' );
    }
 
@@ -134,7 +134,7 @@ sub is_accessible {
    for my $locale ($req->locale, @{ $req->locales }, $self->config->locale) {
       $seen{ $locale } and next; $seen{ $locale } = TRUE;
 
-      my $node = $self->find_node( $locale, \@path ) or next;
+      my $node = $self->find_node( $req, $locale, \@path ) or next;
 
       is_access_authorised( $req, $node ) and return TRUE;
    }
@@ -147,7 +147,7 @@ sub navigation {
 
    my $conf = $self->config;
    my $locale = $conf->locale; # Always index config default language
-   my $node = $self->localised_tree( $locale )
+   my $node = $self->localised_tree( $req, $locale )
       or throw 'Default locale [_1] has no document tree', [ $locale ];
 
    return build_navigation $req, {

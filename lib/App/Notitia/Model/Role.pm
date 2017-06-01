@@ -58,7 +58,7 @@ sub add_role_action : Role(administrator) Role(person_manager) {
       $self->send_event( $req, $message );
    }
 
-   $self->state_cache( 'roles_mtime', time );
+   $req->state_cache( 'roles_mtime', time );
 
    my $location = $req->uri_for_action( $self->moniker.'/role', [ $name ] );
    my $message  = [ to_msg '[_1] role(s) added by [_2]',
@@ -83,7 +83,7 @@ sub remove_role_action : Role(administrator) Role(person_manager) {
       $self->send_event( $req, $message );
    }
 
-   $self->state_cache( 'roles_mtime', time );
+   $req->state_cache( 'roles_mtime', time );
 
    my $location = $req->uri_for_action( $self->moniker.'/role', [ $name ] );
    my $message  = [ to_msg '[_1] role(s) removed by [_2]',

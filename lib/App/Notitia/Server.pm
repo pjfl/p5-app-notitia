@@ -6,7 +6,8 @@ use App::Notitia::Util     qw( authenticated_only enhance );
 use Class::Usul;
 use Class::Usul::Constants qw( NUL TRUE );
 use Class::Usul::Functions qw( ensure_class_loaded );
-use Class::Usul::Types     qw( HashRef Plinth );
+use Class::Usul::Types     qw( HashRef Object Plinth );
+use File::DataClass::Schema;
 use HTTP::Status           qw( HTTP_FOUND );
 use Plack::Builder;
 use Web::Simple;
@@ -15,6 +16,12 @@ use Web::Simple;
 has '_config_attr' => is => 'ro', isa => HashRef,
    builder  => sub { { name => 'server' } }, init_arg => 'config';
 
+has '_fs_cache' => is => 'lazy', isa => Object, builder => sub {
+   File::DataClass::Schema->new( {
+      builder          => $_[ 0 ],
+      cache_attributes => { namespace => $_[ 0 ]->config->prefix.'-state' },
+      storage_class    => 'JSON' } ) };
+
 has '_usul' => is => 'lazy', isa => Plinth,
    builder  => sub { Class::Usul->new( enhance $_[ 0 ]->_config_attr ) },
    handles  => [ qw( config debug dumper l10n lock log log_class ) ];
@@ -22,16 +29,34 @@ has '_usul' => is => 'lazy', isa => Plinth,
 with 'Web::Components::Loader';
 
 # Construction
+around '_build_factory_args' => sub {
+   my ($orig, $self) = @_;
+
+   my $code      = $orig->( $self );
+   my $fs_cache  = $self->_fs_cache;
+   my $localiser = sub { $self->l10n->localize( @_ ) };
+
+   return sub {
+      my ($self, $attr) = @_; $attr = $code->( $self, $attr );
+
+      $attr->{fs_cache } = $fs_cache;
+      $attr->{localiser} = $localiser;
+
+      return $attr;
+   };
+};
+
 around 'to_psgi_app' => sub {
    my ($orig, $self, @args) = @_; my $psgi_app = $orig->( $self, @args );
 
    my $conf = $self->config; my $serve_as_static = $conf->serve_as_static;
 
    return builder {
+      enable 'ConditionalGET';
+      enable 'Options', allowed => [ qw( DELETE GET POST PUT HEAD ) ];
+      enable 'Head';
       enable 'ContentLength';
       enable 'FixMissingBodyInRedirect';
-      enable 'Options', allowed => [ qw( DELETE GET POST PUT HEAD ) ];
-      enable 'ConditionalGET';
       enable_if { defined $_[ 0 ]->{HTTP_X_FORWARDED_FOR} }
          'Plack::Middleware::ReverseProxy';
       mount $conf->mount_point => builder {

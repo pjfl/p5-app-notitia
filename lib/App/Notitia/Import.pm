@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( COMMA EXCEPTION_CLASS FALSE
                                 NUL OK QUOTED_RE SPC TRUE );
-use App::Notitia::Util      qw( to_dt );
+use App::Notitia::Util      qw( new_request to_dt );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
                                 io is_member squeeze throw trim );
 use Class::Usul::Types      qw( Bool HashRef Object );
@@ -463,10 +463,10 @@ sub people : method {
       $badge_id > $max and $max = $badge_id;
    }
 
-   my $admin_model = $self->components->{admin};
+   my $req = new_request { config => $self->config, locale => $self->locale, };
 
-   $badge_id = $admin_model->state_cache( 'badge_id' );
-   $max > $badge_id and $admin_model->state_cache( 'badge_id', $max );
+   $badge_id = $req->state_cache( 'badge_id' );
+   $max > $badge_id and $req->state_cache( 'badge_id', $max );
 
    return OK;
 }

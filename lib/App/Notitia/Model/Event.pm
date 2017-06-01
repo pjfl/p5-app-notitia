@@ -326,11 +326,11 @@ my $_update_event_post = sub {
       my $markdown = $self->$_format_as_markdown( $req, $event );
 
       $path->assert_filepath->println( $markdown ); $path->close;
-      $posts_model->invalidate_docs_cache( $path->stat->{mtime} );
+      $posts_model->invalidate_docs_cache( $req, $path->stat->{mtime} );
    }
    else {
       $path->exists and $path->unlink;
-      $posts_model->invalidate_docs_cache( time );
+      $posts_model->invalidate_docs_cache( $req, time );
    }
 
    return;

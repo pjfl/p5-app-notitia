@@ -368,6 +368,15 @@ sub dump_route_attr : method {
    return OK;
 }
 
+sub dump_state_cache : method {
+   my $self = shift;
+   my $req  = $self->$_new_request( $self->next_argv, $self->next_argv );
+
+   $self->dumper( $req->state_cache );
+
+   return OK;
+}
+
 sub geolocation : method {
    my $self        = shift;
    my $object_type = $self->next_argv or throw Unspecified, [ 'object type' ];
@@ -540,6 +549,8 @@ Dumps public holidays for a given year
 =head2 C<dump_event_attr> - Dumps the event handling attribute data
 
 =head2 C<dump_route_attr> - Dumps the reverse routing table
+
+=head2 C<dump_state_cache> - Dumps the state cache
 
 =head2 C<geolocation> - Lookup geolocation information
 

@@ -203,7 +203,7 @@ sub index : Role(administrator) Role(address_viewer) Role(controller)
 }
 
 sub localised_tree {
-   return { tree => $_[ 0 ]->tree_root, type => 'folder' };
+   return { tree => $_[ 0 ]->tree_root( $_[ 1 ] ), type => 'folder' };
 }
 
 sub nav_label {
@@ -251,7 +251,7 @@ sub template_list : Role(editor) Role(person_manager) {
       depth_offset => $self->depth_offset,
       label        => $self->nav_label,
       limit        => $self->max_navigation,
-      node         => $self->localised_tree,
+      node         => $self->localised_tree( $req ),
       path         => $self->moniker.'/template_view',
    };
    my $table = p_table $form, {
@@ -276,7 +276,7 @@ sub template_view : Role(editor) Role(person_manager) {
 }
 
 sub tree_root {
-   my $self = shift; my $mtime = $self->docs_mtime_cache;
+   my ($self, $req) = @_; my $mtime = $self->docs_mtime_cache( $req );
 
    if ($mtime == 0 or $mtime > $_docs_cache->{_mtime}) {
       my $conf     = $self->config;
@@ -286,8 +286,11 @@ sub tree_root {
 
       $self->log->info( "Tree building ${dir} ${PID}" );
       $_docs_cache = build_tree( $self->type_map, $dir->filter( $filter ) );
-      $_docs_cache->{_mtime} > $mtime and $mtime = $_docs_cache->{_mtime};
-      $self->docs_mtime_cache( $_docs_cache->{_mtime} = $mtime );
+
+      if ($_docs_cache->{_mtime} > $mtime) {
+         $self->docs_mtime_cache( $req, $_docs_cache->{_mtime} );
+      }
+      else { $_docs_cache->{_mtime} = $mtime }
    }
 
    return $_docs_cache;
