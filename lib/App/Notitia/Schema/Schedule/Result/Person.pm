@@ -16,7 +16,7 @@ use App::Notitia::DataTypes    qw( bool_data_type date_data_type
 use App::Notitia::Util         qw( get_salt is_encrypted local_dt new_salt
                                    now_dt slot_limit_index );
 use Auth::GoogleAuth;
-use Class::Usul::Functions     qw( create_token64 is_member throw );
+use Class::Usul::Functions     qw( create_token64 first_char is_member throw );
 use Crypt::Eksblowfish::Bcrypt qw( bcrypt en_base64 );
 use List::SomeUtils            qw( first_index );
 use Try::Tiny;
@@ -262,7 +262,7 @@ my $_assert_claim_allowed = sub {
           [ $slotno, $conf->slot_limits->[ $i ] - 1 ];
 
    $slot_t eq 'rider' and now_dt->add( weeks => 4 ) < $rota_dt
-      and $self->region ne $conf->slot_region->{ $slotno }
+      and $self->region ne first_char uc $conf->slot_region->{ $slotno }
       and throw 'Cannot claim slot [_1] out of region', [ $slotno ];
 
    return;

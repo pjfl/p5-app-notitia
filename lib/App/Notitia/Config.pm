@@ -331,7 +331,7 @@ has 'slot_limits'     => is => 'ro',   isa => ArrayRef[PositiveInt],
    builder            => sub { [ 2, 1, 3, 3, 1, 1 ] };
 
 has 'slot_region'     => is => 'ro',   isa => HashRef,
-   builder            => sub { { 0 => 'N', 1 => 'C', 2 => 'S' } };
+   builder            => sub { { 0 => 'north', 1 => 'central', 2 => 'south' } };
 
 has 'sms_attributes'  => is => 'ro',   isa => HashRef,
    builder            => $_build_sms_attributes, init_arg => undef;

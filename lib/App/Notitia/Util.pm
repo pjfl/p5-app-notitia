@@ -944,8 +944,8 @@ sub slot_claimed ($) {
    return defined $_[ 0 ] && exists $_[ 0 ]->{operator} ? TRUE : FALSE;
 }
 
-sub slot_identifier ($$$) {
-   my ($rota_name, $rota_date, $slot_name) = @_;
+sub slot_identifier ($$$$) {
+   my ($rota_name, $rota_date, $slot_name, $region_map) = @_;
 
    $rota_name =~ s{ _ }{ }gmx;
 
@@ -953,7 +953,7 @@ sub slot_identifier ($$$) {
 
    my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
 
-   my $region = { 0 => 'north', 1 => 'central', 2 => 'south' }->{ $subslot };
+   my $region = $region_map->{ $subslot };
 
    return sprintf '%s %s %s region %s %s',
           $shift_type, $slot_type, $region, $rota_date, $rota_label;

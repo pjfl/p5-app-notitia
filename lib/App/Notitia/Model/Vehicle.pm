@@ -366,7 +366,8 @@ my $_toggle_slot_assignment = sub {
                                 : 'action:vehicle-unassignment';
    my $message = "${kv} date:${dmy} "
                . "shortcode:${operator} slot_key:${slot_name} vehicle:${vrn}";
-   my $label = slot_identifier $rota_name, $rota_date, $slot_name;
+   my $sr_map = $self->config->slot_region;
+   my $label = slot_identifier $rota_name, $rota_date, $slot_name, $sr_map;
 
    $self->send_event( $req, $message );
    $message = [ to_msg $key, $vrn, $label, $req->session->user_label ];
