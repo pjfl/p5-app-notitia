@@ -410,7 +410,7 @@ sub field_defn_view : Dialog Role(administrator) {
    return $stash;
 }
 
-sub form_defn_list : Role(administrator) {
+sub form_defn_list : Role(developer) {
    my ($self, $req) = @_;
 
    my $form_0 = new_container { class => 'standard-form' };

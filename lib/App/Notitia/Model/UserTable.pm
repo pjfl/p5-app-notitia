@@ -284,7 +284,7 @@ sub delete_user_table_action : Role(administrator) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub table_list : Role(administrator) {
+sub table_list : Role(developer) {
    my ($self, $req) = @_;
 
    my $page = {

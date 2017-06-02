@@ -145,7 +145,7 @@ sub form_list : Role(administrator) {
    return $self->get_stash( $req, $page );
 }
 
-sub form_view : Role(administrator) {
+sub form_view : Role(developer) {
    my ($self, $req) = @_;
 
    my $name    = $req->uri_params->( 0 );

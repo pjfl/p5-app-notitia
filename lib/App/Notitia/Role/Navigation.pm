@@ -121,13 +121,15 @@ my $_admin_data_links = sub {
       class => $_selected_class->( $page, 'slot_roles_list' ),
       request => $req };
 
-   p_navlink $list, 'form_defn_list', [ 'form/form_defn_list' ], {
-      class => $_selected_class->( $page, 'form_defn_list' ),
-      request => $req };
+   $self->$_allowed( $req, 'form/form_defn_list' )
+      and p_navlink $list, 'form_defn_list', [ 'form/form_defn_list' ], {
+         class => $_selected_class->( $page, 'form_defn_list' ),
+         request => $req };
 
-   p_navlink $list, 'user_table_list', [ 'table/table_list' ], {
-      class => $_selected_class->( $page, 'user_table_list' ),
-      request => $req };
+   $self->$_allowed( $req, 'table/table_list' )
+      and p_navlink $list, 'user_table_list', [ 'table/table_list' ], {
+         class => $_selected_class->( $page, 'user_table_list' ),
+         request => $req };
 
    return;
 };
