@@ -281,7 +281,7 @@ my $_update_form_from_request = sub {
 
       defined $v or next; $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
 
-      $form->content( $attr, $v );
+      $form->content->{ $attr } = $v;
    }
 
    return;
@@ -475,22 +475,27 @@ sub form_defn_view : Role(administrator) {
       [ name        => {
          class      => 'standard-field',
          disabled   => $name ? TRUE : FALSE, label => 'user_form_name' },
-        notes       => { label => 'user_form_notes', type => 'textarea' },
+        notes       => {
+           class    => 'standard-field autosize',
+           label    => 'user_form_notes', type => 'textarea' },
         table_id    => $self->$_form_defn_tables( $form->table_id ),
         uri_prefix  => { value => $form->uri_prefix || $req->base },
         partial_uri => { value => $form->partial_uri || 'form/'.($name // NUL)},
         template    => $self->$_form_defn_templates( $form->template ),
         ];
 
-   p_textfield $form_0, 'title',        $form->content( 'title' );
-   p_textfield $form_0, 'logo_path',    $form->content( 'logo_path' );
-   p_textfield $form_0, 'logo_href',    $form->content( 'logo_href' );
-   p_textfield $form_0, 'logo_text',    $form->content( 'logo_text' );
-   p_textarea  $form_0, 'css',          $form->content( 'css' ), {
+   p_textfield $form_0, 'title',        $form->content->{title};
+   p_textfield $form_0, 'logo_path',    $form->content->{logo_path};
+   p_textfield $form_0, 'logo_href',    $form->content->{logo_href};
+   p_textfield $form_0, 'logo_text',    $form->content->{logo_text};
+   p_textarea  $form_0, 'css',          $form->content->{css}, {
       class => 'standard-field autosize' };
-   p_textarea  $form_0, 'javascript',   $form->content( 'javascript' );
-   p_textarea  $form_0, 'head_content', $form->content( 'head_content' );
-   p_textfield $form_0, 'response',     $form->response;
+   p_textarea  $form_0, 'javascript',   $form->content->{javascript}, {
+      class => 'standard-field autosize' };
+   p_textarea  $form_0, 'head_content', $form->content->{head_content}, {
+      class => 'standard-field autosize' };
+   p_textarea  $form_0, 'response',     $form->response, {
+      class => 'standard-field autosize' };
 
    if ($form->name) {
       p_action $form_0, 'update', [ 'user_form', $name ], { request => $req };

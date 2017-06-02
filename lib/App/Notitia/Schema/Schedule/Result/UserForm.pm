@@ -23,7 +23,6 @@ $class->add_columns
      notes => varchar_data_type,
      response => varchar_data_type,
      content => {
-        accessor      => '_content',
         data_type     => 'text',
         default_value => NUL,
         is_nullable   => FALSE, },
@@ -37,26 +36,18 @@ $class->belongs_to( table => "${result}::UserTable", 'table_id' );
 
 $class->has_many( fields => "${result}::UserField", 'form_id' );
 
+$class->inflate_column( 'content', {
+   deflate => sub {   to_json( shift ) },
+   inflate => sub { from_json( shift ) },
+} );
+
 # Private methods
 sub _as_string {
    return $_[ 0 ]->name;
 }
 
-sub content {
-   my ($self, $k, $v) = @_;
-
-   my $content = $self->{_content_cache}
-             //= from_json( $self->_content || '{}' );
-
-   defined $k or return $content; defined $v or return $content->{ $k };
-
-   return $content->{ $k } = $v;
-}
-
 sub insert {
    my $self = shift;
-
-   $self->_content( to_json $self->content );
 
    App::Notitia->env_var( 'bulk_insert' ) or $self->validate;
 
@@ -67,7 +58,6 @@ sub update {
    my ($self, $columns) = @_;
 
    $columns and $self->set_inflated_columns( $columns );
-   $self->_content( to_json $self->content );
    $self->validate( TRUE );
 
    return $self->next::method;
