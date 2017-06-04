@@ -86,11 +86,19 @@ around 'load_page' => sub {
    $req->authenticated and $page->{user}
       = $self->components->{person}->find_by_shortcode( $req->username );
 
+
    my $pattern = join '|', @{ $self->config->editors };
    my $editors = qr{ \A (?: $pattern ) \z }mx;
 
    $page->{is_editor} = ($req->authenticated && first { $_ =~ $editors }
                         @{ $req->session->roles }) ? TRUE : FALSE;
+
+   for my $type ( qw{create delete edit rename upload} ) { 
+       $pattern = join '|', @{ $self->config->editor_create };
+       $editors = qr{ \A (?: $pattern ) \z }mx;
+       $page->{"is_$type"} = ($req->authenticated && first { $_ =~ $editors }
+                        @{ $req->session->roles }) ? TRUE : FALSE;
+   }
 
    return $page;
 };
