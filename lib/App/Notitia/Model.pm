@@ -161,7 +161,7 @@ sub exception_handler {
 
    $self->application->debug and $_debug_output->( $req, $e, $list, $leader );
 
-   my $stash = $self->get_stash( $req, $page ); $self->$_log_error( $req, $e );
+   $self->$_log_error( $req, $e ); my $stash = $self->get_stash( $req, $page );
 
    $stash->{code} = $e->code > HTTP_OK ? $e->code : HTTP_OK;
 

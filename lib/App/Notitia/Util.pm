@@ -38,9 +38,10 @@ our @EXPORT_OK = qw( action_for_uri action_path2uri action_path_uri_map
                      localise_tree locd locm mail_domain make_id_from
                      make_name_from make_tip management_link mtime new_request
                      new_salt now_dt page_link_set register_action_paths
-                     set_element_focus set_event_date set_rota_date
-                     slot_claimed slot_identifier slot_limit_index show_node
-                     stash_functions time2int to_dt to_json to_msg );
+                     set_element_focus set_event_date set_last_modified_header
+                     set_rota_date slot_claimed slot_identifier
+                     slot_limit_index show_node stash_functions time2int to_dt
+                     to_json to_msg );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -77,6 +78,13 @@ my $check_field = sub {
       and assert_unique( $rs, { $id => $val }, $attr->{fields}, $id );
 
    return Data::Validation->new( $attr )->check_field( $id, $val );
+};
+
+my $_dt2http_date = sub {
+   my $dt = shift;
+
+   return sprintf '%s, %s %s %s %s %s', $dt->day_abbr, $dt->day,
+      $dt->month_abbr, $dt->year, $dt->hms, $dt->time_zone_short_name;
 };
 
 my $extension2format = sub {
@@ -912,6 +920,18 @@ sub set_event_date ($$$) {
    return;
 }
 
+sub set_last_modified_header ($$;$) {
+   my ($stash, $modified, $expires) = @_; $modified or return;
+
+   my $m_dt = to_dt( time2str undef, $modified );
+   my $expires_dt = now_dt->add( days => $expires // 30 );
+
+   push @{ $stash->{http_headers} }, 'Last-Modified', $_dt2http_date->( $m_dt );
+   push @{ $stash->{http_headers} }, 'Expires', $_dt2http_date->( $expires_dt );
+
+   return;
+}
+
 sub set_rota_date ($$$$) {
    my ($parser, $where, $key, $opts) = @_;
 
@@ -1158,6 +1178,8 @@ on the request object
 =head2 C<set_element_focus>
 
 =head2 C<set_event_date>
+
+=head2 C<set_last_modified_header>
 
 =head2 C<set_rota_date>
 

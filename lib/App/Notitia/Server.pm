@@ -53,6 +53,8 @@ around 'to_psgi_app' => sub {
 
    return builder {
       enable 'ConditionalGET';
+      # enable 'ETag', cache_control => [ 'must-revalidate', 'max-age=3600' ],
+      #    check_last_modified_header => TRUE, file_etag => 'mtime';
       enable 'Options', allowed => [ qw( DELETE GET POST PUT HEAD ) ];
       enable 'Head';
       enable 'ContentLength';

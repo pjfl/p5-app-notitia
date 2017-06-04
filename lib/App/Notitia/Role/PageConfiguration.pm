@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS NUL TRUE );
 use App::Notitia::DOM       qw( p_hidden );
-use App::Notitia::Util      qw( csrf_token loc );
+use App::Notitia::Util      qw( csrf_token loc set_last_modified_header );
 use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
 use Unexpected::Functions   qw( FailedTokenVerification );
@@ -55,6 +55,8 @@ around 'execute' => sub {
    my $stash = $orig->( $self, $method, $req );
 
    $self->$_add_form0_csrf_token( $req, $stash );
+
+#   set_last_modified_header $stash, time;
 
    $req->authenticated and $self->activity_cache( $session->user_label );
 
