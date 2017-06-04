@@ -4,6 +4,8 @@
 
 # Name
 
+[![Join the chat at https://gitter.im/pjfl/p5-app-notitia](https://badges.gitter.im/pjfl/p5-app-notitia.svg)](https://gitter.im/pjfl/p5-app-notitia?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 App::Notitia - People and resource scheduling
 
 # Synopsis
