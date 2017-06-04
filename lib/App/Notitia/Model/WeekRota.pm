@@ -194,6 +194,13 @@ my $_find_location = sub {
    return $list->[ $i ] ? $list->[ $i ]->{location} : FALSE;
 };
 
+my $_reality_adjustment = sub {
+   my ($distance, $factor) = @_;
+
+   return ($distance/$factor) + sqrt( ($distance**2) - ($distance/$factor)**2 );
+};
+
+
 my $_calculate_distance = sub { # In metres
    my ($location, $assignee) = @_;
 
@@ -202,8 +209,9 @@ my $_calculate_distance = sub { # In metres
 
    my ($lx, $ly) = split m{ , }mx, $location->coordinates;
    my ($ax, $ay) = split m{ , }mx, $assignee->coordinates;
+   my $distance = int 0.5 + sqrt( ($lx - $ax)**2 + ($ly - $ay)**2 );
 
-   return int 0.5 + sqrt( ($lx - $ax)**2 + ($ly - $ay)**2 );
+   return $_reality_adjustment->( $distance, 5 );
 };
 
 my $_crow2road = sub { # Distance on the road is always more than the crow flies
