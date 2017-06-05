@@ -34,7 +34,6 @@ requires "Moo" => "2.000001";
 requires "Plack" => "1.0036";
 requires "Plack::Middleware::Debug" => "0.16";
 requires "Plack::Middleware::Deflater" => "0.08";
-requires "Plack::Middleware::ETag" => "0.05";
 requires "Plack::Middleware::FixMissingBodyInRedirect" => "0.12";
 requires "Plack::Middleware::LogErrors" => "0.001";
 requires "Plack::Middleware::Options" => "0.01";

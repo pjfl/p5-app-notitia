@@ -920,14 +920,11 @@ sub set_event_date ($$$) {
    return;
 }
 
-sub set_last_modified_header ($$;$) {
-   my ($stash, $modified, $expires) = @_; $modified or return;
+sub set_last_modified_header ($;$) {
+   my ($stash, $modified) = @_;
 
-   my $m_dt = to_dt( time2str undef, $modified );
-   my $expires_dt = now_dt->add( days => $expires // 30 );
-
-   push @{ $stash->{http_headers} }, 'Last-Modified', $_dt2http_date->( $m_dt );
-   push @{ $stash->{http_headers} }, 'Expires', $_dt2http_date->( $expires_dt );
+   push @{ $stash->{http_headers} }, 'Last-Modified',
+      $_dt2http_date->( to_dt( time2str undef, $modified // time ) );
 
    return;
 }

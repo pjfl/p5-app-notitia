@@ -2,7 +2,8 @@ package App::Notitia::Model::Posts;
 
 use App::Notitia::Attributes;  # Will do cleaning
 use App::Notitia::Util     qw( add_dummies build_tree iterator localise_tree
-                               mtime register_action_paths );
+                               mtime register_action_paths
+                               set_last_modified_header );
 use Class::Usul::Constants qw( SPC TRUE );
 use Class::Usul::Types     qw( NonZeroPositiveInt PositiveInt );
 use English                qw( -no_match_vars );
@@ -116,7 +117,13 @@ sub nav_label {
 }
 
 sub page : Role(anon) {
-   my $self = shift; return $self->get_stash( @_ );
+   my ($self, $req, $page) = @_;
+
+   my $stash = $self->get_stash( $req, $page );
+
+   set_last_modified_header $stash, $stash->{page}->{modified};
+
+   return $stash;
 }
 
 sub qualify_path {

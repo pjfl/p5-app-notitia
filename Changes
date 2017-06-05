@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Add last modified header to CMS pages
           - Merges state-per-request branch
           - Can reverse the log view row order using filter button
           - Stops attempts to email example addresses
