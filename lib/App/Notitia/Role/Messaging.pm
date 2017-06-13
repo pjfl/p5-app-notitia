@@ -229,9 +229,9 @@ sub message_stash {
       label_id => "${adhoc_eml_id}_label" };
 
    p_textarea $form, 'sms_message', "\n\n", {
+      class    => 'standard-field clear autosize',
       id       => "${sms_id}_message",
-      class    => 'standard-field clear autosize', label_class => 'hidden',
-      label_id => "${sms_id}_label" };
+      label_id => "${sms_id}_label", label_class => 'hidden', };
 
    p_button $form, 'confirm', 'message_create', { class => 'button right-last'};
 

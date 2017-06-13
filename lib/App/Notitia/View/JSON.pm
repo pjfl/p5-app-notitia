@@ -21,7 +21,8 @@ has '_transcoder' => is => 'lazy', isa => Object,
 
 # Private functions
 my $_header = sub {
-   return [ 'Content-Type' => 'application/json', @{ $_[ 0 ] // [] } ];
+   return [ 'Cache-Control' => 'no-store, must-revalidate, max-age=0',
+            'Content-Type'  => 'application/json', @{ $_[ 0 ] // [] } ];
 };
 
 # Public methods

@@ -206,7 +206,7 @@ my $_slot_link = sub {
 
    $page->{disabled} and return { colspan => 2, value => $value };
 
-   my $action = slot_claimed $data->{ $k } ? 'yield' : 'claim';
+   my $action = slot_claimed( $data->{ $k } ) ? 'yield' : 'claim';
    my $operator = $data->{ $k }->{operator} // NUL;
    my $can_yield = ($operator eq $req->username
                     or is_member 'rota_manager', $req->session->roles)
@@ -664,6 +664,10 @@ sub slot : Dialog Role(rota_manager) Role(rider) Role(controller) Role(driver) {
       tip => make_tip $req, "${action}_slot_tip", [ $slot_type ] };
 
    return $stash;
+}
+
+sub slot_link {
+   my $self = shift; return $_slot_link->( @_ );
 }
 
 sub yield_slot_action : Role(rota_manager) Role(rider) Role(controller)

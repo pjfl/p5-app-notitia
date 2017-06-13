@@ -7,6 +7,9 @@
    <div class="nav-link left align-right">
 [% Dispatch( page.fields.nav.picker ) -%]
    </div>
+   <div class="nav-link left align-right">
+[% Dispatch( page.fields.query.control ) %]
+   </div>
    <div class="nav-link right align-left">
 [% Dispatch( page.fields.nav.next ) -%]
    </div>
@@ -20,6 +23,5 @@
    <div class="nav-link right align-left">
 [% Dispatch( page.fields.nav.next ) -%]
    </div>
-[% Dispatch( page.fields.query.control ) %]
 </div>
 [% Dispatch( page.forms.1 ) -%]

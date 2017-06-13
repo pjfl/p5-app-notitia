@@ -208,6 +208,7 @@ my $vehicle_link = sub {
             hint  => loc( $req, 'Hint' ),
             href  => HASH_CHAR,
             name  => "${action}_${name}",
+            style => $opts->{style},
             tip   => $tip,
             type  => 'link',
             value => $value, };
@@ -276,7 +277,7 @@ sub assert_unique ($$$$) {
 sub assign_link ($$$$) {
    my ($req, $page, $args, $opts) = @_; my $type = $opts->{type};
 
-   my $name = $opts->{name}; my $value = $opts->{vehicle};
+   my $name = $opts->{name}; my $value = $opts->{vehicle}; my $style;
 
    my $state = slot_claimed( $opts ) ? 'vehicle-not-needed' : NUL;
 
@@ -284,22 +285,24 @@ sub assign_link ($$$$) {
    $value and $state = 'vehicle-assigned';
 
    if ($state eq 'vehicle-assigned') {
-      my $opts = { action => 'unassign', name => $name, value => $value };
+      my $params = { action => 'unassign', name => $name, value => $value };
 
-      $value = $vehicle_link->( $req, $page, $args, $opts );
+      $opts->{vehicle}->colour
+         and $style = 'background-color: '.$opts->{vehicle}->colour.';'
+         and $params->{style} = 'color: '
+                              . contrast_colour( $opts->{vehicle}->colour ).';';
+
+      $value = $vehicle_link->( $req, $page, $args, $params );
    }
    elsif ($state eq 'vehicle-requested') {
-      my $opts = { action => 'assign',
-                   class => 'table-link vehicle-requested windows',
-                   name  => $name, value => 'requested' };
+      my $params = { action => 'assign',
+                     class  => 'table-link vehicle-requested windows',
+                     name   => $name,
+                     type   => $type,
+                     value  => 'requested' };
 
-      $type and $opts->{type} = $type;
-      $value = $vehicle_link->( $req, $page, $args, $opts );
+      $value = $vehicle_link->( $req, $page, $args, $params );
    }
-
-   my $style; $state eq 'vehicle-assigned' and $opts->{vehicle}->colour
-      and $style = 'background-color: '.$opts->{vehicle}->colour.';'
-                 . 'color: '.contrast_colour( $opts->{vehicle}->colour ).';';
 
    my $class = "centre narrow ${state}";
 
@@ -958,7 +961,8 @@ sub show_node ($;$$) {
 }
 
 sub slot_claimed ($) {
-   return defined $_[ 0 ] && exists $_[ 0 ]->{operator} ? TRUE : FALSE;
+   return defined $_[ 0 ] && exists $_[ 0 ]->{operator} && $_[ 0 ]->{operator}
+       && $_[ 0 ]->{operator}->id ? TRUE : FALSE;
 }
 
 sub slot_identifier ($$$$) {

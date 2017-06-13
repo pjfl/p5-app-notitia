@@ -60,17 +60,20 @@ my $_add_event_js = sub {
 };
 
 my $_bind_datetime = sub {
-   my ($req, $event, $opts, $ev_dt) = @_;
+   my ($req, $event, $opts, $ev_dt, $default) = @_;
 
    my $disabled = $opts->{disabled} || $event->uri ? TRUE : FALSE;
-   my $dt = $event->uri ? $ev_dt : $opts->{date} ? to_dt $opts->{date} : now_dt;
+   my $dt = $event->uri   ? $ev_dt
+          : $opts->{date} ? to_dt $opts->{date}
+          : $default      ? $default
+          :                 now_dt;
 
    return { class => 'standard-field required', disabled => $disabled,
             type => 'datetime', value => datetime_label $req, $dt };
 };
 
 my $_bind_ends = sub {
-   return $_bind_datetime->( $_[ 0 ], $_[ 1 ], $_[ 2 ], $_[ 1 ]->ends );
+   return $_bind_datetime->( $_[ 0 ], $_[ 1 ], $_[ 2 ], $_[ 1 ]->ends, $_[ 3 ]);
 };
 
 my $_bind_starts = sub {
@@ -391,13 +394,14 @@ my $_bind_trainer = sub {
 my $_bind_event_fields = sub {
    my ($self, $req, $event, $opts) = @_; $opts //= {};
 
-   my $disabled = $opts->{disabled} // FALSE;
-   my $no_maxp  = $disabled || $opts->{vehicle_event} ? TRUE : FALSE;
+   my $disabled    = $opts->{disabled} // FALSE;
+   my $no_maxp     = $disabled || $opts->{vehicle_event} ? TRUE : FALSE;
+   my $default_end = local_dt( now_dt )->add( hours => 1 );
 
    return
    [  name             => $self->$_bind_event_name( $event, $opts ),
       starts           => $_bind_starts->( $req, $event, $opts ),
-      ends             => $_bind_ends->( $req, $event, $opts ),
+      ends             => $_bind_ends->( $req, $event, $opts, $default_end ),
       owner            => $self->$_bind_owner( $event, $disabled ),
       description      => { class    => 'standard-field autosize server',
                             disabled => $disabled, type => 'textarea' },

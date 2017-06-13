@@ -11,7 +11,7 @@ use Web::ComposableRequest::Constants ();
 Class::Usul::Constants->Exception_Class( 'App::Notitia::Exception' );
 Web::ComposableRequest::Constants->Exception_Class( 'App::Notitia::Exception' );
 
-our @EXPORT = qw( C_DIALOG DOTS DATA_TYPE_ENUM FIELD_TYPE_ENUM HASH_CHAR
+our @EXPORT = qw( C_DIALOG DOTS DATA_TYPE_ENUM FIELD_TYPE_ENUM HASH_CHAR NBSP
                   PIPE_SEP PRIORITY_TYPE_ENUM SHIFT_TYPE_ENUM SLOT_TYPE_ENUM
                   TILDE TRAINING_STATUS_ENUM TYPE_CLASS_ENUM VARCHAR_MAX_SIZE
                   );
@@ -34,6 +34,7 @@ sub import {
 sub C_DIALOG  () { { class => 'table-link windows' } }
 sub DOTS      () { "\x{2026}" }
 sub HASH_CHAR () { chr 35     }
+sub NBSP      () { '&nbsp;' }
 sub PIPE_SEP  () { '&nbsp;|&nbsp;' }
 sub TILDE     () { chr 126    }
 
