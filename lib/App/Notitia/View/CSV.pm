@@ -28,7 +28,8 @@ my $_deref = sub {
 };
 
 my $_header = sub {
-   return [ 'Content-Type' => 'text/csv', @{ $_[ 0 ] // [] } ];
+   return [ 'Cache-Control' => 'no-store, must-revalidate, max-age=0',
+            'Content-Type'  => 'text/csv', @{ $_[ 0 ] // [] } ];
 };
 
 # Public methods

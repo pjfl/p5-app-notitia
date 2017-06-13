@@ -32,7 +32,8 @@ has 'type_map'   => is => 'lazy', isa => HashRef, builder => sub {
 
 # Private functions
 my $_header = sub {
-   return [ 'Content-Type' => 'text/html', @{ $_[ 0 ] // [] } ];
+   return [ 'Cache-Control' => 'no-store, must-revalidate, max-age=0',
+            'Content-Type'  => 'text/html', @{ $_[ 0 ] // [] } ];
 };
 
 # Public methods

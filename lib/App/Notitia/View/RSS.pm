@@ -15,7 +15,8 @@ has '+moniker' => default => 'rss';
 
 # Private functions
 my $_header = sub {
-   return [ 'Content-Type' => 'application/rss+xml', @{ $_[ 0 ] // [] } ];
+   return [ 'Cache-Control' => 'no-store, must-revalidate, max-age=0',
+            'Content-Type'  => 'application/rss+xml', @{ $_[ 0 ] // [] } ];
 };
 
 my $_template = do { local $RS = undef; <DATA> };
