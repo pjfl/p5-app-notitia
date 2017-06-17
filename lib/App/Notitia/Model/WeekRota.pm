@@ -1,14 +1,15 @@
 package App::Notitia::Model::WeekRota;
 
-use namespace::autoclean;
+use utf8;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NBSP NUL SPC TRUE );
 use App::Notitia::DOM       qw( new_container p_cell p_container p_hidden p_item
-                                p_js p_link p_row p_select p_span p_table );
+                                p_js p_link p_list p_row p_select p_span
+                                p_table );
 use App::Notitia::Util      qw( assign_link contrast_colour dialog_anchor
-                                js_server_config
-                                js_submit_config local_dt locm make_tip
+                                js_server_config js_submit_config
+                                js_togglers_config local_dt locm make_tip
                                 register_action_paths slot_limit_index to_dt );
 use Class::Null;
 use Class::Usul::Time       qw( time2str );
@@ -66,7 +67,7 @@ my $_add_slot_tip = sub {
    return;
 };
 
-my $_add_v_event_tip = sub {
+my $_add_vevent_tip = sub {
    my ($req, $page, $event) = @_;
 
    my $href = $req->uri_for_action( 'event/vehicle_info', [ $event->uri ] );
@@ -88,21 +89,6 @@ my $_add_vreq_tip = sub {
    return;
 };
 
-my $_add_journal = sub {
-   my ($journal, $vrn, $start, $tuple) = @_;
-
-   my $list = $journal->{ $vrn } //= []; my $i = 0;
-
-   while (my $entry = $list->[ $i ]) { $entry->{start} < $start and last; $i++ }
-
-   my $location = $tuple->[ 1 ] && $tuple->[ 1 ]->coordinates ? $tuple->[ 1 ]
-                : $tuple->[ 0 ];
-
-   splice @{ $list }, $i, 0, { location => $location, start => $start };
-
-   return;
-};
-
 my $_add_slot_row_js_dialog = sub {
    my ($req, $page, $args, $action, $name, $title) = @_;
 
@@ -117,7 +103,7 @@ my $_add_slot_row_js_dialog = sub {
 };
 
 my $_alloc_cell_event_headers = sub {
-   my ($req, $cno) = @_; my @headings = qw( Event Vehicles );
+   my ($req, $cno) = @_; my @headings = qw( Event 択 Vehicle );
 
    return [ map { { colspan => $_ eq 'Event' ? 2 : 1, value => $_ } }
             @headings  ];
@@ -147,6 +133,21 @@ my $_alloc_query_params = sub {
    return { cols => $cols, rows => $rows };
 };
 
+my $_insert_journal = sub {
+   my ($journal, $vrn, $start, $tuple) = @_;
+
+   my $list = $journal->{ $vrn } //= []; my $i = 0;
+
+   while (my $entry = $list->[ $i ]) { $entry->{start} < $start and last; $i++ }
+
+   my $location = $tuple->[ 1 ] && $tuple->[ 1 ]->coordinates ? $tuple->[ 1 ]
+                : $tuple->[ 0 ];
+
+   splice @{ $list }, $i, 0, { location => $location, start => $start };
+
+   return;
+};
+
 my $_onchange_submit = sub {
    my ($page, $k, $form_id) = @_; $form_id //= 'display_control';
 
@@ -167,13 +168,13 @@ my $_onclick_relocate = sub {
 };
 
 my $_operators_vehicle = sub {
-   my $slot = shift; $slot->operator->id or return NUL;
+   my $slot = shift; $slot->operator->id or return NBSP;
 
    my $slov = $slot->operator_vehicle;
 
    return $slov && $slov->type eq '4x4' ? '4'
         : $slov && $slov->type eq 'car' ? 'C'
-        : NUL;
+        : NBSP;
 };
 
 my $_select_number = sub {
@@ -181,6 +182,24 @@ my $_select_number = sub {
 
    return [ map { [ $_ , $_, { selected => $selected eq $_? TRUE : FALSE } ] }
             1 .. $max ];
+};
+
+my $_slot_link_data = sub {
+   my ($page, $dt, $dt_key, $slot) = @_;
+
+   my $vehicle_type =  $slot->type_name eq 'driver' ? [ '4x4', 'car' ]
+                    :  $slot->type_name eq 'rider'  ? 'bike' : undef;
+   my $operator     =  $slot->operator;
+
+   return { $dt_key => {
+      name          => $slot->key,
+      operator      => $operator,
+      rota_dt       => $dt,
+      rota_name     => $page->{rota_name},
+      slov          => $slot->operator_vehicle,
+      type          => $vehicle_type,
+      vehicle       => $slot->vehicle,
+      vehicle_req   => $slot->vehicle_requested } };
 };
 
 my $_week_label = sub {
@@ -234,6 +253,21 @@ my $_crow2road = sub { # Distance on the road is always more than the crow flies
    return ($x / $factor) + sqrt( ($x**2) - ($x / $factor)**2 );
 };
 
+my $_union = sub {
+   return [ @{ $_[ 0 ]->{ $_[ 1 ]->[ 0 ] } // [] },
+            @{ $_[ 0 ]->{ $_[ 1 ]->[ 1 ] } // [] } ];
+};
+
+my $_vehicle_cell_style = sub {
+   my $vehicle = shift; my $style = NUL;
+
+   blessed $vehicle and $vehicle->colour
+       and $style = 'background-color: '.$vehicle->colour.'; '
+                  . 'color: '.contrast_colour( $vehicle->colour ).'; ';
+
+   return $style;
+};
+
 my $_vehicle_label = sub {
    my ($data, $vehicle) = @_;
 
@@ -254,26 +288,24 @@ my $_vehicle_list = sub {
       selected => $vrn eq $_->vrn ? TRUE : FALSE } ] } @{ $data->{vehicles} } ];
 };
 
-my $_vehicle_cell_style = sub {
-   my $vehicle = shift; my $style = NUL;
-
-   blessed $vehicle and $vehicle->colour
-       and $style = 'background-color: '.$vehicle->colour.'; '
-                  . 'color: '.contrast_colour( $vehicle->colour ).'; ';
-
-   return $style;
-};
-
 my $_vehicle_or_request_list = sub {
-   my ($data, $tuples) = @_;
+   my $count = -1;
 
-   return [ map { [ blessed $_ ? $_->name : $_, $_ ] }
-            map { $_->[ 1 ] } @{ $tuples } ];
+   return [ map { $count++; [ blessed $_ ? $_->name : $_, $count, {
+      selected => $count == 0 ? TRUE : FALSE } ] }
+            map { $_->[ 1 ] } @{ $_[ 0 ] } ];
 };
 
-my $_union = sub {
-   return [ @{ $_[ 0 ]->{ $_[ 1 ]->[ 0 ] } // [] },
-            @{ $_[ 0 ]->{ $_[ 1 ]->[ 1 ] } // [] } ];
+my $_vehicle_or_request_select_cell = sub {
+   my $tuples = shift;
+   my $event = $tuples->[ 0 ]->[ 0 ];
+   my $form = new_container { class => 'spreadsheet-fixed-form align-center' };
+
+   p_select $form, 'vehicle', $_vehicle_or_request_list->( $tuples ), {
+      class => 'spreadsheet-select-single togglers',
+      id => "vehicles-${event}", label => NUL };
+
+   return { class => 'table-cell-select narrow', value => $form };
 };
 
 my $_alloc_key_row = sub {
@@ -331,13 +363,14 @@ my $_alloc_cell_event = sub {
    my ($req, $page, $row, $event, $style, $id) = @_;
 
    my $cell = p_cell $row, {
-      class => 'table-cell-label', colspan => 2, style => $style };
+      class => 'spreadsheet-fixed-cell table-cell-label', colspan => 2 };
 
    my $text = $event->event_type eq 'person'
             ? 'Event Information' : 'Vehicle Event Information';
 
    p_span $cell, $event->name, {
-      class => 'server tips', id => $id, title => locm $req, $text };
+      class => 'label-column server tips',
+      id => $id, title => locm $req, $text };
 
    $_add_event_tip->( $req, $page, $event );
 
@@ -406,7 +439,7 @@ my $_week_rota_assignments = sub {
                    ( 'event/vehicle_event', [ $_->[ 1 ]->vehicle->vrn,
                                               $_->[ 0 ] ] );
                 $_onclick_relocate->( $page, $_->[ 0 ], $href ); $_ }
-         map  { $_add_v_event_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
+         map  { $_add_vevent_tip->( $req, $page, $_ ); [ $_->uri, $_ ] }
          grep { $_->vehicle->vrn eq $vehicle->vrn }
          grep { $_->start_date eq $date } @{ $events };
 
@@ -420,43 +453,12 @@ my $_week_rota_assignments = sub {
 my $_max_controllers = sub {
    my $self = shift;
    my $limits = $self->config->slot_limits;
-   my $max_day_controllers = $limits->[ slot_limit_index 'day', 'controller' ];
-   my $max_night_controllers
+   my $max_day = $limits->[ slot_limit_index 'day', 'controller' ];
+   my $max_night
       = $limits->[ slot_limit_index 'night', 'controller' ];
 
-   return $max_day_controllers + $max_night_controllers;
-};
-
-my $_vehicle_select_cell = sub {
-   my ($self, $req, $page, $data, $form_name, $href, $action, $vrn) = @_;
-
-   my $disabled = $form_name eq 'disabled' ? TRUE : FALSE;
-   my $form = new_container $form_name, $href, {
-      class => 'spreadsheet-fixed-form align-center' };
-   my $jsid = "vehicle-${form_name}";
-
-   $self->add_csrf_token( $req, $form );
-
-   p_js $page, js_submit_config
-      $jsid, 'change', 'submitForm', [ $action, $form_name ];
-   p_select $form, 'vehicle', $_vehicle_list->( $data, $vrn ), {
-      class => "spreadsheet-select submit", disabled => $disabled,
-      id => $jsid, label => NUL };
-   p_hidden $form, 'vehicle_original', $vrn;
-
-   return { class => 'table-cell-select narrow', value => $form };
-};
-
-my $_vehicle_or_request_select_cell = sub {
-   my ($self, $data, $tuples) = @_;
-
-   my $form = new_container { class => 'spreadsheet-fixed-form align-center' };
-
-   p_select $form, 'vehicle', $_vehicle_or_request_list->( $data, $tuples ), {
-      class => 'spreadsheet-select submit',
-      id => 'vehicles->${event}', label => NUL };
-
-   return { class => 'table-cell-select narrow', value => $form };
+   return wantarray             ? [ $max_day, $max_night ]
+        : $max_day > $max_night ? $max_day : $max_night;
 };
 
 my $_alloc_cell_controller_headers = sub {
@@ -468,17 +470,24 @@ my $_alloc_cell_controller_headers = sub {
 };
 
 my $_alloc_cell_controller_row = sub {
-   my ($self, $req, $page, $data, $dt, $cno) = @_; my $row = [];
+   my ($self, $req, $page, $data, $dt, $shift) = @_; my $row = [];
 
    my $local_ymd = local_dt( $dt )->ymd;
+   my $cellno = $shift eq 'day' ? 0 : 1;
 
    for my $subslot (0 .. $self->$_max_controllers - 1) {
-      my $name = "${local_ymd}_controller_${subslot}";
-      my $args = [ $page->{rota_name}, $local_ymd, 'controller', $subslot ];
-      my $href = $req->uri_for_action( 'day/slot', $args );
-      my $cell = p_cell $row, { class => 'table-cell-label' };
+      my $dt_key = "${local_ymd}_${shift}_controller_${subslot}";
+      my $slot = $data->{slots}->{ $dt_key } // Class::Null->new;
+      my $link_data = $_slot_link_data->( $page, $dt, $dt_key, $slot );
+      my $cell =  p_cell $row, $self->components->{day}->slot_link
+         ( $req, $page, $link_data, $dt_key, $slot->type_name );
 
-      p_link $cell, $name, $href, {  value => locm $req, 'Vacant', };
+      $cell->{class} = 'spreadsheet-fixed-cell table-cell-label';
+      $cell->{colspan} = 1;
+
+      if ($subslot > ($self->$_max_controllers)[ $cellno ]) {
+         $cell->{value}->{value} = NUL; $cell->{value}->{tip} = NUL;
+      }
    }
 
    return $row;
@@ -488,39 +497,47 @@ my $_alloc_cell_event_row = sub {
    my ($self, $req, $page, $data, $count, $tuples, $cno) = @_; my $row = [];
 
    my $event = $tuples->[ 0 ]->[ 0 ];
-   my $href  = $req->uri_for_action( 'asset/vehicle', [ $event->uri ] );
 
    $_alloc_cell_event->( $req, $page, $row, $event, NUL, $event->uri );
 
-   p_cell $row, $self->$_vehicle_or_request_select_cell( $data, $tuples );
+   p_cell $row, $_vehicle_or_request_select_cell->( $tuples );
+
+   my $id = "vehicles-${event}"; p_js $page, js_togglers_config $id, 'change',
+      'showSelected', [ $id, scalar @{ $tuples } ];
+
+   my $cell = p_cell $row, {
+      class => 'spreadsheet-fixed-cell table-cell-embeded' };
+   my $list = p_list $cell, NUL, [], { class => 'table-cell-list' };
+   my $index = 0;
+
+   for my $v_or_r (map { $_->[ 1 ] } @{ $tuples }) {
+      my $style = $_vehicle_cell_style->( $v_or_r );
+      my $href  = $req->uri_for_action( 'asset/vehicle', [ $event->uri ] );
+
+      p_link $list, "${id}-${index}", $href, {
+         class => $index == 0 ? 'table-cell-link' : 'table-cell-link hidden',
+         style => $style,
+         tip   => NUL,
+         value => blessed $v_or_r ? $v_or_r->name : ucfirst $v_or_r };
+      $index++;
+   }
 
    return $row;
 };
 
 my $_alloc_cell_slot_row = sub {
-   my ($self, $req, $page, $data, $dt, $slot_key, $cno) = @_;
+   my ($self, $req, $page, $data, $dt, $slot_key, $cno) = @_; my $row = [];
 
    my $local_ymd = local_dt( $dt )->ymd;
    my $dt_key = "${local_ymd}_${slot_key}";
    my $slot = $data->{slots}->{ $dt_key } // Class::Null->new;
-   my $row = [];
 
    $cno == 0 and p_cell $row, {
       class => 'rota-header align-center',
       value => locm $req, "${slot_key}_abbrv" };
 
-   my $vehicle_type =  $slot->type_name eq 'driver' ? [ '4x4', 'car' ]
-                    :  $slot->type_name eq 'rider'  ? 'bike' : undef;
    my $operator     =  $slot->operator;
-   my $link_data    =  { $dt_key => {
-      name          => $slot->key,
-      operator      => $operator,
-      rota_dt       => $dt,
-      rota_name     => $page->{rota_name},
-      slov          => $slot->operator_vehicle,
-      type          => $vehicle_type,
-      vehicle       => $slot->vehicle,
-      vehicle_req   => $slot->vehicle_requested } };
+   my $link_data    =  $_slot_link_data->( $page, $dt, $dt_key, $slot );
    my $cell         =  p_cell $row, $self->components->{day}->slot_link
       ( $req, $page, $link_data, $dt_key, $slot->type_name );
    my $args         =  [ $page->{rota_name}, $local_ymd, $slot_key ];
@@ -539,21 +556,18 @@ my $_alloc_cell_slot_row = sub {
 
    $_add_slot_row_js_dialog->( $req, $page, $args, $action, $name, $title );
 
-   p_cell $row, { class => 'table-cell-label narrow align-center',
-                  value => $operator->id ? $operator->region : NUL };
-   p_cell $row, { class => 'table-cell-label narrow align-center',
+   p_cell $row, { class => 'table-cell-label narrow',
+                  value => $operator->id ? $operator->region : NBSP };
+   p_cell $row, { class => 'table-cell-label narrow',
                   value => $_operators_vehicle->( $slot ) };
 
    if ($operator->id and $slot->vehicle_requested) {
       my $cell = p_cell $row,
          assign_link( $req, $page, $args, $link_data->{ $dt_key } );
 
-      $cell->{class} = 'table-cell-label centre narrow';
+      $cell->{class} = 'table-cell-label narrow';
    }
-   else {
-      p_cell $row, {
-         class => 'spreadsheet-fixed-select table-cell-label', value => NUL };
-   }
+   else { p_cell $row, { class => 'table-cell-label narrow', value => NBSP } }
 
    return $row;
 };
@@ -561,20 +575,17 @@ my $_alloc_cell_slot_row = sub {
 my $_alloc_cell_vevent_row = sub {
    my ($self, $req, $page, $data, $vevent, $cno) = @_; my $row = [];
 
-   my $vehicle = $vevent->vehicle;
-   my $style = $_vehicle_cell_style->( $vehicle );
+   $_alloc_cell_event->( $req, $page, $row, $vevent, NUL, $vevent->uri );
 
-   $_alloc_cell_event->( $req, $page, $row, $vevent, $style, $vevent->uri );
+   $_add_vevent_tip->( $req, $page, $vevent );
 
    p_cell $row, { value => NUL }; p_cell $row, { value => NUL };
 
-   my $opts = { assignee => $vevent->owner, journal => $data->{journal},
-                start => ($vevent->duration)[ 0 ], vehicles => [ $vehicle ] };
+   my $vehicle = $vevent->vehicle;
+   my $style = $_vehicle_cell_style->( $vehicle );
 
-   p_cell $row, $self->$_vehicle_select_cell
-      ( $req, $page, $opts, 'disabled', NUL, NUL, $vehicle->vrn );
-
-   $_add_v_event_tip->( $req, $page, $vevent );
+   p_cell $row, {
+      class => 'table-cell-label', style => $style, value => $vehicle->name };
 
    return $row;
 };
@@ -606,9 +617,11 @@ my $_alloc_cell = sub {
 
    while ($count++ < 4) {
       p_row $table, [ map { {
-         class => $_ == 0 ? 'table-cell-label' : 'table-cell-select narrow',
+         class => $_ == 0 ? 'table-cell-label'
+                : $_ == 1 ? 'table-cell-select narrow'
+                :           'spreadsheet-fixed-cell table-cell-label',
          colspan => $_ == 0 ? 2 : 1, value => NBSP } }
-                      0 .. 1 ];
+                      0 .. 2 ];
    }
 
    $table = p_table $tables, { class => 'embeded' };
@@ -616,7 +629,9 @@ my $_alloc_cell = sub {
    $table->{headers} = $self->$_alloc_cell_controller_headers( $req, $cno );
 
    p_row $table, $self->$_alloc_cell_controller_row
-      ( $req, $page, $data, $dt, $cno );
+      ( $req, $page, $data, $dt, 'day' );
+   p_row $table, $self->$_alloc_cell_controller_row
+      ( $req, $page, $data, $dt, 'night' );
 
    $table = p_table $tables, { class => 'embeded' };
 
@@ -691,7 +706,7 @@ my $_initialise_journal = sub {
       for my $vehicle (@{ $vehicles->{ $type } }) {
          my $tuple = $asset->find_last_keeper( $req, $rota_dt, $vehicle );
 
-         $_add_journal->( $journal, $vehicle->vrn, $rota_dt, $tuple );
+         $_insert_journal->( $journal, $vehicle->vrn, $rota_dt, $tuple );
       }
    }
 
@@ -776,7 +791,7 @@ my $_search_for_vehicle_events = sub {
       my $start = ($vevent->duration)[ 0 ];
       my $tuple = [ $vevent->owner, $vevent->location ];
 
-      $_add_journal->( $journal, $vevent->vehicle->vrn, $start, $tuple );
+      $_insert_journal->( $journal, $vevent->vehicle->vrn, $start, $tuple );
    }
 
    return $vevents;
@@ -824,7 +839,7 @@ my $_search_for_events = sub {
       my $start = ($tport->event->duration)[ 0 ];
       my $tuple = [ $tport->event->owner ];
 
-      $_add_journal->( $journal, $vehicle->vrn, $start, $tuple );
+      $_insert_journal->( $journal, $vehicle->vrn, $start, $tuple );
    }
 
    return $events;
@@ -837,15 +852,14 @@ my $_search_for_slots = sub {
 
    my $slot_rs = $self->schema->resultset( 'Slot' ); my $slots = {};
 
-   for my $slot (grep { $_->type_name->is_driver || $_->type_name->is_rider }
-                 $slot_rs->search_for_slots( $opts )->all) {
+   for my $slot ($slot_rs->search_for_slots( $opts )->all) {
       my $k = local_dt( $slot->start_date )->ymd.'_'.$slot->key;
 
       $slots->{ $k } = $slot; $slot->vehicle or next;
 
       my $start = ($slot->duration)[ 0 ]; my $tuple = [ $slot->operator ];
 
-      $_add_journal->( $journal, $slot->vehicle->vrn, $start, $tuple );
+      $_insert_journal->( $journal, $slot->vehicle->vrn, $start, $tuple );
    }
 
    return $slots;
@@ -1033,7 +1047,6 @@ sub alloc_table : Dialog Role(rota_manager) {
 sub allocation : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $moniker = $self->moniker;
    my $today = time2str '%Y-%m-%d';
    my $rota_name = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
    my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
@@ -1043,6 +1056,7 @@ sub allocation : Role(rota_manager) {
    my $page = $self->$_allocation_page( $req, $rota_name, $rota_dt, $params );
    my $list = $page->{forms}->[ 0 ];
    my $fields = $page->{fields};
+   my $moniker = $self->moniker;
 
    $_push_allocation_js->( $req, $page, $moniker, $rota_dt );
 
@@ -1195,6 +1209,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 =cut
 
 # Local Variables:
+# coding: utf-8
 # mode: perl
 # tab-width: 3
 # End:

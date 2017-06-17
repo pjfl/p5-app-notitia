@@ -271,7 +271,7 @@ footer {
 .pathname, .standard-field { min-width: 300px; }
 .pathname[disabled], .date-field[disabled], .narrow-field[disabled],
 .single-character[disabled], .single-digit[disabled],
-.spreadsheet-select, .standard-field[disabled],
+.spreadsheet-select[disabled], .standard-field[disabled],
 .fake-disabled, .mediumint-field[disabled], .smallint-field[disabled] {
    background-color: @subtle-bg; color: @darker-fg;
 }
@@ -293,7 +293,7 @@ footer {
 }
 .mediumint-field { min-width: 150px; }
 .smallint-field { max-width: 64px; text-align: center; }
-.spreadsheet { margin-left: 0.5em; margin-right: 0.5em; overflow-x: auto; }
+.spreadsheet { margin-left: 0.5em; margin-right: 0.5em; }
 .spreadsheet-heading {
    line-height: 36px; margin: 0 auto; max-width: 320px;
 }
@@ -313,6 +313,11 @@ footer {
    .box-sizing; color: @darker-fg; font-size: 12px; max-width: 90px; margin: 0;
    min-width: 90px; padding: 3px 3px; vertical-align: middle;
 }
+.spreadsheet-select-single {
+   background-color: #fff; border: 2px inset; .border-radius;
+   .box-sizing; color: @darker-fg; font-size: 12px; max-width: 20px; margin: 0;
+   min-width: 20px; padding: 0 3px; vertical-align: middle;
+}
 .spreadsheet-oplinks { margin: 5px auto; }
 .standard-field[type=date], .narrow-field[type=time],
 .standard-field[type=time] {
@@ -323,10 +328,13 @@ footer {
 }
 .standard-form .add-link { margin-bottom: 5px; }
 .standard-form .delete-button, .standard-form .save-button { margin-top: 5px; }
-.table-cell-help, .table-cell-label {
+.table-cell-embeded { padding: 0 !important; }
+.table-cell-help, .table-cell-label, .table-cell-link {
    font-size: 12px; text-align: center;
 }
 .table-cell-help { cursor: pointer; }
+.table-cell-link { display: block; line-height: 26px; }
+.table-cell-list { overflow: hidden; }
 .table-cell-select {
    font-size: 12px; padding: 0.12em 0 !important; text-align: center;
 }
@@ -671,6 +679,7 @@ article h2:first-child, { margin-top: 0; }
    border: 0; color: @contrast; font-size: 12px; line-height: 28px;
    outline: none; padding: 0 10px; width: 80px;
 }
+.day-selector-form { overflow: hidden; }
 .day-selector-form .rota-date-field {
    background: @background; margin-top: -2px;
 }
@@ -841,7 +850,7 @@ hr.subtle { display: none; }
 .spreadsheet-table th.day-of-week { max-width: 270px; }
 .standard-table { margin: 0.5em 0 0 0; }
 table.embeded { margin: 0; }
-table.embeded td { white-space: nowrap; }
+table.embeded td, table.embeded a { white-space: nowrap; }
 /* Note types */
 .info {
    background-color: #0389aa;

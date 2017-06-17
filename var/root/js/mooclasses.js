@@ -3005,13 +3005,23 @@ var Togglers = new Class( {
       target.hide();
    },
 
-   showSelected: function( src_id, sink_id ) {
+   showChecked: function( src_id, sink_id ) {
       var src = $( src_id ), target = $( sink_id );
 
       if (! src || ! target) return;
 
       if (src.getProperty( 'checked' )) { target.show() }
       else { target.hide() }
+   },
+
+   showSelected: function( id, count ) {
+      var src = $( id ); if (! src) return;
+
+      for (var i = 0; i < count; i++) {
+         var target = $( id + '-' + i ); if (target) target.hide();
+      }
+
+      var target = $( id + '-' + src.value ); if (target) target.show();
    },
 
    toggleSwapText: function( id, name, s1, s2 ) {

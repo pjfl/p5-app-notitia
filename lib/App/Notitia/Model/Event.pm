@@ -759,7 +759,8 @@ sub participents : Role(any) {
    my ($self, $req) = @_;
 
    my $uri       =  $req->uri_params->( 0 );
-   my $event     =  $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $schema    =  $self->schema;
+   my $event     =  $schema->resultset( 'Event' )->find_event_by( $uri );
    my $disabled  =  now_dt > $event->start_date ? TRUE : FALSE;
    my $params    =  { event => $uri };
    my $actionp   =  $self->moniker.'/participents';
@@ -778,12 +779,14 @@ sub participents : Role(any) {
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $table = p_table $form, { headers => $_participent_headers->( $req ) };
-   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person_rs = $schema->resultset( 'Person' );
 
    p_row $table, [ map { $self->$_participent_links( $req, $page, $event, $_ ) }
                       @{ $person_rs->list_participents( $event ) } ];
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   my $person = $person_rs->find_by_shortcode( $req->username );
+
+   $_add_participate_button->( $req, $form, $event, $person );
 
    return $self->get_stash( $req, $page );
 }

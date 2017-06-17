@@ -62,28 +62,28 @@ my $_check_env_vars = sub {
 };
 
 my $_create_profile = sub {
-   my ($self, $localdir) = @_; my ($cmd, $profile);
+   my ($self, $localdir) = @_; my $profile;
 
    if ($localdir->exists) {
-      my $inc = $localdir->catdir( 'lib', 'perl5' );
-
-      $cmd = [ $EXECUTABLE_NAME, '-I', "${inc}", "-Mlocal::lib=${localdir}" ];
       $profile = $localdir->catfile( qw( var etc profile ) );
    }
-   else {
-      $localdir = io[ '~', 'local' ];
-
-      my $inc = $localdir->catdir( 'lib', 'perl5' );
-
-      $cmd = [ $EXECUTABLE_NAME, '-I', "${inc}", "-Mlocal::lib=${localdir}" ];
+   elsif ($localdir = io[ '~', 'local' ] and $localdir->exists) {
+      $profile = $self->config->vardir->catfile( 'etc', 'profile' );
+   }
+   elsif ($localdir = io( $ENV{PERL_LOCAL_LIB_ROOT} // NUL )
+          and $localdir->exists) {
       $profile = $self->config->vardir->catfile( 'etc', 'profile' );
    }
 
-   unless ($profile->exists) {
-      delete $ENV{PERL5LIB}; delete $ENV{PERL_LOCAL_LIB_ROOT};
-      $self->run_cmd( $cmd, { err => 'stderr', out => $profile } );
-   }
+   (not $profile or $profile->exists) and return;
 
+   my $inc = $localdir->catdir( 'lib', 'perl5' );
+   my $cmd = [ $EXECUTABLE_NAME, '-I', "${inc}", "-Mlocal::lib=${localdir}" ];
+   my $p5lib = delete $ENV{PERL5LIB};
+   my $libroot = delete $ENV{PERL_LOCAL_LIB_ROOT};
+
+   $self->run_cmd( $cmd, { err => 'stderr', out => $profile } );
+   $ENV{PERL5LIB} = $p5lib; $ENV{PERL_LOCAL_LIB_ROOT} = $libroot;
    return;
 };
 

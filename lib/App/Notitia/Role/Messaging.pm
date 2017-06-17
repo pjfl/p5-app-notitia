@@ -238,13 +238,13 @@ sub message_stash {
    p_js $stash->{page}, set_element_focus "people", 'email_message';
 
    p_js $stash->{page}, js_togglers_config $plate_eml_id, 'checked',
-      'showSelected', [ $plate_eml_id, "${plate_eml_id}_label" ];
+      'showChecked', [ $plate_eml_id, "${plate_eml_id}_label" ];
 
    p_js $stash->{page}, js_togglers_config  $adhoc_eml_id, 'checked',
-      'showSelected', [ $adhoc_eml_id, "${adhoc_eml_id}_label" ];
+      'showChecked', [ $adhoc_eml_id, "${adhoc_eml_id}_label" ];
 
    p_js $stash->{page}, js_togglers_config  $sms_id, 'checked',
-      'showSelected', [ $sms_id, "${sms_id}_label" ];
+      'showChecked', [ $sms_id, "${sms_id}_label" ];
 
    return $stash;
 }
