@@ -288,7 +288,7 @@ sub assign_link ($$$$) {
       my $params = { action => 'unassign', name => $name, value => $value };
 
       $opts->{vehicle}->colour
-         and $style = 'background-color: '.$opts->{vehicle}->colour.';'
+         and $style = 'background-color: '.$opts->{vehicle}->colour.'; '
          and $params->{style} = 'color: '
                               . contrast_colour( $opts->{vehicle}->colour ).';';
 

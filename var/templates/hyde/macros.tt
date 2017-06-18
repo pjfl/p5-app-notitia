@@ -229,7 +229,7 @@
       <thead>
          <tr>
 [%       FOR cell IN f.headers -%]
-           <th class="[% cell.class %]" colspan="[% cell.colspan%]"
+           <th class="[% cell.class %]" colspan="[% cell.colspan %]"
                id="[% cell.name %]">
 [%          IF reference( cell.value ) == 'HASH'; Dispatch( cell.value ) %]
 [%          ELSE; cell.value; END %]</th>

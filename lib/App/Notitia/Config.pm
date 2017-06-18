@@ -265,8 +265,6 @@ has 'preferences'     => is => 'ro',   isa => HashRef[Bool],
 has 'rdbms'           => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    default            => sub { [ 'MySQL' ] };
 
-has 'repo_url'        => is => 'ro',   isa => SimpleStr, default => NUL;
-
 has 'request_roles'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
    builder            => sub {
       [ 'L10N', 'Session', 'JSON', 'Cookie', '+App::Notitia::Role::Request' ] };
@@ -769,11 +767,6 @@ development only. Defaults to false
 
 An array reference of non empty simple strings. The list of relational
 databases to create schema for
-
-=item C<repo_url>
-
-A simple string that defaults to null. The URI of the source code repository
-for this project
 
 =item C<request_roles>
 

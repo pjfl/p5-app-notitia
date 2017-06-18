@@ -511,12 +511,12 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
                           . "slot:${name} vehicle_requested:${request_sv}" );
 
    my $args     = [ $rota_name, $rota_date ];
-   my $location = $req->uri_for_action( $self->moniker.'/day_rota', $args );
+#   my $location = $req->uri_for_action( $self->moniker.'/day_rota', $args );
    my $sr_map   = $self->config->slot_region;
    my $label    = slot_identifier $rota_name, $rota_date, $name, $sr_map;
    my $message  = [ to_msg '[_1] claimed slot [_2]', $person->label, $label ];
 
-   return { redirect => { location => $location, message => $message } };
+   return { redirect => { message => $message } };
 }
 
 sub day_rota : Role(any) {
@@ -690,12 +690,12 @@ sub yield_slot_action : Role(rota_manager) Role(rider) Role(controller)
                           . "slot:${slot_name}" );
 
    my $args     = [ $rota_name, $rota_date ];
-   my $location = $req->uri_for_action( $self->moniker.'/day_rota', $args );
+#   my $location = $req->uri_for_action( $self->moniker.'/day_rota', $args );
    my $sr_map   = $self->config->slot_region;
    my $label    = slot_identifier $rota_name, $rota_date, $slot_name, $sr_map;
    my $message  = [ to_msg '[_1] yielded slot [_2]', $assignee->label, $label ];
 
-   return { redirect => { location => $location, message => $message } };
+   return { redirect => { message => $message } };
 }
 
 1;

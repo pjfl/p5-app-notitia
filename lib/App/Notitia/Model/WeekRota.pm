@@ -3,14 +3,15 @@ package App::Notitia::Model::WeekRota;
 use utf8;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( FALSE NBSP NUL SPC TRUE );
+use App::Notitia::Constants qw( FALSE HASH_CHAR NBSP NUL SPC TRUE );
 use App::Notitia::DOM       qw( new_container p_cell p_container p_hidden p_item
                                 p_js p_link p_list p_row p_select p_span
                                 p_table );
 use App::Notitia::Util      qw( assign_link contrast_colour dialog_anchor
                                 js_server_config js_submit_config
                                 js_togglers_config local_dt locm make_tip
-                                register_action_paths slot_limit_index to_dt );
+                                register_action_paths slot_claimed
+                                slot_limit_index to_dt );
 use Class::Null;
 use Class::Usul::Time       qw( time2str );
 use Scalar::Util            qw( blessed );
@@ -20,6 +21,7 @@ extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
+with    q(App::Notitia::Role::Holidays);
 
 # Public attributes
 has '+moniker' => default => 'week';
@@ -37,7 +39,8 @@ around 'get_stash' => sub {
    my $stash = $orig->( $self, $req, @args );
    my $name  = $req->uri_params->( 0, { optional => TRUE } ) // 'main';
 
-   $stash->{page}->{location} = 'schedule';
+   ($stash->{page}->{template}->[ 1 ] // NUL) ne 'custom/two-week-table'
+      and $stash->{page}->{location} = 'schedule';
    $stash->{navigation}
       = $self->rota_navigation_links( $req, $stash->{page}, 'month', $name );
 
@@ -89,14 +92,14 @@ my $_add_vreq_tip = sub {
    return;
 };
 
-my $_add_slot_row_js_dialog = sub {
-   my ($req, $page, $args, $action, $name, $title) = @_;
+my $_add_slot_js_dialog = sub {
+   my ($req, $page, $jsid, $title, $args, $action) = @_;
 
    my $actionp = 'day/slot';
    my $href = $req->uri_for_action( $actionp, $args, { action => $action } );
 
-   p_js $page, dialog_anchor $args->[ 2 ], $href, {
-      name  => "${action}-${name}",
+   p_js $page, dialog_anchor $jsid, $href, {
+      name  => "${action}-${jsid}",
       title => locm $req, (ucfirst $action).SPC.$title, };
 
    return;
@@ -365,8 +368,9 @@ my $_alloc_cell_event = sub {
    my $cell = p_cell $row, {
       class => 'spreadsheet-fixed-cell table-cell-label', colspan => 2 };
 
-   my $text = $event->event_type eq 'person'
-            ? 'Event Information' : 'Vehicle Event Information';
+   my $text = $event->event_type eq 'person' ? 'Event Information'
+            : $event->event_type eq 'training' ? 'Training Event Information'
+            : 'Vehicle Event Information';
 
    p_span $cell, $event->name, {
       class => 'label-column server tips',
@@ -473,21 +477,29 @@ my $_alloc_cell_controller_row = sub {
    my ($self, $req, $page, $data, $dt, $shift) = @_; my $row = [];
 
    my $local_ymd = local_dt( $dt )->ymd;
-   my $cellno = $shift eq 'day' ? 0 : 1;
+   my $max = ($self->$_max_controllers)[ $shift eq 'day' ? 0 : 1 ] // 0;
 
    for my $subslot (0 .. $self->$_max_controllers - 1) {
-      my $dt_key = "${local_ymd}_${shift}_controller_${subslot}";
+      my $slot_key = "${shift}_controller_${subslot}";
+      my $dt_key = "${local_ymd}_${slot_key}";
       my $slot = $data->{slots}->{ $dt_key } // Class::Null->new;
       my $link_data = $_slot_link_data->( $page, $dt, $dt_key, $slot );
       my $cell =  p_cell $row, $self->components->{day}->slot_link
-         ( $req, $page, $link_data, $dt_key, $slot->type_name );
+         ( $req, $page, $link_data, $dt_key, 'controller' );
 
       $cell->{class} = 'spreadsheet-fixed-cell table-cell-label';
       $cell->{colspan} = 1;
 
-      if ($subslot > ($self->$_max_controllers)[ $cellno ]) {
-         $cell->{value}->{value} = NUL; $cell->{value}->{tip} = NUL;
+      if ($subslot > $max
+          or $shift eq 'day' and $self->is_working_day( local_dt $dt )) {
+         $cell->{value}->{value} = NBSP; $cell->{value}->{tip} = NBSP;
       }
+
+      my $title  = 'Controller Slot';
+      my $args   = [ $page->{rota_name}, $local_ymd, $slot_key ];
+      my $action =  slot_claimed $link_data->{ $dt_key } ? 'yield' : 'claim';
+
+      $_add_slot_js_dialog->( $req, $page, $dt_key, $title, $args, $action );
    }
 
    return $row;
@@ -506,24 +518,36 @@ my $_alloc_cell_event_row = sub {
       'showSelected', [ $id, scalar @{ $tuples } ];
 
    my $cell = p_cell $row, {
-      class => 'spreadsheet-fixed-cell table-cell-embeded' };
+      class => 'table-cell-embeded narrow' };
    my $list = p_list $cell, NUL, [], { class => 'table-cell-list' };
    my $index = 0;
 
    for my $v_or_r (map { $_->[ 1 ] } @{ $tuples }) {
-      my $style = $_vehicle_cell_style->( $v_or_r );
-      my $href  = $req->uri_for_action( 'asset/vehicle', [ $event->uri ] );
+      my $action  = blessed $v_or_r ? 'unassign' : 'assign';
+      my $vehicle = $action eq 'unassign' ? $v_or_r : undef;
+      my $value   = $action eq 'unassign' ? $v_or_r->name : ucfirst $v_or_r;
+      my $type    = $action eq 'unassign' ? $v_or_r->type : $v_or_r;
+      my $args    = [ $event->uri ];
+      my $params  = { action => $action, type => $type, vehicle => $vehicle };
+      my $href    = $req->uri_for_action( 'asset/assign', $args, $params );
 
-      p_link $list, "${id}-${index}", $href, {
-         class => $index == 0 ? 'table-cell-link' : 'table-cell-link hidden',
-         style => $style,
+      p_link $list, "${id}-${index}", HASH_CHAR, {
+         class => $index == 0 ? 'table-cell-link windows'
+                : 'table-cell-link windows hidden',
+         style => $_vehicle_cell_style->( $v_or_r ),
          tip   => NUL,
-         value => blessed $v_or_r ? $v_or_r->name : ucfirst $v_or_r };
+         value => $value };
+
+      p_js $page, dialog_anchor "${id}-${index}", $href, {
+         name  => "${action}-vehicle",
+         title => locm $req, ucfirst "${action} Vehicle" };
       $index++;
    }
 
    return $row;
 };
+
+# p_hidden $form, 'vehicle_original', $vrn;
 
 my $_alloc_cell_slot_row = sub {
    my ($self, $req, $page, $data, $dt, $slot_key, $cno) = @_; my $row = [];
@@ -531,6 +555,9 @@ my $_alloc_cell_slot_row = sub {
    my $local_ymd = local_dt( $dt )->ymd;
    my $dt_key = "${local_ymd}_${slot_key}";
    my $slot = $data->{slots}->{ $dt_key } // Class::Null->new;
+   my ($shift, $slot_type) = split m{ _ }mx, $slot_key;
+   my $suppress = $shift eq 'day' && $self->is_working_day( local_dt $dt )
+                ? TRUE : FALSE;
 
    $cno == 0 and p_cell $row, {
       class => 'rota-header align-center',
@@ -539,31 +566,31 @@ my $_alloc_cell_slot_row = sub {
    my $operator     =  $slot->operator;
    my $link_data    =  $_slot_link_data->( $page, $dt, $dt_key, $slot );
    my $cell         =  p_cell $row, $self->components->{day}->slot_link
-      ( $req, $page, $link_data, $dt_key, $slot->type_name );
-   my $args         =  [ $page->{rota_name}, $local_ymd, $slot_key ];
-   my $action       =  'yield';
+      ( $req, $page, $link_data, $dt_key, $slot_type );
 
    $cell->{class}   =  'spreadsheet-fixed-cell table-cell-label';
 
-   if (blessed $cell->{value}->{value}) {
-      $cell->{value}->{value} = locm $req, 'Vacant'; $action = 'claim';
+   if ($suppress) {
+      $cell->{value}->{value} = NBSP; $cell->{value}->{tip} = NUL;
    }
 
-   my $name = 'rider-slot'; my $title = 'Rider Slot';
+   my $args   = [ $page->{rota_name}, $local_ymd, $slot_key ];
+   my $title  = $slot_type eq 'driver' ? 'Driver Slot' : 'Rider Slot';
+   my $action = slot_claimed $link_data->{ $dt_key } ? 'yield' : 'claim';
 
-   $slot->type_name eq 'driver'
-      and $name = 'driver-slot' and $title = 'Driver Slot';
-
-   $_add_slot_row_js_dialog->( $req, $page, $args, $action, $name, $title );
+   $_add_slot_js_dialog->( $req, $page, $dt_key, $title, $args, $action );
 
    p_cell $row, { class => 'table-cell-label narrow',
-                  value => $operator->id ? $operator->region : NBSP };
+                  value => $suppress ? NBSP
+                         : $operator->id ? $operator->region : NBSP };
    p_cell $row, { class => 'table-cell-label narrow',
-                  value => $_operators_vehicle->( $slot ) };
+                  value => $suppress ? NBSP : $_operators_vehicle->( $slot ) };
 
-   if ($operator->id and $slot->vehicle_requested) {
+   if (not $suppress and $operator->id and $slot->vehicle_requested) {
+      $link_data->{ $dt_key }->{name} = $dt_key;
+
       my $cell = p_cell $row,
-         assign_link( $req, $page, $args, $link_data->{ $dt_key } );
+         assign_link $req, $page, $args, $link_data->{ $dt_key };
 
       $cell->{class} = 'table-cell-label narrow';
    }
