@@ -319,29 +319,6 @@ my $_bind_vehicle_fields = sub {
       ];
 };
 
-my $_filter_vehicles = sub {
-   my ($self, $tuples, $args, $assigner) = @_; my $r = []; my $is_slot = TRUE;
-
-   try   { $self->schema->resultset( 'Type' )->find_rota_by( $args->[ 0 ] ) }
-   catch { $is_slot = FALSE };
-
-   for my $tuple (@{ $tuples }) {
-      my $vehicle = $tuple->[ 1 ];
-
-      if ($is_slot) {
-         $vehicle->is_slot_assignment_allowed
-            ( $args->[ 0 ], to_dt( $args->[ 1 ] ), $args->[ 2 ], $assigner )
-            and push @{ $r }, $tuple;
-      }
-      else {
-         $vehicle->is_event_assignment_allowed( $args->[ 0 ], $assigner )
-            and push @{ $r }, $tuple;
-      }
-   }
-
-   return $r;
-};
-
 my $_toggle_event_assignment = sub {
    my ($self, $req, $vrn, $action) = @_;
 
@@ -588,8 +565,8 @@ sub assign : Dialog Role(rota_manager) {
       my $vehicles = $rs->list_vehicles( $where );
       my $mode     = $req->query_params->( 'mode', { optional => TRUE }) // NUL;
 
-      $mode eq 'slow' and $vehicles = $self->$_filter_vehicles
-         ( $vehicles, $args, $req->username );
+      $mode eq 'slow' and $vehicles = $self->components->{week}->filter_vehicles
+         ( $req, $args, $vehicles );
 
       p_select $form, 'vehicle', [ [ NUL, NUL ], @{ $vehicles } ], {
          class => 'right-last', label => NUL };

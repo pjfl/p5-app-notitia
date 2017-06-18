@@ -15,6 +15,7 @@ use App::Notitia::Util      qw( assign_link contrast_colour dialog_anchor
 use Class::Null;
 use Class::Usul::Time       qw( time2str );
 use Scalar::Util            qw( blessed );
+use Try::Tiny;
 use Moo;
 
 extends q(App::Notitia::Model);
@@ -284,13 +285,6 @@ my $_vehicle_label = sub {
    return $distance ? $vehicle->name." (${distance} mls)" : $vehicle->name;
 };
 
-my $_vehicle_list = sub {
-   my ($data, $vrn) = @_; $vrn //= NUL;
-
-   return [ [ NUL, NUL ], map { [ $_vehicle_label->( $data, $_ ), $_->vrn, {
-      selected => $vrn eq $_->vrn ? TRUE : FALSE } ] } @{ $data->{vehicles} } ];
-};
-
 my $_vehicle_or_request_list = sub {
    my $count = -1;
 
@@ -532,7 +526,7 @@ my $_alloc_cell_event_row = sub {
       my $vehicle = $action eq 'unassign' ? $v_or_r : undef;
       my $value   = $action eq 'unassign' ? $v_or_r->name : ucfirst $v_or_r;
       my $type    = $action eq 'unassign' ? $v_or_r->type : $v_or_r;
-      my $args    = [ $event->uri ];
+      my $args    = [ $event->uri, $page->{rota_date} ];
       my $params  = { action => $action, mode => 'slow',
                       type   => $type, vehicle => $vehicle };
       my $href    = $req->uri_for_action( 'asset/assign', $args, $params );
@@ -994,6 +988,50 @@ my $_allocation_page = sub {
    return $page;
 };
 
+my $_find_event_or_slot = sub {
+   my ($self, $req, $is_slot, $args) = @_; my $object;
+
+   my $schema = $self->schema;
+
+   if ($is_slot) {
+      my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $args->[ 2 ], 3;
+
+      my $rs     = $schema->resultset( 'Person' );
+      my $person = $rs->find_by_shortcode( $req->username );
+      my $shift  = $person->find_shift
+         ( $args->[ 0 ], to_dt( $args->[ 1 ] ), $shift_type );
+
+      $object = $person->find_slot( $shift, $slot_type, $subslot );
+   }
+   else {
+      $object = $schema->resultset( 'Event' )->find_event_by( $args->[ 0 ] );
+   }
+
+   return $object;
+};
+
+my $_get_all_the_data = sub {
+   my ($self, $req, $rota_name, $rota_dt, $cols) = @_;
+
+   my $opts = {
+      after => $rota_dt->clone->subtract( days => 1 ),
+      before => $rota_dt->clone->add( days => $cols ),
+      rota_type => $self->$_find_rota_type( $rota_name )->id };
+   my $vehicles = $self->$_search_for_vehicles();
+   my $journal = $self->$_initialise_journal( $req, $rota_dt, $vehicles );
+   my $events = $self->$_search_for_events( $opts, $journal );
+   my $slots = $self->$_search_for_slots( $opts, $journal );
+   my $vevents = $self->$_search_for_vehicle_events( $opts, $journal );
+
+   return {
+      events => $events,
+      journal => $journal,
+      slots => $slots,
+      vehicles => $vehicles,
+      vevents => $vevents,
+   };
+};
+
 my $_week_rota_page = sub {
    my ($self, $req, $rota_name, $rota_dt) = @_;
 
@@ -1046,18 +1084,7 @@ sub alloc_table : Dialog Role(rota_manager) {
    my $rota_date = $req->uri_params->( 1, { optional => TRUE } ) // $today;
    my $cols = $req->uri_params->( 2, { optional => TRUE } ) // 7;
    my $rota_dt = to_dt $rota_date;
-   my $opts = {
-      after => $rota_dt->clone->subtract( days => 1 ),
-      before => $rota_dt->clone->add( days => $cols ),
-      rota_type => $self->$_find_rota_type( $rota_name )->id };
-   my $vehicles = $self->$_search_for_vehicles();
-   my $journal = $self->$_initialise_journal( $req, $rota_dt, $vehicles );
-   my $events = $self->$_search_for_events( $opts, $journal );
-   my $slots = $self->$_search_for_slots( $opts, $journal );
-   my $vevents = $self->$_search_for_vehicle_events( $opts, $journal );
-   my $data = {
-      events => $events, journal => $journal, slots => $slots,
-      vehicles => $vehicles, vevents => $vevents };
+   my $data = $self->$_get_all_the_data( $req, $rota_name, $rota_dt, $cols );
    my $stash = $self->dialog_stash( $req );
    my $page = $stash->{page};
    my $table = $page->{forms}->[ 0 ] = new_container {
@@ -1068,6 +1095,7 @@ sub alloc_table : Dialog Role(rota_manager) {
    $page->{limits} = $self->config->slot_limits;
    $page->{moniker} = $self->moniker;
    $page->{rota_name} = $rota_name;
+   $page->{rota_date} = $rota_date;
    $page->{rota_dt} = $rota_dt;
 
    p_cell $row, [ map { $self->$_alloc_cell( $req, $page, $data, $_ ) }
@@ -1137,6 +1165,41 @@ sub display_control_action : Role(rota_manager) {
    my $location  = $req->uri_for_action( $actionp, $args, $params );
 
    return { redirect => { location => $location } };
+}
+
+sub filter_vehicles {
+   my ($self, $req, $args, $tuples) = @_; my $r = [];
+
+   my $assigner = $req->username; my $is_slot = TRUE;
+
+   try   { $self->$_find_rota_type( $args->[ 0 ] ) }
+   catch { $is_slot = FALSE };
+
+   for my $tuple (@{ $tuples }) {
+      my $vehicle = $tuple->[ 1 ];
+
+      if ($is_slot) {
+         $vehicle->is_slot_assignment_allowed
+            ( $args->[ 0 ], to_dt( $args->[ 1 ] ), $args->[ 2 ], $assigner )
+            and push @{ $r }, $tuple;
+      }
+      else {
+         $vehicle->is_event_assignment_allowed( $args->[ 0 ], $assigner )
+            and push @{ $r }, $tuple;
+      }
+   }
+
+   my $rota_name = $is_slot ? $args->[ 0 ] : 'main';
+   my $rota_dt = to_dt( $args->[ 1 ] );
+   my $object = $self->$_find_event_or_slot( $req, $is_slot, $args );
+   my $data = $self->$_get_all_the_data( $req, $rota_name, $rota_dt, 7 );
+   my $opts = { assignee => $is_slot ? $object->operator : $object->owner,
+                journal => $data->{journal},
+                start => ($object->duration)[ 0 ], };
+
+   return [ map {
+      [ $_vehicle_label->( $opts, $_->[ 1 ] ), $_->[ 1 ], $_->[ 2 ] ] }
+            @{ $r } ];
 }
 
 sub week_rota : Role(any) {
