@@ -171,14 +171,41 @@ my $_onclick_relocate = sub {
    return;
 };
 
-my $_operators_vehicle = sub {
-   my $slot = shift; $slot->operator->id or return NBSP;
-
-   my $slov = $slot->operator_vehicle;
+my $_operators_vehicle_label = sub {
+   my $slov = shift;
 
    return $slov && $slov->type eq '4x4' ? '4'
         : $slov && $slov->type eq 'car' ? 'C'
         : NBSP;
+};
+
+my $_operators_vehicle_link = sub {
+   my ($req, $page, $rota_dt, $slot, $suppress) = @_;
+
+   my $cell    = { class => 'table-cell-label narrow', value => NBSP };
+
+   $suppress and return $cell;
+
+   my $args    = [ $page->{rota_name}, local_dt( $rota_dt )->ymd, $slot->key ];
+   my $tip     = locm $req, 'operators_vehicle_tip';
+   my $actionp = 'day/operator_vehicle';
+   my $id      = $slot->key.'_vehicle';
+
+   if ($slot->operator eq $req->username and not $page->{disabled}) {
+      p_link $cell, $id, HASH_CHAR, {
+         class => 'windows', request => $req, tip => $tip,
+         value => $_operators_vehicle_label->( $slot->operator_vehicle ),
+      };
+
+      p_js $page, dialog_anchor $id, $req->uri_for_action( $actionp, $args ), {
+         name  => 'operator-vehicle' ,
+         title => locm $req, 'operators_vehicle_title' };
+   }
+   else {
+      $cell->{value} = $_operators_vehicle_label->( $slot->operator_vehicle );
+   }
+
+   return $cell;
 };
 
 my $_select_number = sub {
@@ -580,11 +607,10 @@ my $_alloc_cell_slot_row = sub {
 
    $_add_slot_js_dialog->( $req, $page, $dt_key, $title, $args, $action );
 
-   p_cell $row, { class => 'table-cell-label narrow',
-                  value => $suppress ? NBSP
-                         : $operator->id ? $operator->region : NBSP };
-   p_cell $row, { class => 'table-cell-label narrow',
-                  value => $suppress ? NBSP : $_operators_vehicle->( $slot ) };
+   p_cell $row, {
+      class => 'table-cell-label narrow',
+      value => $suppress ? NBSP : $operator->id ? $operator->region : NBSP };
+   p_cell $row, $_operators_vehicle_link->( $req, $page, $dt, $slot, $suppress);
 
    if (not $suppress and $operator->id and $slot->vehicle_requested) {
       $link_data->{ $dt_key }->{mode} = 'slow';
@@ -981,7 +1007,7 @@ my $_allocation_page = sub {
       forms    => [ $list, $form ],
       off_grid => TRUE,
       template => [ 'none', 'custom/two-week-table' ],
-      title    => locm $req, 'Vehicle Allocation',
+      title    => locm $req, 'vehicle_allocation_title',
    };
 
    $_onchange_submit->( $page, 'rota_date', 'day_selector' );
