@@ -652,10 +652,10 @@ sub event_info : Dialog Role(any) {
 
    $event->owner->postcode and $label .= ' ('.$event->owner->outer_postcode.')';
 
-   p_tag $form, 'p', $title, { class => 'label-column' };
-   p_tag $form, 'p', $label, { class => 'label-column' };
-   p_tag $form, 'p', $start, { class => 'label-column' };
-   p_tag $form, 'p', $end,   { class => 'label-column' };
+   p_tag $form, 'p', $title;
+   p_tag $form, 'p', $label;
+   p_tag $form, 'p', $start;
+   p_tag $form, 'p', $end;
 
    return $stash;
 }

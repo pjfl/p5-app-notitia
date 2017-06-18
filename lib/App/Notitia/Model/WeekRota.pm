@@ -3,7 +3,7 @@ package App::Notitia::Model::WeekRota;
 use utf8;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( FALSE HASH_CHAR NBSP NUL SPC TRUE );
+use App::Notitia::Constants qw( FALSE HASH_CHAR NBSP NUL SPC TILDE TRUE );
 use App::Notitia::DOM       qw( new_container p_cell p_container p_hidden p_item
                                 p_js p_link p_list p_row p_select p_span
                                 p_table );
@@ -365,18 +365,23 @@ my $_alloc_table_headers = sub {
 my $_alloc_cell_event = sub {
    my ($req, $page, $row, $event, $style, $id) = @_;
 
+   my $text = $event->event_type eq 'person' ? 'Fund Raising Event'
+            : $event->event_type eq 'training' ? 'Training Event'
+            : 'Vehicle Event';
+
    my $cell = p_cell $row, {
-      class => 'spreadsheet-fixed-cell table-cell-label', colspan => 2 };
-
-   my $text = $event->event_type eq 'person' ? 'Event Information'
-            : $event->event_type eq 'training' ? 'Training Event Information'
-            : 'Vehicle Event Information';
-
-   p_span $cell, $event->name, {
-      class => 'label-column server tips',
-      id => $id, title => locm $req, $text };
+      class   => 'spreadsheet-fixed-cell table-cell-label server tips',
+      colspan => 2,
+      name    => $event->uri,
+      title   => locm( $req, $text ).SPC.TILDE.SPC.NBSP,
+   };
 
    $_add_event_tip->( $req, $page, $event );
+
+   my $href = $req->uri_for_action( 'event/event_summary', [ $event->uri ] );
+
+   p_link $cell, NUL, $href, {
+      class => 'label-column', tip => NUL, value => $event->name };
 
    return;
 };
