@@ -533,7 +533,8 @@ my $_alloc_cell_event_row = sub {
       my $value   = $action eq 'unassign' ? $v_or_r->name : ucfirst $v_or_r;
       my $type    = $action eq 'unassign' ? $v_or_r->type : $v_or_r;
       my $args    = [ $event->uri ];
-      my $params  = { action => $action, type => $type, vehicle => $vehicle };
+      my $params  = { action => $action, mode => 'slow',
+                      type   => $type, vehicle => $vehicle };
       my $href    = $req->uri_for_action( 'asset/assign', $args, $params );
 
       p_link $list, "${id}-${index}", HASH_CHAR, {
@@ -592,6 +593,7 @@ my $_alloc_cell_slot_row = sub {
                   value => $suppress ? NBSP : $_operators_vehicle->( $slot ) };
 
    if (not $suppress and $operator->id and $slot->vehicle_requested) {
+      $link_data->{ $dt_key }->{mode} = 'slow';
       $link_data->{ $dt_key }->{name} = $dt_key;
 
       my $cell = p_cell $row,

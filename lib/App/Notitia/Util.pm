@@ -192,6 +192,7 @@ my $vehicle_link = sub {
    $page->{disabled}
       and return { class => 'table-link', type => 'text', value => $value };
 
+   $opts->{mode} and $params->{mode} = $opts->{mode};
    $opts->{type} and $params->{type} = $opts->{type};
 
    my $path = "asset/${action}";
@@ -297,6 +298,7 @@ sub assign_link ($$$$) {
    elsif ($state eq 'vehicle-requested') {
       my $params = { action => 'assign',
                      class  => 'table-link vehicle-requested windows',
+                     mode   => $opts->{mode},
                      name   => $name,
                      type   => $type,
                      value  => 'requested' };
