@@ -198,7 +198,8 @@
          onchange="if (this.value) window.location.href=this.value"[% END -%]>
 [%    FOR option IN f.value -%]
          <option [% IF option.selected %]selected="selected" [% END -%]
-             value="[% option.value %]">[% loc( option.label ) %]</option>
+             style="[% option.style %]" value="[% option.value %]">
+[%           loc( option.label ) %]</option>
 [%    END -%]
       </select>
 [% END -%]
@@ -228,7 +229,8 @@
       <thead>
          <tr>
 [%       FOR cell IN f.headers -%]
-           <th class="[% cell.class %]" id="[% cell.name %]">
+           <th class="[% cell.class %]" colspan="[% cell.colspan %]"
+               id="[% cell.name %]">
 [%          IF reference( cell.value ) == 'HASH'; Dispatch( cell.value ) %]
 [%          ELSE; cell.value; END %]</th>
 [%       END -%]

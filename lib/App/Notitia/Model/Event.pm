@@ -60,17 +60,20 @@ my $_add_event_js = sub {
 };
 
 my $_bind_datetime = sub {
-   my ($req, $event, $opts, $ev_dt) = @_;
+   my ($req, $event, $opts, $ev_dt, $default) = @_;
 
    my $disabled = $opts->{disabled} || $event->uri ? TRUE : FALSE;
-   my $dt = $event->uri ? $ev_dt : $opts->{date} ? to_dt $opts->{date} : now_dt;
+   my $dt = $event->uri   ? $ev_dt
+          : $opts->{date} ? to_dt $opts->{date}
+          : $default      ? $default
+          :                 now_dt;
 
    return { class => 'standard-field required', disabled => $disabled,
             type => 'datetime', value => datetime_label $req, $dt };
 };
 
 my $_bind_ends = sub {
-   return $_bind_datetime->( $_[ 0 ], $_[ 1 ], $_[ 2 ], $_[ 1 ]->ends );
+   return $_bind_datetime->( $_[ 0 ], $_[ 1 ], $_[ 2 ], $_[ 1 ]->ends, $_[ 3 ]);
 };
 
 my $_bind_starts = sub {
@@ -391,13 +394,14 @@ my $_bind_trainer = sub {
 my $_bind_event_fields = sub {
    my ($self, $req, $event, $opts) = @_; $opts //= {};
 
-   my $disabled = $opts->{disabled} // FALSE;
-   my $no_maxp  = $disabled || $opts->{vehicle_event} ? TRUE : FALSE;
+   my $disabled    = $opts->{disabled} // FALSE;
+   my $no_maxp     = $disabled || $opts->{vehicle_event} ? TRUE : FALSE;
+   my $default_end = local_dt( now_dt )->add( hours => 1 );
 
    return
    [  name             => $self->$_bind_event_name( $event, $opts ),
       starts           => $_bind_starts->( $req, $event, $opts ),
-      ends             => $_bind_ends->( $req, $event, $opts ),
+      ends             => $_bind_ends->( $req, $event, $opts, $default_end ),
       owner            => $self->$_bind_owner( $event, $disabled ),
       description      => { class    => 'standard-field autosize server',
                             disabled => $disabled, type => 'textarea' },
@@ -648,10 +652,10 @@ sub event_info : Dialog Role(any) {
 
    $event->owner->postcode and $label .= ' ('.$event->owner->outer_postcode.')';
 
-   p_tag $form, 'p', $title, { class => 'label-column' };
-   p_tag $form, 'p', $label, { class => 'label-column' };
-   p_tag $form, 'p', $start, { class => 'label-column' };
-   p_tag $form, 'p', $end,   { class => 'label-column' };
+   p_tag $form, 'p', $title;
+   p_tag $form, 'p', $label;
+   p_tag $form, 'p', $start;
+   p_tag $form, 'p', $end;
 
    return $stash;
 }
@@ -755,7 +759,8 @@ sub participents : Role(any) {
    my ($self, $req) = @_;
 
    my $uri       =  $req->uri_params->( 0 );
-   my $event     =  $self->schema->resultset( 'Event' )->find_event_by( $uri );
+   my $schema    =  $self->schema;
+   my $event     =  $schema->resultset( 'Event' )->find_event_by( $uri );
    my $disabled  =  now_dt > $event->start_date ? TRUE : FALSE;
    my $params    =  { event => $uri };
    my $actionp   =  $self->moniker.'/participents';
@@ -774,12 +779,14 @@ sub participents : Role(any) {
    p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    my $table = p_table $form, { headers => $_participent_headers->( $req ) };
-   my $person_rs = $self->schema->resultset( 'Person' );
+   my $person_rs = $schema->resultset( 'Person' );
 
    p_row $table, [ map { $self->$_participent_links( $req, $page, $event, $_ ) }
                       @{ $person_rs->list_participents( $event ) } ];
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   my $person = $person_rs->find_by_shortcode( $req->username );
+
+   $_add_participate_button->( $req, $form, $event, $person );
 
    return $self->get_stash( $req, $page );
 }

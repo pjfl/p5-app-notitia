@@ -293,6 +293,7 @@ my $_vreq_row = sub {
    return $row;
 };
 
+# Private methods
 my $_bind_vehicle_fields = sub {
    my ($self, $req, $vehicle, $opts) = @_; $opts //= {};
 
@@ -318,7 +319,6 @@ my $_bind_vehicle_fields = sub {
       ];
 };
 
-# Private methods
 my $_toggle_event_assignment = sub {
    my ($self, $req, $vrn, $action) = @_;
 
@@ -560,11 +560,15 @@ sub assign : Dialog Role(rota_manager) {
    my $page   = $stash->{page};
 
    if ($action eq 'assign') {
-      my $where  = { service => TRUE, type => $type };
-      my $rs     = $self->schema->resultset( 'Vehicle' );
-      my $values = [ [ NUL, NUL ], @{ $rs->list_vehicles( $where ) } ];
+      my $rs       = $self->schema->resultset( 'Vehicle' );
+      my $where    = { service => TRUE, type => $type };
+      my $vehicles = $rs->list_vehicles( $where );
+      my $mode     = $req->query_params->( 'mode', { optional => TRUE }) // NUL;
 
-      p_select $form, 'vehicle', $values, {
+      $mode eq 'slow' and $vehicles = $self->components->{week}->filter_vehicles
+         ( $req, $args, $vehicles );
+
+      p_select $form, 'vehicle', [ [ NUL, NUL ], @{ $vehicles } ], {
          class => 'right-last', label => NUL };
       p_js $page, set_element_focus 'assign-vehicle', 'vehicle';
    }

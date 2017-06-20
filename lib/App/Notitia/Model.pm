@@ -148,8 +148,9 @@ sub exception_handler {
 
    my $name = $req->session->first_name || $req->username || 'unknown';
    my $list = new_container { type => 'list' };
-   my $page = { forms => [ $list ], template => [ 'none', NUL ],
-                title => locm $req, 'exception_handler_title', $name };
+   my $page = { forms    => [ $list ],
+                template => [ 'none', NUL ],
+                title    => locm $req, 'exception_handler_title', $name };
 
    if ($e->instance_of( ValidationErrors )) {
       $_validation_errors->( $req, $e, $list );

@@ -2602,6 +2602,9 @@ msgstr "Vehicle"
 msgid "vehicle_allocation_management_heading"
 msgstr "Vehicle Allocation"
 
+msgid "vehicle_allocation_title"
+msgstr "Vehicle Allocation"
+
 msgid "vehicle_colour_field_tip"
 msgstr "Leave blank to assign a random colour. Colours are either a name or "
        "a hexadecimal number, e.g. #1b00b5"

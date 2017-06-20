@@ -4,7 +4,7 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Schedule::Base::Result';
 
-use App::Notitia::Constants qw( VARCHAR_MAX_SIZE TRUE );
+use App::Notitia::Constants qw( VARCHAR_MAX_SIZE SPC TRUE );
 use App::Notitia::DataTypes qw( foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 nullable_numerical_id_data_type
@@ -147,7 +147,7 @@ sub insert {
 sub label {
    my ($self, $req) = @_; $req and return $self->localised_label( $req );
 
-   return $self->name.' ('.local_dt( $self->start_date )->dmy( '/' ).')';
+   return local_dt( $self->start_date )->dmy( '/' ).SPC.$self->name;
 }
 
 sub localised_label {
@@ -155,7 +155,7 @@ sub localised_label {
 
    $name = $name ne lc $self->name ? $name : $self->name;
 
-   return $name.' ('.locd( $req, $self->start_date ).')';
+   return locd( $req, $self->start_date ).SPC.$name;
 }
 
 sub post_filename {

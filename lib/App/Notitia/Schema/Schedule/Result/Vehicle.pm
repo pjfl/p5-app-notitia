@@ -5,11 +5,13 @@ use overload '""' => sub { $_[ 0 ]->_as_string },
              '+'  => sub { $_[ 0 ]->_as_number }, fallback => 1;
 use parent   'App::Notitia::Schema::Schedule::Base::Result';
 
-use App::Notitia::Constants qw( EXCEPTION_CLASS VARCHAR_MAX_SIZE SPC TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE
+                                SPC TRUE VARCHAR_MAX_SIZE );
 use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 serial_data_type varchar_data_type );
 use Class::Usul::Functions  qw( throw );
+use Try::Tiny;
 use Unexpected::Functions   qw( VehicleAssigned );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -232,6 +234,38 @@ sub insert {
    $self->$_assert_public_or_private();
 
    return $self->next::method;
+}
+
+sub is_event_assignment_allowed {
+   my ($self, $event_uri, $assigner_name) = @_;
+
+   my $schema   = $self->result_source->schema;
+   my $event    = $schema->resultset( 'Event' )->find_event_by( $event_uri );
+   my $assigner = $self->$_find_assigner( $assigner_name );
+   my $allowed  = TRUE;
+
+   try   { $self->$_assert_event_assignment_allowed( $event, $assigner ) }
+   catch { $allowed = FALSE };
+
+   return $allowed;
+}
+
+sub is_slot_assignment_allowed {
+   my ($self, $rota_name, $rota_dt, $slot_name, $assigner) = @_;
+
+   my ($shift_t, $slot_t, $subslot) = split m{ _ }mx, $slot_name, 3;
+
+   my $slot   = $self->$_find_slot
+      ( $rota_name, $rota_dt, $shift_t, $slot_t, $subslot );
+   my $person = $self->$_find_assigner( $assigner );
+   my $vehicle_req = $slot->bike_requested;
+   my $allowed = TRUE;
+
+   try   { $self->$_assert_slot_assignment_allowed
+           ( $rota_name, $rota_dt, $shift_t, $slot_t, $person, $vehicle_req ) }
+   catch { $allowed = FALSE };
+
+   return $allowed;
 }
 
 sub label {
