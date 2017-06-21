@@ -10,7 +10,11 @@
 [%    IF node.type == 'folder'; depth = depth + 1 -%]
       <optgroup label="[% node.title %]">
 [%    ELSE -%]
+[%       IF reference( node.value ) == 'HASH' -%]
+      <option value="[% node.value.mobile_href %]">[% node.value.value %]</option>
+[%       ELSE -%]
       <option value="[% node.href %]">[% node.value %]</option>
+[%       END -%]
 [%    END -%]
 [% END -%]
 [% WHILE depth > 0; depth = depth - 1 -%]

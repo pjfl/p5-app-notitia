@@ -42,6 +42,8 @@ register_action_paths
    'user/login'           => 'user/login',
    'user/login_action'    => 'user/login',
    'user/logout_action'   => 'user/logout',
+   'user/mob_req_reset'   => 'user/reset-mobile',
+   'user/mob_totp_req'    => 'user/totp-req-mobile',
    'user/profile'         => 'user/profile',
    'user/request_reset'   => 'user/reset',
    'user/show_if_needed'  => 'show-if-needed',
@@ -186,6 +188,21 @@ my $_push_login_js = sub {
    return;
 };
 
+my $_request_reset_form = sub {
+   my ($self, $req, $page) = @_;
+
+   my $href = $req->uri_for_action( $self->moniker.'/reset' );
+   my $form = $page->{forms}->[ 0 ] = new_container 'request_reset', $href;
+
+   p_js $page, set_element_focus 'request_reset', 'username';
+
+   p_textfield $form, 'username';
+
+   p_button $form, 'request_reset', 'request_reset', { class => 'button right'};
+
+   return;
+};
+
 my $_subs_lists = sub {
    my ($self, $scode, $sink) = @_;
 
@@ -210,6 +227,25 @@ my $_themes_list = sub {
    return [ map { [ ucfirst $_, $_, {
       selected => $_ eq $selected ? TRUE : FALSE } ] }
             @{ $conf->themes->{ $conf->skin } } ];
+};
+
+my $_totp_request_form = sub {
+   my ($self, $req, $page) = @_;
+
+   my $href = $req->uri_for_action( $self->moniker.'/reset' );
+   my $form = $page->{forms}->[ 0 ] = new_container 'totp-request', $href;
+
+   p_js $page, set_element_focus 'totp-request', 'username';
+
+   p_textfield $form, 'username';
+   p_password  $form, 'password';
+   p_textfield $form, 'mobile_phone';
+   p_textfield $form, 'postcode';
+
+   p_button $form, 'totp_request', 'totp_request', {
+      class => 'button right-last' };
+
+   return;
 };
 
 my $_update_session = sub {
@@ -316,13 +352,17 @@ sub change_password : Role(anon) {
 
    p_textfield $form, 'username', $username, {
       class => 'standard-field required' };
+
    p_password  $form, 'oldpass',  NUL, {
       class => 'standard-field required', label => 'old_password' };
+
    p_password  $form, 'password', NUL, {
       autocomplete => 'off', class => 'standard-field reveal server required',
       label => 'new_password', tip => make_tip $req, 'new_password_tip' };
+
    p_password  $form, 'again',    NUL, {
       class => 'standard-field reveal required' };
+
    p_button    $form, 'update', 'change_password', {
       class => 'save-button right-last' };
 
@@ -515,6 +555,26 @@ sub logout_action : Action Role(any) {
    return { redirect => { location => $req->base, message => $message } };
 }
 
+sub mob_req_reset : Role(anon) {
+   my ($self, $req) = @_;
+
+   my $page = { title => locm $req, 'request_reset_title', };
+
+   $self->$_request_reset_form( $req, $page );
+
+   return $self->get_stash( $req, $page );
+}
+
+sub mob_totp_req : Role(anon) {
+   my ($self, $req) = @_;
+
+   my $page = { title => locm $req, 'totp_request_title', };
+
+   $self->$_totp_request_form( $req, $page );
+
+   return $self->get_stash( $req, $page );
+}
+
 sub profile : Role(any) {
    my ($self, $req) = @_;
 
@@ -546,15 +606,8 @@ sub request_reset : Dialog Role(anon) {
    my ($self, $req) = @_;
 
    my $stash = $self->dialog_stash( $req );
-   my $href  = $req->uri_for_action( $self->moniker.'/reset' );
-   my $form  = $stash->{page}->{forms}->[ 0 ]
-             = new_container 'request_reset', $href;
 
-   p_js $stash->{page}, set_element_focus 'request_reset', 'username';
-
-   p_textfield $form, 'username';
-
-   p_button $form, 'request_reset', 'request_reset', { class => 'button right'};
+   $self->$_request_reset_form( $req, $stash->{page} );
 
    return $stash;
 }
@@ -722,17 +775,8 @@ sub totp_request : Dialog Role(anon) {
    my ($self, $req) = @_;
 
    my $stash = $self->dialog_stash( $req );
-   my $href  = $req->uri_for_action( $self->moniker.'/reset' );
-   my $form  = $stash->{page}->{forms}->[ 0 ]
-             = new_container 'totp-request', $href;
 
-   p_js $stash->{page}, set_element_focus 'totp-request', 'username';
-   p_textfield $form, 'username';
-   p_password  $form, 'password';
-   p_textfield $form, 'mobile_phone';
-   p_textfield $form, 'postcode';
-   p_button    $form, 'totp_request', 'totp_request', {
-      class => 'button right-last' };
+   $self->$_totp_request_form( $req, $stash->{page} );
 
    return $stash;
 }

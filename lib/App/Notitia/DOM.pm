@@ -339,6 +339,7 @@ sub p_navlink ($$$;$) {
       download => $opts->{download},
       hint  => $hint,
       href  => $href,
+      mobile_href => $opts->{mobile_href},
       name  => $name,
       tip   => $tip,
       type  => 'link',

@@ -445,18 +445,22 @@ my $_unauthenticated_login_links = sub {
       class => $_selected_class->( $page, 'change_password' ),
       request => $req, };
 
+   my $href = $req->uri_for_action( 'user/mob_req_reset' );
+
    p_navlink $nav->{menu}, 'request_reset', '#', {
-      class => 'windows', request => $req, };
+      class => 'windows', mobile_href => $href, request => $req, };
 
    $list->[ -1 ]->{depth} = 1; $list->[ -1 ]->{type} = 'link'; # Ugh
 
-   my $href = $req->uri_for_action( 'user/reset' );
+   $href = $req->uri_for_action( 'user/request_reset' );
 
    p_js $page, dialog_anchor 'request_reset', $href, {
       title => locm $req, 'request_reset_title', };
 
+   $href = $req->uri_for_action( 'user/mob_totp_req' );
+
    p_navlink $nav->{menu}, 'totp_request', '#', {
-      class => 'windows', request => $req, };
+      class => 'windows', mobile_href => $href, request => $req, };
 
    $list->[ -1 ]->{depth} = 1; $list->[ -1 ]->{type} = 'link'; # More ugh
 
