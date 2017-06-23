@@ -24,7 +24,7 @@ has 'uri_no_query' => is => 'lazy', isa => Object, builder => sub {
 # Private attributes
 has '_state_cache' => is => 'lazy', isa => HashRef, builder => sub {
    my $self  = shift;
-   my $path  = $self->_state_cache_path;
+   my $path  = $self->_state_cache_path; $path->exists or $path->touch;
    my $cache = try { $self->fs_cache->load( $path ) } catch { {} };
 
    return $cache;
@@ -50,24 +50,22 @@ sub uri_for_action {
 }
 
 sub state_cache {
-   my ($self, $k, $v) = @_; my $cache = $self->_state_cache;
+   my ($self, $k, $v) = @_;
 
-   defined $k or return $cache;
+   defined $k or return $self->_state_cache;
    $self->_log->( { level => 'debug', message => "State cache key ${k}" } );
-   defined $v or return $cache->{ $k };
+   defined $v or return $self->_state_cache->{ $k };
    $self->_log->( { level => 'debug', message => "State cache value ${v}" } );
+   $self->_state_cache; # Instantiate the lazy
 
-   my $storage = $self->fs_cache->storage; my $path = $self->_state_cache_path;
+   my $path    = $self->_state_cache_path;
+   my $storage = $self->fs_cache->storage;
+   my ($cache) = $storage->read_file( $path, TRUE );
 
-   return $cache->{ $k } = $storage->txn_do( $path, sub {
-      $path->exists or $path->touch;
+   $self->_state_cache->{ $k } = $cache->{ $k } = $v;
+   $storage->write_file( $path, $cache );
 
-      my ($cache) = $storage->read_file( $path, TRUE );
-
-      $cache->{ $k } = $v; $storage->write_file( $path, $cache );
-
-      return $v;
-   } );
+   return $v;
 }
 
 package App::Notitia::Role::Request::Config;
