@@ -455,7 +455,10 @@ sub clone (;$) {
 
 sub contrast_colour ($) {
    my $background  = shift;
-   my ($r, $g, $b) = $colour_names->rgb( $background // 'black' );
+
+   (defined $background and length $background) or $background = 'black';
+
+   my ($r, $g, $b) = $colour_names->rgb( $background );
    my $yiq         = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
 
    return $yiq > 127 ? 'black' : 'white';
