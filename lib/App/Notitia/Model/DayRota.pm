@@ -71,32 +71,33 @@ my $_day_rota_headers = sub {
 };
 
 my $_date_picker = sub {
-   my ($self, $req, $name, $local_dt, $href) = @_;
+   my ($self, $req, $rota_name, $local_dt, $href) = @_;
 
-   my $form = { class       => 'rota-date-form',
-            content     => {
-               list     => [ {
-                  name  => 'rota_name',
-                  type  => 'hidden',
-                  value => $name,
-               }, {
-                  class => 'rota-date-field shadow submit',
-                  label => NUL,
-                  name  => 'rota_date',
-                  type  => 'date',
-                  value => $local_dt->ymd,
-               }, {
-                  class => 'rota-date-field',
-                  disabled => TRUE,
-                  name  => 'rota_date_display',
-                  label => NUL,
-                  type  => 'textfield',
-                  value => $local_dt->day_abbr.SPC.$local_dt->day,
-               }, ],
-               type     => 'list', },
-            form_name   => 'day-rota',
-            href        => $href,
-            type        => 'form', };
+   my $form = {
+      class       => 'rota-date-form',
+      content     => {
+         list     => [ {
+            name  => 'rota_name',
+            type  => 'hidden',
+            value => $rota_name,
+         }, {
+            class => 'rota-date-field shadow submit',
+            label => NUL,
+            name  => 'rota_date',
+            type  => 'date',
+            value => $local_dt->ymd,
+         }, {
+            class => 'rota-date-field',
+            disabled => TRUE,
+            name  => 'rota_date_display',
+            label => NUL,
+            type  => 'textfield',
+            value => $local_dt->day_abbr.SPC.$local_dt->day,
+         }, ],
+         type     => 'list', },
+      form_name   => 'day-rota',
+      href        => $href,
+      type        => 'form', };
 
    $self->add_csrf_token( $req, $form );
    return $form;
@@ -341,7 +342,7 @@ my $_events = sub {
 
    my $href    = $req->uri_for_action( $page->{moniker}.'/day_rota' );
    my $picker  = $self->$_date_picker( $req, $name, $local_dt, $href );
-   my $col1    = { value => $picker, class => 'rota-date narrow' };
+   my $col1    = { value => $picker, class => 'rota-date' };
    my $first   = TRUE;
 
    while (defined (my $event = $todays_events->next) or $first) {

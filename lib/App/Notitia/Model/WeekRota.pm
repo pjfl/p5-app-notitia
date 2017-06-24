@@ -713,10 +713,8 @@ my $_alloc_cell = sub {
 };
 
 my $_date_picker = sub {
-   my ($self, $req, $rota_name, $rota_dt) = @_;
+   my ($self, $req, $rota_name, $local_dt, $href) = @_;
 
-   my $href       =  $req->uri_for_action( $self->moniker.'/allocation' );
-   my $local_dt   =  local_dt $rota_dt;
    my $form       =  {
       class       => 'day-selector-form',
       content     => {
@@ -968,10 +966,13 @@ my $_week_rota_requests = sub {
 my $_alloc_nav = sub {
    my ($self, $req, $rota_name, $rota_dt, $params) = @_;
 
+   my $href = $req->uri_for_action( $self->moniker.'/allocation' );
+
    return {
       next => $self->$_next_week
          ( $req, 'allocation', $rota_name, $rota_dt, $params ),
-      picker => $self->$_date_picker( $req, $rota_name, $rota_dt ),
+      picker => $self->$_date_picker
+         ( $req, $rota_name, local_dt( $rota_dt ), $href ),
       prev => $self->$_prev_week
          ( $req, 'allocation', $rota_name, $rota_dt, $params ),
       oplinks_style => 'max-width: '.($params->{cols} * 270).'px;'
@@ -1080,7 +1081,8 @@ my $_week_rota_page = sub {
 };
 
 # Public methods
-sub alloc_key : Dialog Role(rota_manager) {
+sub alloc_key : Dialog Role(controller) Role(driver) Role(rider)
+   Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $rota_date = $req->uri_params->( 0 );
@@ -1102,7 +1104,8 @@ sub alloc_key : Dialog Role(rota_manager) {
    return $stash;
 }
 
-sub alloc_table : Dialog Role(rota_manager) {
+sub alloc_table : Dialog Role(controller) Role(driver) Role(rider)
+   Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $today = time2str '%Y-%m-%d';
@@ -1132,7 +1135,8 @@ sub alloc_table : Dialog Role(rota_manager) {
    return $stash;
 }
 
-sub allocation : Role(rota_manager) {
+sub allocation : Role(controller) Role(driver) Role(rider)
+   Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $today = time2str '%Y-%m-%d';
@@ -1166,7 +1170,8 @@ sub allocation : Role(rota_manager) {
    return $self->get_stash( $req, $page );
 }
 
-sub day_selector_action : Role(rota_manager) {
+sub day_selector_action : Role(controller) Role(driver) Role(rider)
+   Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $rota_name = $req->body_params->( 'rota_name' );
@@ -1179,7 +1184,8 @@ sub day_selector_action : Role(rota_manager) {
    return { redirect => { location => $location } };
 }
 
-sub display_control_action : Role(rota_manager) {
+sub display_control_action : Role(controller) Role(driver) Role(rider)
+   Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $rota_name = $req->uri_params->( 0 );

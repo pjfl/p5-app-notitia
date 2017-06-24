@@ -1,16 +1,16 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Two Week Table -->
 <div class="spreadsheet-oplinks" style="[% page.fields.nav.oplinks_style %]">
-   <div class="nav-link left align-right">
+   <div class="left align-right">
 [% Dispatch( page.fields.nav.prev ) -%]
    </div>
-   <div class="nav-link left align-right">
+   <div class="left align-right">
 [% Dispatch( page.fields.nav.picker ) -%]
    </div>
-   <div class="nav-link left align-right">
+   <div class="left align-right">
 [% Dispatch( page.fields.query.control ) %]
    </div>
-   <div class="nav-link right align-left">
+   <div class="right align-left">
 [% Dispatch( page.fields.nav.next ) -%]
    </div>
    <h4 class="spreadsheet-heading">[% page.title %]</h4>
