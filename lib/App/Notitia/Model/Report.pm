@@ -254,7 +254,7 @@ my $_get_date_function = sub {
       };
    }
 
-   return sub { $_[ 0 ] ? locd( $req, $_[ 0 ] ) : 'day' };
+   return sub { $_[ 0 ] ? $_[ 0 ]->day_abbr.SPC.locd( $req, $_[ 0 ] ) : 'day' };
 };
 
 my $_inc_bucket = sub {

@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #212. Adds day to slot report date
           - Adds no overwrite of email templates on upgrade
           - Spreadsheet being forced on user base
           - Fixes uninitialized value warning in ColorNames
