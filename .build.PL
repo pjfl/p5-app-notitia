@@ -43,6 +43,7 @@ $bob->install_path( 'bindoc' => catdir( $bob->install_base, 'man', 'man1' ) );
 $bob->install_path( 'libdoc' => catdir( $bob->install_base, 'man', 'man3' ) );
 $bob->add_build_element( 'changes' );
 $bob->add_build_element( 'config'  );
+$bob->add_build_element( 'email'   );
 $bob->add_build_element( 'local'   );
 $bob->add_build_element( 'var'     );
 $bob->create_build_script;
@@ -50,7 +51,10 @@ exit 0;
 
 __DATA__
 
-use File::Basename        qw( dirname );
+use Data::Dumper;
+use Digest::MD5           qw( md5_hex );
+use English               qw( -no_match_vars );
+use File::Basename        qw( basename dirname );
 use File::Copy            qw( copy );
 use File::Find            qw( find );
 use File::Path            qw( make_path );
@@ -77,30 +81,93 @@ sub ACTION_install {
    return;
 }
 
+my $_csums_cache;
+
+sub cached_csum {
+   my ($k, $v) = @_; my $dest = dirname( $k );
+
+   my $path = catfile( $dest, '.csums' ); my $file = basename( $k );
+
+   $_csums_cache or $_csums_cache = -e $path ? do $path : {};
+
+   defined $v or return $_csums_cache->{ $file };
+
+   $_csums_cache->{ $file } = $v; -e $dest or return $v;
+
+   my $dumper = Data::Dumper->new( [ $_csums_cache ], [ 'x' ] );
+   my $dumped = $dumper->Purity( 1 )->Sortkeys( 1 )->Terse( 0 )->Dump();
+
+   open my $fh, '>', $path or die "Path ${path} cannot open: ${OS_ERROR}";
+
+   print {$fh} $dumped; close $fh;
+
+   return $v;
+}
+
+sub get_csum {
+   my $path = shift;
+
+   open my $in, '<', $path or die "Path ${path} cannot open: ${OS_ERROR}";
+
+   my $content; { local $RS = undef; $content = <$in> }; close $in;
+
+   return defined $content ? md5_hex( $content ) : q();
+}
+
 sub process_changes_files {
-   return $_[ 0 ]->_process_files( 'Changes', catdir( 'blib', 'var', 'etc' ) );
+   my $self = shift; $self->_skip_pattern( q() ); umask oct '0027';
+
+   return $self->_process_files( 'Changes', catdir( 'blib', 'var', 'etc' ) );
 }
 
 sub process_config_files {
-   my $self     = shift; umask oct '0027';
+   my $self     = shift; $self->_skip_pattern( q() ); umask oct '0027';
    my $distname = $self->dist_name;
    my $home     = catdir( 'lib', split m{ - }mx, $distname);
 
    return $self->_process_files( catfile( $home, (lc $distname).'.json' ) );
 }
 
+sub process_email_files {
+   my $self   = shift; $self->_skip_pattern( q() ); umask oct '0007';
+   my $dest   = catdir( $self->install_path( 'var' ), 'templates', 'emails' );
+   my $src    = catdir( 'var', 'templates', 'emails' );
+   my $prefix = $self->base_dir;
+
+   find( { no_chdir => 1, wanted => sub {
+      (my $from = $File::Find::name) =~ s{ \A $prefix }{}mx;
+
+      $from eq $src and return;
+
+      my $target = catfile( $dest, basename( $from ) );
+      my $csum; -e $target and $csum = cached_csum( $target );
+
+      if (not $csum or $csum eq get_csum( $target )) {
+         cached_csum( $target, get_csum( $from ) );
+         $self->_copy_file( $from, 'blib' );
+      }
+
+      return;
+   }, }, $src );
+
+   return;
+}
+
 sub process_local_files {
-   my $self = shift; return $self->_process_files( 'local' );
+   my $self = shift; $self->_skip_pattern( q() ); umask oct '0027';
+
+   return $self->_process_files( 'local' );
 }
 
 sub process_var_files {
-   my $self = shift; my $pattern; umask oct '0027';
+   my $self = shift; my $pattern;
 
-   for (qw( .git logs run tmp )) {
+   for (qw( \.git emails/.+ logs run tmp )) {
       $pattern .= ($pattern ? '|' : q()).(catdir( q(), $_ ));
    }
 
-   $self->_skip_pattern( qr{ (?: $pattern ) }mx );
+   $self->_skip_pattern( qr{ (?: $pattern ) }mx ); umask oct '0027';
+
    return $self->_process_files( 'var' );
 }
 

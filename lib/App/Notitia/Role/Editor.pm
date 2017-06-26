@@ -83,9 +83,6 @@ around 'load_page' => sub {
    if ($page->{editing}) { $page->{token} = csrf_token $req }
    else { $self->$_add_editing_js( $req, $page ) }
 
-   $req->authenticated and $page->{user}
-      = $self->components->{person}->find_by_shortcode( $req->username );
-
    my $pattern = join '|', @{ $self->config->editors };
    my $editors = qr{ \A (?: $pattern ) \z }mx;
 
@@ -266,7 +263,7 @@ sub get_dialog {
 
    if ($name eq 'create') {
       p_textfield $form, 'pathname', NUL, { class => 'pathname', label => NUL };
-      p_radio     $form, 'draft', [ [ 'Draft', TRUE ] ], { label => NUL };
+#      p_radio     $form, 'draft', [ [ 'Draft', TRUE ] ], { label => NUL };
       p_button    $form, 'Create', 'create_file', $opts;
       p_js        $page, set_element_focus "${name}-file", 'pathname';
    }

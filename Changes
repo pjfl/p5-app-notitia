@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds no overwrite of email templates on upgrade
           - Spreadsheet being forced on user base
           - Fixes uninitialized value warning in ColorNames
           - Fixes #211. Reset links on mobile nav
