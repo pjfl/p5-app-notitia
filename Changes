@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #202. Exploiter rendering error
           - Fixes #205. Removes add event from service vehicle list
 
 0.14.1    2017-07-01 16:11:05
