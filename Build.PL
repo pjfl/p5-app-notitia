@@ -186,7 +186,7 @@ sub process_template_files {
 
       if (not $c_csum or $c_csum eq _get_csum( $target )) {
          $self->_copy_file( $from, 'blib' );
-         _cached_csum( catdir( 'blib', $src ), $file, _get_csum( $from ) );
+         _cached_csum( $dest, $file, _get_csum( $from ) );
       }
 
       return;
