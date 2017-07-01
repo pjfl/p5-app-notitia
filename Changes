@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #207. Disables vehicle assignment for old events
           - Fixes #202. Exploiter rendering error
           - Fixes #205. Removes add event from service vehicle list
 

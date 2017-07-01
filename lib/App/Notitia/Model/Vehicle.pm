@@ -107,10 +107,11 @@ my $_owner_list = sub {
 };
 
 my $_quantity_list = sub {
-   my ($type, $selected) = @_;
+   my ($page, $type, $selected) = @_;
 
    my $select = { class => 'single-digit-select narrow', };
-   my $opts   = { class => 'single-digit', label => NUL };
+   my $opts   = {
+      class => 'single-digit', disabled => $page->{disabled}, label => NUL };
    my $values = [ [ 0, 0 ], [ 1, 1 ], [ 2, 2 ], [ 3, 3 ], [ 4, 4 ], ];
 
    $values->[ $selected ]->[ 2 ] = { selected => TRUE };
@@ -274,7 +275,7 @@ my $_vreq_row = sub {
    my $tports = $rs->search_for_vehicle_by_type( $event->id, $vehicle_type->id);
    my $quant  = $_req_quantity->( $schema, $event, $vehicle_type );
    my $row    = [ { value => loc( $req, $vehicle_type ) },
-                  $_quantity_list->( $vehicle_type, $quant ) ];
+                  $_quantity_list->( $page, $vehicle_type, $quant ) ];
 
    $quant or return $row;
 
@@ -684,7 +685,9 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    my $selected =  $event->event_type eq 'training' ? 'training_events'
                 :  now_dt > $event->start_date      ? 'previous_events'
                 :                                     'current_events';
+   my $disabled =  $selected eq 'previous_events' ? TRUE : FALSE;
    my $page     =  {
+      disabled  => $disabled,
       event_uri => $uri,
       forms     => [ $form ],
       moniker   => $self->moniker,
@@ -709,9 +712,8 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    p_row $table, [ map { $_vreq_row->( $schema, $req, $page, $event, $_ ) }
                    $type_rs->search_for_vehicle_types->all ];
 
-   ($selected eq 'current_events' or $selected eq 'training_events')
-      and p_button $form, 'request_vehicle', 'request_vehicle', {
-         class => 'save-button right-last' };
+   not $disabled and p_button $form, 'request_vehicle', 'request_vehicle', {
+      class => 'save-button right-last' };
 
    return $self->get_stash( $req, $page );
 }
