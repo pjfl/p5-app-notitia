@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+0.14.1    2017-07-01 16:11:05
           - Include missing dotfiles in distribution
           - Fixes #192. Stop overwriting email templates
           - Fixes #212. Adds day to slot report date
