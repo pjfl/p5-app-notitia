@@ -208,7 +208,7 @@ my $_vehicle_type_tuple = sub {
 };
 
 my $_vehicles_headers = sub {
-   my ($req, $params) = @_; my $max = $params->{service} ? 4 : 1;
+   my ($req, $params) = @_; my $max = $params->{service} ? 3 : 1;
 
    return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } }
             0 .. $max ];
@@ -484,11 +484,7 @@ my $_vehicle_links = sub {
 
    $params->{service} or return $links;
 
-   my $now  = now_dt; my $opts = $_create_action->( $req );
-
-   $href = $req->uri_for_action( 'event/vehicle_event', [ $vrn ] );
-
-   p_item $links, p_link {}, 'event', $href, $opts;
+   my $now  = now_dt;
 
    p_item $links, management_link $req, "${moniker}/vehicle_events", $vrn, {
       params => { after => $now->subtract( days => 1 )->ymd } };
@@ -791,7 +787,7 @@ sub vehicle : Role(rota_manager) {
       selected    => $adhoc   ? 'adhoc_vehicles'
                   :  $private ? 'private_vehicles'
                   :  $service ? 'service_vehicles'
-                  : 'vehicles_list',
+                  :  'vehicles_list',
       title       => loc $req, "vehicle_${action}_heading" };
    my $vehicle    =  $_maybe_find_vehicle->( $self->schema, $vrn );
    my $params     =  {
@@ -835,17 +831,17 @@ sub vehicle_events : Role(rota_manager) {
 
    p_textfield $form, 'vehicle', $vrn, { disabled => TRUE };
 
-   my $table  = p_table $form, { headers => $_vehicle_events_headers->( $req )};
-   my $events = $self->$_vehicle_events( $req, $opts );
-
-   p_row $table, [ map { $_->[ 1 ] } @{ $events } ];
-
    my $links  = [];
    my $href   = $req->uri_for_action( 'event/vehicle_event', [ $vrn ] );
 
    p_link $links, 'event', $href, $_create_action->( $req );
 
    p_list $form, PIPE_SEP, $links, link_options 'right';
+
+   my $table  = p_table $form, { headers => $_vehicle_events_headers->( $req )};
+   my $events = $self->$_vehicle_events( $req, $opts );
+
+   p_row $table, [ map { $_->[ 1 ] } @{ $events } ];
 
    return $self->get_stash( $req, $page );
 }

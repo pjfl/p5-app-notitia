@@ -156,7 +156,7 @@ sub exception_handler {
       $_validation_errors->( $req, $e, $list );
    }
    else {
-      p_tag $list, 'h5', locm $req, 'The following exception was thrown';
+      p_tag $list, 'h5', locm $req, 'exception_handler_subtitle';
       p_tag $list, 'p', $summary;
    }
 

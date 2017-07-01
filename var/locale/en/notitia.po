@@ -952,6 +952,9 @@ msgstr "Expired"
 msgid "external_link_tip"
 msgstr "View this external link in another tab"
 
+msgid "exception_handler_subtitle"
+msgstr "The following exception was thrown"
+
 msgid "exception_handler_title"
 msgstr "I'm sorry [_1], I can't do that"
 
@@ -2737,12 +2740,9 @@ msgid "vehicles_heading_1"
 msgstr "Type"
 
 msgid "vehicles_heading_2"
-msgstr "Add Event"
-
-msgid "vehicles_heading_3"
 msgstr "Events"
 
-msgid "vehicles_heading_4"
+msgid "vehicles_heading_3"
 msgstr "Current Keeper"
 
 msgid "vehicles_management_heading"

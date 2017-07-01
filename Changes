@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Fixes #205. Removes add event from service vehicle list
+
 0.14.1    2017-07-01 16:11:05
           - Include missing dotfiles in distribution
           - Fixes #192. Stop overwriting email templates
