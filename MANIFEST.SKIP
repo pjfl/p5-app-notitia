@@ -10,6 +10,7 @@
 \B\.gitignore-rev$
 \B\.gitpre-commit$
 \B\.svn\b
+.include_for_git
 
 # Avoid Makemaker generated and utility files.
 \bMakefile$
@@ -33,6 +34,7 @@
 \bBuild$
 \bBuild.bat$
 \b_build
+\.build\.PL
 
 # Avoid Dist::Zilla config file
 \bdist.ini$
@@ -54,8 +56,11 @@
 \B\.DS_Store
 #   Mac OSX SMB mount metadata files
 \B\._
+\.directory
 
 # Avoid other crap
+\.burp\.json
+\.travis\.yml
 TAGS
 Thumbs.db
 \bipc_srlock

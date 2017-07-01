@@ -152,6 +152,7 @@ t/41role.t
 t/42vehicle.t
 t/50endorsement.t
 t/boilerplate.pm
+var/docs/en/.contributors.md
 var/docs/en/99_help/01_getting-started.md
 var/docs/en/99_help/02_Menu_Help/01_information/01_Overview.md
 var/docs/en/99_help/02_Menu_Help/02_events/01_Overview.md
@@ -202,6 +203,7 @@ var/templates/custom/month-table.tt
 var/templates/custom/two-week-table.tt
 var/templates/custom/user-defined-form.tt
 var/templates/custom/week-table.tt
+var/templates/emails/.data.json
 var/templates/emails/add_course_email.md
 var/templates/emails/application_upgraded_email.md
 var/templates/emails/backup_data_email.md

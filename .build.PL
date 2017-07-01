@@ -27,9 +27,8 @@ $] < $perl_ver and $stop->( "Minimum required Perl version is ${perl_ver}" );
 
 my $bob = Module::Build->subclass( code => do { local $/; <DATA> } )->new(
    'add_to_cleanup' => [ 'debian', 'META.yml' ],
-   'module_name'    => $name,
-   'notes'          => { min_perl_version => $perl_ver,
-                         testing          => $testing->() },
+   'module_name' => $name,
+   'notes' => { min_perl_version => $perl_ver, testing => $testing->(), },
    %{ $prereqs },
 ##{ $plugin->get_default('share_dir') ##}
 );
@@ -41,11 +40,11 @@ $bob->install_path( 'local'  => catdir( $bob->install_base, 'local' ) );
 $bob->install_path( 'script' => catdir( $bob->install_base, 'bin'   ) );
 $bob->install_path( 'bindoc' => catdir( $bob->install_base, 'man', 'man1' ) );
 $bob->install_path( 'libdoc' => catdir( $bob->install_base, 'man', 'man3' ) );
-$bob->add_build_element( 'changes' );
-$bob->add_build_element( 'config'  );
-$bob->add_build_element( 'email'   );
-$bob->add_build_element( 'local'   );
-$bob->add_build_element( 'var'     );
+$bob->add_build_element( 'changes'  );
+$bob->add_build_element( 'config'   );
+$bob->add_build_element( 'local'    );
+$bob->add_build_element( 'template' );
+$bob->add_build_element( 'var'      );
 $bob->create_build_script;
 exit 0;
 
@@ -60,14 +59,6 @@ use File::Find            qw( find );
 use File::Path            qw( make_path );
 use File::Spec::Functions qw( catdir catfile );
 
-sub _added_to_INC { # CVE-2016-1238
-  my $self = shift; my %seen;
-
-  for ($self->_default_INC) { $seen{ $_ }++ }
-
-  return grep { not $seen{ $_ }++ } $self->base_dir, @INC;
-}
-
 sub ACTION_install {
    my $self = shift; umask oct '0007'; $self->SUPER::ACTION_install();
 
@@ -79,39 +70,6 @@ sub ACTION_install {
    }
 
    return;
-}
-
-my $_csums_cache;
-
-sub cached_csum {
-   my ($k, $v) = @_; my $dest = dirname( $k );
-
-   my $path = catfile( $dest, '.csums' ); my $file = basename( $k );
-
-   $_csums_cache or $_csums_cache = -e $path ? do $path : {};
-
-   defined $v or return $_csums_cache->{ $file };
-
-   $_csums_cache->{ $file } = $v; -e $dest or return $v;
-
-   my $dumper = Data::Dumper->new( [ $_csums_cache ], [ 'x' ] );
-   my $dumped = $dumper->Purity( 1 )->Sortkeys( 1 )->Terse( 0 )->Dump();
-
-   open my $fh, '>', $path or die "Path ${path} cannot open: ${OS_ERROR}";
-
-   print {$fh} $dumped; close $fh;
-
-   return $v;
-}
-
-sub get_csum {
-   my $path = shift;
-
-   open my $in, '<', $path or die "Path ${path} cannot open: ${OS_ERROR}";
-
-   my $content; { local $RS = undef; $content = <$in> }; close $in;
-
-   return defined $content ? md5_hex( $content ) : q();
 }
 
 sub process_changes_files {
@@ -128,7 +86,13 @@ sub process_config_files {
    return $self->_process_files( catfile( $home, (lc $distname).'.json' ) );
 }
 
-sub process_email_files {
+sub process_local_files {
+   my $self = shift; $self->_skip_pattern( q() ); umask oct '0027';
+
+   return $self->_process_files( 'local' );
+}
+
+sub process_template_files {
    my $self   = shift; $self->_skip_pattern( q() ); umask oct '0007';
    my $dest   = catdir( $self->install_path( 'var' ), 'templates', 'emails' );
    my $src    = catdir( 'var', 'templates', 'emails' );
@@ -139,12 +103,13 @@ sub process_email_files {
 
       $from eq $src and return;
 
-      my $target = catfile( $dest, basename( $from ) );
-      my $csum; -e $target and $csum = cached_csum( $target );
+      my $file   = basename( $from );
+      my $target = catfile( $dest, $file );
+      my $c_csum; -e $target and $c_csum = _cached_csum( $dest, $file );
 
-      if (not $csum or $csum eq get_csum( $target )) {
-         cached_csum( $target, get_csum( $from ) );
+      if (not $c_csum or $c_csum eq _get_csum( $target )) {
          $self->_copy_file( $from, 'blib' );
+         _cached_csum( catdir( 'blib', $src ), $file, _get_csum( $from ) );
       }
 
       return;
@@ -153,22 +118,70 @@ sub process_email_files {
    return;
 }
 
-sub process_local_files {
-   my $self = shift; $self->_skip_pattern( q() ); umask oct '0027';
-
-   return $self->_process_files( 'local' );
-}
-
 sub process_var_files {
    my $self = shift; my $pattern;
 
-   for (qw( \.git emails/.+ logs run tmp )) {
+   for (qw( \.git templates/emails logs run tmp )) {
       $pattern .= ($pattern ? '|' : q()).(catdir( q(), $_ ));
    }
 
    $self->_skip_pattern( qr{ (?: $pattern ) }mx ); umask oct '0027';
 
    return $self->_process_files( 'var' );
+}
+
+sub _added_to_INC { # CVE-2016-1238
+  my $self = shift; my %seen;
+
+  for ($self->_default_INC) { $seen{ $_ }++ }
+
+  return grep { not $seen{ $_ }++ } $self->base_dir, @INC;
+}
+
+sub _copy_file {
+   my ($self, $src, $dest) = @_; my $pattern = $self->_skip_pattern;
+
+   ($src and -f $src and (not $pattern or $src !~ $pattern)) or return;
+   # Rebase the directory path
+   my $dir = catdir( $dest, dirname( $src ) );
+   # Ensure target directory exists
+   -d $dir or make_path( $dir, { mode => oct '0750' } );
+
+   copy( $src, $dir );
+   return;
+}
+
+my $_csums_cache;
+
+sub _cached_csum {
+   my ($dir, $file, $v) = @_;
+
+   my $csums = catfile( $dir, '.csums' );
+
+   defined $_csums_cache or $_csums_cache = -e $csums ? do $csums : {};
+
+   defined $v or return $_csums_cache->{ $file };
+
+   $_csums_cache->{ $file } = $v; -e $dir or return $v;
+
+   my $dumper = Data::Dumper->new( [ $_csums_cache ], [ 'x' ] );
+   my $dumped = $dumper->Purity( 1 )->Sortkeys( 1 )->Terse( 0 )->Dump();
+
+   open my $fh, '>', $csums or die "Path ${csums} cannot open: ${OS_ERROR}";
+
+   print {$fh} $dumped; close $fh;
+
+   return $v;
+}
+
+sub _get_csum {
+   my $path = shift;
+
+   open my $in, '<', $path or die "Path ${path} cannot open: ${OS_ERROR}";
+
+   my $content; { local $RS = undef; $content = <$in> }; close $in;
+
+   return defined $content ? md5_hex( $content ) : q();
 }
 
 sub _process_files {
@@ -185,18 +198,6 @@ sub _process_files {
       }, }, $src );
    }
 
-   return;
-}
-
-sub _copy_file {
-   my ($self, $src, $dest) = @_; my $pattern = $self->_skip_pattern;
-
-   ($src and -f $src and (not $pattern or $src !~ $pattern)) or return;
-   # Rebase the directory path
-   my $dir = catdir( $dest, dirname( $src ) );
-   # Ensure target directory exists
-   -d $dir or make_path( $dir, { mode => oct '0750' } );
-   copy( $src, $dir );
    return;
 }
 
