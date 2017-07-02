@@ -189,8 +189,9 @@ my $vehicle_link = sub {
    $action eq 'unassign' and $params->{vehicle} = $value;
    blessed $value and $value = $value->slotref;
 
-   $page->{disabled}
-      and return { class => 'table-link', type => 'text', value => $value };
+   $page->{disabled} and return {
+      class => 'table-link', style => $opts->{style},
+      type  => 'text', value => $value };
 
    $opts->{mode} and $params->{mode} = $opts->{mode};
    $opts->{type} and $params->{type} = $opts->{type};
@@ -289,7 +290,7 @@ sub assign_link ($$$$) {
       my $params = { action => 'unassign', name => $name, value => $value };
 
       $opts->{vehicle}->colour
-         and $style = 'background-color: '.$opts->{vehicle}->colour.'; '
+         and $style = 'background-color: '.$opts->{vehicle}->colour.';'
          and $params->{style} = 'color: '
                               . contrast_colour( $opts->{vehicle}->colour ).';';
 

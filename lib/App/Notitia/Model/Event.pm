@@ -6,9 +6,9 @@ use App::Notitia::DOM       qw( new_container p_action p_button p_list p_fields
                                 p_item p_js p_link p_row p_table p_tag p_text
                                 p_textfield );
 use App::Notitia::Util      qw( check_field_js datetime_label display_duration
-                                loc local_dt locd locm make_tip management_link
-                                now_dt page_link_set register_action_paths
-                                to_dt to_msg );
+                                link_options loc local_dt locd locm
+                                make_tip management_link now_dt page_link_set
+                                register_action_paths to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -99,10 +99,6 @@ my $_event_ops_links = sub {
    p_link $links, 'event', $href, $_create_action->( $req );
 
    return $links;
-};
-
-my $_link_opts = sub {
-   return { class => 'operation-links align-right right-last' };
 };
 
 my $_add_participate_button = sub {
@@ -624,7 +620,7 @@ sub event : Role(event_manager) {
    my $event      =  $self->$_maybe_find_event( $uri );
    my $links      =  $uri ? $_event_ops_links->( $req, $actionp, $uri ) : [];
 
-   $uri and p_list $form, PIPE_SEP, $links, $_link_opts->();
+   $uri and p_list $form, PIPE_SEP, $links, link_options 'right';
 
    p_fields $form, $self->schema, 'Event', $event,
       $self->$_bind_event_fields( $req, $event, {
@@ -681,7 +677,7 @@ sub event_summary : Role(any) {
       title    => loc $req, 'event_summary_heading' };
    my $links   =  $_event_ops_links->( $req, $actionp, $uri );
 
-   $uri and p_list $form, PIPE_SEP, $links, $_link_opts->();
+   $uri and p_list $form, PIPE_SEP, $links, link_options 'right';
 
    p_fields $form, $self->schema, 'Event', $event,
       $self->$_bind_event_fields( $req, $event, { disabled => TRUE } );
@@ -718,13 +714,13 @@ sub events : Role(any) {
       title      => loc $req, "${form_name}_heading" };
    my $links     =  $_events_ops_links->( $req, $moniker, $params, $pager );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, { headers => $_events_headers->( $req ) };
 
    p_row $table, [ map { $self->$_event_links( $req, $_ ) } $events->all ];
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    return $self->get_stash( $req, $page );
 }
@@ -776,7 +772,7 @@ sub participents : Role(any) {
       title      => $_participents_title->( $req, $event ) };
    my $links     =  $self->$_participent_ops_links( $req, $page, $params );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, { headers => $_participent_headers->( $req ) };
    my $person_rs = $schema->resultset( 'Person' );
@@ -808,7 +804,7 @@ sub training_event : Role(training_manager) {
    my $args = [ 'training_event', $uri ];
    my $links =  $uri ? $_event_ops_links->( $req, $actionp, $uri ) : [];
 
-   $uri and p_list $form, PIPE_SEP, $links, $_link_opts->();
+   $uri and p_list $form, PIPE_SEP, $links, link_options 'right';
 
    p_fields $form, $self->schema, 'Event', $event,
       $self->$_bind_event_fields( $req, $event, {

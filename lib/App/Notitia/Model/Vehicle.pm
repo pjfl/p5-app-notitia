@@ -288,7 +288,7 @@ my $_vreq_row = sub {
                         vehicle     => $vehicle,
                         vehicle_req => TRUE, };
 
-      push @{ $row }, assign_link( $req, $page, [ $uri ], $opts );
+      push @{ $row }, assign_link $req, $page, [ $uri ], $opts;
    }
 
    return $row;
@@ -690,6 +690,7 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
       disabled  => $disabled,
       event_uri => $uri,
       forms     => [ $form ],
+      location  => 'events',
       moniker   => $self->moniker,
       selected  => $selected,
       title     => loc $req, 'vehicle_request_heading' };
@@ -715,7 +716,11 @@ sub request_vehicle : Role(rota_manager) Role(event_manager) {
    not $disabled and p_button $form, 'request_vehicle', 'request_vehicle', {
       class => 'save-button right-last' };
 
-   return $self->get_stash( $req, $page );
+   my $stash = $self->get_stash( $req, $page );
+
+   $stash->{navigation} = $self->events_navigation_links( $req, $page );
+
+   return $stash;
 }
 
 sub request_vehicle_action : Role(event_manager) {
