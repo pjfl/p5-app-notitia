@@ -11,10 +11,10 @@ use Web::ComposableRequest::Constants ();
 Class::Usul::Constants->Exception_Class( 'App::Notitia::Exception' );
 Web::ComposableRequest::Constants->Exception_Class( 'App::Notitia::Exception' );
 
-our @EXPORT = qw( C_DIALOG DOTS DATA_TYPE_ENUM FIELD_TYPE_ENUM HASH_CHAR NBSP
-                  PIPE_SEP PRIORITY_TYPE_ENUM SHIFT_TYPE_ENUM SLOT_TYPE_ENUM
-                  TILDE TRAINING_STATUS_ENUM TYPE_CLASS_ENUM VARCHAR_MAX_SIZE
-                  );
+our @EXPORT = qw( C_DIALOG DASH DATA_TYPE_ENUM DOTS FIELD_TYPE_ENUM HASH_CHAR
+                  NBSP PIPE_SEP PRIORITY_TYPE_ENUM SHIFT_TYPE_ENUM
+                  SLOT_TYPE_ENUM TILDE TRAINING_STATUS_ENUM TYPE_CLASS_ENUM
+                  VARCHAR_MAX_SIZE );
 
 sub import {
    my $class       = shift;
@@ -32,6 +32,7 @@ sub import {
 }
 
 sub C_DIALOG  () { { class => 'table-link windows' } }
+sub DASH      () { '-' }
 sub DOTS      () { "\x{2026}" }
 sub HASH_CHAR () { chr 35     }
 sub NBSP      () { '&nbsp;' }
@@ -51,7 +52,7 @@ sub SLOT_TYPE_ENUM       () { [ qw( controller rider driver ) ] }
 sub TRAINING_STATUS_ENUM () { [ qw( enrolled started completed expired ) ] }
 sub TYPE_CLASS_ENUM      () {
    [ qw( call_category certification course
-         event package role rota vehicle ) ] }
+         event package role rota vehicle vehicle_model ) ] }
 sub VARCHAR_MAX_SIZE     () { 255 }
 
 1;

@@ -5,6 +5,7 @@ use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions  qw( throw );
+use Try::Tiny;
 
 # Private methods
 my $_find_recipient = sub {
@@ -16,9 +17,16 @@ my $_find_recipient = sub {
 };
 
 my $_find_cert_type_id = sub {
-   my ($self, $name) = @_; my $schema = $self->result_source->schema;
+   my ($self, $name) = @_;
 
-   return $schema->resultset( 'Type' )->find_certification_by( $name )->id;
+   my $rs   = $self->result_source->schema->resultset( 'Type' );
+   my $cert = try { $rs->find_certification_by( $name ) };
+
+   $cert and return $cert->id;
+   $cert = try { $rs->find_vehicle_model_by( $name ) };
+   $cert or throw 'Certification type [_1] not found', [ $name ];
+
+   return $cert->id;
 };
 
 # Public methods

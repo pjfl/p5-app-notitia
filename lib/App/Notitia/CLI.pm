@@ -92,7 +92,7 @@ my $_create_schema = sub {
 
    my $opts = { err => 'stderr', in => 'stdin', out => 'stdout' };
 
-   # TODO: Add -a option when C::U v0.81
+   # TODO: Add -a option to create the usertable schema also
    $self->run_cmd( [ $cmd, '-o', 'bootstrap=1', 'create-schema' ], $opts );
 
    return;

@@ -4,7 +4,7 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Schedule::Base::Result';
 
-use App::Notitia::Constants qw( VARCHAR_MAX_SIZE );
+use App::Notitia::Constants qw( DASH NUL SPC VARCHAR_MAX_SIZE );
 use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type
                                 varchar_data_type );
 use App::Notitia::Util      qw( local_dt locd locm );
@@ -38,13 +38,16 @@ sub insert {
 }
 
 sub label {
-   my ($self, $req) = @_;
+   my ($self, $req) = @_; my $prefix = NUL;
 
-   my $type = $req ? locm( $req, $self->type ) : $self->type;
-   my $date = $req ? locd( $req, $self->completed )
-                   : local_dt( $self->completed )->dmy( '/' );
+   $req and $self->type->type_class eq 'vehicle_model'
+        and $prefix = locm( $req, 'vehicle_model_cert_prefix' ).SPC.DASH.SPC;
 
-   return "${type} (${date})";
+   my $label = $prefix.$self->type->label( $req );
+   my $date  = $req ? locd( $req, $self->completed )
+                    : local_dt( $self->completed )->dmy( '/' );
+
+   return "${label} (${date})";
 }
 
 sub update {

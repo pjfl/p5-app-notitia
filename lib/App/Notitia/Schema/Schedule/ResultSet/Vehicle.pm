@@ -69,7 +69,7 @@ sub search_for_vehicles {
 
    $opts = { columns  => [ 'colour', 'id', 'name', 'vrn' ],
              order_by => [ 'type.name', 'vrn' ],
-             prefetch => [ 'type', 'owner' ], %{ $opts } };
+             prefetch => [ 'model', 'owner', 'type' ], %{ $opts } };
    delete $opts->{fields};
 
    my $where = {};

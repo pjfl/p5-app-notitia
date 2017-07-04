@@ -546,6 +546,10 @@ sub label {
    return ucfirst( $_[ 0 ]->first_name ).SPC.ucfirst( $_[ 0 ]->last_name );
 }
 
+sub list_certifications {
+   return [ $_[ 0 ]->certs->all ];
+}
+
 sub list_courses {
    my $self = shift; my $opts = { prefetch => 'course_type' };
 

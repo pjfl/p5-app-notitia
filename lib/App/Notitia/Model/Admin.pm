@@ -184,7 +184,7 @@ my $_types_links = sub {
    my ($req, $type) = @_; my $links = [];
 
    p_item $links, ucfirst locm $req, $type->type_class;
-   p_item $links, locm $req, $type->name;
+   p_item $links, $type->label( $req );
    p_item $links, management_link $req, 'admin/type', $type->name, {
       args => [ $type->type_class, $type->name ] };
 
@@ -469,17 +469,21 @@ sub add_certification_action : Role(administrator) {
 }
 
 sub add_type_action : Role(administrator) {
-   my ($self, $req) = @_; my $type_class = $req->uri_params->( 0 );
+   my ($self, $req) = @_;
+
+   my $type_class = $req->uri_params->( 0 );
 
    is_member $type_class, TYPE_CLASS_ENUM
       or throw 'Type class [_1] unknown', [ $type_class ];
 
-   my $name     =  $req->body_params->( 'name' );
-   my $person   =  $self->schema->resultset( 'Type' )->create( {
-      name      => $name, type_class => $type_class } );
-   my $message  =  [ to_msg 'Type [_1] class [_2] created by [_3]',
-                     $name, $type_class, $req->session->user_label ];
-   my $location =  $req->uri_for_action( $self->moniker.'/types' );
+   my $name = lc $req->body_params->( 'name' ); $name =~ s{ [ ] }{_}gmx;
+
+   $self->schema->resultset( 'Type' )->create( {
+      name => $name, type_class => $type_class } );
+
+   my $location = $req->uri_for_action( $self->moniker.'/types' );
+   my $message  = [ to_msg 'Type [_1] class [_2] created by [_3]',
+                    $name, $type_class, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
 }

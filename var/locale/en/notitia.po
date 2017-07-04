@@ -268,7 +268,7 @@ msgid "cert_type"
 msgstr "Cert. Type"
 
 msgid "cert_types"
-msgstr "Cert. Types"
+msgstr "Cert. Type"
 
 msgid "certification_add_link"
 msgstr "Add Certification"
@@ -293,6 +293,12 @@ msgstr "Edit"
 
 msgid "certification_update_tip"
 msgstr "Edit the certification record for [_1]"
+
+msgid "certifications_link"
+msgstr "Certifications"
+
+msgid "certifications_tip"
+msgstr "List the certifications for [_1]"
 
 msgid "certificates_management_heading"
 msgstr "Certifications"
@@ -987,6 +993,9 @@ msgstr "First &nbsp;…&nbsp;"
 
 msgid "first_page_tip"
 msgstr "Goto page 1"
+
+msgid "fjr"
+msgstr "FJR"
 
 msgid "form_defn_link"
 msgstr "Form Definition"
@@ -2660,6 +2669,18 @@ msgstr "Edit"
 msgid "vehicle_management_tip"
 msgstr "Edit this vehicle record"
 
+msgid "vehicle_model"
+msgstr "Model"
+
+msgid "vehicle_model_cert_prefix"
+msgstr "Vehicle Model"
+
+msgid "vehicle_model_type_create_link"
+msgstr "Model"
+
+msgid "vehicle_model_type_create_tip"
+msgstr "Create a vehicle model record"
+
 msgid "vehicle_name"
 msgstr "Nickname"
 
@@ -2740,10 +2761,13 @@ msgid "vehicles_heading_1"
 msgstr "Type"
 
 msgid "vehicles_heading_2"
-msgstr "Events"
+msgstr "Model"
 
 msgid "vehicles_heading_3"
 msgstr "Current Keeper"
+
+msgid "vehicles_heading_4"
+msgstr "Events"
 
 msgid "vehicles_management_heading"
 msgstr "Vehicles"

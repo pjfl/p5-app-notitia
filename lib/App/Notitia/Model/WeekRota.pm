@@ -335,13 +335,12 @@ my $_vehicle_or_request_select_cell = sub {
 my $_alloc_key_row = sub {
    my ($req, $assets, $keeper_dt, $vehicle) = @_; my $row = [];
 
-   my $keeper  = $assets->find_last_keeper( $req, $keeper_dt, $vehicle );
-   my $details = $vehicle->name.', '.$vehicle->notes.', '.$vehicle->vrn;
-   my $style   = $_vehicle_cell_style->( $vehicle );
+   my $keeper = $assets->find_last_keeper( $req, $keeper_dt, $vehicle );
+   my $style  = $_vehicle_cell_style->( $vehicle );
 
-   p_cell $row, { style => $style,
-                  value => ucfirst $details };
+   p_cell $row, { style => $style, value => $vehicle->label };
    p_cell $row, { value => locm $req, $vehicle->type };
+   p_cell $row, { value => locm $req, $vehicle->model // NUL };
    p_cell $row, { class => 'narrow align-center',
                   value => $keeper ? $keeper->[ 0 ]->region : NUL };
    p_cell $row, { value => $keeper ? $keeper->[ 0 ]->label : NUL };
@@ -358,7 +357,7 @@ my $_alloc_key_row = sub {
 my $_alloc_key_headers = sub {
    my ($req, $keeper_dt) = @_;
 
-   my @headings = ( 'Vehicle Details', 'Type', 'R',
+   my @headings = ( 'Vehicle', 'Type', 'Model', 'R',
                     'Keeper at [_1] [_2] [_3]', 'Keeper Location' );
 
    return [ map { { class => 'rota-header', value => locm $req, $_,
@@ -573,8 +572,6 @@ my $_alloc_cell_event_row = sub {
 
    return $row;
 };
-
-# p_hidden $form, 'vehicle_original', $vrn;
 
 my $_alloc_cell_slot_row = sub {
    my ($self, $req, $page, $data, $dt, $slot_key, $cno) = @_; my $row = [];

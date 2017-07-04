@@ -68,6 +68,10 @@ sub find_vehicle_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'vehicle' );
 }
 
+sub find_vehicle_model_by {
+   return $_[ 0 ]->$_find_by( $_[ 1 ], 'vehicle_model' );
+}
+
 sub list_types {
    my ($self, $opts) = @_; $opts = { %{ $opts // {} } };
 
@@ -144,6 +148,13 @@ sub search_for_types {
    return $self->search
       ( { type_class => $type_class },
         { columns    => [ 'id', 'name', 'type_class' ], %{ $opts } } );
+}
+
+sub search_for_vehicle_models {
+   my ($self, $opts) = @_; $opts //= {};
+
+   return $self->search( { type_class => 'vehicle_model' },
+                         { columns    => [ 'id', 'name' ], %{ $opts } } );
 }
 
 sub search_for_vehicle_types {

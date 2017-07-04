@@ -199,6 +199,15 @@ my $_vehicle_title = sub {
    return loc $req, $k;
 };
 
+my $_vehicle_model_tuple = sub {
+   my ($model, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   $opts->{selected} //= NUL;
+   $opts->{selected}   = $opts->{selected} eq $model ? TRUE : FALSE;
+
+   return [ $model->name, $model, $opts ];
+};
+
 my $_vehicle_type_tuple = sub {
    my ($type, $opts) = @_; $opts = { %{ $opts // {} } };
 
@@ -209,7 +218,7 @@ my $_vehicle_type_tuple = sub {
 };
 
 my $_vehicles_headers = sub {
-   my ($req, $params) = @_; my $max = $params->{service} ? 3 : 1;
+   my ($req, $params) = @_; my $max = $params->{service} ? 4 : 1;
 
    return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } }
             0 .. $max ];
@@ -224,6 +233,16 @@ my $_find_or_create_vreq = sub {
 
    return $rs->new_result( { event_id => $event->id,
                              type_id  => $vehicle_type->id } );
+};
+
+my $_list_vehicle_models = sub {
+   my ($schema, $opts) = @_; $opts = { %{ $opts // {} } };
+
+   my $fields  = delete $opts->{fields} // {};
+   my $type_rs = $schema->resultset( 'Type' );
+
+   return [ map { $_vehicle_model_tuple->( $_, $fields ) }
+            $type_rs->search_for_vehicle_models( $opts )->all ];
 };
 
 my $_list_vehicle_types = sub {
@@ -251,6 +270,23 @@ my $_select_nav_link_name = sub {
         : $params->{private} ? 'private_vehicles'
         : $params->{service} ? 'service_vehicles'
                              : 'vehicles_list';
+};
+
+my $_vehicle_model_list = sub {
+   my ($schema, $vehicle, $disabled) = @_;
+
+   my $opts   = { fields => { selected => $vehicle->model } };
+   my $values = [ [ NUL, undef], @{ $_list_vehicle_models->( $schema, $opts )}];
+
+   return {
+      class    => 'standard-field required',
+      disabled => $disabled,
+      label    => 'vehicle_model',
+      name     => 'model',
+      numify   => TRUE,
+      type     => 'select',
+      value    => $values,
+   };
 };
 
 my $_vehicle_type_list = sub {
@@ -304,6 +340,7 @@ my $_bind_vehicle_fields = sub {
    [  vrn         => { class    => 'standard-field server',
                        disabled => $disabled },
       type        => $_vehicle_type_list->( $schema, $vehicle, $disabled ),
+      model       => $_vehicle_model_list->( $schema, $vehicle, $disabled ),
       name        => !$opts->{adhoc} && !$opts->{private} ? {
          disabled => $disabled,
          label    => 'vehicle_name',
@@ -377,15 +414,10 @@ my $_toggle_slot_assignment = sub {
 };
 
 my $_toggle_assignment = sub {
-   my ($self, $req, $action) = @_;
+   my ($self, $req, $action) = @_; my $r;
 
-   my $params = $req->uri_params; my $rota_name = $params->( 0 ); my $r;
-
-   my $vrn = $req->body_params->( 'vehicle', { optional => TRUE } );
-
-   unless ($vrn) {
-      $vrn = $req->body_params->( 'vehicle_original' ); $action = 'unassign';
-   }
+   my $rota_name = $req->uri_params->( 0 );
+   my $vrn = $req->body_params->( 'vehicle' );
 
    try   { $self->schema->resultset( 'Type' )->find_rota_by( $rota_name ) }
    catch { $r = $self->$_toggle_event_assignment( $req, $vrn, $action ) };
@@ -414,8 +446,9 @@ my $_update_vehicle_from_request = sub {
       $vehicle->$attr( $v );
    }
 
+   $v = $params->( 'model', $opts ); defined $v and $vehicle->model_id( $v );
    $v = $params->( 'owner', $opts ); $vehicle->owner_id( $v ? $v : undef );
-   $v = $params->( 'type', $opts ); defined $v and $vehicle->type_id( $v );
+   $v = $params->( 'type',  $opts ); defined $v and $vehicle->type_id( $v );
 
    return;
 };
@@ -481,18 +514,19 @@ my $_vehicle_links = sub {
       tip     => locm( $req, 'vehicle_management_tip', $vrn ),
       value   => $vehicle->label };
 
-   p_item $links, loc $req, $vehicle->type;
+   p_item $links, locm $req, $vehicle->type;
 
    $params->{service} or return $links;
 
-   my $now  = now_dt;
+   p_item $links, locm $req, $vehicle->model // NUL;
 
-   p_item $links, management_link $req, "${moniker}/vehicle_events", $vrn, {
-      params => { after => $now->subtract( days => 1 )->ymd } };
-
+   my $now    = now_dt;
    my $keeper = $self->find_last_keeper( $req, $now, $vehicle );
 
    p_item $links, $keeper ? $keeper->[ 0 ]->label : NUL;
+
+   p_item $links, management_link $req, "${moniker}/vehicle_events", $vrn, {
+      params => { after => $now->subtract( days => 1 )->ymd } };
 
    return $links;
 };

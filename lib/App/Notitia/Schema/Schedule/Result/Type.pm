@@ -5,9 +5,10 @@ use overload '""' => sub { $_[ 0 ]->_as_string },
              '+'  => sub { $_[ 0 ]->_as_number }, fallback => 1;
 use parent   'App::Notitia::Schema::Schedule::Base::Result';
 
-use App::Notitia::Constants qw( FALSE TRUE TYPE_CLASS_ENUM );
+use App::Notitia::Constants qw( FALSE SPC TRUE TYPE_CLASS_ENUM );
 use App::Notitia::DataTypes qw( enumerated_data_type serial_data_type
                                 varchar_data_type );
+use App::Notitia::Util      qw( locm );
 use Class::Usul::Functions  qw( throw );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
@@ -67,6 +68,16 @@ sub is_cert_type_member_of {
 
    return $slot_type && $self->slot_certs->find( $slot_type, $self->id )
         ? TRUE : FALSE;
+}
+
+sub label {
+   my ($self, $req) = @_;
+
+   my $name = $req ? locm( $req, $self->name ) : $self->name;
+
+   $name ne $self->name and return $name;
+
+   return join SPC, map { ucfirst $_ } split m{ [_] }mx, $name;
 }
 
 1;

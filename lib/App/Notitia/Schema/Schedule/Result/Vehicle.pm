@@ -10,7 +10,7 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE
 use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 serial_data_type varchar_data_type );
-use Class::Usul::Functions  qw( throw );
+use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
 use Unexpected::Functions   qw( VehicleAssigned );
 
@@ -23,6 +23,7 @@ $class->table( 'vehicle' );
 $class->add_columns
    ( id       => serial_data_type,
      type_id  => foreign_key_data_type,
+     model_id => nullable_foreign_key_data_type,
      owner_id => nullable_foreign_key_data_type,
      aquired  => date_data_type,
      disposed => date_data_type,
@@ -35,6 +36,7 @@ $class->set_primary_key( 'id' );
 
 $class->add_unique_constraint( [ 'vrn' ] );
 
+$class->belongs_to( model => "${result}::Type", 'model_id', $left_join );
 $class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
 $class->belongs_to( type  => "${result}::Type", 'type_id' );
 
@@ -159,19 +161,30 @@ my $_assert_event_assignment_allowed = sub {
    return;
 };
 
+my $_assert_vehicle_model_allowed = sub {
+   my ($self, $person) = @_; $self->model_id or return;
+
+   is_member $self->model_id,
+      [ map { $_->type->id } @{ $person->list_certifications } ]
+         or throw '[_1] not certified for [_2]',
+         [ $person->label, $self->model->label ];
+
+   return;
+};
+
 my $_assert_slot_assignment_allowed = sub {
-   my ($self, $rota_name, $rota_dt, $shift_t, $slot_t, $person, $v_req) = @_;
+   my ($self, $rota_name, $rota_dt, $shift_t, $slot_t, $slot, $person) = @_;
 
    $person->assert_member_of( 'rota_manager' );
 
-   if ($slot_t eq 'rider') {
-      $v_req and $self->type ne 'bike' and
+   if ($slot_t eq 'rider' and $slot->bike_requested) {
+      $self->type ne 'bike' and
          throw 'Vehicle [_1] is not a bike and one was requested', [ $self ];
 
-      $v_req and not $self->name and
-         throw 'Vehicle [_1] is not a service vehicle', [ $self ];
+      $self->name or throw 'Vehicle [_1] is not a service vehicle', [ $self ];
    }
 
+   $self->$_assert_vehicle_model_allowed( $slot->operator );
    $self->$_assert_not_assigned_to_event( $rota_dt, $shift_t );
    $self->$_assert_not_assigned_to_slot( $rota_name, $rota_dt, $shift_t );
    $self->$_assert_not_assigned_to_vehicle_event( $rota_dt, $shift_t );
@@ -212,10 +225,9 @@ sub assign_slot {
    my $slot   = $self->$_find_slot
       ( $rota_name, $rota_dt, $shift_t, $slot_t, $subslot );
    my $person = $self->$_find_assigner( $assigner );
-   my $vehicle_req = $slot->bike_requested;
 
    $self->$_assert_slot_assignment_allowed
-      ( $rota_name, $rota_dt, $shift_t, $slot_t, $person, $vehicle_req );
+      ( $rota_name, $rota_dt, $shift_t, $slot_t, $slot, $person );
 
    $slot->vehicle_id( $self->id ); $slot->vehicle_assigner_id( $person->id );
 
@@ -255,14 +267,15 @@ sub is_slot_assignment_allowed {
 
    my ($shift_t, $slot_t, $subslot) = split m{ _ }mx, $slot_name, 3;
 
-   my $slot   = $self->$_find_slot
+   my $slot = $self->$_find_slot
       ( $rota_name, $rota_dt, $shift_t, $slot_t, $subslot );
    my $person = $self->$_find_assigner( $assigner );
-   my $vehicle_req = $slot->bike_requested;
    my $allowed = TRUE;
 
-   try   { $self->$_assert_slot_assignment_allowed
-           ( $rota_name, $rota_dt, $shift_t, $slot_t, $person, $vehicle_req ) }
+   try   {
+      $self->$_assert_slot_assignment_allowed
+         ( $rota_name, $rota_dt, $shift_t, $slot_t, $slot, $person );
+   }
    catch { $allowed = FALSE };
 
    return $allowed;

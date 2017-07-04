@@ -1,12 +1,14 @@
 package App::Notitia::Model::Certification;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE NUL SPC TRUE );
+use App::Notitia::Constants qw( C_DIALOG DASH EXCEPTION_CLASS
+                                FALSE NUL SPC TRUE );
 use App::Notitia::DOM       qw( new_container f_tag p_action p_button p_cell
                                 p_item p_js p_link p_list p_fields p_radio
                                 p_row p_table p_tag p_textfield );
-use App::Notitia::Util      qw( check_field_js dialog_anchor loc locm
-                                make_tip register_action_paths to_dt to_msg );
+use App::Notitia::Util      qw( check_field_js dialog_anchor link_options loc
+                                locm make_tip register_action_paths to_dt
+                                to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
@@ -52,10 +54,6 @@ my $_certs_headers = sub {
    return [ map { { value => loc $req, "certs_heading_${_}" } } 0 .. 1 ];
 };
 
-my $_link_opts = sub {
-   return { class => 'operation-links' };
-};
-
 my $_personal_docs_headers = sub {
    my $req = shift;
 
@@ -69,12 +67,32 @@ my $_cert_row = sub {
    p_item $row, $cert->label( $req );
 
    my $actionp = $self->moniker.'/certification';
-   my $href    = $req->uri_for_action( $actionp, [ $scode, $cert->type ] );
-   my $args    = [ $cert->recipient->label ];
+   my $args    = [ $scode, $cert->type ];
+   my $params  = $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
+   my $href    = $req->uri_for_action( $actionp, $args, $params );
    my $cell    = p_cell $row, {}; p_link $cell, 'certification', $href, {
-      action => 'update', args => $args, request => $req };
+      action   => 'update',
+      args     => [ $cert->recipient->label ],
+      request  => $req };
 
    return $row;
+};
+
+my $_cert_ops_links = sub {
+   my ($self, $req, $page, $person) = @_; my $links = [];
+
+   my $scode = $person->shortcode;
+   my $params = $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
+   my $actionp = $self->moniker.'/certifications';
+   my $href  = $req->uri_for_action( $actionp, [ $scode ], $params );
+   my $opts  = { args => [ $person->label ],
+                 container_class => 'ops-links right', request => $req };
+
+   p_link $links, 'certifications', $href, $opts;
+
+   return $links;
 };
 
 my $_certs_ops_links = sub {
@@ -158,9 +176,16 @@ my $_files_ops_links = sub {
 };
 
 my $_list_all_certs = sub {
-   my $self = shift; my $type_rs = $self->schema->resultset( 'Type' );
+   my ($self, $req) = @_;
 
-   return [ [ NUL, NUL ], $type_rs->search_for_certification_types->all ];
+   my $type_rs = $self->schema->resultset( 'Type' );
+   my @certs   = map { [ locm( $req, $_ ), $_ ] }
+                 $type_rs->search_for_certification_types->all;
+   my $prefix  = locm( $req, 'vehicle_model_cert_prefix' ).SPC.DASH.SPC;
+   my @models  = map { [ $prefix.$_->label( $req ), $_ ] }
+                 $type_rs->search_for_vehicle_models->all;
+
+   return [ [ NUL, NUL ], @certs, @models ];
 };
 
 my $_maybe_find_cert = sub {
@@ -193,18 +218,27 @@ my $_update_cert_from_request = sub {
 my $_bind_cert_fields = sub {
    my ($self, $cert, $opts) = @_;
 
+   my $req       = $opts->{request};
    my $updating  = $opts->{action} eq 'update' ? TRUE : FALSE;
    my $completed = $updating ? $cert->completed : to_dt time2str '%Y-%m-%d';
+   my $prefix    = NUL;
 
-   return
-   [  cert_type   => !$updating ? FALSE : {
-         disabled => TRUE, value => loc $opts->{request}, $cert->type },
+   $cert->type and $cert->type->type_class eq 'vehicle_model'
+      and $prefix = locm( $req, 'vehicle_model_cert_prefix' ).SPC.DASH.SPC;
+
+   return [
+      cert_type   => !$updating ? FALSE : {
+         disabled => TRUE,
+         value    => $prefix.$cert->type->label( $req ) },
       cert_types  => $updating ? FALSE : {
-         type     => 'select', value => $self->$_list_all_certs() },
-      completed   => { class => 'standard-field server', type => 'date',
-                       value => $completed },
-      notes       => { class => 'standard-field autosize', type => 'textarea' },
-      ];
+         type     => 'select',
+         value    => $self->$_list_all_certs( $req ) },
+      completed   => {
+         class    => 'standard-field server', type => 'date',
+         value    => $completed },
+      notes       => {
+         class    => 'standard-field autosize', type => 'textarea' },
+   ];
 };
 
 # Public functions
@@ -226,6 +260,9 @@ sub certification : Role(person_manager) Role(training_manager) {
    my $person    =  $person_rs->find_by_shortcode( $scode );
    my $cert      =  $self->$_maybe_find_cert( $scode, $type );
    my $args      =  [ 'certification', $person->label ];
+   my $links     =  $self->$_cert_ops_links( $req, $page, $person );
+
+   p_list $form, NUL, $links, link_options;
 
    p_js $page, $_certification_js->();
 
@@ -249,7 +286,7 @@ sub certifications : Role(person_manager) Role(training_manager) {
    my $href    =  $req->uri_for_action( $actionp, [ $scode ] );
    my $role    =  $req->query_params->( 'role', { optional => TRUE } );
    my $form    =  new_container 'certifications', $href, {
-      class => 'wide-form' };
+      class    => 'wide-form' };
    my $page    =  {
       forms    => [ $form ],
       selected => $role ? "${role}_list" : 'people_list',
@@ -258,7 +295,7 @@ sub certifications : Role(person_manager) Role(training_manager) {
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );
    my $links   =  $self->$_certs_ops_links( $req, $page, $person );
 
-   p_list $form, NUL, $links, $_link_opts->();
+   p_list $form, NUL, $links, link_options;
 
    my $cert_rs =  $schema->resultset( 'Certification' );
    my $table   =  p_table $form, { headers => $_certs_headers->( $req ) };
@@ -267,7 +304,7 @@ sub certifications : Role(person_manager) Role(training_manager) {
                    $cert_rs->search_for_certifications( $scode )->all ];
 
    $links = $self->$_files_ops_links( $req, $page, $person );
-   p_list $form, NUL, $links, $_link_opts->();
+   p_list $form, NUL, $links, link_options;
 
    $table = p_table $form, { headers => $_personal_docs_headers->( $req ) };
 
@@ -280,7 +317,7 @@ sub certifications : Role(person_manager) Role(training_manager) {
                    $userdir->all_files ];
 
    $links = $self->$_files_action_links( $req, $page, $person );
-   p_list $form, NUL, $links, $_link_opts->();
+   p_list $form, NUL, $links, link_options;
 
    return $self->get_stash( $req, $page );
 }
@@ -306,9 +343,10 @@ sub create_certification_action : Role(person_manager) Role(training_manager) {
 
    my $actionp  = $self->moniker.'/certifications';
    my $location = $req->uri_for_action( $actionp, [ $scode ] );
-   my $key      = 'Certertification [_1] for [_2] added by [_3]';
+   my $key      = 'Certification [_1] for [_2] added by [_3]';
+   my $who      = $req->session->user_label;
 
-   $message = [ to_msg $key, $type, $scode, $req->session->user_label ];
+   $message = [ to_msg $key, locm( $req, $type ), $scode, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -326,8 +364,9 @@ sub delete_certification_action : Role(person_manager) Role(training_manager) {
    my $action   = $self->moniker.'/certifications';
    my $location = $req->uri_for_action( $action, [ $scode ] );
    my $key      = 'Certification [_1] for [_2] deleted by [_3]';
+   my $who      = $req->session->user_label;
 
-   $message = [ to_msg $key, $type, $scode, $req->session->user_label ];
+   $message = [ to_msg $key, locm( $req, $type ), $scode, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
@@ -374,8 +413,9 @@ sub update_certification_action : Role(person_manager) Role(training_manager) {
    my $actionp  = $self->moniker.'/certifications';
    my $location = $req->uri_for_action( $actionp, [ $scode ] );
    my $key      = 'Certification [_1] for [_2] updated by [_3]';
+   my $who      = $req->session->user_label;
 
-   $message = [ to_msg $key, $type, $scode, $req->session->user_label ];
+   $message = [ to_msg $key, locm( $req, $type ), $scode, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }
