@@ -340,7 +340,8 @@ my $_alloc_key_row = sub {
 
    p_cell $row, { style => $style, value => $vehicle->label };
    p_cell $row, { value => locm $req, $vehicle->type };
-   p_cell $row, { value => locm $req, $vehicle->model // NUL };
+   p_cell $row, {
+      value => $vehicle->model ? $vehicle->model->label( $req ) : NUL };
    p_cell $row, { class => 'narrow align-center',
                   value => $keeper ? $keeper->[ 0 ]->region : NUL };
    p_cell $row, { value => $keeper ? $keeper->[ 0 ]->label : NUL };

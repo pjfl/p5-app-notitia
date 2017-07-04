@@ -205,7 +205,7 @@ my $_vehicle_model_tuple = sub {
    $opts->{selected} //= NUL;
    $opts->{selected}   = $opts->{selected} eq $model ? TRUE : FALSE;
 
-   return [ $model->name, $model, $opts ];
+   return [ $model->label, $model, $opts ];
 };
 
 my $_vehicle_type_tuple = sub {
@@ -518,7 +518,7 @@ my $_vehicle_links = sub {
 
    $params->{service} or return $links;
 
-   p_item $links, locm $req, $vehicle->model // NUL;
+   p_item $links, $vehicle->model ? $vehicle->model->label( $req ) : NUL;
 
    my $now    = now_dt;
    my $keeper = $self->find_last_keeper( $req, $now, $vehicle );
@@ -634,7 +634,7 @@ sub create_vehicle_action : Role(rota_manager) {
 
    my $vrn = $vehicle->vrn;
    my $who = $req->session->user_label;
-   my $location = $req->uri_for_action( $self->moniker.'/vehicle', [ $vrn ] );
+   my $location = $req->uri_for_action( $self->moniker.'/vehicles' );
    my $message = [ to_msg 'Vehicle [_1] created by [_2]', $vrn, $who ];
 
    $self->send_event( $req, "action:create-vehicle vehicle:${vrn}" );
@@ -803,7 +803,7 @@ sub update_vehicle_action : Role(rota_manager) {
    catch { $self->blow_smoke( $_, 'update', 'vehicle', $vehicle->vrn ) };
 
    my $who      = $req->session->user_label; $vrn = $vehicle->vrn;
-   my $location = $req->uri_for_action( $self->moniker.'/vehicle', [ $vrn ] );
+   my $location = $req->uri_for_action( $self->moniker.'/vehicles' );
    my $message  = [ to_msg 'Vehicle [_1] updated by [_2]', $vrn, $who ];
 
    $self->send_event( $req, "action:update-vehicle vehicle:${vrn}" );
