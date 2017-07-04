@@ -714,7 +714,7 @@ my $_date_picker = sub {
    my ($self, $req, $rota_name, $local_dt, $href) = @_;
 
    my $form       =  {
-      class       => 'day-selector-form',
+      class       => 'paddle',
       content     => {
          list     => [ {
             name  => 'rota_name',

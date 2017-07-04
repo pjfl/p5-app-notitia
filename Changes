@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes vertical alignment in spreadsheet nav
           - Fixes #167. Vehicle subtypes and certs
           - Fixes #207. Disables vehicle assignment for old events
           - Fixes #202. Exploiter rendering error

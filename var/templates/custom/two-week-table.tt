@@ -1,27 +1,35 @@
 [% PROCESS 'hyde/macros.tt' -%]
 <!-- Two Week Table -->
 <div class="spreadsheet-oplinks" style="[% page.fields.nav.oplinks_style %]">
-   <div class="left align-right">
-[% Dispatch( page.fields.nav.prev ) -%]
+   <div class="spreadsheet-oplink left align-right">
+      <div class="paddle">
+[%    Dispatch( page.fields.nav.prev ) -%]
+      </div>
    </div>
-   <div class="left align-right">
+   <div class="spreadsheet-oplink left align-right">
 [% Dispatch( page.fields.nav.picker ) -%]
    </div>
-   <div class="left align-right">
+   <div class="spreadsheet-oplink left align-right">
 [% Dispatch( page.fields.query.control ) %]
    </div>
-   <div class="right align-left">
+   <div class="spreadsheet-oplink right align-left">
+      <div class="paddle">
 [% Dispatch( page.fields.nav.next ) -%]
+      </div>
    </div>
    <h4 class="spreadsheet-heading">[% page.title %]</h4>
 </div>
 [% Dispatch( page.forms.0 ) -%]
 <div class="spreadsheet-oplinks" style="[% page.fields.nav.oplinks_style %]">
-   <div class="nav-link left align-right">
+   <div class="spreadsheet-oplink left align-right">
+      <div class="nav-link paddle">
 [% Dispatch( page.fields.nav.prev ) -%]
+      </div>
    </div>
-   <div class="nav-link right align-left">
+   <div class="spreadsheet-oplink right align-left">
+      <div class="nav-link paddle">
 [% Dispatch( page.fields.nav.next ) -%]
+      </div>
    </div>
 </div>
 [% Dispatch( page.forms.1 ) -%]

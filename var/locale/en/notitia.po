@@ -1530,6 +1530,9 @@ msgstr "»"
 msgid "next_page_tip"
 msgstr "Goto page [_1]"
 
+msgid "next-week_tip"
+msgstr "Display the following weeks schedule"
+
 msgid "nhsbt_issue"
 msgstr "NHSBT Issue"
 
@@ -1857,6 +1860,9 @@ msgstr "«"
 
 msgid "prev_page_tip"
 msgstr "Goto page [_1]"
+
+msgid "prev-week_tip"
+msgstr "Display the previous weeks schedule"
 
 msgid "primary_role"
 msgstr "Primary Role"

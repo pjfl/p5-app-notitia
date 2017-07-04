@@ -244,14 +244,14 @@ footer {
 .nav-link { margin-top: 7px; }
 .next-rota, .prev-rota {
    background-color: @buttons; .border-radius; .box-shadow;
-   color: @foreground; font-size: 12px; font-weight: 700;
-   padding: 8px 12px 10px; position: relative; text-transform: uppercase;
+   color: @foreground; font-size: 12px; font-weight: 700; line-height: 26px;
+   padding: 6px 10px; text-transform: uppercase;
 }
 .next-rota:after, .prev-rota:before {
    color: @darker-fg; position: absolute; font-size: 32px; font-weight: 900;
-   text-shadow: 0 1px 0 rgba(255,255,255,.4); top: -5px;
+   line-height: 26px; text-shadow: 0 1px 0 rgba(255,255,255,.4); top: -3px;
 }
-.next-rota:after { content: '\203A'; right: 10px; }
+.next-rota:after { content: '\203A'; right: 20px; }
 .next-rota:hover, .prev-rota:hover {
    background-color: @heavy; color: @brighter; outline: 0;
    text-decoration: underline;
@@ -262,6 +262,7 @@ footer {
 .option-label {
    display: inline-block; padding: 0.325em 0; vertical-align: top;
 }
+.paddle { margin: 0.25em 0; overflow: hidden; }
 .pathname, .date-field, .narrow-field, .single-character, .single-digit,
 .standard-field, .mediumint-field, .smallint-field {
    background-color: #fff; border: 2px inset; .border-radius;
@@ -276,7 +277,7 @@ footer {
    background-color: @subtle-bg; color: @darker-fg;
 }
 .person-column { vertical-align: top; }
-.prev-rota:before { content: '\2039'; left: 10px; }
+.prev-rota:before { content: '\2039'; left: 20px; }
 .prev-rota, .prev-rota:hover { margin-left: 10px; padding-left: 30px; }
 .radio-group {
    .box-sizing; display: inline-block; vertical-align: top;
@@ -318,6 +319,8 @@ footer {
    .box-sizing; color: @darker-fg; font-size: 12px; max-width: 20px; margin: 0;
    min-width: 20px; padding: 0 3px; vertical-align: middle;
 }
+.spreadsheet-oplink { margin: auto 0; }
+.spreadsheet-oplink .rota-date-field { line-height: 26px; padding: 0 0 0 40px; }
 .spreadsheet-oplinks { margin: 5px auto; }
 .standard-field[type=date], .narrow-field[type=time],
 .standard-field[type=time] {
@@ -679,15 +682,12 @@ article h2:first-child, { margin-top: 0; }
    border: 0; color: @contrast; font-size: 12px;
    outline: none; padding: 0 10px; width: 80px;
 }
-.day-selector-form { overflow: hidden; }
-.day-selector-form .rota-date-field {
-   background: @background;
-}
+.rota-date-field { background: @background; }
 table .rota-date-field {
    border-top: 1px solid #747474; border-top: 1px solid rgba(0,0,0,.1);
    .box-shadow; .table-background; line-height: 28px;
 }
-.rota-date-form, .day-selector-form { display: inline-block; }
+.rota-date-form, { display: inline-block; }
 .rota-link { display: block; }
 table.month-rota { font-size: 0.625em; width: 100%; }
 td.embeded { padding: 0 !important; }
