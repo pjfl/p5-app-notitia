@@ -991,6 +991,8 @@ my $_alloc_query = sub {
 
    $_onchange_submit->( $page, 'display_rows' );
 
+   $self->add_csrf_token( $req, $form );
+
    return { control => $form };
 };
 
@@ -1010,6 +1012,7 @@ my $_allocation_page = sub {
    };
 
    $_onchange_submit->( $page, 'rota_date', 'day_selector' );
+
    return $page;
 };
 
