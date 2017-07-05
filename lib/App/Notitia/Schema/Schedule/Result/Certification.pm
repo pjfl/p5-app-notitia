@@ -43,11 +43,7 @@ sub label {
    $req and $self->type->type_class eq 'vehicle_model'
         and $prefix = locm( $req, 'vehicle_model_cert_prefix' ).SPC.DASH.SPC;
 
-   my $label = $prefix.$self->type->label( $req );
-   my $date  = $req ? locd( $req, $self->completed )
-                    : local_dt( $self->completed )->dmy( '/' );
-
-   return "${label} (${date})";
+   return $prefix.$self->type->label( $req );
 }
 
 sub update {

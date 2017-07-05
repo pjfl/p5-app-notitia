@@ -7,7 +7,7 @@ use App::Notitia::DOM       qw( new_container p_action p_button p_fields p_js
                                 p_link p_list p_row p_select p_table
                                 p_tag p_textfield );
 use App::Notitia::Util      qw( check_field_js datetime_label dialog_anchor
-                                locm make_tip now_dt page_link_set
+                                link_options locm make_tip now_dt page_link_set
                                 register_action_paths to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
@@ -81,10 +81,6 @@ my $_customers_headers = sub {
    my $req = shift; my $header = 'customers_heading';
 
    return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 0 ];
-};
-
-my $_link_opts = sub {
-   return { class => 'operation-links align-right right-last' };
 };
 
 my $_location_tuple = sub {
@@ -293,11 +289,42 @@ my $_bind_journey_fields = sub {
 };
 
 my $_bind_vehicle = sub {
-   my ($self, $leg, $opts) = @_; my $selected = $leg->vehicle_id // 0;
+   my ($self, $leg, $opts) = @_;
+
+   my $selected = $leg->vehicle_id // $opts->{selected_vehicle} // 0;
 
    return [ [ NUL, undef ],
             map { $_vehicle_tuple->( $selected, $_ ) }
                @{ $opts->{vehicles} } ];
+};
+
+my $_search_for_vehicles = sub {
+   my ($self, $req, $leg, $opts) = @_;
+
+   my $schema            = $self->schema;
+   my $rs                = $schema->resultset( 'Vehicle' );
+   my @adhoc_vehicles    = $rs->search_for_vehicles( { adhoc => TRUE } )->all;
+   my @service_vehicles  = $rs->search_for_vehicles( { service => TRUE } )->all;
+   my @personal_vehicles = ();
+
+   $leg->operator_id and @personal_vehicles =
+      $rs->search_for_vehicles( { owner => $leg->operator } )->all;
+
+   $opts->{vehicles}
+      = [ @service_vehicles, @personal_vehicles, @adhoc_vehicles ];
+
+   my $id = $leg->operator_id or return; my $vm = $self->components->{asset};
+
+   for my $vehicle (@service_vehicles) {
+      my $keeper = $vm->find_last_keeper( $req, $leg->called, $vehicle )
+         or next;
+
+      $keeper->[ 0 ]->id == $id
+         and $opts->{selected_vehicle} = $vehicle->id
+         and last;
+   }
+
+   return;
 };
 
 my $_bind_leg_fields = sub {
@@ -306,25 +333,13 @@ my $_bind_leg_fields = sub {
    my $schema     = $self->schema;
    my $disabled   = $opts->{disabled} // FALSE;
    my $journey_rs = $schema->resultset( 'Journey' );
-   my $vehicle_rs = $schema->resultset( 'Vehicle' );
 
    $opts->{journey  } = $journey_rs->find( $opts->{journey_id} );
    $opts->{locations} = [ $schema->resultset( 'Location' )->search( {} )->all ];
    $opts->{people   } = $schema->resultset( 'Person' )->search_for_people( {
       roles => [ 'driver', 'rider' ], status => 'current' } );
 
-   my @service_vehicles = $vehicle_rs->search_for_vehicles( {
-      service => TRUE } )->all;
-   my @personal_vehicles = ();
-
-   $leg->operator_id and @personal_vehicles =
-      $vehicle_rs->search_for_vehicles( { owner => $leg->operator } )->all;
-
-   my @adhoc_vehicles = $vehicle_rs->search_for_vehicles( {
-      adhoc => TRUE } )->all;
-
-   $opts->{vehicles}
-      = [ @service_vehicles, @personal_vehicles, @adhoc_vehicles ];
+   $self->$_search_for_vehicles( $req, $leg, $opts );
 
    my $on_station_disabled =
       $opts->{request}->username ne $opts->{journey}->controller
@@ -642,7 +657,7 @@ my $_packages_and_stages = sub {
 
    my $links = $self->$_journey_package_ops_links( $req, $page, $jid );
 
-   $disabled or p_list $pform, PIPE_SEP, $links, $_link_opts->();
+   $disabled or p_list $pform, PIPE_SEP, $links, link_options 'right';
 
    my $package_rs = $self->schema->resultset( 'Package' );
    my $packages = $package_rs->search( { journey_id => $jid }, {
@@ -668,7 +683,7 @@ my $_packages_and_stages = sub {
    }
 
    $disabled or $last_leg or p_list $lform, PIPE_SEP,
-      $self->$_journey_leg_ops_links( $req, $jid ), $_link_opts->();
+      $self->$_journey_leg_ops_links( $req, $jid ), link_options 'right';
 
    my $l_table = p_table $lform, { headers => $_journey_leg_headers->( $req ) };
 
@@ -965,7 +980,7 @@ sub customers : Role(call_manager) Role(controller) Role(driver) Role(rider) {
    };
    my $links = $self->$_customers_ops_links( $req );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, { headers => $_customers_headers->( $req ) };
    my $customers = $self->schema->resultset( 'Customer' )->search( {} );
@@ -1138,7 +1153,7 @@ sub journeys : Role(call_manager) Role(controller) Role(driver) Role(rider) {
    my $links     =  $self->$_journeys_ops_links
       ( $req, $page, $params, $journeys->pager, $done );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, { headers => $_journeys_headers->( $req, $done )};
 
@@ -1172,7 +1187,7 @@ sub leg : Role(call_manager) Role(controller) Role(driver) Role(rider) {
       leg_count => $count, request => $req } );
    my $label    = locm( $req, 'stage' ).SPC.($lid // NUL);
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    p_fields $form, $self->schema, 'Leg', $leg, $fields;
 
@@ -1222,7 +1237,7 @@ sub locations : Role(controller) Role(driver) Role(rider) {
    };
    my $links = $self->$_locations_ops_links( $req );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, { headers => $_locations_headers->( $req ) };
    my $locations = $self->schema->resultset( 'Location' )->search( {} );

@@ -217,7 +217,7 @@ msgid "blots_heading_0"
 msgstr "Endorsement"
 
 msgid "blots_heading_1"
-msgstr "Edit"
+msgstr "Received"
 
 msgid "bluelight"
 msgstr "Bluelight"
@@ -316,7 +316,7 @@ msgid "certs_heading_0"
 msgstr "Certification"
 
 msgid "certs_heading_1"
-msgstr "Edit"
+msgstr "Awarded"
 
 msgid "change_password_link"
 msgstr "Change Password"
@@ -813,6 +813,12 @@ msgstr "Edit the endorsement record for [_1]"
 
 msgid "endorsement_update_heading"
 msgstr "Edit Endorsement"
+
+msgid "endorsements_list_link"
+msgstr "Endorsements"
+
+msgid "endorsements_list_tip"
+msgstr "List the endorsements for this bad boy"
 
 msgid "endorsements_management_heading"
 msgstr "Endorsements"

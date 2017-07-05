@@ -8,8 +8,8 @@ use App::Notitia::DOM       qw( new_container p_cell p_js p_link p_list p_row
                                 p_table p_tag );
 use App::Notitia::Util      qw( contrast_colour dialog_anchor display_duration
                                 js_server_config js_submit_config lcm_for
-                                local_dt locm now_dt register_action_paths
-                                slot_limit_index to_dt );
+                                link_options local_dt locm now_dt
+                                register_action_paths slot_limit_index to_dt );
 use Class::Usul::Functions  qw( sum );
 use Class::Usul::Time       qw( time2str );
 use Moo;
@@ -50,10 +50,6 @@ my $_is_this_month = sub {
    my ($rno, $local_dt) = @_; $rno > 0 and return TRUE;
 
    return $local_dt->day < 15 ? TRUE : FALSE;
-};
-
-my $_link_opts = sub {
-   return { class => 'operation-links align-right right-last' };
 };
 
 my $_onclick_relocate = sub {
@@ -468,7 +464,7 @@ sub month_rota : Role(any) {
    my $links     = $self->$_month_rota_ops_links( $req, $page, $rota_name );
    my $form      = $page->{forms}->[ 0 ];
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, $_month_rota_table->( $req );
 

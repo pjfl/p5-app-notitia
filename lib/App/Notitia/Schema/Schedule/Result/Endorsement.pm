@@ -62,11 +62,7 @@ sub insert {
 sub label {
    my ($self, $req) = @_;
 
-   my $type = $req ? locm( $req, $self->type_code ) : $self->type_code;
-   my $date = $req ? locd( $req, $self->endorsed )
-                   : local_dt( $self->endorsed )->dmy( '/' );
-
-   return "${type} (${date})";
+   return $req ? locm( $req, $self->type_code ) : $self->type_code;
 }
 
 sub update {

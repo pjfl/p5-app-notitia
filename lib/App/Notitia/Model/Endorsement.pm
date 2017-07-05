@@ -4,8 +4,9 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::DOM       qw( new_container p_action p_cell p_item p_js p_link
                                 p_list p_fields p_row p_table p_textfield );
-use App::Notitia::Util      qw( check_field_js loc local_dt locm now_dt
-                                register_action_paths to_dt to_msg );
+use App::Notitia::Util      qw( check_field_js link_options loc local_dt locd
+                                locm now_dt register_action_paths
+                                to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
@@ -59,46 +60,60 @@ my $_endorsement_js = sub {
           check_field_js( 'endorsed',  $opts );
 };
 
-my $_endorsement_ops_links = sub {
-   my ($req, $actionp, $person) = @_; my $links = [];
-
-   my $params = $req->query_params->( { optional => TRUE } );
-
-   delete $params->{mid};
-
-   my $href = $req->uri_for_action( $actionp, [ $person->shortcode ], $params );
-
-   p_link $links, 'endorsement', $href, {
-      action => 'add', args => [ $person->label ], request => $req };
-
-   return $links;
-};
-
 my $_endorsements_headers = sub {
    my $req = shift;
 
    return [ map { { value => loc( $req, "blots_heading_${_}" ) } } 0 .. 1 ];
 };
 
-my $_link_opts = sub {
-   return { class => 'operation-links align-right right-last' };
-};
-
 # Private methods
 my $_endorsement_links = sub {
-   my ($self, $req, $scode, $blot) = @_; my $links = [];
+   my ($self, $req, $scode, $blot) = @_; my $row = [];
 
-   p_item $links, $blot->label( $req );
+   my $actionp = $self->moniker.'/endorsement';
+   my $args    = [ $scode, $blot->uri ];
+   my $params  = $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
+   my $href    = $req->uri_for_action( $actionp, $args, $params );
+   my $cell    = p_cell $row, {};
 
-   my $args = [ $blot->recipient->label ]; my @links;
+   p_link $cell, 'endorsement', $href, {
+      action  => 'update',
+      args    => [ $blot->recipient->label ],
+      request => $req,
+      value   => $blot->label( $req ) };
 
-   for my $actionp (map { $self->moniker."/${_}" } 'endorsement' ) {
-      my $href = $req->uri_for_action( $actionp, [ $scode, $blot->uri ] );
-      my $cell = p_cell $links, {};
+   p_item $row, locd $req, $blot->endorsed;
 
-      p_link $cell, 'endorsement', $href, {
-         action => 'update', args => $args, request => $req };
-   }
+   return $row;
+};
+
+my $_endorsement_ops_links = sub {
+   my ($self, $req, $person) = @_; my $links = [];
+
+   my $actionp = $self->moniker.'/endorsements';
+   my $args    = [ $person->shortcode ];
+   my $params  = $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
+   my $href    = $req->uri_for_action( $actionp, $args, $params );
+
+   p_link $links, 'endorsements', $href, {
+      action => 'list', args => [ $person->label ], request => $req };
+
+   return $links;
+};
+
+my $_endorsements_ops_links = sub {
+   my ($self, $req, $person) = @_; my $links = [];
+
+   my $actionp = $self->moniker.'/endorsement';
+   my $args    = [ $person->shortcode ];
+   my $params  = $req->query_params->( {
+      optional => TRUE } ); delete $params->{mid};
+   my $href    = $req->uri_for_action( $actionp, $args, $params );
+
+   p_link $links, 'endorsement', $href, {
+      action => 'add', args => [ $person->label ], request => $req };
 
    return $links;
 };
@@ -197,7 +212,7 @@ sub endorsement : Role(person_manager) {
    my $href       =  $req->uri_for_action( $actionp, [ $scode, $uri ] );
    my $form       =  new_container 'endorsement-admin', $href;
    my $page       =  {
-      first_field => $uri ? 'endorsed' : 'type_code',
+      first_field => $uri ? 'points' : 'type_code',
       forms       => [ $form ],
       selected    => $role ? "${role}_list" : 'people_list',
       title       => loc $req, "endorsement_${action}_heading" };
@@ -205,8 +220,11 @@ sub endorsement : Role(person_manager) {
    my $person_rs  =  $self->schema->resultset( 'Person' );
    my $person     =  $person_rs->find_by_shortcode( $scode );
    my $args       =  [ 'endorsement', $person->label ];
+   my $links      =  $self->$_endorsement_ops_links( $req, $person );
 
    p_js $page, $_endorsement_js->(),
+
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    p_textfield $form, 'username', $person->label, { disabled => TRUE };
 
@@ -223,7 +241,6 @@ sub endorsement : Role(person_manager) {
 sub endorsements : Role(person_manager) {
    my ($self, $req) = @_;
 
-   my $actionp =  $self->moniker.'/endorsement';
    my $scode   =  $req->uri_params->( 0 );
    my $role    =  $req->query_params->( 'role', { optional => TRUE } );
    my $form    =  new_container;
@@ -234,16 +251,16 @@ sub endorsements : Role(person_manager) {
    my $schema  =  $self->schema;
    my $person  =  $schema->resultset( 'Person' )->find_by_shortcode( $scode );
    my $blot_rs =  $schema->resultset( 'Endorsement' );
-   my $links   =  $_endorsement_ops_links->( $req, $actionp, $person );
+   my $links   =  $self->$_endorsements_ops_links( $req, $person );
 
    p_textfield $form, 'username', $person->label, { disabled => TRUE };
+
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, { headers => $_endorsements_headers->( $req ) };
 
    p_row $table, [ map { $self->$_endorsement_links( $req, $scode, $_ ) }
                    $blot_rs->search_for_endorsements( $scode )->all ];
-
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
 
    return $self->get_stash( $req, $page );
 }

@@ -7,7 +7,7 @@ use App::Notitia::DOM       qw( new_container f_tag p_action p_button p_cell
                                 p_item p_js p_link p_list p_fields p_radio
                                 p_row p_table p_tag p_textfield );
 use App::Notitia::Util      qw( check_field_js dialog_anchor link_options loc
-                                locm make_tip register_action_paths to_dt
+                                locd locm make_tip register_action_paths to_dt
                                 to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
@@ -64,17 +64,20 @@ my $_personal_docs_headers = sub {
 my $_cert_row = sub {
    my ($self, $req, $scode, $cert) = @_; my $row = [];
 
-   p_item $row, $cert->label( $req );
-
    my $actionp = $self->moniker.'/certification';
    my $args    = [ $scode, $cert->type ];
    my $params  = $req->query_params->( {
       optional => TRUE } ); delete $params->{mid};
    my $href    = $req->uri_for_action( $actionp, $args, $params );
-   my $cell    = p_cell $row, {}; p_link $cell, 'certification', $href, {
+   my $cell    = p_cell $row, {};
+
+   p_link $cell, 'certification', $href, {
       action   => 'update',
       args     => [ $cert->recipient->label ],
-      request  => $req };
+      request  => $req,
+      value    => $cert->label( $req ) };
+
+   p_item $row, locd $req, $cert->completed;
 
    return $row;
 };
@@ -329,10 +332,9 @@ sub create_certification_action : Role(person_manager) Role(training_manager) {
    my $type    = $req->body_params->( 'cert_types' );
    my $cert_rs = $self->schema->resultset( 'Certification' );
    my $cert    = $cert_rs->new_result( { recipient => $scode, type => $type } );
+   my $label   = locm $req, $type;
 
    $self->$_update_cert_from_request( $req, $cert );
-
-   my $label   = $cert->label( $req );
 
    try   { $cert->insert }
    catch { $self->blow_smoke( $_, 'create', 'certification', $label ) };
@@ -346,7 +348,7 @@ sub create_certification_action : Role(person_manager) Role(training_manager) {
    my $key      = 'Certification [_1] for [_2] added by [_3]';
    my $who      = $req->session->user_label;
 
-   $message = [ to_msg $key, locm( $req, $type ), $scode, $who ];
+   $message = [ to_msg $key, $label, $scode, $who ];
 
    return { redirect => { location => $location, message => $message } };
 }

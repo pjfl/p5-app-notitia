@@ -5,8 +5,8 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::DOM       qw( new_container p_cell p_container p_date p_hidden
                                 p_item p_js p_link p_list p_row
                                 p_select p_table );
-use App::Notitia::Util      qw( js_submit_config local_dt locd locm make_tip
-                                now_dt to_dt register_action_paths
+use App::Notitia::Util      qw( js_submit_config link_options local_dt locd
+                                locm make_tip now_dt to_dt register_action_paths
                                 slot_limit_index );
 use Class::Null;
 use Class::Usul::Functions  qw( sum throw );
@@ -326,10 +326,6 @@ my $_link_args = sub {
    }
 
    return [ $name, $from->ymd, $to->ymd ];
-};
-
-my $_link_opts = sub {
-   return { class => 'operation-links align-right right-last' };
 };
 
 my $_onchange_submit = sub {
@@ -723,7 +719,8 @@ sub customers : Role(controller) {
                    grep  { not m{ \A _ }mx }
                    keys %{ $data } ];
 
-   p_list $form, NUL, $_dl_links->( $req, 'customers', $opts ), $_link_opts->();
+   p_list $form, NUL, $_dl_links->( $req, 'customers', $opts ),
+      link_options 'right';
 
    return $self->get_stash( $req, $page );
 }
@@ -782,7 +779,7 @@ sub deliveries : Role(controller) {
    p_container $form, $sample_table, { class => 'wide-content' };
 
    p_list $form, NUL, $_dl_links->( $req, 'deliveries', $opts ),
-          $_link_opts->();
+          link_options 'right';
 
    return $self->get_stash( $req, $page );
 }
@@ -811,7 +808,8 @@ sub incidents : Role(controller) {
 
    p_container $form, $sample_table, { class => 'wide-content' };
 
-   p_list $form, NUL, $_dl_links->( $req, 'incidents', $opts ), $_link_opts->();
+   p_list $form, NUL, $_dl_links->( $req, 'incidents', $opts ),
+      link_options 'right';
 
    return $self->get_stash( $req, $page );
 }
@@ -839,7 +837,8 @@ sub people : Role(person_manager) {
                    map   { $_sum_counts->( $data, $_, 4 ) }
                    keys %{ $data } ];
 
-   p_list $form, NUL, $_dl_links->( $req, 'people', $opts ), $_link_opts->();
+   p_list $form, NUL, $_dl_links->( $req, 'people', $opts ),
+      link_options 'right';
 
    return $self->get_stash( $req, $page );
 }
@@ -869,7 +868,7 @@ sub people_meta : Role(person_manager) {
    }
 
    p_list $form, NUL, $_dl_links->( $req, 'people_meta', $opts ),
-      $_link_opts->();
+      link_options 'right';
 
    return $self->get_stash( $req, $page );
 }
@@ -899,7 +898,8 @@ sub slots : Role(rota_manager) {
                    map { $_slot_utilisation->( $_, $expected ) }
                       @{ $data } ];
 
-   p_list $form, NUL, $_dl_links->( $req, 'slots', $opts ), $_link_opts->();
+   p_list $form, NUL, $_dl_links->( $req, 'slots', $opts ),
+      link_options 'right';
 
    return $self->get_stash( $req, $page );
 }
@@ -927,7 +927,8 @@ sub vehicles : Role(rota_manager) {
                    map   { $_sum_counts->( $data, $_, 3 ) }
                    keys %{ $data } ];
 
-   p_list $form, NUL, $_dl_links->( $req, 'vehicles', $opts ), $_link_opts->();
+   p_list $form, NUL, $_dl_links->( $req, 'vehicles', $opts ),
+      link_options 'right';
 
    return $self->get_stash( $req, $page );
 }

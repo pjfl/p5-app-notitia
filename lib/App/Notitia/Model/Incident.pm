@@ -5,9 +5,9 @@ use App::Notitia::Constants qw( FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::DOM       qw( new_container f_tag p_action p_button p_cell
                                 p_container p_fields p_item p_js p_link p_list
                                 p_row p_select p_table p_textfield );
-use App::Notitia::Util      qw( check_field_js js_window_config locm make_tip
-                                page_link_set register_action_paths to_dt
-                                to_msg );
+use App::Notitia::Util      qw( check_field_js js_window_config link_options
+                                locm make_tip page_link_set
+                                register_action_paths to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
@@ -64,10 +64,6 @@ my $_incidents_headers = sub {
    my $req = shift; my $header = 'incidents_heading';
 
    return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 2 ];
-};
-
-my $_link_opts = sub {
-   return { class => 'operation-links align-right right-last' };
 };
 
 my $_person_tuple = sub {
@@ -346,7 +342,7 @@ sub incident : Role(controller) Role(incident_manager) {
    my $incident = $self->$_maybe_find( 'Incident', $i_id );
    my $fopts = { disabled => FALSE };
 
-   $i_id and p_list $form, PIPE_SEP, $links, $_link_opts->();
+   $i_id and p_list $form, PIPE_SEP, $links, link_options 'right';
 
    p_fields $form, $self->schema, 'Incident', $incident,
       $self->$_bind_incident_fields( $req, $page, $incident, $fopts );
@@ -379,7 +375,7 @@ sub incident_party : Role(controller) Role(incident_manager) {
    my $people = $_subtract->( $self->$_list_all_people, $parties );
    my $links = $self->$_incident_party_ops_links( $req, $page, $i_id );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    p_textfield $form, 'incident', $title, {
       disabled => TRUE, label => 'incident_title' };
@@ -426,7 +422,7 @@ sub incidents : Role(controller) Role(incident_manager) {
    my $links = $self->$_incidents_ops_links
       ( $req, $page, $params, $incidents->pager );
 
-   p_list $form, PIPE_SEP, $links, $_link_opts->();
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    my $table = p_table $form, { headers => $_incidents_headers->( $req ) };
 
