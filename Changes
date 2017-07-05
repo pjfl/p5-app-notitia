@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #52. Returns to same page after edit
           - Fixes #152. Defaults service vehicle on delivery stage
           - Fixes vertical alignment in spreadsheet nav
           - Fixes #167. Vehicle subtypes and certs

@@ -152,10 +152,10 @@ my $_people_search_opts = sub {
 
    return  {
       columns  => [ 'badge_id' ],
-      filter_column => $column,
-      order_by => $_people_order->( $params ),
-      page     => delete $params->{page} // 1,
+      filter_column  => $column,
       filter_pattern => $pattern,
+      order_by => $_people_order->( $params ),
+      page     => $params->{page} // 1,
       role     => $params->{role},
       rows     => $req->session->rows_per_page,
       status   => $params->{status},
@@ -301,7 +301,7 @@ my $_people_links = sub {
 
    p_item $links, p_link {}, "${scode}-${action}", $href, {
       request  => $req,
-      tip      => locm( $req, "${action}_management_tip", $scode ),
+      tip      => locm( $req, "${action}_management_tip", $person->label ),
       value    => $person->label };
 
    my @paths = (); push @paths, 'role/role';
@@ -530,7 +530,8 @@ sub create_person_action : Role(person_manager) {
 
    my $who      = $req->session->user_label;
    my $key      = '[_1] created by [_2] ref. [_3]';
-   my $location = $req->uri_for_action( $self->moniker.'/people' );
+   my $params   = $req->query_params->( { optional => TRUE } );
+   my $location = $req->uri_for_action( $self->moniker.'/people', [], $params );
 
    $message = [ to_msg $key, $person->label, $who, $job_label ];
 
@@ -552,7 +553,8 @@ sub delete_person_action : Role(person_manager) {
    $self->send_event( $req, "action:delete-person shortcode:${name}" );
 
    my $who      = $req->session->user_label;
-   my $location = $req->uri_for_action( $self->moniker.'/people' );
+   my $params   = $req->query_params->( { optional => TRUE } );
+   my $location = $req->uri_for_action( $self->moniker.'/people', [], $params );
    my $message  = [ to_msg '[_1] deleted by [_2]', $label, $who ];
 
    return { redirect => { location => $location, message => $message } };
@@ -601,11 +603,13 @@ sub mugshot : Dialog Role(person_manager) {
 sub person : Role(person_manager) {
    my ($self, $req) = @_; my $people;
 
-   my $moniker    =  $self->moniker;
    my $name       =  $req->uri_params->( 0, { optional => TRUE } );
    my $role       =  $req->query_params->( 'role', { optional => TRUE } );
    my $status     =  $req->query_params->( 'status', { optional => TRUE } );
-   my $href       =  $req->uri_for_action( "${moniker}/person", [ $name ] );
+   my $page       =  $req->query_params->( 'page', { optional => TRUE } );
+   my $actionp    =  $self->moniker.'/person';
+   my $params     =  { page => $page };
+   my $href       =  $req->uri_for_action( $actionp, [ $name ], $params );
    my $form       =  new_container 'person-admin', $href;
    my $action     =  $name ? 'update' : 'create';
    my $page       =  {
@@ -658,9 +662,9 @@ sub person_summary : Role(person_manager) Role(address_viewer)
 sub people : Role(administrator) Role(person_manager) Role(address_viewer) {
    my ($self, $req, $type) = @_;
 
-   my $params  =  $req->query_params->( {
-      optional => TRUE } ); delete $params->{mid};
+   my $params  =  $req->query_params->( { optional => TRUE } );
 
+   delete $params->{mid};
    $type and $params->{type} = $type; $type = $params->{type} || NUL;
 
    my $role    =  $params->{role  };
@@ -715,7 +719,8 @@ sub update_person_action : Role(person_manager) {
    $self->send_event( $req, "action:update-person shortcode:${scode}" );
 
    my $who      = $req->session->user_label;
-   my $location = $req->uri_for_action( $self->moniker.'/people' );
+   my $params   = $req->query_params->( { optional => TRUE } );
+   my $location = $req->uri_for_action( $self->moniker.'/people', [], $params );
    my $message  = [ to_msg '[_1] updated by [_2]', $label, $who ];
 
    return { redirect => { location => $location, message => $message } };
