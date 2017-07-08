@@ -7,9 +7,10 @@ use App::Notitia::Constants qw( FALSE HASH_CHAR NBSP NUL SPC TILDE TRUE );
 use App::Notitia::DOM       qw( new_container p_cell p_container p_hidden p_item
                                 p_js p_link p_list p_row p_select p_span
                                 p_table );
-use App::Notitia::Util      qw( assign_link contrast_colour dialog_anchor
-                                js_server_config js_submit_config
-                                js_togglers_config local_dt locm make_tip
+use App::Notitia::Util      qw( assign_link calculate_distance contrast_colour
+                                crow2road dialog_anchor js_server_config
+                                js_submit_config js_togglers_config
+                                local_dt locm make_tip
                                 register_action_paths slot_claimed
                                 slot_limit_index to_dt );
 use Class::Null;
@@ -23,6 +24,7 @@ with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
 with    q(App::Notitia::Role::Holidays);
+with    q(App::Notitia::Role::DatePicker);
 
 # Public attributes
 has '+moniker' => default => 'week';
@@ -266,24 +268,6 @@ my $_find_location = sub {
    return $list->[ $i ] ? $list->[ $i ]->{location} : FALSE;
 };
 
-my $_calculate_distance = sub { # In metres
-   my ($location, $assignee) = @_;
-
-   ($location and $location->coordinates and
-    $assignee and $assignee->coordinates) or return;
-
-   my ($lx, $ly) = split m{ , }mx, $location->coordinates;
-   my ($ax, $ay) = split m{ , }mx, $assignee->coordinates;
-
-   return int 0.5 + sqrt( ($lx - $ax)**2 + ($ly - $ay)**2 );
-};
-
-my $_crow2road = sub { # Distance on the road is always more than the crow flies
-   my ($x, $factor) = @_;
-
-   return ($x / $factor) + sqrt( ($x**2) - ($x / $factor)**2 );
-};
-
 my $_union = sub {
    return [ @{ $_[ 0 ]->{ $_[ 1 ]->[ 0 ] } // [] },
             @{ $_[ 0 ]->{ $_[ 1 ]->[ 1 ] } // [] } ];
@@ -297,19 +281,6 @@ my $_vehicle_cell_style = sub {
                   . 'color: '.contrast_colour( $vehicle->colour ).'; ';
 
    return $style;
-};
-
-my $_vehicle_label = sub {
-   my ($data, $vehicle) = @_;
-
-   my $list = $data->{journal}->{ $vehicle->vrn };
-   my $location = $_find_location->( $list, $data->{start} );
-   my $distance = $_calculate_distance->( $location, $data->{assignee} );
-
-   $distance and $distance = $_crow2road->( $distance, 5 );
-   $distance and $distance = int 0.5 + 5 * $distance / 8000; # Metres to miles
-
-   return $distance ? $vehicle->name." (${distance} mls)" : $vehicle->name;
 };
 
 my $_vehicle_or_request_list = sub {
@@ -710,39 +681,6 @@ my $_alloc_cell = sub {
    return { class => 'embeded', value => $tables };
 };
 
-my $_date_picker = sub {
-   my ($self, $req, $rota_name, $local_dt, $href) = @_;
-
-   my $form       =  {
-      class       => 'paddle',
-      content     => {
-         list     => [ {
-            name  => 'rota_name',
-            type  => 'hidden',
-            value => $rota_name,
-         }, {
-            class => 'rota-date-field shadow submit',
-            label => NUL,
-            name  => 'rota_date',
-            type  => 'date',
-            value => $local_dt->ymd,
-         }, {
-            class => 'rota-date-field',
-            disabled => TRUE,
-            name  => 'rota_date_display',
-            label => NUL,
-            type  => 'textfield',
-            value => $local_dt->day_abbr.SPC.$local_dt->day,
-         }, ],
-         type     => 'list', },
-      form_name   => 'day-selector',
-      href        => $href,
-      type        => 'form', };
-
-   $self->add_csrf_token( $req, $form );
-   return $form;
-};
-
 my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
 };
@@ -969,8 +907,8 @@ my $_alloc_nav = sub {
    return {
       next => $self->$_next_week
          ( $req, 'allocation', $rota_name, $rota_dt, $params ),
-      picker => $self->$_date_picker
-         ( $req, $rota_name, local_dt( $rota_dt ), $href ),
+      picker => $self->date_picker
+         ( $req, 'paddle', $rota_name, local_dt( $rota_dt ), $href ),
       prev => $self->$_prev_week
          ( $req, 'allocation', $rota_name, $rota_dt, $params ),
       oplinks_style => 'max-width: '.($params->{cols} * 270).'px;'
@@ -1011,7 +949,7 @@ my $_allocation_page = sub {
       title    => locm $req, 'vehicle_allocation_title',
    };
 
-   $_onchange_submit->( $page, 'rota_date', 'day_selector' );
+   $self->date_picker_js( $page );
 
    return $page;
 };
@@ -1058,6 +996,20 @@ my $_get_all_the_data = sub {
       vehicles => $vehicles,
       vevents => $vevents,
    };
+};
+
+my $_vehicle_label = sub {
+   my ($self, $data, $vehicle) = @_;
+
+   my $list = $data->{journal}->{ $vehicle->vrn };
+   my $location = $_find_location->( $list, $data->{start} );
+   my $distance = calculate_distance $location, $data->{assignee}
+      or return $vehicle->name;
+   my $df = $self->config->distance_factor;
+
+   $distance = crow2road $distance, $df->[ 0 ];
+
+   return $vehicle->name." (${distance} mls)";
 };
 
 my $_week_rota_page = sub {
@@ -1175,14 +1127,7 @@ sub day_selector_action : Role(controller) Role(driver) Role(rider)
    Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $rota_name = $req->body_params->( 'rota_name' );
-   my $rota_date = $req->body_params->( 'rota_date' );
-   my $rota_dt   = to_dt $rota_date;
-   my $actionp   = $self->moniker.'/allocation';
-   my $args      = [ $rota_name, local_dt( $rota_dt )->ymd ];
-   my $location  = $req->uri_for_action( $actionp, $args );
-
-   return { redirect => { location => $location } };
+   return $self->date_picker_redirect( $req, $self->moniker.'/allocation' );
 }
 
 sub display_control_action : Role(controller) Role(driver) Role(rider)
@@ -1231,7 +1176,7 @@ sub filter_vehicles {
                 start => ($object->duration)[ 0 ], };
 
    return [ map {
-      [ $_vehicle_label->( $opts, $_->[ 1 ] ), $_->[ 1 ], $_->[ 2 ] ] }
+      [ $self->$_vehicle_label( $opts, $_->[ 1 ] ), $_->[ 1 ], $_->[ 2 ] ] }
             @{ $r } ];
 }
 

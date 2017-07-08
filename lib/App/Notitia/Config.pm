@@ -9,7 +9,7 @@ use Data::Validation::Constants qw( );
 use File::DataClass::Types      qw( ArrayRef Bool CodeRef Directory File
                                     HashRef NonEmptySimpleStr
                                     NonNumericSimpleStr NonZeroPositiveInt
-                                    Object Path PositiveInt SimpleStr
+                                    Num Object Path PositiveInt SimpleStr
                                     Str Undef );
 use Moo;
 
@@ -25,10 +25,10 @@ my $_path2theme = sub {
 };
 
 my $_to_array_of_hash = sub {
-   my ($href, $key_key, $val_key) = @_;
+   my ($hash, $key_key, $val_key) = @_;
 
-   return [ map { my $v = $href->{ $_ }; +{ $key_key => $_, $val_key => $v } }
-            sort keys %{ $href } ],
+   return [ map { my $v = $hash->{ $_ }; +{ $key_key => $_, $val_key => $v } }
+            sort keys %{ $hash } ],
 };
 
 # Attribute constructors
@@ -151,6 +151,9 @@ has 'deflate_types'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
       [ qw( text/css text/html text/javascript application/javascript ) ] };
 
 has 'description'     => is => 'ro',   isa => SimpleStr, default => NUL;
+
+has 'distance_factor' => is => 'ro',   isa => ArrayRef[Num],
+   builder            => sub { [ 5, 1.2 ] };
 
 has 'docs_root'       => is => 'lazy', isa => Directory, coerce => TRUE,
    builder            => sub { $_[ 0 ]->vardir->catdir( 'docs' ) };
@@ -540,6 +543,12 @@ deflate in L<Plack> middleware
 
 A simple string that defaults to null. The HTML meta attributes description
 value
+
+=item C<distance_factor>
+
+An array reference of consisting of two numbers. The first is the scaling
+factor supplied to the L<crow2road|App::Notitia::Util/crow2road> function,
+the second is used as a multiplying factor when converting miles to minutes
 
 =item C<docs_root>
 

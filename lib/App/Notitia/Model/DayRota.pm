@@ -19,6 +19,7 @@ extends q(App::Notitia::Model);
 with    q(App::Notitia::Role::PageConfiguration);
 with    q(App::Notitia::Role::WebAuthorisation);
 with    q(App::Notitia::Role::Navigation);
+with    q(App::Notitia::Role::DatePicker);
 
 # Public attributes
 has '+moniker' => default => 'day';
@@ -68,47 +69,6 @@ my $_day_label = sub {
 
 my $_day_rota_headers = sub {
    return [ map {  $_day_label->( $_[ 0 ], $_ ) } 0 .. $_max_rota_cols - 1 ];
-};
-
-my $_date_picker = sub {
-   my ($self, $req, $rota_name, $local_dt, $href) = @_;
-
-   my $form = {
-      class       => 'rota-date-form',
-      content     => {
-         list     => [ {
-            name  => 'rota_name',
-            type  => 'hidden',
-            value => $rota_name,
-         }, {
-            class => 'rota-date-field shadow submit',
-            label => NUL,
-            name  => 'rota_date',
-            type  => 'date',
-            value => $local_dt->ymd,
-         }, {
-            class => 'rota-date-field',
-            disabled => TRUE,
-            name  => 'rota_date_display',
-            label => NUL,
-            type  => 'textfield',
-            value => $local_dt->day_abbr.SPC.$local_dt->day,
-         }, ],
-         type     => 'list', },
-      form_name   => 'day-rota',
-      href        => $href,
-      type        => 'form', };
-
-   $self->add_csrf_token( $req, $form );
-   return $form;
-};
-
-my $_onchange_submit = sub {
-   my $page = shift; my $args = [ 'rota_redirect', 'day-rota' ];
-
-   p_js $page, js_submit_config 'rota_date', 'change', 'submitForm', $args;
-
-   return;
 };
 
 my $_onclick_relocate = sub {
@@ -341,7 +301,8 @@ my $_events = sub {
    my ($self, $req, $page, $name, $local_dt, $schema, $todays_events) = @_;
 
    my $href    = $req->uri_for_action( $page->{moniker}.'/day_rota' );
-   my $picker  = $self->$_date_picker( $req, $name, $local_dt, $href );
+   my $picker  = $self->date_picker
+      ( $req, 'rota-date-form', $name, $local_dt, $href );
    my $col1    = { value => $picker, class => 'rota-date' };
    my $first   = TRUE;
 
@@ -356,7 +317,7 @@ my $_events = sub {
       $col1 = { value => undef }; $first = FALSE;
    }
 
-   $_onchange_submit->( $page );
+   $self->date_picker_js( $page );
    return;
 };
 
@@ -556,6 +517,12 @@ sub day_rota : Role(any) {
    return $self->get_stash( $req, $page );
 }
 
+sub day_selector_action : Role(any) {
+   my ($self, $req) = @_;
+
+   return $self->date_picker_redirect( $req, $self->moniker.'/day_rota' );
+}
+
 sub operator_vehicle : Dialog Role(any) {
    my ($self, $req) = @_;
 
@@ -578,21 +545,6 @@ sub operator_vehicle : Dialog Role(any) {
       tip => make_tip $req, 'select_operator_vehicle_tip' };
 
    return $stash;
-}
-
-sub rota_redirect_action : Role(any) {
-   my ($self, $req) = @_;
-
-   my $period    = 'day';
-   my $rota_name = $req->body_params->( 'rota_name' );
-   my $local_dt  = to_dt $req->body_params->( 'rota_date' ), 'local';
-   my $mid       = $req->query_params->( 'mid', { optional => TRUE } );
-   my $actionp   = $self->moniker."/${period}_rota";
-   my $args      = [ $rota_name, $local_dt->ymd ];
-   my $params    = $mid ? { mid => $mid } : {};
-   my $location  = $req->uri_for_action( $actionp, $args, $params );
-
-   return { redirect => { location => $location } };
 }
 
 sub select_operator_vehicle_action : Role(driver) Role(rider) {

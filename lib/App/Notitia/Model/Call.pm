@@ -25,14 +25,10 @@ with    q(App::Notitia::Role::Schema);
 has '+moniker' => default => 'call';
 
 register_action_paths
-   'call/customer'  => 'customer',
-   'call/customers' => 'customers',
    'call/delivery_stages' => 'delivery-stages',
    'call/journey'   => 'delivery',
    'call/journeys'  => 'deliveries',
    'call/leg'       => 'delivery/*/stage',
-   'call/location'  => 'location',
-   'call/locations' => 'locations',
    'call/package'   => 'delivery/*/package';
 
 # Construction
@@ -48,27 +44,6 @@ around 'get_stash' => sub {
 };
 
 # Private functions
-my $_add_customer_js = sub {
-   my ($page, $name) = @_;
-
-   my $opts = { domain => $name ? 'update' : 'insert', form => 'Customer' };
-
-   p_js $page, check_field_js( 'name', $opts );
-
-   return;
-};
-
-my $_add_location_js = sub {
-   my ($page, $name) = @_;
-
-   my $opts = { domain => $name ? 'update' : 'insert', form => 'Location' };
-
-   p_js $page, check_field_js( 'address', $opts ),
-               check_field_js( 'postcode', $opts );
-
-   return;
-};
-
 my $_customer_tuple = sub {
    my ($selected, $customer) = @_;
 
@@ -77,10 +52,11 @@ my $_customer_tuple = sub {
    return [ $customer->name, $customer->id, $opts ];
 };
 
-my $_customers_headers = sub {
-   my $req = shift; my $header = 'customers_heading';
+my $_bind_customer = sub {
+   my ($customers, $journey) = @_; my $selected = $journey->customer_id;
 
-   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 0 ];
+   return [ [ NUL, undef ],
+            map { $_customer_tuple->( $selected, $_ ) } $customers->all ];
 };
 
 my $_location_tuple = sub {
@@ -89,19 +65,6 @@ my $_location_tuple = sub {
    my $opts = { selected => $location->id == $selected ? TRUE : FALSE };
 
    return [ $location->address, $location->id, $opts ];
-};
-
-my $_locations_headers = sub {
-   my $req = shift; my $header = 'locations_heading';
-
-   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 1 ];
-};
-
-my $_bind_customer = sub {
-   my ($customers, $journey) = @_; my $selected = $journey->customer_id;
-
-   return [ [ NUL, undef ],
-            map { $_customer_tuple->( $selected, $_ ) } $customers->all ];
 };
 
 my $_bind_dropoff_location = sub {
@@ -224,15 +187,6 @@ my $_bind_beginning_location = sub {
    return [ [ NUL, undef ],
             map { $_location_tuple->( $selected, $_ ) }
                @{ $opts->{locations} } ];
-};
-
-my $_bind_customer_fields = sub {
-   my ($self, $custer, $opts) = @_; $opts //= {};
-
-   my $disabled = $opts->{disabled} // FALSE;
-
-   return [ name => { class => 'standard-field server',
-                      disabled => $disabled, label => 'customer_name' } ];
 };
 
 my $_bind_ending_location = sub {
@@ -385,46 +339,10 @@ my $_bind_leg_fields = sub {
       ];
 };
 
-my $_bind_location_fields = sub {
-   my ($self, $location, $opts) = @_; $opts //= {};
-
-   my $disabled = $opts->{disabled} // FALSE;
-
-   return
-      [ address     => { class    => 'standard-field server',
-                         disabled => $disabled, label => 'location_address' },
-        location    => { disabled => $disabled },
-        postcode    => { class    => 'standard-field server',
-                         disabled => $disabled },
-        coordinates => { disabled => $disabled },
-        ];
-};
-
 my $_count_legs = sub {
    my ($self, $jid) = @_; my $rs = $self->schema->resultset( 'Leg' );
 
    return $rs->search( { journey_id => $jid } )->count;
-};
-
-my $_customers_ops_links = sub {
-   my ($self, $req) = @_; my $links = [];
-
-   my $actionp = $self->moniker.'/customer';
-
-   p_link $links, 'customer', $req->uri_for_action( $actionp ), {
-      action => 'create', container_class => 'add-link', request => $req };
-
-   return $links;
-};
-
-my $_customers_row = sub {
-   my ($self, $req, $customer) = @_; my $moniker = $self->moniker;
-
-   my $href = $req->uri_for_action( "${moniker}/customer", [ $customer->id ] );
-   my $cell = {}; p_link $cell, 'customer', $href, {
-      request => $req, value => "${customer}" };
-
-   return [ $cell ];
 };
 
 my $_find_person = sub {
@@ -610,27 +528,6 @@ my $_leg_ops_links = sub {
    return $links;
 };
 
-my $_locations_ops_links = sub {
-   my ($self, $req) = @_; my $links = [];
-
-   my $actionp = $self->moniker.'/location';
-
-   p_link $links, 'location', $req->uri_for_action( $actionp ), {
-      action => 'create', container_class => 'add-link', request => $req };
-
-   return $links;
-};
-
-my $_locations_row = sub {
-   my ($self, $req, $location) = @_; my $moniker = $self->moniker;
-
-   my $href = $req->uri_for_action( "${moniker}/location", [ $location->id ] );
-   my $cell = {}; p_link $cell, 'location', $href, {
-      request => $req, value => "${location}" };
-
-   return [ $cell, { value => $location->postcode } ];
-};
-
 my $_maybe_find = sub {
    my ($self, $class, $id) = @_; $id or return Class::Null->new;
 
@@ -794,20 +691,6 @@ my $_update_leg_from_request = sub {
    return;
 };
 
-my $_update_location_from_request = sub {
-   my ($self, $req, $location) = @_; my $params = $req->body_params;
-
-   for my $attr (qw( address coordinates location postcode )) {
-      my $v = $params->( $attr, { optional => TRUE } );
-
-      (defined $v and length $v) or next;
-      $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
-      $location->$attr( $v );
-   }
-
-   return;
-};
-
 my $_update_package_from_request = sub {
    my ($self, $req, $package) = @_; my $params = $req->body_params;
 
@@ -825,19 +708,6 @@ my $_update_package_from_request = sub {
 };
 
 # Public methods
-sub create_customer_action : Role(call_manager) Role(controller) {
-   my ($self, $req) = @_;
-
-   my $name     = $req->body_params->( 'name' );
-   my $rs       = $self->schema->resultset( 'Customer' );
-   my $cid      = $rs->create( { name => $name } )->id;
-   my $key      = 'Customer [_1] created by [_2]';
-   my $message  = [ to_msg $key, $name, $req->session->user_label ];
-   my $location = $req->uri_for_action( $self->moniker.'/customers' );
-
-   return { redirect => { location => $location, message => $message } };
-}
-
 sub create_delivery_request_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
@@ -894,29 +764,6 @@ sub create_delivery_stage_action : Role(call_manager) Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub create_location_action : Role(call_manager) Role(controller) {
-   my ($self, $req) = @_;
-
-   my $address  = $req->body_params->( 'address' );
-   my $rs       = $self->schema->resultset( 'Location' );
-   my $location = $rs->new_result( {} );
-
-   $self->$_update_location_from_request( $req, $location );
-   $location->insert;
-
-   my $lid = $location->id;
-   my $message = "action:create-location location_id:${lid}";
-
-   $self->send_event( $req, $message );
-
-   my $key = 'Location [_1] created by [_2]';
-
-   $message = [ to_msg $key, $lid, $req->session->user_label ];
-   $location = $req->uri_for_action( $self->moniker.'/locations' );
-
-   return { redirect => { location => $location, message => $message } };
-}
-
 sub create_package_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
@@ -944,64 +791,6 @@ sub create_package_action : Role(call_manager) Role(controller) {
 
    return { redirect => { location => $location, message => $message } };
 };
-
-sub customer : Role(call_manager) Role(controller) Role(driver) Role(rider) {
-   my ($self, $req) = @_;
-
-   my $cid     =  $req->uri_params->( 0, { optional => TRUE } );
-   my $href    =  $req->uri_for_action( $self->moniker.'/customer', [ $cid ] );
-   my $form    =  new_container 'customer', $href;
-   my $action  =  $cid ? 'update' : 'create';
-   my $page    =  {
-      first_field => 'name', forms => [ $form ], selected => 'customers',
-      title    => locm $req, 'customer_setup_title'
-   };
-   my $custer  =  $self->$_maybe_find( 'Customer', $cid );
-
-   p_fields $form, $self->schema, 'Customer', $custer,
-      $self->$_bind_customer_fields( $custer, {} );
-
-   p_action $form, $action, [ 'customer', $cid ], { request => $req };
-
-   $cid and p_action $form, 'delete', [ 'customer', $cid ], { request => $req };
-
-   $_add_customer_js->( $page, $cid );
-
-   return $self->get_stash( $req, $page );
-}
-
-sub customers : Role(call_manager) Role(controller) Role(driver) Role(rider) {
-   my ($self, $req) = @_;
-
-   my $form = new_container { class => 'standard-form' };
-   my $page = {
-      forms => [ $form ], selected => 'customers',
-      title => locm $req, 'customers_list_title'
-   };
-   my $links = $self->$_customers_ops_links( $req );
-
-   p_list $form, PIPE_SEP, $links, link_options 'right';
-
-   my $table = p_table $form, { headers => $_customers_headers->( $req ) };
-   my $customers = $self->schema->resultset( 'Customer' )->search( {} );
-
-   p_row $table, [ map { $self->$_customers_row( $req, $_ ) } $customers->all ];
-
-   return $self->get_stash( $req, $page );
-}
-
-sub delete_customer_action : Role(call_manager) Role(controller) {
-   my ($self, $req) = @_;
-
-   my $cid = $req->uri_params->( 0 );
-   my $custer = $self->schema->resultset( 'Customer' )->find( $cid );
-   my $c_name = $custer->name; $custer->delete;
-   my $who = $req->session->user_label;
-   my $message = [ to_msg 'Customer [_1] deleted by [_2]', $c_name, $who ];
-   my $location = $req->uri_for_action( $self->moniker.'/customers' );
-
-   return { redirect => { location => $location, message => $message } };
-}
 
 sub delete_delivery_request_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
@@ -1037,20 +826,6 @@ sub delete_delivery_stage_action : Role(call_manager) Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delete_location_action : Role(call_manager) Role(controller) {
-   my ($self, $req) = @_;
-
-   my $lid = $req->uri_params->( 0 );
-   my $location = $self->schema->resultset( 'Location' )->find( $lid );
-   my $address = $location->address; $location->delete;
-   my $who = $req->session->user_label;
-   my $message = [ to_msg 'Location [_1] deleted by [_2]', $address, $who ];
-
-   $location = $req->uri_for_action( $self->moniker.'/locations' );
-
-   return { redirect => { location => $location, message => $message } };
-}
-
 sub delete_package_action : Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
@@ -1076,7 +851,7 @@ sub delete_package_action : Role(call_manager) Role(controller) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub delivery_stages : Role(call_manager) Dialog Role(controller) Role(driver)
+sub delivery_stages : Dialog Role(call_manager) Role(controller) Role(driver)
                       Role(rider) {
    my ($self, $req) = @_;
 
@@ -1202,52 +977,7 @@ sub leg : Role(call_manager) Role(controller) Role(driver) Role(rider) {
    return $self->get_stash( $req, $page );
 }
 
-sub location : Role(call_manager) Role(controller) Role(driver) Role(rider) {
-   my ($self, $req) = @_;
-
-   my $lid = $req->uri_params->( 0, { optional => TRUE } );
-   my $href = $req->uri_for_action( $self->moniker.'/location', [ $lid ] );
-   my $form = new_container 'location', $href;
-   my $action = $lid ? 'update' : 'create';
-   my $page = {
-      first_field => 'address', forms => [ $form ], selected => 'locations',
-      title => locm $req, 'location_setup_title'
-   };
-   my $where = $self->$_maybe_find( 'Location', $lid );
-
-   p_fields $form, $self->schema, 'Location', $where,
-      $self->$_bind_location_fields( $where, {} );
-
-   p_action $form, $action, [ 'location', $lid ], { request => $req };
-
-   $lid and p_action $form, 'delete', [ 'location', $lid ], { request => $req };
-
-   $_add_location_js->( $page, $lid );
-
-   return $self->get_stash( $req, $page );
-}
-
-sub locations : Role(controller) Role(driver) Role(rider) {
-   my ($self, $req) = @_;
-
-   my $form = new_container { class => 'standard-form' };
-   my $page = {
-      forms => [ $form ], selected => 'locations',
-      title => locm $req, 'locations_list_title'
-   };
-   my $links = $self->$_locations_ops_links( $req );
-
-   p_list $form, PIPE_SEP, $links, link_options 'right';
-
-   my $table = p_table $form, { headers => $_locations_headers->( $req ) };
-   my $locations = $self->schema->resultset( 'Location' )->search( {} );
-
-   p_row $table, [ map { $self->$_locations_row( $req, $_ ) } $locations->all ];
-
-   return $self->get_stash( $req, $page );
-}
-
-sub package : Role(call_manager) Dialog Role(controller) {
+sub package : Dialog Role(call_manager) Role(controller) {
    my ($self, $req) = @_;
 
    my $journey_id = $req->uri_params->( 0 );
@@ -1279,19 +1009,6 @@ sub package : Role(call_manager) Dialog Role(controller) {
       request => $req };
 
    return $stash;
-}
-
-sub update_customer_action : Role(call_manager) Role(controller) {
-   my ($self, $req) = @_;
-
-   my $cid = $req->uri_params->( 0 );
-   my $custer = $self->schema->resultset( 'Customer' )->find( $cid );
-   my $c_name = $custer->name( $req->body_params->( 'name' ) ); $custer->update;
-   my $who = $req->session->user_label;
-   my $message = [ to_msg 'Customer [_1] updated by [_2]', $c_name, $who ];
-   my $location = $req->uri_for_action( $self->moniker.'/customers' );
-
-   return { redirect => { location => $location, message => $message } };
 }
 
 sub update_delivery_request_action : Role(call_manager) Role(controller) {
@@ -1360,27 +1077,6 @@ sub update_delivery_stage_action : Role(call_manager) Role(controller)
    my $key = 'Stage [_2] of delivery request [_1] updated by [_3]';
    my $message = [ to_msg $key, $jid, $lid, $req->session->user_label ];
    my $location = $req->uri_for_action( $self->moniker.'/journey', [ $jid ] );
-
-   return { redirect => { location => $location, message => $message } };
-}
-
-sub update_location_action : Role(call_manager) Role(controller) {
-   my ($self, $req) = @_;
-
-   my $lid = $req->uri_params->( 0 );
-   my $location = $self->schema->resultset( 'Location' )->find( $lid );
-
-   $self->$_update_location_from_request( $req, $location );
-   $location->update;
-
-   my $message = "action:update-location location_id:${lid}";
-
-   $self->send_event( $req, $message );
-
-   my $key = 'Location [_1] updated by [_2]';
-
-   $message = [ to_msg $key, $location->address, $req->session->user_label ];
-   $location = $req->uri_for_action( $self->moniker.'/locations' );
 
    return { redirect => { location => $location, message => $message } };
 }

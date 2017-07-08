@@ -544,12 +544,17 @@ sub call_navigation_links {
    p_navlink $list, 'incidents', [ 'inc/incidents' ], {
       class => $_selected_class->( $page, 'incidents' ), request => $req };
 
+   p_folder $list, 'information', { request => $req };
+
+   p_navlink $list, 'distances', [ 'util/distances' ], {
+      class => $_selected_class->( $page, 'distances' ), request => $req };
+
    p_folder $list, 'setup', { request => $req };
 
-   p_navlink $list, 'customers_list', [ 'call/customers' ], {
+   p_navlink $list, 'customers_list', [ 'util/customers' ], {
       class => $_selected_class->( $page, 'customers' ), request => $req };
 
-   p_navlink $list, 'locations_list', [ 'call/locations' ], {
+   p_navlink $list, 'locations_list', [ 'util/locations' ], {
       class => $_selected_class->( $page, 'locations' ), request => $req };
 
    return $nav;

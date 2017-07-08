@@ -601,6 +601,9 @@ msgstr "Edit"
 msgid "day_rota_title"
 msgstr "[_1] rota for [_2]"
 
+msgid "day_shift_subtitle"
+msgstr "Day Shift"
+
 msgid "default_value"
 msgstr "Default Value"
 
@@ -657,6 +660,30 @@ msgstr "Rows"
 
 msgid "disposed"
 msgstr "Disposed"
+
+msgid "distances_heading_0"
+msgstr "Location Address"
+
+msgid "distances_heading_1"
+msgstr "[_1]"
+
+msgid "distances_heading_2"
+msgstr "[_1]"
+
+msgid "distances_heading_3"
+msgstr "[_1]"
+
+msgid "distances_heading_4"
+msgstr "[_1]"
+
+msgid "distances_link"
+msgstr "Distances"
+
+msgid "distances_tip"
+msgstr "Show tables of distances between locations and riders/drivers"
+
+msgid "distances_title"
+msgstr "Distances for [_1]"
 
 msgid "dob"
 msgstr "Date of Birth"
@@ -1138,6 +1165,9 @@ msgstr "List, create, and update incident call records"
 msgid "incidents_title"
 msgstr "Incidents"
 
+msgid "information_management_heading"
+msgstr "Information"
+
 msgid "init_event_controls"
 msgstr "Initialise Event Controls"
 
@@ -1568,6 +1598,9 @@ msgstr "Night South"
 
 msgid "night_rider_2_abbrv"
 msgstr "NS"
+
+msgid "night_shift_subtitle"
+msgstr "Night Shift"
 
 msgid "no_event_handler_tip"
 msgstr "There is no event handler defined for this event control. The default "

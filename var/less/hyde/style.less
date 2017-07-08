@@ -180,6 +180,8 @@ footer {
 .control-label { font-size: 0.75em; line-height: 17px; }
 .cuddles { display: inline-block; }
 .date-field { max-width: 98px; }
+.day-selector { .border-radius; display: block; margin: 1.6em 0 0.8em; }
+.day-selector:hover { background: @background; .box-shadow-deep; }
 .dialog {
    background-color: @dialog-background; border: 2px solid @divider;
    .border-radius; color: @darker-fg; padding: 0.5em 1em;
@@ -230,6 +232,7 @@ footer {
 .log-detail { max-width: 530px; }
 .log-links { margin: 0.5em 0; }
 .log-warning-level { color: yellow; }
+.mediumint-field { min-width: 150px; }
 .month-rota-day-number {
    font-size: 1.2em; font-weight: bold; height: 21px;
    padding-bottom: 0.25em !important; padding-top: 0.25em !important;
@@ -283,6 +286,12 @@ footer {
    .box-sizing; display: inline-block; vertical-align: top;
 }
 .required { border-right: 3px solid @divider; }
+.shifts .rota-date-field {
+   background: transparent; line-height: 2em; text-align: center; width: 50px;
+}
+.shifts .rota-date-field:hover {
+   color: #f90; text-decoration: none; text-shadow: 0 1px 3px rgba(0,0,0,.5);
+}
 .slider {
    .border-radius(4px);
    border: 1px solid; display: block; height: 8px; left: 5px;
@@ -292,7 +301,6 @@ footer {
 .slider .knob {
    cursor: ew-resize; display: block; height: 18px; top: 5px; width: 18px;
 }
-.mediumint-field { min-width: 150px; }
 .smallint-field { max-width: 64px; text-align: center; }
 .spreadsheet { margin-left: 0.5em; margin-right: 0.5em; }
 .spreadsheet-heading {
@@ -679,10 +687,9 @@ article h2:first-child, { margin-top: 0; }
 }
 /* Rota */
 .rota-date-field {
-   border: 0; color: @contrast; font-size: 12px;
+   background: @background; border: 0; color: @contrast; font-size: 12px;
    outline: none; padding: 0 10px; width: 80px;
 }
-.rota-date-field { background: @background; }
 table .rota-date-field {
    border-top: 1px solid #747474; border-top: 1px solid rgba(0,0,0,.1);
    .box-shadow; .table-background; line-height: 28px;

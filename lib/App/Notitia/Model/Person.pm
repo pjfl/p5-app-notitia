@@ -606,9 +606,9 @@ sub person : Role(person_manager) {
    my $name       =  $req->uri_params->( 0, { optional => TRUE } );
    my $role       =  $req->query_params->( 'role', { optional => TRUE } );
    my $status     =  $req->query_params->( 'status', { optional => TRUE } );
-   my $page       =  $req->query_params->( 'page', { optional => TRUE } );
+   my $page_no    =  $req->query_params->( 'page', { optional => TRUE } );
    my $actionp    =  $self->moniker.'/person';
-   my $params     =  { page => $page };
+   my $params     =  { page => $page_no };
    my $href       =  $req->uri_for_action( $actionp, [ $name ], $params );
    my $form       =  new_container 'person-admin', $href;
    my $action     =  $name ? 'update' : 'create';

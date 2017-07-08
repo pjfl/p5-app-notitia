@@ -26,13 +26,13 @@ use YAML::Tiny;
 
 our @EXPORT_OK = qw( action_for_uri action_path2uri action_path_uri_map
                      add_dummies assert_unique assign_link authenticated_only
-                     build_navigation build_tree check_field_js
-                     check_form_field clone contrast_colour csrf_token
-                     datetime_label dialog_anchor display_duration
-                     encrypted_attr enhance event_actions event_handler
-                     event_handler_cache event_streams from_json get_hashed_pw
-                     get_salt is_access_authorised is_draft is_encrypted
-                     iterator js_slider_config js_server_config
+                     build_navigation build_tree calculate_distance
+                     check_field_js check_form_field clone contrast_colour
+                     crow2road csrf_token datetime_label dialog_anchor
+                     display_duration encrypted_attr enhance event_actions
+                     event_handler event_handler_cache event_streams from_json
+                     get_hashed_pw get_salt is_access_authorised is_draft
+                     is_encrypted iterator js_slider_config js_server_config
                      js_submit_config js_togglers_config js_window_config
                      lcm_for link_options load_file_data loc local_dt
                      localise_tree locd locm mail_domain make_id_from
@@ -421,6 +421,18 @@ sub build_tree {
    return $tree;
 }
 
+sub calculate_distance (;$$) { # In metres
+   my ($location, $assignee) = @_;
+
+   ($location and $location->coordinates and
+    $assignee and $assignee->coordinates) or return;
+
+   my ($lx, $ly) = split m{ , }mx, $location->coordinates;
+   my ($ax, $ay) = split m{ , }mx, $assignee->coordinates;
+
+   return int 0.5 + sqrt( ($lx - $ax)**2 + ($ly - $ay)**2 );
+}
+
 sub check_field_js ($$) {
    my ($k, $opts) = @_; my $args = [ $k, $opts->{form}, $opts->{domain} ];
 
@@ -463,6 +475,14 @@ sub contrast_colour ($) {
    my $yiq         = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
 
    return $yiq > 127 ? 'black' : 'white';
+}
+
+sub crow2road ($;$) { # Distance on the road is always more than the crow flies
+   my ($x, $factor) = @_; $factor //= 5;
+
+   my $distance = ($x / $factor) + sqrt( ($x**2) - ($x / $factor)**2 );
+
+   return int 0.5 + 5 * $distance / 8000; # Metres to miles
 }
 
 sub csrf_token ($;$) {
@@ -1076,6 +1096,8 @@ Defines no attributes
 
 =head2 C<build_tree>
 
+=head2 C<calculate_distance>
+
 =head2 C<check_field_js>
 
 =head2 C<check_form_field>
@@ -1083,6 +1105,8 @@ Defines no attributes
 =head2 C<clone>
 
 =head2 C<contrast_colour>
+
+=head2 C<crow2road>
 
 =head2 C<csrf_token>
 
