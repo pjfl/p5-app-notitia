@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Aligns day rota column order with spreadsheet
           - Adds created attribute to event object
           - Fixes #161. Adds rider distances page
           - Fixes #52. Returns to same page after edit

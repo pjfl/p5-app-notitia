@@ -44,7 +44,7 @@ around 'get_stash' => sub {
 };
 
 # Private class attributes
-my $_max_rota_cols = 4;
+my $_max_rota_cols = 5;
 
 # Private functions
 my $_add_js_dialog = sub {
@@ -62,7 +62,7 @@ my $_add_js_dialog = sub {
 
 my $_day_label = sub {
    my $v    = locm $_[ 0 ], 'day_rota_heading_'.$_[ 1 ];
-   my $span = { 0 => 1, 1 => 1, 2 => 2, 3 => 1 }->{ $_[ 1 ] };
+   my $span = { 0 => 1, 1 => 2, 2 => 1, 3 => 1, 4 => 1 }->{ $_[ 1 ] };
 
    return { colspan => $span, value => $v };
 };
@@ -77,6 +77,15 @@ my $_onclick_relocate = sub {
    p_js $page, js_submit_config $k, 'click', 'location', [ "${href}" ];
 
    return;
+};
+
+my $_operators_region = sub {
+   my ($req, $page, $data, $k) = @_; my $region;
+
+   exists $data->{ $k }->{operator}
+      and $region = $data->{ $k }->{operator}->region;
+
+   return { class => 'narrow', value => $region // NUL };
 };
 
 my $_operators_vehicle_label = sub {
@@ -265,9 +274,11 @@ my $_driver_row = sub {
    my ($req, $page, $args, $data) = @_; my $k = $args->[ 2 ];
 
    return [ { value => locm( $req, $k ), class => 'rota-header' },
-            assign_link( $req, $page, $args, $data->{ $k } ),
             $_slot_link->( $req, $page, $data, $k, 'driver' ),
-            $_operators_vehicle_link->( $req, $page, $data, $k ), ];
+            $_operators_region->( $req, $page, $data, $k ),
+            $_operators_vehicle_link->( $req, $page, $data, $k ),
+            assign_link( $req, $page, $args, $data->{ $k } ),
+            ];
 };
 
 my $_event_link = sub {
@@ -321,14 +332,15 @@ my $_events = sub {
    return;
 };
 
-
 my $_rider_row = sub {
    my ($req, $page, $args, $data) = @_; my $k = $args->[ 2 ];
 
    return [ { value => locm( $req, $k ), class => 'rota-header' },
-            assign_link( $req, $page, $args, $data->{ $k } ),
             $_slot_link->( $req, $page, $data, $k, 'rider' ),
-            $_operators_vehicle_link->( $req, $page, $data, $k ), ];
+            $_operators_region->( $req, $page, $data, $k ),
+            $_operators_vehicle_link->( $req, $page, $data, $k ),
+            assign_link( $req, $page, $args, $data->{ $k } ),
+            ];
 };
 
 my $_riders_n_drivers = sub {

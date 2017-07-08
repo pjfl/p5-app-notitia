@@ -587,13 +587,16 @@ msgid "day_rota_heading_0"
 msgstr "Shift"
 
 msgid "day_rota_heading_1"
-msgstr "Vehicle"
+msgstr "Name"
 
 msgid "day_rota_heading_2"
-msgstr "Name"
+msgstr "R"
 
 msgid "day_rota_heading_3"
 msgstr "C4"
+
+msgid "day_rota_heading_4"
+msgstr "Vehicle"
 
 msgid "day_rota_management_link"
 msgstr "Edit"
