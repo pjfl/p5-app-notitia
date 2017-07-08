@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Adds created attribute to event object
           - Fixes #161. Adds rider distances page
           - Fixes #52. Returns to same page after edit
           - Fixes #152. Defaults service vehicle on delivery stage

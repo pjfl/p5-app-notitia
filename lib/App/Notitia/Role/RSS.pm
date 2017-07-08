@@ -32,8 +32,8 @@ around 'BUILDARGS' => sub {
 
    my $views = $attr->{views} or return $attr;
 
-   exists $views->{html} and $attr->{formatters}
-        = $views->{html}->can( 'formatters' ) ? $views->{html}->formatters : {};
+   exists $views->{html} and $views->{html}->can( 'formatters' )
+      and $attr->{formatters} = $views->{html}->formatters;
 
    return $attr;
 };
@@ -82,7 +82,7 @@ my $_format_page = sub {
       categories => $page->{categories} // [],
       content    => $content,
       created    => time2str( '%Y-%m-%dT%XZ', $page->{created} ),
-      guid       => substr( create_token( $page->{url} ), 0, 32 ),
+      guid       => substr( create_token( $page->{url}.$content ), 0, 32 ),
       modified   => time2str( '%Y-%m-%dT%XZ', $page->{modified}, 'GMT' ),
       link       => $self->base_uri( $req, [ $page->{url} ] ),
       title      => loc( $req, $page->{title} ), };

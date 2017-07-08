@@ -8,7 +8,9 @@ use App::Notitia::Constants qw( VARCHAR_MAX_SIZE SPC TRUE );
 use App::Notitia::DataTypes qw( foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 nullable_numerical_id_data_type
-                                serial_data_type varchar_data_type );
+                                serial_data_type
+                                set_on_create_datetime_data_type
+                                varchar_data_type );
 use App::Notitia::Util      qw( local_dt locd locm );
 use Class::Usul::Functions  qw( create_token exception throw );
 use Unexpected::Functions   qw( ValidationErrors );
@@ -24,7 +26,8 @@ $class->add_columns
      event_type_id    => foreign_key_data_type,
      owner_id         => foreign_key_data_type,
      start_rota_id    => foreign_key_data_type,
-     end_rota_id      => nullable_foreign_key_data_type,
+     end_rota_id      => foreign_key_data_type,
+     created          => set_on_create_datetime_data_type,
      vehicle_id       => nullable_foreign_key_data_type,
      course_type_id   => nullable_foreign_key_data_type,
      location_id      => nullable_foreign_key_data_type,
