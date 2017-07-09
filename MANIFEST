@@ -40,6 +40,7 @@ lib/App/Notitia/Markdown.pm
 lib/App/Notitia/Model.pm
 lib/App/Notitia/Model/Admin.pm
 lib/App/Notitia/Model/Call.pm
+lib/App/Notitia/Model/CallUtils.pm
 lib/App/Notitia/Model/Certification.pm
 lib/App/Notitia/Model/DayRota.pm
 lib/App/Notitia/Model/Documentation.pm
@@ -63,6 +64,7 @@ lib/App/Notitia/Plugin/Core.pm
 lib/App/Notitia/Plugin/Email.pm
 lib/App/Notitia/Plugin/UKHolidays.pm
 lib/App/Notitia/Plugin/Update.pm
+lib/App/Notitia/Role/DatePicker.pm
 lib/App/Notitia/Role/Editor.pm
 lib/App/Notitia/Role/EventStream.pm
 lib/App/Notitia/Role/Holidays.pm
