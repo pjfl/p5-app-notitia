@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Another patch for ColourNames
+
 0.15.1    2017-07-09 09:09:22
           - Aligns day rota column order with spreadsheet
           - Adds created attribute to event object

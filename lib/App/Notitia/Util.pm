@@ -471,6 +471,12 @@ sub contrast_colour ($) {
 
    (defined $background and length $background) or $background = 'black';
 
+   if ($background =~ m{ \A \x23? ([0-9a-f]{3}) \z }imx) { # Fucking ugh
+      my ($r, $g, $b) = $background
+         =~ m{ \A \x23? ([0-9a-f]) ([0-9a-f]) ([0-9a-f]) \z }imx;
+      $background = "#${r}${r}${g}${g}${b}${b}";
+   }
+
    my ($r, $g, $b) = $colour_names->rgb( $background );
    my $yiq         = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
 
