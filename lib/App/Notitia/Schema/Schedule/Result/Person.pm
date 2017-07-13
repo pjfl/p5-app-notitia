@@ -145,11 +145,11 @@ my $_new_shortcode = sub {
 
    my $schema = $self->result_source->schema; my $conf = $schema->config;
 
-   my $name = lc "${last_name}${first_name}"; $name =~ s{ [ \-\'] }{}gmx;
+   my $name = lc "${last_name}${first_name}"; $name =~ s{ [^a-z] }{}gmx;
 
    if ((length $name) < $conf->min_name_length) {
-      throw 'Person name [_1] too short [_2] character min.',
-            [ $first_name.SPC.$last_name, $conf->min_name_length ];
+      throw 'Person name [_1] too short [_2] character minimum',
+            [ $name, $conf->min_name_length ];
    }
 
    my $min_id_len = $conf->min_id_length;
@@ -179,7 +179,7 @@ my $_new_shortcode = sub {
    }
 
    $chars[ $lastp - 1 ] >= length $name
-       and throw 'Person name [_1] no ids left', [ $first_name.SPC.$last_name ];
+       and throw 'Person name [_1] no ids left', [ $name ];
    $lid or throw 'Person name [_1] no id', [ $name ];
    return $prefix.$lid;
 };
