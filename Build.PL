@@ -20,6 +20,7 @@ my $prereqs  = {
     'CSS::LESS' => 'v0.0.3'
   },
   'requires' => {
+    'Algorithm::Combinatorics' => '0.27',
     'App::Ack' => '2.12',
     'Auth::GoogleAuth' => '1.01',
     'Authen::SASL' => '2.16',

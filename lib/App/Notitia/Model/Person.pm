@@ -1,17 +1,18 @@
 package App::Notitia::Model::Person;
 
+use Algorithm::Combinatorics qw( combinations );
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( C_DIALOG EXCEPTION_CLASS FALSE
-                                NUL PIPE_SEP SPC TRUE );
-use App::Notitia::DOM       qw( new_container p_action p_button p_fields p_item
-                                p_js p_link p_list p_row p_select p_table
-                                p_textfield );
-use App::Notitia::Util      qw( check_field_js dialog_anchor link_options locm
-                                make_tip management_link page_link_set
-                                register_action_paths to_dt to_msg );
+use App::Notitia::Constants  qw( C_DIALOG EXCEPTION_CLASS FALSE
+                                 NUL PIPE_SEP SPC TRUE );
+use App::Notitia::DOM        qw( new_container p_action p_button p_fields p_item
+                                 p_js p_link p_list p_row p_select p_table
+                                 p_textfield );
+use App::Notitia::Util       qw( check_field_js dialog_anchor link_options locm
+                                 make_tip management_link page_link_set
+                                 register_action_paths to_dt to_msg );
 use Class::Null;
-use Class::Usul::Functions  qw( create_token is_member throw );
-use Class::Usul::Types      qw( ArrayRef );
+use Class::Usul::Functions   qw( create_token is_member throw );
+use Class::Usul::Types       qw( ArrayRef );
 use Try::Tiny;
 use Moo;
 
@@ -155,7 +156,7 @@ my $_people_search_opts = sub {
       filter_column  => $column,
       filter_pattern => $pattern,
       order_by => $_people_order->( $params ),
-      page     => $params->{page} // 1,
+      page     => $params->{page} || 1,
       role     => $params->{role},
       rows     => $req->session->rows_per_page,
       status   => $params->{status},
@@ -205,6 +206,23 @@ my $_bind_next_of_kin = sub {
    $disabled and $opts->{disabled} = TRUE;
 
    return $opts;
+};
+
+my $_bind_region = sub {
+   my ($self, $person, $disabled) = @_;
+
+   my %sr    = %{ $self->config->slot_region };
+   my @keys  = map { uc substr $sr{ $_ }, 0, 1 } sort keys %sr;
+   my $value = [ map {
+      [ $_, $_, { selected => $_ eq $person->region ? TRUE : FALSE } ] }
+                 map { map { join NUL, @{ $_ } }
+                       combinations( [ @keys ], $_ ) } 1 .. scalar @keys ];
+
+   return {
+      class    => 'single-character',
+      disabled => $disabled,
+      type     => 'select',
+      value    => $value };
 };
 
 my $_bind_view_nok = sub {
@@ -454,8 +472,7 @@ my $_bind_person_fields = sub {
       name             => { class    => 'standard-field',
                             disabled => $disabled, label => 'username',
                             tip => make_tip( $req, 'username_field_tip' ) },
-      region           => { class => 'single-character', disabled => $disabled,
-                            maxlength => 1, fieldsize => 1 },
+      region           => $self->$_bind_region( $person, $disabled ),
       enable_2fa       => $is_create || $disabled ? FALSE : {
          checked       => $person->totp_secret ? TRUE : FALSE,
          label_class   => 'right', type => 'checkbox' },

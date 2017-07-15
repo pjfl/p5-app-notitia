@@ -2360,6 +2360,70 @@ var Replacements = new Class( {
    }
 } );
 
+var RotateList = new Class( {
+   Implements: [ Options ],
+
+   options       : {
+      config_attr: 'rotate',
+      direction  : 'up',      // Direction in which to scroll
+      duration   : 1000,      // Millisecs for each transition
+      nitems     : 3,         // Number of items to display
+      selector   : '.rotate', // Class name matching lists to rotate
+      speed      : 5000,      // Millisecs between rotations
+      transition : 'linear',  // Transition style
+      zero_style : { height : 0, marginBottom : 0, marginTop : 0,
+                     opacity: 0, paddingBottom: 0, paddingTop: 0 }
+   },
+
+   initialize: function( options ) {
+      this.aroundSetOptions( options ); this.build();
+   },
+
+   attach: function( el ) {
+      var opt = this.mergeOptions( el.id );
+
+      var first; if (! (first = el.getElement( 'li' ))) return;
+
+      el.setStyle( 'height', (opt.nitems * first.getHeight()) + 'px' );
+      el.timer = opt.direction == 'up'
+               ? this.rotateListUp.periodical  ( opt.speed, this, [ el, opt ] )
+               : this.rotateListDown.periodical( opt.speed, this, [ el, opt ] );
+   },
+
+   rotateListDown: function( el, opt ) {
+      var first    = el.getElement ( 'li' );
+      var last     = el.getElements( 'li' ).getLast();
+
+      if (first == last) return;
+
+      var styles   = last.getStyles( 'height',        'marginBottom',
+                                     'marginTop',     'opacity',
+                                     'paddingBottom', 'paddingTop' );
+      var disposed = last.dispose(); disposed.setStyles( opt.zero_style );
+      var inserted = el.insertBefore( disposed, first );
+
+      inserted.set  ( 'morph', { duration  : opt.duration,
+                                 transition: opt.transition } );
+      inserted.morph( styles );
+   },
+
+   rotateListUp: function( el, opt ) {
+      var first  = el.getElement( 'li' );
+      var last   = el.getElements( 'li' ).getLast();
+
+      if (first == last) return;
+
+      var clone  = first.clone();
+      var rotate = function() {
+          this.destroy(); el.appendChild( clone ) }.bind( first );
+
+      first.set  ( 'morph', { onComplete: rotate,
+                              duration  : opt.duration,
+                              transition: opt.transition } );
+      first.morph( opt.zero_style );
+   }
+} );
+
 var ServerUtils = new Class( {
    Implements: [ Options, LoadMore ],
 

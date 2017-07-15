@@ -309,7 +309,7 @@
 [% END -%]
 [%# -%]
 [% MACRO UnorderedList( f ) BLOCK -%]
-      <ul class="[% f.class %]">
+      <ul class="[% f.class %]" id="[% f.name %]">
 [%    FOR item IN f.list -%]
          <li class="[% item.class %]">
 [%       IF reference( item.value ) == 'HASH'; Dispatch( item.value ) %]

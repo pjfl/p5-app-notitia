@@ -32,10 +32,10 @@ our @EXPORT_OK = qw( action_for_uri action_path2uri action_path_uri_map
                      display_duration encrypted_attr enhance event_actions
                      event_handler event_handler_cache event_streams from_json
                      get_hashed_pw get_salt is_access_authorised is_draft
-                     is_encrypted iterator js_slider_config js_server_config
-                     js_submit_config js_togglers_config js_window_config
-                     lcm_for link_options load_file_data loc local_dt
-                     localise_tree locd locm mail_domain make_id_from
+                     is_encrypted iterator js_rotate_config js_slider_config
+                     js_server_config js_submit_config js_togglers_config
+                     js_window_config lcm_for link_options load_file_data loc
+                     local_dt localise_tree locd locm mail_domain make_id_from
                      make_name_from make_tip management_link mtime new_request
                      new_salt now_dt page_link_set register_action_paths
                      set_element_focus set_event_date set_last_modified_header
@@ -658,6 +658,12 @@ sub iterator ($) {
    };
 }
 
+sub js_rotate_config ($$) {
+   my ($k, $params) = @_; $params = to_json( $params );
+
+   return "   behaviour.config.rotate[ '${k}' ] = ${params};";
+}
+
 sub js_server_config ($$$$) {
    my ($k, $event, $method, $args) = @_; $args = to_json( $args );
 
@@ -1151,6 +1157,8 @@ Greatest common factor
 =head2 C<is_encrypted>
 
 =head2 C<iterator>
+
+=head2 C<js_rotate_config>
 
 =head2 C<js_server_config>
 

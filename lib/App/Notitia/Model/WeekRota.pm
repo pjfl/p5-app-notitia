@@ -6,11 +6,11 @@ use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE HASH_CHAR NBSP NUL SPC TILDE TRUE );
 use App::Notitia::DOM       qw( new_container p_cell p_container p_hidden p_item
                                 p_js p_link p_list p_row p_select p_span
-                                p_table );
+                                p_table p_unordered );
 use App::Notitia::Util      qw( assign_link calculate_distance contrast_colour
-                                crow2road dialog_anchor js_server_config
-                                js_submit_config js_togglers_config
-                                local_dt locm make_tip
+                                crow2road dialog_anchor js_rotate_config
+                                js_server_config js_submit_config
+                                js_togglers_config local_dt locm make_tip
                                 register_action_paths slot_claimed
                                 slot_limit_index to_dt );
 use Class::Null;
@@ -545,26 +545,43 @@ my $_alloc_cell_event_row = sub {
    return $row;
 };
 
+my $_alloc_cell_slot_region = sub {
+   my ($page, $dt_key, $suppress, $operator, $row) = @_;
+
+   my $cell    = p_cell $row, { class => 'table-cell-label narrow' };
+   my $list    = p_unordered $cell, {
+      class => 'regions rotate', name => "${dt_key}_region" };
+   my $regions = !$suppress && $operator->id ? $operator->region : SPC;
+
+   for my $region (map { $_ eq SPC ? NBSP : $_ } split m{}mx, $regions) {
+      p_item $list, $region;
+   }
+
+   p_js $page, js_rotate_config "${dt_key}_region", { nitems => 1 };
+
+   return;
+};
+
 my $_alloc_cell_slot_row = sub {
    my ($self, $req, $page, $data, $dt, $slot_key, $cno) = @_; my $row = [];
 
    my $local_ymd = local_dt( $dt )->ymd;
-   my $dt_key = "${local_ymd}_${slot_key}";
-   my $slot = $data->{slots}->{ $dt_key } // Class::Null->new;
+   my $dt_key    = "${local_ymd}_${slot_key}";
+   my $slot      = $data->{slots}->{ $dt_key } // Class::Null->new;
    my ($shift, $slot_type) = split m{ _ }mx, $slot_key;
-   my $suppress = $shift eq 'day' && $self->is_working_day( local_dt $dt )
-                ? TRUE : FALSE;
+   my $suppress  = $shift eq 'day' && $self->is_working_day( local_dt $dt )
+                 ? TRUE : FALSE;
 
    $cno == 0 and p_cell $row, {
       class => 'rota-header align-center',
       value => locm $req, "${slot_key}_abbrv" };
 
-   my $operator     =  $slot->operator;
-   my $link_data    =  $_slot_link_data->( $page, $dt, $dt_key, $slot );
-   my $cell         =  p_cell $row, $self->components->{day}->slot_link
+   my $operator  =  $slot->operator;
+   my $link_data =  $_slot_link_data->( $page, $dt, $dt_key, $slot );
+   my $cell      =  p_cell $row, $self->components->{day}->slot_link
       ( $req, $page, $link_data, $dt_key, $slot_type );
 
-   $cell->{class}   =  'spreadsheet-fixed-cell table-cell-label';
+   $cell->{class} = 'spreadsheet-fixed-cell table-cell-label';
 
    if ($suppress) {
       $cell->{value}->{value} = NBSP; $cell->{value}->{tip} = NUL;
@@ -575,10 +592,8 @@ my $_alloc_cell_slot_row = sub {
    my $action = slot_claimed $link_data->{ $dt_key } ? 'yield' : 'claim';
 
    $_add_slot_js_dialog->( $req, $page, $dt_key, $title, $args, $action );
+   $_alloc_cell_slot_region->( $page, $dt_key, $suppress, $operator, $row );
 
-   p_cell $row, {
-      class => 'table-cell-label narrow',
-      value => $suppress ? NBSP : $operator->id ? $operator->region : NBSP };
    p_cell $row, $_operators_vehicle_link->( $req, $page, $dt, $slot, $suppress);
 
    if (not $suppress and $operator->id and $slot->vehicle_requested) {

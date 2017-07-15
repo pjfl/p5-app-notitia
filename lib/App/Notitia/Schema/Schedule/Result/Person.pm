@@ -56,7 +56,7 @@ $class->add_columns
      mobile_phone     => varchar_data_type(  16 ),
      home_phone       => varchar_data_type(  16 ),
      totp_secret      => varchar_data_type(  16 ),
-     region           => varchar_data_type(   1 ),
+     region           => varchar_data_type(   3 ),
      notes            => varchar_data_type, );
 
 $class->set_primary_key( 'id' );
@@ -261,8 +261,10 @@ my $_assert_claim_allowed = sub {
       and throw 'Cannot claim slot [_1] greater than slot limit [_2]',
           [ $slotno, $conf->slot_limits->[ $i ] - 1 ];
 
+   my $slot_region = first_char uc $conf->slot_region->{ $slotno };
+
    $slot_t eq 'rider' and now_dt->add( weeks => 4 ) < $rota_dt
-      and $self->region ne first_char uc $conf->slot_region->{ $slotno }
+      and index( $self->region, $slot_region ) < 0
       and throw 'Cannot claim slot [_1] out of region', [ $slotno ];
 
    return;
@@ -686,7 +688,7 @@ sub validation_attributes {
                             min_length =>   0, },
          password      => { max_length => 128, min_length => 8, },
          postcode      => { max_length =>  16, min_length => 0, },
-         region        => { max_length =>   1, min_length => 1, },
+         region        => { max_length =>   3, min_length => 1, },
          shortcode     => { max_length =>   8, min_length => 5, },
       },
       fields           => {

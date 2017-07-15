@@ -5,6 +5,7 @@ var Behaviour = new Class( {
 
    config      : {
       inputs   : {},
+      rotate   : {},
       sidebars : {},
       server   : {},
       slider   : {},
@@ -82,6 +83,7 @@ var Behaviour = new Class( {
       this.noticeBoard  = new NoticeBoard( { context: this } );
       this.pickers      = new Pickers( { context: this } );
       this.replacements = new Replacements( { context: this } );
+      this.rotations    = new RotateList( { context: this } );
       this.sliders      = new Sliders( { context: this } );
       this.server       = new ServerUtils( {
          context        : this,

@@ -1,3 +1,4 @@
+requires "Algorithm::Combinatorics" => "0.27";
 requires "App::Ack" => "2.12";
 requires "Auth::GoogleAuth" => "1.01";
 requires "Authen::SASL" => "2.16";
