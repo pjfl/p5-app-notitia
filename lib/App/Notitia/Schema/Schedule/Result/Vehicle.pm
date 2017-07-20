@@ -40,6 +40,8 @@ $class->belongs_to( model => "${result}::Type", 'model_id', $left_join );
 $class->belongs_to( owner => "${result}::Person", 'owner_id', $left_join );
 $class->belongs_to( type  => "${result}::Type", 'type_id' );
 
+$class->has_many( histories => "${result}::VehicleHistory", 'vehicle_id' );
+
 # Private functions
 my $_display_vrn = sub {
    my $vrn = shift;

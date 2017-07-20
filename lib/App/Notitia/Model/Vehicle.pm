@@ -6,8 +6,8 @@ use App::Notitia::DOM       qw( new_container p_action p_button p_date p_fields
                                 p_hidden p_item p_js p_link p_list p_row
                                 p_select p_table p_tag p_textarea p_textfield );
 use App::Notitia::Util      qw( assign_link check_field_js display_duration
-                                link_options loc locd locm now_dt make_tip
-                                management_link page_link_set
+                                link_options loc local_dt locd locm make_tip
+                                management_link month_label now_dt page_link_set
                                 register_action_paths set_element_focus
                                 slot_identifier time2int to_dt to_msg );
 use Class::Null;
@@ -26,6 +26,8 @@ has '+moniker' => default => 'asset';
 register_action_paths
    'asset/adhoc_vehicle'   => 'adhoc-vehicle',
    'asset/assign'          => 'vehicle-assign',
+   'asset/history_list'    => 'vehicle-histories',
+   'asset/history_view'    => 'vehicle-history',
    'asset/request_info'    => 'vehicle-request-info',
    'asset/request_vehicle' => 'vehicle-request',
    'asset/unassign'        => 'vehicle-assign',
@@ -45,6 +47,11 @@ around 'get_stash' => sub {
 
    return $stash;
 };
+
+my @HISTORY_ATTR = qw( current_miles front_tyre_life front_tyre_miles
+                       insurance_due last_fueled mot_due next_service_due
+                       next_service_miles rear_tyre_life
+                       rear_tyre_miles tax_due );
 
 # Private functions
 my $_compare_forward = sub {
@@ -85,6 +92,12 @@ my $_find_vreq_by = sub {
                          type_id  => $vehicle_type->id } )->single;
 };
 
+my $_history_list_headers = sub {
+   my $req = shift; my $header = 'vehicle_history_heading';
+
+   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 1 ];
+};
+
 my $_maybe_find_vehicle = sub {
    my ($schema, $vrn) = @_; $vrn or return Class::Null->new;
 
@@ -121,13 +134,20 @@ my $_quantity_list = sub {
    return $select;
 };
 
+my $_query_params_no_mid = sub {
+   my $req = shift; my $params = $req->query_params->( { optional => TRUE } );
+
+   delete $params->{mid};
+   return $params;
+};
+
 my $_transport_links = sub {
    my ($self, $req, $event) = @_; my @links;
 
-   my $moniker = $self->moniker; my $uri = $event->uri;
+   my $actionp = $self->moniker.'/request_vehicle';
+   my $args    = { args => [ $event->uri ] };
 
-   p_item \@links, management_link
-      $req, "${moniker}/request_vehicle", 'edit', { args => [ $uri ] };
+   p_item \@links, management_link $req, $actionp, 'edit', $args;
 
    return @links;
 };
@@ -150,11 +170,9 @@ my $_vehicle_events_headers = sub {
 my $_vehicle_event_links = sub {
    my ($self, $req, $event) = @_; my @links;
 
-   my $uri = $event->uri; my $vrn = $event->vehicle->vrn;
+   my $args = { args => [ $event->vehicle->vrn, $event->uri ] };
 
-   push @links, {
-      value => management_link
-         ( $req, 'event/vehicle_event', 'edit', { args => [ $vrn, $uri ] } ) };
+   p_item \@links, management_link $req, 'event/vehicle_event', 'edit', $args;
 
    return @links;
 };
@@ -169,12 +187,9 @@ my $_vehicle_js = sub {
 my $_vehicle_slot_links = sub {
    my ($self, $req, $slot) = @_; my @links;
 
-   my $type = $slot->rota_type;
-   my $date = $slot->date->clone->set_time_zone( 'local' )->ymd;
+   my $args = { args => [ $slot->rota_type, local_dt( $slot->date )->ymd ] };
 
-   push @links, {
-      value => management_link
-         ( $req, 'day/day_rota', 'edit', { args => [ $type, $date ] } ) };
+   p_item \@links, management_link $req, 'day/day_rota', 'edit', $args;
 
    return @links;
 };
@@ -218,7 +233,7 @@ my $_vehicle_type_tuple = sub {
 };
 
 my $_vehicles_headers = sub {
-   my ($req, $params) = @_; my $max = $params->{service} ? 4 : 1;
+   my ($req, $params) = @_; my $max = $params->{service} ? 5 : 1;
 
    return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } }
             0 .. $max ];
@@ -264,7 +279,7 @@ my $_req_quantity = sub {
 };
 
 my $_select_nav_link_name = sub {
-   my $params = { %{ $_[ 0 ] } };
+   my $params = shift;
 
    return $params->{adhoc  } ? 'adhoc_vehicles'
         : $params->{private} ? 'private_vehicles'
@@ -279,7 +294,7 @@ my $_vehicle_model_list = sub {
    my $values = [ [ NUL, undef], @{ $_list_vehicle_models->( $schema, $opts )}];
 
    return {
-      class    => 'standard-field required',
+      class    => 'standard-field',
       disabled => $disabled,
       label    => 'vehicle_model',
       name     => 'model',
@@ -331,6 +346,29 @@ my $_vreq_row = sub {
 };
 
 # Private methods
+my $_bind_history_fields = sub {
+   my ($self, $req, $history, $params) = @_;
+
+   $history->id or return
+      [ period_start => { class => 'standard-field', type => 'month' } ];
+
+   return
+      [ period_start       => {
+         class => 'standard-field', disabled => TRUE, type => 'month' },
+        current_miles      => { class => 'standard-field' },
+        last_fueled        => { type => 'date' },
+        next_service_due   => { type => 'date' },
+        next_service_miles => {},
+        tax_due            => { type => 'date' },
+        mot_due            => { type => 'date' },
+        insurance_due      => { type => 'date' },
+        front_tyre_miles   => {},
+        front_tyre_life    => {},
+        rear_tyre_miles    => {},
+        rear_tyre_life     => {},
+        ];
+};
+
 my $_bind_vehicle_fields = sub {
    my ($self, $req, $vehicle, $opts) = @_; $opts //= {};
 
@@ -355,6 +393,70 @@ my $_bind_vehicle_fields = sub {
       notes       => { class    => 'standard-field autosize',
                        disabled => $disabled, type => 'textarea' },
       ];
+};
+
+my $_history_list_ops_links = sub {
+   my ($self, $req, $vrn, $opts, $pager) = @_; my $links = [];
+
+   my $actionp = $self->moniker.'/history_list';
+   my $page_links = page_link_set $req, $actionp, [], $opts, $pager;
+
+   $page_links and push @{ $links }, $page_links;
+
+   $actionp = $self->moniker.'/history_view';
+
+   my $params = $_query_params_no_mid->( $req );
+   my $href   = $req->uri_for_action( $actionp, [ $vrn ], $params );
+
+   p_link $links, 'mileage_period', $href, $_create_action->( $req, $opts );
+
+   return $links;
+};
+
+my $_history_list_row = sub {
+   my ($self, $req, $params, $history) = @_; my $row = [];
+
+   my $vrn     = $history->vehicle->vrn;
+   my $actionp = $self->moniker.'/history_view';
+   my $date    = local_dt( $history->period_start )->ymd;
+   my $href    = $req->uri_for_action( $actionp, [ $vrn, $date ], $params );
+
+   p_item $row, p_link {}, "${vrn}-history", $href, {
+      request => $req,
+      tip     => locm( $req, 'mileage_period_edit_tip', $vrn ),
+      value   => month_label( $req, $history->period_start ) };
+
+   p_item $row, $history->current_miles;
+
+   return $row;
+};
+
+my $_history_list_uri_for = sub {
+   my ($self, $req, $vrn) = @_;
+
+   my $actionp = $self->moniker.'/history_list';
+   my $params  = $_query_params_no_mid->( $req );
+
+   return $req->uri_for_action( $actionp, [ $vrn ], $params );
+};
+
+my $_history_view_ops_links = sub {
+   my ($self, $req, $vrn) = @_; my $links = [];
+
+   my $href = $self->$_history_list_uri_for( $req, $vrn );
+
+   p_link $links, 'vehicle_histories', $href, { request => $req };
+
+   return $links;
+};
+
+my $_maybe_find_history = sub {
+   my ($self, $vehicle, $hist_dt) = @_; $hist_dt or return Class::Null->new;
+
+   my $hist_rs = $self->schema->resultset( 'VehicleHistory' );
+   my $where   = { period_start => $hist_dt, vehicle_id => $vehicle->id };
+
+   return $hist_rs->search( $where )->first;
 };
 
 my $_toggle_event_assignment = sub {
@@ -453,6 +555,43 @@ my $_update_vehicle_from_request = sub {
    return;
 };
 
+my $_update_history_from_previous = sub {
+   my ($self, $vehicle, $hist_rs, $current) = @_;
+
+   my $where    =  { vehicle_id => $vehicle->id };
+   my $opts     =  {
+      order_by  => { '-desc' => 'period_start' },
+      page      => 1,
+      rows      => 1, };
+
+   if (my $previous = $hist_rs->search( $where, $opts )->first) {
+      for my $attr (@HISTORY_ATTR) { $current->$attr( $previous->$attr() ) }
+   }
+   else { $current->current_miles( 0 ) }
+
+   return;
+};
+
+my $_update_history_from_request = sub {
+   my ($self, $req, $history) = @_; my $params = $req->body_params;
+
+   my $opts = { optional => TRUE };
+
+   for my $attr (@HISTORY_ATTR) {
+      my $v = $params->( $attr, $opts ); defined $v or next;
+
+      $v =~ s{ \r\n }{\n}gmx; $v =~ s{ \r }{\n}gmx;
+
+      length $v and is_member $attr,
+         [ qw( insurance_due last_fueled mot_due next_service_due tax_due ) ]
+            and $v = to_dt $v;
+
+      $history->$attr( $v );
+   }
+
+   return;
+};
+
 my $_vehicle_events = sub {
    my ($self, $req, $opts) = @_; my @rows;
 
@@ -502,33 +641,40 @@ my $_vehicle_events = sub {
    return [ sort { $compare->( $a, $b ) } @rows ];
 };
 
-my $_vehicle_links = sub {
-   my ($self, $req, $params, $vehicle) = @_; my $links = [];
+my $_vehicles_row = sub {
+   my ($self, $req, $params, $vehicle) = @_; my $row = [];
 
    my $vrn     = $vehicle->vrn;
    my $moniker = $self->moniker;
    my $href    = $req->uri_for_action( "${moniker}/vehicle", [ $vrn ], $params);
 
-   p_item $links, p_link {}, "${vrn}-vehicle", $href, {
+   p_item $row, p_link {}, "${vrn}-vehicle", $href, {
       request => $req,
       tip     => locm( $req, 'vehicle_management_tip', $vrn ),
       value   => $vehicle->label };
 
-   p_item $links, locm $req, $vehicle->type;
+   p_item $row, locm $req, $vehicle->type;
 
-   $params->{service} or return $links;
+   $params->{service} or return $row;
 
-   p_item $links, $vehicle->model ? $vehicle->model->label( $req ) : NUL;
+   p_item $row, $vehicle->model ? $vehicle->model->label( $req ) : NUL;
 
    my $now    = now_dt;
    my $keeper = $self->find_last_keeper( $req, $now, $vehicle );
 
-   p_item $links, $keeper ? $keeper->[ 0 ]->label : NUL;
+   p_item $row, $keeper ? $keeper->[ 0 ]->label : NUL;
 
-   p_item $links, management_link $req, "${moniker}/vehicle_events", $vrn, {
+   p_item $row, management_link $req, "${moniker}/vehicle_events", $vrn, {
       params => { after => $now->subtract( days => 1 )->ymd } };
 
-   return $links;
+   $href = $self->$_history_list_uri_for( $req, $vrn );
+
+   p_item $row, p_link {}, "${vrn}-vehicle-histories", $href, {
+      request => $req,
+      tip     => locm( $req, 'vehicle_histories_tip', $vrn ),
+      value   => locm( $req, 'Mileage' ), };
+
+   return $row;
 };
 
 my $_vehicles_ops_links = sub {
@@ -560,10 +706,10 @@ sub adhoc_vehicle : Dialog Role(any) {
    my $schema = $self->schema;
    my $values = [ [ NUL, undef ], @{ $_list_vehicle_types->( $schema, {} ) } ];
 
-   p_textfield $form, 'vrn',  NUL;
-   p_select    $form, 'type', $values, {
-      label => 'vehicle_type', numify => TRUE };
-   p_textarea  $form, 'notes', NUL, { class => 'standard-field autosize' };
+   p_textfield $form, 'vrn',    NUL;
+   p_select    $form, 'type',   $values, {
+      label => 'vehicle_type',  numify => TRUE };
+   p_textarea  $form, 'notes',  NUL, { class => 'standard-field autosize' };
    p_action    $form, 'create', [ 'adhoc_vehicle' ], { request => $req };
 
    return $stash;
@@ -617,9 +763,32 @@ sub assign_vehicle_action : Role(rota_manager) {
 
 sub create_adhoc_vehicle_action : Role(controller) Role(driver) Role(rider)
                                   Role(rota_manager) {
+   return $_[ 0 ]->create_vehicle_action( $_[ 1 ] );
+}
+
+sub create_mileage_period_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   return $self->create_vehicle_action( $req );
+   my $vrn      = $req->uri_params->( 0 );
+   my $date     = $req->body_params->( 'period_start' );
+   my $hist_dt  = to_dt $date;
+   my $schema   = $self->schema;
+   my $vehicle  = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+   my $hist_rs  = $schema->resultset( 'VehicleHistory' );
+   my $history  = $hist_rs->new_result( {
+      period_start => $hist_dt, vehicle_id => $vehicle->id } );
+
+   $self->$_update_history_from_previous( $vehicle, $hist_rs, $history );
+
+   try   { $history->insert }
+   catch { $self->blow_smoke( $_, 'create', 'mileage period', $vrn ) };
+
+   my $who      = $req->session->user_label;
+   my $message  = [ to_msg 'Mileage period [_1] [_2] created by [_3]',
+                    $vrn, month_label( $req, $hist_dt ), $who ];
+   my $location = $self->$_history_list_uri_for( $req, $vrn );
+
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub create_vehicle_action : Role(rota_manager) {
@@ -640,6 +809,28 @@ sub create_vehicle_action : Role(rota_manager) {
    $self->send_event( $req, "action:create-vehicle vehicle:${vrn}" );
 
    return { redirect => { message => $message } }; # location referer
+}
+
+sub delete_mileage_period_action : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $vrn      = $req->uri_params->( 0 );
+   my $date     = $req->uri_params->( 1 );
+   my $hist_dt  = to_dt $date;
+   my $schema   = $self->schema;
+   my $vehicle  = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+   my $who      = $req->session->user_label;
+   my $args     = [ $vrn, month_label( $req, $hist_dt ), $who ];
+   my $history  = $self->$_maybe_find_history( $vehicle, $hist_dt )
+      or throw 'Mileage period [_1] [_2] not found', $args;
+
+   $history->delete;
+
+   my $key      = 'Mileage period [_1] [_2] deleted by [_3]';
+   my $message  = [ to_msg $key, @{ $args } ];
+   my $location = $self->$_history_list_uri_for( $req, $vrn );
+
+   return { redirect => { location => $location, message => $message } };
 }
 
 sub delete_vehicle_action : Role(rota_manager) {
@@ -682,6 +873,72 @@ sub find_last_keeper {
    }
 
    return $keeper;
+}
+
+sub history_list : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $vrn       =  $req->uri_params->( 0 );
+   my $params    =  $_query_params_no_mid->( $req );
+   my $form      =  new_container;
+   my $page      =  {
+      forms      => [ $form ],
+      selected   => $_select_nav_link_name->( $params ),
+      title      => locm $req, 'vehicle_histories_title', };
+   my $schema    =  $self->schema;
+   my $vehicle   =  $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+   my $hist_rs   =  $schema->resultset( 'VehicleHistory' );
+   my $opts      =  {
+      order_by   => { '-desc' => 'period_start' },
+      page       => $params->{page} || 1,
+      rows       => $req->session->rows_per_page, };
+   my $histories =  $hist_rs->search( { vehicle_id => $vehicle->id }, $opts );
+   my $links     =  $self->$_history_list_ops_links
+      ( $req, $vrn, $opts, $histories->pager );
+
+   p_textfield $form, 'vehicle', $vehicle->label, { disabled => TRUE };
+   p_list      $form, PIPE_SEP, $links, link_options 'right';
+
+   my $table = p_table $form, { headers => $_history_list_headers->( $req ) };
+
+   p_row $table, [ map { $self->$_history_list_row( $req, $params, $_ ) }
+                   $histories->all ];
+
+   return $self->get_stash( $req, $page );
+}
+
+sub history_view : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $vrn     =  $req->uri_params->( 0 );
+   my $date    =  $req->uri_params->( 1, { optional => TRUE } );
+   my $hist_dt =  $date ? to_dt $date : undef;
+   my $actionp =  $self->moniker.'/history_view';
+   my $params  =  $_query_params_no_mid->( $req );
+   my $href    =  $req->uri_for_action( $actionp, [ $vrn, $date ], $params );
+   my $form    =  new_container 'history-view', $href;
+   my $page    =  {
+      forms    => [ $form ],
+      selected => $_select_nav_link_name->( $params ),
+      title    => locm $req, 'vehicle_history_title', };
+   my $schema  =  $self->schema;
+   my $vehicle =  $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+   my $links   =  $self->$_history_view_ops_links( $req, $vrn );
+   my $history =  $self->$_maybe_find_history( $vehicle, $hist_dt );
+   my $fields  =  $self->$_bind_history_fields( $req, $history, $params );
+   my $args    =  [ 'mileage_period', $history->label( $req ) ];
+   my $action  =  $date ? 'update' : 'create';
+   my $first   =  $date ? 'current_miles' : 'period_start';
+
+   p_js        $page, set_element_focus 'history-view', $first;
+   p_list      $form, PIPE_SEP, $links, link_options 'right';
+   p_textfield $form, 'vehicle', $vehicle->label, { disabled => TRUE };
+   p_fields    $form, $schema, 'VehicleHistory', $history, $fields;
+   p_action    $form, $action, $args, { request => $req };
+
+   $date and p_action $form, 'delete', $args, { request => $req };
+
+   return $self->get_stash( $req, $page );
 }
 
 sub request_info : Dialog Role(rota_manager) {
@@ -791,6 +1048,31 @@ sub unassign_vehicle_action : Role(rota_manager) {
    return $_[ 0 ]->$_toggle_assignment( $_[ 1 ], 'unassign' );
 }
 
+sub update_mileage_period_action : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $vrn     = $req->uri_params->( 0 );
+   my $date    = $req->uri_params->( 1 );
+   my $hist_dt = to_dt $date;
+   my $schema  = $self->schema;
+   my $vehicle = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
+   my $who     = $req->session->user_label;
+   my $args    = [ $vrn, month_label( $req, $hist_dt ), $who ];
+   my $history = $self->$_maybe_find_history( $vehicle, $hist_dt )
+      or throw 'Mileage period [_1] [_2] not found', $args;
+
+   $self->$_update_history_from_request( $req, $history );
+
+   try   { $history->update }
+   catch { $self->blow_smoke( $_, 'update', 'mileage period', $vrn ) };
+
+   my $key      = 'Mileage period [_1] [_2] updated by [_3]';
+   my $message  = [ to_msg $key, @{ $args } ];
+   my $location = $self->$_history_list_uri_for( $req, $vrn );
+
+   return { redirect => { location => $location, message => $message } };
+};
+
 sub update_vehicle_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
@@ -816,23 +1098,16 @@ sub vehicle : Role(rota_manager) {
 
    my $actionp    =  $self->moniker.'/vehicle';
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
-   my $adhoc      =  $req->query_params->( 'adhoc',   { optional => TRUE } );
-   my $private    =  $req->query_params->( 'private', { optional => TRUE } );
-   my $service    =  $req->query_params->( 'service', { optional => TRUE } );
+   my $params     =  $_query_params_no_mid->( $req );
    my $href       =  $req->uri_for_action( $actionp, [ $vrn ] );
    my $form       =  new_container 'vehicle-admin', $href;
    my $action     =  $vrn ? 'update' : 'create';
    my $page       =  {
       first_field => 'vrn',
       forms       => [ $form ],
-      selected    => $adhoc   ? 'adhoc_vehicles'
-                  :  $private ? 'private_vehicles'
-                  :  $service ? 'service_vehicles'
-                  :  'vehicles_list',
+      selected    => $_select_nav_link_name->( $params ),
       title       => loc $req, "vehicle_${action}_heading" };
    my $vehicle    =  $_maybe_find_vehicle->( $self->schema, $vrn );
-   my $params     =  {
-      adhoc       => $adhoc, private => $private, service => $service };
    my $fields     =  $self->$_bind_vehicle_fields( $req, $vehicle, $params );
    my $args       =  [ 'vehicle', $vehicle->label ];
    my $links      =  [];
@@ -891,17 +1166,16 @@ sub vehicles : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $moniker  =  $self->moniker;
-   my $params   =  $req->query_params->( {
-      optional => TRUE } ); delete $params->{mid};
+   my $params   =  $_query_params_no_mid->( $req );
    my $opts     =  {
       adhoc     => $params->{adhoc  } || FALSE,
-      page      => $params->{page   } // 1,
+      page      => $params->{page   } || 1,
       private   => $params->{private} || FALSE,
       rows      => $req->session->rows_per_page,
       service   => $params->{service} || FALSE,
       type      => $params->{type   } };
-   my $rs       =  $self->schema->resultset( 'Vehicle' );
-   my $vehicles =  $rs->search_for_vehicles( $opts );
+   my $v_rs     =  $self->schema->resultset( 'Vehicle' );
+   my $vehicles =  $v_rs->search_for_vehicles( $opts );
    my $form     =  new_container;
    my $page     =  {
       forms     => [ $form ],
@@ -914,10 +1188,8 @@ sub vehicles : Role(rota_manager) {
    my $table = p_table $form, {
       headers => $_vehicles_headers->( $req, $params ) };
 
-   p_row $table, [ map { $self->$_vehicle_links( $req, $params, $_ ) }
+   p_row $table, [ map { $self->$_vehicles_row( $req, $params, $_ ) }
                    $vehicles->all ];
-
-   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    return $self->get_stash( $req, $page );
 }

@@ -2185,7 +2185,8 @@ var Pickers = new Class( {
 
    options       : {
       pickerClass: 'datepicker_vista',
-      selector   : [ '.pick-date', '.pick-datetime', '.pick-time' ]
+      selector   : [ '.pick-date', '.pick-datetime',
+                     '.pick-month', '.pick-time' ]
    },
 
    initialize: function( options ) {
@@ -2210,6 +2211,11 @@ var Pickers = new Class( {
                   opts[ 'format' ] = '%d/%m/%Y @ %H:%M';
                   opts[ 'timePicker' ] = true;
                   opts[ 'timeWheelStep' ] = 1;
+               }
+
+               if (el.hasClass( 'pick-month' )) {
+                  opts[ 'format' ] = '01/%m/%Y';
+                  opts[ 'pickOnly' ] = 'month';
                }
 
                if (el.hasClass( 'pick-time')) {

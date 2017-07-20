@@ -36,12 +36,12 @@ our @EXPORT_OK = qw( action_for_uri action_path2uri action_path_uri_map
                      js_server_config js_submit_config js_togglers_config
                      js_window_config lcm_for link_options load_file_data loc
                      local_dt localise_tree locd locm mail_domain make_id_from
-                     make_name_from make_tip management_link mtime new_request
-                     new_salt now_dt page_link_set register_action_paths
-                     set_element_focus set_event_date set_last_modified_header
-                     set_rota_date slot_claimed slot_identifier
-                     slot_limit_index show_node stash_functions time2int to_dt
-                     to_json to_msg );
+                     make_name_from make_tip management_link month_label mtime
+                     new_request new_salt now_dt page_link_set
+                     register_action_paths set_element_focus set_event_date
+                     set_last_modified_header set_rota_date slot_claimed
+                     slot_identifier slot_limit_index show_node stash_functions
+                     time2int to_dt to_json to_msg );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -829,6 +829,16 @@ sub management_link ($$$;$) {
    return $link;
 }
 
+sub month_label ($;$) {
+   my ($req, $dt) = @_; $req or return NUL;
+
+   blessed $req eq 'DateTime' and ($req, $dt) = ($dt, $req); $dt or return NUL;
+
+   my $local_dt = local_dt( $dt );
+
+   return $local_dt->month_name.SPC.$local_dt->year;
+}
+
 sub mtime ($) {
    return $_[ 0 ]->{tree}->{_mtime};
 }
@@ -1201,6 +1211,8 @@ LCM for a list of integers
 =head2 C<make_tip>
 
 =head2 C<management_link>
+
+=head2 C<month_label>
 
 =head2 C<mtime>
 

@@ -15,6 +15,7 @@
 [%       CASE 'label'; Label( f ); -%]
 [%       CASE 'link'; Link( f ) -%]
 [%       CASE 'list'; List( f ); -%]
+[%       CASE 'month'; MonthField( f ); -%]
 [%       CASE 'password'; PasswordField( f ); -%]
 [%       CASE 'radio'; RadioButtons( f ); -%]
 [%       CASE 'select'; Select( f ); -%]
@@ -163,6 +164,17 @@
 [%       IF !loop.first && f.separator; -%][% sep %][% END -%]
 [%       Dispatch( field ) -%]
 [%    END -%]
+[% END -%]
+[%# -%]
+[% MACRO MonthField( f ) WRAPPER label -%]
+[%    IF f.tip; FieldHelp( f ); END -%]
+[%    IF f.class; class = f.class; ELSE; class = 'standard-field'; END -%]
+[%    IF f.id; id = f.id; ELSE; id = f.name; END -%]
+      <input [% IF f.disabled %]disabled="disabled"[% END -%]
+             class="[% class %] pick-month" id="[% id %]"
+             name="[% f.name %]" value="[% f.value %]">
+      <div class="field-group">
+         <span class="hidden" id="[% f.name %]_ajax"></span></div>
 [% END -%]
 [%# -%]
 [% MACRO PasswordField( f ) WRAPPER label -%]

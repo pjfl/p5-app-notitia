@@ -478,6 +478,9 @@ msgstr "Current"
 msgid "current_events_tip"
 msgstr "List current and future events"
 
+msgid "current_miles"
+msgstr "Current Mileage"
+
 msgid "current_page_link"
 msgstr "( [_1] )"
 
@@ -1072,6 +1075,12 @@ msgstr "Take a sneeky peek at this magnificent form"
 msgid "form_preview_title"
 msgstr "[_1] Form Preview"
 
+msgid "front_tyre_life"
+msgstr "Front Tyre Life"
+
+msgid "front_tyre_miles"
+msgstr "Front Tyre Miles"
+
 msgid "fund_raiser"
 msgstr "Fund Raiser"
 
@@ -1177,6 +1186,9 @@ msgstr "Initialise Event Controls"
 msgid "init_event_controls_tip"
 msgstr "Click this button to run the process that will populate the event "
        "control table from the event handler cache"
+
+msgid "insurance_due"
+msgstr "Insurance Due"
 
 msgid "is_running"
 msgstr "Running"
@@ -1284,6 +1296,9 @@ msgstr "Deliveries"
 
 msgid "label_class"
 msgstr "Label Class"
+
+msgid "last_fueled"
+msgstr "Last Fueled"
 
 msgid "last_page_link"
 msgstr "&nbsp;…&nbsp;Last"
@@ -1429,6 +1444,15 @@ msgstr "Max. Participants"
 msgid "max_participents"
 msgstr "Max. Participants"
 
+msgid "mileage_period_create_link"
+msgstr "Add Period"
+
+msgid "mileage_period_create_tip"
+msgstr "Add a mileage period record for another time period"
+
+msgid "mileage_period_edit_tip"
+msgstr "Edit this existing mileage period record"
+
 msgid "milk"
 msgstr "Milk"
 
@@ -1544,6 +1568,9 @@ msgstr "[_1] rota for [_2]"
 msgid "months_management_heading"
 msgstr "Select Month"
 
+msgid "mot_due"
+msgstr "MOT Due"
+
 msgid "mugshot_upload_link"
 msgstr "Upload Mugshot"
 
@@ -1571,6 +1598,12 @@ msgstr "Goto page [_1]"
 
 msgid "next-week_tip"
 msgstr "Display the following weeks schedule"
+
+msgid "next_service_due"
+msgstr "Service Due"
+
+msgid "next_service_miles"
+msgstr "Next Service"
 
 msgid "nhsbt_issue"
 msgstr "NHSBT Issue"
@@ -1822,6 +1855,9 @@ msgstr "Certs"
 msgid "people_role_heading_5"
 msgstr "Endorsements"
 
+msgid "period_start"
+msgstr "Period Start"
+
 msgid "person"
 msgstr "Person"
 
@@ -1938,6 +1974,12 @@ msgstr "Quantity"
 
 msgid "raised"
 msgstr "Raised"
+
+msgid "rear_tyre_life"
+msgstr "Rear Tyre Life"
+
+msgid "rear_tyre_miles"
+msgstr "Rear Tyre Miles"
 
 msgid "recent_activity"
 msgstr "Recently Active:"
@@ -2279,6 +2321,9 @@ msgstr "Subscription"
 
 msgid "table_id"
 msgstr "User Table"
+
+msgid "tax_due"
+msgstr "Tax Due"
 
 msgid "title"
 msgstr "Title"
@@ -2711,6 +2756,24 @@ msgstr "Service Vehicle Events"
 msgid "vehicle_events_management_link"
 msgstr "Events"
 
+msgid "vehicle_history_heading_0"
+msgstr "Period"
+
+msgid "vehicle_history_heading_1"
+msgstr "Current Mileage"
+
+msgid "vehicle_history_title"
+msgstr "Mileage Period"
+
+msgid "vehicle_histories_link"
+msgstr "Mileage Periods"
+
+msgid "vehicle_histories_tip"
+msgstr "List the mileage periods for this vehicle"
+
+msgid "vehicle_histories_title"
+msgstr "Mileage Periods"
+
 msgid "vehicle_management_link"
 msgstr "Edit"
 
@@ -2816,6 +2879,9 @@ msgstr "Current Keeper"
 
 msgid "vehicles_heading_4"
 msgstr "Events"
+
+msgid "vehicles_heading_5"
+msgstr "Mileage"
 
 msgid "vehicles_management_heading"
 msgstr "Vehicles"

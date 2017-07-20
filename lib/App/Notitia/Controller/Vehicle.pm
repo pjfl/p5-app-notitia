@@ -7,17 +7,20 @@ with q(Web::Components::Role);
 has '+moniker' => default => 'vehicle';
 
 sub dispatch_request {
-   sub (GET  + /adhoc-vehicle         + ?*) { [ 'asset/adhoc_vehicle',   @_ ] },
-   sub (GET  + /vehicles              + ?*) { [ 'asset/vehicles',        @_ ] },
-   sub (GET  + /vehicle-assign/**     + ?*) { [ 'asset/assign',          @_ ] },
-   sub (GET  + /vehicle-events/*      + ?*) { [ 'asset/vehicle_events',  @_ ] },
-   sub (GET  + /vehicle-request-info/*+ ?*) { [ 'asset/request_info',    @_ ] },
-   sub (GET  + /vehicle-request/*     + ?*) { [ 'asset/request_vehicle', @_ ] },
-   sub (POST + /vehicle/**            + ?*) { [ 'asset/from_request',    @_ ] },
-   sub (POST + /vehicle/*             + ?*) { [ 'asset/from_request',    @_ ] },
-   sub (POST + /vehicle               + ?*) { [ 'asset/from_request',    @_ ] },
-   sub (GET  + /vehicle/*             + ?*) { [ 'asset/vehicle',         @_ ] },
-   sub (GET  + /vehicle               + ?*) { [ 'asset/vehicle',         @_ ] },
+   sub (GET  + /adhoc-vehicle         + ?*) {[ 'asset/adhoc_vehicle',     @_ ]},
+   sub (GET  + /vehicles              + ?*) {[ 'asset/vehicles',          @_ ]},
+   sub (GET  + /vehicle-assign/**     + ?*) {[ 'asset/assign',            @_ ]},
+   sub (GET  + /vehicle-events/*      + ?*) {[ 'asset/vehicle_events',    @_ ]},
+   sub (GET  + /vehicle-histories/*   + ?*) {[ 'asset/history_list',      @_ ]},
+   sub (POST + /vehicle-history/**    + ?*) {[ 'asset/from_request',      @_ ]},
+   sub (GET  + /vehicle-history/**    + ?*) {[ 'asset/history_view',      @_ ]},
+   sub (GET  + /vehicle-request-info/*+ ?*) {[ 'asset/request_info',      @_ ]},
+   sub (GET  + /vehicle-request/*     + ?*) {[ 'asset/request_vehicle',   @_ ]},
+   sub (POST + /vehicle/**            + ?*) {[ 'asset/from_request',      @_ ]},
+   sub (POST + /vehicle/*             + ?*) {[ 'asset/from_request',      @_ ]},
+   sub (POST + /vehicle               + ?*) {[ 'asset/from_request',      @_ ]},
+   sub (GET  + /vehicle/*             + ?*) {[ 'asset/vehicle',           @_ ]},
+   sub (GET  + /vehicle               + ?*) {[ 'asset/vehicle',           @_ ]};
 }
 
 1;

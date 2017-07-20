@@ -9,7 +9,8 @@ our @EXPORT_OK = qw( bool_data_type date_data_type enumerated_data_type
                      foreign_key_data_type nullable_foreign_key_data_type
                      nullable_numerical_id_data_type nullable_varchar_data_type
                      numerical_id_data_type serial_data_type
-                     set_on_create_datetime_data_type varchar_data_type );
+                     set_on_create_datetime_data_type
+                     unsigned_int_data_type varchar_data_type );
 
 # Public functions
 sub bool_data_type (;$) {
@@ -84,6 +85,18 @@ sub serial_data_type () {
 
 sub set_on_create_datetime_data_type () {
    return { %{ date_data_type() }, set_on_create => TRUE };
+}
+
+sub unsigned_int_data_type (;$$) {
+   my $type_info = { data_type     => 'integer',
+                     default_value => $_[ 0 ],
+                     extra         => { unsigned => TRUE },
+                     is_nullable   => FALSE,
+                     is_numeric    => TRUE, };
+
+   defined $_[ 1 ] and $type_info->{accessor} = $_[ 1 ];
+
+   return $type_info;
 }
 
 sub varchar_data_type (;$$) {
