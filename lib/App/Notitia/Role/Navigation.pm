@@ -7,7 +7,7 @@ use App::Notitia::Constants qw( FALSE HASH_CHAR NUL PIPE_SEP SPC TRUE );
 use App::Notitia::DOM       qw( new_container p_button p_folder p_image p_item
                                 p_js p_link p_list p_navlink p_text );
 use App::Notitia::Util      qw( dialog_anchor local_dt locd locm
-                                make_tip now_dt to_dt );
+                                make_tip natatime now_dt to_dt );
 use Class::Usul::Functions  qw( is_member throw );
 use Class::Usul::Time       qw( time2str );
 use Moo::Role;
@@ -296,51 +296,36 @@ my $_people_links = sub {
 my $_report_links = sub {
    my ($self, $req, $page, $nav) = @_; my $list = $nav->{menu}->{list};
 
-   my $is_allowed_customers  = $self->$_allowed( $req, 'report/customers' );
-   my $is_allowed_deliveries = $self->$_allowed( $req, 'report/deliveries' );
-   my $is_allowed_incidents  = $self->$_allowed( $req, 'report/incidents' );
-   my $is_allowed_people     = $self->$_allowed( $req, 'report/people' );
-   my $is_allowed_slots      = $self->$_allowed( $req, 'report/slots' );
+   my @reports = qw( report/customers   customer_report
+                     report/deliveries  delivery_report
+                     report/incidents   incident_report
+                     report/mileage     mileage_report
+                     report/people      people_report
+                     report/people_meta people_meta_report
+                     report/slots       slot_report
+                     report/vehicles    vehicle_report
+                     );
+   my $periods = { mileage_report => 'last-month' };
+   my $iter    = natatime 2, @reports;
+   my $allowed = FALSE;
+   my %allowed = ();
 
-   $is_allowed_customers or $is_allowed_deliveries or $is_allowed_incidents
-      or $is_allowed_people or $is_allowed_slots or return;
+   while (my ($actionp, $name) = $iter->()) {
+      $self->$_allowed( $req, $actionp )
+         and $allowed = $allowed{ $actionp } = TRUE;
+   }
+
+   $allowed or return; $iter = natatime 2, @reports;
 
    p_folder $list, 'reports', { request => $req, tip => 'Report Menu' };
 
-   $is_allowed_customers and p_navlink $list, 'customer_report',
-      [ 'report/customers', [], period => 'year-to-date' ], {
-         class   => $_selected_class->( $page, 'customer_report' ),
-         request => $req };
+   while (my ($actionp, $name) = $iter->()) {
+      my $period = $periods->{ $name } // 'year-to-date';
 
-   $is_allowed_deliveries and p_navlink $list, 'delivery_report',
-      [ 'report/deliveries', [], period => 'year-to-date' ], {
-         class   => $_selected_class->( $page, 'delivery_report' ),
-         request => $req };
-
-   $is_allowed_incidents and p_navlink $list, 'incident_report',
-      [ 'report/incidents', [], period => 'year-to-date' ], {
-         class   => $_selected_class->( $page, 'incident_report' ),
-         request => $req };
-
-   $is_allowed_people and p_navlink $list, 'people_report',
-      [ 'report/people', [], period => 'year-to-date' ], {
-         class   => $_selected_class->( $page, 'people_report' ),
-         request => $req };
-
-   $is_allowed_people and p_navlink $list, 'people_meta_report',
-      [ 'report/people_meta', [], period => 'year-to-date' ], {
-         class   => $_selected_class->( $page, 'people_meta_report' ),
-         request => $req };
-
-   $is_allowed_slots and p_navlink $list, 'slot_report',
-      [ 'report/slots', [], period => 'year-to-date' ], {
-         class   => $_selected_class->( $page, 'slot_report' ),
-         request => $req };
-
-   $is_allowed_slots and p_navlink $list, 'vehicle_report',
-      [ 'report/vehicles', [], period => 'year-to-date' ], {
-         class   => $_selected_class->( $page, 'vehicle_report' ),
-         request => $req };
+      $allowed{ $actionp } and p_navlink $list, $name,
+         [ $actionp, [], period => $period ], {
+            class => $_selected_class->( $page, $name ), request => $req };
+   }
 
    return;
 };

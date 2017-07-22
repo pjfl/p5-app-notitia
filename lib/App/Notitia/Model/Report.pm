@@ -22,14 +22,15 @@ with    q(App::Notitia::Role::Navigation);
 has '+moniker' => default => 'report';
 
 register_action_paths
-   'report/customers' => 'customer-report',
-   'report/controls' => 'report-controls',
-   'report/deliveries' => 'delivery-report',
-   'report/incidents' => 'incident-report',
+   'report/customers'   => 'customer-report',
+   'report/controls'    => 'report-controls',
+   'report/deliveries'  => 'delivery-report',
+   'report/incidents'   => 'incident-report',
+   'report/mileage'     => 'mileage-report',
    'report/people_meta' => 'people-meta-report',
-   'report/people' => 'people-report',
-   'report/slots' => 'slots-report',
-   'report/vehicles' => 'vehicles-report';
+   'report/people'      => 'people-report',
+   'report/slots'       => 'slots-report',
+   'report/vehicles'    => 'vehicles-report';
 
 # Construction
 my $_download_format = sub {
@@ -159,33 +160,37 @@ my $_dl_links = sub {
 my $_exclusive_date_range = sub {
    my $opts = shift; $opts = { %{ $opts } }; delete $opts->{period};
 
-   $opts->{after} = $opts->{after}->clone->truncate( to => 'day' )
-                                         ->subtract( seconds => 1 );
-   $opts->{before} = $opts->{before}->clone->add( days => 1 )
-                                           ->truncate( to => 'day' );
+   $opts->{after } = local_dt( $opts->{after } )
+                        ->subtract( seconds => 1 )->set_time_zone( 'GMT' );
+   $opts->{before} = local_dt( $opts->{before} )
+                        ->add( days => 1 )
+                        ->truncate( to => 'day' )->set_time_zone( 'GMT' );
    return $opts;
 };
 
 my $_expand_range = sub {
-   my $period = shift; my $now = now_dt;
+   my ($period, $after) = @_;
 
-   my $after = local_dt $now; my $before = local_dt $now;
+   my $now = now_dt; $after //= local_dt $now; my $before = local_dt $now;
 
    if ($period eq 'last-month') {
-      $after = $after->subtract( months => 1 )->truncate( to => 'month' ) ;
-      $before = $after->clone->add( months => 1 )->subtract( days => 1 ) ;
+      $after = $after->subtract( months => 1 )->truncate( to => 'month' );
+      $before = $after->clone->add( months => 1 )->subtract( days => 1 );
    }
    elsif ($period eq 'last-quarter') {
-      $after = $after->subtract( months => 3 )->truncate( to => 'month' ) ;
-      $before = $after->clone->add( months => 3 )->subtract( days => 1 ) ;
+      $after = $after->subtract( months => 3 )->truncate( to => 'month' );
+      $before = $after->clone->add( months => 3 )->subtract( days => 1 );
    }
    elsif ($period eq 'last-week') {
-      $after = $after->subtract( weeks => 1 )->truncate( to => 'week' ) ;
-      $before = $after->clone->add( weeks => 1 )->subtract( days => 1 ) ;
+      $after = $after->subtract( weeks => 1 )->truncate( to => 'week' );
+      $before = $after->clone->add( weeks => 1 )->subtract( days => 1 );
    }
    elsif ($period eq 'last-year') {
-      $after = $after->subtract( years => 1 )->truncate( to => 'year' ) ;
-      $before = $after->clone->add( years => 1 )->subtract( days => 1 ) ;
+      $after = $after->subtract( years => 1 )->truncate( to => 'year' );
+      $before = $after->clone->add( years => 1 )->subtract( days => 1 );
+   }
+   elsif ($period eq 'one-month') {
+      $before = $after->clone->add( months => 1 )->subtract( days => 1 );
    }
    elsif ($period eq 'rolling-month') {
       $after = $after->subtract( months => 1 );
@@ -226,9 +231,9 @@ my $_get_bucket = sub {
 my $_get_date_function = sub {
    my ($req, $opts) = @_; weaken $req;
 
-   my $after = $opts->{after};
+   my $after  = $opts->{after};
    my $before = $opts->{before};
-   my $drtn = local_dt( $after )->delta_md( local_dt $before );
+   my $drtn   = local_dt( $after )->delta_md( local_dt $before );
 
    if ($drtn->years > 2 or ($drtn->years == 2
        and ($drtn->months > 0 or $drtn->weeks > 0 or $drtn->days > 0))) {
@@ -328,16 +333,28 @@ my $_link_args = sub {
    return [ $name, $from->ymd, $to->ymd ];
 };
 
+my $_mileage_columns = sub {
+   return qw( last_fueled current_miles next_service_due next_service_miles
+              miles_to_next_service weeks_to_next_service tax_due mot_due
+              insurance_due front_tyre_miles front_tyre_life
+              miles_to_new_front_tyre rear_tyre_miles
+              rear_tyre_life miles_to_new_rear_tyre );
+};
+
+my $_mileage_headers = sub {
+   return [ map { { value => $_ } } 'vehicle', $_mileage_columns->() ];
+};
+
 my $_onchange_submit = sub {
    my ($page, $k) = @_;
 
    p_js $page, js_submit_config $k,
-      'change', 'submitForm', [ 'date_control', 'date-control' ];
+      'change', 'submitForm', [ 'date_filter', 'date-filter' ];
 
    return;
 };
 
-my $_push_date_controls = sub {
+my $_add_date_filter = sub {
    my ($page, $opts) = @_; my $form = $page->{forms}->[ 0 ];
 
    p_date $form, 'after_date', $opts->{after}, {
@@ -354,6 +371,19 @@ my $_push_date_controls = sub {
       class => 'narrow-field submit', id => 'period', label_class => 'right',
       label_field_class => 'control-label' };
    $_onchange_submit->( $page, 'period' );
+
+   return;
+};
+
+my $_add_date_selector = sub {
+   my ($page, $opts) = @_; my $form = $page->{forms}->[ 0 ];
+
+   p_date   $form, 'after_date', $opts->{after}, {
+      class => 'date-field submit', label_field_class => 'control-label' };
+   p_hidden $form, 'prev_after_date', $opts->{after};
+   $_onchange_submit->( $page, 'after_date' );
+
+   p_hidden $form, 'display_period', 'one-month';
 
    return;
 };
@@ -609,15 +639,24 @@ my $_get_expected = sub {
 my $_get_period_options = sub {
    my ($self, $req, $pos, $opts) = @_; $pos //= 1; $opts //= {};
 
-   my $now = now_dt;
-   my $after = $req->uri_params->( $pos, { optional => TRUE } )
-      // local_dt( $now )->truncate( to => 'year' )->ymd;
-   my $before = $req->uri_params->( $pos + 1, { optional => TRUE } )
-      // local_dt( $now )->subtract( days => 1 )->ymd;
+   my $now    = now_dt;
+   my $after  = $req->uri_params->(   $pos,     { optional => TRUE } );
+   my $before = $req->uri_params->(   $pos + 1, { optional => TRUE } );
+   my $period = $req->query_params->( 'period', { optional => TRUE } );
 
-   $opts->{after} = to_dt $after; $opts->{before} = to_dt $before;
-   $opts->{period} = $req->query_params->( 'period', { optional => TRUE } );
+   if ($period and not $after and not $before) {
+      ($after, $before) = $_expand_range->( $period );
+   }
+   elsif ($period and $after and not $before) {
+      ($after, $before) = $_expand_range->( $period, local_dt to_dt $after );
+   }
 
+   $after  //= local_dt( $now )->truncate( to => 'year' )->ymd;
+   $before //= local_dt( $now )->subtract( days => 1 )->ymd;
+
+   $opts->{after } = to_dt $after;
+   $opts->{before} = to_dt $before;
+   $opts->{period} = $period;
    return $opts;
 };
 
@@ -655,6 +694,73 @@ my $_incidents_for_period = sub {
    }
 
    return $incidents;
+};
+
+my $_mileages_for_period = sub {
+   my ($self, $opts) = @_; my $mileages = [];
+
+   $opts = $_exclusive_date_range->( $opts );
+
+   my %mileages = ();
+   my $rs       = $self->schema->resultset( 'VehicleHistory' );
+   my $parser   = $self->schema->datetime_parser;
+   my $where    = { period_start => {
+      '>' => $parser->format_datetime( $opts->{after } ),
+      '<' => $parser->format_datetime( $opts->{before} ) } };
+
+   $opts = { order_by => { '-asc' => 'period_start' },
+             prefetch => [ 'vehicle' ] };
+
+   for my $history ($rs->search( $where, $opts )->all) {
+      $mileages{ $history->vehicle->label } = $history;
+   }
+
+   for my $label (sort keys %mileages) {
+      push @{ $mileages }, [ $label, $mileages{ $label } ];
+   }
+
+   return $mileages;
+};
+
+my $_mileage_row = sub {
+   my ($self, $req, $tuple) = @_; my $row = [];
+
+   p_item $row, $tuple->[ 0 ];
+
+   my $distance_factor = $self->config->distance_factor->[ 2 ];
+
+   for my $attr ($_mileage_columns->()) {
+      my $history = $tuple->[ 1 ];
+
+      if ($history->can( $attr )) {
+         my $v = $history->$attr();
+
+         if (blessed $v) { p_item $row, locd $req, local_dt $v }
+         else { p_item $row, $v }
+      }
+      else {
+         if ($attr eq 'miles_to_new_front_tyre') {
+            p_item $row, $history->front_tyre_life
+               + $history->front_tyre_miles - $history->current_miles;
+         }
+         elsif ($attr eq 'miles_to_new_rear_tyre') {
+            p_item $row, $history->rear_tyre_life
+               + $history->rear_tyre_miles - $history->current_miles;
+         }
+         elsif ($attr eq 'miles_to_next_service') {
+            p_item $row, $history->next_service_miles - $history->current_miles;
+         }
+         elsif ($attr eq 'weeks_to_next_service') {
+            my $v = $history->next_service_miles - $history->current_miles;
+
+            $v = int( 0.5 + 10 * $v * $distance_factor ) / 10;
+
+            p_item $row, $v;
+         }
+      }
+   }
+
+   return $row;
 };
 
 my $_people_meta_summary_table = sub {
@@ -700,18 +806,21 @@ my $_slots_row = sub {
 sub customers : Role(controller) {
    my ($self, $req) = @_;
 
-   my $actp = $self->moniker.'/controls';
-   my $opts = $self->$_get_period_options( $req, 0 );
-   my $href = $req->uri_for_action( $actp, [ 'customers' ] );
-   my $form = new_container 'date-control', $href, { class => 'wide-form' };
-   my $page = { forms => [ $form ], selected => 'customer_report',
-                title => locm $req, 'customer_report_title' };
+   my $actionp =  $self->moniker.'/controls';
+   my $opts    =  $self->$_get_period_options( $req, 0 );
+   my $href    =  $req->uri_for_action( $actionp, [ 'customers' ] );
+   my $form    =  new_container 'date-filter', $href, { class => 'wide-form' };
+   my $page    =  {
+      forms    => [ $form ],
+      selected => 'customer_report',
+      title    => locm $req, 'customer_report_title' };
 
-   $_push_date_controls->( $page, $opts );
+   $_add_date_filter->( $page, $opts );
 
-   my $data = $self->$_deliveries_by_customer( $opts );
-   my $headers = $_report_headers->( $req, 'customers', 4 );
-   my $table = $page->{content} = p_table $form, { headers => $headers };
+   my $data    =  $self->$_deliveries_by_customer( $opts );
+   my $headers =  $_report_headers->( $req, 'customers', 4 );
+   my $table   =  $page->{content} = p_table $form, { headers => $headers };
+
 
    p_row $table, [ map   { $_report_row->( $_->{customer}->name, $_, 3 ) }
                    map   { $data->{ $_ } }
@@ -725,22 +834,27 @@ sub customers : Role(controller) {
    return $self->get_stash( $req, $page );
 }
 
-sub date_control_action : Role(controller) Role(person_manager)
-                          Role(rota_manager) {
+sub date_filter_action : Role(controller) Role(person_manager)
+                         Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $report = $req->uri_params->( 0 );
-   my $arg1 = $req->uri_params->( 1, { optional => TRUE } );
-   my $args = []; $arg1 and push @{ $args }, $arg1;
-   my $after = $req->body_params->( 'after_date' );
-   my $before = $req->body_params->( 'before_date' );
-   my $prev_after = $req->body_params->( 'prev_after_date' );
-   my $prev_before = $req->body_params->( 'prev_before_date' );
-   my $period = $req->body_params->( 'display_period', { optional => TRUE } );
-   my $params = {};
+   my $opts        = { optional => TRUE };
+   my $report      = $req->uri_params->( 0 );
+   my $arg1        = $req->uri_params->( 1, $opts );
+   my $args        = []; $arg1 and push @{ $args }, $arg1;
+   my $after       = $req->body_params->( 'after_date' );
+   my $before      = $req->body_params->( 'before_date', $opts ) // NUL;
+   my $prev_after  = $req->body_params->( 'prev_after_date' );
+   my $prev_before = $req->body_params->( 'prev_before_date', $opts ) // NUL;
+   my $period      = $req->body_params->( 'display_period', $opts );
+   my $params      = {};
 
    if ($period and $after eq $prev_after and $before eq $prev_before) {
       ($after, $before) = $_expand_range->( $period );
+      $params->{period} = $period;
+   }
+   elsif ($period and $after ne $prev_after and not $before) {
+      ($after, $before) = $_expand_range->( $period, local_dt to_dt $after );
       $params->{period} = $period;
    }
 
@@ -759,12 +873,12 @@ sub deliveries : Role(controller) {
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options( $req, 0 );
    my $href = $req->uri_for_action( $actp, [ 'deliveries' ] );
-   my $form = new_container 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-filter', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
                 selected => 'delivery_report',
                 title => locm $req, 'delivery_report_title' };
 
-   $_push_date_controls->( $page, $opts );
+   $_add_date_filter->( $page, $opts );
 
    my $data = $self->$_deliveries_by_customer( $opts );
    my $headers = $_delivery_headers->( my $max_stages = $data->{_max_stages} );
@@ -790,12 +904,12 @@ sub incidents : Role(controller) {
    my $actp = $self->moniker.'/controls';
    my $opts = $self->$_get_period_options( $req, 0 );
    my $href = $req->uri_for_action( $actp, [ 'incidents' ] );
-   my $form = new_container 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-filter', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ],
                 selected => 'incident_report',
                 title => locm $req, 'incident_report_title', };
 
-   $_push_date_controls->( $page, $opts );
+   $_add_date_filter->( $page, $opts );
 
    my $headers = $_incident_headers->();
    my $incidents = $self->$_incidents_for_period( $opts );
@@ -814,6 +928,32 @@ sub incidents : Role(controller) {
    return $self->get_stash( $req, $page );
 }
 
+sub mileage : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $actionp =  $self->moniker.'/controls';
+   my $opts    =  $self->$_get_period_options( $req, 0 );
+   my $href    =  $req->uri_for_action( $actionp, [ 'mileage' ] );
+   my $form    =  new_container 'date-filter', $href, { class => 'wide-form' };
+   my $page    =  {
+      forms    => [ $form ],
+      selected => 'mileage_report',
+      title    => locm $req, 'mileage_report_title' };
+   my $headers =  $_mileage_headers->();
+   my $tuples  =  $self->$_mileages_for_period( $opts );
+   my @rows    =  map { $self->$_mileage_row( $req, $_ ) } @{ $tuples };
+   my $table   =  p_table {}, { class => 'embeded', headers => $headers };
+   my $links   =  $_dl_links->( $req, 'mileages', $opts );
+
+   $page->{content} = $table; $_add_date_selector->( $page, $opts );
+
+   p_row       $table, [ @rows ];
+   p_container $form,  $table, { class => 'wide-content' };
+   p_list      $form,  NUL, $links, link_options 'right';
+
+   return $self->get_stash( $req, $page );
+}
+
 sub people : Role(person_manager) {
    my ($self, $req) = @_;
 
@@ -821,11 +961,11 @@ sub people : Role(person_manager) {
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
    my $href = $req->uri_for_action( $actp, [ 'people', $opts->{rota_name} ] );
-   my $form = new_container 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-filter', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'people_report',
                 title => locm $req, 'people_report_title' };
 
-   $_push_date_controls->( $page, $opts );
+   $_add_date_filter->( $page, $opts );
 
    my $data = $self->$_counts_by_person( $opts );
    my $headers = $_report_headers->( $req, 'people', 5 );
@@ -851,11 +991,11 @@ sub people_meta : Role(person_manager) {
       ( $req, 1, $self->$_get_role_name( $req ) );
    my $name = $opts->{role_name};
    my $href = $req->uri_for_action( $actp, [ 'people_meta', $name ] );
-   my $form = new_container 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-filter', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'people_meta_report',
                 title => $_people_meta_report_title->( $req, $name ) };
 
-   $_push_date_controls->( $page, $opts );
+   $_add_date_filter->( $page, $opts );
 
    my $data = $self->$_counts_of_people( $req, $opts );
 
@@ -881,11 +1021,11 @@ sub slots : Role(rota_manager) {
       ( $req, 1, $self->$_get_rota_name( $req ) );
    my $name = $opts->{rota_name};
    my $href = $req->uri_for_action( $actp, [ 'slots', $name ] );
-   my $form = new_container 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-filter', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'slot_report',
                 title => locm $req, 'slot_report_title' };
 
-   $_push_date_controls->( $page, $opts );
+   $_add_date_filter->( $page, $opts );
 
    my $data = $self->$_counts_by_slot( $req, $opts );
    my $df = $_get_date_function->( $req, $opts );
@@ -911,11 +1051,11 @@ sub vehicles : Role(rota_manager) {
    my $opts = $self->$_get_period_options
       ( $req, 1, $self->$_get_rota_name( $req ) );
    my $href = $req->uri_for_action( $actp, [ 'vehicles', $opts->{rota_name} ] );
-   my $form = new_container 'date-control', $href, { class => 'wide-form' };
+   my $form = new_container 'date-filter', $href, { class => 'wide-form' };
    my $page = { forms => [ $form ], selected => 'vehicle_report',
                 title => locm $req, 'vehicle_report_title' };
 
-   $_push_date_controls->( $page, $opts );
+   $_add_date_filter->( $page, $opts );
 
    my $data = $self->$_counts_by_vehicle( $opts );
    my $headers = $_report_headers->( $req, 'vehicle', 4 );

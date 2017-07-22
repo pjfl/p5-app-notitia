@@ -1,5 +1,7 @@
 Revision history for App::Notitia
 
+          - Fixes #203. Vehicle mileage report
+          - Fixes #194. Additional service vehicle fields
           - Fixes #204. Allows multiple regions
           - Another patch for ColourNames
 

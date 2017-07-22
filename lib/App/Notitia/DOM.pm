@@ -3,7 +3,7 @@ package App::Notitia::DOM;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use App::Notitia::Util      qw( local_dt locm locd make_tip );
+use App::Notitia::Util      qw( local_dt locm locd make_tip natatime );
 use App::Notitia::Constants qw( FALSE HASH_CHAR NUL TRUE );
 use Class::Usul::Functions  qw( is_arrayref is_hashref throw );
 use Scalar::Util            qw( blessed );
@@ -106,12 +106,6 @@ my $_field_options = sub {
 
 my $_inline_args = sub {
    my $n = shift; return (map { $ARG_NAMES[ $_ ] => $_[ $_ ] } 0 .. $n - 1);
-};
-
-my $_natatime = sub {
-   my $n = shift; my @list = @_;
-
-   return sub { return $_[ 0 ] ? unshift @list, @_ : splice @list, 0, $n };
 };
 
 my $_parse_args = sub {
@@ -222,7 +216,7 @@ sub p_date ($@) {
 sub p_fields ($$$$$) {
    my ($f, $schema, $result, $src, $map) = @_;
 
-   my $iter = $_natatime->( 2, @{ $map } );
+   my $iter = natatime 2, @{ $map };
 
    while (my ($k, $opts) = $iter->()) {
       $opts or next; my $type = $opts->{type} // 'textfield';

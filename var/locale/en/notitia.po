@@ -1453,6 +1453,15 @@ msgstr "Add a mileage period record for another time period"
 msgid "mileage_period_edit_tip"
 msgstr "Edit this existing mileage period record"
 
+msgid "mileage_report_link"
+msgstr "Mileage Report"
+
+msgid "mileage_report_tip"
+msgstr "View a dump of the vehicle mileage history table"
+
+msgid "mileage_report_title"
+msgstr "Mileage Report"
+
 msgid "milk"
 msgstr "Milk"
 

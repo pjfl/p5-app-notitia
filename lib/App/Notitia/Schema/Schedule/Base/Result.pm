@@ -4,7 +4,7 @@ use strictures;
 use parent 'DBIx::Class::Core';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS NUL TRUE );
-use App::Notitia::Util      qw( assert_unique to_dt );
+use App::Notitia::Util      qw( assert_unique local_dt to_dt );
 use Class::Usul::Functions  qw( throw );
 use Data::Validation;
 use Unexpected::Functions   qw( VehicleAssigned );
@@ -97,7 +97,7 @@ sub shift_times {
    my $shift_times = $self->result_source->schema->config->shift_times;
    my $start_time  = $shift_times->{ "${shift_t}_start" };
    my $end_time    = $shift_times->{ "${shift_t}_end" };
-   my $local_dt    = $rota_dt->clone->set_time_zone( 'local' );
+   my $local_dt    = local_dt $rota_dt;
    my $shift_start = to_dt $local_dt->ymd." ${start_time}";
    my $shift_end   = to_dt $local_dt->ymd." ${end_time}";
 

@@ -153,7 +153,7 @@ has 'deflate_types'   => is => 'ro',   isa => ArrayRef[NonEmptySimpleStr],
 has 'description'     => is => 'ro',   isa => SimpleStr, default => NUL;
 
 has 'distance_factor' => is => 'ro',   isa => ArrayRef[Num],
-   builder            => sub { [ 5, 1.2 ] };
+   builder            => sub { [ 5, 1.2, 0.00278414 ] };
 
 has 'docs_root'       => is => 'lazy', isa => Directory, coerce => TRUE,
    builder            => sub { $_[ 0 ]->vardir->catdir( 'docs' ) };

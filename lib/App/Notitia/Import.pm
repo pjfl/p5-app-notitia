@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use App::Notitia::Constants qw( COMMA EXCEPTION_CLASS FALSE
                                 NUL OK QUOTED_RE SPC TRUE );
-use App::Notitia::Util      qw( new_request to_dt );
+use App::Notitia::Util      qw( natatime new_request to_dt );
 use Class::Usul::Functions  qw( create_token ensure_class_loaded
                                 io is_member squeeze throw trim );
 use Class::Usul::Types      qw( Bool HashRef Object );
@@ -50,18 +50,12 @@ my $_make_key_from = sub {
    my $x = shift; my $k = lc squeeze trim $x; $k =~ s{ [ \-] }{_}gmx; return $k;
 };
 
-my $_natatime = sub {
-   my $n = shift; my @list = @_;
-
-   return sub { return $_[ 0 ] ? unshift @list, @_ : splice @list, 0, $n };
-};
-
 my $_word_iter = sub {
    my ($n, $field) = @_; $field =~ s{[\(\)]}{\"}gmx;
 
    my $splitter = Data::Record->new( { split => SPC, unless => QUOTED_RE } );
 
-   return $_natatime->( $n, $splitter->records( $field ) );
+   return natatime $n, $splitter->records( $field );
 };
 
 # Private methods

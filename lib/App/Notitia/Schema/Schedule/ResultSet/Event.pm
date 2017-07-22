@@ -4,7 +4,7 @@ use strictures;
 use parent 'DBIx::Class::ResultSet';
 
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
-use App::Notitia::Util      qw( set_event_date set_rota_date );
+use App::Notitia::Util      qw( local_dt set_event_date set_rota_date );
 use Class::Usul::Functions  qw( is_member throw );
 
 # Private methods
@@ -96,7 +96,7 @@ sub has_events_for {
    set_rota_date $parser, $where, 'start_rota.date', $opts;
 
    for my $event ($self->search( $where, { prefetch => $prefetch } )->all) {
-      my $key = $event->start_date->set_time_zone( 'local' )->ymd;
+      my $key = local_dt( $event->start_date )->ymd;
 
       $has_event->{ $key } //= []; push @{ $has_event->{ $key } }, $event;
    }

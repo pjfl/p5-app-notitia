@@ -37,7 +37,7 @@ our @EXPORT_OK = qw( action_for_uri action_path2uri action_path_uri_map
                      js_window_config lcm_for link_options load_file_data loc
                      local_dt localise_tree locd locm mail_domain make_id_from
                      make_name_from make_tip management_link month_label mtime
-                     new_request new_salt now_dt page_link_set
+                     natatime new_request new_salt now_dt page_link_set
                      register_action_paths set_element_focus set_event_date
                      set_last_modified_header set_rota_date slot_claimed
                      slot_identifier slot_limit_index show_node stash_functions
@@ -843,6 +843,12 @@ sub mtime ($) {
    return $_[ 0 ]->{tree}->{_mtime};
 }
 
+sub natatime ($@) {
+   my $n = shift; my @list = @_;
+
+   return sub { return $_[ 0 ] ? unshift @list, @_ : splice @list, 0, $n };
+}
+
 sub new_request ($) {
    my $args         = shift; ensure_class_loaded 'Web::ComposableRequest';
    my $buildargs    = sub {
@@ -1215,6 +1221,8 @@ LCM for a list of integers
 =head2 C<month_label>
 
 =head2 C<mtime>
+
+=head2 C<natatime>
 
 =head2 C<new_request>
 

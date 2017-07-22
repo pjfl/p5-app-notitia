@@ -17,18 +17,17 @@ my $_find_by_shortcode = sub {
 sub search_for_incidents {
    my ($self, $opts) = @_; $opts = { %{ $opts // () } };
 
+   my $parser = $self->result_source->schema->datetime_parser;
    my $scode = delete $opts->{controller};
    my $is_manager = delete $opts->{is_manager};
    my $where = {};
 
    unless ($is_manager) {
-      my $parser = $self->result_source->schema->datetime_parser;
-
       $where->{controller_id} = $self->$_find_by_shortcode( $scode )->id;
       $opts->{after} = now_dt->subtract( hours => 24 );
-      set_rota_date $parser, $where, 'raised', $opts;
    }
 
+   set_rota_date $parser, $where, 'raised', $opts;
    $opts->{prefetch} //= [ 'controller', 'category' ];
 
    return $self->search( $where, $opts );
