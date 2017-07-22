@@ -1224,6 +1224,8 @@ LCM for a list of integers
 
 =head2 C<natatime>
 
+Process a list C<n> elements at a time
+
 =head2 C<new_request>
 
 =head2 C<new_salt>
