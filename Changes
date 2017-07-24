@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes #200. Can update vehicle request via my slots
           - Fixes #203. Vehicle mileage report
           - Fixes #194. Additional service vehicle fields
           - Fixes #204. Allows multiple regions

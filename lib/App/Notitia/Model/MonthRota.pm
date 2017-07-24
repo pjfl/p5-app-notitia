@@ -4,12 +4,13 @@ use namespace::autoclean;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( FALSE NUL PIPE_SEP SHIFT_TYPE_ENUM SPC TRUE );
-use App::Notitia::DOM       qw( new_container p_cell p_js p_link p_list p_row
-                                p_table p_tag );
+use App::Notitia::DOM       qw( new_container p_button p_cell p_item p_js p_link
+                                p_list p_row p_table p_tag );
 use App::Notitia::Util      qw( contrast_colour dialog_anchor display_duration
-                                js_server_config js_submit_config lcm_for
-                                link_options local_dt locm now_dt
-                                register_action_paths slot_limit_index to_dt );
+                                find_slot js_server_config js_submit_config
+                                lcm_for link_options local_dt locm make_tip
+                                now_dt register_action_paths slot_limit_index
+                                to_dt to_msg );
 use Class::Usul::Functions  qw( sum );
 use Class::Usul::Time       qw( time2str );
 use Moo;
@@ -167,20 +168,7 @@ my $_user_events_row = sub {
 my $_user_slots_headers = sub {
    my $req = shift;
 
-   return [ map { { value => locm $req, "user_slots_heading_${_}" } } 0 .. 0 ];
-};
-
-my $_user_slots_row = sub {
-   my ($req, $rota_name, $slot) = @_; my $cell = {};
-
-   my $date = local_dt( $slot->start_date )->ymd;
-   my $href = $req->uri_for_action( 'day/day_rota', [ $rota_name, $date ] );
-   my $tip  = locm $req, 'user_slots_row_link_tip';
-
-   p_link $cell, 'slot_'.$slot->key, $href, {
-      request => $req, tip => $tip, value => $slot->label( $req ) };
-
-   return [ $cell ];
+   return [ map { { value => locm $req, "user_slots_heading_${_}" } } 0 .. 1 ];
 };
 
 # Private methods
@@ -392,6 +380,36 @@ my $_slot_assignments = sub {
    return $data;
 };
 
+my $_user_slots_row = sub {
+   my ($self, $req, $rota_name, $slot) = @_; my $row = [];
+
+   my $ymd  = local_dt( $slot->start_date )->ymd;
+   my $href = $req->uri_for_action( 'day/day_rota', [ $rota_name, $ymd ] );
+   my $tip  = locm $req, 'user_slots_row_link_tip';
+   my $cell = {};
+
+   p_link $cell, 'slot_'.$slot->key, $href, {
+      request => $req, tip => $tip, value => $slot->label( $req ) };
+
+   push @{ $row }, $cell;
+
+   my $actionp = $self->moniker.'/user_slots';
+
+   $href = $req->uri_for_action( $actionp, [ $rota_name, $ymd, $slot->key ] );
+
+   my $form   = new_container 'vehicle-request', $href;
+   my $action = $slot->vehicle_requested ? 'unrequest' : 'request';
+
+   p_button $form, "${action}_slot_vehicle", "${action}_vehicle", {
+      class   => 'save-button',
+      request => $req,
+      tip     => make_tip $req, "${action}_slot_vehicle_tip", [] };
+
+   $cell = p_item $row, $form; $cell->{class} = 'embeded';
+
+   return $row;
+};
+
 # Public methods
 sub assign_summary : Dialog Role(any) {
    my ($self, $req) = @_;
@@ -491,6 +509,48 @@ sub month_rota : Role(any) {
    return $self->get_stash( $req, $page );
 }
 
+sub request_vehicle_action : Role(driver) Role(rider) {
+   my ($self, $req) = @_;
+
+   my $rota_name = $req->uri_params->( 0 );
+   my $rota_date = $req->uri_params->( 1 );
+   my $slot_key  = $req->uri_params->( 2 );
+   my $rota_dt   = to_dt $rota_date;
+   my $rs        = $self->schema->resultset( 'Person' );
+   my $person    = $rs->find_by_shortcode( $req->username );
+   my $slot      = find_slot $person, $rota_name, $rota_dt, $slot_key;
+
+   $slot->vehicle_requested( TRUE ); $slot->update;
+
+   my $actionp   = $self->moniker.'/month_rota';
+   my $location  = $req->uri_for_action( $actionp, [ $rota_name, $rota_date ] );
+   my $message   = [ to_msg 'Vehicle requested' ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
+sub unrequest_vehicle_action : Role(driver) Role(rider) {
+   my ($self, $req) = @_;
+
+   my $rota_name = $req->uri_params->( 0 );
+   my $rota_date = $req->uri_params->( 1 );
+   my $slot_key  = $req->uri_params->( 2 );
+   my $rota_dt   = to_dt $rota_date;
+   my $rs        = $self->schema->resultset( 'Person' );
+   my $person    = $rs->find_by_shortcode( $req->username );
+   my $slot      = find_slot $person, $rota_name, $rota_dt, $slot_key;
+
+   $slot->operator_vehicle->unassign_slot( $rota_name, $rota_dt, $slot_key );
+   $slot->vehicle_requested( FALSE );
+   $slot->update;
+
+   my $actionp   = $self->moniker.'/month_rota';
+   my $location  = $req->uri_for_action( $actionp, [ $rota_name, $rota_date ] );
+   my $message   = [ to_msg 'Vehicle request deleted' ];
+
+   return { redirect => { location => $location, message => $message } };
+}
+
 sub user_events : Dialog Role(any) {
    my ($self, $req) = @_;
 
@@ -508,26 +568,25 @@ sub user_events : Dialog Role(any) {
    return $stash;
 }
 
-sub user_slots : Dialog Role(rota_manager) Role(rider)
-                 Role(controller) Role(driver) {
+sub user_slots : Dialog Role(controller) Role(driver) Role(rider) {
    my ($self, $req) = @_;
 
    my $params    = $req->uri_params;
-   my $rota_name = $params->( 0, { optional => TRUE } ) // 'main';
-   my $rota_date = $params->( 1, { optional => TRUE } )
-                // local_dt( now_dt )->ymd;
+   my $rota_name = $params->( 0 );
+   my $now_ymd   = local_dt( now_dt )->ymd;
+   my $rota_date = $params->( 1, { optional => TRUE } ) // $now_ymd;
    my $rota_dt   = to_dt $rota_date;
    my $opts      = $self->$_month_rota_opts( $rota_name, $rota_dt );
 
    $opts->{operator} = $req->username;
 
    my $assigned = $self->$_slot_assignments( $opts );
-   my $stash = $self->dialog_stash( $req );
-   my $form = $stash->{page}->{forms}->[ 0 ] = new_container;
-   my $table = p_table $form, { headers => $_user_slots_headers->( $req ) };
+   my $stash    = $self->dialog_stash( $req );
+   my $form     = $stash->{page}->{forms}->[ 0 ] = new_container;
+   my $table    = p_table $form, { headers => $_user_slots_headers->( $req ) };
 
    for my $slot (map { $assigned->{ $_ }->{slot} } sort keys %{ $assigned }) {
-      p_row $table, $_user_slots_row->( $req, $rota_name, $slot );
+      p_row $table, $self->$_user_slots_row( $req, $rota_name, $slot );
    }
 
    return $stash;

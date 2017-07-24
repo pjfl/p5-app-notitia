@@ -2060,6 +2060,12 @@ msgstr "Reset Password Request"
 msgid "request_service_vehicle"
 msgstr "Do you want a vehicle?"
 
+msgid "request_slot_vehicle"
+msgstr "Request Vehicle"
+
+msgid "request_slot_vehicle_tip"
+msgstr "Request a vehicle to use for this shift"
+
 msgid "request_vehicle"
 msgstr "Request Vehicles"
 
@@ -2520,6 +2526,12 @@ msgstr "Cancel participation in the [_1] event"
 msgid "unparticipate_tip"
 msgstr "Cancel participation in the [_1] event"
 
+msgid "unrequest_slot_vehicle"
+msgstr "Delete Request"
+
+msgid "unrequest_slot_vehicle_tip"
+msgstr "Delete the request for a vehicle to use on this shift"
+
 msgid "unsubscribe_email"
 msgstr "Unsubscribe"
 
@@ -2663,6 +2675,9 @@ msgstr "User Forms"
 
 msgid "user_slots_heading_0"
 msgstr "Slot Link"
+
+msgid "user_slots_heading_1"
+msgstr "Vehicle Request"
 
 msgid "user_slots_link"
 msgstr "My Slots"

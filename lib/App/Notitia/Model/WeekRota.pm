@@ -970,25 +970,17 @@ my $_allocation_page = sub {
 };
 
 my $_find_event_or_slot = sub {
-   my ($self, $req, $is_slot, $args) = @_; my $object;
-
-   my $schema = $self->schema;
+   my ($self, $req, $is_slot, $args) = @_; my $schema = $self->schema;
 
    if ($is_slot) {
-      my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $args->[ 2 ], 3;
-
       my $rs     = $schema->resultset( 'Person' );
       my $person = $rs->find_by_shortcode( $req->username );
-      my $shift  = $person->find_shift
-         ( $args->[ 0 ], to_dt( $args->[ 1 ] ), $shift_type );
+      my $dt     = to_dt $args->[ 1 ];
 
-      $object = $person->find_slot( $shift, $slot_type, $subslot );
-   }
-   else {
-      $object = $schema->resultset( 'Event' )->find_event_by( $args->[ 0 ] );
+      return find_shift $person, $args->[ 0 ], $dt, $args->[ 2 ];
    }
 
-   return $object;
+   return $schema->resultset( 'Event' )->find_event_by( $args->[ 0 ] );
 };
 
 my $_get_all_the_data = sub {

@@ -7,10 +7,11 @@ use App::Notitia::Constants qw( C_DIALOG FALSE NUL SPC
                                 SHIFT_TYPE_ENUM TILDE TRUE );
 use App::Notitia::DOM       qw( new_container p_button p_checkbox p_hidden
                                 p_js p_link p_select );
-use App::Notitia::Util      qw( assign_link dialog_anchor js_submit_config
-                                js_togglers_config local_dt locm make_tip
-                                now_dt register_action_paths slot_claimed
-                                slot_identifier slot_limit_index to_dt to_msg );
+use App::Notitia::Util      qw( assign_link dialog_anchor find_slot
+                                js_submit_config js_togglers_config local_dt
+                                locm make_tip now_dt register_action_paths
+                                slot_claimed slot_identifier slot_limit_index
+                                to_dt to_msg );
 use Class::Usul::Functions  qw( create_token is_member throw );
 use Class::Usul::Time       qw( time2str );
 use Moo;
@@ -424,22 +425,11 @@ my $_find_rota_type = sub {
    return $_[ 0 ]->schema->resultset( 'Type' )->find_rota_by( $_[ 1 ] );
 };
 
-my $_find_slot = sub {
-   my ($result, $rota_name, $date, $slot_name) = @_;
-
-   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
-
-   my $shift = $result->find_shift( $rota_name, $date, $shift_type );
-   my $slot  = $result->find_slot( $shift, $slot_type, $subslot );
-
-   return $slot;
-};
-
 my $_push_vehicle_select = sub {
    my ($self, $req, $form, $id, $person, $args) = @_;
 
    my $rota_dt = to_dt $args->[ 1 ];
-   my $slot = $_find_slot->( $person, $args->[ 0 ], $rota_dt, $args->[ 2 ] );
+   my $slot = find_slot $person, $args->[ 0 ], $rota_dt, $args->[ 2 ];
    my $vehicle_id = $slot ? $slot->operator_vehicle_id : undef;
    my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
    my $vehicle = $vehicle_id ? $vehicle_rs->find( $vehicle_id ) : NUL;
@@ -645,7 +635,7 @@ sub yield_slot_action : Role(rota_manager) Role(rider) Role(controller)
    my $slot_name = $params->( 2 );
    my $rota_dt   = to_dt $rota_date;
    my $user      = $self->$_find_by_shortcode( $req->username );
-   my $slot      = $_find_slot->( $user, $rota_name, $rota_dt, $slot_name );
+   my $slot      = find_slot $user, $rota_name, $rota_dt, $slot_name;
    my $assignee  = $self->$_find_by_shortcode( $slot->operator );
 
    $user->yield_slot( $rota_name, $rota_dt, $slot_name );

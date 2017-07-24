@@ -30,18 +30,19 @@ our @EXPORT_OK = qw( action_for_uri action_path2uri action_path_uri_map
                      check_field_js check_form_field clone contrast_colour
                      crow2road csrf_token datetime_label dialog_anchor
                      display_duration encrypted_attr enhance event_actions
-                     event_handler event_handler_cache event_streams from_json
-                     get_hashed_pw get_salt is_access_authorised is_draft
-                     is_encrypted iterator js_rotate_config js_slider_config
-                     js_server_config js_submit_config js_togglers_config
-                     js_window_config lcm_for link_options load_file_data loc
-                     local_dt localise_tree locd locm mail_domain make_id_from
-                     make_name_from make_tip management_link month_label mtime
-                     natatime new_request new_salt now_dt page_link_set
-                     register_action_paths set_element_focus set_event_date
-                     set_last_modified_header set_rota_date slot_claimed
-                     slot_identifier slot_limit_index show_node stash_functions
-                     time2int to_dt to_json to_msg );
+                     event_handler event_handler_cache event_streams find_slot
+                     from_json get_hashed_pw get_salt is_access_authorised
+                     is_draft is_encrypted iterator js_rotate_config
+                     js_slider_config js_server_config js_submit_config
+                     js_togglers_config js_window_config lcm_for link_options
+                     load_file_data loc local_dt localise_tree locd locm
+                     mail_domain make_id_from make_name_from make_tip
+                     management_link month_label mtime natatime new_request
+                     new_salt now_dt page_link_set register_action_paths
+                     set_element_focus set_event_date set_last_modified_header
+                     set_rota_date slot_claimed slot_identifier
+                     slot_limit_index show_node stash_functions time2int to_dt
+                     to_json to_msg );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -577,6 +578,17 @@ sub event_handler_cache () {
 
 sub event_streams () {
    return sort keys %{ $handler_cache };
+}
+
+sub find_slot ($$$$) {
+   my ($result, $rota_name, $date, $slot_name) = @_;
+
+   my ($shift_type, $slot_type, $subslot) = split m{ _ }mx, $slot_name, 3;
+
+   my $shift = $result->find_shift( $rota_name, $date, $shift_type );
+   my $slot  = $result->find_slot( $shift, $slot_type, $subslot );
+
+   return $slot;
 }
 
 sub from_json ($) {
@@ -1155,6 +1167,8 @@ Defines no attributes
 =head2 C<event_handler_cache>
 
 =head2 C<event_streams>
+
+=head2 C<find_slot>
 
 =head2 C<from_json>
 

@@ -4,7 +4,7 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Schedule::Base::Result';
 
-use App::Notitia::Constants qw( FALSE SLOT_TYPE_ENUM TRUE );
+use App::Notitia::Constants qw( FALSE SLOT_TYPE_ENUM SPC TRUE );
 use App::Notitia::DataTypes qw( bool_data_type enumerated_data_type
                                 foreign_key_data_type
                                 nullable_foreign_key_data_type
@@ -77,7 +77,7 @@ sub key {
 sub label {
    my ($self, $req) = @_;
 
-   return locm( $req, $self->key ).' ('.locd( $req, $self->date ).')';
+   return locd( $req, $self->date ).SPC.locm( $req, $self->key );
 }
 
 sub start_date {
