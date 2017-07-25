@@ -464,8 +464,8 @@ my $_counts_by_person = sub {
    $opts = $_exclusive_date_range->( $opts ); delete $opts->{rota_name};
 
    my $slot_rs = $self->schema->resultset( 'Slot' );
-   my $participent_rs = $self->schema->resultset( 'Participent' );
-   my $attendees = $participent_rs->search_for_attendees( $opts );
+   my $participant_rs = $self->schema->resultset( 'Participent' );
+   my $attendees = $participant_rs->search_for_attendees( $opts );
    my $data = {};
 
    for my $slot ($slot_rs->search_for_slots( $opts )->all) {

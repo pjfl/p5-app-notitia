@@ -1441,9 +1441,6 @@ msgstr "Welcome to [_1]"
 msgid "max_participents"
 msgstr "Max. Participants"
 
-msgid "max_participents"
-msgstr "Max. Participants"
-
 msgid "mileage_period_create_link"
 msgstr "Add Period"
 
@@ -1717,25 +1714,25 @@ msgstr "Participate"
 msgid "participate_event_tip"
 msgstr "Participate in the [_1] event"
 
-msgid "participents_heading_0"
+msgid "participants_heading_0"
 msgstr "People"
 
-msgid "participents_heading_1"
+msgid "participants_heading_1"
 msgstr "View"
 
-msgid "participents_heading_2"
+msgid "participants_heading_2"
 msgstr "Unparticipate"
 
-msgid "participents_management_heading"
+msgid "participants_management_heading"
 msgstr "[_1] Participants"
 
-msgid "participents_management_link"
+msgid "participants_management_link"
 msgstr "Participants"
 
-msgid "participents_management_tip"
+msgid "participants_management_tip"
 msgstr "View the participants in the [_1] event"
 
-msgid "participents_view_link"
+msgid "participants_view_link"
 msgstr "Click to view the [_1] event participants"
 
 msgid "password"

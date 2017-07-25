@@ -99,7 +99,7 @@ sub list_all_people {
    return [ map { $_person_tuple->( $_, $opts->{fields} ) } $people->all ];
 }
 
-sub list_participents {
+sub list_participants {
    my ($self, $event, $opts) = @_; $opts = { %{ $opts // {} } };
 
    my $fields  = delete $opts->{fields} // {};

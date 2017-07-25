@@ -129,16 +129,16 @@ my $_operators_vehicle_link = sub {
    return $vehicle_link;
 };
 
-my $_participents_link = sub {
+my $_participants_link = sub {
    my ($req, $page, $event) = @_; $event or return;
 
-   my $href = $req->uri_for_action( 'event/participents', [ $event->uri ] );
-   my $tip  = locm $req, 'participents_view_link', $event->label;
+   my $href = $req->uri_for_action( 'event/participants', [ $event->uri ] );
+   my $tip  = locm $req, 'participants_view_link', $event->label;
 
    return { class   => 'narrow',
             colspan => 1,
             value   => { class => 'list-icon', hint => locm( $req, 'Hint' ),
-                         href  => $href,       name => 'view-participents',
+                         href  => $href,       name => 'view-participants',
                          tip   => $tip,        type => 'link',
                          value => '&nbsp;', } };
 };
@@ -321,7 +321,7 @@ my $_events = sub {
    while (defined (my $event = $todays_events->next) or $first) {
       my $col2 = $_vehicle_request_link->( $req, $page, $schema, $event );
       my $col3 = $_event_link->( $req, $page, $local_dt, $event );
-      my $col4 = $_participents_link->( $req, $page, $event );
+      my $col4 = $_participants_link->( $req, $page, $event );
       my $cols = [ $col1, $col2, $col3 ];
 
       $col4 and push @{ $cols }, $col4;

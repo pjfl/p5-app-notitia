@@ -107,14 +107,14 @@ my $_list_from_stash = sub {
    return $person_rs->list_all_people( $opts );
 };
 
-my $_list_participents = sub {
+my $_list_participants = sub {
    my $self  = shift;
    my $uri   = $self->options->{event};
    my $event = $self->schema->resultset( 'Event' )->find_event_by( $uri );
    my $opts  = { columns => [ 'email_address', 'mobile_phone' ] };
    my $rs    = $self->schema->resultset( 'Person' );
 
-   return $rs->list_participents( $event, $opts );
+   return $rs->list_participants( $event, $opts );
 };
 
 my $_list_people = sub {
@@ -447,7 +447,7 @@ sub send_message : method {
 
    my $attaches = $self->$_qualify_assets( delete $stash->{attachments} );
    my $tuples   = $opts->{stash}      ? $self->$_list_from_stash( $stash )
-                : $opts->{event}      ? $self->$_list_participents
+                : $opts->{event}      ? $self->$_list_participants
                 : $opts->{recipients} ? $self->$_list_recipients
                                       : $self->$_list_people;
 

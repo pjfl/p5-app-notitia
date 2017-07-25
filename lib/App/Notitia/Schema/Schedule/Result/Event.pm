@@ -116,7 +116,7 @@ sub add_trainer {
    return $self->create_related( 'trainers', { trainer_id => $trainer->id } );
 }
 
-sub count_of_participents {
+sub count_of_participants {
    my $self = shift;
    my $rs   = $self->result_source->schema->resultset( 'Participent' );
 

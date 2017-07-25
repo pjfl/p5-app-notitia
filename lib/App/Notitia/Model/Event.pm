@@ -32,7 +32,7 @@ register_action_paths
    'event/events'         => 'events',
    'event/message'        => 'message-participants',
    'event/participate'    => 'participate',
-   'event/participents'   => 'participants',
+   'event/participants'   => 'participants',
    'event/training_event' => 'training-event',
    'event/vehicle_event'  => 'vehicle-event',
    'event/vehicle_info'   => 'vehicle-event-info';
@@ -111,7 +111,7 @@ my $_add_participate_button = sub {
 
    my $text; $action eq 'participate'
       and $event->max_participents
-      and $event->count_of_participents >= $event->max_participents
+      and $event->count_of_participants >= $event->max_participents
       and $text = locm $req, 'Maximum number of paticipants reached'
       and p_text $form, 'info', $text, $t_opts
       and return;
@@ -143,17 +143,17 @@ my $_add_participate_button = sub {
    return;
 };
 
-my $_participent_headers = sub {
-   return [ map { { value => loc( $_[ 0 ], "participents_heading_${_}" ) } }
+my $_participant_headers = sub {
+   return [ map { { value => loc( $_[ 0 ], "participants_heading_${_}" ) } }
             0 .. 2 ];
 };
 
-my $_participents_title = sub {
+my $_participants_title = sub {
    my ($req, $event) = @_; my $name = $event->name;
 
    my $label = $event->event_type eq 'training' ? locm $req, lc $name : $name;
 
-   return locm $req, 'participents_management_heading', $label;
+   return locm $req, 'participants_management_heading', $label;
 };
 
 my $_vehicle_events_uri = sub {
@@ -206,7 +206,7 @@ my $_event_links = sub {
       tip      => locm( $req, 'event_management_tip', $uri ),
       value    => $event->label };
 
-   my @actions = qw( event/participents
+   my @actions = qw( event/participants
                      asset/request_vehicle event/event_summary );
 
    for my $actionp (@actions) {
@@ -257,7 +257,7 @@ my $_unparticipate_allowed = sub {
    return FALSE;
 };
 
-my $_participent_links = sub {
+my $_participant_links = sub {
    my ($self, $req, $page, $event, $tuple) = @_;
 
    my $name = $tuple->[ 1 ]->shortcode; my $disabled = $page->{disabled};
@@ -272,11 +272,11 @@ my $_participent_links = sub {
      ];
 };
 
-my $_participent_ops_links = sub {
+my $_participant_ops_links = sub {
    my ($self, $req, $page, $params) = @_; my $links = [];
 
    my $href = $req->uri_for_action( $self->moniker.'/message', [], $params );
-   my $name = 'message_participents';
+   my $name = 'message_participants';
 
    $self->message_link( $req, $page, $href, $name, $links );
 
@@ -741,7 +741,7 @@ sub participate_event_action : Role(any) {
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_by_shortcode( $req->username );
 
-   $person->add_participent_for( $uri );
+   $person->add_participant_for( $uri );
 
    my $actionp   = $self->moniker.'/event_summary';
    my $location  = $req->uri_for_action( $actionp, [ $uri ] );
@@ -752,7 +752,7 @@ sub participate_event_action : Role(any) {
    return { redirect => { location => $location, message => $message } };
 }
 
-sub participents : Role(any) {
+sub participants : Role(any) {
    my ($self, $req) = @_;
 
    my $uri       =  $req->uri_params->( 0 );
@@ -760,26 +760,26 @@ sub participents : Role(any) {
    my $event     =  $schema->resultset( 'Event' )->find_event_by( $uri );
    my $disabled  =  now_dt > $event->start_date ? TRUE : FALSE;
    my $params    =  { event => $uri };
-   my $actionp   =  $self->moniker.'/participents';
+   my $actionp   =  $self->moniker.'/participants';
    my $href      =  $req->uri_for_action( $actionp, [ $uri ], $params );
-   my $form      =  new_container 'message-participents', $href, {
-      class      => 'wider-table', id => 'message-participents' };
+   my $form      =  new_container 'message-participants', $href, {
+      class      => 'wider-table', id => 'message-participants' };
    my $page      =  {
       disabled   => $disabled,
       forms      => [ $form ],
       selected   => $event->event_type eq 'training' ? 'training_events'
                  :  $disabled ? 'previous_events'
                  :  'current_events',
-      title      => $_participents_title->( $req, $event ) };
-   my $links     =  $self->$_participent_ops_links( $req, $page, $params );
+      title      => $_participants_title->( $req, $event ) };
+   my $links     =  $self->$_participant_ops_links( $req, $page, $params );
 
    p_list $form, PIPE_SEP, $links, link_options 'right';
 
-   my $table = p_table $form, { headers => $_participent_headers->( $req ) };
+   my $table = p_table $form, { headers => $_participant_headers->( $req ) };
    my $person_rs = $schema->resultset( 'Person' );
 
-   p_row $table, [ map { $self->$_participent_links( $req, $page, $event, $_ ) }
-                      @{ $person_rs->list_participents( $event ) } ];
+   p_row $table, [ map { $self->$_participant_links( $req, $page, $event, $_ ) }
+                      @{ $person_rs->list_participants( $event ) } ];
 
    my $person = $person_rs->find_by_shortcode( $req->username );
 
@@ -826,7 +826,7 @@ sub unparticipate_event_action : Role(any) {
    my $person_rs = $self->schema->resultset( 'Person' );
    my $person    = $person_rs->find_by_shortcode( $user );
 
-   $person->delete_participent_for( $uri );
+   $person->delete_participant_for( $uri );
 
    my $who       = $person->label;
    my $actionp   = $self->moniker.'/event_summary';

@@ -100,7 +100,7 @@ my $_event_links = sub {
 
    p_link $cell, 'training_event', $href, { value => $value };
 
-   my @actions = qw( event/participents event/event_summary );
+   my @actions = qw( event/participants event/event_summary );
 
    for my $actionp (@actions) {
       p_item $links, management_link $req, $actionp, $uri;
