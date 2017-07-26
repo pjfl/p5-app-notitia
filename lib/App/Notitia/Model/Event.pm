@@ -33,6 +33,7 @@ register_action_paths
    'event/message'        => 'message-participants',
    'event/participate'    => 'participate',
    'event/participants'   => 'participants',
+   'event/press_gang'     => 'press-gang',
    'event/training_event' => 'training-event',
    'event/vehicle_event'  => 'vehicle-event',
    'event/vehicle_info'   => 'vehicle-event-info';
@@ -275,7 +276,12 @@ my $_participant_links = sub {
 my $_participant_ops_links = sub {
    my ($self, $req, $page, $params) = @_; my $links = [];
 
-   my $href = $req->uri_for_action( $self->moniker.'/message', [], $params );
+   my $actionp = $self->moniker.'/press_gang';
+   my $href    = $req->uri_for_action( $actionp, [ $params->{event} ] );
+
+   p_link $links, 'press-gang', $href;
+
+   $href = $req->uri_for_action( $self->moniker.'/message', [], $params );
    my $name = 'message_participants';
 
    $self->message_link( $req, $page, $href, $name, $links );
@@ -785,6 +791,16 @@ sub participants : Role(any) {
 
    $_add_participate_button->( $req, $form, $event, $person );
 
+   return $self->get_stash( $req, $page );
+}
+
+sub press_gang : Role(event_manager) {
+   my ($self, $req) = @_;
+
+   my $page = {
+      selected => 'current_events',
+      title => locm $req, 'press_gang_title'
+   };
    return $self->get_stash( $req, $page );
 }
 

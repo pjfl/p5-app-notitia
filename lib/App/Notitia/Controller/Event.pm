@@ -17,6 +17,7 @@ sub dispatch_request {
    sub (POST + /participants          + ?*) { [ 'event/from_request',    @_ ] },
    sub (POST + /participants/*        + ?*) { [ 'event/from_request',    @_ ] },
    sub (GET  + /participants/**       + ?*) { [ 'event/participants',    @_ ] },
+   sub (GET  + /press-gang/*          + ?*) { [ 'event/press_gang',      @_ ] },
    sub (GET  + /vehicle-event-info/*  + ?*) { [ 'event/vehicle_info',    @_ ] },
    sub (POST + /vehicle-event/**      + ?*) { [ 'event/from_request',    @_ ] },
    sub (POST + /vehicle-event/*       + ?*) { [ 'event/from_request',    @_ ] },
