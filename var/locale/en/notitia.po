@@ -1714,6 +1714,15 @@ msgstr "Participate"
 msgid "participate_event_tip"
 msgstr "Participate in the [_1] event"
 
+msgid "participate_multiple_event"
+msgstr "Participate"
+
+msgid "participate_multiple_event_tip"
+msgstr "Participate in the [_1] event"
+
+msgid "participants"
+msgstr "Participants"
+
 msgid "participants_heading_0"
 msgstr "People"
 
@@ -1929,6 +1938,15 @@ msgstr "Posts"
 
 msgid "posts_tip"
 msgstr "Posts about upcoming events"
+
+msgid "press_gang_link"
+msgstr "Press Gang"
+
+msgid "press_gang_tip"
+msgstr "Select people to participate in this event"
+
+msgid "press_gang_title"
+msgstr "Event Participation"
 
 msgid "previous_events_heading"
 msgstr "Previous Events"
@@ -2518,6 +2536,12 @@ msgid "unparticipate_event_link"
 msgstr "Unparticipate"
 
 msgid "unparticipate_event_tip"
+msgstr "Cancel participation in the [_1] event"
+
+msgid "unparticipate_multiple_event"
+msgstr "Unparticipate"
+
+msgid "unparticipate_multiple_event_tip"
 msgstr "Cancel participation in the [_1] event"
 
 msgid "unparticipate_tip"

@@ -2,15 +2,16 @@ package App::Notitia::Model::Event;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
-use App::Notitia::DOM       qw( new_container p_action p_button p_list p_fields
-                                p_item p_js p_link p_row p_table p_tag p_text
-                                p_textfield );
+use App::Notitia::DOM       qw( new_container f_tag p_action p_button
+                                p_container p_list p_fields p_item p_js p_link
+                                p_row p_select p_table p_tag p_text p_textfield
+                                );
 use App::Notitia::Util      qw( check_field_js datetime_label display_duration
                                 link_options loc local_dt locd locm
                                 make_tip management_link now_dt page_link_set
                                 register_action_paths to_dt to_msg );
 use Class::Null;
-use Class::Usul::Functions  qw( create_token is_member throw );
+use Class::Usul::Functions  qw( create_token is_arrayref is_member throw );
 use Class::Usul::Time       qw( time2str );
 use Try::Tiny;
 use Unexpected::Functions   qw( catch_class VehicleAssigned );
@@ -102,35 +103,43 @@ my $_event_ops_links = sub {
    return $links;
 };
 
-my $_add_participate_button = sub {
-   my ($req, $form, $event, $person) = @_;
+my $_p_training_event_status = sub {
+   my ($req, $form, $event, $person) = @_; my $text;
 
-   my $uri     = $event->uri;
-   my $action  = $person->is_participating_in( $uri, $event )
-               ? 'unparticipate' : 'participate';
-   my $t_opts  = { class => 'field-text right-last', label => NUL };
+   my $t_opts = { class => 'field-text right-last', label => NUL };
 
-   my $text; $action eq 'participate'
+   my $course; $person->is_enrolled_on( $event->course_type )
+      and $course = $person->assert_enrolled_on( $event->course_type );
+
+   not $course
+      and $text = locm $req, 'Not enrolled on this course'
+      and p_text $form, 'info', $text, $t_opts
+      and return TRUE;
+
+   $course->status ne 'enrolled'
+      and $text = locm $req, 'Current course status: [_1]', $course->status
+      and p_text $form, 'info', $text, $t_opts
+      and return TRUE;
+
+   return FALSE;
+};
+
+my $_p_action_button = sub {
+   my ($req, $form, $event, $action, $person) = @_;
+
+   my $t_opts = { class => 'field-text right-last', label => NUL };
+
+   my $text; $action =~ m{ \A participate }mx
       and $event->max_participents
       and $event->count_of_participants >= $event->max_participents
-      and $text = locm $req, 'Maximum number of paticipants reached'
+      and $text = locm $req, 'Maximum number of participants reached'
       and p_text $form, 'info', $text, $t_opts
       and return;
 
-   if ($action eq 'participate' and $event->event_type eq 'training') {
-      my $course; $person->is_enrolled_on( $event->course_type )
-         and $course = $person->assert_enrolled_on( $event->course_type );
-
-      not $course
-         and $text = locm $req, 'Not enrolled on this course'
-         and p_text $form, 'info', $text, $t_opts
-         and return;
-
-      $course->status ne 'enrolled'
-         and $text = locm $req, 'Current course status: [_1]', $course->status
-         and p_text $form, 'info', $text, $t_opts
-         and return;
-   }
+   $action =~ m{ \A participate }mx
+      and $event->event_type eq 'training'
+      and $_p_training_event_status->( $req, $form, $event, $person )
+      and return;
 
    now_dt > $event->start_date
       and $text = locm $req, 'This event has already happened'
@@ -139,7 +148,19 @@ my $_add_participate_button = sub {
 
    p_button $form, "${action}_event", "${action}_event", {
       class => 'save-button', container_class => 'right-last',
-      tip => make_tip( $req, "${action}_event_tip", [ $uri ] ) };
+      tip => make_tip( $req, "${action}_event_tip", [ $event->uri ] ) };
+
+   return;
+};
+
+my $_add_participate_button = sub {
+   my ($req, $form, $event, $person) = @_;
+
+   my $uri     = $event->uri;
+   my $action  = $person->is_participating_in( $uri, $event )
+               ? 'unparticipate' : 'participate';
+
+   $_p_action_button->( $req, $form, $event, $action, $person );
 
    return;
 };
@@ -155,6 +176,10 @@ my $_participants_title = sub {
    my $label = $event->event_type eq 'training' ? locm $req, lc $name : $name;
 
    return locm $req, 'participants_management_heading', $label;
+};
+
+my $_subtract = sub {
+   return [ grep { is_arrayref $_ or not is_member $_, $_[ 1 ] } @{ $_[ 0 ] } ];
 };
 
 my $_vehicle_events_uri = sub {
@@ -197,10 +222,11 @@ my $_bind_owner = sub {
 my $_event_links = sub {
    my ($self, $req, $event) = @_; my $links = [];
 
-   my $uri     = $event->uri;
-   my $actionp = $self->moniker.'/event';
-   my $params  = $req->query_params->( { optional => TRUE } );
-   my $href    = $req->uri_for_action( $actionp, [ $uri ], $params );
+   my $uri      = $event->uri;
+   my $optional = { optional => TRUE };
+   my $actionp  = $self->moniker.'/event';
+   my $params   = $req->query_params->( $optional ); delete $params->{mid};
+   my $href     = $req->uri_for_action( $actionp, [ $uri ], $params );
 
    p_item $links, p_link {}, "${uri}-event", $href, {
       request  => $req,
@@ -249,13 +275,13 @@ my $_maybe_find_event = sub {
    return $schema->resultset( 'Event' )->find_event_by( $uri, $opts );
 };
 
-my $_unparticipate_allowed = sub {
+my $_unparticipate_not_allowed = sub {
    my ($req, $scode) = @_;
 
-   $scode eq $req->username and return TRUE;
-   is_member 'event_manager', $req->session->roles and return TRUE;
-   is_member 'training_manager', $req->session->roles and return TRUE;
-   return FALSE;
+   $scode eq $req->username and return FALSE;
+   is_member 'event_manager', $req->session->roles and return FALSE;
+   is_member 'training_manager', $req->session->roles and return FALSE;
+   return TRUE;
 };
 
 my $_participant_links = sub {
@@ -266,7 +292,7 @@ my $_participant_links = sub {
    return
    [ { value => $tuple->[ 0 ] },
      { value => management_link $req, 'person/person_summary', $name },
-     { value => ($disabled or not $_unparticipate_allowed->( $req, $name ))
+     { value => ($disabled or $_unparticipate_not_allowed->( $req, $name ))
               ? locm $req, 'Unparticipate'
               : management_link $req, 'event/event', 'unparticipate', {
                  args => [ $event->uri ], type => 'form_button' } }
@@ -276,15 +302,31 @@ my $_participant_links = sub {
 my $_participant_ops_links = sub {
    my ($self, $req, $page, $params) = @_; my $links = [];
 
-   my $actionp = $self->moniker.'/press_gang';
-   my $href    = $req->uri_for_action( $actionp, [ $params->{event} ] );
+   my $optional = { optional => TRUE };
+   my $actionp  = $self->moniker.'/press_gang';
+   my $query    = $req->query_params->( $optional ); delete $params->{mid};
+   my $href     = $req->uri_for_action( $actionp, [ $params->{event} ], $query);
 
-   p_link $links, 'press-gang', $href;
+   p_link $links, 'press_gang', $href, { request => $req };
 
-   $href = $req->uri_for_action( $self->moniker.'/message', [], $params );
    my $name = 'message_participants';
 
+   $href = $req->uri_for_action( $self->moniker.'/message', [], $params );
    $self->message_link( $req, $page, $href, $name, $links );
+
+   return $links;
+};
+
+my $_press_gang_ops_links = sub {
+   my ($self, $req, $page, $uri) = @_; my $links = [];
+
+   my $optional = { optional => TRUE };
+   my $actionp  = $self->moniker.'/participants';
+   my $params   = $req->query_params->( $optional ); delete $params->{mid};
+   my $href     = $req->uri_for_action( $actionp, [ $uri ], $params );
+
+   p_link $links, 'participants_management', $href, {
+      args => [ $uri ], request => $req };
 
    return $links;
 };
@@ -698,8 +740,8 @@ sub events : Role(any) {
    my ($self, $req) = @_;
 
    my $moniker   =  $self->moniker;
-   my $params    =  $req->query_params->( {
-      optional => TRUE } ); delete $params->{mid};
+   my $optional  =  { optional => TRUE };
+   my $params    =  $req->query_params->( $optional ); delete $params->{mid};
    my $after     =  $params->{after} ? to_dt $params->{after} : FALSE;
    my $before    =  $params->{before} ? to_dt $params->{before} : FALSE;
    my $opts      =  { after      => $after,
@@ -743,19 +785,41 @@ sub message_create_action : Role(event_manager) {
 sub participate_event_action : Role(any) {
    my ($self, $req) = @_;
 
-   my $uri       = $req->uri_params->( 0 );
+   my $scode = $req->username;
+   my $uri = $req->uri_params->( 0 );
    my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_by_shortcode( $req->username );
+   my $person = $person_rs->find_by_shortcode( $scode );
+   my $action = 'participate-in-event';
 
    $person->add_participant_for( $uri );
+   $self->send_event( $req, "action:${action} event_uri:${uri} scode:${scode}");
 
-   my $actionp   = $self->moniker.'/event_summary';
-   my $location  = $req->uri_for_action( $actionp, [ $uri ] );
-   my $message   = [ to_msg 'Event [_1] attendee [_2]', $uri, $person->label ];
+   my $who = $req->session->user_label;
+   my $message = [ to_msg '[_1] added to attendees of [_2]', $who, $uri ];
 
-   $self->send_event( $req, "action:participate-in-event event_uri:${uri}" );
+   return { redirect => { message => $message } }; # location referer
+}
 
-   return { redirect => { location => $location, message => $message } };
+sub participate_multiple_event_action : Role(event_manager) {
+   my ($self, $req) = @_;
+
+   my $uri = $req->uri_params->( 0 );
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $action = 'participate-in-event';
+   my $multiple = { multiple => TRUE };
+
+   for my $scode (@{ $req->body_params->( 'people', $multiple ) }) {
+      my $person = $person_rs->find_by_shortcode( $scode );
+
+      $person->add_participant_for( $uri );
+      $self->send_event
+         ( $req, "action:${action} event_uri:${uri} scode:${scode}" );
+   }
+
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Event [_1] attendees added by [_2]', $uri, $who ];
+
+   return { redirect => { message => $message } }; # location referer
 }
 
 sub participants : Role(any) {
@@ -797,10 +861,44 @@ sub participants : Role(any) {
 sub press_gang : Role(event_manager) {
    my ($self, $req) = @_;
 
+   my $uri = $req->uri_params->( 0 );
+   my $optional = { optional => TRUE };
+   my $current = $req->query_params->( 'before', $optional ) ? FALSE : TRUE;
+   my $params = $req->query_params->( $optional ); delete $params->{mid};
+   my $actionp = $self->moniker.'/press_gang';
+   my $href = $req->uri_for_action( $actionp, [ $uri ], $params );
+   my $form = new_container 'press-gang', $href;
    my $page = {
-      selected => 'current_events',
-      title => locm $req, 'press_gang_title'
-   };
+      forms => [ $form ],
+      selected => $current ? 'current_events' : 'previous_events',
+      title => locm $req, 'press_gang_title' };
+   my $links = $self->$_press_gang_ops_links( $req, $page, $uri );
+   my $schema = $self->schema;
+   my $opts = { prefetch => [ 'owner' ] };
+   my $event = $schema->resultset( 'Event' )->find_event_by( $uri, $opts );
+   my $participants = [ map { $_->participent } $event->participents->all ];
+   my $rs = $schema->resultset( 'Person' );
+   my $people = [ $rs->search_for_people( { status => 'current' } )->all ];
+   my $available = $_subtract->( $people, $participants );
+
+   $participants = [ map { [ $_->label, $_ ] } @{ $participants } ];
+   $available = [ map { [ $_->label, $_ ] } @{ $available } ];
+
+   p_list $form, PIPE_SEP, $links, link_options 'right';
+
+   p_textfield $form, 'event_name', $event->label( $req ), { disabled => TRUE };
+
+   p_select $form, 'participants', $participants, {
+      multiple => TRUE, size => 5 };
+
+   $_p_action_button->( $req, $form, $event, 'unparticipate_multiple' );
+
+   p_container $form, f_tag( 'hr' ), { class => 'form-separator' };
+
+   p_select $form, 'people', $available, { multiple => TRUE, size => 5 };
+
+   $_p_action_button->( $req, $form, $event, 'participate_multiple' );
+
    return $self->get_stash( $req, $page );
 }
 
@@ -837,22 +935,41 @@ sub training_event : Role(training_manager) {
 sub unparticipate_event_action : Role(any) {
    my ($self, $req) = @_;
 
-   my $user      = $req->username;
-   my $uri       = $req->uri_params->( 0 );
+   my $scode = $req->username;
+   my $uri = $req->uri_params->( 0 );
    my $person_rs = $self->schema->resultset( 'Person' );
-   my $person    = $person_rs->find_by_shortcode( $user );
+   my $person = $person_rs->find_by_shortcode( $scode );
+   my $action = 'unparticipate-in-event';
 
    $person->delete_participant_for( $uri );
+   $self->send_event( $req, "action:${action} event_uri:${uri} scode:${scode}");
 
-   my $who       = $person->label;
-   my $actionp   = $self->moniker.'/event_summary';
-   my $location  = $req->uri_for_action( $actionp, [ $uri ] );
-   my $message   = [ to_msg 'Event [_1] attendence cancelled for [_2]',
-                     $uri, $who ];
+   my $who = $req->session->user_label;
+   my $message = [ to_msg '[_1] cancelled attendence for [_2]', $who, $uri ];
 
-   $self->send_event( $req, "action:unparticipate-in-event event_uri:${uri}" );
+   return { redirect => { message => $message } }; # location referer
+}
 
-   return { redirect => { location => $location, message => $message } };
+sub unparticipate_multiple_event_action : Role(event_manager) {
+   my ($self, $req) = @_;
+
+   my $uri = $req->uri_params->( 0 );
+   my $person_rs = $self->schema->resultset( 'Person' );
+   my $action = 'unparticipate-in-event';
+   my $multiple = { multiple => TRUE };
+
+   for my $scode (@{ $req->body_params->( 'participants', $multiple ) }) {
+      my $person = $person_rs->find_by_shortcode( $scode );
+
+      $person->delete_participant_for( $uri );
+      $self->send_event
+         ( $req, "action:${action} event_uri:${uri} scode:${scode}" );
+   }
+
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Event [_1] attendees cancelled by [_2]', $uri, $who];
+
+   return { redirect => { message => $message } }; # location referer
 }
 
 sub update_event_action : Role(event_manager) {
