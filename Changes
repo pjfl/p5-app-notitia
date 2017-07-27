@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Fixes vehicle creation without model
           - Mostly fixes spelling error
           - Fixes #200. Can update vehicle request via my slots
           - Fixes #203. Vehicle mileage report

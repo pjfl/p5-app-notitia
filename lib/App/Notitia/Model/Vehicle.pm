@@ -459,6 +459,21 @@ my $_maybe_find_history = sub {
    return $hist_rs->search( $where )->first;
 };
 
+my $_maybe_redirect_to_management = sub {
+   my ($self, $req, $stash) = @_;
+
+   my $params = $_query_params_no_mid->( $req );
+
+   if ($params->{adhoc} or $params->{private} or $params->{service}) {
+      my $actionp = $self->moniker.'/vehicles';
+      my $location = $req->uri_for_action( $actionp, [], $params );
+
+      $stash->{redirect}->{location} = $location;
+   }
+
+   return;
+};
+
 my $_toggle_event_assignment = sub {
    my ($self, $req, $vrn, $action) = @_;
 
@@ -548,7 +563,7 @@ my $_update_vehicle_from_request = sub {
       $vehicle->$attr( $v );
    }
 
-   $v = $params->( 'model', $opts ); defined $v and $vehicle->model_id( $v );
+   $v = $params->( 'model', $opts ); $vehicle->model_id( $v ? $v : undef );
    $v = $params->( 'owner', $opts ); $vehicle->owner_id( $v ? $v : undef );
    $v = $params->( 'type',  $opts ); defined $v and $vehicle->type_id( $v );
 
@@ -802,13 +817,16 @@ sub create_vehicle_action : Role(rota_manager) {
    catch { $self->blow_smoke( $_, 'create', 'vehicle', $vehicle->vrn ) };
 
    my $vrn = $vehicle->vrn;
-   my $who = $req->session->user_label;
-   my $location = $req->uri_for_action( $self->moniker.'/vehicles' );
-   my $message = [ to_msg 'Vehicle [_1] created by [_2]', $vrn, $who ];
 
    $self->send_event( $req, "action:create-vehicle vehicle:${vrn}" );
 
-   return { redirect => { message => $message } }; # location referer
+   my $who = $req->session->user_label;
+   my $message = [ to_msg 'Vehicle [_1] created by [_2]', $vrn, $who ];
+   my $stash = { redirect => { message => $message } }; # location referer
+
+   $self->$_maybe_redirect_to_management( $req, $stash );
+
+   return $stash;
 }
 
 sub delete_mileage_period_action : Role(rota_manager) {
@@ -836,14 +854,16 @@ sub delete_mileage_period_action : Role(rota_manager) {
 sub delete_vehicle_action : Role(rota_manager) {
    my ($self, $req) = @_;
 
-   my $vrn = $req->uri_params->( 0 );
+   my $vrn     = $req->uri_params->( 0 );
    my $vehicle = $self->schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
 
    $vehicle->delete;
 
-   my $who = $req->session->user_label;
-   my $location = $req->uri_for_action( $self->moniker.'/vehicles' );
-   my $message = [ to_msg 'Vehicle [_1] deleted by [_2]', $vrn, $who ];
+   my $who      = $req->session->user_label;
+   my $actionp  = $self->moniker.'/vehicles';
+   my $params   = $_query_params_no_mid->( $req );
+   my $location = $req->uri_for_action( $actionp, [], $params );
+   my $message  = [ to_msg 'Vehicle [_1] deleted by [_2]', $vrn, $who ];
 
    $self->send_event( $req, "action:delete-vehicle vehicle:${vrn}" );
 
@@ -1085,7 +1105,9 @@ sub update_vehicle_action : Role(rota_manager) {
    catch { $self->blow_smoke( $_, 'update', 'vehicle', $vehicle->vrn ) };
 
    my $who      = $req->session->user_label; $vrn = $vehicle->vrn;
-   my $location = $req->uri_for_action( $self->moniker.'/vehicles' );
+   my $actionp  = $self->moniker.'/vehicles';
+   my $params   = $_query_params_no_mid->( $req );
+   my $location = $req->uri_for_action( $actionp, [], $params );
    my $message  = [ to_msg 'Vehicle [_1] updated by [_2]', $vrn, $who ];
 
    $self->send_event( $req, "action:update-vehicle vehicle:${vrn}" );
@@ -1099,7 +1121,7 @@ sub vehicle : Role(rota_manager) {
    my $actionp    =  $self->moniker.'/vehicle';
    my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
    my $params     =  $_query_params_no_mid->( $req );
-   my $href       =  $req->uri_for_action( $actionp, [ $vrn ] );
+   my $href       =  $req->uri_for_action( $actionp, [ $vrn ], $params );
    my $form       =  new_container 'vehicle-admin', $href;
    my $action     =  $vrn ? 'update' : 'create';
    my $page       =  {
