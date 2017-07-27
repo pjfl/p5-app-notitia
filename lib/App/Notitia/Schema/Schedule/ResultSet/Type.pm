@@ -3,8 +3,9 @@ package App::Notitia::Schema::Schedule::ResultSet::Type;
 use strictures;
 use parent 'DBIx::Class::ResultSet';
 
-use App::Notitia::Constants qw( FALSE NUL TRUE );
+use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use Class::Usul::Functions  qw( throw );
+use Unexpected::Functions   qw( Unspecified );
 
 # Private class attributes
 my $_types = {};
@@ -12,6 +13,9 @@ my $_types = {};
 # Private methods
 my $_find_by = sub {
    my ($self, $name, $type_class, $opts) = @_; $opts //= {};
+
+   $type_class or throw Unspecified, [ 'type class' ];
+   $name or throw Unspecified, [ "type name for class ${type_class}" ];
 
 # TODO: Implement cache invalidation when a type is removed
    my $k = "${name}-${type_class}"; exists $_types->{ $k }

@@ -8,10 +8,10 @@ use App::Notitia::DOM       qw( new_container p_cell p_container p_hidden p_item
                                 p_js p_link p_list p_row p_select p_span
                                 p_table p_unordered );
 use App::Notitia::Util      qw( assign_link calculate_distance contrast_colour
-                                crow2road dialog_anchor js_rotate_config
-                                js_server_config js_submit_config
-                                js_togglers_config local_dt locm make_tip
-                                register_action_paths slot_claimed
+                                crow2road dialog_anchor find_slot
+                                js_rotate_config js_server_config
+                                js_submit_config js_togglers_config local_dt
+                                locm make_tip register_action_paths slot_claimed
                                 slot_limit_index to_dt );
 use Class::Null;
 use Class::Usul::Time       qw( time2str );
@@ -977,7 +977,7 @@ my $_find_event_or_slot = sub {
       my $person = $rs->find_by_shortcode( $req->username );
       my $dt     = to_dt $args->[ 1 ];
 
-      return find_shift $person, $args->[ 0 ], $dt, $args->[ 2 ];
+      return find_slot $person, $args->[ 0 ], $dt, $args->[ 2 ];
    }
 
    return $schema->resultset( 'Event' )->find_event_by( $args->[ 0 ] );
@@ -1155,9 +1155,11 @@ sub display_control_action : Role(controller) Role(driver) Role(rider)
 sub filter_vehicles {
    my ($self, $req, $args, $tuples) = @_; my $r = [];
 
-   my $assigner = $req->username; my $is_slot = TRUE;
+   my $assigner = $req->username;
+   my $rota_name = $args->[ 0 ];
+   my $is_slot = TRUE;
 
-   try   { $self->$_find_rota_type( $args->[ 0 ] ) }
+   try   { $self->$_find_rota_type( $rota_name ) }
    catch { $is_slot = FALSE };
 
    for my $tuple (@{ $tuples }) {
@@ -1165,17 +1167,18 @@ sub filter_vehicles {
 
       if ($is_slot) {
          $vehicle->is_slot_assignment_allowed
-            ( $args->[ 0 ], to_dt( $args->[ 1 ] ), $args->[ 2 ], $assigner )
+            ( $rota_name, to_dt( $args->[ 1 ] ), $args->[ 2 ], $assigner )
             and push @{ $r }, $tuple;
       }
       else {
-         $vehicle->is_event_assignment_allowed( $args->[ 0 ], $assigner )
+         $vehicle->is_event_assignment_allowed( $rota_name, $assigner )
             and push @{ $r }, $tuple;
       }
    }
 
-   my $rota_name = $is_slot ? $args->[ 0 ] : 'main';
-   my $rota_dt = to_dt( $args->[ 1 ] );
+   $is_slot or $rota_name = 'main';
+
+   my $rota_dt = to_dt $args->[ 1 ];
    my $object = $self->$_find_event_or_slot( $req, $is_slot, $args );
    my $data = $self->$_get_all_the_data( $req, $rota_name, $rota_dt, 7 );
    my $opts = { assignee => $is_slot ? $object->operator : $object->owner,
