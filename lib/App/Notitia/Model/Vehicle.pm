@@ -5,11 +5,12 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::DOM       qw( new_container p_action p_button p_date p_fields
                                 p_hidden p_item p_js p_link p_list p_row
                                 p_select p_table p_tag p_textarea p_textfield );
-use App::Notitia::Util      qw( assign_link check_field_js display_duration
-                                link_options loc local_dt locd locm make_tip
-                                management_link month_label now_dt page_link_set
-                                register_action_paths set_element_focus
-                                slot_identifier time2int to_dt to_msg );
+use App::Notitia::Util      qw( assign_link check_field_js dialog_anchor
+                                display_duration link_options loc local_dt locd
+                                locm make_tip management_link month_label
+                                now_dt page_link_set register_action_paths
+                                set_element_focus slot_identifier time2int
+                                to_dt to_msg );
 use Class::Null;
 use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
@@ -33,6 +34,7 @@ register_action_paths
    'asset/unassign'        => 'vehicle-assign',
    'asset/vehicle'         => 'vehicle',
    'asset/vehicle_events'  => 'vehicle-events',
+   'asset/vehicle_model'   => 'vehicle-model',
    'asset/vehicles'        => 'vehicles';
 
 # Construction
@@ -233,7 +235,7 @@ my $_vehicle_type_tuple = sub {
 };
 
 my $_vehicles_headers = sub {
-   my ($req, $params) = @_; my $max = $params->{service} ? 5 : 1;
+   my ($req, $params) = @_; my $max = $params->{service} ? 5 : 2;
 
    return [ map { { value => loc( $req, "vehicles_heading_${_}" ) } }
             0 .. $max ];
@@ -656,6 +658,31 @@ my $_vehicle_events = sub {
    return [ sort { $compare->( $a, $b ) } @rows ];
 };
 
+my $_vehicle_ops_links = sub {
+   my ($self, $req, $page, $vrn) = @_; my $links = [];
+
+   my $params = $_query_params_no_mid->( $req );
+
+   if ($vrn) {
+      p_link $links, 'vehicle',
+         $req->uri_for_action( $self->moniker.'/vehicle', [], $params ),
+            $_create_action->( $req );
+   }
+   else {
+      p_link $links, 'model', '#', {
+         class   => 'windows',
+         request => $req,
+         tip     => locm( $req, 'vehicle_model_tip' ),
+         value   => locm( $req, 'vehicle_model_add' ), };
+
+      p_js $page, dialog_anchor 'model',
+         $req->uri_for_action( $self->moniker.'/vehicle_model', [], $params ), {
+            name => 'model', title => locm $req, 'vehicle_model_title' };
+   }
+
+   return $links;
+};
+
 my $_vehicles_row = sub {
    my ($self, $req, $params, $vehicle) = @_; my $row = [];
 
@@ -670,9 +697,9 @@ my $_vehicles_row = sub {
 
    p_item $row, locm $req, $vehicle->type;
 
-   $params->{service} or return $row;
-
    p_item $row, $vehicle->model ? $vehicle->model->label( $req ) : NUL;
+
+   $params->{service} or return $row;
 
    my $now    = now_dt;
    my $keeper = $self->find_last_keeper( $req, $now, $vehicle );
@@ -825,6 +852,18 @@ sub create_vehicle_action : Role(rota_manager) {
    my $stash = { redirect => { message => $message } }; # location referer
 
    $self->$_maybe_redirect_to_management( $req, $stash );
+
+   return $stash;
+}
+
+sub create_vehicle_model_action : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $stash  = $self->components->{admin}->add_type_action( $req );
+   my $params = $_query_params_no_mid->( $req );
+   my $href   = $req->uri_for_action( $self->moniker.'/vehicle', [], $params );
+
+   $stash->{redirect}->{location} = $href;
 
    return $stash;
 }
@@ -1119,8 +1158,8 @@ sub vehicle : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $actionp    =  $self->moniker.'/vehicle';
-   my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
    my $params     =  $_query_params_no_mid->( $req );
+   my $vrn        =  $req->uri_params->( 0, { optional => TRUE } );
    my $href       =  $req->uri_for_action( $actionp, [ $vrn ], $params );
    my $form       =  new_container 'vehicle-admin', $href;
    my $action     =  $vrn ? 'update' : 'create';
@@ -1132,14 +1171,11 @@ sub vehicle : Role(rota_manager) {
    my $vehicle    =  $_maybe_find_vehicle->( $self->schema, $vrn );
    my $fields     =  $self->$_bind_vehicle_fields( $req, $vehicle, $params );
    my $args       =  [ 'vehicle', $vehicle->label ];
-   my $links      =  [];
+   my $links      =  $self->$_vehicle_ops_links( $req, $page, $vrn );
 
    p_js $page, $_vehicle_js->( $vrn );
 
-   p_link $links, 'vehicle', $req->uri_for_action( $actionp, [], $params ),
-       $_create_action->( $req );
-
-   $vrn and p_list $form, PIPE_SEP, $links, link_options 'right';
+   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    p_fields $form, $self->schema, 'Vehicle', $vehicle, $fields;
 
@@ -1154,7 +1190,7 @@ sub vehicle_events : Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $vrn    =  $req->uri_params->( 0 );
-   my $params =  $req->query_params;
+   my $params =  $_query_params_no_mid->( $req );
    my $after  =  $params->( 'after',  { optional => TRUE } );
    my $before =  $params->( 'before', { optional => TRUE } );
 # TODO: Add paged query in case of search for vehicle event before tommorrow
@@ -1182,6 +1218,22 @@ sub vehicle_events : Role(rota_manager) {
    p_row $table, [ map { $_->[ 1 ] } @{ $events } ];
 
    return $self->get_stash( $req, $page );
+}
+
+sub vehicle_model : Dialog Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $stash   = $self->dialog_stash( $req );
+   my $actionp = $self->moniker.'/vehicle_model';
+   my $params  = $_query_params_no_mid->( $req );
+   my $href    = $req->uri_for_action( $actionp, [ 'vehicle_model' ], $params );
+   my $form    = $stash->{page}->{forms}->[ 0 ]
+               = new_container 'vehicle-model', $href;
+
+   p_textfield $form, 'name', NUL;
+   p_action    $form, 'create', [ 'vehicle_model' ], { request => $req };
+
+   return $stash;
 }
 
 sub vehicles : Role(rota_manager) {

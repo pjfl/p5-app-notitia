@@ -14,6 +14,8 @@ sub dispatch_request {
    sub (GET  + /vehicle-histories/*   + ?*) {[ 'asset/history_list',      @_ ]},
    sub (POST + /vehicle-history/**    + ?*) {[ 'asset/from_request',      @_ ]},
    sub (GET  + /vehicle-history/**    + ?*) {[ 'asset/history_view',      @_ ]},
+   sub (POST + /vehicle-model/*       + ?*) {[ 'asset/from_request',      @_ ]},
+   sub (GET  + /vehicle-model         + ?*) {[ 'asset/vehicle_model',     @_ ]},
    sub (GET  + /vehicle-request-info/*+ ?*) {[ 'asset/request_info',      @_ ]},
    sub (GET  + /vehicle-request/*     + ?*) {[ 'asset/request_vehicle',   @_ ]},
    sub (POST + /vehicle/**            + ?*) {[ 'asset/from_request',      @_ ]},

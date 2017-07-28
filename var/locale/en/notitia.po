@@ -2807,6 +2807,15 @@ msgstr "Model"
 msgid "vehicle_model_cert_prefix"
 msgstr "Vehicle Model"
 
+msgid "vehicle_model_add"
+msgstr "Add Model"
+
+msgid "vehicle_model_tip"
+msgstr "Add another vehicle model"
+
+msgid "vehicle_model_title"
+msgstr "Add Vehicle Model"
+
 msgid "vehicle_model_type_create_link"
 msgstr "Model"
 
