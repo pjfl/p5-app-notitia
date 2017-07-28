@@ -242,6 +242,12 @@ my $_update_incident_from_request = sub {
       $incident->$attr( $v );
    }
 
+   my $type_rs = $self->schema->resultset( 'Type' );
+   my $category_other = $type_rs->find_call_category_by( 'other' );
+
+   $incident->category_id != $category_other->id
+      and $incident->category_other( NUL );
+
    if ($incident->committee_informed or $incident->committee_member_id) {
       ($incident->committee_informed and $incident->committee_member_id)
          or throw 'Must set date and member if committee informed';

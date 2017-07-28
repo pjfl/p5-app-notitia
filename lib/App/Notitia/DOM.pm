@@ -87,19 +87,25 @@ my $_f_list = sub {
 my $_field_options = sub {
    my ($schema, $result, $name, $opts) = @_; $opts = { %{ $opts // {} } };
 
-   my $mandy;
+   my $tuple;
 
-   unless (defined ($mandy = $field_option_cache->{ $result }->{ $name })) {
-      my $class       = blessed $schema->resultset( $result )->new_result( {} );
-      my $constraints = $class->validation_attributes->{fields}->{ $name };
+   unless (defined ($tuple = $field_option_cache->{ $result }->{ $name })) {
+      my $class = blessed $schema->resultset( $result )->new_result( {} );
+      my $field = $class->validation_attributes->{fields}->{ $name };
+      my $mandy = exists $field->{validate} && $field->{validate}
+                =~ m{ isMandatory }mx ? ' required' : NUL;
+      my $constraints = $class->validation_attributes->{constraints}->{ $name };
+      my $maxlength = exists $constraints->{max_length}
+                    ? $constraints->{max_length} : undef;
 
-      $mandy = $field_option_cache->{ $result }->{ $name }
-             = exists $constraints->{validate}
-                   && $constraints->{validate} =~ m{ isMandatory }mx
-             ? ' required' : NUL;
+      $tuple = $field_option_cache->{ $result }->{ $name }
+             = [ $mandy, $maxlength ];
    }
 
-   $opts->{class} //= NUL; $opts->{class} .= $mandy;
+   $opts->{class} //= NUL; $opts->{class} .= $tuple->[ 0 ];
+
+   ($opts->{type} // 'textfield') eq 'textfield' and $tuple->[ 1 ]
+      and $opts->{maxlength} = $tuple->[ 1 ];
 
    return $opts;
 };

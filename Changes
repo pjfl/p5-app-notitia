@@ -1,5 +1,8 @@
 Revision history for App::Notitia
 
+          - Adds certs to account page
+          - Limits the size of text fields
+          - Empties category_other field when not valid
           - Fixes bug in weekrota find_slot call
           - Fixes vehicle creation without model
           - Mostly fixes spelling error

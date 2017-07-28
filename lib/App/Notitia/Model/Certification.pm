@@ -62,20 +62,24 @@ my $_personal_docs_headers = sub {
 
 # Private methods
 my $_cert_row = sub {
-   my ($self, $req, $scode, $cert) = @_; my $row = [];
+   my ($self, $req, $scode, $disabled, $cert) = @_; my $row = [];
 
    my $actionp = $self->moniker.'/certification';
    my $args    = [ $scode, $cert->type ];
    my $params  = $req->query_params->( {
       optional => TRUE } ); delete $params->{mid};
    my $href    = $req->uri_for_action( $actionp, $args, $params );
-   my $cell    = p_cell $row, {};
 
-   p_link $cell, 'certification', $href, {
-      action   => 'update',
-      args     => [ $cert->recipient->label ],
-      request  => $req,
-      value    => $cert->label( $req ) };
+   if ($disabled) { p_item $row, $cert->label( $req ) }
+   else {
+      my $cell = p_cell $row, {};
+
+      p_link $cell, 'certification', $href, {
+         action   => 'update',
+         args     => [ $cert->recipient->label ],
+         request  => $req,
+         value    => $cert->label( $req ) };
+   }
 
    p_item $row, locd $req, $cert->completed;
 
@@ -281,6 +285,17 @@ sub certification : Role(person_manager) Role(training_manager) {
    return $self->get_stash( $req, $page );
 }
 
+sub certification_table {
+   my ($self, $req, $form, $scode, $disabled) = @_;
+
+   my $cert_rs = $self->schema->resultset( 'Certification' );
+   my $table   = p_table $form, { headers => $_certs_headers->( $req ) };
+
+   p_row $table, [ map { $self->$_cert_row( $req, $scode, $disabled, $_ ) }
+                   $cert_rs->search_for_certifications( $scode )->all ];
+   return;
+}
+
 sub certifications : Role(person_manager) Role(training_manager) {
    my ($self, $req) = @_;
 
@@ -299,22 +314,16 @@ sub certifications : Role(person_manager) Role(training_manager) {
    my $links   =  $self->$_certs_ops_links( $req, $page, $person );
 
    p_list $form, NUL, $links, link_options;
-
-   my $cert_rs =  $schema->resultset( 'Certification' );
-   my $table   =  p_table $form, { headers => $_certs_headers->( $req ) };
-
-   p_row $table, [ map { $self->$_cert_row( $req, $scode, $_ ) }
-                   $cert_rs->search_for_certifications( $scode )->all ];
-
+   $self->certification_table( $req, $form, $scode );
    $links = $self->$_files_ops_links( $req, $page, $person );
    p_list $form, NUL, $links, link_options;
-
-   $table = p_table $form, { headers => $_personal_docs_headers->( $req ) };
 
    my $assetdir = $self->config->assetdir;
    my $userdir  = $assetdir->catdir( 'personal' )->catdir( $scode );
 
    $userdir->exists or return $self->get_stash( $req, $page );
+
+   my $table = p_table $form, { headers => $_personal_docs_headers->( $req ) };
 
    p_row $table, [ map { $self->$_file_row( $req, $scode, $_ ) }
                    $userdir->all_files ];

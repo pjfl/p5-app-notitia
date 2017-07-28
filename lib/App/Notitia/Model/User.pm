@@ -3,12 +3,12 @@ package App::Notitia::Model::User;
 use App::Notitia::Attributes;   # Will do namespace cleaning
 use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL SPC TRUE );
 use App::Notitia::DOM       qw( new_container f_tag p_button p_checkbox
-                                p_container p_image p_js p_label p_password
-                                p_radio p_select p_slider p_tag p_text
-                                p_textfield );
+                                p_container p_image p_js p_label p_list
+                                p_password p_radio p_select p_slider p_tag
+                                p_text p_textfield );
 use App::Notitia::Util      qw( check_field_js check_form_field event_actions
-                                js_server_config js_slider_config locm make_tip
-                                new_request register_action_paths
+                                js_server_config js_slider_config link_options
+                                locm make_tip new_request register_action_paths
                                 set_element_focus to_msg );
 use Class::Usul::Functions  qw( is_arrayref is_member create_token throw );
 use Class::Usul::Types      qw( ArrayRef HashRef Object );
@@ -598,6 +598,14 @@ sub profile : Role(any) {
    $self->$_bind_profile_fields( $req, $page, $person );
 
    p_button $form, 'update', 'update_profile', { class => 'button right-last' };
+
+   my $links = [];
+
+   p_tag $links, 'h4', 'Certifications', { class => 'label left' };
+   p_list $form, NUL, $links, link_options;
+
+   $self->components->{certs}->certification_table
+      ( $req, $form, $req->username, TRUE );
 
    return $self->get_stash( $req, $page );
 }

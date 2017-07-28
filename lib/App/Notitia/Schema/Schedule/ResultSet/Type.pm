@@ -40,6 +40,10 @@ my $_type_tuple = sub {
 };
 
 # Public methods
+sub find_call_category_by {
+   return $_[ 0 ]->$_find_by( $_[ 1 ], 'call_category' );
+}
+
 sub find_certification_by {
    return $_[ 0 ]->$_find_by( $_[ 1 ], 'certification' );
 }
