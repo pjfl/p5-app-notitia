@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Controller allowed to view the vehicle list
           - Adds vehicle model creation for rota manager
           - Adds certs to account page
           - Limits the size of text fields

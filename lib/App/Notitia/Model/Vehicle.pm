@@ -1236,7 +1236,7 @@ sub vehicle_model : Dialog Role(rota_manager) {
    return $stash;
 }
 
-sub vehicles : Role(rota_manager) {
+sub vehicles : Role(controller) Role(rota_manager) {
    my ($self, $req) = @_;
 
    my $moniker  =  $self->moniker;
