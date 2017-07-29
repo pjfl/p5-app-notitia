@@ -308,11 +308,12 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       show_training   => [ Bool, FALSE                      ],
       skin            => [ NonEmptySimpleStr, $_[ 0 ]->skin ],
       theme           => [ NonEmptySimpleStr, 'dark'        ],
+      tracking        => [ HashRef[PositiveInt], sub { {} } ],
       user_label      => [ SimpleStr | Undef                ],
       version         => [ NonEmptySimpleStr, $sess_version ],
       wanted          => [ SimpleStr | Undef                ], } };
 
-has 'session_version' => is => 'ro',   isa => NonZeroPositiveInt, default => 3;
+has 'session_version' => is => 'ro',   isa => NonZeroPositiveInt, default => 4;
 
 has 'shift_times'     => is => 'ro',   isa => HashRef,
    builder            => sub { {

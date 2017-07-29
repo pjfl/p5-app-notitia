@@ -6,9 +6,10 @@ use App::Notitia::DOM       qw( new_container f_tag p_button p_checkbox
                                 p_container p_image p_js p_label p_list
                                 p_password p_radio p_select p_slider p_tag
                                 p_text p_textfield );
-use App::Notitia::Util      qw( check_field_js check_form_field event_actions
-                                js_server_config js_slider_config link_options
-                                locm make_tip new_request register_action_paths
+use App::Notitia::Util      qw( check_field_js check_form_field display_once
+                                event_actions js_server_config js_slider_config
+                                link_options locm make_tip new_request
+                                register_action_paths
                                 set_element_focus to_msg );
 use Class::Usul::Functions  qw( is_arrayref is_member create_token throw );
 use Class::Usul::Types      qw( ArrayRef HashRef Object );
@@ -269,11 +270,12 @@ my $_where_in_hell = sub {
    my $wanted  = $session->wanted; $session->wanted( NUL );
    my $places  = $self->config->places;
    my $docs    = $self->components->{docs};
-   my $notice  = $docs->is_accessible( $req, $places->{notice} );
+   my $node    = $docs->find_node_by_path( $req, $places->{notice} );
+   my $notice  = $node && display_once( $req, $node ) ? TRUE : FALSE;
 
    return $wanted ? $req->uri_for( $wanted )
         : $notice ? $req->uri_for_action( 'docs/page', [ $places->{notice} ] )
-        :           $req->uri_for_action( $places->{login_redirect } );
+        :           $req->uri_for_action( $places->{login_redirect} );
 };
 
 my $_bind_profile_fields = sub {

@@ -102,6 +102,22 @@ sub find_node {
    return $node;
 }
 
+sub find_node_by_path {
+   my ($self, $req, $path) = @_;
+
+   my @path = split m{ / }mx, $path; my %seen = ();
+
+   for my $locale ($req->locale, @{ $req->locales }, $self->config->locale) {
+      $seen{ $locale } and next; $seen{ $locale } = TRUE;
+
+      my $node = $self->find_node( $req, $locale, \@path ) or next;
+
+      return $node;
+   }
+
+   return;
+}
+
 sub initialise_page {
    my ($self, $req, $node, $locale) = @_; my $page = clone $node;
 
@@ -124,22 +140,6 @@ sub invalidate_docs_cache {
    }
 
    return;
-}
-
-sub is_accessible {
-   my ($self, $req, $path) = @_;
-
-   my @path = split m{ / }mx, $path; my %seen = ();
-
-   for my $locale ($req->locale, @{ $req->locales }, $self->config->locale) {
-      $seen{ $locale } and next; $seen{ $locale } = TRUE;
-
-      my $node = $self->find_node( $req, $locale, \@path ) or next;
-
-      is_access_authorised( $req, $node ) and return TRUE;
-   }
-
-   return FALSE;
 }
 
 sub navigation {

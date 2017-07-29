@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Notice page will display only once
           - Controller allowed to view the vehicle list
           - Adds vehicle model creation for rota manager
           - Adds certs to account page

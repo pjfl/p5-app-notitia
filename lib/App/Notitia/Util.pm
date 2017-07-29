@@ -29,20 +29,20 @@ our @EXPORT_OK = qw( action_for_uri action_path2uri action_path_uri_map
                      build_navigation build_tree calculate_distance
                      check_field_js check_form_field clone contrast_colour
                      crow2road csrf_token datetime_label dialog_anchor
-                     display_duration encrypted_attr enhance event_actions
-                     event_handler event_handler_cache event_streams find_slot
-                     from_json get_hashed_pw get_salt is_access_authorised
-                     is_draft is_encrypted iterator js_rotate_config
-                     js_slider_config js_server_config js_submit_config
-                     js_togglers_config js_window_config lcm_for link_options
-                     load_file_data loc local_dt localise_tree locd locm
-                     mail_domain make_id_from make_name_from make_tip
-                     management_link month_label mtime natatime new_request
-                     new_salt now_dt page_link_set register_action_paths
-                     set_element_focus set_event_date set_last_modified_header
-                     set_rota_date slot_claimed slot_identifier
-                     slot_limit_index show_node stash_functions time2int to_dt
-                     to_json to_msg );
+                     display_duration display_once encrypted_attr enhance
+                     event_actions event_handler event_handler_cache
+                     event_streams find_slot from_json get_hashed_pw get_salt
+                     is_access_authorised is_draft is_encrypted iterator
+                     js_rotate_config js_slider_config js_server_config
+                     js_submit_config js_togglers_config js_window_config
+                     lcm_for link_options load_file_data loc local_dt
+                     localise_tree locd locm mail_domain make_id_from
+                     make_name_from make_tip management_link month_label mtime
+                     natatime new_request new_salt now_dt page_link_set
+                     register_action_paths set_element_focus set_event_date
+                     set_last_modified_header set_rota_date slot_claimed
+                     slot_identifier slot_limit_index show_node stash_functions
+                     time2int to_dt to_json to_msg );
 
 # Private class attributes
 my $action_path_uri_map = {}; # Key is an action path, value a partial URI
@@ -405,16 +405,18 @@ sub build_tree {
           url         => $url,
           _order      => $node_order++, };
 
-      $path->is_file and ++$fcount and $load_file_data->( $node )
-                     and $mtime > $max_mtime and $max_mtime = $mtime;
-      $path->is_dir  or  next;
-      $node->{type} = 'folder';
-      $load_directory_data->( $node );
-      $node->{tree} = $depth > 1 # Skip the language code directories
-         ?  build_tree( $map, $path, $depth, $node_order, $url, $name )
-         :  build_tree( $map, $path, $depth, $node_order );
-      $fcount += $node->{fcount} = $node->{tree}->{_fcount};
-      mtime( $node ) > $max_mtime and $max_mtime = mtime( $node );
+      if ($path->is_file) {
+         $load_file_data->( $node ); $fcount++;
+         $mtime > $max_mtime and $max_mtime = $mtime;
+      }
+      elsif ($path->is_dir) {
+         $node->{type} = 'folder'; $load_directory_data->( $node );
+         $node->{tree} = $depth > 1 # Skip the language code directories
+            ?  build_tree( $map, $path, $depth, $node_order, $url, $name )
+            :  build_tree( $map, $path, $depth, $node_order );
+         $fcount += $node->{fcount} = $node->{tree}->{_fcount};
+         mtime( $node ) > $max_mtime and $max_mtime = mtime( $node );
+      }
    }
 
    $tree->{_fcount} = $fcount; $tree->{_mtime} = $max_mtime;
@@ -526,6 +528,18 @@ sub display_duration ($$) {
    return
       loc( $req, 'Starts' ).SPC.datetime_label( $req, $starts ),
       loc( $req, 'Ends' ).SPC.datetime_label( $req, $ends );
+}
+
+sub display_once ($$) {
+   my ($req, $node) = @_;
+
+   is_access_authorised( $req, $node ) or return FALSE;
+
+   $node->{modified} > ($req->session->tracking->{ $node->{url} } // 0)
+      and $req->session->tracking->{ $node->{url} } = $node->{modified}
+      and return TRUE;
+
+   return FALSE;
 }
 
 sub encrypted_attr ($$$$) {
@@ -1155,6 +1169,8 @@ Defines no attributes
 =head2 C<dialog_anchor>
 
 =head2 C<display_duration>
+
+=head2 C<display_once>
 
 =head2 C<encrypted_attr>
 
