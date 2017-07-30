@@ -536,11 +536,10 @@ sub login_action : Role(anon) {
 
    $person->authenticate_optional_2fa( $password, $auth_code );
    $self->$_update_session( $session, $person );
+   $self->send_event( $req, 'action:logged-in' );
 
    my $message   = [ to_msg '[_1] logged in', $person->label ];
    my $location  = $self->$_where_in_hell( $req );
-
-   $self->send_event( $req, 'action:logged-in' );
 
    return { redirect => { location => $location, message => $message } };
 }

@@ -30,6 +30,7 @@ register_action_paths
    'admin/slot_certs'     => 'slot-certs',
    'admin/slot_roles'     => 'slot-roles',
    'admin/type'           => 'type',
+   'admin/type_classes'   => 'type-classes',
    'admin/types'          => 'types';
 
 # Attribute constructors
@@ -153,16 +154,21 @@ my $_to_action_label = sub {
    my $action = ucfirst shift; $action =~ s{ _ }{ }gmx; return $action;
 };
 
+my $_type_classes_headers = sub {
+   my $req = shift; my $header = 'type_classes_heading';
+
+   return [ map { { value => locm $req, "${header}_${_}" } } 0 .. 1 ];
+};
+
 my $_type_create_links = sub {
    my ($req, $moniker, $type_class) = @_;
 
    my $actionp = "${moniker}/type"; my $links = [];
 
    if ($type_class) {
-      my $k = "${type_class}_type";
       my $href = $req->uri_for_action( $actionp, [ $type_class ] );
 
-      p_link $links, $k, $href, $_create_action->( $req );
+      p_link $links, 'type', $href, $_create_action->( $req );
    }
    else {
       for my $type_class (@{ TYPE_CLASS_ENUM() }) {
@@ -177,13 +183,12 @@ my $_type_create_links = sub {
 };
 
 my $_types_headers = sub {
-   return [ map { { value => loc $_[ 0 ], "types_heading_${_}" } } 0 .. 2 ];
+   return [ map { { value => loc $_[ 0 ], "types_heading_${_}" } } 0 .. 1 ];
 };
 
 my $_types_links = sub {
    my ($req, $type) = @_; my $links = [];
 
-   p_item $links, ucfirst locm $req, $type->type_class;
    p_item $links, $type->label( $req );
    p_item $links, management_link $req, 'admin/type', $type->name, {
       args => [ $type->type_class, $type->name ] };
@@ -445,6 +450,21 @@ my $_toggle_event_status = sub {
 
    return [ to_msg "Stream [_1] action [_2] ${verb} by [_3]",
             $sink, $action, $req->session->user_label ];
+};
+
+my $_type_classes_row = sub {
+   my ($self, $req, $type) = @_; my $row = [];
+
+   my $params = { type_class => $type->type_class };
+   my $href = $req->uri_for_action( $self->moniker.'/types', [], $params );
+   my $cell = p_link {}, 'types', $href, {
+      request => $req, value => ucfirst locm $req, $type->type_class };
+
+   p_item $row, $cell;
+
+   p_item $row, $type->get_column( 'count_by_class' );
+
+   return $row;
 };
 
 # Public methods
@@ -802,7 +822,7 @@ sub type : Role(administrator) {
    my $page       =  {
       first_field => 'name',
       forms       => [ $form ],
-      selected    => 'types_list',
+      selected    => 'type_classes',
       title       => locm $req, 'type_management_heading', $class_name };
 
    p_textfield $form, 'name', loc( $req, $type->name ), {
@@ -822,17 +842,38 @@ sub type : Role(administrator) {
    return $self->get_stash( $req, $page );
 }
 
+sub type_classes : Role(administrator) {
+   my ($self, $req) = @_;
+
+   my $form       =  new_container;
+   my $page       =  {
+      forms       => [ $form ],
+      selected    => 'type_classes',
+      title       => locm $req, 'type_classes_title' };
+   my $types      =  $self->schema->resultset( 'Type' )->search( {}, {
+      'columns'   => [ 'type_class' ],
+      'distinct'  => 1,
+      '+select'   => [ { count => 'name', -as => 'count_by_class' } ],
+      'order_by'  => 'type_class', } );
+
+   my $table = p_table $form, { headers => $_type_classes_headers->( $req ) };
+
+   p_row $table, [ map { $self->$_type_classes_row( $req, $_ ) } $types->all ];
+
+   return $self->get_stash( $req, $page );
+}
+
 sub types : Role(administrator) {
    my ($self, $req) = @_;
 
    my $moniker    =  $self->moniker;
    my $type_class =  $req->query_params->( 'type_class', { optional => TRUE } );
    my $form       =  new_container;
+   my $title      =  $type_class ? 'type_class_list_title' : 'types_list_title';
    my $page       =  {
       forms       => [ $form ],
-      selected    => $type_class ? "${type_class}_type_list" : 'types_list',
-      title       => loc( $req, $type_class ? "${type_class}_type_list_title"
-                                            : 'types_list_title' ), };
+      selected    => 'type_classes',
+      title       => locm $req, $title, ucfirst locm $req, $type_class };
    my $type_rs    =  $self->schema->resultset( 'Type' );
    my $types      =  $type_class ? $type_rs->search_for_types( $type_class )
                                  : $type_rs->search_for_all_types;
@@ -843,8 +884,6 @@ sub types : Role(administrator) {
    my $table = p_table $form, { headers => $_types_headers->( $req ) };
 
    p_row $table, [ map { $_types_links->( $req, $_ ) } $types->all ];
-
-   p_list $form, PIPE_SEP, $links, link_options 'right';
 
    return $self->get_stash( $req, $page );
 }

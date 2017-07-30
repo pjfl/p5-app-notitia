@@ -113,12 +113,12 @@ my $_admin_data_links = sub {
    p_folder $list, 'data', {
       class => $class, request => $req, tip => 'Data Management Menu' };
 
-   p_navlink $list, 'types_list', [ 'admin/types' ], {
-      class => $_selected_class->( $page, 'types_list' ),
-      request => $req };
-
    p_navlink $list, 'slot_roles_list', [ 'admin/slot_roles' ], {
       class => $_selected_class->( $page, 'slot_roles_list' ),
+      request => $req };
+
+   p_navlink $list, 'type_classes', [ 'admin/type_classes' ], {
+      class => $_selected_class->( $page, 'type_classes' ),
       request => $req };
 
    $self->$_allowed( $req, 'form/form_defn_list' )

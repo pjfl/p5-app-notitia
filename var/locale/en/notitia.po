@@ -2475,8 +2475,32 @@ msgstr "Trustees"
 msgid "trustee_list_tip"
 msgstr "The Bored of Trustees"
 
+msgid "type_class_list_title"
+msgstr "[_1] Types"
+
 msgid "type_code"
 msgstr "Type Code"
+
+msgid "type_classes_title"
+msgstr "Type Classes"
+
+msgid "type_classes_heading_0"
+msgstr "Type Class"
+
+msgid "type_classes_heading_1"
+msgstr "Count"
+
+msgid "type_classes_link"
+msgstr "Type Classes"
+
+msgid "type_classes_tip"
+msgstr "List the type classes used by the application"
+
+msgid "type_create_link"
+msgstr "Add Type"
+
+msgid "type_create_tip"
+msgstr "Create a new type record"
 
 msgid "type_management_heading"
 msgstr "[_1] Type"
@@ -2491,12 +2515,9 @@ msgid "type_name"
 msgstr "Type Name"
 
 msgid "types_heading_0"
-msgstr "Type Class"
-
-msgid "types_heading_1"
 msgstr "Type Name"
 
-msgid "types_heading_2"
+msgid "types_heading_1"
 msgstr "Remove"
 
 msgid "types_list_link"
@@ -2507,6 +2528,9 @@ msgstr "Manage the list of resource types"
 
 msgid "types_list_title"
 msgstr "All Types"
+
+msgid "types_tip"
+msgstr "List the type records defined for this type class"
 
 msgid "unassign_management_tip"
 msgstr "Unassign a vehicle from this slot"
@@ -2802,7 +2826,7 @@ msgid "vehicle_management_tip"
 msgstr "Edit this vehicle record"
 
 msgid "vehicle_model"
-msgstr "Model"
+msgstr "Vehicle Model"
 
 msgid "vehicle_model_cert_prefix"
 msgstr "Vehicle Model"

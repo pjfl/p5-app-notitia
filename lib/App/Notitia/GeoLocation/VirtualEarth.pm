@@ -32,7 +32,7 @@ my $_round = sub {
 my $_convert_to_grid = sub {
    my $coords = shift;
 
-   my ($zone, $x, $y) = latlon_to_utm( 23 , $coords->[ 0 ], $coords->[ 1 ] );
+   my ($zone, $x, $y) = latlon_to_utm( 23, $coords->[ 0 ], $coords->[ 1 ] );
 
    return $_round->( $x ).COMMA.$_round->( $y );
 };
