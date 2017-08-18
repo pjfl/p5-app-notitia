@@ -11,7 +11,7 @@ use Unexpected::Functions   qw( FailedTokenVerification );
 use Web::ComposableRequest::Util qw( new_uri );
 use Moo::Role;
 
-requires qw( config execute initialise_stash load_page lock log );
+requires qw( config execute initialise_stash load_page log );
 
 # Private methods
 my $_add_form0_csrf_token = sub {

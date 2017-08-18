@@ -21,8 +21,8 @@ with q(App::Notitia::Role::Schema);
 with q(App::Notitia::Role::EventStream);
 
 # Public attributes
-has 'application' => is => 'ro', isa => Plinth,
-   handles        => [ 'lock' ], required => TRUE, weak_ref => TRUE;
+has 'application' => is => 'ro', isa => Plinth, required => TRUE,
+   weak_ref => TRUE;
 
 # Private functions
 my $_debug_output = sub {
@@ -192,6 +192,10 @@ sub get_stash {
 
 sub initialise_stash {
    return { code => HTTP_OK, view => $_[ 0 ]->config->default_view, };
+}
+
+sub jobdaemon { # Shortcut for result classes
+   return $_[ 0 ]->components->{daemon}->jobdaemon;
 }
 
 sub load_page {
