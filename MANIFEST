@@ -112,6 +112,7 @@ lib/App/Notitia/Schema/Schedule/Result/UserField.pm
 lib/App/Notitia/Schema/Schedule/Result/UserForm.pm
 lib/App/Notitia/Schema/Schedule/Result/UserTable.pm
 lib/App/Notitia/Schema/Schedule/Result/Vehicle.pm
+lib/App/Notitia/Schema/Schedule/Result/VehicleHistory.pm
 lib/App/Notitia/Schema/Schedule/Result/VehicleRequest.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Certification.pm
 lib/App/Notitia/Schema/Schedule/ResultSet/Endorsement.pm
