@@ -280,31 +280,31 @@ sub assert_unique ($$$$) {
 sub assign_link ($$$$) {
    my ($req, $page, $args, $opts) = @_;
 
-   my $obj     = $opts->{slot} // $opts->{transport};
-   my $has_req = $opts->{vehicle_req}
-              // ($obj ? $obj->vehicle_requested : undef);
-   my $name    = $opts->{name} // ($obj ? "${obj}" : undef);
-   my $value   = $obj && $obj->vehicle ? $obj->vehicle : undef;
-   my $state   = slot_claimed( $opts ) ? 'vehicle-not-needed' : NUL;
+   my $obj      = $opts->{slot} // $opts->{transport};
+   my $has_req  = $opts->{vehicle_req}
+               // ($obj ? $obj->vehicle_requested : undef);
+   my $name     = $opts->{name} // ($obj ? "${obj}" : undef);
+   my $value    = $obj && $obj->vehicle ? $obj->vehicle : undef;
+   my $state    = slot_claimed( $opts ) ? 'vehicle-not-needed' : NUL;
+   my $disabled = $obj->provisional && !$opts->{is_manager} ? TRUE : FALSE;
    my $style;
 
    $has_req and $state = 'vehicle-requested';
    $value   and $state = 'vehicle-assigned';
 
-   if ($state eq 'vehicle-assigned') {
-      my $colour   = $obj->vehicle->colour;
-      my $disabled = $obj->provisional && !$opts->{is_manager} ? TRUE : FALSE;
-      my $params   = { action   => 'unassign',
-                       disabled => $disabled,
-                       name     => $name,
-                       value    => $value, };
+   if ($state eq 'vehicle-assigned' and not $disabled) {
+      my $colour = $obj->vehicle->colour;
+      my $params = { action => 'unassign',
+                     name   => $name,
+                     value  => $value, };
 
       $colour and $style = "background-color: ${colour};"
               and $params->{style} = 'color: ' . contrast_colour( $colour ).';';
       $value = $vehicle_link->( $req, $page, $args, $params );
       $obj->provisional and $value->{value} .= NBSP.'*';
    }
-   elsif ($state eq 'vehicle-requested') {
+   elsif ($state eq 'vehicle-requested'
+          or ($state eq 'vehicle-assigned' and $disabled)) {
       my $params = { action => 'assign',
                      class  => 'table-link vehicle-requested windows',
                      mode   => $opts->{mode},

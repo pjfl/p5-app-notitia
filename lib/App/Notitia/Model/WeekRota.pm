@@ -517,30 +517,33 @@ my $_alloc_cell_event_row = sub {
    my $id = "vehicles-${event}"; p_js $page, js_togglers_config $id, 'change',
       'showSelected', [ $id, scalar @{ $tuples } ];
 
-   my $cell = p_cell $row, {
-      class => 'table-cell-embeded narrow' };
-   my $list = p_list $cell, NUL, [], { class => 'table-cell-list' };
+   my $cell  = p_cell $row, {
+      class  => 'table-cell-embeded narrow' };
+   my $list  = p_list $cell, NUL, [], { class => 'table-cell-list' };
    my $index = 0;
 
    for my $tuple (@{ $tuples }) {
-      my $v_or_r  = $tuple->[ 1 ];
-      my $action  = blessed $v_or_r ? 'unassign' : 'assign';
-      my $vehicle = $action eq 'unassign' ? $v_or_r : undef;
-      my $value   = $action eq 'unassign' ? $v_or_r->name : ucfirst $v_or_r;
-      my $type    = $action eq 'unassign' ? $v_or_r->type : $v_or_r;
-      my $tport   = $action eq 'unassign' ? $tuple->[ 2 ] : undef;
-      my $prov    = $tport ? $tport->provisional : FALSE;
-      my $args    = [ $event->uri, $page->{rota_date} ];
-      my $params  = { action => $action, mode => 'slow',
-                      type   => $type, vehicle => $vehicle };
-      my $href    = $req->uri_for_action( 'asset/assign', $args, $params );
+      my $v_or_r   = $tuple->[ 1 ];
+      my $action   = blessed $v_or_r ? 'unassign' : 'assign';
+      my $vehicle  = $action eq 'unassign' ? $v_or_r : undef;
+      my $type     = $action eq 'unassign' ? $v_or_r->type : $v_or_r;
+      my $tport    = $action eq 'unassign' ? $tuple->[ 2 ] : undef;
+      my $prov     = $tport ? $tport->provisional : FALSE;
+      my $disabled = $prov && !$page->{is_manager} ? TRUE : FALSE;
+      my $value    = $action eq 'unassign' && !$disabled ? $v_or_r->name
+                   : $action eq 'unassign'               ? $v_or_r->type
+                   : ucfirst $v_or_r;
+      my $args     = [ $event->uri, $page->{rota_date} ];
+      my $params   = { action => $action, mode => 'slow',
+                       type   => $type, vehicle => $vehicle };
+      my $href     = $req->uri_for_action( 'asset/assign', $args, $params );
 
       p_link $list, "${id}-${index}", HASH_CHAR, {
          class => $index == 0 ? 'table-cell-link windows'
                 : 'table-cell-link windows hidden',
-         style => $_vehicle_cell_style->( $v_or_r ),
+         style => $disabled ? NUL : $_vehicle_cell_style->( $v_or_r ),
          tip   => NUL,
-         value => $value.($prov ? NBSP.'*' : NUL) };
+         value => $value.($prov && !$disabled ? NBSP.'*' : NUL) };
 
       p_js $page, dialog_anchor "${id}-${index}", $href, {
          name  => "${action}-vehicle",
