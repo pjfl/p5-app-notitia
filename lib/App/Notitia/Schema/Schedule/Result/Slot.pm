@@ -5,7 +5,8 @@ use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Schedule::Base::Result';
 
 use App::Notitia::Constants qw( FALSE SLOT_TYPE_ENUM SPC TRUE );
-use App::Notitia::DataTypes qw( bool_data_type enumerated_data_type
+use App::Notitia::DataTypes qw( bool_data_type date_data_type
+                                enumerated_data_type
                                 foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 numerical_id_data_type );
@@ -26,6 +27,8 @@ $class->add_columns
      vehicle_assigner_id => nullable_foreign_key_data_type,
      vehicle_id          => nullable_foreign_key_data_type,
      operator_vehicle_id => nullable_foreign_key_data_type,
+     provisional         => bool_data_type,
+     provisional_created => date_data_type,
      );
 
 $class->set_primary_key( 'shift_id', 'type_name', 'subslot' );
@@ -46,6 +49,14 @@ sub _as_string {
 }
 
 # Public methods
+sub cancel_provisional {
+   my $self = shift;
+
+   $self->provisional( FALSE ); $self->provisional_created( undef );
+
+   return $self->update;
+}
+
 sub date {
    return $_[ 0 ]->shift->rota->date;
 }
@@ -92,6 +103,17 @@ sub start_time {
 
 sub rota_type {
    return $_[ 0 ]->shift->rota->type;
+}
+
+sub unassign_vehicle {
+   my $self = shift;
+
+   $self->vehicle_id( undef );
+   $self->vehicle_assigner_id( undef );
+   $self->provisional( FALSE );
+   $self->provisional_created( undef );
+
+   return $self->update;
 }
 
 sub update {

@@ -11,8 +11,8 @@ use Web::ComposableRequest::Constants ();
 Class::Usul::Constants->Exception_Class( 'App::Notitia::Exception' );
 Web::ComposableRequest::Constants->Exception_Class( 'App::Notitia::Exception' );
 
-our @EXPORT = qw( C_DIALOG DASH DATA_TYPE_ENUM DOTS FIELD_TYPE_ENUM HASH_CHAR
-                  NBSP PIPE_SEP PRIORITY_TYPE_ENUM SHIFT_TYPE_ENUM
+our @EXPORT = qw( BATCH_MODE C_DIALOG DASH DATA_TYPE_ENUM DOTS FIELD_TYPE_ENUM
+                  HASH_CHAR NBSP PIPE_SEP PRIORITY_TYPE_ENUM SHIFT_TYPE_ENUM
                   SLOT_TYPE_ENUM TILDE TRAINING_STATUS_ENUM TYPE_CLASS_ENUM
                   VARCHAR_MAX_SIZE );
 
@@ -39,6 +39,7 @@ sub NBSP      () { '&nbsp;' }
 sub PIPE_SEP  () { '&nbsp;|&nbsp;' }
 sub TILDE     () { chr 126    }
 
+sub BATCH_MODE           () { 1 }
 sub DATA_TYPE_ENUM       () {
    [ qw( bigint binary bit boolean blob char date datetime dec decimal double
          float int integer numeric real smallint text time timestamp tinyblob

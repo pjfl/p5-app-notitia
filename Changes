@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+          - Implements batch vehicle assignment mode
           - Slits out type classes list on admin model
           - Notice page will display only once
           - Controller allowed to view the vehicle list

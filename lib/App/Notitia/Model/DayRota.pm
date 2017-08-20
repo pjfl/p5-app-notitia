@@ -83,8 +83,8 @@ my $_onclick_relocate = sub {
 my $_operators_region = sub {
    my ($req, $page, $data, $k) = @_; my $region;
 
-   exists $data->{ $k }->{operator}
-      and $region = $data->{ $k }->{operator}->region;
+   exists $data->{ $k }->{slot} and $data->{ $k }->{slot}->operator
+      and $region = $data->{ $k }->{slot}->operator->region;
 
    return { class => 'narrow', value => $region // NUL };
 };
@@ -109,22 +109,21 @@ my $_operators_vehicle_link = sub {
    my $local_rota_dt = local_dt $slot_data->{rota_dt};
    my $args = [ $slot_data->{rota_name}, $local_rota_dt->ymd, $k ];
    my $tip = locm $req, 'operators_vehicle_tip';
+   my $operator = $slot_data->{slot}->operator // NUL;
+   my $vehicle = $slot_data->{slot}->operator_vehicle;
    my $id = "${k}_vehicle";
 
-   if ($slot_data->{operator} eq $req->username and not $page->{disabled}) {
+   if ($operator eq $req->username and not $page->{disabled}) {
       p_link $vehicle_link, $id, '#', {
          class => 'windows', request => $req, tip => $tip,
-         value => $_operators_vehicle_label->( $slot_data->{slov} ),
+         value => $_operators_vehicle_label->( $vehicle ),
       };
 
       p_js $page, dialog_anchor $id, $req->uri_for_action( $actionp, $args ), {
          name => 'operator-vehicle' ,
          title => locm $req, 'operators_vehicle_title' };
    }
-   else {
-      $vehicle_link->{value}
-         = $_operators_vehicle_label->( $slot_data->{slov} );
-   }
+   else { $vehicle_link->{value} = $_operators_vehicle_label->( $vehicle ) }
 
    return $vehicle_link;
 };
@@ -155,41 +154,47 @@ my $_push_slot_claim_js = sub {
 };
 
 my $_slot_contact_info = sub {
-   my ($req, $slot) = @_; slot_claimed $slot or return NUL;
+   my ($req, $opts) = @_; slot_claimed $opts or return NUL;
 
    for my $role ('controller', 'rota_manager') {
       is_member $role, $req->session->roles
-         and return "(\x{260E} ".$slot->{operator}->mobile_phone.')';
+         and return "(\x{260E} ".$opts->{slot}->operator->mobile_phone.')';
    }
 
    return NUL;
 };
 
 my $_slot_label = sub {
-   return slot_claimed( $_[ 1 ] ) ? $_[ 1 ]->{operator}->label
-                                  : locm $_[ 0 ], 'Vacant';
+   my ($req, $opts) = @_;
+
+   slot_claimed( $opts ) or return locm $req, 'Vacant';
+
+   return $opts->{slot}->operator->label;
 };
 
 my $_slot_link = sub {
    my ($req, $page, $data, $k, $slot_type) = @_;
 
-   my $value = $_slot_label->( $req, $data->{ $k } );
+   my $slot_data = $data->{ $k };
+   my $value     = $_slot_label->( $req, $slot_data );
 
    $page->{disabled} and return { colspan => 2, value => $value };
 
-   my $action = slot_claimed( $data->{ $k } ) ? 'yield' : 'claim';
-   my $operator = $data->{ $k }->{operator} // NUL;
-   my $can_yield = ($operator eq $req->username
-                    or is_member 'rota_manager', $req->session->roles)
-                 ? TRUE : FALSE;
+   my $action    = slot_claimed( $slot_data ) ? 'yield' : 'claim';
+   my $operator  = exists $slot_data->{slot}
+                 ? $slot_data->{slot}->operator : NUL;
 
-   $action eq 'yield' and not $can_yield
+   $action eq 'yield'
+      and $operator ne $req->username
+      and not $slot_data->{is_manager}
       and return { colspan => 2, value => $value };
 
-   my $opts = { action => $action,
-                args => [ $slot_type,
-                          $_slot_contact_info->( $req, $data->{ $k } ) ],
-                name => $k, request => $req, value => $value };
+   my $args = [ $slot_type, $_slot_contact_info->( $req, $slot_data ) ];
+   my $opts = { action  => $action,
+                args    => $args,
+                name    => $k,
+                request => $req,
+                value   => $value };
    my $link = { colspan => 2, }; p_link $link, 'slot', C_DIALOG, $opts;
 
    return $link;
@@ -445,6 +450,29 @@ my $_push_vehicle_select = sub {
    return;
 };
 
+my $_search_for_slot_data = sub {
+   my ($self, $req, $rota_name, $rota_dt, $opts) = @_;
+
+   my $is_manager = is_member 'rota_manager', $req->session->roles;
+   my $slot_rs    = $self->schema->resultset( 'Slot' );
+   my $slot_data  = {};
+
+   for my $slot ($slot_rs->search_for_slots( $opts )->all) {
+      my $vehicle_type = $slot->type_name eq 'driver' ? [ '4x4', 'car' ]
+                       : $slot->type_name eq 'rider'  ? 'bike' : undef;
+
+      $slot_data->{ $slot->key } = {
+         is_manager => $is_manager,
+         rota_dt    => $rota_dt,
+         rota_name  => $rota_name,
+         slot       => $slot,
+         type       => $vehicle_type,
+      };
+   }
+
+   return $slot_data;
+};
+
 # Public methods
 sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
                         Role(driver) {
@@ -474,13 +502,11 @@ sub claim_slot_action : Role(rota_manager) Role(rider) Role(controller)
                           . "rota_name:${rota_name} rota_date:${rota_date} "
                           . "slot:${name} vehicle_requested:${request_sv}" );
 
-   my $args     = [ $rota_name, $rota_date ];
-#   my $location = $req->uri_for_action( $self->moniker.'/day_rota', $args );
-   my $sr_map   = $self->config->slot_region;
-   my $label    = slot_identifier $rota_name, $rota_date, $name, $sr_map;
-   my $message  = [ to_msg '[_1] claimed slot [_2]', $person->label, $label ];
+   my $sr_map  = $self->config->slot_region;
+   my $label   = slot_identifier $rota_name, $rota_date, $name, $sr_map;
+   my $message = [ to_msg '[_1] claimed slot [_2]', $person->label, $label ];
 
-   return { redirect => { message => $message } };
+   return { redirect => { message => $message } }; # location referer
 }
 
 sub day_rota : Role(any) {
@@ -492,27 +518,11 @@ sub day_rota : Role(any) {
    my $rota_date = $params->( 1, { optional => TRUE } ) // $today;
    my $rota_dt   = to_dt $rota_date;
    my $type_id   = $self->$_find_rota_type( $name )->id;
-   my $slot_rs   = $self->schema->resultset( 'Slot' );
    my $event_rs  = $self->schema->resultset( 'Event' );
    my $events    = $event_rs->search_for_a_days_events
       ( $type_id, $rota_dt, { event_type => [ qw( person training ) ] } );
    my $opts      = { rota_type => $type_id, on => $rota_dt };
-   my $slot_data = {};
-
-   for my $slot ($slot_rs->search_for_slots( $opts )->all) {
-      my $vehicle_type = $slot->type_name eq 'driver' ? [ '4x4', 'car' ]
-                       : $slot->type_name eq 'rider'  ? 'bike' : undef;
-
-      $slot_data->{ $slot->key } =
-         { name        => $slot->key,
-           operator    => $slot->operator,
-           rota_dt     => $rota_dt,
-           rota_name   => $name,
-           slov        => $slot->operator_vehicle,
-           type        => $vehicle_type,
-           vehicle     => $slot->vehicle,
-           vehicle_req => $slot->vehicle_requested };
-   }
+   my $slot_data = $self->$_search_for_slot_data( $req, $name, $rota_dt, $opts);
 
    my $page = $self->$_day_page( $req, $name, $rota_dt, $events, $slot_data );
 
@@ -644,13 +654,11 @@ sub yield_slot_action : Role(rota_manager) Role(rider) Role(controller)
                           . "rota_name:${rota_name} rota_date:${rota_date} "
                           . "slot:${slot_name}" );
 
-   my $args     = [ $rota_name, $rota_date ];
-#   my $location = $req->uri_for_action( $self->moniker.'/day_rota', $args );
-   my $sr_map   = $self->config->slot_region;
-   my $label    = slot_identifier $rota_name, $rota_date, $slot_name, $sr_map;
-   my $message  = [ to_msg '[_1] yielded slot [_2]', $assignee->label, $label ];
+   my $sr_map  = $self->config->slot_region;
+   my $label   = slot_identifier $rota_name, $rota_date, $slot_name, $sr_map;
+   my $message = [ to_msg '[_1] yielded slot [_2]', $assignee->label, $label ];
 
-   return { redirect => { message => $message } };
+   return { redirect => { message => $message } }; # location referer
 }
 
 1;

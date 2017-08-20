@@ -10,6 +10,7 @@ use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE
 use App::Notitia::DataTypes qw( date_data_type foreign_key_data_type
                                 nullable_foreign_key_data_type
                                 serial_data_type varchar_data_type );
+use App::Notitia::Util      qw( now_dt );
 use Class::Usul::Functions  qw( is_member throw );
 use Try::Tiny;
 use Unexpected::Functions   qw( VehicleAssigned );
@@ -206,7 +207,7 @@ sub assign_private {
 }
 
 sub assign_to_event {
-   my ($self, $event_uri, $assigner_name) = @_;
+   my ($self, $event_uri, $assigner_name, $provisional) = @_;
 
    my $schema   = $self->result_source->schema;
    my $event    = $schema->resultset( 'Event' )->find_event_by( $event_uri );
@@ -214,13 +215,17 @@ sub assign_to_event {
 
    $self->$_assert_event_assignment_allowed( $event, $assigner );
 
-   return $schema->resultset( 'Transport' )->create
-      ( { event_id => $event->id, vehicle_id => $self->id,
-          vehicle_assigner_id => $assigner->id } );
+   return $schema->resultset( 'Transport' )->create( {
+      event_id            => $event->id,
+      vehicle_id          => $self->id,
+      vehicle_assigner_id => $assigner->id,
+      provisional         => $provisional,
+      provisional_created => now_dt,
+   } );
 }
 
 sub assign_slot {
-   my ($self, $rota_name, $rota_dt, $slot_name, $assigner) = @_;
+   my ($self, $rota_name, $rota_dt, $slot_name, $assigner, $provisional) = @_;
 
    my ($shift_t, $slot_t, $subslot) = split m{ _ }mx, $slot_name, 3;
 
@@ -231,8 +236,10 @@ sub assign_slot {
    $self->$_assert_slot_assignment_allowed
       ( $rota_name, $rota_dt, $shift_t, $slot_t, $slot, $person );
 
-   $slot->vehicle_id( $self->id ); $slot->vehicle_assigner_id( $person->id );
-
+   $slot->vehicle_id( $self->id );
+   $slot->vehicle_assigner_id( $person->id );
+   $slot->provisional( $provisional );
+   $slot->provisional_created( now_dt );
    return $slot->update;
 }
 
@@ -325,9 +332,7 @@ sub unassign_slot {
    my $slot = $self->$_find_slot
       ( $rota_name, $date, $shift_type, $slot_type, $subslot );
 
-   $slot->vehicle_id( undef ); $slot->vehicle_assigner_id( undef );
-
-   return $slot->update;
+   return $slot->unassign_vehicle;
 }
 
 sub update {

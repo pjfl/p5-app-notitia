@@ -294,6 +294,7 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       my $sess_version = $_[ 0 ]->session_version;
 
       return {
+      allocation_mode => [ Bool, FALSE                      ],
       display_cols    => [ PositiveInt, 7                   ],
       display_rows    => [ PositiveInt, 2                   ],
       enable_2fa      => [ Bool, FALSE                      ],
@@ -313,7 +314,7 @@ has 'session_attr'    => is => 'lazy', isa => HashRef[ArrayRef],
       version         => [ NonEmptySimpleStr, $sess_version ],
       wanted          => [ SimpleStr | Undef                ], } };
 
-has 'session_version' => is => 'ro',   isa => NonZeroPositiveInt, default => 4;
+has 'session_version' => is => 'ro',   isa => NonZeroPositiveInt, default => 5;
 
 has 'shift_times'     => is => 'ro',   isa => HashRef,
    builder            => sub { {

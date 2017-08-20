@@ -4,7 +4,9 @@ use strictures;
 use overload '""' => sub { $_[ 0 ]->_as_string }, fallback => 1;
 use parent   'App::Notitia::Schema::Schedule::Base::Result';
 
-use App::Notitia::DataTypes qw( foreign_key_data_type );
+use App::Notitia::Constants qw( FALSE );
+use App::Notitia::DataTypes qw( bool_data_type
+                                date_data_type foreign_key_data_type );
 
 my $class = __PACKAGE__; my $result = 'App::Notitia::Schema::Schedule::Result';
 
@@ -13,7 +15,10 @@ $class->table( 'transport' );
 $class->add_columns
    ( event_id            => foreign_key_data_type,
      vehicle_id          => foreign_key_data_type,
-     vehicle_assigner_id => foreign_key_data_type, );
+     vehicle_assigner_id => foreign_key_data_type,
+     provisional         => bool_data_type,
+     provisional_created => date_data_type,
+     );
 
 $class->set_primary_key( 'event_id', 'vehicle_id' );
 
@@ -25,6 +30,14 @@ $class->belongs_to( vehicle => "${result}::Vehicle", 'vehicle_id' );
 # Private methods
 sub _as_string {
    return $_[ 0 ]->vehicle;
+}
+
+sub cancel_provisional {
+   my $self = shift;
+
+   $self->provisional( FALSE ); $self->provisional_created( undef );
+
+   return $self->update;
 }
 
 1;

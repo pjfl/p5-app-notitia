@@ -17,6 +17,9 @@
 [% Dispatch( page.fields.nav.next ) -%]
       </div>
    </div>
+   <div class="spreadsheet-oplink right align-left">
+[% Dispatch( page.fields.nav.control ) -%]
+   </div>
    <h4 class="spreadsheet-heading">[% page.title %]</h4>
 </div>
 [% Dispatch( page.forms.0 ) -%]

@@ -1,7 +1,8 @@
 package App::Notitia::Model::Vehicle;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( EXCEPTION_CLASS FALSE NUL PIPE_SEP SPC TRUE );
+use App::Notitia::Constants qw( BATCH_MODE EXCEPTION_CLASS
+                                FALSE NUL PIPE_SEP SPC TRUE );
 use App::Notitia::DOM       qw( new_container p_action p_button p_date p_fields
                                 p_hidden p_item p_js p_link p_list p_row
                                 p_select p_table p_tag p_textarea p_textfield );
@@ -327,19 +328,20 @@ my $_vreq_row = sub {
    my $rs     = $schema->resultset( 'Transport' );
    my $tports = $rs->search_for_vehicle_by_type( $event->id, $vehicle_type->id);
    my $quant  = $_req_quantity->( $schema, $event, $vehicle_type );
+   my $is_manager = is_member 'rota_manager', $req->session->roles;
    my $row    = [ { value => loc( $req, $vehicle_type ) },
                   $_quantity_list->( $page, $vehicle_type, $quant ) ];
 
    $quant or return $row;
 
    for my $slotno (0 .. $quant - 1) {
-      my $transport = $tports->next;
-      my $vehicle   = $transport ? $transport->vehicle : undef;
-      my $opts      = { name        => "${vehicle_type}_event_${slotno}",
-                        operator    => $event->owner,
-                        type        => $vehicle_type,
-                        vehicle     => $vehicle,
-                        vehicle_req => TRUE, };
+      my $opts       = {
+         is_manager  => $is_manager,
+         name        => "${vehicle_type}_event_${slotno}",
+         operator    => $event->owner,
+         transport   => $tports->next,
+         type        => $vehicle_type,
+         vehicle_req => TRUE, };
 
       push @{ $row }, assign_link $req, $page, [ $uri ], $opts;
    }
@@ -477,57 +479,51 @@ my $_maybe_redirect_to_management = sub {
 };
 
 my $_toggle_event_assignment = sub {
-   my ($self, $req, $vrn, $action) = @_;
+   my ($self, $req, $action, $vrn) = @_;
 
-   my $schema = $self->schema;
-   my $uri = $req->uri_params->( 0 );
+   my $schema  = $self->schema;
+   my $uri     = $req->uri_params->( 0 );
+   my $event   = $schema->resultset( 'Event' )->find_event_by( $uri );
    my $vehicle = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
-   my $method = $action eq 'assign' ? 'assign_to_event' : 'unassign_from_event';
+   my $method  = $action eq 'assign'
+               ? 'assign_to_event' : 'unassign_from_event';
+   my $mode    = $req->session->allocation_mode;
 
-   $vehicle->$method( $uri, $req->username );
+   $vehicle->$method( $uri, $req->username, $mode );
 
-   my $prep = $action eq 'assign' ? 'to' : 'from';
-   my $key  = "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]";
-   my $event = $schema->resultset( 'Event' )->find_event_by( $uri );
-   my $scode = $event->owner;
-   my $dmy = locd $req, $event->start_date;
-   my $kv = $action eq 'assign' ? 'action:vehicle-assignment'
-                                : 'action:vehicle-unassignment';
-   my $message = "${kv} event_uri:${uri} "
-               . "shortcode:${scode} date:${dmy} vehicle:${vrn}";
+   $mode eq BATCH_MODE
+      or $self->send_event_assign_event( $req, $action, $vrn, $event );
 
-   $self->send_event( $req, $message );
-   $message = [ to_msg $key, $vrn, $uri, $req->session->user_label ];
+   my $prep    = $action eq 'assign' ? 'to' : 'from';
+   my $key     = "Vehicle [_1] ${action}ed ${prep} [_2] by [_3]";
+   my $message = [ to_msg $key, $vrn, $uri, $req->session->user_label ];
 
    return { redirect => { message => $message } }; # location referer
 };
 
 my $_toggle_slot_assignment = sub {
-   my ($self, $req, $vrn, $action) = @_;
+   my ($self, $req, $action, $vrn) = @_;
 
-   my $params = $req->uri_params;
-   my $rota_name = $params->( 0 );
-   my $rota_date = $params->( 1 );
-   my $slot_name = $params->( 2 );
-   my $schema = $self->schema;
-   my $vehicle = $schema->resultset( 'Vehicle' )->find_vehicle_by( $vrn );
-   my $method = "${action}_slot"; # Assign or unassign
-   my $rota_dt = to_dt $rota_date;
-   my $assignee = $req->username;
-   my $slot = $vehicle->$method( $rota_name, $rota_dt, $slot_name, $assignee );
-   my $prep = $action eq 'assign' ? 'to' : 'from';
-   my $key = "Vehicle [_1] ${action}ed ${prep} slot [_2] by [_3]";
-   my $operator = $slot->operator;
-   my $dmy = locd $req, $rota_dt;
-   my $kv = $action eq 'assign' ? 'action:vehicle-assignment'
-                                : 'action:vehicle-unassignment';
-   my $message = "${kv} date:${dmy} "
-               . "shortcode:${operator} slot_key:${slot_name} vehicle:${vrn}";
-   my $sr_map = $self->config->slot_region;
-   my $label = slot_identifier $rota_name, $rota_date, $slot_name, $sr_map;
+   my $params     = $req->uri_params;
+   my $rota_name  = $params->( 0 );
+   my $rota_date  = $params->( 1 );
+   my $slot_key   = $params->( 2 );
+   my $vehicle_rs = $self->schema->resultset( 'Vehicle' );
+   my $vehicle    = $vehicle_rs->find_vehicle_by( $vrn );
+   my $method     = "${action}_slot"; # Assign or unassign
+   my $rota_dt    = to_dt $rota_date;
+   my $mode       = $req->session->allocation_mode;
+   my $slot       = $vehicle->$method
+      ( $rota_name, $rota_dt, $slot_key, $req->username, $mode );
 
-   $self->send_event( $req, $message );
-   $message = [ to_msg $key, $vrn, $label, $req->session->user_label ];
+   $mode eq BATCH_MODE
+      or $self->send_slot_assign_event( $req, $action, $vrn, $slot );
+
+   my $sr_map  = $self->config->slot_region;
+   my $prep    = $action eq 'assign' ? 'to' : 'from';
+   my $key     = "Vehicle [_1] ${action}ed ${prep} slot [_2] by [_3]";
+   my $label   = slot_identifier $rota_name, $rota_date, $slot_key, $sr_map;
+   my $message = [ to_msg $key, $vrn, $label, $req->session->user_label ];
 
    return { redirect => { message => $message } }; # location referer
 };
@@ -539,11 +535,11 @@ my $_toggle_assignment = sub {
    my $vrn = $req->body_params->( 'vehicle' );
 
    try   { $self->schema->resultset( 'Type' )->find_rota_by( $rota_name ) }
-   catch { $r = $self->$_toggle_event_assignment( $req, $vrn, $action ) };
+   catch { $r = $self->$_toggle_event_assignment( $req, $action, $vrn ) };
 
    $r and return $r;
 
-   return $self->$_toggle_slot_assignment( $req, $vrn, $action );
+   return $self->$_toggle_slot_assignment( $req, $action, $vrn );
 };
 
 my $_update_vehicle_from_request = sub {
@@ -1101,6 +1097,34 @@ sub request_vehicle_action : Role(event_manager) {
                     $event->label, $req->session->user_label ];
 
    return { redirect => { location => $location, message => $message } };
+}
+
+sub send_event_assign_event {
+   my ($self, $req, $action, $vrn, $event) = @_;
+
+   my $uri       = $event->uri;
+   my $scode     = $event->owner;
+   my $local_dmy = locd $req, $event->start_date;
+   my $kv        = $action eq 'assign' ? 'action:vehicle-assignment'
+                                       : 'action:vehicle-unassignment';
+   my $message   = "${kv} date:${local_dmy} event_uri:${uri} "
+                 . "shortcode:${scode} vehicle:${vrn}";
+
+   return $self->send_event( $req, $message );
+}
+
+sub send_slot_assign_event {
+   my ($self, $req, $action, $vrn, $slot) = @_;
+
+   my $slot_key  = $slot->key;
+   my $scode     = $slot->operator;
+   my $local_dmy = locd $req, $slot->start_date;
+   my $kv        = $action eq 'assign' ? 'action:vehicle-assignment'
+                                       : 'action:vehicle-unassignment';
+   my $message   = "${kv} date:${local_dmy} slot_key:${slot_key} "
+                 . "shortcode:${scode} vehicle:${vrn}";
+
+   return $self->send_event( $req, $message );
 }
 
 sub unassign_vehicle_action : Role(rota_manager) {

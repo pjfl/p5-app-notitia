@@ -195,6 +195,21 @@ msgid "badge_id_field_tip"
 msgstr "Set this to 'next' and the next available badge id will be "
        "automatically selected"
 
+msgid "batch_mode"
+msgstr "Batch Mode"
+
+msgid "batch_mode_cancel_notice"
+msgstr "Batch vehicle assignment mode cancelled"
+
+msgid "batch_mode_commit_notice"
+msgstr "Batch vehicle assignment mode commited"
+
+msgid "batch_mode_start_notice"
+msgstr "Batch vehicle assignment mode started"
+
+msgid "batch_mode_tip"
+msgstr "Start batch mode. In batch mode vehicle assignments are provisional"
+
 msgid "beginning_id"
 msgstr "Beginning Location"
 
@@ -248,6 +263,12 @@ msgstr "Log incoming calls from other agencies"
 
 msgid "called"
 msgstr "Called"
+
+msgid "cancel_batch"
+msgstr "Cancel Batch"
+
+msgid "cancel_batch_tip"
+msgstr "Delete all your provisional assignments"
 
 msgid "car"
 msgstr "Car"
@@ -354,6 +375,13 @@ msgstr "Collection ETA"
 
 msgid "colour"
 msgstr "Colour"
+
+msgid "commit_batch"
+msgstr "Commit Batch"
+
+msgid "commit_batch_tip"
+msgstr "Make all provisional assignments real and send any vehicle "
+       "assignment notitfications"
 
 msgid "committee"
 msgstr "Committee"

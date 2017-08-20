@@ -3,10 +3,11 @@ package App::Notitia::Model::WeekRota;
 use utf8;
 
 use App::Notitia::Attributes;   # Will do namespace cleaning
-use App::Notitia::Constants qw( FALSE HASH_CHAR NBSP NUL SPC TILDE TRUE );
-use App::Notitia::DOM       qw( new_container p_cell p_container p_hidden p_item
-                                p_js p_link p_list p_row p_select p_span
-                                p_table p_unordered );
+use App::Notitia::Constants qw( BATCH_MODE FALSE HASH_CHAR
+                                NBSP NUL SPC TILDE TRUE );
+use App::Notitia::DOM       qw( new_container p_button p_cell p_container
+                                p_hidden p_item p_js p_link p_list p_row
+                                p_select p_span p_table p_unordered );
 use App::Notitia::Util      qw( assign_link calculate_distance contrast_colour
                                 crow2road dialog_anchor find_slot
                                 js_rotate_config js_server_config
@@ -14,6 +15,7 @@ use App::Notitia::Util      qw( assign_link calculate_distance contrast_colour
                                 locm make_tip register_action_paths slot_claimed
                                 slot_limit_index to_dt );
 use Class::Null;
+use Class::Usul::Functions  qw( is_member );
 use Class::Usul::Time       qw( time2str );
 use Scalar::Util            qw( blessed );
 use Try::Tiny;
@@ -218,21 +220,19 @@ my $_select_number = sub {
 };
 
 my $_slot_link_data = sub {
-   my ($page, $dt, $dt_key, $slot) = @_;
+   my ($page, $dt_key, $rota_name, $rota_dt, $slot) = @_;
 
    my $vehicle_type =  $slot->type_name eq 'driver' ? [ '4x4', 'car' ]
                     :  $slot->type_name eq 'rider'  ? 'bike' : undef;
-   my $operator     =  $slot->operator;
 
-   return { $dt_key => {
-      name          => $slot->key,
-      operator      => $operator,
-      rota_dt       => $dt,
-      rota_name     => $page->{rota_name},
-      slov          => $slot->operator_vehicle,
-      type          => $vehicle_type,
-      vehicle       => $slot->vehicle,
-      vehicle_req   => $slot->vehicle_requested } };
+   return {
+      $dt_key       => {
+         is_manager => $page->{is_manager},
+         rota_dt    => $rota_dt,
+         rota_name  => $rota_name,
+         slot       => $slot,
+         type       => $vehicle_type,
+      } };
 };
 
 my $_week_label = sub {
@@ -473,14 +473,17 @@ my $_alloc_cell_controller_headers = sub {
 my $_alloc_cell_controller_row = sub {
    my ($self, $req, $page, $data, $dt, $shift) = @_; my $row = [];
 
-   my $local_ymd = local_dt( $dt )->ymd;
+   my $local_dt  = local_dt( $dt );
+   my $local_ymd = $local_dt->ymd;
    my $max = ($self->$_max_controllers)[ $shift eq 'day' ? 0 : 1 ] // 0;
 
    for my $subslot (0 .. $self->$_max_controllers - 1) {
       my $slot_key = "${shift}_controller_${subslot}";
       my $dt_key = "${local_ymd}_${slot_key}";
       my $slot = $data->{slots}->{ $dt_key } // Class::Null->new;
-      my $link_data = $_slot_link_data->( $page, $dt, $dt_key, $slot );
+      my $rota_name = $page->{rota_name};
+      my $link_data
+         = $_slot_link_data->( $page, $dt_key, $rota_name, $dt, $slot );
       my $cell =  p_cell $row, $self->components->{day}->slot_link
          ( $req, $page, $link_data, $dt_key, 'controller' );
 
@@ -488,13 +491,13 @@ my $_alloc_cell_controller_row = sub {
       $cell->{colspan} = 1;
 
       if ($subslot > $max
-          or $shift eq 'day' and $self->is_working_day( local_dt $dt )) {
+          or $shift eq 'day' and $self->is_working_day( $local_dt )) {
          $cell->{value}->{value} = NBSP; $cell->{value}->{tip} = NBSP;
       }
 
       my $title  = 'Controller Slot';
-      my $args   = [ $page->{rota_name}, $local_ymd, $slot_key ];
-      my $action =  slot_claimed $link_data->{ $dt_key } ? 'yield' : 'claim';
+      my $args   = [ $rota_name, $local_ymd, $slot_key ];
+      my $action =  slot_claimed( $link_data->{ $dt_key } ) ? 'yield' : 'claim';
 
       $_add_slot_js_dialog->( $req, $page, $dt_key, $title, $args, $action );
    }
@@ -519,11 +522,14 @@ my $_alloc_cell_event_row = sub {
    my $list = p_list $cell, NUL, [], { class => 'table-cell-list' };
    my $index = 0;
 
-   for my $v_or_r (map { $_->[ 1 ] } @{ $tuples }) {
+   for my $tuple (@{ $tuples }) {
+      my $v_or_r  = $tuple->[ 1 ];
       my $action  = blessed $v_or_r ? 'unassign' : 'assign';
       my $vehicle = $action eq 'unassign' ? $v_or_r : undef;
       my $value   = $action eq 'unassign' ? $v_or_r->name : ucfirst $v_or_r;
       my $type    = $action eq 'unassign' ? $v_or_r->type : $v_or_r;
+      my $tport   = $action eq 'unassign' ? $tuple->[ 2 ] : undef;
+      my $prov    = $tport ? $tport->provisional : FALSE;
       my $args    = [ $event->uri, $page->{rota_date} ];
       my $params  = { action => $action, mode => 'slow',
                       type   => $type, vehicle => $vehicle };
@@ -534,7 +540,7 @@ my $_alloc_cell_event_row = sub {
                 : 'table-cell-link windows hidden',
          style => $_vehicle_cell_style->( $v_or_r ),
          tip   => NUL,
-         value => $value };
+         value => $value.($prov ? NBSP.'*' : NUL) };
 
       p_js $page, dialog_anchor "${id}-${index}", $href, {
          name  => "${action}-vehicle",
@@ -565,20 +571,21 @@ my $_alloc_cell_slot_region = sub {
 my $_alloc_cell_slot_row = sub {
    my ($self, $req, $page, $data, $dt, $slot_key, $cno) = @_; my $row = [];
 
-   my $local_ymd = local_dt( $dt )->ymd;
+   my $local_dt  = local_dt( $dt );
+   my $local_ymd = $local_dt->ymd;
    my $dt_key    = "${local_ymd}_${slot_key}";
    my $slot      = $data->{slots}->{ $dt_key } // Class::Null->new;
    my ($shift, $slot_type) = split m{ _ }mx, $slot_key;
-   my $suppress  = $shift eq 'day' && $self->is_working_day( local_dt $dt )
+   my $suppress  = $shift eq 'day' && $self->is_working_day( $local_dt )
                  ? TRUE : FALSE;
 
-   $cno == 0 and p_cell $row, {
+   $cno == 0 and p_cell $row, { # Shift key on first day only
       class => 'rota-header align-center',
       value => locm $req, "${slot_key}_abbrv" };
 
-   my $operator  =  $slot->operator;
-   my $link_data =  $_slot_link_data->( $page, $dt, $dt_key, $slot );
-   my $cell      =  p_cell $row, $self->components->{day}->slot_link
+   my $rota_name = $page->{rota_name};
+   my $link_data = $_slot_link_data->( $page, $dt_key, $rota_name, $dt, $slot );
+   my $cell      = p_cell $row, $self->components->{day}->slot_link
       ( $req, $page, $link_data, $dt_key, $slot_type );
 
    $cell->{class} = 'spreadsheet-fixed-cell table-cell-label';
@@ -587,9 +594,10 @@ my $_alloc_cell_slot_row = sub {
       $cell->{value}->{value} = NBSP; $cell->{value}->{tip} = NUL;
    }
 
-   my $args   = [ $page->{rota_name}, $local_ymd, $slot_key ];
-   my $title  = $slot_type eq 'driver' ? 'Driver Slot' : 'Rider Slot';
-   my $action = slot_claimed $link_data->{ $dt_key } ? 'yield' : 'claim';
+   my $args     = [ $rota_name, $local_ymd, $slot_key ];
+   my $title    = $slot_type eq 'driver' ? 'Driver Slot' : 'Rider Slot';
+   my $action   = slot_claimed( $link_data->{ $dt_key } ) ? 'yield' : 'claim';
+   my $operator = $slot->operator;
 
    $_add_slot_js_dialog->( $req, $page, $dt_key, $title, $args, $action );
    $_alloc_cell_slot_region->( $page, $dt_key, $suppress, $operator, $row );
@@ -837,7 +845,7 @@ my $_search_for_events = sub {
       my $k = local_dt( $tport->event->start_date )->ymd;
       my $vehicle = $tport->vehicle;
 
-      push @{ $events->{ $k } //= [] }, [ $tport->event, $vehicle ];
+      push @{ $events->{ $k } //= [] }, [ $tport->event, $vehicle, $tport ];
 
       my $start = ($tport->event->duration)[ 0 ];
       my $tuple = [ $tport->event->owner ];
@@ -914,17 +922,43 @@ my $_week_rota_requests = sub {
    return $row;
 };
 
+my $_alloc_nav_control = sub {
+   my ($self, $req) = @_;
+
+   is_member 'rota_manager', $req->session->roles or return {};
+
+   my $href = $req->uri_for_action( $self->moniker.'/allocation' );
+   my $form = new_container 'allocation-control', $href;
+   my $opts = { class => 'save-button right', request => $req, };
+
+   if ($req->session->allocation_mode eq BATCH_MODE) {
+      $opts->{tip} = make_tip $req, 'cancel_batch_tip';
+      p_button $form, 'cancel_batch', 'cancel_batch', $opts;
+      $opts->{tip} = make_tip $req, 'commit_batch_tip';
+      p_button $form, 'commit_batch', 'commit_batch', $opts;
+   }
+   else {
+      $opts->{tip} = make_tip $req, 'batch_mode_tip';
+      p_button $form, 'batch_mode', 'batch_mode', $opts;
+   }
+
+   $self->add_csrf_token( $req, $form );
+
+   return $form;
+};
+
 my $_alloc_nav = sub {
    my ($self, $req, $rota_name, $rota_dt, $params) = @_;
 
    my $href = $req->uri_for_action( $self->moniker.'/allocation' );
 
    return {
-      next => $self->$_next_week
+      control => $self->$_alloc_nav_control( $req ),
+      next    => $self->$_next_week
          ( $req, 'allocation', $rota_name, $rota_dt, $params ),
-      picker => $self->date_picker
+      picker  => $self->date_picker
          ( $req, 'paddle', $rota_name, local_dt( $rota_dt ), $href ),
-      prev => $self->$_prev_week
+      prev    => $self->$_prev_week
          ( $req, 'allocation', $rota_name, $rota_dt, $params ),
       oplinks_style => 'max-width: '.($params->{cols} * 270).'px;'
    };
@@ -933,8 +967,8 @@ my $_alloc_nav = sub {
 my $_alloc_query = sub {
    my ($self, $req, $page, $args, $params) = @_;
 
-   my $moniker = $self->moniker;
-   my $href = $req->uri_for_action( "${moniker}/allocation", $args );
+   my $actionp = $self->moniker.'/allocation';
+   my $href = $req->uri_for_action( $actionp, $args );
    my $form = new_container 'display-control', $href, {
       class => 'standard-form display-control' };
 
@@ -997,12 +1031,30 @@ my $_get_all_the_data = sub {
    my $vevents = $self->$_search_for_vehicle_events( $opts, $journal );
 
    return {
-      events => $events,
-      journal => $journal,
-      slots => $slots,
+      events   => $events,
+      journal  => $journal,
+      slots    => $slots,
       vehicles => $vehicles,
-      vevents => $vevents,
+      vevents  => $vevents,
    };
+};
+
+my $_get_my_provisional_slots = sub {
+   my ($self, $req) = @_;
+
+   return $self->schema->resultset( 'Slot' )->search( {
+      'vehicle_assigner.shortcode' => $req->username,
+      'provisional'                => TRUE }, {
+         'prefetch'                => 'vehicle_assigner', } );
+};
+
+my $_get_my_provisional_tports = sub {
+   my ($self, $req) = @_;
+
+   return $self->schema->resultset( 'Transport' )->search( {
+      'vehicle_assigner.shortcode' => $req->username,
+      'provisional'                => TRUE }, {
+         'prefetch'                => 'vehicle_assigner', } );
 };
 
 my $_vehicle_label = sub {
@@ -1054,7 +1106,7 @@ sub alloc_key : Dialog Role(controller) Role(driver) Role(rider)
    my $vehicles = $self->schema->resultset( 'Vehicle' )->search_for_vehicles( {
       columns => $columns, service => TRUE } );
    my $assets = $self->components->{asset};
-   my $keeper_dt = local_dt( $rota_dt->clone->subtract( seconds => 1 ) );
+   my $keeper_dt = local_dt $rota_dt->clone->subtract( seconds => 1 );
 
    $table->{headers} = $_alloc_key_headers->( $req, $keeper_dt );
 
@@ -1080,12 +1132,13 @@ sub alloc_table : Dialog Role(controller) Role(driver) Role(rider)
       class => 'spreadsheet-table', type => 'table' };
    my $row = p_row $table;
 
-   $table->{headers} = $_alloc_table_headers->( $req, $rota_dt, $cols );
-   $page->{limits} = $self->config->slot_limits;
-   $page->{moniker} = $self->moniker;
-   $page->{rota_name} = $rota_name;
-   $page->{rota_date} = $rota_date;
-   $page->{rota_dt} = $rota_dt;
+   $table->{headers}   = $_alloc_table_headers->( $req, $rota_dt, $cols );
+   $page->{is_manager} = is_member 'rota_manager', $req->session->roles;
+   $page->{limits    } = $self->config->slot_limits;
+   $page->{moniker   } = $self->moniker;
+   $page->{rota_name } = $rota_name;
+   $page->{rota_date } = $rota_date;
+   $page->{rota_dt   } = $rota_dt;
 
    p_cell $row, [ map { $self->$_alloc_cell( $req, $page, $data, $_ ) }
                   0 .. $cols - 1 ];
@@ -1128,6 +1181,63 @@ sub allocation : Role(controller) Role(driver) Role(rider)
    }
 
    return $self->get_stash( $req, $page );
+}
+
+sub batch_mode_action : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   $req->session->allocation_mode( BATCH_MODE );
+
+   my $message = [ locm $req, 'batch_mode_start_notice' ];
+
+   return { redirect => { message => $message } }; # location referer
+}
+
+sub cancel_batch_action : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $slots = $self->$_get_my_provisional_slots( $req );
+
+   for my $slot ($slots->all) { $slot->unassign_vehicle }
+
+   my $tports = $self->$_get_my_provisional_tports( $req );
+
+   for my $tport ($tports->all) { $tport->delete }
+
+   $req->session->allocation_mode( 0 );
+
+   my $message = [ locm $req, 'batch_mode_cancel_notice' ];
+
+   return { redirect => { message => $message } }; # location referer
+}
+
+sub commit_batch_action : Role(rota_manager) {
+   my ($self, $req) = @_;
+
+   my $asset = $self->components->{asset};
+   my $slots = $self->$_get_my_provisional_slots( $req );
+
+   for my $slot ($slots->all) {
+      my $vrn = $slot->vehicle->vrn;
+
+      $asset->send_slot_assign_event( $req, 'assign', $vrn, $slot );
+      $slot->cancel_provisional;
+   }
+
+   my $tports = $self->$_get_my_provisional_tports( $req );
+
+   for my $tport ($tports->all) {
+      my $vrn = $tport->vehicle->vrn;
+
+      $asset->send_event_assign_event( $req, 'assign', $vrn, $tport->event );
+      $tport->cancel_provisional;
+   }
+
+   $req->session->allocation_mode( 0 );
+
+   my $message = [ locm $req, 'batch_mode_commit_notice' ];
+
+   return { redirect => { message => $message } }; # location referer
 }
 
 sub day_selector_action : Role(controller) Role(driver) Role(rider)

@@ -4,8 +4,8 @@ use utf8;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use App::Notitia::Constants    qw( EXCEPTION_CLASS FALSE HASH_CHAR NUL SPC
-                                   TILDE TRUE );
+use App::Notitia::Constants    qw( EXCEPTION_CLASS FALSE HASH_CHAR NBSP
+                                   NUL SPC TILDE TRUE );
 use Class::Usul::Crypt::Util   qw( decrypt_from_config encrypt_for_config );
 use Class::Usul::File;
 use Class::Usul::Functions     qw( class2appdir bson64id create_token
@@ -190,7 +190,7 @@ my $vehicle_link = sub {
    $action eq 'unassign' and $params->{vehicle} = $value;
    blessed $value and $value = $value->slotref;
 
-   $page->{disabled} and return {
+   ($opts->{disabled} or $page->{disabled}) and return {
       class => 'table-link', style => $opts->{style},
       type  => 'text', value => $value };
 
@@ -278,32 +278,39 @@ sub assert_unique ($$$$) {
 }
 
 sub assign_link ($$$$) {
-   my ($req, $page, $args, $opts) = @_; my $type = $opts->{type};
+   my ($req, $page, $args, $opts) = @_;
 
-   my $name = $opts->{name}; my $value = $opts->{vehicle}; my $style;
+   my $obj     = $opts->{slot} // $opts->{transport};
+   my $has_req = $opts->{vehicle_req}
+              // ($obj ? $obj->vehicle_requested : undef);
+   my $name    = $opts->{name} // ($obj ? "${obj}" : undef);
+   my $value   = $obj && $obj->vehicle ? $obj->vehicle : undef;
+   my $state   = slot_claimed( $opts ) ? 'vehicle-not-needed' : NUL;
+   my $style;
 
-   my $state = slot_claimed( $opts ) ? 'vehicle-not-needed' : NUL;
-
-   $opts->{vehicle_req} and $state = 'vehicle-requested';
-   $value and $state = 'vehicle-assigned';
+   $has_req and $state = 'vehicle-requested';
+   $value   and $state = 'vehicle-assigned';
 
    if ($state eq 'vehicle-assigned') {
-      my $params = { action => 'unassign', name => $name, value => $value };
+      my $colour   = $obj->vehicle->colour;
+      my $disabled = $obj->provisional && !$opts->{is_manager} ? TRUE : FALSE;
+      my $params   = { action   => 'unassign',
+                       disabled => $disabled,
+                       name     => $name,
+                       value    => $value, };
 
-      $opts->{vehicle}->colour
-         and $style = 'background-color: '.$opts->{vehicle}->colour.';'
-         and $params->{style} = 'color: '
-                              . contrast_colour( $opts->{vehicle}->colour ).';';
-
+      $colour and $style = "background-color: ${colour};"
+              and $params->{style} = 'color: ' . contrast_colour( $colour ).';';
       $value = $vehicle_link->( $req, $page, $args, $params );
+      $obj->provisional and $value->{value} .= NBSP.'*';
    }
    elsif ($state eq 'vehicle-requested') {
       my $params = { action => 'assign',
                      class  => 'table-link vehicle-requested windows',
                      mode   => $opts->{mode},
                      name   => $name,
-                     type   => $type,
-                     value  => 'requested' };
+                     type   => $opts->{type},
+                     value  => 'requested', };
 
       $value = $vehicle_link->( $req, $page, $args, $params );
    }
@@ -1041,8 +1048,14 @@ sub show_node ($;$$) {
 }
 
 sub slot_claimed ($) {
-   return defined $_[ 0 ] && exists $_[ 0 ]->{operator} && $_[ 0 ]->{operator}
-       && $_[ 0 ]->{operator}->id ? TRUE : FALSE;
+   my $hash = shift; defined $hash or return FALSE;
+
+   exists $hash->{slot}
+      and return $hash->{slot}->operator && $hash->{slot}->operator->id
+        ? TRUE : FALSE;
+
+   return exists $hash->{operator} && $hash->{operator} && $hash->{operator}->id
+        ? TRUE : FALSE;
 }
 
 sub slot_identifier ($$$$) {

@@ -48,7 +48,8 @@ sub search_for_slots {
 
    return $self->search
       ( $where,
-        { 'columns'      => [ qw( bike_requested type_name subslot ) ],
+        { 'columns'      => [ qw( bike_requested provisional
+                                  provisional_created type_name subslot ) ],
           'join'         => [ 'operator', 'vehicle' ],
           'order_by'     => $order,
           'prefetch'     => [ { 'shift' => 'rota' },
