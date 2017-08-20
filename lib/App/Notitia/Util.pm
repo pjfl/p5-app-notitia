@@ -285,8 +285,9 @@ sub assign_link ($$$$) {
                // ($obj ? $obj->vehicle_requested : undef);
    my $name     = $opts->{name} // ($obj ? "${obj}" : undef);
    my $value    = $obj && $obj->vehicle ? $obj->vehicle : undef;
+   my $disabled = $obj && $obj->provisional && !$opts->{is_manager}
+                ? TRUE : FALSE;
    my $state    = slot_claimed( $opts ) ? 'vehicle-not-needed' : NUL;
-   my $disabled = $obj->provisional && !$opts->{is_manager} ? TRUE : FALSE;
    my $style;
 
    $has_req and $state = 'vehicle-requested';
