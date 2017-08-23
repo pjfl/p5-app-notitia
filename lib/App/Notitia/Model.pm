@@ -194,10 +194,6 @@ sub initialise_stash {
    return { code => HTTP_OK, view => $_[ 0 ]->config->default_view, };
 }
 
-sub jobdaemon { # Shortcut for result classes
-   return $_[ 0 ]->components->{daemon}->jobdaemon;
-}
-
 sub load_page {
    my ($self, $req, $page) = @_; $page //= {}; return $page;
 }

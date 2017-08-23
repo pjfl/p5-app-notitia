@@ -666,11 +666,11 @@ my $_alloc_cell = sub {
 
    while ($count++ < 4) {
       p_row $table, [ map { {
-         class => $_ == 0 ? 'table-cell-label'
-                : $_ == 1 ? 'table-cell-select narrow'
-                :           'spreadsheet-fixed-cell table-cell-label',
-         colspan => $_ == 0 ? 2 : 1, value => NBSP } }
-                      0 .. 2 ];
+         class   => $_ == 0 ? 'table-cell-label'
+                  : $_ == 1 ? 'table-cell-select narrow'
+                  :           'spreadsheet-fixed-cell table-cell-label',
+         colspan => $_ == 0 ? 2 : 1,
+         value   => NBSP } } 0 .. 2 ];
    }
 
    $table = p_table $tables, { class => 'embeded' };

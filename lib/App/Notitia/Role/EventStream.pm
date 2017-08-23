@@ -252,6 +252,10 @@ sub event_schema_update {
    return $message;
 }
 
+sub jobdaemon { # Shortcut for result classes
+   return $_[ 0 ]->components->{daemon}->jobdaemon;
+}
+
 sub send_event {
    my ($self, $req, $message, $params) = @_;
 
