@@ -1,5 +1,6 @@
 Revision history for App::Notitia
 
+0.16.1    2017-08-28 11:55:17
           - Fixes missing jobdaemon shortcut
           - Hides provisional assignments from plebs
           - Implements batch vehicle assignment mode
